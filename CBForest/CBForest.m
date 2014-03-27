@@ -14,7 +14,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 //FIX: I have no idea what the right values for these are
-static fdb_config kDefaultConfig = {
+static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
     .chunksize = sizeof(uint64_t),
     .offsetsize = sizeof(uint64_t),
     .buffercache_size = 4 * 1024 * 1024,
@@ -128,21 +128,22 @@ static fdb_config kDefaultConfig = {
     fdb_status status = fdb_iterator_init(self.db, &iterator,
                                           startKey.buf, startKey.size,
                                           endKey.buf, endKey.size, fdbOptions);
-    if (status == FDB_RESULT_SUCCESS) {
-        for (;;) {
-            fdb_doc *docinfo;
-            status = fdb_iterator_next(&iterator, &docinfo);
-            if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
-                break;
-            CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self info: docinfo];
-            BOOL stop = NO;
-            block(doc, &stop);
-            if (stop)
-                break;
-        }
-        fdb_iterator_close(&iterator);
+    if (!Check(status, outError))
+        return NO;
+
+    for (;;) {
+        fdb_doc *docinfo;
+        status = fdb_iterator_next(&iterator, &docinfo);
+        if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
+            break; // FDB returns FDB_RESULT_FAIL at end of iteration
+        CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self info: docinfo];
+        BOOL stop = NO;
+        block(doc, &stop);
+        if (stop)
+            break;
     }
-    return Check(status, outError);
+    fdb_iterator_close(&iterator);
+    return YES;
 }
 
 
