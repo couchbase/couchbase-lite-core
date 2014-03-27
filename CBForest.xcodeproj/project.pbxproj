@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		2750723F18E3E52800A80C5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
 		2750724218E3E52800A80C5A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724118E3E52800A80C5A /* main.m */; };
-		2750724618E3E52800A80C5A /* CBForest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2750724518E3E52800A80C5A /* CBForest.1 */; };
+		2750724D18E3E5BB00A80C5A /* libforestdb.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750724C18E3E5BB00A80C5A /* libforestdb.dylib */; };
+		2750725618E3E60900A80C5A /* CBForest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForest.m */; };
+		2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725118E3E60900A80C5A /* CBForestDocument.m */; };
+		2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725518E3E60900A80C5A /* CBForestPrivate.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -19,7 +22,6 @@
 			dstPath = /usr/share/man/man1/;
 			dstSubfolderSpec = 0;
 			files = (
-				2750724618E3E52800A80C5A /* CBForest.1 in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -30,7 +32,49 @@
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724118E3E52800A80C5A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		2750724418E3E52800A80C5A /* CBForest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CBForest-Prefix.pch"; sourceTree = "<group>"; };
-		2750724518E3E52800A80C5A /* CBForest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CBForest.1; sourceTree = "<group>"; };
+		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
+		2750724E18E3E60900A80C5A /* CBForest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForest.h; sourceTree = "<group>"; };
+		2750724F18E3E60900A80C5A /* CBForest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForest.m; sourceTree = "<group>"; };
+		2750725018E3E60900A80C5A /* CBForestDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDocument.h; sourceTree = "<group>"; };
+		2750725118E3E60900A80C5A /* CBForestDocument.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDocument.m; sourceTree = "<group>"; };
+		2750725218E3E60900A80C5A /* CBForestVersions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestVersions.h; sourceTree = "<group>"; };
+		2750725318E3E60900A80C5A /* CBForestVersions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestVersions.m; sourceTree = "<group>"; };
+		2750725418E3E60900A80C5A /* CBForestPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestPrivate.h; sourceTree = "<group>"; };
+		2750725518E3E60900A80C5A /* CBForestPrivate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestPrivate.m; sourceTree = "<group>"; };
+		2750725F18E3E72900A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb.h; sourceTree = "<group>"; };
+		2750726118E3E72900A80C5A /* option.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = option.h; sourceTree = "<group>"; };
+		2750726318E3E72900A80C5A /* arch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = arch.h; sourceTree = "<group>"; };
+		2750726518E3E72900A80C5A /* avltree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = avltree.h; sourceTree = "<group>"; };
+		2750726718E3E72900A80C5A /* blockcache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = blockcache.h; sourceTree = "<group>"; };
+		2750726A18E3E72900A80C5A /* btree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btree.h; sourceTree = "<group>"; };
+		2750726D18E3E72900A80C5A /* btree_kv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btree_kv.h; sourceTree = "<group>"; };
+		2750727018E3E72900A80C5A /* btreeblock.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btreeblock.h; sourceTree = "<group>"; };
+		2750727218E3E72900A80C5A /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		2750727418E3E72900A80C5A /* docio.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = docio.h; sourceTree = "<group>"; };
+		2750727718E3E72900A80C5A /* filemgr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filemgr.h; sourceTree = "<group>"; };
+		2750727A18E3E72900A80C5A /* filemgr_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filemgr_ops.h; sourceTree = "<group>"; };
+		2750728118E3E72900A80C5A /* hash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hash.h; sourceTree = "<group>"; };
+		2750728418E3E72900A80C5A /* hash_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hash_functions.h; sourceTree = "<group>"; };
+		2750728718E3E72900A80C5A /* hbtrie.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hbtrie.h; sourceTree = "<group>"; };
+		2750728B18E3E72900A80C5A /* list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
+		2750729118E3E72900A80C5A /* wal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wal.h; sourceTree = "<group>"; };
+		2750729318E4857900A80C5A /* avltree.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = avltree.cc; sourceTree = "<group>"; };
+		2750729418E4857900A80C5A /* blockcache.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = blockcache.cc; sourceTree = "<group>"; };
+		2750729518E4857900A80C5A /* btree_kv.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btree_kv.cc; sourceTree = "<group>"; };
+		2750729618E4857900A80C5A /* btree.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btree.cc; sourceTree = "<group>"; };
+		2750729718E4857900A80C5A /* btreeblock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btreeblock.cc; sourceTree = "<group>"; };
+		2750729818E4857900A80C5A /* docio.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = docio.cc; sourceTree = "<group>"; };
+		2750729918E4857900A80C5A /* filemgr_ops_linux.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_linux.cc; sourceTree = "<group>"; };
+		2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_windows.cc; sourceTree = "<group>"; };
+		2750729B18E4857900A80C5A /* filemgr_ops.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops.cc; sourceTree = "<group>"; };
+		2750729C18E4857900A80C5A /* filemgr.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr.cc; sourceTree = "<group>"; };
+		2750729D18E4857900A80C5A /* forestdb.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb.cc; sourceTree = "<group>"; };
+		2750729E18E4857900A80C5A /* hash_functions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hash_functions.cc; sourceTree = "<group>"; };
+		2750729F18E4857900A80C5A /* hash.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hash.cc; sourceTree = "<group>"; };
+		275072A018E4857900A80C5A /* hbtrie.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hbtrie.cc; sourceTree = "<group>"; };
+		275072A118E4857900A80C5A /* iterator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = iterator.cc; sourceTree = "<group>"; };
+		275072A218E4857900A80C5A /* list.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = list.cc; sourceTree = "<group>"; };
+		275072A318E4857900A80C5A /* wal.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wal.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +83,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2750723F18E3E52800A80C5A /* Foundation.framework in Frameworks */,
+				2750724D18E3E5BB00A80C5A /* libforestdb.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -49,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				2750724018E3E52800A80C5A /* CBForest */,
+				2750725A18E3E6E100A80C5A /* forestdb */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
 			);
@@ -65,6 +111,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				2750724C18E3E5BB00A80C5A /* libforestdb.dylib */,
 				2750723E18E3E52800A80C5A /* Foundation.framework */,
 			);
 			name = Frameworks;
@@ -73,8 +120,15 @@
 		2750724018E3E52800A80C5A /* CBForest */ = {
 			isa = PBXGroup;
 			children = (
+				2750724E18E3E60900A80C5A /* CBForest.h */,
+				2750724F18E3E60900A80C5A /* CBForest.m */,
+				2750725018E3E60900A80C5A /* CBForestDocument.h */,
+				2750725118E3E60900A80C5A /* CBForestDocument.m */,
+				2750725218E3E60900A80C5A /* CBForestVersions.h */,
+				2750725318E3E60900A80C5A /* CBForestVersions.m */,
+				2750725418E3E60900A80C5A /* CBForestPrivate.h */,
+				2750725518E3E60900A80C5A /* CBForestPrivate.m */,
 				2750724118E3E52800A80C5A /* main.m */,
-				2750724518E3E52800A80C5A /* CBForest.1 */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -86,6 +140,72 @@
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		2750725A18E3E6E100A80C5A /* forestdb */ = {
+			isa = PBXGroup;
+			children = (
+				2750725E18E3E72900A80C5A /* include */,
+				2750726018E3E72900A80C5A /* option */,
+				2750726218E3E72900A80C5A /* src */,
+			);
+			name = forestdb;
+			path = vendor/forestdb;
+			sourceTree = "<group>";
+		};
+		2750725E18E3E72900A80C5A /* include */ = {
+			isa = PBXGroup;
+			children = (
+				2750725F18E3E72900A80C5A /* forestdb.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		2750726018E3E72900A80C5A /* option */ = {
+			isa = PBXGroup;
+			children = (
+				2750726118E3E72900A80C5A /* option.h */,
+			);
+			path = option;
+			sourceTree = "<group>";
+		};
+		2750726218E3E72900A80C5A /* src */ = {
+			isa = PBXGroup;
+			children = (
+				2750729318E4857900A80C5A /* avltree.cc */,
+				2750729418E4857900A80C5A /* blockcache.cc */,
+				2750729518E4857900A80C5A /* btree_kv.cc */,
+				2750729618E4857900A80C5A /* btree.cc */,
+				2750729718E4857900A80C5A /* btreeblock.cc */,
+				2750729818E4857900A80C5A /* docio.cc */,
+				2750729918E4857900A80C5A /* filemgr_ops_linux.cc */,
+				2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */,
+				2750729B18E4857900A80C5A /* filemgr_ops.cc */,
+				2750729C18E4857900A80C5A /* filemgr.cc */,
+				2750729D18E4857900A80C5A /* forestdb.cc */,
+				2750729E18E4857900A80C5A /* hash_functions.cc */,
+				2750729F18E4857900A80C5A /* hash.cc */,
+				275072A018E4857900A80C5A /* hbtrie.cc */,
+				275072A118E4857900A80C5A /* iterator.cc */,
+				275072A218E4857900A80C5A /* list.cc */,
+				275072A318E4857900A80C5A /* wal.cc */,
+				2750726318E3E72900A80C5A /* arch.h */,
+				2750726518E3E72900A80C5A /* avltree.h */,
+				2750726718E3E72900A80C5A /* blockcache.h */,
+				2750726A18E3E72900A80C5A /* btree.h */,
+				2750726D18E3E72900A80C5A /* btree_kv.h */,
+				2750727018E3E72900A80C5A /* btreeblock.h */,
+				2750727218E3E72900A80C5A /* common.h */,
+				2750727418E3E72900A80C5A /* docio.h */,
+				2750727718E3E72900A80C5A /* filemgr.h */,
+				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
+				2750728118E3E72900A80C5A /* hash.h */,
+				2750728418E3E72900A80C5A /* hash_functions.h */,
+				2750728718E3E72900A80C5A /* hbtrie.h */,
+				2750728B18E3E72900A80C5A /* list.h */,
+				2750729118E3E72900A80C5A /* wal.h */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,7 +259,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */,
+				2750725618E3E60900A80C5A /* CBForest.m in Sources */,
 				2750724218E3E52800A80C5A /* main.m in Sources */,
+				2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -160,6 +283,7 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
@@ -172,6 +296,8 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -198,6 +324,7 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
@@ -205,6 +332,8 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -221,6 +350,18 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include",
+					"$(SRCROOT)/vendor/forestdb/src",
+					"$(SRCROOT)/vendor/forestdb/option",
+					"$(SRCROOT)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/forestdb/build",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -230,6 +371,18 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include",
+					"$(SRCROOT)/vendor/forestdb/src",
+					"$(SRCROOT)/vendor/forestdb/option",
+					"$(SRCROOT)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/forestdb/build",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -253,6 +406,7 @@
 				2750724B18E3E52800A80C5A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

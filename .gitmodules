@@ -1,0 +1,3 @@
+[submodule "vendor/forestdb"]
+	path = vendor/forestdb
+	url = git@github.com:couchbaselabs/forestdb.git
