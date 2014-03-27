@@ -6,16 +6,14 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import <CBForest/CBForest.h>
+
 
 int main(int argc, const char * argv[])
 {
-
     @autoreleasepool {
-        
-        // insert code here...
-        NSLog(@"Hello, World!");
-        
+        [CBForest class];
+        NSLog(@"CBForest runs!");
     }
     return 0;
 }

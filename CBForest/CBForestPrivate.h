@@ -22,6 +22,8 @@ sized_buf StringToBuf(NSString* docID);
 NSData* BufToData(const void* buf, size_t size);
 NSString* BufToString(const void* buf, size_t size);
 
+sized_buf CopyBuf(sized_buf buf);
+
 void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data);
 
 
@@ -31,7 +33,8 @@ void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data);
 
 
 @interface CBForestDocument ()
-- (id) initWithStore: (CBForest*)store docID: (NSString*)docID info: (fdb_doc*)info;
+- (id) initWithStore: (CBForest*)store docID: (NSString*)docID;
+- (id) initWithStore: (CBForest*)store info: (fdb_doc*)info;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @end

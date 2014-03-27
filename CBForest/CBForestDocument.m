@@ -25,21 +25,30 @@
 
 - (id) initWithStore: (CBForest*)store
                docID: (NSString*)docID
-                info: (fdb_doc*)info
 {
     NSParameterAssert(store != nil);
-    NSParameterAssert(docID || info);
+    NSParameterAssert(docID != nil);
     self = [super init];
     if (self) {
         _db = store;
-        if (info)
-            _info = *info;
-        if (docID)
-            _docID = [docID copy];
-        else
-            _docID = BufToString(info->key, info->keylen);
-        if (!_docID)
-            return nil;
+        _docID = [docID copy];
+        sized_buf idbuf = CopyBuf(StringToBuf(docID));
+        _info.keylen = idbuf.size;
+        _info.key = idbuf.buf;
+        _info.seqnum = SEQNUM_NOT_USED;
+    }
+    return self;
+}
+
+
+- (id) initWithStore: (CBForest*)store
+                info: (fdb_doc*)info
+{
+    self = [super init];
+    if (self) {
+        _db = store;
+        _info = *info;
+        _docID = BufToString(_info.key, _info.keylen);
     }
     return self;
 }
@@ -71,8 +80,8 @@
 
 - (sized_buf) rawID                 {return (sized_buf){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
-- (uint64_t) dbSequence             {return _info.seqnum;}
-- (BOOL) exists                     {return _info.seqnum > 0;}
+- (uint64_t) sequence               {return _info.seqnum;}
+- (BOOL) exists                     {return _info.seqnum != SEQNUM_NOT_USED;}
 
 
 - (BOOL) refreshMeta: (NSError**)outError {

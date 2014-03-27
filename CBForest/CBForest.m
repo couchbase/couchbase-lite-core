@@ -13,6 +13,18 @@
 NSString* const CBForestErrorDomain = @"CBForest";
 
 
+//FIX: I have no idea what the right values for these are
+static fdb_config kDefaultConfig = {
+    .chunksize = sizeof(uint64_t),
+    .offsetsize = sizeof(uint64_t),
+    .buffercache_size = 4 * 1024 * 1024,
+    .wal_threshold = 1024,
+    .seqtree_opt = FDB_SEQTREE_USE,
+    .durability_opt = FDB_DRB_NONE,
+};
+
+
+
 @implementation CBForest
 {
     fdb_handle _db;
@@ -21,23 +33,21 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 @synthesize filename=_path;
 
+
 - (id) initWithFile: (NSString*)filePath
-            options: (CBForestOpenOptions)options
               error: (NSError**)outError
 {
     self = [super init];
     if (self) {
         _path = filePath.copy;
-        fdb_config config;
-        if (!Check(fdb_open(&_db, (char*)filePath.fileSystemRepresentation, &config), outError))
+        if (!Check(fdb_open(&_db, (char*)filePath.fileSystemRepresentation, &kDefaultConfig), outError))
             return nil;
         _open = YES;
     }
     return self;
 }
 
-- (void) dealloc
-{
+- (void) dealloc {
     if (_open)
         fdb_close(&_db);
 }
@@ -53,27 +63,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (NSString*) description {
-    if (_open)
-        return [NSString stringWithFormat: @"%@[%@]", [self class], _path];
-    else
-        return [NSString stringWithFormat: @"%@[%@ CLOSED]", [self class], _path];
+    return [NSString stringWithFormat: @"%@[%@]", [self class], _path];
 }
-
-#if 0
-- (BOOL) getInfo: (CBForestInfo*)info
-           error: (NSError**)outError
-{
-    DbInfo dbInfo;
-    if (!Check(couchstore_db_info(self.db, &dbInfo), outError))
-        return NO;
-    info->lastSequence = dbInfo.last_sequence;
-    info->docCount = dbInfo.doc_count;
-    info->deletedCount = dbInfo.deleted_count;
-    info->spaceUsed = dbInfo.space_used;
-    info->headerPosition = dbInfo.header_position;
-    return YES;
-}
-#endif
 
 - (BOOL) commit: (NSError**)outError {
     return Check(fdb_commit(self.db), outError);
@@ -95,21 +86,15 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 - (CBForestDocument*) makeDocumentWithID: (NSString*)docID {
-    return [[CBForestDocument alloc] initWithStore: self docID: docID info: NULL];
+    return [[CBForestDocument alloc] initWithStore: self docID: docID];
 }
 
 
 - (CBForestDocument*) documentWithID: (NSString*)docID
-                                 error: (NSError**)outError
+                               error: (NSError**)outError
 {
-    sized_buf idbuf = StringToBuf(docID);
-    fdb_doc doc = {
-        .keylen = idbuf.size,
-        .key = idbuf.buf
-    };
-    if (!Check(fdb_get(self.db, &doc), outError))
-        return nil;
-    return [[CBForestDocument alloc] initWithStore: self docID: nil info: &doc];
+    CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: docID];
+    return [doc loadData: outError] ? doc : nil;
 }
 
 
@@ -121,7 +106,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     };
     if (!Check(fdb_get_byseq(self.db, &doc), outError))
         return nil;
-    return [[CBForestDocument alloc] initWithStore: self docID: nil info: &doc];
+    return [[CBForestDocument alloc] initWithStore: self info: &doc];
 }
 
 
@@ -149,7 +134,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
             status = fdb_iterator_next(&iterator, &docinfo);
             if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
                 break;
-            CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: nil info: docinfo];
+            CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self info: docinfo];
             BOOL stop = NO;
             block(doc, &stop);
             if (stop)

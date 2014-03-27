@@ -14,17 +14,9 @@ BOOL Check(fdb_status code, NSError** outError) {
         if (outError)
             *outError = nil;
         return YES;
-    }
-    if (outError) {
-        NSDictionary* info = nil;
-#if 0
-        const char* str = couchstore_strerror(code);
-        if (str) {
-            NSString* description = [NSString stringWithUTF8String: str];
-            if (description)
-                info = @{ NSLocalizedDescriptionKey : description };
-        }
-#endif
+    } else if (outError) {
+        static NSString* const kErrorNames[] = {nil, @"Error", @"Invalid arguments"};
+        NSDictionary* info = @{NSLocalizedDescriptionKey: kErrorNames[code]};
         *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
     }
     return NO;
@@ -55,6 +47,16 @@ NSString* BufToString(const void* buf, size_t size) {
     return [[NSString alloc] initWithBytes: buf
                                     length: size
                                   encoding: NSUTF8StringEncoding];
+}
+
+
+sized_buf CopyBuf(sized_buf buf) {
+    if (buf.size > 0) {
+        void* newBuf = malloc(buf.size);
+        memcpy(newBuf, buf.buf, buf.size);
+        buf.buf = newBuf;
+    }
+    return buf;
 }
 
 

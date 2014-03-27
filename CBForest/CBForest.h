@@ -10,12 +10,6 @@
 @class CBForestDocument;
 
 
-/** Option flag bits for opening a CBForest. */
-typedef enum {
-    kCBForestOpenCreate = 1,  /**< File will be created if it does not exist. */
-    kCBForestOpenReadOnly = 2 /**< File will be opened read-only; saves will fail. */
-} CBForestOpenOptions;
-
 /** Option flag bigs for enumerating documents in a CBForest. */
 typedef enum {
     kCBForestEnumerateMetaOnly
@@ -35,7 +29,6 @@ typedef void (^CBForestIterator)(CBForestDocument* doc, BOOL *stop);
     @param filename The name of the file containing the database
     @param flags Additional flags for how the database should be opened. */
 - (id) initWithFile: (NSString*)filePath
-            options: (CBForestOpenOptions)options
               error: (NSError**)outError;
 
 /** Closes the database. It's not strictly necessary to call this -- the database will be closed when this object is deallocated -- but it's a good way to ensure it gets closed in a timely manner.
