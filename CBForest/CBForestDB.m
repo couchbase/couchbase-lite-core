@@ -6,7 +6,7 @@
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
 //
 
-#import "CBForest.h"
+#import "CBForestDB.h"
 #import "CBForestPrivate.h"
 
 
@@ -25,7 +25,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 
-@implementation CBForest
+@implementation CBForestDB
 {
     fdb_handle _db;
     BOOL _open;
@@ -91,20 +91,33 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 - (CBForestDocument*) documentWithID: (NSString*)docID
+                             options: (CBForestDBContentOptions)options
                                error: (NSError**)outError
 {
     CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: docID];
-    return [doc loadData: outError] ? doc : nil;
+    BOOL ok;
+    if (options & kCBForestDBMetaOnly)
+        ok = [doc refreshMeta: outError];
+    else
+        ok = [doc loadBody: outError] != nil;
+    return ok ? doc : nil;
 }
 
 
 - (CBForestDocument*) documentWithSequence: (uint64_t)sequence
+                                   options: (CBForestDBContentOptions)options
                                      error: (NSError**)outError
 {
     fdb_doc doc = {
         .seqnum = sequence
     };
-    if (!Check(fdb_get_byseq(self.db, &doc), outError))
+    uint64_t bodyOffset = 0;
+    fdb_status status;
+    if (options & kCBForestDBMetaOnly)
+        status = fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset);
+    else
+        status = fdb_get_byseq(self.db, &doc);
+    if (!Check(status, outError))
         return nil;
     return [[CBForestDocument alloc] initWithStore: self info: &doc];
 }
@@ -115,14 +128,14 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 - (BOOL) enumerateDocsFromID: (NSString*)startID
                         toID: (NSString*)endID
-                     options: (CBForestEnumerationOptions)options
+                     options: (CBForestDBContentOptions)options
                        error: (NSError**)outError
                    withBlock: (CBForestIterator)block
 {
     sized_buf startKey = StringToBuf(startID);
     sized_buf endKey = StringToBuf(endID);
     fdb_iterator_opt_t fdbOptions = FDB_ITR_NONE;
-    if (options & kCBForestEnumerateMetaOnly)
+    if (options & kCBForestDBMetaOnly)
         fdbOptions |= FDB_ITR_METAONLY;
     fdb_iterator iterator;
     fdb_status status = fdb_iterator_init(self.db, &iterator,

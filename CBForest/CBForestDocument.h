@@ -7,7 +7,16 @@
 //
 
 #import <Foundation/Foundation.h>
-@class CBForest;
+@class CBForestDB;
+
+
+typedef UInt8 CBForestDocumentFlags;
+enum {
+    kCBForestDocDeleted    = 0x01,
+    kCBForestDocConflicted = 0x02
+};
+
+extern const UInt64 kForestDocNoSequence;
 
 
 /** Represents a single document in a CBForest.
@@ -15,7 +24,7 @@
 @interface CBForestDocument : NSObject
 
 /** The CBForest that this document belongs to. */
-@property (readonly) CBForest* db;
+@property (readonly) CBForestDB* db;
 
 /** The document's ID. */
 @property (readonly) NSString* docID;
@@ -28,21 +37,30 @@
     This will be YES for all documents other than those created by -makeDocumentWithID:. */
 @property (readonly) BOOL exists;
 
-/** Document body. */
-@property (copy) NSData* data;
+/** Have the document's body, revID or flags been changed in memory since it was read or saved? */
+@property (readonly) BOOL changed;
 
-/** Document metadata. Clients can store anything they want here. */
-@property (copy) NSData* metadata;
+/** Length of the body (available even if the body hasn't been loaded) */
+@property (readonly) UInt64 bodyLength;
+
+/** Document body. May be nil if the document was explicitly loaded without its body. */
+@property (copy) NSData* body;
+
+/** Document revision ID metadata */
+@property (copy) NSString* revID;
+
+/** Document deleted/conflicted flag metadata */
+@property CBForestDocumentFlags flags;
 
 // I/O:
 
-/** Refreshes the cached metadata from the latest revision on disk. */
+/** Refreshes the cached metadata (revID and flags) from the latest revision on disk. */
 - (BOOL) refreshMeta: (NSError**)outError;
 
-/** Reads the document's data from disk. (The data is not cached in memory.) */
-- (NSData*) loadData: (NSError**)outError;
+/** (Re-)reads the document's body and metadata from disk. */
+- (NSData*) loadBody: (NSError**)outError;
 
-/** Writes the document's current data and metadata to disk. */
+/** Writes the document's current body and metadata to disk, if they've been changed. */
 - (BOOL) saveChanges: (NSError**)outError;
 
 @end

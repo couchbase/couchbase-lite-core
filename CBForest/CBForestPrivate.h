@@ -6,7 +6,7 @@
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
 //
 
-#import "CBForest.h"
+#import "CBForestDB.h"
 #import "CBForestDocument.h"
 #import "forestdb.h"
 
@@ -27,14 +27,14 @@ sized_buf CopyBuf(sized_buf buf);
 void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data);
 
 
-@interface CBForest ()
+@interface CBForestDB ()
 @property (readonly) fdb_handle* db;
 @end
 
 
 @interface CBForestDocument ()
-- (id) initWithStore: (CBForest*)store docID: (NSString*)docID;
-- (id) initWithStore: (CBForest*)store info: (fdb_doc*)info;
+- (id) initWithStore: (CBForestDB*)store docID: (NSString*)docID;
+- (id) initWithStore: (CBForestDB*)store info: (fdb_doc*)info;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @end

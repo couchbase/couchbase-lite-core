@@ -9,13 +9,13 @@
 /* Begin PBXBuildFile section */
 		2750723F18E3E52800A80C5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
 		2750724218E3E52800A80C5A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724118E3E52800A80C5A /* main.m */; };
-		2750725618E3E60900A80C5A /* CBForest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForest.m */; };
+		2750725618E3E60900A80C5A /* CBForestDB.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForestDB.m */; };
 		2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725118E3E60900A80C5A /* CBForestDocument.m */; };
 		2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725518E3E60900A80C5A /* CBForestPrivate.m */; };
 		275072AC18E4A68E00A80C5A /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		275072B218E4A68E00A80C5A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 275072B018E4A68E00A80C5A /* InfoPlist.strings */; };
 		275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 275072B318E4A68E00A80C5A /* CBForest_Tests.m */; };
-		275072BB18E4A81F00A80C5A /* CBForest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForest.m */; };
+		275072BB18E4A81F00A80C5A /* CBForestDB.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForestDB.m */; };
 		275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725118E3E60900A80C5A /* CBForestDocument.m */; };
 		275072BD18E4A81F00A80C5A /* CBForestPrivate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725518E3E60900A80C5A /* CBForestPrivate.m */; };
 		275072C718E4AA5000A80C5A /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
@@ -87,8 +87,8 @@
 		2750724118E3E52800A80C5A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		2750724418E3E52800A80C5A /* CBForest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CBForest-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
-		2750724E18E3E60900A80C5A /* CBForest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForest.h; sourceTree = "<group>"; };
-		2750724F18E3E60900A80C5A /* CBForest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForest.m; sourceTree = "<group>"; };
+		2750724E18E3E60900A80C5A /* CBForestDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDB.h; sourceTree = "<group>"; };
+		2750724F18E3E60900A80C5A /* CBForestDB.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDB.m; sourceTree = "<group>"; };
 		2750725018E3E60900A80C5A /* CBForestDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDocument.h; sourceTree = "<group>"; };
 		2750725118E3E60900A80C5A /* CBForestDocument.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDocument.m; sourceTree = "<group>"; };
 		2750725218E3E60900A80C5A /* CBForestVersions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestVersions.h; sourceTree = "<group>"; };
@@ -149,6 +149,7 @@
 		275072EC18E4ACE100A80C5A /* stopwatch.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stopwatch.cc; sourceTree = "<group>"; };
 		275072ED18E4ACE100A80C5A /* stopwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stopwatch.h; sourceTree = "<group>"; };
 		275072EF18E4ACE100A80C5A /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
+		2750730518E4E05100A80C5A /* CBForest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBForest.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -214,8 +215,9 @@
 		2750724018E3E52800A80C5A /* CBForest */ = {
 			isa = PBXGroup;
 			children = (
-				2750724E18E3E60900A80C5A /* CBForest.h */,
-				2750724F18E3E60900A80C5A /* CBForest.m */,
+				2750730518E4E05100A80C5A /* CBForest.h */,
+				2750724E18E3E60900A80C5A /* CBForestDB.h */,
+				2750724F18E3E60900A80C5A /* CBForestDB.m */,
 				2750725018E3E60900A80C5A /* CBForestDocument.h */,
 				2750725118E3E60900A80C5A /* CBForestDocument.m */,
 				2750725218E3E60900A80C5A /* CBForestVersions.h */,
@@ -466,7 +468,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */,
-				2750725618E3E60900A80C5A /* CBForest.m in Sources */,
+				2750725618E3E60900A80C5A /* CBForestDB.m in Sources */,
 				2750724218E3E52800A80C5A /* main.m in Sources */,
 				2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */,
 			);
@@ -478,7 +480,7 @@
 			files = (
 				275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */,
 				275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */,
-				275072BB18E4A81F00A80C5A /* CBForest.m in Sources */,
+				275072BB18E4A81F00A80C5A /* CBForestDB.m in Sources */,
 				275072BD18E4A81F00A80C5A /* CBForestPrivate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -567,7 +569,7 @@
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -603,7 +605,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -709,6 +711,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
@@ -724,6 +727,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				EXECUTABLE_PREFIX = lib;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;

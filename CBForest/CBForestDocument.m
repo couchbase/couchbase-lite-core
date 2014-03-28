@@ -10,20 +10,22 @@
 #import "CBForestPrivate.h"
 
 
+const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
+
+
 @implementation CBForestDocument
 {
-    CBForest* _db;
+    CBForestDB* _db;
     fdb_doc _info;
     NSString* _docID;
     uint64_t _bodyOffset;
-    BOOL _changed;
 }
 
 
-@synthesize db=_db, docID=_docID;
+@synthesize db=_db, docID=_docID, changed=_changed;
 
 
-- (id) initWithStore: (CBForest*)store
+- (id) initWithStore: (CBForestDB*)store
                docID: (NSString*)docID
 {
     NSParameterAssert(store != nil);
@@ -35,13 +37,13 @@
         sized_buf idbuf = CopyBuf(StringToBuf(docID));
         _info.keylen = idbuf.size;
         _info.key = idbuf.buf;
-        _info.seqnum = SEQNUM_NOT_USED;
+        _info.seqnum = kForestDocNoSequence;
     }
     return self;
 }
 
 
-- (id) initWithStore: (CBForest*)store
+- (id) initWithStore: (CBForestDB*)store
                 info: (fdb_doc*)info
 {
     self = [super init];
@@ -54,8 +56,7 @@
 }
 
 
-- (void)dealloc
-{
+- (void)dealloc {
     free(_info.key);
     free(_info.body);
     free(_info.meta);
@@ -81,43 +82,74 @@
 - (sized_buf) rawID                 {return (sized_buf){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
 - (uint64_t) sequence               {return _info.seqnum;}
-- (BOOL) exists                     {return _info.seqnum != SEQNUM_NOT_USED;}
+- (BOOL) exists                     {return _info.seqnum != kForestDocNoSequence;}
 
 
 - (BOOL) refreshMeta: (NSError**)outError {
-    uint64_t bodyOffset;
-    if (!Check(fdb_get_metaonly(_db.db, &_info, &bodyOffset),
+    if (!Check(fdb_get_metaonly(_db.db, &_info, &_bodyOffset),
                outError))
         return NO;
     return YES;
 }
 
-
-- (NSData*) loadData: (NSError**)outError {
-    if (!_info.body) {
-        if (!Check(fdb_get(_db.db, &_info), outError))
-            return nil;
-    }
-    return self.data;
+- (UInt64) bodyLength {
+    return _info.bodylen;
 }
 
-
-- (NSData*) data {
+- (NSData*) body {
     return BufToData(_info.body, _info.bodylen);
 }
 
-- (void) setData:(NSData*) data {
+- (void) setBody:(NSData*) data {
     UpdateBuffer(&_info.body, &_info.bodylen, data);
     _changed = YES;
 }
 
 
-- (NSData*) metadata {
-    return BufToData(_info.meta, _info.metalen);
+- (NSData*) loadBody: (NSError**)outError {
+    if (!Check(fdb_get(_db.db, &_info), outError))
+        return nil;
+    return self.body;
 }
 
-- (void) setMetadata:(NSData*) metadata {
-    UpdateBuffer(&_info.meta, &_info.metalen, metadata);
+
+- (CBForestDocumentFlags)flags {
+    if (_info.metalen == 0)
+        return 0;
+    return ((UInt8*)_info.meta)[0];
+}
+
+- (void)setFlags:(CBForestDocumentFlags)flags {
+    if (_info.metalen == 0) {
+        _info.meta = malloc(1);
+        _info.metalen = 1;
+    }
+    if (flags != ((UInt8*)_info.meta)[0]) {
+        ((UInt8*)_info.meta)[0] = flags;
+        _changed = YES;
+    }
+}
+
+
+- (NSString*) revID {
+    if (_info.metalen <= 1)
+        return nil;
+    return [[NSString alloc] initWithBytes: &((UInt8*)_info.meta)[1]
+                                    length: _info.metalen - 1
+                                  encoding: NSUTF8StringEncoding];
+}
+
+- (void) setRevID: (NSString*)revID {
+    NSData* revIDData = [revID dataUsingEncoding: NSUTF8StringEncoding];
+    size_t newMetaLen = 1 + revIDData.length;
+    if (newMetaLen != _info.metalen) {
+        CBForestDocumentFlags flags = self.flags;
+        free(_info.meta);
+        _info.meta = malloc(newMetaLen);
+        _info.metalen = newMetaLen;
+        self.flags = flags;
+    }
+    memcpy(&((UInt8*)_info.meta)[1], revIDData.bytes, revIDData.length);
     _changed = YES;
 }
 
@@ -125,6 +157,12 @@
 - (BOOL) saveChanges: (NSError**)outError {
     if (!_changed)
         return YES;
+    if (!_info.body) {
+        // If the body hasn't been loaded, we need to load it now otherwise fdb_set will
+        // reset it to empty.
+        if (!Check(fdb_get(_db.db, &_info), outError))
+            return NO;
+    }
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
     _changed = NO;
