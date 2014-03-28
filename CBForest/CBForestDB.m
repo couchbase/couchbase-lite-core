@@ -97,9 +97,9 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
     CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: docID];
     BOOL ok;
     if (options & kCBForestDBMetaOnly)
-        ok = [doc refreshMeta: outError];
+        ok = [doc reloadMeta: outError];
     else
-        ok = [doc loadBody: outError] != nil;
+        ok = [doc reload: outError];
     return ok ? doc : nil;
 }
 

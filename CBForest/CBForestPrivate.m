@@ -60,13 +60,18 @@ sized_buf CopyBuf(sized_buf buf) {
 }
 
 
-void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data) {
+void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcLen) {
     free(*outBuf);
     *outBuf = NULL;
-    *outLen = data.length;
-    if (*outLen > 0) {
-        *outBuf = malloc(*outLen);
-        memcpy(*outBuf, data.bytes, *outLen);
+    *outLen = srcLen;
+    if (srcLen > 0) {
+        *outBuf = malloc(srcLen);
+        memcpy(*outBuf, srcBuf, srcLen);
     }
+
+}
+
+void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data) {
+    UpdateBuffer(outBuf, outLen, data.bytes, data.length);
 
 }

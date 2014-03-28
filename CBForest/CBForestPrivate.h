@@ -10,10 +10,8 @@
 #import "CBForestDocument.h"
 #import "forestdb.h"
 
-typedef struct {
-    void* buf;
-    size_t size;
-} sized_buf;
+#import "rev_tree.h"
+
 
 BOOL Check(fdb_status err, NSError** outError);
 
@@ -24,7 +22,8 @@ NSString* BufToString(const void* buf, size_t size);
 
 sized_buf CopyBuf(sized_buf buf);
 
-void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data);
+void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcLen);
+void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
 
 @interface CBForestDB ()
@@ -37,4 +36,5 @@ void UpdateBuffer(void** outBuf, size_t *outLen, NSData* data);
 - (id) initWithStore: (CBForestDB*)store info: (fdb_doc*)info;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
+@property (readonly) uint64_t bodyFileOffset;
 @end

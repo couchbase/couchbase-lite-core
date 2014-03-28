@@ -25,7 +25,6 @@
 
 
 - (void) setUp {
-    NSLog(@" ---- setup ----");
     NSError* error;
     if (![[NSFileManager defaultManager] removeItemAtPath: kDBPath error: &error])
         NSLog(@"WARNING: Couldn't delete db file: %@", error);
@@ -114,13 +113,14 @@
     XCTAssertEqual(docBySeq.flags, kCBForestDocDeleted);
 
     // Now let's try updating the original doc's metadata:
-    XCTAssert([doc refreshMeta: &error], @"refreshMeta failed: %@", error);
+    XCTAssert([doc reloadMeta: &error], @"refreshMeta failed: %@", error);
     XCTAssertEqualObjects(doc.revID, revID);
     XCTAssertEqual(doc.flags, kCBForestDocDeleted);
 
     // ...and body:
-    XCTAssert([doc loadBody: &error], @"loadBody failed: %@", error);
-    XCTAssertEqualObjects(doc.body, body);
+    NSData* curBody = [doc getBody: &error];
+    XCTAssert(curBody != nil, @"getBody: failed: %@", error);
+    XCTAssertEqualObjects(curBody, body);
     XCTAssertEqual(doc.sequence, 1);
 }
 

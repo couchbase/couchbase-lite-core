@@ -11,11 +11,10 @@
 
 @interface CBForestVersions : NSObject
 
-- (id) initWithDocument: (CBForestDocument*)doc error: (NSError**)outError;
+- (id) initWithDocument: (CBForestDocument*)doc
+                  error: (NSError**)outError;
 
-@property (readonly) NSString* currentRevisionID;
 @property (readonly) NSData* currentRevisionData;
-@property (readonly) BOOL currentRevisionDeleted;
 
 @property (readonly) NSUInteger revisionCount;
 
@@ -23,12 +22,15 @@
 - (NSData*) dataOfRevision: (NSString*)revID;
 - (BOOL) isRevisionDeleted: (NSString*)revID;
 
-- (BOOL) hasConflicts;
+@property (readonly) BOOL hasConflicts;
 - (NSArray*) currentRevisionIDs;
 
 - (NSArray*) historyOfRevision: (NSString*)revID;
 
-- (BOOL) addRevision: (NSData*)data withID: (NSString*)revID parent: (NSString*)parentRevID;
+- (BOOL) addRevision: (NSData*)data
+            deletion: (BOOL)deletion
+              withID: (NSString*)revID
+            parentID: (NSString*)parentRevID;
 
 - (BOOL) save: (NSError**)outError;
 

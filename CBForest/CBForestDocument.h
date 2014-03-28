@@ -13,7 +13,7 @@
 typedef UInt8 CBForestDocumentFlags;
 enum {
     kCBForestDocDeleted    = 0x01,
-    kCBForestDocConflicted = 0x02
+    kCBForestDocConflicted = 0x02,
 };
 
 extern const UInt64 kForestDocNoSequence;
@@ -46,6 +46,11 @@ extern const UInt64 kForestDocNoSequence;
 /** Document body. May be nil if the document was explicitly loaded without its body. */
 @property (copy) NSData* body;
 
+/** Sets the body from a raw buffer. */
+- (void) setBodyBytes: (const void*)bytes
+               length: (size_t)length
+               noCopy: (BOOL)noCopy;
+
 /** Document revision ID metadata */
 @property (copy) NSString* revID;
 
@@ -54,11 +59,14 @@ extern const UInt64 kForestDocNoSequence;
 
 // I/O:
 
-/** Refreshes the cached metadata (revID and flags) from the latest revision on disk. */
-- (BOOL) refreshMeta: (NSError**)outError;
+/** Reads the document's body and metadata from disk, only if the body hasn't been loaded yet. */
+- (NSData*) getBody: (NSError**)outError;
 
-/** (Re-)reads the document's body and metadata from disk. */
-- (NSData*) loadBody: (NSError**)outError;
+/** Re-reads the document's body and metadata from disk. */
+- (BOOL) reload: (NSError**)outError;
+
+/** Refreshes the cached metadata (revID and flags) from the latest revision on disk. */
+- (BOOL) reloadMeta: (NSError**)outError;
 
 /** Writes the document's current body and metadata to disk, if they've been changed. */
 - (BOOL) saveChanges: (NSError**)outError;

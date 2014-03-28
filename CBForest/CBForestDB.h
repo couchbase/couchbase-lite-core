@@ -10,6 +10,14 @@
 @class CBForestDocument;
 
 
+extern NSString* const CBForestErrorDomain;
+enum {
+    kCBForestErrorFailure,
+    kCBForestErrorInvalidArgument,
+    kCBForestErrorDataCorrupt
+};
+
+
 /** Option flag bigs for enumerating documents in a CBForest. */
 typedef enum {
     kCBForestDBMetaOnly = 1     //< Only load document metadata, not the body

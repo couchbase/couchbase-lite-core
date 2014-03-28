@@ -50,6 +50,12 @@
 		2750730118E4ACE100A80C5A /* stopwatch.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072ED18E4ACE100A80C5A /* stopwatch.h */; };
 		2750730318E4ACE100A80C5A /* time_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072EF18E4ACE100A80C5A /* time_utils.h */; };
 		2750730418E4AD4700A80C5A /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
+		2750730618E5049C00A80C5A /* CBForestVersions.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725318E3E60900A80C5A /* CBForestVersions.m */; };
+		2750730918E504FC00A80C5A /* rev_tree.c in Sources */ = {isa = PBXBuildFile; fileRef = 2750730718E504FC00A80C5A /* rev_tree.c */; };
+		2750730B18E5EB7200A80C5A /* RevTree_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730A18E5EB7200A80C5A /* RevTree_Tests.m */; };
+		2750730C18E5ECCA00A80C5A /* rev_tree.c in Sources */ = {isa = PBXBuildFile; fileRef = 2750730718E504FC00A80C5A /* rev_tree.c */; };
+		2750730D18E5ECCE00A80C5A /* CBForestVersions.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750725318E3E60900A80C5A /* CBForestVersions.m */; };
+		2750730F18E621C000A80C5A /* Versions_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730E18E621C000A80C5A /* Versions_Tests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -150,6 +156,10 @@
 		275072ED18E4ACE100A80C5A /* stopwatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stopwatch.h; sourceTree = "<group>"; };
 		275072EF18E4ACE100A80C5A /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		2750730518E4E05100A80C5A /* CBForest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBForest.h; sourceTree = "<group>"; };
+		2750730718E504FC00A80C5A /* rev_tree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rev_tree.c; sourceTree = "<group>"; };
+		2750730818E504FC00A80C5A /* rev_tree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rev_tree.h; sourceTree = "<group>"; };
+		2750730A18E5EB7200A80C5A /* RevTree_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RevTree_Tests.m; sourceTree = "<group>"; };
+		2750730E18E621C000A80C5A /* Versions_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Versions_Tests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -224,6 +234,8 @@
 				2750725318E3E60900A80C5A /* CBForestVersions.m */,
 				2750725418E3E60900A80C5A /* CBForestPrivate.h */,
 				2750725518E3E60900A80C5A /* CBForestPrivate.m */,
+				2750730718E504FC00A80C5A /* rev_tree.c */,
+				2750730818E504FC00A80C5A /* rev_tree.h */,
 				2750724118E3E52800A80C5A /* main.m */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
@@ -309,6 +321,8 @@
 			isa = PBXGroup;
 			children = (
 				275072B318E4A68E00A80C5A /* CBForest_Tests.m */,
+				2750730A18E5EB7200A80C5A /* RevTree_Tests.m */,
+				2750730E18E621C000A80C5A /* Versions_Tests.m */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
 			);
 			path = "CBForest Tests";
@@ -467,8 +481,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2750730618E5049C00A80C5A /* CBForestVersions.m in Sources */,
 				2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */,
 				2750725618E3E60900A80C5A /* CBForestDB.m in Sources */,
+				2750730918E504FC00A80C5A /* rev_tree.c in Sources */,
 				2750724218E3E52800A80C5A /* main.m in Sources */,
 				2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */,
 			);
@@ -480,8 +496,12 @@
 			files = (
 				275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */,
 				275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */,
+				2750730B18E5EB7200A80C5A /* RevTree_Tests.m in Sources */,
+				2750730C18E5ECCA00A80C5A /* rev_tree.c in Sources */,
 				275072BB18E4A81F00A80C5A /* CBForestDB.m in Sources */,
 				275072BD18E4A81F00A80C5A /* CBForestPrivate.m in Sources */,
+				2750730F18E621C000A80C5A /* Versions_Tests.m in Sources */,
+				2750730D18E5ECCE00A80C5A /* CBForestVersions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -672,6 +692,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)",
+					"$(SRCROOT)/vendor/forestdb/include",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -692,6 +713,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)",
+					"$(SRCROOT)/vendor/forestdb/include",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -767,6 +789,7 @@
 				275072BA18E4A68E00A80C5A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb" */ = {
 			isa = XCConfigurationList;
@@ -775,6 +798,7 @@
 				275072C618E4AA4400A80C5A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

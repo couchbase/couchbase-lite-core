@@ -18,11 +18,11 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     CBForestDB* _db;
     fdb_doc _info;
     NSString* _docID;
-    uint64_t _bodyOffset;
+    uint64_t _bodyOffset; // this isn't really useable yet as not all the API calls set it
 }
 
 
-@synthesize db=_db, docID=_docID, changed=_changed;
+@synthesize db=_db, docID=_docID, bodyFileOffset=_bodyOffset, changed=_changed;
 
 
 - (id) initWithStore: (CBForestDB*)store
@@ -85,10 +85,12 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 - (BOOL) exists                     {return _info.seqnum != kForestDocNoSequence;}
 
 
-- (BOOL) refreshMeta: (NSError**)outError {
+- (BOOL) reloadMeta: (NSError**)outError {
     if (!Check(fdb_get_metaonly(_db.db, &_info, &_bodyOffset),
                outError))
         return NO;
+    free(_info.body);       //FIX: Should do this only if a newer version was read
+    _info.body = NULL;
     return YES;
 }
 
@@ -101,15 +103,33 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 }
 
 - (void) setBody:(NSData*) data {
-    UpdateBuffer(&_info.body, &_info.bodylen, data);
+    [self setBodyBytes: data.bytes length: data.length noCopy: NO];
+}
+
+- (void) setBodyBytes: (const void*)bytes length: (size_t)length noCopy: (BOOL)noCopy {
+    NSParameterAssert(bytes!=NULL || length==0);
+    if (noCopy) {
+        _info.body = (void*)bytes;
+        _info.bodylen = length;
+    } else {
+        UpdateBuffer(&_info.body, &_info.bodylen, bytes, length);
+    }
     _changed = YES;
 }
 
 
-- (NSData*) loadBody: (NSError**)outError {
-    if (!Check(fdb_get(_db.db, &_info), outError))
+- (NSData*) getBody: (NSError**)outError {
+    if (!_info.body && ![self reload: outError])
         return nil;
     return self.body;
+}
+
+
+- (BOOL) reload: (NSError**)outError {
+    if (!Check(fdb_get(_db.db, &_info), outError))
+        return NO;
+    _changed = NO;
+    return YES;
 }
 
 

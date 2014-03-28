@@ -15,6 +15,7 @@
 {
     CBForestDocument* _doc;
     uint64_t _bp;
+    NSData* _rawTree;
     RevTree* _tree;
     BOOL _changed;
     NSMutableArray* _insertedData;
@@ -29,21 +30,21 @@
     if (self) {
         _doc = doc;
         if (_doc.exists) {
-            if ((_doc.info->content_meta & COUCH_DOC_IS_REVISIONED) != 0) {
-                NSData* data = [_doc readData: outError];
-                if (!data)
-                    return nil;
-                _tree = RevTreeDecode(DataToBuf(data), 1);
-            }
+            // Read RevTree from doc body:
+            _rawTree = [_doc getBody: outError];
+            if (!_rawTree)
+                return nil;
+            _tree = RevTreeDecode(DataToBuf(_rawTree), 1);
             if (!_tree) {
                 if (outError)
                     *outError = [NSError errorWithDomain: CBForestErrorDomain
-                                                    code: COUCHSTORE_ERROR_CORRUPT
+                                                    code: kCBForestErrorDataCorrupt
                                                 userInfo: nil];
                 return nil;
             }
-            _bp = _doc.info->bp;
+            _bp = _doc.bodyFileOffset;
         } else {
+            // New doc, create a new RevTree:
             _tree = RevTreeNew(1);
         }
     }
@@ -57,7 +58,7 @@
 
 
 - (fdb_handle*) db {
-    return _doc.store.db;
+    return _doc.db.db;
 }
 
 
@@ -65,26 +66,13 @@
     if (!_changed)
         return YES;
 
-    uint32_t generation;
-    sized_buf digest;
-    const RevNode* curNode = RevTreeGetNode(_tree, 0);
-    if (!curNode || !ParseRevID(curNode->revID, &generation, &digest)) {
-        generation = 0;
-        digest.size = 0;
-    }
-    _doc.revSequence = generation;
-    _doc.revMeta = BufToData(digest);
-    _doc.info->content_meta = COUCH_DOC_IS_REVISIONED | COUCH_DOC_IS_COMPRESSED |
-                              COUCH_DOC_INVALID_JSON;
-
     sized_buf encoded = RevTreeEncode(_tree);
-    BOOL ok = [_doc writeBytes: encoded.buf length: encoded.size error: outError];
-    free(encoded.buf);
-    if (!ok)
+    [_doc setBodyBytes: encoded.buf length: encoded.size noCopy: YES];
+
+    if (![_doc saveChanges: outError])
         return NO;
-    _bp = _doc.info->bp;
+    _bp = _doc.bodyFileOffset;
     _changed = NO;
-    _insertedData = nil;
     return YES;
 }
 
@@ -93,18 +81,6 @@
     return RevTreeGetCount(_tree);
 }
 
-
-- (NSString*) currentRevisionID {
-    RevTreeSort(_tree);
-    const RevNode* current = RevTreeGetNode(_tree, 0);
-    return current ? BufToString(current->revID) : nil;
-}
-
-- (BOOL) currentRevisionDeleted {
-    RevTreeSort(_tree);
-    const RevNode* current = RevTreeGetNode(_tree, 0);
-    return current && (current->flags & kRevNodeIsDeleted);
-}
 
 static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outError) {
     if (outError)
@@ -115,7 +91,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     bool freeData;
     if (!Check(RevTreeReadNodeData(node, db, &databuf, &freeData), outError))
         return nil;
-    return BufToData(databuf);
+    return BufToData(databuf.buf, databuf.size);
 }
 
 - (NSData*) currentRevisionData {
@@ -141,9 +117,7 @@ static BOOL nodeIsActive(const RevNode* node) {
 }
 
 - (BOOL) hasConflicts {
-    // Active (undeleted leaf) nodes come first in the array, so check the second one:
-    RevTreeSort(_tree);
-    return nodeIsActive(RevTreeGetNode(_tree, 1));
+    return RevTreeHasConflict(_tree);
 }
 
 - (NSArray*) currentRevisionIDs {
@@ -153,7 +127,7 @@ static BOOL nodeIsActive(const RevNode* node) {
         const RevNode* node = RevTreeGetNode(_tree, i);
         if (!nodeIsActive(node))
             break;
-        [conflicts addObject: BufToString(node->revID)];
+        [conflicts addObject: BufToString(node->revID.buf, node->revID.size)];
     }
     return conflicts;
 }
@@ -168,13 +142,18 @@ static BOOL nodeIsActive(const RevNode* node) {
     
     NSMutableArray* history = [NSMutableArray array];
     while (node) {
-        [history addObject: BufToString(node->revID)];
+        [history addObject: BufToString(node->revID.buf, node->revID.size)];
         node = RevTreeGetNode(_tree, node->parentIndex);
     }
     return history;
 }
 
-- (BOOL) addRevision: (NSData*)data withID: (NSString*)revID parent: (NSString*)parentRevID {
+
+- (BOOL) addRevision: (NSData*)data
+            deletion: (BOOL)deletion
+              withID: (NSString*)revID
+            parentID: (NSString*)parentRevID
+{
     if (!RevTreeReserveCapacity(&_tree, 1))
         return NO;
 
@@ -212,8 +191,19 @@ static BOOL nodeIsActive(const RevNode* node) {
     }
 
     // Finally, insert:
-    RevTreeInsert(_tree, revIDBuf, DataToBuf(data), parent, (data == nil), _bp);
+    RevTreeInsert(_tree, revIDBuf, DataToBuf(data), parent, deletion, _bp);
     _changed = YES;
+
+    // Update the flags and current revision ID:
+    const RevNode* curNode = RevTreeGetCurrentNode(_tree);
+    CBForestDocumentFlags flags = 0;
+    if (curNode->flags & kRevNodeIsDeleted)
+        flags |= kCBForestDocDeleted;
+    if (RevTreeHasConflict(_tree))
+        flags |= kCBForestDocConflicted;
+    _doc.revID = BufToString(curNode->revID.buf, curNode->revID.size);
+    _doc.flags = flags;
+
     return YES;
 }
 
