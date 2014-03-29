@@ -51,6 +51,9 @@ extern const UInt64 kForestDocNoSequence;
                length: (size_t)length
                noCopy: (BOOL)noCopy;
 
+/** Removes the body data from memory. It can be reloaded by calling -getBody:. */
+- (void) unloadBody;
+
 /** Document revision ID metadata */
 @property (copy) NSString* revID;
 
@@ -70,5 +73,8 @@ extern const UInt64 kForestDocNoSequence;
 
 /** Writes the document's current body and metadata to disk, if they've been changed. */
 - (BOOL) saveChanges: (NSError**)outError;
+
+/** Deletes the document from the database. */
+- (BOOL) deleteDocument: (NSError**)outError;
 
 @end

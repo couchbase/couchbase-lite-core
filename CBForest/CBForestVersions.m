@@ -72,6 +72,7 @@
     if (![_doc saveChanges: outError])
         return NO;
     _bp = _doc.bodyFileOffset;
+    [_doc unloadBody];
     _changed = NO;
     return YES;
 }

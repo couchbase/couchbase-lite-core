@@ -35,12 +35,16 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 - (id) initWithFile: (NSString*)filePath
+           readOnly: (BOOL)readOnly
               error: (NSError**)outError
 {
     self = [super init];
     if (self) {
         _path = filePath.copy;
-        if (!Check(fdb_open(&_db, (char*)filePath.fileSystemRepresentation, &kDefaultConfig), outError))
+        fdb_config config = kDefaultConfig;
+        if (readOnly)
+            config.durability_opt = FDB_DRB_RDONLY;
+        if (!Check(fdb_open(&_db, filePath.fileSystemRepresentation, &config), outError))
             return nil;
         _open = YES;
     }
@@ -73,7 +77,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 - (BOOL) compactToFile: (NSString*)filePath
                  error: (NSError**)outError
 {
-    if (Check(fdb_compact(self.db, (char*)filePath.fileSystemRepresentation), outError)) {
+    if (Check(fdb_compact(self.db, filePath.fileSystemRepresentation), outError)) {
         _path = filePath.copy;
         return YES;
     } else {
@@ -119,7 +123,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
         status = fdb_get_byseq(self.db, &doc);
     if (!Check(status, outError))
         return nil;
-    return [[CBForestDocument alloc] initWithStore: self info: &doc];
+    return [[CBForestDocument alloc] initWithStore: self info: &doc offset: bodyOffset];
 }
 
 
@@ -146,10 +150,19 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
     for (;;) {
         fdb_doc *docinfo;
-        status = fdb_iterator_next(&iterator, &docinfo);
+        uint64_t bodyOffset = 0;
+        if (options & kCBForestDBMetaOnly)
+            status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
+        else
+            status = fdb_iterator_next(&iterator, &docinfo);
         if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
             break; // FDB returns FDB_RESULT_FAIL at end of iteration
-        CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self info: docinfo];
+        if ((options & kCBForestDBSkipDeleted)
+                    && ([CBForestDocument flagsFromMeta: docinfo] & kCBForestDocDeleted))
+            continue;
+        CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self
+                                                                   info: docinfo
+                                                                 offset: bodyOffset];
         BOOL stop = NO;
         block(doc, &stop);
         if (stop)

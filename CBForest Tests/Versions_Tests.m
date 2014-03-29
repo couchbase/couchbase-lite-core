@@ -31,7 +31,7 @@
     if (![[NSFileManager defaultManager] removeItemAtPath: kDBPath error: &error])
         NSLog(@"WARNING: Couldn't delete db file: %@", error);
 
-    _db = [[CBForestDB alloc] initWithFile: kDBPath error: &error];
+    _db = [[CBForestDB alloc] initWithFile: kDBPath readOnly: NO error: &error];
     XCTAssert(_db, @"Couldn't open db: %@", error);
     doc = [_db makeDocumentWithID: @"foo"];
     vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];

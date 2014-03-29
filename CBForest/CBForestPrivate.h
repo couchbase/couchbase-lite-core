@@ -33,8 +33,9 @@ void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
 @interface CBForestDocument ()
 - (id) initWithStore: (CBForestDB*)store docID: (NSString*)docID;
-- (id) initWithStore: (CBForestDB*)store info: (fdb_doc*)info;
+- (id) initWithStore: (CBForestDB*)store info: (fdb_doc*)info offset: (uint64_t)bodyOffset;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
++ (CBForestDocumentFlags) flagsFromMeta: (const fdb_doc*)docinfo;
 @end

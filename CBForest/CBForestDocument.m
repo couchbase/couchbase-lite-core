@@ -45,12 +45,14 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 
 - (id) initWithStore: (CBForestDB*)store
                 info: (fdb_doc*)info
+              offset: (uint64_t)bodyOffset
 {
     self = [super init];
     if (self) {
         _db = store;
         _info = *info;
         _docID = BufToString(_info.key, _info.keylen);
+        _bodyOffset = bodyOffset;
     }
     return self;
 }
@@ -118,6 +120,12 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 }
 
 
+- (void) unloadBody {
+    free(_info.body);
+    _info.body = NULL;
+}
+
+
 - (NSData*) getBody: (NSError**)outError {
     if (!_info.body && ![self reload: outError])
         return nil;
@@ -132,6 +140,12 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     return YES;
 }
 
+
++ (CBForestDocumentFlags) flagsFromMeta: (const fdb_doc*)docinfo {
+    if (docinfo->metalen == 0)
+        return 0;
+    return ((UInt8*)docinfo->meta)[0];
+}
 
 - (CBForestDocumentFlags)flags {
     if (_info.metalen == 0)
@@ -186,6 +200,18 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
     _changed = NO;
+    return YES;
+}
+
+
+- (BOOL) deleteDocument: (NSError**)outError {
+    free(_info.body);
+    _info.body = NULL;
+    _info.bodylen = 0;
+    if (!Check(fdb_set(_db.db, &_info), outError))
+        return NO;
+    _changed = NO;
+    _info.seqnum = kForestDocNoSequence;
     return YES;
 }
 
