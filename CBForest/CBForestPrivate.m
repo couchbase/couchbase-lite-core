@@ -15,8 +15,29 @@ BOOL Check(fdb_status code, NSError** outError) {
             *outError = nil;
         return YES;
     } else if (outError) {
-        static NSString* const kErrorNames[] = {nil, @"Error", @"Invalid arguments"};
-        NSDictionary* info = @{NSLocalizedDescriptionKey: kErrorNames[code]};
+        static NSString* const kErrorNames[] = {
+            nil,
+            @"Invalid arguments",
+            @"Open failed",
+            @"File not found",
+            @"Write failed",
+            @"Read failed",
+            @"Close failed",
+            @"Commit failed",
+            @"Memory allocation failed",
+            @"Key not found",
+            @"Database is read-only",
+            @"Compaction failed",
+            @"Iterator failed",
+        };
+        NSString* errorName;
+        if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))
+            errorName = [NSString stringWithFormat: @"ForestDB error: %@", kErrorNames[-code]];
+        else if ((int)code == kCBForestErrorDataCorrupt)
+            errorName = @"Revision data is corrupted";
+        else
+            errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
+        NSDictionary* info = @{NSLocalizedDescriptionKey: errorName};
         *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
     }
     return NO;
