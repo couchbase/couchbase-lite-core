@@ -9,6 +9,7 @@
 #import "CBForestVersions.h"
 #import "CBForestPrivate.h"
 #import "rev_tree.h"
+#import "forestdb_x.h"
 
 
 @implementation CBForestVersions
@@ -34,6 +35,7 @@
             _rawTree = [_doc getBody: outError];
             if (!_rawTree)
                 return nil;
+            NSAssert(doc.bodyFileOffset > 0, @"Body offset unknown");
             _tree = RevTreeDecode(DataToBuf(_rawTree), 1,
                                   doc.sequence, doc.bodyFileOffset);
             if (!_tree) {
@@ -89,11 +91,32 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
         *outError = nil;
     if (!node)
         return nil;
-    sized_buf databuf;
-    bool freeData;
-    if (!Check(RevTreeReadNodeData(node, db, &databuf, &freeData), outError))
-        return nil;
-    return BufToData(databuf.buf, databuf.size);
+    NSData* result = nil;
+    if (node->data.size > 0) {
+        result = BufToData(node->data.buf, node->data.size);
+    }
+#ifdef REVTREE_USES_FILE_OFFSETS
+    else if (node->oldBodyOffset > 0) {
+        // Look up old document from the saved oldBodyOffset:
+        fdb_doc doc = {.bodylen = node->oldBodySize};
+        if (!Check(x_fdb_read_body(db, &doc, node->oldBodyOffset), outError))
+            return nil;
+        RevTree* oldTree = RevTreeDecode((sized_buf){doc.body, doc.bodylen}, 0, 0, 0);
+        if (oldTree) {
+            // Now look up the revision, which still has a body in this old doc:
+            const RevNode* oldNode = RevTreeFindNode(oldTree, node->revID);
+            if (oldNode && oldNode->data.buf)
+                result = BufToData(oldNode->data.buf, oldNode->data.size);
+            RevTreeFree(oldTree);
+        }
+        free(doc.body);
+        if (!result && outError)
+            *outError = [NSError errorWithDomain: CBForestErrorDomain
+                                            code: kCBForestErrorDataCorrupt
+                                        userInfo: nil];
+    }
+#endif
+    return result;
 }
 
 - (NSData*) currentRevisionData {

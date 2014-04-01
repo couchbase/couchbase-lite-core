@@ -86,7 +86,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssert(bufequalstr(node->revID, "1-f00"));
     XCTAssert(bufequalstr(node->data, "{\"hi\":true}"));
     XCTAssertEqual(node->parentIndex, kRevNodeParentIndexNone);
-    XCTAssertEqual(node->flags, kRevNodeIsLeaf);
+    XCTAssertEqual(node->flags, kRevNodeIsLeaf | kRevNodeIsNew);
 
     XCTAssertEqual(RevTreeGetNode(tree, 1), NULL);
     XCTAssertEqual(RevTreeGetCurrentNode(tree), node);
@@ -109,8 +109,8 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssert(bufequalstr(node2->revID, "2-ba4"));
     XCTAssert(bufequalstr(node2->data, "{\"hi\":false}"));
     XCTAssertEqual(node2->parentIndex, 0);
-    XCTAssertEqual(node2->flags, kRevNodeIsLeaf);
-    XCTAssertEqual(node->flags, 0);
+    XCTAssertEqual(node2->flags, kRevNodeIsLeaf | kRevNodeIsNew);
+    XCTAssertEqual(node->flags, kRevNodeIsNew);
 
     // Sort the revisions: this will change their order:
     RevTreeSort(tree);
@@ -120,6 +120,39 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     node2 = RevTreeFindNode(tree, strtobuf("2-ba4"));
     XCTAssertEqual(node2, RevTreeGetNode(tree, 0));
     XCTAssertEqual(node2->parentIndex, 1);
+}
+
+- (void) testEncode {
+    tree = RevTreeNew(1);
+    sized_buf revID1 = strtobuf("1-f000");
+    RevTreeInsert(&tree, revID1, strtobuf("{\"hi\":true}"), (sized_buf){}, false, 0);
+    sized_buf encoded = RevTreeEncode(tree);
+    XCTAssert(encoded.buf != NULL);
+    XCTAssert(encoded.size > 20);
+
+    tree = RevTreeDecode(encoded, 1, 0, 123);
+    XCTAssert(tree != NULL);
+    XCTAssertEqual(RevTreeGetCount(tree), 1);
+    const RevNode* rev1 = RevTreeFindNode(tree, revID1);
+    XCTAssert(rev1->data.buf != NULL);
+    sized_buf revID2 = strtobuf("2-ba22");
+    RevTreeInsert(&tree, revID2, strtobuf("{\"hi\":false}"), revID1, false, 0);
+
+    sized_buf encoded2 = RevTreeEncode(tree);
+    XCTAssert(encoded2.buf != NULL);
+    XCTAssert(encoded2.size > 20);
+
+    tree = RevTreeDecode(encoded2, 1, 1, 456);
+    XCTAssert(tree != NULL);
+    XCTAssertEqual(RevTreeGetCount(tree), 2);
+    rev1 = RevTreeFindNode(tree, revID1);
+#ifdef REVTREE_USES_FILE_OFFSETS
+    XCTAssert(rev1->data.buf == NULL);
+    XCTAssertEqual(rev1->oldBodyOffset, 123);
+    XCTAssertEqual(rev1->oldBodySize, encoded.size);
+#endif
+    const RevNode* rev2 = RevTreeFindNode(tree, revID2);
+    XCTAssert(rev2->data.buf != NULL);
 }
 
 @end

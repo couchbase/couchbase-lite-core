@@ -146,11 +146,10 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 
 
 - (BOOL) reload: (NSError**)outError {
-    if (!Check(fdb_get(_db.db, &_info), outError))
-        return NO;
-    _bodyOffset = 0; // don't know where the body is now
-    _changed = NO;
-    return YES;
+    // We don't call fdb_get, because it doesn't tell us the bodyOffset.
+    // Instead, load the metadata first, then the body.
+    return [self reloadMeta: outError]
+        && Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError);
 }
 
 

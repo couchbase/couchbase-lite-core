@@ -127,6 +127,7 @@
     // Save document:
     NSError* error;
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
+    NSLog(@"Body size = %llu", doc.bodyLength);
 
     // Reload:
     doc = [_db documentWithID: @"foo" options: 0 error: &error];
@@ -136,6 +137,14 @@
 
     XCTAssertEqual(doc.flags, 0);
     XCTAssertEqualObjects(doc.revID, parentID);
+
+    // Verify revisions:
+    for (int i = 1; i < 100; i++) {
+        NSString* bodyStr = [NSString stringWithFormat: @"{\"i\":%d}", i];
+        NSString* revID = [NSString stringWithFormat: @"%d-xxxx", i];
+        XCTAssertEqualObjects([vers dataOfRevision: revID],
+                              [bodyStr dataUsingEncoding: NSUTF8StringEncoding]);
+    }
 
     // Add a conflict:
     XCTAssert([vers addRevision: [@"{\"isConflict\":true}" dataUsingEncoding: NSUTF8StringEncoding]
@@ -145,6 +154,7 @@
     XCTAssertEqual(doc.flags, kCBForestDocConflicted);
     XCTAssertEqualObjects(doc.revID, parentID);
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
+    NSLog(@"Body size = %llu", doc.bodyLength);
 
     // Reload:
     doc = [_db documentWithID: @"foo" options: 0 error: &error];
@@ -154,6 +164,14 @@
 
     XCTAssertEqualObjects([vers currentRevisionIDs], (@[@"99-xxxx", @"51-yyyy"]));
 
+    // Verify revisions:
+    for (int i = 1; i < 100; i++) {
+        NSString* bodyStr = [NSString stringWithFormat: @"{\"i\":%d}", i];
+        NSString* revID = [NSString stringWithFormat: @"%d-xxxx", i];
+        XCTAssertEqualObjects([vers dataOfRevision: revID],
+                              [bodyStr dataUsingEncoding: NSUTF8StringEncoding], @"i=%d",i);
+    }
+
     // Delete one branch to resolve the conflict:
     XCTAssert([vers addRevision: nil
                        deletion: YES
@@ -162,6 +180,7 @@
     XCTAssertEqual(doc.flags, 0);
     XCTAssertEqualObjects(doc.revID, @"51-yyyy");
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
+    NSLog(@"Body size = %llu", doc.bodyLength);
 }
 
 

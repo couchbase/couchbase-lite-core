@@ -24,19 +24,21 @@
 
 // Innards of RevTree struct (in-memory representation)
 struct RevTree {
-    unsigned    count;
-    unsigned    capacity;
-    bool        sorted;
-    RevNode     node[1 /* really count */];
+    unsigned    count;          // Number of nodes in tree
+    unsigned    capacity;       // Capacity of node[] array
+    uint64_t    bodyOffset;     // File offset of body this tree was read from
+    uint64_t    bodySize;
+    bool        sorted;         // Are the nodes currently sorted?
+    RevNode     node[1];        // Actual dimension is [.capacity]
 };
 
 
 // Private RevNodeFlags bits:
 enum {
-    kRevNodePublicFlags = (kRevNodeIsLeaf | kRevNodeIsDeleted),
+    kRevNodePublicPersistentFlags = (kRevNodeIsLeaf | kRevNodeIsDeleted),
     kRevNodeHasData = 0x80,    /**< Does this raw node contain JSON data? */
 #ifdef REVTREE_USES_FILE_OFFSETS
-    kRevNodeHasBodyOffset   = 0x40    /**< Does this raw node have a file position (body_offset)? */
+    kRevNodeHasBodyOffset = 0x40    /**< Does this raw node have a file position (oldBodyOffset)? */
 #endif
 };
 
@@ -52,14 +54,16 @@ typedef struct {
     char            revID[1];       // actual size is [revIDLen]
     // These follow the revID:
     // varint       sequence
-    //union {
-    //    char      data[1];       // Used if HasData: contains the revision body (JSON)
-    //    raw_bp    body_offset;            // Used if HasBodyOffset: points to doc that has the body (0 if none)
-    //};
+    // if HasData flag:
+    //    char      data[];       // Contains the revision body (JSON)
+    // else:
+    //    varint    oldBodyOffset;  // Points to doc that has the body (0 if none)
+    //    varint    body_size;
 } RawRevNode;
 
 #define nodeIsLeaf(N)    (((N)->flags & kRevNodeIsLeaf) != 0)
 #define nodeIsDeleted(N) (((N)->flags & kRevNodeIsDeleted) != 0)
+#define nodeIsNew(N)     (((N)->flags & kRevNodeIsNew) != 0)
 #define nodeIsActive(N)  (nodeIsLeaf(N) && !nodeIsDeleted(N))
 
 
@@ -95,13 +99,14 @@ RevTree* RevTreeNew(unsigned capacity)
         tree->count = 0;
         tree->capacity = capacity;
         tree->sorted = true;
+        tree->bodyOffset = 0;
     }
     return tree;
 }
 
 
 RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
-                       uint64_t sequence, uint64_t body_offset)
+                       uint64_t sequence, uint64_t oldBodyOffset)
 {
     const RawRevNode *rawNode = (const RawRevNode*)raw_tree.buf;
     unsigned count = countRawNodes(rawNode);
@@ -117,10 +122,6 @@ RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
         nodeFromRawNode(rawNode, node);
         if (node->sequence == SEQNUM_NOT_USED)
             node->sequence = sequence;
-#ifdef REVTREE_USES_FILE_OFFSETS
-        if (node->body_offset == 0)
-            node->body_offset = body_offset;
-#endif
         node++;
     }
     if ((void*)rawNode != raw_tree.buf + raw_tree.size - sizeof(uint32_t)) {
@@ -128,6 +129,8 @@ RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
         return NULL;
     }
     tree->count = count;
+    tree->bodyOffset = oldBodyOffset;
+    tree->bodySize = raw_tree.size;
     return tree;
 }
 
@@ -139,8 +142,17 @@ sized_buf RevTreeEncode(RevTree *tree)
     // Allocate output buffer:
     sized_buf result = {NULL, 0};
     size_t size = sizeof(uint32_t);  // start with space for trailing 0 size
-    const RevNode *node = &tree->node[0];
+    RevNode *node = &tree->node[0];
     for (unsigned i = 0; i < tree->count; ++i) {
+#ifdef REVTREE_USES_FILE_OFFSETS
+        if (node->data.size > 0 && !(nodeIsLeaf(node) || nodeIsNew(node))) {
+            // Prune body of an already-saved node that's no longer a leaf:
+            node->data.buf = NULL;
+            node->data.size = 0;
+            node->oldBodyOffset = tree->bodyOffset;
+            node->oldBodySize = tree->bodySize;
+        }
+#endif
         size += sizeForRawNode(node++);
     }
     void *buf = malloc(size);
@@ -157,11 +169,11 @@ sized_buf RevTreeEncode(RevTree *tree)
         memcpy(dst->revID, src->revID.buf, src->revID.size);
         dst->parentIndex = htons(src->parentIndex);
 
-        dst->flags = src->flags & kRevNodePublicFlags;
+        dst->flags = src->flags & kRevNodePublicPersistentFlags;
         if (src->data.size > 0)
             dst->flags |= kRevNodeHasData;
 #ifdef REVTREE_USES_FILE_OFFSETS
-        else if (src->body_offset > 0)
+        else if (src->oldBodyOffset > 0)
             dst->flags |= kRevNodeHasBodyOffset;
 #endif
 
@@ -172,7 +184,8 @@ sized_buf RevTreeEncode(RevTree *tree)
         }
 #ifdef REVTREE_USES_FILE_OFFSETS
         else if (dst->flags & kRevNodeHasBodyOffset) {
-            *(raw_bp*)dstData = htonll(src->body_offset);
+            dstData += WriteUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
+            dstData += WriteUVarInt(dstData, src->oldBodySize    ?: tree->bodySize);
         }
 #endif
 
@@ -280,47 +293,6 @@ bool RevTreeHasConflict(RevTree *tree) {
 }
 
 
-#define error_unless(COND,ERR) if(COND) ; else {errcode=(ERR); goto cleanup;}
-
-
-bool RevTreeReadNodeData(const RevNode *node,
-                        fdb_handle *db,
-                        sized_buf *data,
-                        bool *freeData)
-{
-    *freeData = false;
-    if (node->data.size > 0) {
-        *data = node->data;
-        return 0;
-    } else {
-#if 1
-        return kRevTreeErrDocNotFound;
-#else
-        int errcode = 0;
-        fdb_doc *doc = NULL;
-        error_unless(node->body_offset > 0, kRevTreeErrDocNotFound);
-        error_pass(couchstore_open_doc_with_bp(db, node->body_offset, &doc,
-                                               DECOMPRESS_DOC_BODIES));
-        RevNode oldNode;
-        error_unless(RevTreeRawFindNode(doc->data, node->revID, &oldNode) && oldNode.data.size > 0,
-                     COUCHSTORE_ERROR_CORRUPT);
-        data->size = oldNode.data.size;
-        if (data->size > 0) {
-            data->buf = malloc(data->size);
-            error_unless(data->buf != NULL, kRevTreeErrAllocFailed);
-            memcpy(data->buf, oldNode.data.buf, data->size);
-            *freeData = true;
-        } else {
-            data->buf = NULL;
-        }
-    cleanup:
-        couchstore_free_document(doc);
-        return errcode;
-#endif
-    }
-}
-
-
 bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity)
 {
     unsigned capacityNeeded = (*pTree)->count + extraCapacity;
@@ -353,9 +325,9 @@ void _revTreeInsert(RevTree *tree,
     newNode->data = data;
     newNode->sequence = SEQNUM_NOT_USED; // Sequence is unknown till doc is saved
 #ifdef REVTREE_USES_FILE_OFFSETS
-    newNode->body_offset = 0; // Body position is unknown till doc is saved
+    newNode->oldBodyOffset = 0; // Body position is unknown till doc is saved
 #endif
-    newNode->flags = kRevNodeIsLeaf;
+    newNode->flags = kRevNodeIsLeaf | kRevNodeIsNew;
     if (deleted)
         newNode->flags |= kRevNodeIsDeleted;
 
@@ -364,19 +336,7 @@ void _revTreeInsert(RevTree *tree,
         ptrdiff_t parentIndex = parentNode - &tree->node[0];
         assert(parentIndex >= 0 && parentIndex < tree->count - 1);
         newNode->parentIndex = (uint16_t)parentIndex;
-
-        // Mark parent node as no longer a leaf, and remove its data (if any), replacing it
-        // with the current doc's file pos so it can be looked up later.
-        if (nodeIsLeaf(parentNode)) {
-            ((RevNode*)parentNode)->flags &= ~kRevNodeIsLeaf;
-#ifdef REVTREE_USES_FILE_OFFSETS
-            if (parentNode->data.buf) {
-                ((RevNode*)parentNode)->data.buf = NULL;
-                ((RevNode*)parentNode)->data.size = 0;
-                ((RevNode*)parentNode)->body_offset = currentBodyOffset;
-            }
-#endif
-        }
+        ((RevNode*)parentNode)->flags &= ~kRevNodeIsLeaf;
     }
 
     if (tree->count > 1)
@@ -458,8 +418,8 @@ static size_t sizeForRawNode(const RevNode *node)
     if (node->data.size > 0)
         size += node->data.size;
 #ifdef REVTREE_USES_FILE_OFFSETS
-    else if (node->body_offset > 0)
-        size += sizeof(raw_bp);
+    else if (node->oldBodyOffset > 0)
+        size += SizeOfVarInt(node->oldBodyOffset) + SizeOfVarInt(node->oldBodySize);
 #endif
     return size;
 }
@@ -480,12 +440,12 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
     const void* end = nextRawNode(src);
     dst->revID.buf = (char*)src->revID;
     dst->revID.size = src->revIDLen;
-    dst->flags = src->flags & kRevNodePublicFlags;
+    dst->flags = src->flags & kRevNodePublicPersistentFlags;
     dst->parentIndex = ntohs(src->parentIndex);
     const void *data = offsetby(&src->revID, src->revIDLen);
     data += ReadUVarInt((sized_buf){(void*)data, end-data}, &dst->sequence);
 #ifdef REVTREE_USES_FILE_OFFSETS
-    dst->body_offset = 0;
+    dst->oldBodyOffset = dst->oldBodySize = 0;
 #endif
     if (src->flags & kRevNodeHasData) {
         dst->data.buf = (char*)data;
@@ -494,8 +454,13 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
         dst->data.buf = NULL;
         dst->data.size = 0;
 #ifdef REVTREE_USES_FILE_OFFSETS
-        if (src->flags & kRevNodeHasBodyOffset)
-            dst->body_offset = ntohll(*(const raw_bp*)data);
+        if (src->flags & kRevNodeHasBodyOffset) {
+            sized_buf buf = {(void*)data, end-data};
+            size_t nBytes = ReadUVarInt(buf, &dst->oldBodyOffset);
+            buf.buf += nBytes;
+            buf.size -= nBytes;
+            ReadUVarInt(buf, &dst->oldBodySize);
+        }
 #endif
     }
 }

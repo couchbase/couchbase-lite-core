@@ -249,11 +249,11 @@
 				2750725518E3E60900A80C5A /* CBForestPrivate.m */,
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
-				2750724118E3E52800A80C5A /* main.m */,
 				27FDFC0018EA58BF00AC4647 /* varint.c */,
 				27FDFC0218EA58DA00AC4647 /* varint.h */,
 				2740498318E7A32A0036333A /* forestdb_x.cc */,
 				2740498518E7A3360036333A /* forestdb_x.h */,
+				2750724118E3E52800A80C5A /* main.m */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;

@@ -14,7 +14,7 @@
 
 
 // If defined, previous revision bodies will be stored as file offsets to their obsolete docs
-#undef REVTREE_USES_FILE_OFFSETS
+#define REVTREE_USES_FILE_OFFSETS
 
 
 typedef struct {
@@ -36,6 +36,7 @@ enum {
 enum {
     kRevNodeIsDeleted = 0x01,    /**< Is this revision a deletion/tombstone? */
     kRevNodeIsLeaf    = 0x02,    /**< Is this revision a leaf (no children?) */
+    kRevNodeIsNew     = 0x04     /**< Has this node been inserted since decoding? */
 };
 typedef uint8_t RevNodeFlags;
 
@@ -45,7 +46,8 @@ typedef struct RevNode {
     sized_buf   revID;          /**< Revision ID */
     sized_buf   data;           /**< Revision body (JSON), or empty if not stored in this tree */
 #ifdef REVTREE_USES_FILE_OFFSETS
-    off_t       body_offset;    /**< File offset of Doc containing revision body, or else 0 */
+    uint64_t    oldBodyOffset;    /**< File offset of Doc containing revision body, or else 0 */
+    uint64_t    oldBodySize;       /**< Length of Doc containing revision body, or else 0 */
 #endif
     uint64_t    sequence;       /**< DB sequence number that this revision has/had */
     uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
@@ -58,20 +60,25 @@ typedef struct RevNode {
 typedef struct RevTree RevTree;
 
 
+/** Allocates a new empty RevTree. */
 RevTree* RevTreeNew(unsigned capacity);
 
+/** Frees a RevTree. (Does not free the raw_tree it was decoded from, if any.) */
 static inline void RevTreeFree(RevTree *tree) {free(tree);}
-
 
 /** Converts a serialized RevTree into in-memory form.
  *  The RevTree contains pointers into the serialized data, so the memory pointed to by
- *  raw_tree must remain valid until after the RevTree* is freed. */
+ *  raw_tree must remain valid until after the RevTree* is freed.
+ *  @param raw_tree  The serialized data to read from.
+ *  @param extraCapacity  Number of extra nodes to leave room for as an optimization.
+ *  @param sequence  The sequence # of the document the raw tree is read from.
+ *  @param bodyOffset  The file offset of the document body containing the serialized tree. */
 RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
-                       uint64_t sequence, uint64_t body_offset);
+                       uint64_t sequence, uint64_t bodyOffset);
 
-/** Serializes a RevTree. Caller is responsible for freeing the returned block.
-    The document's content_meta flags should include COUCH_DOC_IS_REVISIONED. */
+/** Serializes a RevTree. Caller is responsible for freeing the returned block. */
 sized_buf RevTreeEncode(RevTree *tree);
+
 
 /** Returns the number of nodes in a tree. */
 unsigned RevTreeGetCount(RevTree *tree);
@@ -94,6 +101,9 @@ bool RevTreeRawGetNode(sized_buf raw_tree, unsigned index, RevNode *outNode);
  *  This is more efficient if you only need to look up one node. */
 bool RevTreeRawFindNode(sized_buf raw_tree, sized_buf revID, RevNode *outNode);
 
+/** Returns true if the tree has a conflict (multiple nondeleted leaf revisions.) */
+bool RevTreeHasConflict(RevTree *tree);
+
 
 /** Reserves room for up to 'extraCapacity' insertions.
     May reallocate the tree, invalidating all existing RevNode pointers. */
@@ -114,30 +124,12 @@ bool RevTreeInsert(RevTree **treePtr,
     RevTreeSort is called automatically by RevTreeEncode. */
 void RevTreeSort(RevTree *tree);
 
-/** Returns true if the tree has a conflict (multiple nondeleted leaf revisions.) */
-bool RevTreeHasConflict(RevTree *tree);
-
 #ifdef REVTREE_USES_FILE_OFFSETS
 /** Removes all body file offsets in an encoded tree; should be called as part of a document
     mutator during compaction, since compaction invalidates all existing file offsets.
     Returns true if any changes were made. */
 bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree);
 #endif
-
-/** Reads the data of a node. If the data is not inline but the node has a body_offset value,
- *  this will read the old document at that body_offset from the database and return the inline
- *  value found there.
- *  @param node The node to get the data of.
- *  @param db  The database the node was read from.
- *  @param data  On return, will be filled in with a pointer to the data.
- *  @param freeData  On return, will be set to true if the caller needs to call free()
- *              on data.buf after finishing with it, else false.
- *  @return COUCHSTORE_SUCCESS or COUCHSTORE_ERROR_DOC_NOT_FOUND, or an I/O error.
- */
-bool RevTreeReadNodeData(const RevNode *node,
-                         fdb_handle *db,
-                         sized_buf *data,
-                         bool *freeData);
 
 
 /** Parses a revision ID into its generation-number prefix and digest suffix.
