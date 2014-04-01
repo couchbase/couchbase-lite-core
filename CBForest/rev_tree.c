@@ -7,6 +7,7 @@
 //
 
 #include "rev_tree.h"
+#include "varint.h"
 #include <forestdb.h>
 #include <ctype.h>
 #include <stddef.h>
@@ -47,10 +48,10 @@ typedef struct {
     uint32_t        size;           // Total size of this tree node
     uint16_t        parentIndex;
     RevNodeFlags    flags;
-    uint64_t        sequence;
     uint8_t         revIDLen;
     char            revID[1];       // actual size is [revIDLen]
     // These follow the revID:
+    // varint       sequence
     //union {
     //    char      data[1];       // Used if HasData: contains the revision body (JSON)
     //    raw_bp    body_offset;            // Used if HasBodyOffset: points to doc that has the body (0 if none)
@@ -155,7 +156,6 @@ sized_buf RevTreeEncode(RevTree *tree)
         dst->revIDLen = (uint8_t)src->revID.size;
         memcpy(dst->revID, src->revID.buf, src->revID.size);
         dst->parentIndex = htons(src->parentIndex);
-        dst->sequence = ntohll(src->sequence);
 
         dst->flags = src->flags & kRevNodePublicFlags;
         if (src->data.size > 0)
@@ -166,6 +166,7 @@ sized_buf RevTreeEncode(RevTree *tree)
 #endif
 
         void *dstData = (void*)offsetby(&dst->revID[0], src->revID.size);
+        dstData += WriteUVarInt(dstData, src->sequence);
         if (dst->flags & kRevNodeHasData) {
             memcpy(dstData, src->data.buf, src->data.size);
         }
@@ -453,7 +454,7 @@ bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree)
 
 static size_t sizeForRawNode(const RevNode *node)
 {
-    size_t size = offsetof(RawRevNode, revID) + node->revID.size;
+    size_t size = offsetof(RawRevNode, revID) + node->revID.size + SizeOfVarInt(node->sequence);
     if (node->data.size > 0)
         size += node->data.size;
 #ifdef REVTREE_USES_FILE_OFFSETS
@@ -476,18 +477,19 @@ static unsigned countRawNodes(const RawRevNode *tree)
 
 static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
 {
+    const void* end = nextRawNode(src);
     dst->revID.buf = (char*)src->revID;
     dst->revID.size = src->revIDLen;
     dst->flags = src->flags & kRevNodePublicFlags;
-    dst->sequence = ntohll(src->sequence);
     dst->parentIndex = ntohs(src->parentIndex);
     const void *data = offsetby(&src->revID, src->revIDLen);
+    data += ReadUVarInt((sized_buf){(void*)data, end-data}, &dst->sequence);
 #ifdef REVTREE_USES_FILE_OFFSETS
     dst->body_offset = 0;
 #endif
     if (src->flags & kRevNodeHasData) {
         dst->data.buf = (char*)data;
-        dst->data.size = (char*)nextRawNode(src) - (char*)data;
+        dst->data.size = (char*)end - (char*)data;
     } else {
         dst->data.buf = NULL;
         dst->data.size = 0;

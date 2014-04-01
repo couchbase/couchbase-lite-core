@@ -8,6 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import "rev_tree.h"
+#import "varint.h"
 
 
 static sized_buf strtobuf(const char* str) {return (sized_buf){(void*)str, strlen(str)};}
@@ -33,6 +34,21 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     RevTreeFree(tree);
     tree = nil;
     [super tearDown];
+}
+
+- (void) testVarint {
+    const uint64_t tests[] = {0, 1, 127, 128, 123456, 0x12345678, 0x1234567812345678,
+        0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
+    uint8_t buf[kMaxVarintLen64];
+    for (int i=0; i<9; i++) {
+        size_t len = WriteUVarInt(buf, tests[i]);
+        XCTAssert(len > 0 && len <= kMaxVarintLen64);
+        XCTAssertEqual(len, SizeOfVarInt(tests[i]));
+        uint64_t readNum;
+        size_t readLen = ReadUVarInt((sized_buf){buf, len}, &readNum);
+        XCTAssertEqual(readLen, len);
+        XCTAssertEqual(readNum, tests[i]);
+    }
 }
 
 - (void) testParseRevID {

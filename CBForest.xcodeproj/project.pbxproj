@@ -60,6 +60,8 @@
 		2750730F18E621C000A80C5A /* Versions_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730E18E621C000A80C5A /* Versions_Tests.m */; };
 		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
+		27FDFC0118EA58BF00AC4647 /* varint.c in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.c */; };
+		27FDFC0318EA875100AC4647 /* varint.c in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -169,6 +171,8 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
+		27FDFC0018EA58BF00AC4647 /* varint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = varint.c; sourceTree = "<group>"; };
+		27FDFC0218EA58DA00AC4647 /* varint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = varint.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -246,6 +250,8 @@
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
 				2750724118E3E52800A80C5A /* main.m */,
+				27FDFC0018EA58BF00AC4647 /* varint.c */,
+				27FDFC0218EA58DA00AC4647 /* varint.h */,
 				2740498318E7A32A0036333A /* forestdb_x.cc */,
 				2740498518E7A3360036333A /* forestdb_x.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
@@ -501,6 +507,7 @@
 				2740498618E7A3D10036333A /* forestdb_x.cc in Sources */,
 				2750725618E3E60900A80C5A /* CBForestDB.m in Sources */,
 				2750730918E504FC00A80C5A /* rev_tree.c in Sources */,
+				27FDFC0118EA58BF00AC4647 /* varint.c in Sources */,
 				2750724218E3E52800A80C5A /* main.m in Sources */,
 				2750725918E3E60900A80C5A /* CBForestPrivate.m in Sources */,
 			);
@@ -513,6 +520,7 @@
 				2740498718E7DF770036333A /* forestdb_x.cc in Sources */,
 				275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */,
 				275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */,
+				27FDFC0318EA875100AC4647 /* varint.c in Sources */,
 				2750730B18E5EB7200A80C5A /* RevTree_Tests.m in Sources */,
 				2750730C18E5ECCA00A80C5A /* rev_tree.c in Sources */,
 				275072BB18E4A81F00A80C5A /* CBForestDB.m in Sources */,
