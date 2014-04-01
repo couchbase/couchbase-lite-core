@@ -45,8 +45,9 @@ typedef struct RevNode {
     sized_buf   revID;          /**< Revision ID */
     sized_buf   data;           /**< Revision body (JSON), or empty if not stored in this tree */
 #ifdef REVTREE_USES_FILE_OFFSETS
-    off_t       bp;             /**< File offset of Doc containing revision body, or else 0 */
+    off_t       body_offset;    /**< File offset of Doc containing revision body, or else 0 */
 #endif
+    uint64_t    sequence;       /**< DB sequence number that this revision has/had */
     uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
     RevNodeFlags flags;         /**< Leaf/deleted flags */
 } RevNode;
@@ -65,7 +66,8 @@ static inline void RevTreeFree(RevTree *tree) {free(tree);}
 /** Converts a serialized RevTree into in-memory form.
  *  The RevTree contains pointers into the serialized data, so the memory pointed to by
  *  raw_tree must remain valid until after the RevTree* is freed. */
-RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity);
+RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
+                       uint64_t sequence, uint64_t body_offset);
 
 /** Serializes a RevTree. Caller is responsible for freeing the returned block.
     The document's content_meta flags should include COUCH_DOC_IS_REVISIONED. */
@@ -99,12 +101,12 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity);
 
 /** Adds a revision to a tree. The tree's capacity MUST be greater than its count.
  *  The memory pointed to by revID and data MUST remain valid until after the tree is freed. */
-void RevTreeInsert(RevTree *tree,
+bool RevTreeInsert(RevTree **treePtr,
                    sized_buf revID,
                    sized_buf data,
-                   const RevNode *parentNode,
+                   sized_buf parentRevID,
                    bool deleted,
-                   off_t currentBP);
+                   off_t currentBodyOffset);
 
 /** Sorts the nodes of a tree so that the current node(s) come first.
     Nodes are normally sorted already, but RevTreeInsert will leave them unsorted.
@@ -116,14 +118,14 @@ void RevTreeSort(RevTree *tree);
 bool RevTreeHasConflict(RevTree *tree);
 
 #ifdef REVTREE_USES_FILE_OFFSETS
-/** Removes all file offsets (bp fields) in an encoded tree; should be called as part of a document
+/** Removes all body file offsets in an encoded tree; should be called as part of a document
     mutator during compaction, since compaction invalidates all existing file offsets.
     Returns true if any changes were made. */
-bool RevTreeRawClearBPs(sized_buf *raw_tree);
+bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree);
 #endif
 
-/** Reads the data of a node. If the data is not inline but the node has a bp value,
- *  this will read the old document at that bp from the database and return the inline
+/** Reads the data of a node. If the data is not inline but the node has a body_offset value,
+ *  this will read the old document at that body_offset from the database and return the inline
  *  value found there.
  *  @param node The node to get the data of.
  *  @param db  The database the node was read from.
@@ -137,8 +139,28 @@ bool RevTreeReadNodeData(const RevNode *node,
                          sized_buf *data,
                          bool *freeData);
 
-/** Parses a revision ID into its sequence/generation number prefix and digest suffix.
- *  Returns false if the ID is not of the right form. */
-bool ParseRevID(sized_buf rev, unsigned *sequence, sized_buf *digest);
+
+/** Parses a revision ID into its generation-number prefix and digest suffix.
+    The generation number will be nonzero. The digest will be non-empty.
+    Returns false if the ID is not of the right form. */
+bool RevIDParse(sized_buf rev, unsigned *generation, sized_buf *digest);
+
+/** Parses a compacted revision ID. */
+bool RevIDParseCompacted(sized_buf rev, unsigned *generation, sized_buf *digest);
+
+/** Compacts a compressed revision ID. The compact form is written to dstrev->buf (which must
+    be large enough to contain it), and dstrev->size is updated.
+    Returns false if the input ID is not parseable. */
+bool RevIDCompact(sized_buf srcrev, sized_buf *dstrev);
+
+/** Returns the expanded size of a compressed revision ID: the number of bytes of the expanded form.
+    If an uncompressed revision ID is given, 0 is returned to signal that expansion isn't needed. */
+size_t RevIDExpandedSize(sized_buf rev);
+
+/** Expands a compressed revision ID. The expanded form is written to expanded_rev->buf (which must
+    be large enough to contain it), and expanded_rev->size is updated.
+    If the revision ID is not compressed, it's copied as-is to expanded_rev. */
+void RevIDExpand(sized_buf rev, sized_buf* expanded_rev);
+
 
 #endif

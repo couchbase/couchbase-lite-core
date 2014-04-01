@@ -70,8 +70,18 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
     return [NSString stringWithFormat: @"%@[%@]", [self class], _path];
 }
 
+- (CBForestDBInfo) info {
+    return (CBForestDBInfo) {
+        .headerRevNum  = _db.cur_header_revnum,
+        .databaseSize  = fdb_estimate_space_used(&_db),
+        .documentCount = _db.ndocs,
+        .lastSequence  = _db.seqnum
+    };
+}
+
 - (BOOL) commit: (NSError**)outError {
-    return Check(fdb_commit(self.db), outError);
+    return Check(fdb_commit(self.db), outError)
+        && Check(fdb_flush_wal(&_db), outError);
 }
 
 - (BOOL) compactToFile: (NSString*)filePath
@@ -150,11 +160,8 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
     for (;;) {
         fdb_doc *docinfo;
-        uint64_t bodyOffset = 0;
-        if (options & kCBForestDBMetaOnly)
-            status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
-        else
-            status = fdb_iterator_next(&iterator, &docinfo);
+        uint64_t bodyOffset;
+        status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
         if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
             break; // FDB returns FDB_RESULT_FAIL at end of iteration
         if ((options & kCBForestDBSkipDeleted)

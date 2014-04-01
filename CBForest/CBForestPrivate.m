@@ -75,3 +75,39 @@ void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data) {
     UpdateBuffer(outBuf, outLen, data.bytes, data.length);
 
 }
+
+
+
+
+
+
+sized_buf CompactRevIDToBuf(NSString* revID) {
+    return DataToBuf(CompactRevID(revID));
+}
+
+
+NSData* CompactRevID(NSString* revID) {
+    if (!revID)
+        return nil;
+    //OPT: This is not very efficient.
+    sized_buf src = StringToBuf(revID);
+    NSMutableData* data = [[NSMutableData alloc] initWithLength: src.size];
+    sized_buf dst = DataToBuf(data);
+    if (!RevIDCompact(src, &dst))
+        return nil; // error
+    data.length = dst.size;
+    return data;
+}
+
+
+NSString* ExpandRevID(sized_buf compressedRevID) {
+    //OPT: This is not very efficient.
+    size_t size = RevIDExpandedSize(compressedRevID);
+    if (size == 0)
+        return BufToString(compressedRevID.buf, compressedRevID.size);
+    NSMutableData* data = [[NSMutableData alloc] initWithLength: size];
+    sized_buf buf = DataToBuf(data);
+    RevIDExpand(compressedRevID, &buf);
+    data.length = buf.size;
+    return [[NSString alloc] initWithData: data encoding: NSASCIIStringEncoding];
+}

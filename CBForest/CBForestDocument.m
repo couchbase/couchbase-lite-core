@@ -8,6 +8,7 @@
 
 #import "CBForestDocument.h"
 #import "CBForestPrivate.h"
+#import "forestdb_x.h"
 
 
 const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
@@ -88,11 +89,15 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 
 
 - (BOOL) reloadMeta: (NSError**)outError {
-    if (!Check(fdb_get_metaonly(_db.db, &_info, &_bodyOffset),
+    uint64_t newBodyOffset;
+    if (!Check(fdb_get_metaonly(_db.db, &_info, &newBodyOffset),
                outError))
         return NO;
-    free(_info.body);       //FIX: Should do this only if a newer version was read
-    _info.body = NULL;
+    if (newBodyOffset != _bodyOffset) {
+        _bodyOffset = newBodyOffset;
+        free(_info.body);
+        _info.body = NULL;
+    }
     return YES;
 }
 
@@ -127,8 +132,15 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 
 
 - (NSData*) getBody: (NSError**)outError {
-    if (!_info.body && ![self reload: outError])
-        return nil;
+    if (!_info.body) {
+        if (_bodyOffset > 0) {
+            if (!Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError))
+                return nil;
+        } else {
+            if (![self reload: outError])
+                return nil;
+        }
+    }
     return self.body;
 }
 
@@ -136,6 +148,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 - (BOOL) reload: (NSError**)outError {
     if (!Check(fdb_get(_db.db, &_info), outError))
         return NO;
+    _bodyOffset = 0; // don't know where the body is now
     _changed = NO;
     return YES;
 }
@@ -153,7 +166,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     return ((UInt8*)_info.meta)[0];
 }
 
-- (void)setFlags:(CBForestDocumentFlags)flags {
+- (void)setFlags: (CBForestDocumentFlags)flags {
     if (_info.metalen == 0) {
         _info.meta = malloc(1);
         _info.metalen = 1;
@@ -194,11 +207,12 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     if (!_info.body) {
         // If the body hasn't been loaded, we need to load it now otherwise fdb_set will
         // reset it to empty.
-        if (!Check(fdb_get(_db.db, &_info), outError))
+        if (![self getBody: outError])
             return NO;
     }
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
+    _bodyOffset = 0; // don't know its new offset
     _changed = NO;
     return YES;
 }
@@ -211,6 +225,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
     _changed = NO;
+    _bodyOffset = 0;
     _info.seqnum = kForestDocNoSequence;
     return YES;
 }

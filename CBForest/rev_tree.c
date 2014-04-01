@@ -35,7 +35,7 @@ enum {
     kRevNodePublicFlags = (kRevNodeIsLeaf | kRevNodeIsDeleted),
     kRevNodeHasData = 0x80,    /**< Does this raw node contain JSON data? */
 #ifdef REVTREE_USES_FILE_OFFSETS
-    kRevNodeHasBP   = 0x40     /**< Does this raw node have a file position (bp)? */
+    kRevNodeHasBodyOffset   = 0x40    /**< Does this raw node have a file position (body_offset)? */
 #endif
 };
 
@@ -44,33 +44,22 @@ typedef uint64_t raw_bp;
 // Layout of revision node in encoded form. Tree is a sequence of these followed by a 32-bit zero.
 // Nodes are stored in decending priority, with the current leaf node(s) coming first.
 typedef struct {
-    uint32_t      size;           // Total size of this tree node
-    uint16_t      parentIndex;
-    RevNodeFlags flags;
-    uint8_t     revIDLen;
-    char        revID[1];       // actual size is [revIDLen]
+    uint32_t        size;           // Total size of this tree node
+    uint16_t        parentIndex;
+    RevNodeFlags    flags;
+    uint64_t        sequence;
+    uint8_t         revIDLen;
+    char            revID[1];       // actual size is [revIDLen]
     // These follow the revID:
     //union {
-    //    char   data[1];       // Used if HasData: contains the revision body (JSON)
-    //    raw_bp bp;            // Used if HasBP: points to doc that has the body (0 if none)
+    //    char      data[1];       // Used if HasData: contains the revision body (JSON)
+    //    raw_bp    body_offset;            // Used if HasBodyOffset: points to doc that has the body (0 if none)
     //};
 } RawRevNode;
 
 #define nodeIsLeaf(N)    (((N)->flags & kRevNodeIsLeaf) != 0)
 #define nodeIsDeleted(N) (((N)->flags & kRevNodeIsDeleted) != 0)
 #define nodeIsActive(N)  (nodeIsLeaf(N) && !nodeIsDeleted(N))
-
-static int buf_cmp(sized_buf a, sized_buf b) {
-    size_t minSize = a.size < b.size ? a.size : b.size;
-    int result = memcmp(a.buf, b.buf, minSize);
-    if (result == 0) {
-        if (a.size < b.size)
-            result = -1;
-        else if (a.size > b.size)
-            result = 1;
-    }
-    return result;
-}
 
 
 static size_t sizeForRawNode(const RevNode *node);
@@ -110,7 +99,8 @@ RevTree* RevTreeNew(unsigned capacity)
 }
 
 
-RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity)
+RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
+                       uint64_t sequence, uint64_t body_offset)
 {
     const RawRevNode *rawNode = (const RawRevNode*)raw_tree.buf;
     unsigned count = countRawNodes(rawNode);
@@ -123,7 +113,14 @@ RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity)
     }
     RevNode *node = &tree->node[0];
     for (; validRawNode(rawNode); rawNode = nextRawNode(rawNode)) {
-        nodeFromRawNode(rawNode, node++);
+        nodeFromRawNode(rawNode, node);
+        if (node->sequence == SEQNUM_NOT_USED)
+            node->sequence = sequence;
+#ifdef REVTREE_USES_FILE_OFFSETS
+        if (node->body_offset == 0)
+            node->body_offset = body_offset;
+#endif
+        node++;
     }
     if ((void*)rawNode != raw_tree.buf + raw_tree.size - sizeof(uint32_t)) {
         free(tree);
@@ -158,13 +155,14 @@ sized_buf RevTreeEncode(RevTree *tree)
         dst->revIDLen = (uint8_t)src->revID.size;
         memcpy(dst->revID, src->revID.buf, src->revID.size);
         dst->parentIndex = htons(src->parentIndex);
+        dst->sequence = ntohll(src->sequence);
 
         dst->flags = src->flags & kRevNodePublicFlags;
         if (src->data.size > 0)
             dst->flags |= kRevNodeHasData;
 #ifdef REVTREE_USES_FILE_OFFSETS
-        else if (src->bp > 0)
-            dst->flags |= kRevNodeHasBP;
+        else if (src->body_offset > 0)
+            dst->flags |= kRevNodeHasBodyOffset;
 #endif
 
         void *dstData = (void*)offsetby(&dst->revID[0], src->revID.size);
@@ -172,8 +170,8 @@ sized_buf RevTreeEncode(RevTree *tree)
             memcpy(dstData, src->data.buf, src->data.size);
         }
 #ifdef REVTREE_USES_FILE_OFFSETS
-        else if (dst->flags & kRevNodeHasBP) {
-            *(raw_bp*)dstData = htonll(src->bp);
+        else if (dst->flags & kRevNodeHasBodyOffset) {
+            *(raw_bp*)dstData = htonll(src->body_offset);
         }
 #endif
 
@@ -299,8 +297,8 @@ bool RevTreeReadNodeData(const RevNode *node,
 #else
         int errcode = 0;
         fdb_doc *doc = NULL;
-        error_unless(node->bp > 0, kRevTreeErrDocNotFound);
-        error_pass(couchstore_open_doc_with_bp(db, node->bp, &doc,
+        error_unless(node->body_offset > 0, kRevTreeErrDocNotFound);
+        error_pass(couchstore_open_doc_with_bp(db, node->body_offset, &doc,
                                                DECOMPRESS_DOC_BODIES));
         RevNode oldNode;
         error_unless(RevTreeRawFindNode(doc->data, node->revID, &oldNode) && oldNode.data.size > 0,
@@ -341,19 +339,20 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity)
 }
 
 
-void RevTreeInsert(RevTree *tree,
-                   sized_buf revID,
-                   sized_buf data,
-                   const RevNode *parentNode,
-                   bool deleted,
-                   off_t currentBP)
+void _revTreeInsert(RevTree *tree,
+                    sized_buf revID,
+                    sized_buf data,
+                    const RevNode *parentNode,
+                    bool deleted,
+                    off_t currentBodyOffset)
 {
     assert(tree->count < tree->capacity);
     RevNode *newNode = &tree->node[tree->count++];
     newNode->revID = revID;
     newNode->data = data;
+    newNode->sequence = SEQNUM_NOT_USED; // Sequence is unknown till doc is saved
 #ifdef REVTREE_USES_FILE_OFFSETS
-    newNode->bp = 0;
+    newNode->body_offset = 0; // Body position is unknown till doc is saved
 #endif
     newNode->flags = kRevNodeIsLeaf;
     if (deleted)
@@ -373,7 +372,7 @@ void RevTreeInsert(RevTree *tree,
             if (parentNode->data.buf) {
                 ((RevNode*)parentNode)->data.buf = NULL;
                 ((RevNode*)parentNode)->data.size = 0;
-                ((RevNode*)parentNode)->bp = currentBP;
+                ((RevNode*)parentNode)->body_offset = currentBodyOffset;
             }
 #endif
         }
@@ -381,6 +380,42 @@ void RevTreeInsert(RevTree *tree,
 
     if (tree->count > 1)
         tree->sorted = false;
+}
+
+
+bool RevTreeInsert(RevTree **treeP,
+                   sized_buf revID,
+                   sized_buf data,
+                   sized_buf parentRevID,
+                   bool deleted,
+                   off_t currentBodyOffset)
+{
+    if (!RevTreeReserveCapacity(treeP, 1))
+        return false;
+
+    // Make sure the given revID is valid but doesn't exist yet:
+    uint32_t newSeq;
+    if (!RevIDParseCompacted(revID, &newSeq, NULL))
+        return false;
+    if (RevTreeFindNode(*treeP, revID))
+        return false;
+
+    // Find the parent node, if a parent ID is given:
+    const RevNode* parent = NULL;
+    uint32_t parentSeq = 0;
+    if (parentRevID.buf) {
+        parent = RevTreeFindNode(*treeP, parentRevID);
+        if (!parent || !RevIDParseCompacted(parentRevID, &parentSeq, NULL))
+            return false;
+    }
+    
+    // Enforce that sequence number went up by 1 from the parent:
+    if (newSeq != parentSeq + 1)
+        return false;
+
+    // Finally, insert:
+    _revTreeInsert(*treeP, revID, data, parent, deleted, currentBodyOffset);
+    return true;
 }
 
 
@@ -395,14 +430,14 @@ static void spliceOut(sized_buf *buf, void *start, size_t len)
 }
 
 
-bool RevTreeRawClearBPs(sized_buf *raw_tree)
+bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree)
 {
     bool changed = false;
     RawRevNode *src = (RawRevNode*)firstRawNode(*raw_tree);
     while(validRawNode(src)) {
         RawRevNode *next = (RawRevNode*)nextRawNode(src);
-        if (src->flags & kRevNodeHasBP) {
-            src->flags &= ~kRevNodeHasBP;
+        if (src->flags & kRevNodeHasBodyOffset) {
+            src->flags &= ~kRevNodeHasBodyOffset;
             next = offsetby(next, -sizeof(raw_bp));
             spliceOut(raw_tree, next, sizeof(raw_bp));
             changed = true;
@@ -422,7 +457,7 @@ static size_t sizeForRawNode(const RevNode *node)
     if (node->data.size > 0)
         size += node->data.size;
 #ifdef REVTREE_USES_FILE_OFFSETS
-    else if (node->bp > 0)
+    else if (node->body_offset > 0)
         size += sizeof(raw_bp);
 #endif
     return size;
@@ -444,10 +479,11 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
     dst->revID.buf = (char*)src->revID;
     dst->revID.size = src->revIDLen;
     dst->flags = src->flags & kRevNodePublicFlags;
+    dst->sequence = ntohll(src->sequence);
     dst->parentIndex = ntohs(src->parentIndex);
     const void *data = offsetby(&src->revID, src->revIDLen);
 #ifdef REVTREE_USES_FILE_OFFSETS
-    dst->bp = 0;
+    dst->body_offset = 0;
 #endif
     if (src->flags & kRevNodeHasData) {
         dst->data.buf = (char*)data;
@@ -456,10 +492,123 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
         dst->data.buf = NULL;
         dst->data.size = 0;
 #ifdef REVTREE_USES_FILE_OFFSETS
-        if (src->flags & kRevNodeHasBP)
-            dst->bp = ntohll(*(const raw_bp*)data);
+        if (src->flags & kRevNodeHasBodyOffset)
+            dst->body_offset = ntohll(*(const raw_bp*)data);
 #endif
     }
+}
+
+
+#pragma mark - REVISION IDS:
+
+
+// Parses bytes from str to end as an ASCII number. Returns 0 if non-digit found.
+static uint32_t parseDigits(const char *str, const char *end)
+{
+    uint32_t result = 0;
+    for (; str < end; ++str) {
+        if (!isdigit(*str))
+            return 0;
+        result = 10*result + (*str - '0');
+    }
+    return result;
+}
+
+
+bool RevIDParse(sized_buf rev, unsigned *generation, sized_buf *digest) {
+    const char *dash = memchr(rev.buf, '-', rev.size);
+    if (dash == NULL || dash == rev.buf) {
+        return false;
+    }
+    ssize_t dashPos = dash - (const char*)rev.buf;
+    if (dashPos > 8 || dashPos >= rev.size - 1) {
+        return false;
+    }
+    *generation = parseDigits(rev.buf, dash);
+    if (*generation == 0) {
+        return false;
+    }
+    if (digest) {
+        digest->buf = (char*)dash + 1;
+        digest->size = rev.buf + rev.size - digest->buf;
+    }
+    return true;
+}
+
+
+bool RevIDParseCompacted(sized_buf rev, unsigned *generation, sized_buf *digest) {
+    unsigned gen = ((uint8_t*)rev.buf)[0];
+    if (isdigit(gen))
+        return RevIDParse(rev, generation, digest);
+    if (gen > '9')
+        gen -= 10;
+    *generation = gen;
+    if (digest)
+        *digest = (sized_buf){rev.buf + 1, rev.size - 1};
+    return true;
+}
+
+
+static void copyBuf(sized_buf srcrev, sized_buf *dstrev) {
+    dstrev->size = srcrev.size;
+    memcpy(dstrev->buf, srcrev.buf, srcrev.size);
+}
+
+
+bool RevIDCompact(sized_buf srcrev, sized_buf *dstrev) {
+    unsigned generation;
+    sized_buf digest;
+    if (!RevIDParse(srcrev, &generation, &digest))
+        return false;
+    else if (generation > 245 || (digest.size & 1)) {
+        copyBuf(srcrev, dstrev);
+        return true;
+    }
+    const char* src = digest.buf;
+    for (unsigned i=0; i<digest.size; i++) {
+        if (!isxdigit(src[i])) {
+            copyBuf(srcrev, dstrev);
+            return true;
+        }
+    }
+
+    uint8_t encodedGen = (uint8_t)generation;
+    if (generation >= '0')
+        encodedGen += 10; // skip digit range
+    char* buf = dstrev->buf, *dst = buf;
+    *dst++ = encodedGen;
+    for (unsigned i=0; i<digest.size; i+=2)
+        *dst++ = 16*digittoint(src[i]) + digittoint(src[i+1]);
+    dstrev->size = dst - buf;
+    return true;
+}
+
+
+size_t RevIDExpandedSize(sized_buf rev) {
+    unsigned generation = ((const uint8_t*)rev.buf)[0];
+    if (isdigit(generation))
+        return 0; // uncompressed
+    if (generation > '9')
+        generation -= 10;
+    return 2 + (generation >= 10) + (generation >= 100) + 2*(rev.size-1);
+}
+
+
+void RevIDExpand(sized_buf rev, sized_buf* expanded_rev) {
+    const uint8_t* src = rev.buf;
+    if (isdigit(src[0])) {
+        expanded_rev->size = rev.size;
+        memcpy(expanded_rev->buf, rev.buf, rev.size);
+        return;
+    }
+    unsigned generation = src[0];
+    if (generation > '9')
+        generation -= 10;
+    char *buf = expanded_rev->buf, *dst = buf;
+    dst += sprintf(dst, "%u-", generation);
+    for (unsigned i=1; i<rev.size; i++)
+        dst += sprintf(dst, "%02x", src[i]);
+    expanded_rev->size = dst - buf;
 }
 
 
@@ -500,37 +649,16 @@ void RevTreeSort(RevTree *tree)
 }
 
 
-// Parses bytes from str to end as an ASCII number. Returns 0 if non-digit found.
-static uint32_t parseDigits(const char *str, const char *end)
-{
-    uint32_t result = 0;
-    for (; str < end; ++str) {
-        if (!isdigit(*str))
-            return 0;
-        result = 10*result + (*str - '0');
+static int buf_cmp(sized_buf a, sized_buf b) {
+    size_t minSize = a.size < b.size ? a.size : b.size;
+    int result = memcmp(a.buf, b.buf, minSize);
+    if (result == 0) {
+        if (a.size < b.size)
+            result = -1;
+        else if (a.size > b.size)
+            result = 1;
     }
     return result;
-}
-
-
-bool ParseRevID(sized_buf rev, unsigned *sequence, sized_buf *digest) {
-    const char *dash = memchr(rev.buf, '-', rev.size);
-    if (dash == NULL || dash == rev.buf) {
-        return false;
-    }
-    ssize_t dashPos = dash - (const char*)rev.buf;
-    if (dashPos > 8 || dashPos >= rev.size - 1) {
-        return false;
-    }
-    *sequence = parseDigits(rev.buf, dash);
-    if (*sequence == 0) {
-        return false;
-    }
-    if (digest) {
-        digest->buf = (char*)dash + 1;
-        digest->size = rev.buf + rev.size - digest->buf;
-    }
-    return true;
 }
 
 
@@ -541,7 +669,7 @@ static int compareRevIDs(sized_buf rev1, sized_buf rev2)
 {
     uint32_t gen1, gen2;
     sized_buf digest1, digest2;
-    if (!ParseRevID(rev1, &gen1, &digest1) || !ParseRevID(rev2, &gen2, &digest2)) {
+    if (!RevIDParse(rev1, &gen1, &digest1) || !RevIDParse(rev2, &gen2, &digest2)) {
         // Improper rev IDs; just compare as plain text:
         return buf_cmp(rev1, rev2);
     }

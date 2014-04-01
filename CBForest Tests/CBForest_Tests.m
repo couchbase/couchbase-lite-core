@@ -59,7 +59,14 @@
     XCTAssertEqual(doc.flags, 0);
 }
 
+- (void) logDbInfo {
+    CBForestDBInfo info = _db.info;
+    NSLog(@"db docCount=%llu, size=%llu, seq=%llu, headerRevNum=%llu",
+          info.documentCount, info.databaseSize, info.lastSequence, info.headerRevNum);
+}
+
 - (void) test03_SaveDoc {
+    [self logDbInfo];
     NSData* body = [@"Hello ForestDB" dataUsingEncoding: NSUTF8StringEncoding];
     NSString* revID = @"1-cafebabe";
 
@@ -76,6 +83,7 @@
     NSError* error;
     XCTAssert([doc saveChanges: &error], @"Save failed: %@", error);
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
+    [self logDbInfo];
 
     CBForestDocument* doc2 = [_db documentWithID: @"foo" options: 0 error: &error];
     XCTAssert(doc2, @"documentWithID: failed: %@", error);
@@ -94,6 +102,7 @@
     XCTAssert(doc.changed);
     XCTAssert([doc saveChanges: &error], @"Save failed: %@", error);
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
+    [self logDbInfo];
 
     CBForestDocument* doc3 = [_db documentWithID: @"foo" options: 0 error: &error];
     XCTAssert(doc3, @"documentWithID: failed: %@", error);
@@ -142,7 +151,7 @@
         XCTAssertEqual(doc.db, _db);
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%02d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
-//      XCTAssertEqual(doc.sequence, i); //Disabled because it fails due to MB-10676
+        XCTAssertEqual(doc.sequence, i);
         XCTAssertEqualObjects(doc.body, [expectedDocID dataUsingEncoding: NSUTF8StringEncoding]);
         i++;
     }];

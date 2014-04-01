@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2740498618E7A3D10036333A /* forestdb_x.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2740498318E7A32A0036333A /* forestdb_x.cc */; };
+		2740498718E7DF770036333A /* forestdb_x.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2740498318E7A32A0036333A /* forestdb_x.cc */; };
 		2750723F18E3E52800A80C5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
 		2750724218E3E52800A80C5A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724118E3E52800A80C5A /* main.m */; };
 		2750725618E3E60900A80C5A /* CBForestDB.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750724F18E3E60900A80C5A /* CBForestDB.m */; };
@@ -90,6 +92,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
+		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
 		2750723B18E3E52800A80C5A /* CBForest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724118E3E52800A80C5A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -242,6 +246,8 @@
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
 				2750724118E3E52800A80C5A /* main.m */,
+				2740498318E7A32A0036333A /* forestdb_x.cc */,
+				2740498518E7A3360036333A /* forestdb_x.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -492,6 +498,7 @@
 			files = (
 				2750730618E5049C00A80C5A /* CBForestVersions.m in Sources */,
 				2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */,
+				2740498618E7A3D10036333A /* forestdb_x.cc in Sources */,
 				2750725618E3E60900A80C5A /* CBForestDB.m in Sources */,
 				2750730918E504FC00A80C5A /* rev_tree.c in Sources */,
 				2750724218E3E52800A80C5A /* main.m in Sources */,
@@ -503,6 +510,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2740498718E7DF770036333A /* forestdb_x.cc in Sources */,
 				275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */,
 				275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */,
 				2750730B18E5EB7200A80C5A /* RevTree_Tests.m in Sources */,

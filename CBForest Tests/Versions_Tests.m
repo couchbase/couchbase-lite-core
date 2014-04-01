@@ -8,6 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import <CBForest/CBForest.h>
+#import <CBForest/CBForestPrivate.h>
 #import <forestdb.h>
 
 
@@ -43,6 +44,27 @@
     _db = nil;
     fdb_shutdown(); // workaround for MB-10674
     [super tearDown];
+}
+
+
+- (void) test00_CompactRevisions {
+    NSArray* goodRevs = @[@"92-abf9", @"1-fadebead",
+                          @"240-1234567812345678123456781234567812345678"];
+    for (NSString* revID in goodRevs) {
+        NSData* compact = CompactRevID(revID);
+        XCTAssert(compact != nil);
+        XCTAssert(compact.length < revID.length);
+        NSString* expanded = ExpandRevID(DataToBuf(compact));
+        XCTAssertEqualObjects(expanded, revID);
+    }
+
+    NSArray* allowableRevs = @[@"1-xxxx", @"299-abcd", @"1-1234567"];
+    for (NSString* revID in allowableRevs) {
+        NSData* compact = CompactRevID(revID);
+        XCTAssert(compact != nil);
+        NSString* expanded = ExpandRevID(DataToBuf(compact));
+        XCTAssertEqualObjects(expanded, revID);
+    }
 }
 
 

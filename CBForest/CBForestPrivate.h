@@ -25,6 +25,10 @@ sized_buf CopyBuf(sized_buf buf);
 void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcLen);
 void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
+NSData* CompactRevID(NSString* revID);
+sized_buf CompactRevIDToBuf(NSString* revID);
+NSString* ExpandRevID(sized_buf compressedRevID);
+
 
 @interface CBForestDB ()
 @property (readonly) fdb_handle* db;

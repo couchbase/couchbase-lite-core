@@ -38,16 +38,16 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 - (void) testParseRevID {
     unsigned sequence;
     sized_buf digest;
-    XCTAssert(ParseRevID(strtobuf("42-cafebabe"), &sequence, &digest));
+    XCTAssert(RevIDParse(strtobuf("42-cafebabe"), &sequence, &digest));
     XCTAssertEqual(sequence, 42);
     XCTAssert(bufequalstr(digest, "cafebabe"));
 
-    XCTAssert(!ParseRevID(strtobuf(""), &sequence, &digest));
-    XCTAssert(!ParseRevID(strtobuf("0-cafebabe"), &sequence, &digest));
-    XCTAssert(!ParseRevID(strtobuf("-cafebabe"), &sequence, &digest));
-    XCTAssert(!ParseRevID(strtobuf("10-"), &sequence, &digest));
-    XCTAssert(!ParseRevID(strtobuf("111111111111111-foo"), &sequence, &digest));
-    XCTAssert(!ParseRevID(strtobuf("1af9-decafbad"), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf(""), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf("0-cafebabe"), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf("-cafebabe"), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf("10-"), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf("111111111111111-foo"), &sequence, &digest));
+    XCTAssert(!RevIDParse(strtobuf("1af9-decafbad"), &sequence, &digest));
 }
 
 - (void) testNewTree {
@@ -63,7 +63,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 - (void) testInsertRev {
     // Create a tree and insert a revision:
     tree = RevTreeNew(1);
-    RevTreeInsert(tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), NULL, false, 0);
+    RevTreeInsert(&tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), (sized_buf){}, false, 0);
     XCTAssertEqual(RevTreeGetCount(tree), 1);
     const RevNode* node = RevTreeGetNode(tree, 0);
     XCTAssert(node != nil);
@@ -86,7 +86,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssert(bufequalstr(node->revID, "1-f00"));
 
     // Insert a new revision:
-    RevTreeInsert(tree, strtobuf("2-ba4"), strtobuf("{\"hi\":false}"), node, false, 0);
+    RevTreeInsert(&tree, strtobuf("2-ba4"), strtobuf("{\"hi\":false}"), node->revID, false, 0);
     XCTAssertEqual(RevTreeGetCount(tree), 2);
     const RevNode* node2 = RevTreeGetNode(tree, 1);
     XCTAssert(node2 != nil);

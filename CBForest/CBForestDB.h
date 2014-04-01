@@ -30,6 +30,13 @@ extern NSString* const CBForestErrorDomain;
 /** Callback block to pass to enumeration methods. */
 typedef void (^CBForestIterator)(CBForestDocument* doc, BOOL *stop);
 
+typedef struct {
+    uint64_t documentCount;
+    uint64_t databaseSize;
+    uint64_t lastSequence;
+    uint64_t headerRevNum;
+} CBForestDBInfo;
+
 
 /** An open CBForest database. */
 @interface CBForestDB : NSObject
@@ -47,6 +54,8 @@ typedef void (^CBForestIterator)(CBForestDocument* doc, BOOL *stop);
 
 /** The filesystem path the database was opened on. */
 @property (readonly) NSString* filename;
+
+- (CBForestDBInfo) info;
 
 /** Updates the database file header and makes sure all writes have been flushed to the disk.
     Until this happens, no changes made will persist: they aren't visible to any other client
