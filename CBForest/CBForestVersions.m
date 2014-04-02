@@ -12,6 +12,9 @@
 #import "forestdb_x.h"
 
 
+#define kDefaultMaxDepth 100
+
+
 @implementation CBForestVersions
 {
     CBForestDocument* _doc;
@@ -23,12 +26,16 @@
 }
 
 
+@synthesize maxDepth=_maxDepth;
+
+
 - (id) initWithDocument: (CBForestDocument*)doc
                   error: (NSError**)outError
 {
     NSParameterAssert(doc);
     self = [super init];
     if (self) {
+        _maxDepth = kDefaultMaxDepth;
         _doc = doc;
         if (_doc.exists) {
             // Read RevTree from doc body:
@@ -69,6 +76,7 @@
     if (!_changed)
         return YES;
 
+    RevTreePrune(_tree, _maxDepth);
     sized_buf encoded = RevTreeEncode(_tree);
     [_doc setBodyBytes: encoded.buf length: encoded.size noCopy: YES];
 

@@ -118,6 +118,9 @@ bool RevTreeInsert(RevTree **treePtr,
                    bool deleted,
                    off_t currentBodyOffset);
 
+/** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
+void RevTreePrune(RevTree* tree, unsigned maxDepth);
+
 /** Sorts the nodes of a tree so that the current node(s) come first.
     Nodes are normally sorted already, but RevTreeInsert will leave them unsorted.
     Note that sorting will invalidate any pre-existing RevNode pointers!

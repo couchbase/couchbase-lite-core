@@ -170,10 +170,8 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
         _info.meta = malloc(1);
         _info.metalen = 1;
     }
-    if (flags != ((UInt8*)_info.meta)[0]) {
-        ((UInt8*)_info.meta)[0] = flags;
-        _changed = YES;
-    }
+    ((UInt8*)_info.meta)[0] = flags;
+    _changed = YES;
 }
 
 

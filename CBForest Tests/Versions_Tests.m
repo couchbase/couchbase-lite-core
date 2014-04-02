@@ -153,6 +153,7 @@
     XCTAssert(vers.hasConflicts);
     XCTAssertEqual(doc.flags, kCBForestDocConflicted);
     XCTAssertEqualObjects(doc.revID, parentID);
+    vers.maxDepth = 50; // Force some pruning!
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
     NSLog(@"Body size = %llu", doc.bodyLength);
 
@@ -162,14 +163,18 @@
     vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];
     XCTAssert(vers, @"Reloading CBForestVersions failed: %@", error);
 
+    XCTAssertEqual(vers.revisionCount, 51);
     XCTAssertEqualObjects([vers currentRevisionIDs], (@[@"99-xxxx", @"51-yyyy"]));
 
     // Verify revisions:
     for (int i = 1; i < 100; i++) {
         NSString* bodyStr = [NSString stringWithFormat: @"{\"i\":%d}", i];
         NSString* revID = [NSString stringWithFormat: @"%d-xxxx", i];
-        XCTAssertEqualObjects([vers dataOfRevision: revID],
-                              [bodyStr dataUsingEncoding: NSUTF8StringEncoding], @"i=%d",i);
+        NSData* data = [vers dataOfRevision: revID];
+        if (i < 50)
+            XCTAssertNil(data, @"i=%d", i); // was pruned
+        else
+            XCTAssertEqualObjects(data, [bodyStr dataUsingEncoding: NSUTF8StringEncoding], @"i=%d",i);
     }
 
     // Delete one branch to resolve the conflict:

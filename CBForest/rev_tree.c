@@ -88,6 +88,12 @@ static inline const RawRevNode *nextRawNode(const RawRevNode *node)
 
 static int compareNodes(const void *ptr1, const void *ptr2);
 
+static RevNode* parentNode(RevTree* tree, RevNode* node) {
+    if (node->parentIndex == kRevNodeParentIndexNone)
+        return nil;
+    return &tree->node[node->parentIndex];
+}
+
 
 #pragma mark - PUBLIC API:
 
@@ -185,7 +191,7 @@ sized_buf RevTreeEncode(RevTree *tree)
 #ifdef REVTREE_USES_FILE_OFFSETS
         else if (dst->flags & kRevNodeHasBodyOffset) {
             dstData += WriteUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
-            dstData += WriteUVarInt(dstData, src->oldBodySize    ?: tree->bodySize);
+            WriteUVarInt(dstData, src->oldBodySize ?: tree->bodySize);
         }
 #endif
 
@@ -312,12 +318,12 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity)
 }
 
 
-void _revTreeInsert(RevTree *tree,
-                    sized_buf revID,
-                    sized_buf data,
-                    const RevNode *parentNode,
-                    bool deleted,
-                    off_t currentBodyOffset)
+static void _revTreeInsert(RevTree *tree,
+                           sized_buf revID,
+                           sized_buf data,
+                           const RevNode *parentNode,
+                           bool deleted,
+                           off_t currentBodyOffset)
 {
     assert(tree->count < tree->capacity);
     RevNode *newNode = &tree->node[tree->count++];
@@ -377,6 +383,57 @@ bool RevTreeInsert(RevTree **treeP,
     // Finally, insert:
     _revTreeInsert(*treeP, revID, data, parent, deleted, currentBodyOffset);
     return true;
+}
+
+
+void RevTreePrune(RevTree* tree, unsigned maxDepth) {
+    if (tree->count <= maxDepth)
+        return;
+
+    // First find all the leaves, and walk from each one down to its root:
+    bool pruned = false;
+    RevNode* node = &tree->node[0];
+    for (unsigned i=0; i<tree->count; i++,node++) {
+        if (nodeIsLeaf(node)) {
+            // Starting from a leaf node, trace its ancestry to find its depth:
+            unsigned depth = 0;
+            for (RevNode* anc = node; anc; anc = parentNode(tree, anc)) {
+                if (++depth > maxDepth) {
+                    // Mark nodes that are too far away:
+                    anc->revID.size = 0;
+                    pruned = true;
+                }
+            }
+        } else if (tree->sorted) {
+            break;
+        }
+    }
+    if (!pruned)
+        return;
+
+    // Next, create a mapping from current to new node indexes (after removing pruned nodes)
+    uint16_t* map = malloc(tree->count * sizeof(uint16));
+    node = &tree->node[0];
+    for (unsigned i=0, j=0; i<tree->count; i++,node++) {
+        if (node->revID.size > 0)
+            map[i] = j++;
+        else
+            map[i] = kRevNodeParentIndexNone;
+    }
+
+    // Finally, slide the surviving nodes down and renumber their parent indexes:
+    node = &tree->node[0];
+    RevNode* dst = node;
+    for (unsigned i=0; i<tree->count; i++,node++) {
+        if (node->revID.size > 0) {
+            node->parentIndex = map[node->parentIndex];
+            if (dst != node)
+                *dst = *node;
+            dst++;
+        }
+    }
+    tree->count = (unsigned)(dst - &tree->node[0]);
+    free(map);
 }
 
 

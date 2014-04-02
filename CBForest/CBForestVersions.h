@@ -17,6 +17,9 @@
 - (id) initWithDocument: (CBForestDocument*)doc
                   error: (NSError**)outError;
 
+/** Max depth the tree can grow to; older revisions will be pruned to enforce this. */
+@property unsigned maxDepth;
+
 /** Body of the current revision. */
 @property (readonly) NSData* currentRevisionData;
 
