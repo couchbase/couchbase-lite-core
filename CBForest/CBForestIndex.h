@@ -9,26 +9,27 @@
 #import "CBForestDB.h"
 
 
-typedef struct {
-    unsigned skip;
-    unsigned limit;
-    BOOL inclusiveEnd;
-} CBForestQueryParameters;
+/** Callback block for a CBForestIndex query. */
+typedef void (^CBForestQueryCallbackBlock)(id key,
+                                           NSString* docID,
+                                           NSData* rawValue,
+                                           BOOL *stop);
 
 
-typedef bool (^CBForestQueryCallbackBlock)(id key, NSString* docID, NSData* rawValue);
-
-
+/** Key/value index for a database, stored as a separate database file. */
 @interface CBForestIndex : CBForestDB
 
-- (BOOL) addKeys: (NSArray*)keys
+/** Stores the given key/value pairs associated with the given document.
+    Any previously stored pairs for the document will be removed. */
+- (BOOL) setKeys: (NSArray*)keys
           values: (NSArray*)values
      forDocument: (NSString*)docID
            error: (NSError**)outError;
 
+/** Queries the index, calling the block once for each result. */
 - (BOOL) queryStartKey: (id)startKey
                 endKey: (id)endKey
-               options: (const CBForestQueryParameters*)params
+               options: (const CBForestEnumerationOptions*)options
                  error: (NSError**)outError
                  block: (CBForestQueryCallbackBlock)block;
 

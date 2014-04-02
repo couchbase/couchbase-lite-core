@@ -33,7 +33,7 @@ static int indexCmp(void *a, void *b) {
 }
 
 
-- (BOOL) addKeys: (NSArray*)keys
+- (BOOL) setKeys: (NSArray*)keys
           values: (NSArray*)values
      forDocument: (NSString*)docID
            error: (NSError**)outError
@@ -91,7 +91,7 @@ static int indexCmp(void *a, void *b) {
 
 - (BOOL) queryStartKey: (id)startKey
                 endKey: (id)endKey
-               options: (const CBForestQueryParameters*)params
+               options: (const CBForestEnumerationOptions*)options
                  error: (NSError**)outError
                  block: (CBForestQueryCallbackBlock)block
 {
@@ -102,26 +102,18 @@ static int indexCmp(void *a, void *b) {
         if (!endKeyData)
             return NO;
     }
-    __block unsigned skip = params ? params->skip : 0;
-    __block unsigned limit = params ? params->limit : 0;
     return [self _enumerateValuesFromKey: startKeyData toKey: endKeyData
                                  options: 0
                                    error: outError
                                withBlock: ^BOOL(const fdb_doc *doc, uint64_t bodyOffset)
     {
-        if (skip > 0) {
-            skip--;
-            return true;
-        }
         NSArray* realKey = BufToJSON((sized_buf){doc->key, doc->keylen}, NULL);
-        if (params && !params->inclusiveEnd && endKey && [endKey isEqual: realKey[0]]) {
+        if (options && !options->inclusiveEnd && endKey && [endKey isEqual: realKey[0]]) {
             return false;
         }
-        block(realKey[0], realKey[1], BufToData(doc->body, doc->bodylen));
-        if (limit > 0 && --limit == 0) {
-            return false;
-        }
-        return true;
+        BOOL stop = NO;
+        block(realKey[0], realKey[1], BufToData(doc->body, doc->bodylen), &stop);
+        return !stop;
     }];
 }
 

@@ -52,7 +52,7 @@
         for (NSUInteger i = 0; i < keys.count; i++)
             [values addObject: name];
         NSError* error;
-        XCTAssert([index addKeys: keys values: values forDocument: docID error: &error],
+        XCTAssert([index setKeys: keys values: values forDocument: docID error: &error],
                   @"Indexing failed: %@", error);
     }
 
@@ -60,16 +60,15 @@
     __block int nRows = 0;
     NSError* error;
     BOOL ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                             block: ^bool(id key, NSString *docID, NSData *rawValue)
+                             block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
     {
         nRows++;
         NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
-        return true;
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 8);
 
-    XCTAssert(([index addKeys: @[@"Portland", @"Walla Walla", @"Salem"]
+    XCTAssert(([index setKeys: @[@"Portland", @"Walla Walla", @"Salem"]
                        values: @[@"Oregon", @"Oregon", @"Oregon"]
                   forDocument: @"OR" error: &error]),
               @"Indexing failed: %@", error);
@@ -77,26 +76,24 @@
     NSLog(@"--- After updating OR");
     nRows = 0;
     ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                             block: ^bool(id key, NSString *docID, NSData *rawValue)
+                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
     {
         nRows++;
         NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
-        return true;
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 9);
 
-    XCTAssert(([index addKeys: nil values: nil forDocument: @"CA" error: &error]),
+    XCTAssert(([index setKeys: nil values: nil forDocument: @"CA" error: &error]),
               @"Indexing failed: %@", error);
 
     NSLog(@"--- After removing CA:");
     nRows = 0;
     ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                             block: ^bool(id key, NSString *docID, NSData *rawValue)
+                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
     {
         nRows++;
         NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
-        return true;
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 6);

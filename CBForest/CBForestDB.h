@@ -16,11 +16,19 @@ enum {
 };
 
 
-/** Option flag bigs for enumerating documents in a CBForest. */
+/** Option flag bits for loading & enumerating documents in a CBForest. */
 typedef enum {
     kCBForestDBMetaOnly     = 0x01, //< Only load document metadata, not the body
-    kCBForestDBSkipDeleted  = 0x02
-} CBForestDBContentOptions;
+} CBForestContentOptions;
+
+typedef struct {
+    unsigned                skip;
+    unsigned                limit;
+    BOOL                    inclusiveEnd;
+    BOOL                    skipDeleted;
+    CBForestContentOptions  contentOptions;
+} CBForestEnumerationOptions;
+
 
 /** NSError domain string for errors specific to CBForest. For error codes see error.h. */
 extern NSString* const CBForestErrorDomain;
@@ -56,7 +64,8 @@ typedef struct {
 /** The filesystem path the database was opened on. */
 @property (readonly) NSString* filename;
 
-- (CBForestDBInfo) info;
+/** Some stats about the database. */
+@property (readonly) CBForestDBInfo info;
 
 /** Updates the database file header and makes sure all writes have been flushed to the disk.
     Until this happens, no changes made will persist: they aren't visible to any other client
@@ -71,24 +80,36 @@ typedef struct {
 
 // KEYS/VALUES:
 
+/** Stores a value blob for a key blob, replacing any previous value.
+    Use a nil value to delete. */
 - (uint64_t) setValue: (NSData*)value
                  meta: (NSData*)meta
                forKey: (NSData*)key
                 error: (NSError**)outError;
 
-- (BOOL) deleteSequence: (uint64_t)sequence
-                  error: (NSError**)outError;
-
+/** Loads the value blob with the given key blob, plus its metadata.
+    If there is no value for the key, no error is returned, but the value and meta will be nil. */
 - (BOOL) getValue: (NSData**)outValue
              meta: (NSData**)outMeta
            forKey: (NSData*)key
             error: (NSError**)outError;
 
+/** Iterates over values, in ascending order by key.
+    @param startKey  The key to start at, or nil to start from the beginning.
+    @param endKey  The last key to enumerate, or nil to go to the end.
+    @param options  Iteration options, or NULL to use the default options.
+    @param outError  On failure, an NSError will be stored here (unless it's NULL).
+    @param block  The block to call for every value.
+    @return  YES on success, NO on failure. */
 - (BOOL) enumerateValuesFromKey: (NSData*)startKey
                           toKey: (NSData*)endKey
-                        options: (CBForestDBContentOptions)options
+                        options: (const CBForestEnumerationOptions*)options
                           error: (NSError**)outError
                       withBlock: (CBForestValueIterator)block;
+
+/** Deletes the document/value with the given sequence. */
+- (BOOL) deleteSequence: (uint64_t)sequence
+                  error: (NSError**)outError;
 
 // DOCUMENTS:
 
@@ -100,27 +121,25 @@ typedef struct {
 
 /** Loads the document with the given ID into a CBForestDocument object. */
 - (CBForestDocument*) documentWithID: (NSString*)docID
-                             options: (CBForestDBContentOptions)options
+                             options: (CBForestContentOptions)options
                                error: (NSError**)outError;
 
 /** Loads the metadata of the document with the given sequence number,
     into a CBForestDocument object. */
 - (CBForestDocument*) documentWithSequence: (uint64_t)sequence
-                                   options: (CBForestDBContentOptions)options
+                                   options: (CBForestContentOptions)options
                                      error: (NSError**)outError;
 
-// ENUMERATING DOCUMENTS:
-
-/** Iterates through all documents, in ascending order by key.
+/** Iterates over documents, in ascending order by key.
     @param startID  The document ID to start at, or nil to start from the beginning.
     @param endID  The last document ID to enumerate, or nil to go to the end.
-    @param options  kCBForestEnumerateMetaOnly is supported.
+    @param options  Iteration options, or NULL to use the default options.
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.
     @return  YES on success, NO on failure. */
 - (BOOL) enumerateDocsFromID: (NSString*)startID
                         toID: (NSString*)endID
-                     options: (CBForestDBContentOptions)options
+                     options: (const CBForestEnumerationOptions*)options
                        error: (NSError**)outError
                    withBlock: (CBForestDocIterator)block;
 

@@ -150,28 +150,46 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 - (BOOL) _enumerateValuesFromKey: (NSData*)startKey
                            toKey: (NSData*)endKey
-                         options: (CBForestDBContentOptions)options
+                         options: (const CBForestEnumerationOptions*)options
                            error: (NSError**)outError
                        withBlock: (CBForest_Iterator)block
 {
     fdb_iterator_opt_t fdbOptions = FDB_ITR_NONE;
-    if (options & kCBForestDBMetaOnly)
+    if (options && (options->contentOptions & kCBForestDBMetaOnly))
         fdbOptions |= FDB_ITR_METAONLY;
+    const void* endKeyBytes = endKey.bytes;
+    size_t endKeyLength = endKey.length;
     fdb_iterator iterator;
     fdb_status status = fdb_iterator_init(self.db, &iterator,
                                           startKey.bytes, startKey.length,
-                                          endKey.bytes, endKey.length, fdbOptions);
+                                          endKeyBytes, endKeyLength, fdbOptions);
     if (!Check(status, outError))
         return NO;
 
+    __block unsigned skip  = options ? options->skip  : 0;
+    __block unsigned limit = options ? options->limit : 0;
     for (;;) {
         fdb_doc *docinfo;
         uint64_t bodyOffset;
         status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
         if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
             break; // FDB returns FDB_RESULT_FAIL at end of iteration
+
+        if (skip > 0) {
+            skip--;
+            continue;
+        }
+        if (options && !options->inclusiveEnd && endKeyBytes
+                && docinfo->keylen == endKeyLength
+                && memcmp(docinfo->key, endKeyBytes, endKeyLength)==0)
+            break;
+
         if (!block(docinfo, bodyOffset))
             break;
+
+        if (limit > 0 && --limit == 0) {
+            break;
+        }
     }
     fdb_iterator_close(&iterator);
     return YES;
@@ -180,7 +198,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 - (BOOL) enumerateValuesFromKey: (NSData*)startKey
                           toKey: (NSData*)endKey
-                        options: (CBForestDBContentOptions)options
+                        options: (const CBForestEnumerationOptions*)options
                           error: (NSError**)outError
                       withBlock: (CBForestValueIterator)block
 {
@@ -208,7 +226,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 - (CBForestDocument*) documentWithID: (NSString*)docID
-                             options: (CBForestDBContentOptions)options
+                             options: (CBForestContentOptions)options
                                error: (NSError**)outError
 {
     CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: docID];
@@ -222,7 +240,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 - (CBForestDocument*) documentWithSequence: (uint64_t)sequence
-                                   options: (CBForestDBContentOptions)options
+                                   options: (CBForestContentOptions)options
                                      error: (NSError**)outError
 {
     fdb_doc doc = {
@@ -245,7 +263,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 - (BOOL) enumerateDocsFromID: (NSString*)startID
                         toID: (NSString*)endID
-                     options: (CBForestDBContentOptions)options
+                     options: (const CBForestEnumerationOptions*)options
                        error: (NSError**)outError
                    withBlock: (CBForestDocIterator)block
 {
