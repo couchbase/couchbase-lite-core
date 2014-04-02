@@ -24,7 +24,6 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 };
 
 
-
 @implementation CBForestDB
 {
     fdb_handle _db;
@@ -95,6 +94,110 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
     }
 }
 
+#pragma mark - KEYS/VALUES:
+
+
+- (uint64_t) setValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
+                error: (NSError**)outError
+{
+    fdb_doc doc = {
+        .key = (void*)key.bytes,
+        .keylen = key.length,
+        .body = (void*)value.bytes,
+        .bodylen = value.length,
+        .meta = (void*)meta.bytes,
+        .metalen = meta.length
+    };
+    if (!Check(fdb_set(self.db, &doc), outError))
+        return SEQNUM_NOT_USED;
+    return doc.seqnum;
+}
+
+
+- (BOOL) getValue: (NSData**)value meta: (NSData**)meta forKey: (NSData*)key error: (NSError**)outError {
+    fdb_doc doc = {
+        .key = (void*)key.bytes,
+        .keylen = key.length,
+    };
+    fdb_status status;
+    if (value) {
+        status = fdb_get(self.db, &doc);
+        *value = BufToData(doc.body, doc.bodylen);
+    } else {
+        status = fdb_get_metaonly(self.db, &doc, NULL);
+    }
+    if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
+        return NO;
+    if (meta)
+        *meta = BufToData(doc.meta, doc.metalen);
+    return YES;
+}
+
+
+- (BOOL) deleteSequence: (uint64_t)sequence error: (NSError**)outError {
+    fdb_doc doc = {.seqnum = sequence};
+    uint64_t bodyOffset;
+    fdb_status status = fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset);
+    if (status == FDB_RESULT_KEY_NOT_FOUND)
+        return YES;
+    else if (!Check(status, outError))
+        return NO;
+    doc.body = doc.meta = NULL;
+    doc.bodylen = doc.metalen = 0;
+    return Check(fdb_set(self.db, &doc), outError);
+}
+
+
+- (BOOL) _enumerateValuesFromKey: (NSData*)startKey
+                           toKey: (NSData*)endKey
+                         options: (CBForestDBContentOptions)options
+                           error: (NSError**)outError
+                       withBlock: (CBForest_Iterator)block
+{
+    fdb_iterator_opt_t fdbOptions = FDB_ITR_NONE;
+    if (options & kCBForestDBMetaOnly)
+        fdbOptions |= FDB_ITR_METAONLY;
+    fdb_iterator iterator;
+    fdb_status status = fdb_iterator_init(self.db, &iterator,
+                                          startKey.bytes, startKey.length,
+                                          endKey.bytes, endKey.length, fdbOptions);
+    if (!Check(status, outError))
+        return NO;
+
+    for (;;) {
+        fdb_doc *docinfo;
+        uint64_t bodyOffset;
+        status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
+        if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
+            break; // FDB returns FDB_RESULT_FAIL at end of iteration
+        if (!block(docinfo, bodyOffset))
+            break;
+    }
+    fdb_iterator_close(&iterator);
+    return YES;
+}
+
+
+- (BOOL) enumerateValuesFromKey: (NSData*)startKey
+                          toKey: (NSData*)endKey
+                        options: (CBForestDBContentOptions)options
+                          error: (NSError**)outError
+                      withBlock: (CBForestValueIterator)block
+{
+    return [self _enumerateValuesFromKey: startKey toKey: endKey options: options error: outError
+                               withBlock: ^BOOL(const fdb_doc *doc, uint64_t bodyOffset)
+    {
+        @autoreleasepool {
+            NSData* key = BufToData(doc->key, doc->keylen);
+            NSData* value = BufToData(doc->body, doc->bodylen);
+            NSData* meta = BufToData(doc->meta, doc->metalen);
+            BOOL stop = NO;
+            block(key, value, meta, &stop);
+            return !stop;
+        }
+    }];
+}
+
 
 #pragma mark - DOCUMENTS:
 
@@ -144,39 +247,23 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                         toID: (NSString*)endID
                      options: (CBForestDBContentOptions)options
                        error: (NSError**)outError
-                   withBlock: (CBForestIterator)block
+                   withBlock: (CBForestDocIterator)block
 {
-    sized_buf startKey = StringToBuf(startID);
-    sized_buf endKey = StringToBuf(endID);
-    fdb_iterator_opt_t fdbOptions = FDB_ITR_NONE;
-    if (options & kCBForestDBMetaOnly)
-        fdbOptions |= FDB_ITR_METAONLY;
-    fdb_iterator iterator;
-    fdb_status status = fdb_iterator_init(self.db, &iterator,
-                                          startKey.buf, startKey.size,
-                                          endKey.buf, endKey.size, fdbOptions);
-    if (!Check(status, outError))
-        return NO;
-
-    for (;;) {
-        fdb_doc *docinfo;
-        uint64_t bodyOffset;
-        status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
-        if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
-            break; // FDB returns FDB_RESULT_FAIL at end of iteration
-        if ((options & kCBForestDBSkipDeleted)
-                    && ([CBForestDocument flagsFromMeta: docinfo] & kCBForestDocDeleted))
-            continue;
-        CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self
-                                                                   info: docinfo
-                                                                 offset: bodyOffset];
-        BOOL stop = NO;
-        block(doc, &stop);
-        if (stop)
-            break;
-    }
-    fdb_iterator_close(&iterator);
-    return YES;
+    return [self _enumerateValuesFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
+                                   toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
+                                 options: options
+                                   error: outError
+                               withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
+    {
+        @autoreleasepool {
+            CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self
+                                                                       info: docinfo
+                                                                     offset: bodyOffset];
+            BOOL stop = NO;
+            block(doc, &stop);
+            return !stop;
+        }
+    }];
 }
 
 

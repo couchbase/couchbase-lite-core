@@ -26,7 +26,10 @@ typedef enum {
 extern NSString* const CBForestErrorDomain;
 
 /** Callback block to pass to enumeration methods. */
-typedef void (^CBForestIterator)(CBForestDocument* doc, BOOL *stop);
+typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, BOOL *stop);
+
+/** Callback block to pass to enumeration methods. */
+typedef void (^CBForestDocIterator)(CBForestDocument* doc, BOOL *stop);
 
 typedef struct {
     uint64_t documentCount;
@@ -66,6 +69,27 @@ typedef struct {
 - (BOOL) compactToFile: (NSString*)filePath
                  error: (NSError**)outError;
 
+// KEYS/VALUES:
+
+- (uint64_t) setValue: (NSData*)value
+                 meta: (NSData*)meta
+               forKey: (NSData*)key
+                error: (NSError**)outError;
+
+- (BOOL) deleteSequence: (uint64_t)sequence
+                  error: (NSError**)outError;
+
+- (BOOL) getValue: (NSData**)outValue
+             meta: (NSData**)outMeta
+           forKey: (NSData*)key
+            error: (NSError**)outError;
+
+- (BOOL) enumerateValuesFromKey: (NSData*)startKey
+                          toKey: (NSData*)endKey
+                        options: (CBForestDBContentOptions)options
+                          error: (NSError**)outError
+                      withBlock: (CBForestValueIterator)block;
+
 // DOCUMENTS:
 
 /** Instantiates a CBForestDocument with the given document ID,
@@ -98,6 +122,6 @@ typedef struct {
                         toID: (NSString*)endID
                      options: (CBForestDBContentOptions)options
                        error: (NSError**)outError
-                   withBlock: (CBForestIterator)block;
+                   withBlock: (CBForestDocIterator)block;
 
 @end

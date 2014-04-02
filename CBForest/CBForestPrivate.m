@@ -33,7 +33,8 @@ BOOL Check(fdb_status code, NSError** outError) {
         NSString* errorName;
         if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))
             errorName = [NSString stringWithFormat: @"ForestDB error: %@", kErrorNames[-code]];
-        else if ((int)code == kCBForestErrorDataCorrupt)
+        else if ((int)code
+                 == kCBForestErrorDataCorrupt)
             errorName = @"Revision data is corrupted";
         else
             errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
@@ -68,6 +69,25 @@ NSString* BufToString(const void* buf, size_t size) {
     return [[NSString alloc] initWithBytes: buf
                                     length: size
                                   encoding: NSUTF8StringEncoding];
+}
+
+
+NSData* JSONToData(id obj, NSError** outError) {
+    if ([obj isKindOfClass: [NSDictionary class]] || [obj isKindOfClass: [NSArray class]]) {
+        return [NSJSONSerialization dataWithJSONObject: obj options: 0 error: outError];
+    } else {
+        NSArray* array = [[NSArray alloc] initWithObjects: &obj count: 1];
+        NSData* data = [NSJSONSerialization dataWithJSONObject: array options: 0 error: outError];
+        return [data subdataWithRange: NSMakeRange(1, data.length - 2)];
+    }
+}
+
+
+id BufToJSON(sized_buf buf, NSError** outError) {
+    if (buf.size == 0)
+        return nil;
+    NSData* data = [[NSData alloc] initWithBytesNoCopy: buf.buf length: buf.size freeWhenDone: NO];
+    return DataToJSON(data, outError);
 }
 
 

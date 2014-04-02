@@ -45,7 +45,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 
 
 - (id) initWithStore: (CBForestDB*)store
-                info: (fdb_doc*)info
+                info: (const fdb_doc*)info
               offset: (uint64_t)bodyOffset
 {
     self = [super init];
@@ -180,13 +180,11 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 - (NSString*) revID {
     if (_info.metalen <= 1)
         return nil;
-    return [[NSString alloc] initWithBytes: &((UInt8*)_info.meta)[1]
-                                    length: _info.metalen - 1
-                                  encoding: NSUTF8StringEncoding];
+    return ExpandRevID((sized_buf){&((UInt8*)_info.meta)[1], _info.metalen - 1});
 }
 
 - (void) setRevID: (NSString*)revID {
-    NSData* revIDData = [revID dataUsingEncoding: NSUTF8StringEncoding];
+    NSData* revIDData = CompactRevID(revID);
     size_t newMetaLen = 1 + revIDData.length;
     if (newMetaLen != _info.metalen) {
         CBForestDocumentFlags flags = self.flags;

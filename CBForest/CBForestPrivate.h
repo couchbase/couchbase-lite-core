@@ -22,6 +22,16 @@ NSString* BufToString(const void* buf, size_t size);
 
 sized_buf CopyBuf(sized_buf buf);
 
+NSData* JSONToData(id obj, NSError** outError) ;
+
+static inline id DataToJSON(NSData* data, NSError** outError) {
+    return [NSJSONSerialization JSONObjectWithData: data
+                                           options: NSJSONReadingAllowFragments
+                                             error: NULL];
+}
+
+id BufToJSON(sized_buf, NSError** outError);
+
 void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcLen);
 void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
@@ -30,14 +40,22 @@ sized_buf CompactRevIDToBuf(NSString* revID);
 NSString* ExpandRevID(sized_buf compressedRevID);
 
 
+typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
+
+
 @interface CBForestDB ()
 @property (readonly) fdb_handle* db;
+- (BOOL) _enumerateValuesFromKey: (NSData*)startKey
+                           toKey: (NSData*)endKey
+                         options: (CBForestDBContentOptions)options
+                           error: (NSError**)outError
+                       withBlock: (CBForest_Iterator)block;
 @end
 
 
 @interface CBForestDocument ()
 - (id) initWithStore: (CBForestDB*)store docID: (NSString*)docID;
-- (id) initWithStore: (CBForestDB*)store info: (fdb_doc*)info offset: (uint64_t)bodyOffset;
+- (id) initWithStore: (CBForestDB*)store info: (const fdb_doc*)info offset: (uint64_t)bodyOffset;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
