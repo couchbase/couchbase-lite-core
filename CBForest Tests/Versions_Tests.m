@@ -22,7 +22,6 @@
 @implementation Versions_Tests
 {
     CBForestDB* _db;
-    CBForestDocument* doc;
     CBForestVersions* vers;
 }
 
@@ -33,9 +32,9 @@
         NSLog(@"WARNING: Couldn't delete db file: %@", error);
 
     _db = [[CBForestDB alloc] initWithFile: kDBPath readOnly: NO error: &error];
+    _db.documentClass = [CBForestVersions class];
     XCTAssert(_db, @"Couldn't open db: %@", error);
-    doc = [_db makeDocumentWithID: @"foo"];
-    vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];
+    vers = (CBForestVersions*)[_db makeDocumentWithID: @"foo"];
     XCTAssert(vers, @"Creating CBForestVersions failed: %@", error);
 }
 
@@ -87,21 +86,19 @@
     XCTAssertEqualObjects(vers.currentRevisionIDs, @[revID]);
     XCTAssert(!vers.hasConflicts);
 
-    XCTAssertEqual(doc.flags, 0);
-    XCTAssertEqualObjects(doc.revID, revID);
+    XCTAssertEqual(vers.flags, 0);
+    XCTAssertEqualObjects(vers.revID, revID);
 
     // Save document:
     NSError* error;
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
 
     // Reload:
-    doc = [_db documentWithID: @"foo" options: 0 error: &error];
-    XCTAssert(doc, @"Reloading doc failed: %@", error);
-    vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];
-    XCTAssert(vers, @"Reloading CBForestVersions failed: %@", error);
+    vers = (CBForestVersions*)[_db documentWithID: @"foo" options: 0 error: &error];
+    XCTAssert(vers, @"Reloading doc failed: %@", error);
 
-    XCTAssertEqual(doc.flags, 0);
-    XCTAssertEqualObjects(doc.revID, revID);
+    XCTAssertEqual(vers.flags, 0);
+    XCTAssertEqualObjects(vers.revID, revID);
 
     // Test versions again:
     XCTAssert([vers hasRevision: revID]);
@@ -127,16 +124,14 @@
     // Save document:
     NSError* error;
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
-    NSLog(@"Body size = %llu", doc.bodyLength);
+    NSLog(@"Body size = %llu", vers.bodyLength);
 
     // Reload:
-    doc = [_db documentWithID: @"foo" options: 0 error: &error];
-    XCTAssert(doc, @"Reloading doc failed: %@", error);
-    vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];
-    XCTAssert(vers, @"Reloading CBForestVersions failed: %@", error);
+    vers = (CBForestVersions*)[_db documentWithID: @"foo" options: 0 error: &error];
+    XCTAssert(vers, @"Reloading doc failed: %@", error);
 
-    XCTAssertEqual(doc.flags, 0);
-    XCTAssertEqualObjects(doc.revID, parentID);
+    XCTAssertEqual(vers.flags, 0);
+    XCTAssertEqualObjects(vers.revID, parentID);
 
     // Verify revisions:
     for (int i = 1; i < 100; i++) {
@@ -151,17 +146,15 @@
                        deletion: NO
                          withID: @"51-yyyy" parentID: @"50-xxxx"]);
     XCTAssert(vers.hasConflicts);
-    XCTAssertEqual(doc.flags, kCBForestDocConflicted);
-    XCTAssertEqualObjects(doc.revID, parentID);
+    XCTAssertEqual(vers.flags, kCBForestDocConflicted);
+    XCTAssertEqualObjects(vers.revID, parentID);
     vers.maxDepth = 50; // Force some pruning!
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
-    NSLog(@"Body size = %llu", doc.bodyLength);
+    NSLog(@"Body size = %llu", vers.bodyLength);
 
     // Reload:
-    doc = [_db documentWithID: @"foo" options: 0 error: &error];
-    XCTAssert(doc, @"Reloading doc failed: %@", error);
-    vers = [[CBForestVersions alloc] initWithDocument: doc error: &error];
-    XCTAssert(vers, @"Reloading CBForestVersions failed: %@", error);
+    vers = (CBForestVersions*)[_db documentWithID: @"foo" options: 0 error: &error];
+    XCTAssert(vers, @"Reloading doc failed: %@", error);
 
     XCTAssertEqual(vers.revisionCount, 51);
     XCTAssertEqualObjects([vers currentRevisionIDs], (@[@"99-xxxx", @"51-yyyy"]));
@@ -182,10 +175,10 @@
                        deletion: YES
                          withID: @"100-zzzz" parentID: @"99-xxxx"]);
     XCTAssert(!vers.hasConflicts);
-    XCTAssertEqual(doc.flags, 0);
-    XCTAssertEqualObjects(doc.revID, @"51-yyyy");
+    XCTAssertEqual(vers.flags, 0);
+    XCTAssertEqualObjects(vers.revID, @"51-yyyy");
     XCTAssert([vers save: &error], @"Vers save failed: %@", error);
-    NSLog(@"Body size = %llu", doc.bodyLength);
+    NSLog(@"Body size = %llu", vers.bodyLength);
 }
 
 

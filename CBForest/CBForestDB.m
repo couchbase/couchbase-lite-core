@@ -30,7 +30,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
     BOOL _open;
 }
 
-@synthesize filename=_path;
+@synthesize filename=_path, documentClass=_documentClass;
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -39,6 +39,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 {
     self = [super init];
     if (self) {
+        _documentClass = [CBForestDocument class];
         _path = filePath.copy;
         fdb_config config = kDefaultConfig;
         if (readOnly)
@@ -154,9 +155,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                            error: (NSError**)outError
                        withBlock: (CBForest_Iterator)block
 {
-    fdb_iterator_opt_t fdbOptions = FDB_ITR_NONE;
-    if (options && (options->contentOptions & kCBForestDBMetaOnly))
-        fdbOptions |= FDB_ITR_METAONLY;
+    fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
     const void* endKeyBytes = endKey.bytes;
     size_t endKeyLength = endKey.length;
     fdb_iterator iterator;
@@ -184,7 +183,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                 && memcmp(docinfo->key, endKeyBytes, endKeyLength)==0)
             break;
 
-        if (!block(docinfo, bodyOffset))
+        if (!block(docinfo, 0/*bodyOffset*/))   // ignore bodyOffset, it's wrong -- MB-10747
             break;
 
         if (limit > 0 && --limit == 0) {
@@ -221,7 +220,7 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
 
 
 - (CBForestDocument*) makeDocumentWithID: (NSString*)docID {
-    return [[CBForestDocument alloc] initWithStore: self docID: docID];
+    return [[_documentClass alloc] initWithDB: self docID: docID];
 }
 
 
@@ -229,13 +228,10 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                              options: (CBForestContentOptions)options
                                error: (NSError**)outError
 {
-    CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self docID: docID];
-    BOOL ok;
-    if (options & kCBForestDBMetaOnly)
-        ok = [doc reloadMeta: outError];
-    else
-        ok = [doc reload: outError];
-    return ok ? doc : nil;
+    CBForestDocument* doc = [[_documentClass alloc] initWithDB: self docID: docID];
+    if (![doc reloadMeta: outError])
+        return nil;
+    return doc;
 }
 
 
@@ -247,14 +243,9 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
         .seqnum = sequence
     };
     uint64_t bodyOffset = 0;
-    fdb_status status;
-    if (options & kCBForestDBMetaOnly)
-        status = fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset);
-    else
-        status = fdb_get_byseq(self.db, &doc);
-    if (!Check(status, outError))
+    if (!Check(fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset), outError))
         return nil;
-    return [[CBForestDocument alloc] initWithStore: self info: &doc offset: bodyOffset];
+    return [[_documentClass alloc] initWithDB: self info: &doc offset: bodyOffset];
 }
 
 
@@ -274,9 +265,10 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                                withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
         @autoreleasepool {
-            CBForestDocument* doc = [[CBForestDocument alloc] initWithStore: self
-                                                                       info: docinfo
-                                                                     offset: bodyOffset];
+            NSLog(@"(bodyOffset = %llu)", bodyOffset);//TEMP
+            CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
+                                                                     info: docinfo
+                                                                   offset: bodyOffset];
             BOOL stop = NO;
             block(doc, &stop);
             return !stop;

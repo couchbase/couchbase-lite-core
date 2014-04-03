@@ -8,6 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import <CBForest/CBForest.h>
+#import "CBForestPrivate.h"
 #import "forestdb.h"
 
 
@@ -54,9 +55,6 @@
     XCTAssertEqual(doc.db, _db);
     XCTAssertEqualObjects(doc.docID, @"foo");
     XCTAssert(!doc.exists);
-    XCTAssertEqualObjects(doc.body, nil);
-    XCTAssertEqualObjects(doc.revID, nil);
-    XCTAssertEqual(doc.flags, 0);
 }
 
 - (void) logDbInfo {
@@ -68,66 +66,56 @@
 - (void) test03_SaveDoc {
     [self logDbInfo];
     NSData* body = [@"Hello ForestDB" dataUsingEncoding: NSUTF8StringEncoding];
-    NSString* revID = @"1-cafebabe";
+    NSData* meta = [@"metametameta" dataUsingEncoding: NSUTF8StringEncoding];
 
     CBForestDocument* doc = [_db makeDocumentWithID: @"foo"];
-    XCTAssert(!doc.changed);
-    doc.body = body;
-    doc.revID = revID;
-    XCTAssertEqualObjects(doc.body, body);
-    XCTAssertEqualObjects(doc.revID, revID);
-    XCTAssertEqual(doc.flags, 0);
+    XCTAssertNil(doc.metadata);
     XCTAssertEqual(doc.sequence, kForestDocNoSequence);
-    XCTAssert(doc.changed);
 
     NSError* error;
-    XCTAssert([doc saveChanges: &error], @"Save failed: %@", error);
+    XCTAssert([doc writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
     [self logDbInfo];
 
+    XCTAssertEqualObjects([doc readBody: &error], body, @"Read failed, err=%@", error);
+    XCTAssertEqualObjects(doc.metadata, meta);
+
     CBForestDocument* doc2 = [_db documentWithID: @"foo" options: 0 error: &error];
     XCTAssert(doc2, @"documentWithID: failed: %@", error);
-    XCTAssert(!doc2.changed);
     XCTAssertEqualObjects(doc2, doc, @"isEqual: failed");
     XCTAssertEqualObjects(doc2.docID, @"foo");
     XCTAssert(doc2.exists);
-    XCTAssertEqualObjects(doc2.body, body);
-    XCTAssertEqualObjects(doc2.revID, revID);
-    XCTAssertEqual(doc.flags, 0);
+    XCTAssertEqualObjects([doc2 readBody: &error], body, @"Read failed, err=%@", error);
+    XCTAssertEqualObjects(doc2.metadata, meta);
     XCTAssertEqual(doc2.sequence, 0);
 
     body = [@"Bye!" dataUsingEncoding: NSUTF8StringEncoding];
-    doc.body = body;
-    doc.flags = kCBForestDocDeleted;
-    XCTAssert(doc.changed);
-    XCTAssert([doc saveChanges: &error], @"Save failed: %@", error);
+    meta = [@"meatmeatmeat" dataUsingEncoding: NSUTF8StringEncoding];
+    XCTAssert([doc2 writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
     [self logDbInfo];
 
     CBForestDocument* doc3 = [_db documentWithID: @"foo" options: 0 error: &error];
     XCTAssert(doc3, @"documentWithID: failed: %@", error);
-    XCTAssertEqualObjects(doc3.body, body);
     XCTAssert(doc3.exists);
     XCTAssertEqual(doc3.sequence, 1);
-    XCTAssertEqualObjects(doc3.revID, revID);
-    XCTAssertEqual(doc3.flags, kCBForestDocDeleted);
+    XCTAssertEqualObjects([doc3 readBody: &error], body, @"Read failed, err=%@", error);
+    XCTAssertEqualObjects(doc3.metadata, meta);
 
     CBForestDocument* docBySeq = [_db documentWithSequence: 1 options: 0 error: &error];
     XCTAssert(docBySeq, @"documentWithSequence: failed: %@", error);
     XCTAssertEqualObjects(docBySeq.docID, @"foo");
     XCTAssert(docBySeq.exists);
     XCTAssertEqual(docBySeq.sequence, 1);
-    XCTAssertEqualObjects(docBySeq.body, body);
-    XCTAssertEqualObjects(docBySeq.revID, revID);
-    XCTAssertEqual(docBySeq.flags, kCBForestDocDeleted);
+    XCTAssertEqualObjects([docBySeq readBody: &error], body, @"Read failed, err=%@", error);
+    XCTAssertEqualObjects(docBySeq.metadata, meta);
 
     // Now let's try updating the original doc's metadata:
     XCTAssert([doc reloadMeta: &error], @"refreshMeta failed: %@", error);
-    XCTAssertEqualObjects(doc.revID, revID);
-    XCTAssertEqual(doc.flags, kCBForestDocDeleted);
+    XCTAssertEqualObjects(doc.metadata, meta);
 
     // ...and body:
-    NSData* curBody = [doc getBody: &error];
+    NSData* curBody = [doc readBody: &error];
     XCTAssert(curBody != nil, @"getBody: failed: %@", error);
     XCTAssertEqualObjects(curBody, body);
     XCTAssertEqual(doc.sequence, 1);
@@ -138,9 +126,13 @@
     for (int i = 0; i < 100; i++) {
         NSString* docID = [NSString stringWithFormat: @"doc-%02d", i];
         CBForestDocument* doc = [_db makeDocumentWithID: docID];
-        doc.body = [docID dataUsingEncoding: NSUTF8StringEncoding];
-        XCTAssert([doc saveChanges: &error], @"save failed: %@", error);
+        XCTAssert([doc writeBody: [docID dataUsingEncoding: NSUTF8StringEncoding]
+                        metadata: nil
+                           error: &error], @"Save failed: %@", error);
         XCTAssertEqual(doc.sequence, i);
+        XCTAssertEqualObjects([doc readBody: &error],
+                              [docID dataUsingEncoding: NSUTF8StringEncoding],
+                              @"(i=%d)", i);
     }
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
 
@@ -152,35 +144,14 @@
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%02d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
         XCTAssertEqual(doc.sequence, i);
-        XCTAssertEqualObjects(doc.body, [expectedDocID dataUsingEncoding: NSUTF8StringEncoding]);
+        NSError* error;
+        XCTAssertEqualObjects([doc readBody: &error],
+                              [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
+                              @"(i=%d)", i);
         i++;
     }];
     XCTAssert(ok);
     XCTAssertEqual(i, 51);
-}
-
-- (void) test05_MetaOnly {
-    NSData* body = [@"Hello ForestDB" dataUsingEncoding: NSUTF8StringEncoding];
-    NSString* revID = @"1-cafebabe";
-
-    CBForestDocument* doc = [_db makeDocumentWithID: @"foo"];
-    doc.body = body;
-    doc.revID = revID;
-    NSError* error;
-    XCTAssert([doc saveChanges: &error], @"Save failed: %@", error);
-    XCTAssert([_db commit: &error], @"Commit failed: %@", error);
-
-    CBForestDocument* doc2 = [_db documentWithID: @"foo" options: kCBForestDBMetaOnly error: &error];
-    XCTAssert(!doc2.changed);
-    XCTAssertEqualObjects(doc2, doc, @"isEqual: failed");
-    XCTAssertEqualObjects(doc2.docID, @"foo");
-    XCTAssert(doc2.exists);
-    XCTAssert(doc2.body == nil);
-    XCTAssertEqual(doc2.bodyLength, body.length);
-    XCTAssertEqualObjects(doc2.revID, revID);
-    XCTAssertEqual(doc.flags, 0);
-    XCTAssertEqual(doc2.sequence, 0);
-
 }
 
 @end

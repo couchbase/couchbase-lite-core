@@ -115,8 +115,7 @@ bool RevTreeInsert(RevTree **treePtr,
                    sized_buf revID,
                    sized_buf data,
                    sized_buf parentRevID,
-                   bool deleted,
-                   off_t currentBodyOffset);
+                   bool deleted);
 
 /** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
 void RevTreePrune(RevTree* tree, unsigned maxDepth);

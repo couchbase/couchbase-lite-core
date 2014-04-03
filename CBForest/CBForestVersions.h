@@ -9,13 +9,24 @@
 #import "CBForest/CBForestDocument.h"
 
 
-/** Version-tracking layer on top of a CBForestDocument.
-    Uses the document's body as a structured store of a CouchDB-style revision tree. */
-@interface CBForestVersions : NSObject
+typedef UInt8 CBForestVersionsFlags;
+enum {
+    kCBForestDocDeleted    = 0x01,
+    kCBForestDocConflicted = 0x02,
+};
 
-/** Instantiates from a document. The document doesn't need to exist in the database yet. */
-- (id) initWithDocument: (CBForestDocument*)doc
-                  error: (NSError**)outError;
+
+/** Version-tracking document.
+    Uses the document's body as a structured store of a CouchDB-style revision tree.
+    Don't use the inherited accessors for the metadata and body; instead use the API below
+    to access revisions. */
+@interface CBForestVersions : CBForestDocument
+
+/** The current flags. (Stored in the metadata for efficient access.) */
+@property (readonly) CBForestVersionsFlags flags;
+
+/** The current revision ID. (Stored in the metadata for efficient access.) */
+@property (readonly) NSString* revID;
 
 /** Max depth the tree can grow to; older revisions will be pruned to enforce this. */
 @property unsigned maxDepth;
@@ -52,7 +63,7 @@
               withID: (NSString*)revID
             parentID: (NSString*)parentRevID;
 
-/** Serializes the revision tree and saves it back to the document's body. */
+/** Saves changes made by -addRevision:. No-op if there haven't been any changes. */
 - (BOOL) save: (NSError**)outError;
 
 @end

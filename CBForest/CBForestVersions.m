@@ -15,10 +15,15 @@
 #define kDefaultMaxDepth 100
 
 
+@interface CBForestVersions ()
+@property (readwrite) CBForestVersionsFlags flags;
+@property (readwrite) NSString* revID;
+@end
+
+
 @implementation CBForestVersions
 {
     CBForestDocument* _doc;
-    uint64_t _bp;
     NSData* _rawTree;
     RevTree* _tree;
     BOOL _changed;
@@ -26,49 +31,81 @@
 }
 
 
-@synthesize maxDepth=_maxDepth;
+@synthesize maxDepth=_maxDepth, flags=_flags, revID=_revID;
 
 
-- (id) initWithDocument: (CBForestDocument*)doc
-                  error: (NSError**)outError
-{
-    NSParameterAssert(doc);
-    self = [super init];
+- (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID {
+    self = [super initWithDB: store docID: docID];
     if (self) {
         _maxDepth = kDefaultMaxDepth;
-        _doc = doc;
-        if (_doc.exists) {
-            // Read RevTree from doc body:
-            _rawTree = [_doc getBody: outError];
-            if (!_rawTree)
-                return nil;
-            NSAssert(doc.bodyFileOffset > 0, @"Body offset unknown");
-            _tree = RevTreeDecode(DataToBuf(_rawTree), 1,
-                                  doc.sequence, doc.bodyFileOffset);
-            if (!_tree) {
-                if (outError)
-                    *outError = [NSError errorWithDomain: CBForestErrorDomain
-                                                    code: kCBForestErrorDataCorrupt
-                                                userInfo: nil];
-                return nil;
-            }
-            _bp = _doc.bodyFileOffset;
-        } else {
-            // New doc, create a new RevTree:
-            _tree = RevTreeNew(1);
-        }
+        _tree = RevTreeNew(1);
+    }
+    return self;
+}
+
+- (id) initWithDB: (CBForestDB*)store
+                info: (const fdb_doc*)info
+              offset: (uint64_t)bodyOffset
+{
+    self = [super initWithDB: store info: info offset: bodyOffset];
+    if (self) {
+        _maxDepth = kDefaultMaxDepth;
     }
     return self;
 }
 
 
-- (void)dealloc {
+- (BOOL) readTree: (NSError**)outError {
+    _rawTree = [self readBody: outError];
+    if (!_rawTree)
+        return NO;
+    NSAssert(self.bodyFileOffset > 0, @"Body offset unknown");
+    RevTree* tree = RevTreeDecode(DataToBuf(_rawTree), 1, self.sequence, self.bodyFileOffset);
+    if (!tree) {
+        if (outError)
+            *outError = [NSError errorWithDomain: CBForestErrorDomain
+                                            code: kCBForestErrorDataCorrupt
+                                        userInfo: nil];
+        return NO;
+    }
+    RevTreeFree(_tree);
+    _tree = tree;
+    return YES;
+}
+
+
+- (void) dealloc {
     RevTreeFree(_tree);
 }
 
 
-- (fdb_handle*) db {
-    return _doc.db.db;
++ (CBForestVersionsFlags) flagsFromMeta: (const fdb_doc*)docinfo {
+    if (docinfo->metalen == 0)
+        return 0;
+    return ((UInt8*)docinfo->meta)[0];
+}
+
+
+- (BOOL) reloadMeta:(NSError *__autoreleasing *)outError {
+    if (![super reloadMeta: outError])
+        return NO;
+    // Decode flags & revID from metadata:
+    NSData* meta = self.metadata;
+    if (meta.length >= 1) {
+        const void* metabytes = meta.bytes;
+        CBForestVersionsFlags flags = *(uint8_t*)metabytes;
+        NSString* revID = ExpandRevID((sized_buf){(void*)metabytes+1, meta.length-1});
+        if (flags != _flags || ![revID isEqualToString: _revID]) {
+            self.flags = flags;
+            self.revID = revID;
+            if (![self readTree: outError])
+                return NO;
+        }
+    } else {
+        self.flags = 0;
+        self.revID = nil;
+    }
+    return YES;
 }
 
 
@@ -78,14 +115,22 @@
 
     RevTreePrune(_tree, _maxDepth);
     sized_buf encoded = RevTreeEncode(_tree);
-    [_doc setBodyBytes: encoded.buf length: encoded.size noCopy: YES];
 
-    if (![_doc saveChanges: outError])
-        return NO;
-    _bp = _doc.bodyFileOffset;
-    [_doc unloadBody];
-    _changed = NO;
-    return YES;
+    // Encode flags & revID into metadata:
+    NSMutableData* metadata = [NSMutableData dataWithLength: 1 + _revID.length];
+    void* bytes = metadata.mutableBytes;
+    *(uint8_t*)bytes = _flags;
+    sized_buf dstRev = {bytes+1, metadata.length-1};
+    RevIDCompact(StringToBuf(_revID), &dstRev);
+    metadata.length = 1 + dstRev.size;
+
+    BOOL ok = [self writeBody: BufToData(encoded.buf, encoded.size)
+                     metadata: metadata
+                        error: outError];
+    free(encoded.buf);
+    if (ok)
+        _changed = NO;
+    return ok;
 }
 
 
@@ -129,11 +174,11 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 
 - (NSData*) currentRevisionData {
     RevTreeSort(_tree);
-    return dataForNode(self.db, RevTreeGetNode(_tree, 0), NULL);
+    return dataForNode(self.db.db, RevTreeGetNode(_tree, 0), NULL);
 }
 
 - (NSData*) dataOfRevision: (NSString*)revID {
-    return dataForNode(self.db, RevTreeFindNode(_tree, CompactRevIDToBuf(revID)), NULL);
+    return dataForNode(self.db.db, RevTreeFindNode(_tree, CompactRevIDToBuf(revID)), NULL);
 }
 
 - (BOOL) isRevisionDeleted: (NSString*)revID {
@@ -191,7 +236,7 @@ static BOOL nodeIsActive(const RevNode* node) {
     data = [data copy];
 
     if (!RevTreeInsert(&_tree, DataToBuf(revIDData), DataToBuf(data),
-                       CompactRevIDToBuf(parentRevID), deletion, _bp))
+                       CompactRevIDToBuf(parentRevID), deletion))
         return NO;
 
     // Keep references to the NSData objects that the sized_bufs point to, so their contents
@@ -205,16 +250,17 @@ static BOOL nodeIsActive(const RevNode* node) {
     // Update the flags and current revision ID.
     // (Remember that the newly-inserted revision did not necessarily become the current one!)
     const RevNode* curNode = RevTreeGetCurrentNode(_tree);
-    CBForestDocumentFlags flags = 0;
+    CBForestVersionsFlags flags = 0;
     if (curNode->flags & kRevNodeIsDeleted)
         flags |= kCBForestDocDeleted;
     if (RevTreeHasConflict(_tree))
         flags |= kCBForestDocConflicted;
-    _doc.flags = flags;
-    _doc.revID = ExpandRevID(curNode->revID);
+    self.flags = flags;
+    self.revID = ExpandRevID(curNode->revID);
 
     _changed = YES;
     return YES;
 }
+
 
 @end

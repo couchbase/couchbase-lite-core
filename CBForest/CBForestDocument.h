@@ -10,12 +10,6 @@
 @class CBForestDB;
 
 
-typedef UInt8 CBForestDocumentFlags;
-enum {
-    kCBForestDocDeleted    = 0x01,
-    kCBForestDocConflicted = 0x02,
-};
-
 extern const UInt64 kForestDocNoSequence;
 
 
@@ -29,6 +23,9 @@ extern const UInt64 kForestDocNoSequence;
 /** The document's ID. */
 @property (readonly) NSString* docID;
 
+/** The document's metadata. */
+@property (readonly) NSData* metadata;
+
 /** The document's current sequence number in the database; this is a serial number that starts
     at 1 and is incremented every time any document is saved. */
 @property (readonly) uint64_t sequence;
@@ -37,42 +34,21 @@ extern const UInt64 kForestDocNoSequence;
     This will be YES for all documents other than those created by -makeDocumentWithID:. */
 @property (readonly) BOOL exists;
 
-/** Have the document's body, revID or flags been changed in memory since it was read or saved? */
-@property (readonly) BOOL changed;
-
 /** Length of the body (available even if the body hasn't been loaded) */
 @property (readonly) UInt64 bodyLength;
 
-/** Document body. May be nil if the document was explicitly loaded without its body. */
-@property (copy) NSData* body;
-
-/** Sets the body from a raw buffer. */
-- (void) setBodyBytes: (const void*)bytes
-               length: (size_t)length
-               noCopy: (BOOL)noCopy;
-
-/** Removes the body data from memory. It can be reloaded by calling -getBody:. */
-- (void) unloadBody;
-
-/** Document revision ID metadata */
-@property (copy) NSString* revID;
-
-/** Document deleted/conflicted flag metadata */
-@property CBForestDocumentFlags flags;
-
 // I/O:
 
-/** Reads the document's body and metadata from disk, only if the body hasn't been loaded yet. */
-- (NSData*) getBody: (NSError**)outError;
+/** Reads the document's body from the database. */
+- (NSData*) readBody: (NSError**)outError;
 
-/** Re-reads the document's body and metadata from disk. */
-- (BOOL) reload: (NSError**)outError;
-
-/** Refreshes the cached metadata (revID and flags) from the latest revision on disk. */
+/** Refreshes the cached metadata from the latest revision on disk. */
 - (BOOL) reloadMeta: (NSError**)outError;
 
-/** Writes the document's current body and metadata to disk, if they've been changed. */
-- (BOOL) saveChanges: (NSError**)outError;
+/** Writes the document to the database. */
+- (BOOL) writeBody: (NSData*)body
+          metadata: (NSData*)metadata
+             error: (NSError**)outError;
 
 /** Deletes the document from the database. */
 - (BOOL) deleteDocument: (NSError**)outError;

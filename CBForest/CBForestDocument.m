@@ -19,15 +19,15 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     CBForestDB* _db;
     fdb_doc _info;
     NSString* _docID;
-    uint64_t _bodyOffset; // this isn't really useable yet as not all the API calls set it
+    NSData* _metadata;
+    uint64_t _bodyOffset;
 }
 
 
-@synthesize db=_db, docID=_docID, bodyFileOffset=_bodyOffset, changed=_changed;
+@synthesize db=_db, docID=_docID, bodyFileOffset=_bodyOffset;
 
 
-- (id) initWithStore: (CBForestDB*)store
-               docID: (NSString*)docID
+- (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID
 {
     NSParameterAssert(store != nil);
     NSParameterAssert(docID != nil);
@@ -44,7 +44,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 }
 
 
-- (id) initWithStore: (CBForestDB*)store
+- (id) initWithDB: (CBForestDB*)store
                 info: (const fdb_doc*)info
               offset: (uint64_t)bodyOffset
 {
@@ -88,138 +88,71 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 - (BOOL) exists                     {return _info.seqnum != kForestDocNoSequence;}
 
 
+- (NSData*) metadata {
+    if (!_metadata && _info.meta != NULL) {
+        _metadata = [NSData dataWithBytesNoCopy: _info.meta length: _info.metalen
+                                   freeWhenDone: YES];
+        _info.meta = NULL;
+    }
+    return _metadata;
+}
+
 - (BOOL) reloadMeta: (NSError**)outError {
     uint64_t newBodyOffset;
     if (!Check(fdb_get_metaonly(_db.db, &_info, &newBodyOffset),
                outError))
         return NO;
-    if (newBodyOffset != _bodyOffset) {
-        _bodyOffset = newBodyOffset;
-        free(_info.body);
-        _info.body = NULL;
-    }
+    _metadata = nil;
+    _bodyOffset = newBodyOffset;
     return YES;
 }
+
 
 - (UInt64) bodyLength {
     return _info.bodylen;
 }
 
-- (NSData*) body {
-    return BufToData(_info.body, _info.bodylen);
-}
 
-- (void) setBody:(NSData*) data {
-    [self setBodyBytes: data.bytes length: data.length noCopy: NO];
-}
-
-- (void) setBodyBytes: (const void*)bytes length: (size_t)length noCopy: (BOOL)noCopy {
-    NSParameterAssert(bytes!=NULL || length==0);
-    if (noCopy) {
-        _info.body = (void*)bytes;
-        _info.bodylen = length;
-    } else {
-        UpdateBuffer(&_info.body, &_info.bodylen, bytes, length);
+- (NSData*) readBody: (NSError**)outError {
+    if (_bodyOffset == 0) {
+        if (![self reloadMeta: outError])
+            return nil;
+        assert(_bodyOffset > 0);
     }
-    _changed = YES;
-}
-
-
-- (void) unloadBody {
-    free(_info.body);
-    _info.body = NULL;
-}
-
-
-- (NSData*) getBody: (NSError**)outError {
-    if (!_info.body) {
-        if (_bodyOffset > 0) {
-            if (!Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError))
-                return nil;
-        } else {
-            if (![self reload: outError])
-                return nil;
-        }
-    }
-    return self.body;
-}
-
-
-- (BOOL) reload: (NSError**)outError {
-    // We don't call fdb_get, because it doesn't tell us the bodyOffset.
-    // Instead, load the metadata first, then the body.
-    return [self reloadMeta: outError]
-        && Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError);
-}
-
-
-+ (CBForestDocumentFlags) flagsFromMeta: (const fdb_doc*)docinfo {
-    if (docinfo->metalen == 0)
-        return 0;
-    return ((UInt8*)docinfo->meta)[0];
-}
-
-- (CBForestDocumentFlags)flags {
-    if (_info.metalen == 0)
-        return 0;
-    return ((UInt8*)_info.meta)[0];
-}
-
-- (void)setFlags: (CBForestDocumentFlags)flags {
-    if (_info.metalen == 0) {
-        _info.meta = malloc(1);
-        _info.metalen = 1;
-    }
-    ((UInt8*)_info.meta)[0] = flags;
-    _changed = YES;
-}
-
-
-- (NSString*) revID {
-    if (_info.metalen <= 1)
+    if (!Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError))
         return nil;
-    return ExpandRevID((sized_buf){&((UInt8*)_info.meta)[1], _info.metalen - 1});
-}
-
-- (void) setRevID: (NSString*)revID {
-    NSData* revIDData = CompactRevID(revID);
-    size_t newMetaLen = 1 + revIDData.length;
-    if (newMetaLen != _info.metalen) {
-        CBForestDocumentFlags flags = self.flags;
-        free(_info.meta);
-        _info.meta = malloc(newMetaLen);
-        _info.metalen = newMetaLen;
-        self.flags = flags;
-    }
-    memcpy(&((UInt8*)_info.meta)[1], revIDData.bytes, revIDData.length);
-    _changed = YES;
+    NSData* body = [NSData dataWithBytesNoCopy: _info.body length: _info.bodylen freeWhenDone: YES];
+    _info.body = NULL;
+    return body;
 }
 
 
-- (BOOL) saveChanges: (NSError**)outError {
-    if (!_changed)
-        return YES;
-    if (!_info.body) {
-        // If the body hasn't been loaded, we need to load it now otherwise fdb_set will
-        // reset it to empty.
-        if (![self getBody: outError])
-            return NO;
-    }
-    if (!Check(fdb_set(_db.db, &_info), outError))
+- (BOOL) writeBody: (NSData*)body metadata: (NSData*)metadata error: (NSError**)outError {
+    fdb_doc newDoc = {
+        .key = _info.key,
+        .keylen = _info.keylen,
+        .meta = (void*)metadata.bytes,
+        .metalen = metadata.length,
+        .body = (void*)body.bytes,
+        .bodylen = body.length,
+    };
+    if (!Check(fdb_set(_db.db, &newDoc), outError))
         return NO;
+    _metadata = [metadata copy];
+    free(_info.meta);
+    _info.meta = NULL;
+    _info.bodylen = newDoc.bodylen;
+    _info.seqnum = newDoc.seqnum;
     _bodyOffset = 0; // don't know its new offset
-    _changed = NO;
     return YES;
 }
 
 
 - (BOOL) deleteDocument: (NSError**)outError {
-    free(_info.body);
     _info.body = NULL;
     _info.bodylen = 0;
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
-    _changed = NO;
     _bodyOffset = 0;
     _info.seqnum = kForestDocNoSequence;
     return YES;

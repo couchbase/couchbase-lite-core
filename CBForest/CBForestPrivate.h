@@ -8,6 +8,7 @@
 
 #import "CBForestDB.h"
 #import "CBForestDocument.h"
+#import "CBForestVersions.h"
 #import "forestdb.h"
 
 #import "rev_tree.h"
@@ -54,10 +55,14 @@ typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
 
 
 @interface CBForestDocument ()
-- (id) initWithStore: (CBForestDB*)store docID: (NSString*)docID;
-- (id) initWithStore: (CBForestDB*)store info: (const fdb_doc*)info offset: (uint64_t)bodyOffset;
+- (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID;
+- (id) initWithDB: (CBForestDB*)store info: (const fdb_doc*)info offset: (uint64_t)bodyOffset;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
-+ (CBForestDocumentFlags) flagsFromMeta: (const fdb_doc*)docinfo;
+@end
+
+
+@interface CBForestVersions ()
++ (CBForestVersionsFlags) flagsFromMeta: (const fdb_doc*)docinfo;
 @end

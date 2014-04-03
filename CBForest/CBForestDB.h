@@ -18,7 +18,7 @@ enum {
 
 /** Option flag bits for loading & enumerating documents in a CBForest. */
 typedef enum {
-    kCBForestDBMetaOnly     = 0x01, //< Only load document metadata, not the body
+    kCBForestDBMetaOnly     = 0x01, // UNUSED
 } CBForestContentOptions;
 
 typedef struct {
@@ -112,6 +112,9 @@ typedef struct {
                   error: (NSError**)outError;
 
 // DOCUMENTS:
+
+/** What class of document to create (must inherit from CBForestDocument) */
+@property Class documentClass;
 
 /** Instantiates a CBForestDocument with the given document ID,
     but doesn't load its data or metadata yet.

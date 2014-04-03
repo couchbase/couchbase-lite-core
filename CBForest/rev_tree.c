@@ -322,8 +322,7 @@ static void _revTreeInsert(RevTree *tree,
                            sized_buf revID,
                            sized_buf data,
                            const RevNode *parentNode,
-                           bool deleted,
-                           off_t currentBodyOffset)
+                           bool deleted)
 {
     assert(tree->count < tree->capacity);
     RevNode *newNode = &tree->node[tree->count++];
@@ -354,8 +353,7 @@ bool RevTreeInsert(RevTree **treeP,
                    sized_buf revID,
                    sized_buf data,
                    sized_buf parentRevID,
-                   bool deleted,
-                   off_t currentBodyOffset)
+                   bool deleted)
 {
     if (!RevTreeReserveCapacity(treeP, 1))
         return false;
@@ -381,13 +379,13 @@ bool RevTreeInsert(RevTree **treeP,
         return false;
 
     // Finally, insert:
-    _revTreeInsert(*treeP, revID, data, parent, deleted, currentBodyOffset);
+    _revTreeInsert(*treeP, revID, data, parent, deleted);
     return true;
 }
 
 
 void RevTreePrune(RevTree* tree, unsigned maxDepth) {
-    if (tree->count <= maxDepth)
+    if (maxDepth == 0 || tree->count <= maxDepth)
         return;
 
     // First find all the leaves, and walk from each one down to its root:
