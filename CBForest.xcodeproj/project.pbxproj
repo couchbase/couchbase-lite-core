@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
+		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
+		273AD3C318EF268D007D8C23 /* cJSON.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3C118EF268D007D8C23 /* cJSON.cc */; };
+		273AD3C418EF268D007D8C23 /* cJSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3C218EF268D007D8C23 /* cJSON.h */; };
 		2740498618E7A3D10036333A /* forestdb_x.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2740498318E7A32A0036333A /* forestdb_x.cc */; };
 		2740498718E7DF770036333A /* forestdb_x.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2740498318E7A32A0036333A /* forestdb_x.cc */; };
 		2750723F18E3E52800A80C5A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
@@ -99,6 +103,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
+		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
+		273AD3C118EF268D007D8C23 /* cJSON.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cJSON.cc; sourceTree = "<group>"; };
+		273AD3C218EF268D007D8C23 /* cJSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cJSON.h; sourceTree = "<group>"; };
 		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
 		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
 		2750723B18E3E52800A80C5A /* CBForest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -319,6 +327,7 @@
 				2750729618E4857900A80C5A /* btree.cc */,
 				2750729718E4857900A80C5A /* btreeblock.cc */,
 				2750731318E6499800A80C5A /* btree_prefix_kv.cc */,
+				273AD3BD18EF263B007D8C23 /* configuration.cc */,
 				2750729818E4857900A80C5A /* docio.cc */,
 				2750729918E4857900A80C5A /* filemgr_ops_linux.cc */,
 				2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */,
@@ -339,6 +348,7 @@
 				2750727018E3E72900A80C5A /* btreeblock.h */,
 				2750731218E6499800A80C5A /* btree_prefix_kv.h */,
 				2750727218E3E72900A80C5A /* common.h */,
+				273AD3BE18EF263B007D8C23 /* configuration.h */,
 				2750727418E3E72900A80C5A /* docio.h */,
 				2750727718E3E72900A80C5A /* filemgr.h */,
 				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
@@ -376,6 +386,8 @@
 		275072DB18E4ACE100A80C5A /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				273AD3C118EF268D007D8C23 /* cJSON.cc */,
+				273AD3C218EF268D007D8C23 /* cJSON.h */,
 				275072DC18E4ACE100A80C5A /* adv_random.h */,
 				275072DD18E4ACE100A80C5A /* bitwise_utils.h */,
 				275072DE18E4ACE100A80C5A /* crc32.cc */,
@@ -403,6 +415,8 @@
 				275072FB18E4ACE100A80C5A /* iniparser.h in Headers */,
 				275072FE18E4ACE100A80C5A /* memleak.h in Headers */,
 				2750730318E4ACE100A80C5A /* time_utils.h in Headers */,
+				273AD3C418EF268D007D8C23 /* cJSON.h in Headers */,
+				273AD3C018EF263B007D8C23 /* configuration.h in Headers */,
 				275072F618E4ACE100A80C5A /* debug.h in Headers */,
 				275072F318E4ACE100A80C5A /* crc32.h in Headers */,
 				275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */,
@@ -574,8 +588,10 @@
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
+				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
 				275072C718E4AA5000A80C5A /* avltree.cc in Sources */,
 				275072CD18E4AA5000A80C5A /* filemgr_ops_linux.cc in Sources */,
+				273AD3C318EF268D007D8C23 /* cJSON.cc in Sources */,
 				275072F518E4ACE100A80C5A /* debug.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

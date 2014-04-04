@@ -13,17 +13,6 @@
 NSString* const CBForestErrorDomain = @"CBForest";
 
 
-//FIX: I have no idea what the right values for these are
-static const fdb_config kDefaultConfig = {
-    .chunksize = sizeof(uint64_t),
-    .offsetsize = sizeof(uint64_t),
-    .buffercache_size = 4 * 1024 * 1024,
-    .wal_threshold = 1024,
-    .seqtree_opt = FDB_SEQTREE_USE,
-    .durability_opt = FDB_DRB_NONE,
-};
-
-
 @implementation CBForestDB
 {
     fdb_handle _db;
@@ -41,10 +30,9 @@ static const fdb_config kDefaultConfig = {
     if (self) {
         _documentClass = [CBForestDocument class];
         _path = filePath.copy;
-        fdb_config config = kDefaultConfig;
-        if (readOnly)
-            config.durability_opt = FDB_DRB_RDONLY;
-        if (!Check(fdb_open(&_db, filePath.fileSystemRepresentation, &config), outError))
+        fdb_open_flags flags = readOnly ? FDB_OPEN_FLAG_RDONLY : 0;
+        // Note: There is another flag FDB_OPEN_FLAG_CREATE but it isn't used yet by ForestDB. 4/14
+        if (!Check(fdb_open(&_db, filePath.fileSystemRepresentation, flags, NULL), outError))
             return nil;
         _open = YES;
     }

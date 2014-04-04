@@ -37,7 +37,6 @@
 - (void) tearDown {
     [_db close];
     _db = nil;
-    fdb_shutdown(); // workaround for MB-10674
     [super tearDown];
 }
 
