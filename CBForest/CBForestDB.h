@@ -28,7 +28,8 @@ typedef struct {
     unsigned                skip;
     unsigned                limit;
     BOOL                    inclusiveEnd;
-    BOOL                    skipDeleted;
+    BOOL                    includeDeleted;
+    BOOL                    onlyConflicts;
     CBForestContentOptions  contentOptions;
 } CBForestEnumerationOptions;
 
@@ -72,11 +73,9 @@ typedef struct {
     who opens the database, and will be lost if you close and re-open the database. */
 - (BOOL) commit: (NSError**)outError;
 
-/** Copies current versions of all documents to a new database at the given path.
-    Afterwards, this database can be closed and deleted and the new one opened,
-    without losing any currently-available data. */
-- (BOOL) compactToFile: (NSString*)filePath
-                 error: (NSError**)outError;
+/** Copies current versions of all documents to a new file, then replaces the current database
+    file with the new one. */
+- (BOOL) compact: (NSError**)outError;
 
 // KEYS/VALUES:
 

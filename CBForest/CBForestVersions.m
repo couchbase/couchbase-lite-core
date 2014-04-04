@@ -79,7 +79,7 @@
 }
 
 
-+ (CBForestVersionsFlags) flagsFromMeta: (const fdb_doc*)docinfo {
+static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     if (docinfo->metalen == 0)
         return 0;
     return ((UInt8*)docinfo->meta)[0];
@@ -259,6 +259,21 @@ static BOOL nodeIsActive(const RevNode* node) {
     self.revID = ExpandRevID(curNode->revID);
 
     _changed = YES;
+    return YES;
+}
+
+
++ (BOOL) docInfo: (const fdb_doc*)docInfo
+  matchesOptions: (const CBForestEnumerationOptions*)options
+{
+    if (!options || !options->includeDeleted) {
+        if (flagsFromMeta(docInfo) & kCBForestDocDeleted)
+            return NO;
+    }
+    if (options && options->onlyConflicts) {
+        if (!(flagsFromMeta(docInfo) & kCBForestDocConflicted))
+            return NO;
+    }
     return YES;
 }
 

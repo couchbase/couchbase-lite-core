@@ -84,15 +84,17 @@ static const fdb_config kDefaultConfig = {
         && Check(fdb_flush_wal(&_db), outError);
 }
 
-- (BOOL) compactToFile: (NSString*)filePath
-                 error: (NSError**)outError
+- (BOOL) compact: (NSError**)outError
 {
-    if (Check(fdb_compact(self.db, filePath.fileSystemRepresentation), outError)) {
-        _path = filePath.copy;
-        return YES;
-    } else {
+    NSString* tempFile = [_path stringByAppendingPathExtension: @"cpt"];
+    [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
+    if (!Check(fdb_compact(self.db, tempFile.fileSystemRepresentation), outError)
+            || ![[NSFileManager defaultManager] moveItemAtPath: tempFile toPath: _path
+                                                         error: outError]) {
+        [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
         return NO;
     }
+    return YES;
 }
 
 #pragma mark - KEYS/VALUES:
@@ -265,6 +267,8 @@ static const fdb_config kDefaultConfig = {
                                withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
         @autoreleasepool {
+            if (![_documentClass docInfo: docinfo matchesOptions: options])
+                return true;
             CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
                                                                   info: docinfo
                                                                 offset: bodyOffset];

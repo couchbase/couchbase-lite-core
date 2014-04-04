@@ -135,6 +135,7 @@
                               @"(i=%d)", i);
     }
     XCTAssert([_db commit: &error], @"Commit failed: %@", error);
+    XCTAssert([_db compact: &error], @"Compact failed: %@", error);
 
     __block int i = 5;
     BOOL ok = [_db enumerateDocsFromID: @"doc-05" toID: @"doc-50" options: 0 error: &error

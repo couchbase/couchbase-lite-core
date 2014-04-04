@@ -159,4 +159,9 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 }
 
 
++ (BOOL) docInfo: (const fdb_doc*)docInfo matchesOptions: (const CBForestEnumerationOptions*)options {
+    return YES;
+}
+
+
 @end

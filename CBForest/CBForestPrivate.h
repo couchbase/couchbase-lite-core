@@ -60,9 +60,6 @@ typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
-@end
-
-
-@interface CBForestVersions ()
-+ (CBForestVersionsFlags) flagsFromMeta: (const fdb_doc*)docinfo;
++ (BOOL) docInfo: (const fdb_doc*)docInfo
+  matchesOptions: (const CBForestEnumerationOptions*)options;
 @end
