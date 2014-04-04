@@ -1,5 +1,5 @@
 //
-//  CBForest.h
+//  CBForestDB.h
 //  CBForest
 //
 //  Created by Jens Alfke on 9/4/12.
@@ -10,7 +10,10 @@
 @class CBForestDocument;
 
 
+/** NSError domain string for errors specific to CBForest; the error codes correspond to the
+    fdb_status enum (see <forestdb_types.h>) except for the ones added below. */
 extern NSString* const CBForestErrorDomain;
+
 enum {
     kCBForestErrorDataCorrupt = -1000
 };
@@ -29,9 +32,6 @@ typedef struct {
     CBForestContentOptions  contentOptions;
 } CBForestEnumerationOptions;
 
-
-/** NSError domain string for errors specific to CBForest. For error codes see error.h. */
-extern NSString* const CBForestErrorDomain;
 
 /** Callback block to pass to enumeration methods. */
 typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, BOOL *stop);
@@ -145,5 +145,18 @@ typedef struct {
                      options: (const CBForestEnumerationOptions*)options
                        error: (NSError**)outError
                    withBlock: (CBForestDocIterator)block;
+
+/** Iterates over documents, in ascending order by sequence.
+    @param startSequence  The sequence number to start at (0 to start from the beginning.)
+    @param endID  The sequence number to end at, or SEQNUM_NOT_USED to go to the end.
+    @param options  Iteration options, or NULL to use the default options.
+    @param outError  On failure, an NSError will be stored here (unless it's NULL).
+    @param block  The block to call for every document.
+    @return  YES on success, NO on failure. */
+- (BOOL) enumerateDocsFromSequence: (uint64_t)startSequence
+                        toSequence: (uint64_t)endSequence
+                           options: (const CBForestEnumerationOptions*)options
+                             error: (NSError**)outError
+                         withBlock: (CBForestDocIterator)block;
 
 @end

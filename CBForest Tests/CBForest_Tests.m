@@ -152,6 +152,24 @@
     }];
     XCTAssert(ok);
     XCTAssertEqual(i, 51);
+
+
+    i = 5;
+    ok = [_db enumerateDocsFromSequence: 5 toSequence: 50 options: 0 error: &error
+                              withBlock: ^(CBForestDocument *doc, BOOL *stop)
+    {
+        XCTAssertEqual(doc.db, _db);
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%02d", i];
+        XCTAssertEqualObjects(doc.docID, expectedDocID);
+        XCTAssertEqual(doc.sequence, i);
+        NSError* error;
+        XCTAssertEqualObjects([doc readBody: &error],
+                              [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
+                              @"(i=%d)", i);
+        i++;
+    }];
+    XCTAssert(ok);
+    XCTAssertEqual(i, 51);
 }
 
 @end

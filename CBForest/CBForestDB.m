@@ -14,7 +14,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 //FIX: I have no idea what the right values for these are
-static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
+static const fdb_config kDefaultConfig = {
     .chunksize = sizeof(uint64_t),
     .offsetsize = sizeof(uint64_t),
     .buffercache_size = 4 * 1024 * 1024,
@@ -265,15 +265,49 @@ static /*const*/ fdb_config kDefaultConfig = { // can't be const due to MB-10672
                                withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
         @autoreleasepool {
-            NSLog(@"(bodyOffset = %llu)", bodyOffset);//TEMP
             CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
-                                                                     info: docinfo
-                                                                   offset: bodyOffset];
+                                                                  info: docinfo
+                                                                offset: bodyOffset];
             BOOL stop = NO;
             block(doc, &stop);
             return !stop;
         }
     }];
+}
+
+
+- (BOOL) enumerateDocsFromSequence: (uint64_t)startSequence
+                        toSequence: (uint64_t)endSequence
+                           options: (const CBForestEnumerationOptions*)options
+                             error: (NSError**)outError
+                         withBlock: (CBForestDocIterator)block
+{
+    // FIX: This hasn't been implemented in ForestDB, so we shall have to simulate it:
+    NSMutableArray* docs = [[NSMutableArray alloc] init];
+    if (options && !options->inclusiveEnd && endSequence > 0)
+        endSequence--;
+    BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
+                              withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
+    {
+        if (docinfo->seqnum >= startSequence && docinfo->seqnum <= endSequence) {
+            CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
+                                                                  info: docinfo
+                                                                offset: bodyOffset];
+            [docs addObject: doc];
+        }
+        return true;
+    }];
+    if (!ok)
+        return NO;
+
+    [docs sortUsingComparator: ^NSComparisonResult(CBForestDocument* a, CBForestDocument* b) {
+        return a.sequence - b.sequence;
+    }];
+
+    [docs enumerateObjectsUsingBlock: ^(CBForestDocument* doc, NSUInteger idx, BOOL *stop) {
+        block(doc, stop);
+    }];
+    return YES;
 }
 
 
