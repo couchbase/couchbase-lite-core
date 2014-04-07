@@ -275,30 +275,39 @@ NSString* const CBForestErrorDomain = @"CBForest";
                          withBlock: (CBForestDocIterator)block
 {
     // FIX: This hasn't been implemented in ForestDB, so we shall have to simulate it:
-    NSMutableArray* docs = [[NSMutableArray alloc] init];
+
     if (options && !options->inclusiveEnd && endSequence > 0)
         endSequence--;
+    if (startSequence > self.info.lastSequence || endSequence < startSequence)
+        return YES; // no-op
+
+    NSMutableArray* sequences = [[NSMutableArray alloc] init];
     BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
                               withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
-        if (docinfo->seqnum >= startSequence && docinfo->seqnum <= endSequence) {
-            CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
-                                                                  info: docinfo
-                                                                offset: bodyOffset];
-            [docs addObject: doc];
-        }
+        uint64_t sequence = docinfo->seqnum;
+        if (sequence >= startSequence && sequence <= endSequence)
+            [sequences addObject: @(sequence)];
         return true;
     }];
     if (!ok)
         return NO;
 
-    [docs sortUsingComparator: ^NSComparisonResult(CBForestDocument* a, CBForestDocument* b) {
-        return a.sequence - b.sequence;
-    }];
+    [sequences sortUsingSelector: @selector(compare:)];
 
-    [docs enumerateObjectsUsingBlock: ^(CBForestDocument* doc, NSUInteger idx, BOOL *stop) {
-        block(doc, stop);
-    }];
+    CBForestContentOptions contentOptions = 0;
+    if (options)
+        contentOptions = options->contentOptions;
+    for (NSNumber* sequence in sequences) {
+        CBForestDocument* doc = [self documentWithSequence: sequence.unsignedLongLongValue
+                                                   options: contentOptions error: outError];
+        if (!doc)
+            return NO;
+        BOOL stop = NO;
+        block(doc, &stop);
+        if (stop)
+            break;
+    }
     return YES;
 }
 

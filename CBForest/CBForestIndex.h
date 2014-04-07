@@ -9,6 +9,10 @@
 #import "CBForestDB.h"
 
 
+/** Use this in the values passed to -setKeys:values:forDocument:error: to indicate no value */
+extern id kCBForestIndexNoValue;
+
+
 /** Callback block for a CBForestIndex query. */
 typedef void (^CBForestQueryCallbackBlock)(id key,
                                            NSString* docID,

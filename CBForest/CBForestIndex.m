@@ -17,8 +17,16 @@ static int indexCmp(void *a, void *b) {
 }
 
 
+id kCBForestIndexNoValue;
+
 
 @implementation CBForestIndex
+
+
++ (void) initialize {
+    if (!kCBForestIndexNoValue)
+        kCBForestIndexNoValue = [[NSObject alloc] init];
+}
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -58,18 +66,22 @@ static int indexCmp(void *a, void *b) {
         NSMutableArray* realKey = [[NSMutableArray alloc] initWithObjects: [NSNull null], docID, nil];
         for (NSUInteger i = 0; i < count; i++) {
             realKey[0] = keys[i];
-            if (i > 0) {
-                if (i == 1)
-                    [realKey addObject: @(1)];
-                else
-                    realKey[2] = @(i);
-            }
+            if (i == 1)
+                [realKey addObject: @(1)];
+            else if (i > 1)
+                realKey[2] = @(i);
             NSData* keyData = JSONToData(realKey, outError);
             if (!keyData)
                 return NO;
-            NSData* valueData = JSONToData(values[i], outError);
-            if (!valueData)
-                return NO;
+
+            NSData* valueData = nil;
+            id value = values[i];
+            if (value != kCBForestIndexNoValue) {
+                valueData = JSONToData(value, outError);
+                if (!valueData)
+                    return NO;
+            }
+
             uint64_t seq = [self setValue: valueData meta: nil forKey: keyData error: outError];
             if (seq == SEQNUM_NOT_USED)
                 return NO;

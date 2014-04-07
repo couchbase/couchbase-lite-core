@@ -1,0 +1,6 @@
+.DS_Store
+*~
+*.xccheckout
+xcuserdata/
+build/
+DerivedData/
