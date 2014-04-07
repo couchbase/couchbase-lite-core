@@ -146,6 +146,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
                        withBlock: (CBForest_Iterator)block
 {
     fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
+    if (!(options && options->includeDeleted))
+        fdbOptions |= FDB_ITR_NO_DELETES;
     const void* endKeyBytes = endKey.bytes;
     size_t endKeyLength = endKey.length;
     fdb_iterator iterator;
