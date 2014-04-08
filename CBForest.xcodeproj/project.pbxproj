@@ -113,6 +113,8 @@
 		273AD3C518EF374D007D8C23 /* CBForestMapReduceIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestMapReduceIndex.h; sourceTree = "<group>"; };
 		273AD3C618EF374D007D8C23 /* CBForestMapReduceIndex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestMapReduceIndex.m; sourceTree = "<group>"; };
 		273AD3C918F32DC3007D8C23 /* MapReduce_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MapReduce_Tests.m; sourceTree = "<group>"; };
+		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
+		273AD3CE18F45E05007D8C23 /* internal_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = internal_types.h; sourceTree = "<group>"; };
 		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
 		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
 		2750723B18E3E52800A80C5A /* CBForest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -360,9 +362,11 @@
 				2750727418E3E72900A80C5A /* docio.h */,
 				2750727718E3E72900A80C5A /* filemgr.h */,
 				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
+				273AD3CD18F45E05007D8C23 /* forestdb_endian.h */,
 				2750728118E3E72900A80C5A /* hash.h */,
 				2750728418E3E72900A80C5A /* hash_functions.h */,
 				2750728718E3E72900A80C5A /* hbtrie.h */,
+				273AD3CE18F45E05007D8C23 /* internal_types.h */,
 				2750728B18E3E72900A80C5A /* list.h */,
 				2750729118E3E72900A80C5A /* wal.h */,
 			);
@@ -719,7 +723,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/libforestdb",
+					"$(SRCROOT)/vendor/forestdb/include/**",
 					"$(SRCROOT)/vendor/forestdb/src",
 					"$(SRCROOT)/vendor/forestdb/option",
 					"$(SRCROOT)",
@@ -740,7 +744,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/libforestdb",
+					"$(SRCROOT)/vendor/forestdb/include/**",
 					"$(SRCROOT)/vendor/forestdb/src",
 					"$(SRCROOT)/vendor/forestdb/option",
 					"$(SRCROOT)",
@@ -767,7 +771,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)",
-					"$(SRCROOT)/vendor/forestdb/include/libforestdb",
+					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -790,7 +794,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)",
-					"$(SRCROOT)/vendor/forestdb/include/libforestdb",
+					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				LIBRARY_SEARCH_PATHS = (

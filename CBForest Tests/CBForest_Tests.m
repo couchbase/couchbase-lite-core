@@ -69,7 +69,7 @@
 
     CBForestDocument* doc = [_db makeDocumentWithID: @"foo"];
     XCTAssertNil(doc.metadata);
-    XCTAssertEqual(doc.sequence, kForestDocNoSequence);
+    XCTAssertEqual(doc.sequence, kCBForestNoSequence);
 
     NSError* error;
     XCTAssert([doc writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
@@ -86,7 +86,7 @@
     XCTAssert(doc2.exists);
     XCTAssertEqualObjects([doc2 readBody: &error], body, @"Read failed, err=%@", error);
     XCTAssertEqualObjects(doc2.metadata, meta);
-    XCTAssertEqual(doc2.sequence, 0);
+    XCTAssertEqual(doc2.sequence, 1);
 
     body = [@"Bye!" dataUsingEncoding: NSUTF8StringEncoding];
     meta = [@"meatmeatmeat" dataUsingEncoding: NSUTF8StringEncoding];
@@ -97,15 +97,15 @@
     CBForestDocument* doc3 = [_db documentWithID: @"foo" options: 0 error: &error];
     XCTAssert(doc3, @"documentWithID: failed: %@", error);
     XCTAssert(doc3.exists);
-    XCTAssertEqual(doc3.sequence, 1);
+    XCTAssertEqual(doc3.sequence, 2);
     XCTAssertEqualObjects([doc3 readBody: &error], body, @"Read failed, err=%@", error);
     XCTAssertEqualObjects(doc3.metadata, meta);
 
-    CBForestDocument* docBySeq = [_db documentWithSequence: 1 options: 0 error: &error];
+    CBForestDocument* docBySeq = [_db documentWithSequence: 2 options: 0 error: &error];
     XCTAssert(docBySeq, @"documentWithSequence: failed: %@", error);
     XCTAssertEqualObjects(docBySeq.docID, @"foo");
     XCTAssert(docBySeq.exists);
-    XCTAssertEqual(docBySeq.sequence, 1);
+    XCTAssertEqual(docBySeq.sequence, 2);
     XCTAssertEqualObjects([docBySeq readBody: &error], body, @"Read failed, err=%@", error);
     XCTAssertEqualObjects(docBySeq.metadata, meta);
 
@@ -117,13 +117,13 @@
     NSData* curBody = [doc readBody: &error];
     XCTAssert(curBody != nil, @"getBody: failed: %@", error);
     XCTAssertEqualObjects(curBody, body);
-    XCTAssertEqual(doc.sequence, 1);
+    XCTAssertEqual(doc.sequence, 2);
 }
 
 - (void) test04_EnumerateDocs {
     NSError* error;
-    for (int i = 0; i < 100; i++) {
-        NSString* docID = [NSString stringWithFormat: @"doc-%02d", i];
+    for (int i = 1; i <= 100; i++) {
+        NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
         CBForestDocument* doc = [_db makeDocumentWithID: docID];
         XCTAssert([doc writeBody: [docID dataUsingEncoding: NSUTF8StringEncoding]
                         metadata: nil
@@ -137,11 +137,11 @@
     XCTAssert([_db compact: &error], @"Compact failed: %@", error);
 
     __block int i = 5;
-    BOOL ok = [_db enumerateDocsFromID: @"doc-05" toID: @"doc-50" options: 0 error: &error
+    BOOL ok = [_db enumerateDocsFromID: @"doc-005" toID: @"doc-050" options: 0 error: &error
                              withBlock: ^(CBForestDocument *doc, BOOL *stop)
     {
         XCTAssertEqual(doc.db, _db);
-        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%02d", i];
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
         XCTAssertEqual(doc.sequence, i);
         NSError* error;
@@ -158,8 +158,9 @@
     ok = [_db enumerateDocsFromSequence: 5 toSequence: 50 options: 0 error: &error
                               withBlock: ^(CBForestDocument *doc, BOOL *stop)
     {
+        NSLog(@"i=%2d, doc=%@", i, doc);
         XCTAssertEqual(doc.db, _db);
-        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%02d", i];
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
         XCTAssertEqual(doc.sequence, i);
         NSError* error;

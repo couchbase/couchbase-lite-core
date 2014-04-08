@@ -10,9 +10,6 @@
 @class CBForestDB;
 
 
-extern const UInt64 kForestDocNoSequence;
-
-
 /** Represents a single document in a CBForest.
     Instances are created by the CBForest object; never alloc/init one yourself. */
 @interface CBForestDocument : NSObject

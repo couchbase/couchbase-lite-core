@@ -17,6 +17,9 @@
 extern "C" {
 #endif
 
+/** Returns the last sequence allocated by the database. */
+uint64_t x_fdb_get_last_sequence(fdb_handle *db);
+
 /**
  * Read the body of a document given its offset (as obtained from fdb_get_metaonly or
  * fdb_get_metaonly_byseq.)

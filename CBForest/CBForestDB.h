@@ -10,6 +10,10 @@
 @class CBForestDocument;
 
 
+#define kCBForestNoSequence ((UInt64)0)     // Means "no sequence assigned/known"
+#define kCBForestMaxSequence UINT64_MAX     // Max possible sequence, for use when enumerating
+
+
 /** NSError domain string for errors specific to CBForest; the error codes correspond to the
     fdb_status enum (see <forestdb_types.h>) except for the ones added below. */
 extern NSString* const CBForestErrorDomain;
@@ -146,8 +150,8 @@ typedef struct {
                    withBlock: (CBForestDocIterator)block;
 
 /** Iterates over documents, in ascending order by sequence.
-    @param startSequence  The sequence number to start at (0 to start from the beginning.)
-    @param endID  The sequence number to end at, or SEQNUM_NOT_USED to go to the end.
+    @param startSequence  The sequence number to start at (1 to start from the beginning.)
+    @param endID  The sequence number to end at, or kCBForestMaxSequence to go to the end.
     @param options  Iteration options, or NULL to use the default options.
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.

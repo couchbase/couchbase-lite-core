@@ -8,6 +8,8 @@
 
 #import "CBForestDB.h"
 #import "CBForestPrivate.h"
+#import "rev_tree.h"
+#import "forestdb_x.h"
 
 
 NSString* const CBForestErrorDomain = @"CBForest";
@@ -15,8 +17,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 @implementation CBForestDB
 {
-    fdb_handle _db;
-    BOOL _open;
+    fdb_handle *_db;
 }
 
 @synthesize filename=_path, documentClass=_documentClass;
@@ -34,24 +35,22 @@ NSString* const CBForestErrorDomain = @"CBForest";
         // Note: There is another flag FDB_OPEN_FLAG_CREATE but it isn't used yet by ForestDB. 4/14
         if (!Check(fdb_open(&_db, filePath.fileSystemRepresentation, flags, NULL), outError))
             return nil;
-        _open = YES;
     }
     return self;
 }
 
 - (void) dealloc {
-    if (_open)
-        fdb_close(&_db);
+    fdb_close(_db);
 }
 
 - (fdb_handle*) db {
-    NSAssert(_open, @"%@ already closed!", self);
-    return &_db;
+    NSAssert(_db, @"%@ already closed!", self);
+    return _db;
 }
 
 - (void) close {
-    fdb_close(self.db);
-    _open = NO;
+    fdb_close(_db);
+    _db = nil;
 }
 
 - (NSString*) description {
@@ -60,16 +59,16 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (CBForestDBInfo) info {
     return (CBForestDBInfo) {
-        .headerRevNum  = _db.cur_header_revnum,
-        .databaseSize  = fdb_estimate_space_used(&_db),
-        .documentCount = _db.ndocs,
-        .lastSequence  = _db.seqnum
+        //.headerRevNum  = _db.cur_header_revnum,
+        .databaseSize  = fdb_estimate_space_used(_db),
+        //.documentCount = _db.ndocs,
+        .lastSequence  = x_fdb_get_last_sequence(_db),
     };
 }
 
 - (BOOL) commit: (NSError**)outError {
     return Check(fdb_commit(self.db), outError)
-        && Check(fdb_flush_wal(&_db), outError);
+        && Check(fdb_flush_wal(_db), outError);
 }
 
 - (BOOL) compact: (NSError**)outError
@@ -100,7 +99,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
         .metalen = meta.length
     };
     if (!Check(fdb_set(self.db, &doc), outError))
-        return SEQNUM_NOT_USED;
+        return kCBForestNoSequence;
     return doc.seqnum;
 }
 
@@ -150,7 +149,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
         fdbOptions |= FDB_ITR_NO_DELETES;
     const void* endKeyBytes = endKey.bytes;
     size_t endKeyLength = endKey.length;
-    fdb_iterator iterator;
+    fdb_iterator *iterator;
     fdb_status status = fdb_iterator_init(self.db, &iterator,
                                           startKey.bytes, startKey.length,
                                           endKeyBytes, endKeyLength, fdbOptions);
@@ -162,7 +161,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     for (;;) {
         fdb_doc *docinfo;
         uint64_t bodyOffset;
-        status = fdb_iterator_next_offset(&iterator, &docinfo, &bodyOffset);
+        status = fdb_iterator_next_offset(iterator, &docinfo, &bodyOffset);
         if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
             break; // FDB returns FDB_RESULT_FAIL at end of iteration
 
@@ -175,17 +174,13 @@ NSString* const CBForestErrorDomain = @"CBForest";
                 && memcmp(docinfo->key, endKeyBytes, endKeyLength)==0)
             break;
 
-        if (docinfo->bodylen == 0)  // offset not useful without size, which isn't set (MB-10783)
-            bodyOffset = 0;
-
         if (!block(docinfo, bodyOffset))
             break;
 
-        if (limit > 0 && --limit == 0) {
+        if (limit > 0 && --limit == 0)
             break;
-        }
     }
-    fdb_iterator_close(&iterator);
+    fdb_iterator_close(iterator);
     return YES;
 }
 

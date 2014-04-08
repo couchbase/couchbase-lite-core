@@ -126,7 +126,7 @@ RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
     RevNode *node = &tree->node[0];
     for (; validRawNode(rawNode); rawNode = nextRawNode(rawNode)) {
         nodeFromRawNode(rawNode, node);
-        if (node->sequence == SEQNUM_NOT_USED)
+        if (node->sequence == kRevNodeSequenceNone)
             node->sequence = sequence;
         node++;
     }
@@ -328,7 +328,7 @@ static void _revTreeInsert(RevTree *tree,
     RevNode *newNode = &tree->node[tree->count++];
     newNode->revID = revID;
     newNode->data = data;
-    newNode->sequence = SEQNUM_NOT_USED; // Sequence is unknown till doc is saved
+    newNode->sequence = kRevNodeSequenceNone; // Sequence is unknown till doc is saved
 #ifdef REVTREE_USES_FILE_OFFSETS
     newNode->oldBodyOffset = 0; // Body position is unknown till doc is saved
 #endif

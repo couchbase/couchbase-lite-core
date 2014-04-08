@@ -92,7 +92,7 @@ id kCBForestIndexNoValue;
             }
 
             uint64_t seq = [self setValue: valueData meta: nil forKey: keyData error: outError];
-            if (seq == SEQNUM_NOT_USED)
+            if (seq == kCBForestNoSequence)
                 return NO;
             [seqs addObject: @(seq)];
             NSLog(@"INDEX: Seq %llu = %@ (docID %@)", seq, realKey, docID);

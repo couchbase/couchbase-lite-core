@@ -26,6 +26,9 @@ typedef struct {
 /** RevNode.parentIndex value denoting "no parent". */
 #define kRevNodeParentIndexNone UINT16_MAX
 
+/** RevNode.sequence value meaning "no sequence yet" (for unsaved revisions.) */
+#define kRevNodeSequenceNone 0
+
 
 enum {
     kRevTreeErrDocNotFound = 1,

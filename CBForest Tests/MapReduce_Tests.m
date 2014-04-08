@@ -68,7 +68,9 @@
     }
 
     // Initialize the index:
+    __block int nMapCalls = 0;
     index.map = ^(CBForestDocument* doc, CBForestIndexEmitBlock emit) {
+        nMapCalls++;
         NSError* error;
         NSData* rawBody = [doc readBody: &error];
         XCTAssert(rawBody, @"Couldn't read doc body: %@", error);
@@ -79,7 +81,9 @@
 
     NSLog(@"--- Updating index");
     NSError* error;
+    nMapCalls = 0;
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+    XCTAssertEqual(nMapCalls, 3);
 
     NSLog(@"--- First query");
     __block int nRows = 0;
@@ -96,7 +100,9 @@
     [self writeJSONBody: @{@"name": @"Oregon",
                            @"cities": @[@"Portland", @"Walla Walla", @"Salem"]}
            ofDocumentID: @"OR"];
+    nMapCalls = 0;
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+    XCTAssertEqual(nMapCalls, 1);
 
     NSLog(@"--- After updating OR");
     nRows = 0;
@@ -110,7 +116,9 @@
     XCTAssertEqual(nRows, 9);
 
     [self writeJSONBody: @{@"_deleted": @YES} ofDocumentID: @"CA"];
+    nMapCalls = 0;
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+    XCTAssertEqual(nMapCalls, 1);
 
     NSLog(@"--- After removing CA:");
     nRows = 0;

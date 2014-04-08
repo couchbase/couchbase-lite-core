@@ -25,9 +25,9 @@
     NSData* nextSeqKey = [@"null" dataUsingEncoding: NSUTF8StringEncoding];
     NSData* nextSeqData;
     if (![self getValue: &nextSeqData meta: NULL forKey: nextSeqKey error: outError])
-        return SEQNUM_NOT_USED;
+        return UINT64_MAX;
     if (nextSeqData.length != sizeof(uint64_t))
-        return 0;
+        return 1;
     return NSSwapBigLongLongToHost(*(uint64_t*)nextSeqData.bytes);
 }
 
@@ -45,7 +45,7 @@
     NSAssert(_map, @"No map function set!");
     if (!_readNextSequence) {
         _nextSequence = [self readNextSequence: outError];
-        if (_nextSequence == SEQNUM_NOT_USED)
+        if (_nextSequence == UINT64_MAX)
             return NO;
         _readNextSequence = YES;
     }
@@ -65,10 +65,10 @@
     uint64_t startSequence = _nextSequence;
     __block BOOL gotError = NO;
     BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
-                                        toSequence: SEQNUM_NOT_USED
-                                           options: NULL
-                                             error: outError
-                                         withBlock: ^(CBForestDocument *doc, BOOL *stop)
+                                              toSequence: kCBForestMaxSequence
+                                                 options: NULL
+                                                   error: outError
+                                               withBlock: ^(CBForestDocument *doc, BOOL *stop)
     {
         [keys removeAllObjects];
         [values removeAllObjects];

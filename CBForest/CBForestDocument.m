@@ -11,9 +11,6 @@
 #import "forestdb_x.h"
 
 
-const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
-
-
 @implementation CBForestDocument
 {
     CBForestDB* _db;
@@ -38,7 +35,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
         sized_buf idbuf = CopyBuf(StringToBuf(docID));
         _info.keylen = idbuf.size;
         _info.key = idbuf.buf;
-        _info.seqnum = kForestDocNoSequence;
+        _info.seqnum = kCBForestNoSequence;
     }
     return self;
 }
@@ -85,7 +82,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
 - (sized_buf) rawID                 {return (sized_buf){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
 - (uint64_t) sequence               {return _info.seqnum;}
-- (BOOL) exists                     {return _info.seqnum != kForestDocNoSequence;}
+- (BOOL) exists                     {return _info.seqnum != kCBForestNoSequence;}
 
 
 - (NSData*) metadata {
@@ -154,7 +151,7 @@ const UInt64 kForestDocNoSequence = SEQNUM_NOT_USED;
     if (!Check(fdb_set(_db.db, &_info), outError))
         return NO;
     _bodyOffset = 0;
-    _info.seqnum = kForestDocNoSequence;
+    _info.seqnum = kCBForestNoSequence;
     return YES;
 }
 
