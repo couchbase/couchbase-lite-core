@@ -115,6 +115,7 @@
 		273AD3C918F32DC3007D8C23 /* MapReduce_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MapReduce_Tests.m; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
 		273AD3CE18F45E05007D8C23 /* internal_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = internal_types.h; sourceTree = "<group>"; };
+		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
 		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
 		2750723B18E3E52800A80C5A /* CBForest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -233,6 +234,7 @@
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
+				273AD3CF18F4B23A007D8C23 /* README.md */,
 				2750724018E3E52800A80C5A /* CBForest */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
