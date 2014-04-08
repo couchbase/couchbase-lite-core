@@ -41,6 +41,15 @@ id kCBForestIndexNoValue;
 }
 
 
+- (BOOL) commit: (NSError**)outError {
+    //FIX: Overridden to skip fdb_flush_wal, because this would write the keys to the hb-trie,
+    // and the trie is incompatible with custom comparators. :-(
+    // This is an issue that needs to be fixed in ForestDB (MB-10786).
+
+    return Check(fdb_commit(self.db), outError);
+}
+
+
 - (BOOL) setKeys: (NSArray*)keys
           values: (NSArray*)values
      forDocument: (NSString*)docID

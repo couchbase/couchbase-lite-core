@@ -175,7 +175,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
                 && memcmp(docinfo->key, endKeyBytes, endKeyLength)==0)
             break;
 
-        if (!block(docinfo, 0/*bodyOffset*/))   // ignore bodyOffset, it's wrong -- MB-10747
+        if (docinfo->bodylen == 0)  // offset not useful without size, which isn't set (MB-10783)
+            bodyOffset = 0;
+
+        if (!block(docinfo, bodyOffset))
             break;
 
         if (limit > 0 && --limit == 0) {
