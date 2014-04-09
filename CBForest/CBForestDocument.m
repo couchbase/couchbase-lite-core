@@ -81,7 +81,7 @@
 
 - (sized_buf) rawID                 {return (sized_buf){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
-- (uint64_t) sequence               {return _info.seqnum;}
+- (CBForestSequence) sequence       {return _info.seqnum;}
 - (BOOL) exists                     {return _info.seqnum != kCBForestNoSequence;}
 
 

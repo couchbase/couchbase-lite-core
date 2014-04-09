@@ -58,8 +58,10 @@
 
 - (void) logDbInfo {
     CBForestDBInfo info = _db.info;
-    NSLog(@"db docCount=%llu, size=%llu, seq=%llu, headerRevNum=%llu",
-          info.documentCount, info.databaseSize, info.lastSequence, info.headerRevNum);
+//    NSLog(@"db docCount=%llu, size=%llu, seq=%llu, headerRevNum=%llu",
+//          info.documentCount, info.databaseSize, info.lastSequence, info.headerRevNum);
+    NSLog(@"db size=%llu, seq=%llu",
+          info.databaseSize, info.lastSequence);
 }
 
 - (void) test03_SaveDoc {

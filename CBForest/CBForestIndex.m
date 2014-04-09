@@ -91,7 +91,7 @@ id kCBForestIndexNoValue;
                     return NO;
             }
 
-            uint64_t seq = [self setValue: valueData meta: nil forKey: keyData error: outError];
+            CBForestSequence seq = [self setValue: valueData meta: nil forKey: keyData error: outError];
             if (seq == kCBForestNoSequence)
                 return NO;
             [seqs addObject: @(seq)];

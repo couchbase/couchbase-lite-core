@@ -10,10 +10,6 @@
 @class CBForestDocument;
 
 
-#define kCBForestNoSequence ((UInt64)0)     // Means "no sequence assigned/known"
-#define kCBForestMaxSequence UINT64_MAX     // Max possible sequence, for use when enumerating
-
-
 /** NSError domain string for errors specific to CBForest; the error codes correspond to the
     fdb_status enum (see <forestdb_types.h>) except for the ones added below. */
 extern NSString* const CBForestErrorDomain;
@@ -38,6 +34,13 @@ typedef struct {
 } CBForestEnumerationOptions;
 
 
+/** Sequence number type. Sequences are allocated starting from 1. */
+typedef uint64_t CBForestSequence;
+
+#define kCBForestNoSequence     ((uint64_t)0)   // Means "no sequence assigned/known"
+#define kCBForestMaxSequence    UINT64_MAX      // Max possible sequence, for use when enumerating
+
+
 /** Callback block to pass to enumeration methods. */
 typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, BOOL *stop);
 
@@ -45,10 +48,10 @@ typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, 
 typedef void (^CBForestDocIterator)(CBForestDocument* doc, BOOL *stop);
 
 typedef struct {
-    uint64_t documentCount;
+//    uint64_t documentCount;
     uint64_t databaseSize;
-    uint64_t lastSequence;
-    uint64_t headerRevNum;
+//    uint64_t headerRevNum;
+    CBForestSequence lastSequence;
 } CBForestDBInfo;
 
 
@@ -85,10 +88,10 @@ typedef struct {
 
 /** Stores a value blob for a key blob, replacing any previous value.
     Use a nil value to delete. */
-- (uint64_t) setValue: (NSData*)value
-                 meta: (NSData*)meta
-               forKey: (NSData*)key
-                error: (NSError**)outError;
+- (CBForestSequence) setValue: (NSData*)value
+                         meta: (NSData*)meta
+                       forKey: (NSData*)key
+                        error: (NSError**)outError;
 
 /** Loads the value blob with the given key blob, plus its metadata.
     If there is no value for the key, no error is returned, but the value and meta will be nil. */
@@ -111,7 +114,7 @@ typedef struct {
                       withBlock: (CBForestValueIterator)block;
 
 /** Deletes the document/value with the given sequence. */
-- (BOOL) deleteSequence: (uint64_t)sequence
+- (BOOL) deleteSequence: (CBForestSequence)sequence
                   error: (NSError**)outError;
 
 // DOCUMENTS:
@@ -132,7 +135,7 @@ typedef struct {
 
 /** Loads the metadata of the document with the given sequence number,
     into a CBForestDocument object. */
-- (CBForestDocument*) documentWithSequence: (uint64_t)sequence
+- (CBForestDocument*) documentWithSequence: (CBForestSequence)sequence
                                    options: (CBForestContentOptions)options
                                      error: (NSError**)outError;
 
@@ -156,8 +159,8 @@ typedef struct {
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.
     @return  YES on success, NO on failure. */
-- (BOOL) enumerateDocsFromSequence: (uint64_t)startSequence
-                        toSequence: (uint64_t)endSequence
+- (BOOL) enumerateDocsFromSequence: (CBForestSequence)startSequence
+                        toSequence: (CBForestSequence)endSequence
                            options: (const CBForestEnumerationOptions*)options
                              error: (NSError**)outError
                          withBlock: (CBForestDocIterator)block;

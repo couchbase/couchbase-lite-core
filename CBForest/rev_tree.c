@@ -112,7 +112,7 @@ RevTree* RevTreeNew(unsigned capacity)
 
 
 RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
-                       uint64_t sequence, uint64_t oldBodyOffset)
+                       fdb_seqnum_t sequence, uint64_t oldBodyOffset)
 {
     const RawRevNode *rawNode = (const RawRevNode*)raw_tree.buf;
     unsigned count = countRawNodes(rawNode);

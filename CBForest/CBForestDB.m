@@ -87,8 +87,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
 #pragma mark - KEYS/VALUES:
 
 
-- (uint64_t) setValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
-                error: (NSError**)outError
+- (CBForestSequence) setValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
+                        error: (NSError**)outError
 {
     fdb_doc doc = {
         .key = (void*)key.bytes,
@@ -124,7 +124,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (BOOL) deleteSequence: (uint64_t)sequence error: (NSError**)outError {
+- (BOOL) deleteSequence: (CBForestSequence)sequence error: (NSError**)outError {
     fdb_doc doc = {.seqnum = sequence};
     uint64_t bodyOffset;
     fdb_status status = fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset);
@@ -225,7 +225,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (CBForestDocument*) documentWithSequence: (uint64_t)sequence
+- (CBForestDocument*) documentWithSequence: (CBForestSequence)sequence
                                    options: (CBForestContentOptions)options
                                      error: (NSError**)outError
 {
@@ -268,8 +268,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (BOOL) enumerateDocsFromSequence: (uint64_t)startSequence
-                        toSequence: (uint64_t)endSequence
+- (BOOL) enumerateDocsFromSequence: (CBForestSequence)startSequence
+                        toSequence: (CBForestSequence)endSequence
                            options: (const CBForestEnumerationOptions*)options
                              error: (NSError**)outError
                          withBlock: (CBForestDocIterator)block
@@ -285,7 +285,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
                               withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
-        uint64_t sequence = docinfo->seqnum;
+        fdb_seqnum_t sequence = docinfo->seqnum;
         if (sequence >= startSequence && sequence <= endSequence)
             [sequences addObject: @(sequence)];
         return true;

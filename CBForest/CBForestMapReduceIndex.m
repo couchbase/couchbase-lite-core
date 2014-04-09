@@ -13,28 +13,28 @@
 
 @implementation CBForestMapReduceIndex
 {
-    uint64_t _nextSequence;
+    CBForestSequence _nextSequence;
     BOOL _readNextSequence;
 }
 
 @synthesize sourceDatabase=_sourceDatabase, map=_map;
 
 
-- (uint64_t) readNextSequence: (NSError**)outError {
+- (CBForestSequence) readNextSequence: (NSError**)outError {
     // (The custom compare fn means all keys in this db have to be JSON. So use 'null' for this key)
     NSData* nextSeqKey = [@"null" dataUsingEncoding: NSUTF8StringEncoding];
     NSData* nextSeqData;
     if (![self getValue: &nextSeqData meta: NULL forKey: nextSeqKey error: outError])
         return UINT64_MAX;
-    if (nextSeqData.length != sizeof(uint64_t))
+    if (nextSeqData.length != sizeof(CBForestSequence))
         return 1;
-    return NSSwapBigLongLongToHost(*(uint64_t*)nextSeqData.bytes);
+    return NSSwapBigLongLongToHost(*(CBForestSequence*)nextSeqData.bytes);
 }
 
 
-- (BOOL) writeNextSequence: (uint64_t)nextSequence error: (NSError**)outError {
+- (BOOL) writeNextSequence: (CBForestSequence)nextSequence error: (NSError**)outError {
     NSData* nextSeqKey = [@"null" dataUsingEncoding: NSUTF8StringEncoding];
-    uint64_t bigEndian = NSSwapHostLongLongToBig(nextSequence);
+    CBForestSequence bigEndian = NSSwapHostLongLongToBig(nextSequence);
     NSData* nextSeqData = [NSData dataWithBytes: &bigEndian length: sizeof(bigEndian)];
     return [self setValue: nextSeqData meta: nil forKey: nextSeqKey error: outError];
 }
@@ -62,7 +62,7 @@
         }
     };
 
-    uint64_t startSequence = _nextSequence;
+    CBForestSequence startSequence = _nextSequence;
     __block BOOL gotError = NO;
     BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
                                               toSequence: kCBForestMaxSequence

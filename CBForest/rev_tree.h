@@ -52,7 +52,7 @@ typedef struct RevNode {
     uint64_t    oldBodyOffset;    /**< File offset of Doc containing revision body, or else 0 */
     uint64_t    oldBodySize;       /**< Length of Doc containing revision body, or else 0 */
 #endif
-    uint64_t    sequence;       /**< DB sequence number that this revision has/had */
+    fdb_seqnum_t sequence;       /**< DB sequence number that this revision has/had */
     uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
     RevNodeFlags flags;         /**< Leaf/deleted flags */
 } RevNode;
@@ -77,7 +77,7 @@ static inline void RevTreeFree(RevTree *tree) {free(tree);}
  *  @param sequence  The sequence # of the document the raw tree is read from.
  *  @param bodyOffset  The file offset of the document body containing the serialized tree. */
 RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
-                       uint64_t sequence, uint64_t bodyOffset);
+                       fdb_seqnum_t sequence, uint64_t bodyOffset);
 
 /** Serializes a RevTree. Caller is responsible for freeing the returned block. */
 sized_buf RevTreeEncode(RevTree *tree);

@@ -6,8 +6,7 @@
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-@class CBForestDB;
+#import "CBForestDB.h"
 
 
 /** Represents a single document in a CBForest.
@@ -25,7 +24,7 @@
 
 /** The document's current sequence number in the database; this is a serial number that starts
     at 1 and is incremented every time any document is saved. */
-@property (readonly) uint64_t sequence;
+@property (readonly) CBForestSequence sequence;
 
 /** Is the document known to exist in the database?
     This will be YES for all documents other than those created by -makeDocumentWithID:. */
