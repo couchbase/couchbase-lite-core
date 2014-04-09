@@ -18,9 +18,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
 @implementation CBForestDB
 {
     fdb_handle *_db;
+    fdb_open_flags _openFlags;
 }
 
-@synthesize filename=_path, documentClass=_documentClass;
+@synthesize documentClass=_documentClass;
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -30,10 +31,9 @@ NSString* const CBForestErrorDomain = @"CBForest";
     self = [super init];
     if (self) {
         _documentClass = [CBForestDocument class];
-        _path = filePath.copy;
-        fdb_open_flags flags = readOnly ? FDB_OPEN_FLAG_RDONLY : 0;
+        _openFlags = readOnly ? FDB_OPEN_FLAG_RDONLY : 0;
         // Note: There is another flag FDB_OPEN_FLAG_CREATE but it isn't used yet by ForestDB. 4/14
-        if (!Check(fdb_open(&_db, filePath.fileSystemRepresentation, flags, NULL), outError))
+        if (![self open: filePath error: outError])
             return nil;
     }
     return self;
@@ -43,8 +43,13 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_close(_db);
 }
 
+- (BOOL) open: (NSString*)filePath error: (NSError**)outError {
+    NSAssert(!_db, @"Already open");
+    return Check(fdb_open(&_db, filePath.fileSystemRepresentation, _openFlags, NULL), outError);
+}
+
 - (fdb_handle*) db {
-    NSAssert(_db, @"%@ already closed!", self);
+    NSAssert(_db, @"Already closed!");
     return _db;
 }
 
@@ -54,15 +59,25 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (NSString*) description {
-    return [NSString stringWithFormat: @"%@[%@]", [self class], _path];
+    return [NSString stringWithFormat: @"%@[%@]", [self class], self.filename];
+}
+
+- (NSString*) filename {
+    fdb_info info;
+    fdb_get_dbinfo(self.db, &info);
+    return [[NSFileManager defaultManager] stringWithFileSystemRepresentation: info.filename
+                                                                    length: strlen(info.filename)];
 }
 
 - (CBForestDBInfo) info {
+    fdb_info info;
+    fdb_get_dbinfo(self.db, &info);
     return (CBForestDBInfo) {
         //.headerRevNum  = _db.cur_header_revnum,
-        .databaseSize  = fdb_estimate_space_used(_db),
-        //.documentCount = _db.ndocs,
-        .lastSequence  = x_fdb_get_last_sequence(_db),
+        .dataSize       = info.space_used,
+        .fileSize       = info.file_size,
+        .documentCount  = info.doc_count,
+        .lastSequence   = info.last_seqnum,
     };
 }
 
@@ -73,15 +88,28 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (BOOL) compact: (NSError**)outError
 {
-    NSString* tempFile = [_path stringByAppendingPathExtension: @"cpt"];
+#if 1
+    //FIX: Disabled. There seem to be some problems with compaction in ForestDB. See MB-10811.
+    return YES;
+#else
+    NSString* filename = self.filename;
+    NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
     [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-    if (!Check(fdb_compact(self.db, tempFile.fileSystemRepresentation), outError)
-            || ![[NSFileManager defaultManager] moveItemAtPath: tempFile toPath: _path
-                                                         error: outError]) {
+    if (!Check(fdb_compact(self.db, tempFile.fileSystemRepresentation), outError)) {
         [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
         return NO;
     }
-    return YES;
+    // Now replace the original file with the compacted one and re-open it:
+    [self close];
+    if (rename(tempFile.fileSystemRepresentation, filename.fileSystemRepresentation) < 0) {
+        if (outError)
+            *outError = [NSError errorWithDomain: NSPOSIXErrorDomain code: errno userInfo: nil];
+        [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
+        [self open: filename error: NULL];
+        return NO;
+    }
+    return [self open: filename error: outError];
+#endif
 }
 
 #pragma mark - KEYS/VALUES:

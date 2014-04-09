@@ -18,11 +18,6 @@ uint64_t _docio_read_doc_component(struct docio_handle *handle,
                                    void *buf_out);
 
 
-uint64_t x_fdb_get_last_sequence(fdb_handle *db) {
-    return db->seqnum;
-}
-
-
 fdb_status x_fdb_read_body(fdb_handle *db, fdb_doc *doc, uint64_t offset) {
     void *body = malloc(doc->bodylen);
     uint64_t _offset;

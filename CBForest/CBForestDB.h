@@ -48,9 +48,9 @@ typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, 
 typedef void (^CBForestDocIterator)(CBForestDocument* doc, BOOL *stop);
 
 typedef struct {
-//    uint64_t documentCount;
-    uint64_t databaseSize;
-//    uint64_t headerRevNum;
+    uint64_t         documentCount;
+    uint64_t         dataSize;
+    uint64_t         fileSize;
     CBForestSequence lastSequence;
 } CBForestDBInfo;
 
