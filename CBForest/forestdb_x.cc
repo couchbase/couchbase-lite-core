@@ -17,19 +17,32 @@ uint64_t _docio_read_doc_component(struct docio_handle *handle,
                                    uint32_t len,
                                    void *buf_out);
 
-
-fdb_status x_fdb_read_body(fdb_handle *db, fdb_doc *doc, uint64_t offset) {
-    void *body = malloc(doc->bodylen);
-    uint64_t _offset;
 #ifdef _DOC_COMP
-    _offset = _docio_read_doc_component_comp(db->dhandle, offset, &doc->bodylen, body);
-#else
-    _offset = _docio_read_doc_component(db->dhandle, offset, (uint32_t)doc->bodylen, body);
+extern
+uint64_t _docio_read_doc_component_comp(struct docio_handle *handle,
+                                        uint64_t offset,
+                                        uint32_t len,
+                                        uint32_t comp_len,
+                                        void *buf_out,
+                                        void *comp_data_out);
 #endif
+
+
+//FIX: Remove this function when MB-10695 is implemented.
+fdb_status x_fdb_read_body(fdb_handle *db, fdb_doc *doc, uint64_t _offset) {
+    docio_handle *handle = db->dhandle;
+    doc->body = (void *)malloc(doc->bodylen);
+#ifdef _DOC_COMP
+    // If compression is enabled, I can't tell from looking at just the body whether it's
+    // compressed. So the offset is useless. As a workaround, read the doc the normal way:
+    free(doc->body);
+    doc->body = NULL;
+    return fdb_get(db, doc);
+#else
+    _offset = _docio_read_doc_component(handle, _offset, (uint32_t)doc->bodylen, doc->body);
     if (_offset == 0) {
-        free(body);
-        return FDB_RESULT_FAIL;
+        return FDB_RESULT_KEY_NOT_FOUND;
     }
-    doc->body = body;
+#endif
     return FDB_RESULT_SUCCESS;
 }
