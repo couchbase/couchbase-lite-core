@@ -86,8 +86,6 @@
 		27FDFC0618EB803F00AC4647 /* CBForestIndex.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0518EB803F00AC4647 /* CBForestIndex.m */; };
 		27FDFC0718EB803F00AC4647 /* CBForestIndex.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0518EB803F00AC4647 /* CBForestIndex.m */; };
 		27FDFC0918EC584500AC4647 /* Index_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0818EC584500AC4647 /* Index_Tests.m */; };
-		27FDFC0E18EC609000AC4647 /* CBLCollateJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0D18EC609000AC4647 /* CBLCollateJSON.m */; };
-		27FDFC0F18EC609000AC4647 /* CBLCollateJSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0D18EC609000AC4647 /* CBLCollateJSON.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -226,8 +224,6 @@
 		27FDFC0418EB803F00AC4647 /* CBForestIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestIndex.h; sourceTree = "<group>"; };
 		27FDFC0518EB803F00AC4647 /* CBForestIndex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestIndex.m; sourceTree = "<group>"; };
 		27FDFC0818EC584500AC4647 /* Index_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Index_Tests.m; sourceTree = "<group>"; };
-		27FDFC0C18EC609000AC4647 /* CBLCollateJSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBLCollateJSON.h; sourceTree = "<group>"; };
-		27FDFC0D18EC609000AC4647 /* CBLCollateJSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBLCollateJSON.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -329,8 +325,6 @@
 				273AD3C618EF374D007D8C23 /* CBForestMapReduceIndex.m */,
 				273AD3EB18F608B4007D8C23 /* CBCollatable.h */,
 				273AD3EC18F608B4007D8C23 /* CBCollatable.m */,
-				27FDFC0C18EC609000AC4647 /* CBLCollateJSON.h */,
-				27FDFC0D18EC609000AC4647 /* CBLCollateJSON.m */,
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
 				27FDFC0018EA58BF00AC4647 /* varint.c */,
@@ -607,7 +601,6 @@
 				2750730618E5049C00A80C5A /* CBForestVersions.m in Sources */,
 				273AD3ED18F608B4007D8C23 /* CBCollatable.m in Sources */,
 				2750725718E3E60900A80C5A /* CBForestDocument.m in Sources */,
-				27FDFC0E18EC609000AC4647 /* CBLCollateJSON.m in Sources */,
 				27FDFC0618EB803F00AC4647 /* CBForestIndex.m in Sources */,
 				2740498618E7A3D10036333A /* forestdb_x.cc in Sources */,
 				2750725618E3E60900A80C5A /* CBForestDB.m in Sources */,
@@ -627,7 +620,6 @@
 				275072B418E4A68E00A80C5A /* CBForest_Tests.m in Sources */,
 				275072BC18E4A81F00A80C5A /* CBForestDocument.m in Sources */,
 				27FDFC0318EA875100AC4647 /* varint.c in Sources */,
-				27FDFC0F18EC609000AC4647 /* CBLCollateJSON.m in Sources */,
 				273AD3CA18F32DC3007D8C23 /* MapReduce_Tests.m in Sources */,
 				273AD3C818EF374D007D8C23 /* CBForestMapReduceIndex.m in Sources */,
 				2750730B18E5EB7200A80C5A /* RevTree_Tests.m in Sources */,
@@ -886,6 +878,7 @@
 				);
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -902,6 +895,7 @@
 				EXECUTABLE_PREFIX = lib;
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
