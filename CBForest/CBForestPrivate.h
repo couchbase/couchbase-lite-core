@@ -23,6 +23,8 @@ NSString* BufToString(const void* buf, size_t size);
 
 sized_buf CopyBuf(sized_buf buf);
 
+int CompareBufs(sized_buf a, sized_buf b);
+
 NSData* JSONToData(id obj, NSError** outError) ;
 
 static inline id DataToJSON(NSData* data, NSError** outError) {

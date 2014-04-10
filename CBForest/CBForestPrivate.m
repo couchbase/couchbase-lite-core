@@ -86,6 +86,7 @@ NSData* JSONToData(id obj, NSError** outError) {
 id BufToJSON(sized_buf buf, NSError** outError) {
     if (buf.size == 0)
         return nil;
+    NSCAssert(buf.buf != NULL, @"BufToJSON(NULL)");
     NSData* data = [[NSData alloc] initWithBytesNoCopy: buf.buf length: buf.size freeWhenDone: NO];
     return DataToJSON(data, outError);
 }
@@ -98,6 +99,19 @@ sized_buf CopyBuf(sized_buf buf) {
         buf.buf = newBuf;
     }
     return buf;
+}
+
+
+int CompareBufs(sized_buf a, sized_buf b) {
+    size_t minSize = a.size < b.size ? a.size : b.size;
+    int result = memcmp(a.buf, b.buf, minSize);
+    if (result == 0) {
+        if (a.size < b.size)
+            result = -1;
+        else if (a.size > b.size)
+            result = 1;
+    }
+    return result;
 }
 
 

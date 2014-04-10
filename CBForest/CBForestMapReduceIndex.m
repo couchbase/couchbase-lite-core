@@ -8,6 +8,7 @@
 
 #import "CBForestMapReduceIndex.h"
 #import "CBForestDocument.h"
+#import "CBCollatable.h"
 #import <forestdb.h>
 
 
@@ -21,8 +22,8 @@
 
 
 - (CBForestSequence) readNextSequence: (NSError**)outError {
-    // (The custom compare fn means all keys in this db have to be JSON. So use 'null' for this key)
-    NSData* nextSeqKey = [@"null" dataUsingEncoding: NSUTF8StringEncoding];
+    // (All keys in this db are in collatable form. So use 'null' for this key)
+    NSData* nextSeqKey = CBCreateCollatable([NSNull null]);
     NSData* nextSeqData;
     if (![self getValue: &nextSeqData meta: NULL forKey: nextSeqKey error: outError])
         return UINT64_MAX;
@@ -33,7 +34,7 @@
 
 
 - (BOOL) writeNextSequence: (CBForestSequence)nextSequence error: (NSError**)outError {
-    NSData* nextSeqKey = [@"null" dataUsingEncoding: NSUTF8StringEncoding];
+    NSData* nextSeqKey = CBCreateCollatable([NSNull null]);
     CBForestSequence bigEndian = NSSwapHostLongLongToBig(nextSequence);
     NSData* nextSeqData = [NSData dataWithBytes: &bigEndian length: sizeof(bigEndian)];
     return [self setValue: nextSeqData meta: nil forKey: nextSeqKey error: outError];

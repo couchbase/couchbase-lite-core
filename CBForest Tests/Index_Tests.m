@@ -61,10 +61,10 @@
     NSLog(@"--- First query");
     __block int nRows = 0;
     BOOL ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                             block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+                             block: ^(id key, NSString *docID, id value, BOOL *stop)
     {
         nRows++;
-        NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 8);
@@ -78,10 +78,10 @@
     NSLog(@"--- After updating OR");
     nRows = 0;
     ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+                        block: ^(id key, NSString *docID, id value, BOOL *stop)
     {
         nRows++;
-        NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 9);
@@ -92,10 +92,10 @@
     NSLog(@"--- After removing CA:");
     nRows = 0;
     ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+                        block: ^(id key, NSString *docID, id value, BOOL *stop)
     {
         nRows++;
-        NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 6);
