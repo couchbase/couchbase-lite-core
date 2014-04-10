@@ -38,7 +38,7 @@ id kCBForestIndexNoValue;
     if (seqData) {
         NSArray* oldSeqs = DataToJSON(seqData, outError);
         for (NSNumber* seq in oldSeqs) {
-            NSLog(@"INDEX: Deleting seq %@ for doc %@", seq, docID);
+            //NSLog(@"INDEX: Deleting seq %@ for doc %@", seq, docID);
             [self deleteSequence: seq.unsignedLongLongValue error: outError];
         }
     }
@@ -47,30 +47,36 @@ id kCBForestIndexNoValue;
     NSUInteger count = keys.count;
     if (count > 0) {
         NSMutableArray* seqs = [[NSMutableArray alloc] initWithCapacity: count];
-        NSMutableArray* realKey = [[NSMutableArray alloc] initWithObjects: [NSNull null], docID, nil];
+        NSMutableData* keyData = [NSMutableData dataWithCapacity: 1024];
         for (NSUInteger i = 0; i < count; i++) {
-            realKey[0] = keys[i];
-            if (i == 1)
-                [realKey addObject: @(1)];
-            else if (i > 1)
-                realKey[2] = @(i);
+            @autoreleasepool {
+                keyData.length = 0;
+                CBCollatableBeginArray(keyData);
+                CBAddCollatable(keys[i], keyData);
+                CBAddCollatable(docID, keyData);
+                if (i > 0)
+                    CBAddCollatable(@(i), keyData);
+                CBCollatableEndArray(keyData);
 
-            NSMutableArray* body = [NSMutableArray arrayWithObjects: keys[i], docID, nil];
-            id value = values[i];
-            if (value != kCBForestIndexNoValue)
-                [body addObject: value];
-            NSData* bodyData = JSONToData(body, outError);
-            if (!bodyData)
-                return NO;
+                NSMutableArray* body = [NSMutableArray arrayWithObjects: keys[i], docID, nil];
+                id value = values[i];
+                if (value != kCBForestIndexNoValue)
+                    [body addObject: value];
+                NSData* bodyData = JSONToData(body, NULL);
+                if (!bodyData) {
+                    NSLog(@"WARNING: Can't index non-JSON value %@", value);
+                    continue;
+                }
 
-            CBForestSequence seq = [self setValue: bodyData
-                                             meta: nil
-                                           forKey: CBCreateCollatable(realKey)
-                                            error: outError];
-            if (seq == kCBForestNoSequence)
-                return NO;
-            [seqs addObject: @(seq)];
-            NSLog(@"INDEX: Seq %llu = %@ --> %@", seq, realKey, body);
+                CBForestSequence seq = [self setValue: bodyData
+                                                 meta: nil
+                                               forKey: keyData
+                                                error: outError];
+                if (seq == kCBForestNoSequence)
+                    return NO;
+                [seqs addObject: @(seq)];
+                //NSLog(@"INDEX: Seq %llu = %@ --> %@", seq, keyData, body);
+            }
         }
         seqData = JSONToData(seqs, NULL);
     } else {

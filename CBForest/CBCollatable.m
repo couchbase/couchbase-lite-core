@@ -19,34 +19,33 @@
     array:  6
     dict:   7
  
-    Null, false and true don't need any following data.
+    Null, false and true don't need any following data. They're just single bytes.
  
     Numbers are encoded as follows. (Currently only integers are supported.)
     First a length/sign byte:
         for a positive number this is the number of bytes in the numeric value, ORed with 0x80.
         for a negative number this is 127 minus the number of bytes in the numeric value.
     Then the number itself, using a variable number of bytes, in big-endian byte order.
-    I know, this sounds weird and complex, but it ensures proper ordering while saving space.
+      I know, this sounds weird and complex, but it ensures proper ordering while saving space.
     (A naive encoding would just store an 8-byte big-endian value, but this encoding cuts it
     down to 2 bytes for small integers.)
-    To support floating-point I'll probably need to write the exponent first, then write the
+      To support floating-point I'll probably need to write the exponent first, then write the
     mantissa in a format mostly like the above.
  
-    Strings are converted to lowercase and encoded as UTF-8, followed by a zero byte.
-    (This doesn't fully match the Unicode collation order; will need to fix this.
-    The first problem is that it's entirely case-insensitive, while the Unicode collation says that
-    if two inequal strings are equal ignoring case, then the uppercase letters win the tie. Fixing
-    this will probably require appending a bit-mask to the string marking which characters were
-    originally uppercase.
-    The second problem is that the characters shouldn't be compared in ASCII order. Fixing this
-    will require remapping the character codes to new values that make them sort correctly; for
-    example, all punctuation will have lower character codes than all alphanumerics. I can build
-    a lookup table to make this mapping fast.
- 
+    Strings are converted to UTF-8 and then _partially_ remapped to Unicode Collation Algorithm
+    order: each ASCII character/byte is replaced with its priority in that ordering. Control
+    characters map to 0, whitespace to 1, "`" to 2, etc. (See kInverseMap below for details.)
+      Note that each uppercase letter maps just after its matching lowercase letter. That makes
+    the comparison mostly case-insensitive, except that uppercase letters break ties.
+      It wouldn't be difficult to extend this implementation to support Unicode ordering of other
+    Roman-alphabet characters and some common non-ASCII punctuation marks. But the full UCA looks
+    too complex to support with a dumb lexicographic sort, unless maybe each character is
+    represented by a complex multibyte sequence, which would make strings take up a lot of space.
+
     Arrays are simple: just encode each object in the array, and end with a zero byte.
  
-    Dictionaries are almost as simple: encode the key and value of each pair, sorted by comparing
-    the key strings in Unicode order, and then end with a zero byte.
+    Dictionaries are almost as simple: sort the key/value pairs by comparing the key strings in
+    Unicode order, encode the key and value of each pair, and then end with a zero byte.
  */
 
 
@@ -54,7 +53,12 @@ static NSComparisonResult compareCanonStrings( id s1, id s2, void *context);
 static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t));
 static uint8_t* getCharPriorityMap(void);
 
-static void encodeObject(id object, NSMutableData* output);
+
+NSData* CBCreateCollatable(id object) {
+    NSMutableData* output = [NSMutableData dataWithCapacity: 16];
+    CBAddCollatable(object, output);
+    return output;
+}
 
 
 static void encodeNumber(NSNumber* number, NSMutableData* output) {
@@ -105,11 +109,11 @@ static void encodeString(NSString* str, NSMutableData* output) {
 }
 
 static void encodeArray(NSArray* array, NSMutableData* output) {
-    [output appendBytes: "\6" length: 1];
+    CBCollatableBeginArray(output);
     for (id object in array) {
-        encodeObject(object, output);
+        CBAddCollatable(object, output);
     }
-    [output appendBytes: "\0" length: 1];
+    CBCollatableEndArray(output);
 }
 
 static void encodeDictionary(NSDictionary* dict, NSMutableData* output) {
@@ -117,12 +121,12 @@ static void encodeDictionary(NSDictionary* dict, NSMutableData* output) {
     NSArray* keys = [[dict allKeys] sortedArrayUsingFunction: &compareCanonStrings context: NULL];
     for (NSString* key in keys) {
         encodeString(key, output);
-        encodeObject(dict[key], output);
+        CBAddCollatable(dict[key], output);
     }
     [output appendBytes: "\0" length: 1];
 }
 
-static void encodeObject(id object, NSMutableData* output) {
+void CBAddCollatable(id object, NSMutableData* output) {
     if ([object isKindOfClass: [NSString class]]) {
         encodeString(object, output);
     } else if ([object isKindOfClass: [NSNumber class]]) {
@@ -134,33 +138,31 @@ static void encodeObject(id object, NSMutableData* output) {
     } else if ([object isKindOfClass: [NSArray class]]) {
         encodeArray(object, output);
     } else {
-        NSCAssert(NO, @"Can't encode instances of %@ as JSON", [object class]);
+        NSCAssert(NO, @"CBAddCollatable can't encode instances of %@", [object class]);
     }
 }
 
-
-NSData* CBCreateCollatable(id object) {
-    NSMutableData* output = [NSMutableData dataWithCapacity: 16];
-    encodeObject(object, output);
-    return output;
-}
+void CBCollatableBeginArray(NSMutableData* output)   {[output appendBytes: "\6" length: 1];}
+void CBCollatableEndArray(NSMutableData* output)     {[output appendBytes: "\0" length: 1];}
 
 
 #pragma mark - STRING UTILITIES:
 
 
-
+// String comparison callback used by encodeDictionary.
 static NSComparisonResult compareCanonStrings( id s1, id s2, void *context) {
     return [s1 compare: s2 options: NSLiteralSearch];
 }
 
 
+// Returns a 256-byte table that maps each ASCII character to its relative priority in Unicode
+// ordering. Bytes 0x80--0xFF (i.e. UTF-8 encoded sequences) map to themselves.
 static uint8_t* getCharPriorityMap(void) {
-    static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
-   static uint8_t kCharPriority[256];
+    static uint8_t kCharPriority[256];
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         // Control characters have zero priority:
+        static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
         uint8_t priority = 1;
         for (int i=0; i<strlen(kInverseMap); i++)
             kCharPriority[kInverseMap[i]] = priority++;
@@ -171,6 +173,8 @@ static uint8_t* getCharPriorityMap(void) {
 }
 
 
+// Calls the given block, passing it a UTF-8 encoded version of the given string.
+// The UTF-8 data can be safely modified by the block but isn't valid after the block exits.
 static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
     NSUInteger byteCount;
     if (str.length < 256) {
