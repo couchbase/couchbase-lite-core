@@ -82,10 +82,20 @@ static uint64_t randn(uint64_t limit) {
     XCTAssertEqual(collate(@"", @""), 0);
     XCTAssertEqual(collate(@"", @YES), 1);
     XCTAssertEqual(collate(@"", [NSNull null]), 1);
-    XCTAssertEqual(collate(@"Hello world", @"Aaron"), 1);
+    XCTAssertEqual(collate(@"", @" "), -1);
+    XCTAssertEqual(collate(@"~", @"a"), -1);
+    XCTAssertEqual(collate(@"A", @"a"), 1);
+    XCTAssertEqual(collate(@"\n", @" "), -1);
     XCTAssertEqual(collate(@"Hello world", @""), 1);
-    XCTAssertEqual(collate(@"Hello world", @"hellO wOrLd"), 0); //FIX: This should be -1
-    XCTAssertEqual(collate(@"Hello world", @"hellO wOrLd!"), -1);
+    XCTAssertEqual(collate(@"Hello world", @"Aaron"), 1);
+    XCTAssertEqual(collate(@"Hello world", @"Hello world!"), -1);
+    XCTAssertEqual(collate(@"hello World", @"hellO wOrLd"), -1); // uppercase letters win ties
+    XCTAssertEqual(collate(@"Hello world", @"jello world"), -1); // but letter order comes first
+    XCTAssertEqual(collate(@"hello world", @"Jello world"), -1);
+
+    // Non-ASCII characters aren't going to sort according to the Unicode Collation Algorithm,
+    // but they should still sort after all ASCII characters.
+    XCTAssertEqual(collate(@"Hello world", @"Hello wörld!"), -1);
 }
 
 - (void) testArrays {

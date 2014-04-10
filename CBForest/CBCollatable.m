@@ -50,6 +50,10 @@
  */
 
 
+static NSComparisonResult compareCanonStrings( id s1, id s2, void *context);
+static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t));
+static uint8_t* getCharPriorityMap(void);
+
 static void encodeObject(id object, NSMutableData* output);
 
 
@@ -85,15 +89,19 @@ static void encodeNumber(NSNumber* number, NSMutableData* output) {
     }
 }
 
-static NSComparisonResult compareCanonStrings( id s1, id s2, void *context) {
-    return [s1 compare: s2 options: NSLiteralSearch];
-}
-
 static void encodeString(NSString* str, NSMutableData* output) {
     [output appendBytes: "\5" length: 1];
-    const char* utf8 = str.lowercaseString.UTF8String;
-    //FIX: Need to remap characters to be in Unicode collation order
-    [output appendBytes: utf8 length: strlen(utf8)+1]; // note: includes trailing 0 byte
+    withMutableUTF8(str, ^(uint8_t *utf8, size_t length) {
+        const uint8_t* priority = getCharPriorityMap();
+        for (int i=0; i<length; i++)
+            utf8[i] = priority[utf8[i]];
+        [output appendBytes: utf8 length: length];
+    });
+    [output appendBytes: "\0" length: 1];
+    //FIX: This doesn't match the Unicode Collation Algorithm, for non-ASCII characters.
+    // In fact, I think it's impossible to be fully conformant using a 'dumb' lexicographic compare.
+    // http://www.unicode.org/reports/tr10/
+    // http://www.unicode.org/Public/UCA/latest/allkeys.txt
 }
 
 static void encodeArray(NSArray* array, NSMutableData* output) {
@@ -135,4 +143,59 @@ NSData* CBCreateCollatable(id object) {
     NSMutableData* output = [NSMutableData dataWithCapacity: 16];
     encodeObject(object, output);
     return output;
+}
+
+
+#pragma mark - STRING UTILITIES:
+
+
+
+static NSComparisonResult compareCanonStrings( id s1, id s2, void *context) {
+    return [s1 compare: s2 options: NSLiteralSearch];
+}
+
+
+static uint8_t* getCharPriorityMap(void) {
+    static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
+   static uint8_t kCharPriority[256];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // Control characters have zero priority:
+        uint8_t priority = 1;
+        for (int i=0; i<strlen(kInverseMap); i++)
+            kCharPriority[kInverseMap[i]] = priority++;
+        for (int i=128; i<256; i++)
+            kCharPriority[i] = i;
+    });
+    return kCharPriority;
+}
+
+
+static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
+    NSUInteger byteCount;
+    if (str.length < 256) {
+        // First try to copy the UTF-8 into a smallish stack-based buffer:
+        uint8_t stackBuf[256];
+        NSRange remaining;
+        BOOL ok = [str getBytes: stackBuf maxLength: sizeof(stackBuf) usedLength: &byteCount
+                       encoding: NSUTF8StringEncoding options: 0
+                          range: NSMakeRange(0, str.length) remainingRange: &remaining];
+        if (ok && remaining.length == 0) {
+            block(stackBuf, byteCount);
+            return YES;
+        }
+    }
+
+    // Otherwise malloc a buffer to copy the UTF-8 into:
+    NSUInteger maxByteCount = [str maximumLengthOfBytesUsingEncoding: NSUTF8StringEncoding];
+    uint8_t* buf = malloc(maxByteCount);
+    if (!buf)
+        return NO;
+    BOOL ok = [str getBytes: buf maxLength: maxByteCount usedLength: &byteCount
+                   encoding: NSUTF8StringEncoding options: 0
+                      range: NSMakeRange(0, str.length) remainingRange: NULL];
+    if (ok)
+        block(buf, byteCount);
+        free(buf);
+        return ok;
 }
