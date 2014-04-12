@@ -174,11 +174,11 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 
 - (NSData*) currentRevisionData {
     RevTreeSort(_tree);
-    return dataForNode(self.db.db, RevTreeGetNode(_tree, 0), NULL);
+    return dataForNode(self.db.handle, RevTreeGetNode(_tree, 0), NULL);
 }
 
 - (NSData*) dataOfRevision: (NSString*)revID {
-    return dataForNode(self.db.db, RevTreeFindNode(_tree, CompactRevIDToBuf(revID)), NULL);
+    return dataForNode(self.db.handle, RevTreeFindNode(_tree, CompactRevIDToBuf(revID)), NULL);
 }
 
 - (BOOL) isRevisionDeleted: (NSString*)revID {

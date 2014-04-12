@@ -47,7 +47,7 @@ typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
 
 
 @interface CBForestDB ()
-@property (readonly) fdb_handle* db;
+@property (readonly) fdb_handle* handle;
 - (BOOL) _enumerateValuesFromKey: (NSData*)startKey
                            toKey: (NSData*)endKey
                          options: (const CBForestEnumerationOptions*)options

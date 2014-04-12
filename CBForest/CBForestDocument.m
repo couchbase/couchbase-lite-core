@@ -95,7 +95,7 @@
 
 - (BOOL) reloadMeta: (NSError**)outError {
     uint64_t newBodyOffset;
-    if (!Check(fdb_get_metaonly(_db.db, &_info, &newBodyOffset),
+    if (!Check(fdb_get_metaonly(_db.handle, &_info, &newBodyOffset),
                outError))
         return NO;
     _metadata = nil;
@@ -115,7 +115,7 @@
             return nil;
         assert(_bodyOffset > 0);
     }
-    if (!Check(fdb_get_byoffset(_db.db, &_info, _bodyOffset), outError))
+    if (!Check(fdb_get_byoffset(_db.handle, &_info, _bodyOffset), outError))
         return nil;
     NSData* body = [NSData dataWithBytesNoCopy: _info.body length: _info.bodylen freeWhenDone: YES];
     _info.body = NULL;
@@ -132,7 +132,7 @@
         .body = (void*)body.bytes,
         .bodylen = body.length,
     };
-    if (!Check(fdb_set(_db.db, &newDoc), outError))
+    if (!Check(fdb_set(_db.handle, &newDoc), outError))
         return NO;
     _metadata = [metadata copy];
     free(_info.meta);
@@ -147,7 +147,7 @@
 - (BOOL) deleteDocument: (NSError**)outError {
     _info.body = NULL;
     _info.bodylen = 0;
-    if (!Check(fdb_set(_db.db, &_info), outError))
+    if (!Check(fdb_set(_db.handle, &_info), outError))
         return NO;
     _bodyOffset = 0;
     _info.seqnum = kCBForestNoSequence;

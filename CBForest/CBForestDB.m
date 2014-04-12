@@ -47,7 +47,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     return Check(fdb_open(&_db, filePath.fileSystemRepresentation, _openFlags, NULL), outError);
 }
 
-- (fdb_handle*) db {
+- (fdb_handle*) handle {
     NSAssert(_db, @"Already closed!");
     return _db;
 }
@@ -63,14 +63,14 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (NSString*) filename {
     fdb_info info;
-    fdb_get_dbinfo(self.db, &info);
+    fdb_get_dbinfo(self.handle, &info);
     return [[NSFileManager defaultManager] stringWithFileSystemRepresentation: info.filename
                                                                     length: strlen(info.filename)];
 }
 
 - (CBForestDBInfo) info {
     fdb_info info;
-    fdb_get_dbinfo(self.db, &info);
+    fdb_get_dbinfo(self.handle, &info);
     return (CBForestDBInfo) {
         //.headerRevNum = _db.cur_header_revnum,
         .dataSize       = info.space_used,
@@ -81,7 +81,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (BOOL) commit: (NSError**)outError {
-    return Check(fdb_commit(self.db), outError)
+    return Check(fdb_commit(self.handle), outError)
         && Check(fdb_flush_wal(_db), outError);
 }
 
@@ -90,7 +90,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     NSString* filename = self.filename;
     NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
     [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-    if (!Check(fdb_compact(self.db, tempFile.fileSystemRepresentation), outError)) {
+    if (!Check(fdb_compact(self.handle, tempFile.fileSystemRepresentation), outError)) {
         [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
         return NO;
     }
@@ -120,7 +120,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
         .meta = (void*)meta.bytes,
         .metalen = meta.length
     };
-    if (!Check(fdb_set(self.db, &doc), outError))
+    if (!Check(fdb_set(self.handle, &doc), outError))
         return kCBForestNoSequence;
     return doc.seqnum;
 }
@@ -133,10 +133,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
     };
     fdb_status status;
     if (value) {
-        status = fdb_get(self.db, &doc);
+        status = fdb_get(self.handle, &doc);
         *value = BufToData(doc.body, doc.bodylen);
     } else {
-        status = fdb_get_metaonly(self.db, &doc, NULL);
+        status = fdb_get_metaonly(self.handle, &doc, NULL);
     }
     if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
         return NO;
@@ -149,14 +149,14 @@ NSString* const CBForestErrorDomain = @"CBForest";
 - (BOOL) deleteSequence: (CBForestSequence)sequence error: (NSError**)outError {
     fdb_doc doc = {.seqnum = sequence};
     uint64_t bodyOffset;
-    fdb_status status = fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset);
+    fdb_status status = fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset);
     if (status == FDB_RESULT_KEY_NOT_FOUND)
         return YES;
     else if (!Check(status, outError))
         return NO;
     doc.body = doc.meta = NULL;
     doc.bodylen = doc.metalen = 0;
-    return Check(fdb_set(self.db, &doc), outError);
+    return Check(fdb_set(self.handle, &doc), outError);
 }
 
 
@@ -172,7 +172,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     const void* endKeyBytes = endKey.bytes;
     size_t endKeyLength = endKey.length;
     fdb_iterator *iterator;
-    fdb_status status = fdb_iterator_init(self.db, &iterator,
+    fdb_status status = fdb_iterator_init(self.handle, &iterator,
                                           startKey.bytes, startKey.length,
                                           endKeyBytes, endKeyLength, fdbOptions);
     if (!Check(status, outError))
@@ -255,7 +255,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
         .seqnum = sequence
     };
     uint64_t bodyOffset = 0;
-    if (!Check(fdb_get_metaonly_byseq(self.db, &doc, &bodyOffset), outError))
+    if (!Check(fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset), outError))
         return nil;
     return [[_documentClass alloc] initWithDB: self info: &doc offset: bodyOffset];
 }

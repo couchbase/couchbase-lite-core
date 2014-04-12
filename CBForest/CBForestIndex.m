@@ -107,7 +107,7 @@ id kCBForestIndexNoValue;
                                withBlock: ^BOOL(const fdb_doc *doc, uint64_t bodyOffset)
     {
         //NSLog(@"Query enumerated key=%@", BufToData(doc->key, doc->keylen));//TEMP
-        if (!Check(fdb_get_byoffset(self.db, (fdb_doc *)doc, bodyOffset), outError))
+        if (!Check(fdb_get_byoffset(self.handle, (fdb_doc *)doc, bodyOffset), outError))
             return false;
         NSArray* body = BufToJSON((sized_buf){doc->body, doc->bodylen}, NULL);
         id key = body[0];
