@@ -113,11 +113,12 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity);
 
 /** Adds a revision to a tree. The tree's capacity MUST be greater than its count.
  *  The memory pointed to by revID and data MUST remain valid until after the tree is freed. */
-bool RevTreeInsert(RevTree **treePtr,
+bool RevTreeInsert(RevTree **treeP,
                    sized_buf revID,
                    sized_buf data,
+                   bool deleted,
                    sized_buf parentRevID,
-                   bool deleted);
+                   bool allowConflict);
 
 /** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
 void RevTreePrune(RevTree* tree, unsigned maxDepth);

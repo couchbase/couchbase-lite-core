@@ -95,10 +95,14 @@
 
 - (BOOL) reloadMeta: (NSError**)outError {
     uint64_t newBodyOffset;
-    if (!Check(fdb_get_metaonly(_db.handle, &_info, &newBodyOffset),
-               outError))
+    fdb_status status = fdb_get_metaonly(_db.handle, &_info, &newBodyOffset);
+    if (status == FDB_RESULT_KEY_NOT_FOUND) {
+        _info.seqnum = kCBForestNoSequence;
+        newBodyOffset = 0;
+    } else if (!Check(status, outError)) {
         return NO;
-    _metadata = nil;
+    }
+    _metadata = nil; // forget old cached metadata
     _bodyOffset = newBodyOffset;
     return YES;
 }
@@ -113,7 +117,10 @@
     if (_bodyOffset == 0) {
         if (![self reloadMeta: outError])
             return nil;
-        assert(_bodyOffset > 0);
+        if (_bodyOffset == 0) {
+            Check(FDB_RESULT_KEY_NOT_FOUND, outError);
+            return nil;
+        }
     }
     if (!Check(fdb_get_byoffset(_db.handle, &_info, _bodyOffset), outError))
         return nil;

@@ -26,8 +26,7 @@
     at 1 and is incremented every time any document is saved. */
 @property (readonly) CBForestSequence sequence;
 
-/** Is the document known to exist in the database?
-    This will be YES for all documents other than those created by -makeDocumentWithID:. */
+/** Is the document known to exist in the database? */
 @property (readonly) BOOL exists;
 
 /** Length of the body (available even if the body hasn't been loaded) */
@@ -38,7 +37,9 @@
 /** Reads the document's body from the database. */
 - (NSData*) readBody: (NSError**)outError;
 
-/** Refreshes the cached metadata from the latest revision on disk. */
+/** Refreshes the cached metadata from the latest revision on disk.
+    If the document doesn't exist or has been deleted, no error is returned but the metadata
+    is set to nil*/
 - (BOOL) reloadMeta: (NSError**)outError;
 
 /** Writes the document to the database. */

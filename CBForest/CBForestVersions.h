@@ -40,6 +40,9 @@ enum {
 /** Is there a revision with the given ID? */
 - (BOOL) hasRevision: (NSString*)revID;
 
+/** Is there a revision with the given ID? */
+- (BOOL) hasRevision: (NSString*)revID isLeaf: (BOOL*)outIsLeaf;
+
 /** Returns the data of the revision with the given ID, or nil if it's not found. */
 - (NSData*) dataOfRevision: (NSString*)revID;
 
@@ -62,7 +65,8 @@ enum {
 - (BOOL) addRevision: (NSData*)data
             deletion: (BOOL)deletion
               withID: (NSString*)revID
-            parentID: (NSString*)parentRevID;
+            parentID: (NSString*)parentRevID
+       allowConflict: (BOOL)allowConflict;
 
 /** Saves changes made by -addRevision:. No-op if there haven't been any changes. */
 - (BOOL) save: (NSError**)outError;

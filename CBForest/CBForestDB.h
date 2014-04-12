@@ -28,7 +28,8 @@ typedef enum {
 
 /** Option flag bits for loading & enumerating documents in a CBForest. */
 typedef enum {
-    kCBForestDBMetaOnly     = 0x01, // UNUSED
+    kCBForestDBCreateDoc    = 0x01,
+    kCBForestDBMetaOnly     = 0x02 // UNUSED
 } CBForestContentOptions;
 
 typedef struct {

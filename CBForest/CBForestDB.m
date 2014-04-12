@@ -245,6 +245,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
     CBForestDocument* doc = [[_documentClass alloc] initWithDB: self docID: docID];
     if (![doc reloadMeta: outError])
         return nil;
+    if (!(options & kCBForestDBCreateDoc) && !doc.exists) {
+        Check(FDB_RESULT_KEY_NOT_FOUND, outError);
+        return nil;
+    }
     return doc;
 }
 

@@ -352,30 +352,36 @@ static void _revTreeInsert(RevTree *tree,
 bool RevTreeInsert(RevTree **treeP,
                    sized_buf revID,
                    sized_buf data,
+                   bool deleted,
                    sized_buf parentRevID,
-                   bool deleted)
+                   bool allowConflict)
 {
     if (!RevTreeReserveCapacity(treeP, 1))
         return false;
 
     // Make sure the given revID is valid but doesn't exist yet:
-    uint32_t newSeq;
-    if (!RevIDParseCompacted(revID, &newSeq, NULL))
+    uint32_t newGen;
+    if (!RevIDParseCompacted(revID, &newGen, NULL))
         return false;
     if (RevTreeFindNode(*treeP, revID))
         return false;
 
     // Find the parent node, if a parent ID is given:
     const RevNode* parent = NULL;
-    uint32_t parentSeq = 0;
+    uint32_t parentGen = 0;
     if (parentRevID.buf) {
         parent = RevTreeFindNode(*treeP, parentRevID);
-        if (!parent || !RevIDParseCompacted(parentRevID, &parentSeq, NULL))
+        if (!parent || !RevIDParseCompacted(parentRevID, &parentGen, NULL))
+            return false;
+        if (!allowConflict && !(parent->flags & kRevNodeIsLeaf))
+            return false;
+    } else {
+        if (!allowConflict && (*treeP)->count > 0)
             return false;
     }
     
-    // Enforce that sequence number went up by 1 from the parent:
-    if (newSeq != parentSeq + 1)
+    // Enforce that generation number went up by 1 from the parent:
+    if (newGen != parentGen + 1)
         return false;
 
     // Finally, insert:

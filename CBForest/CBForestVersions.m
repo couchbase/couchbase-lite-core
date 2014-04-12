@@ -190,6 +190,15 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     return RevTreeFindNode(_tree, CompactRevIDToBuf(revID)) != NULL;
 }
 
+- (BOOL) hasRevision: (NSString*)revID isLeaf:(BOOL *)outIsLeaf {
+    const RevNode* node = RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+    if (!node)
+        return NO;
+    if (outIsLeaf)
+        *outIsLeaf = (node->flags & kRevNodeIsLeaf) != 0;
+    return YES;
+}
+
 static BOOL nodeIsActive(const RevNode* node) {
     return node && (node->flags & kRevNodeIsLeaf) && !(node->flags & kRevNodeIsDeleted);
 }
@@ -231,12 +240,13 @@ static BOOL nodeIsActive(const RevNode* node) {
             deletion: (BOOL)deletion
               withID: (NSString*)revID
             parentID: (NSString*)parentRevID
+       allowConflict: (BOOL)allowConflict
 {
     NSData* revIDData = CompactRevID(revID);
     data = [data copy];
 
-    if (!RevTreeInsert(&_tree, DataToBuf(revIDData), DataToBuf(data),
-                       CompactRevIDToBuf(parentRevID), deletion))
+    if (!RevTreeInsert(&_tree, DataToBuf(revIDData), DataToBuf(data), deletion,
+                       CompactRevIDToBuf(parentRevID), allowConflict))
         return NO;
 
     // Keep references to the NSData objects that the sized_bufs point to, so their contents
