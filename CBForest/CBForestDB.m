@@ -24,14 +24,16 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 - (id) initWithFile: (NSString*)filePath
-           readOnly: (BOOL)readOnly
+            options: (CBForestFileOptions)options
               error: (NSError**)outError
 {
     self = [super init];
     if (self) {
         _documentClass = [CBForestDocument class];
-        _openFlags = readOnly ? FDB_OPEN_FLAG_RDONLY : 0;
-        // Note: There is another flag FDB_OPEN_FLAG_CREATE but it isn't used yet by ForestDB. 4/14
+        assert(kCBForestDBCreate == FDB_OPEN_FLAG_CREATE);
+        assert(kCBForestDBReadOnly == FDB_OPEN_FLAG_RDONLY);
+        _openFlags = (fdb_open_flags)options;
+        // Note: ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag. --4/2014
         if (![self open: filePath error: outError])
             return nil;
     }

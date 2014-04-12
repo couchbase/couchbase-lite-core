@@ -27,7 +27,7 @@
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: kDBPath error: &error];
-    index = [[CBForestIndex alloc] initWithFile: kDBPath readOnly: NO error: &error];
+    index = [[CBForestIndex alloc] initWithFile: kDBPath options: kCBForestDBCreate error: &error];
     XCTAssert(index, @"Couldn't open index: %@", error);
 }
 

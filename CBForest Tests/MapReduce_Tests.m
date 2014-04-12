@@ -29,10 +29,10 @@
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: kDBPath error: &error];
-    db = [[CBForestDB alloc] initWithFile: kDBPath readOnly: NO error: &error];
+    db = [[CBForestDB alloc] initWithFile: kDBPath options: kCBForestDBCreate error: &error];
     XCTAssert(db, @"Couldn't open db: %@", error);
     [[NSFileManager defaultManager] removeItemAtPath: kIndexPath error: &error];
-    index = [[CBForestMapReduceIndex alloc] initWithFile: kIndexPath readOnly: NO error: &error];
+    index = [[CBForestMapReduceIndex alloc] initWithFile: kIndexPath options: kCBForestDBCreate error: &error];
     XCTAssert(index, @"Couldn't open index: %@", error);
     index.sourceDatabase = db;
 }

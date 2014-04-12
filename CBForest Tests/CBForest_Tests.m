@@ -28,7 +28,7 @@
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: kDBPath error: &error];
-    _db = [[CBForestDB alloc] initWithFile: kDBPath readOnly: NO error: &error];
+    _db = [[CBForestDB alloc] initWithFile: kDBPath options: kCBForestDBCreate error: &error];
     XCTAssert(_db, @"Couldn't open db: %@", error);
 }
 
