@@ -9,17 +9,19 @@
 #include "rev_tree.h"
 #include "varint.h"
 #include <forestdb.h>
+#include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <CoreServices/CoreServices.h>
+#include <CoreFoundation/CFByteOrder.h>
 
 
 #define offsetby(PTR,OFFSET) (void*)((uint8_t*)(PTR)+(OFFSET))
 
-#define htonll EndianU64_NtoB
-#define ntohll EndianU64_BtoN
+#define htonll CFSwapInt64HostToBig
+#define ntohll CFSwapInt64BigToHost
 
 
 // Innards of RevTree struct (in-memory representation)
@@ -90,7 +92,7 @@ static int compareNodes(const void *ptr1, const void *ptr2);
 
 static RevNode* parentNode(RevTree* tree, RevNode* node) {
     if (node->parentIndex == kRevNodeParentIndexNone)
-        return nil;
+        return NULL;
     return &tree->node[node->parentIndex];
 }
 
@@ -408,7 +410,7 @@ void RevTreePrune(RevTree* tree, unsigned maxDepth) {
         return;
 
     // Next, create a mapping from current to new node indexes (after removing pruned nodes)
-    uint16_t* map = malloc(tree->count * sizeof(uint16));
+    uint16_t* map = malloc(tree->count * sizeof(uint16_t));
     node = &tree->node[0];
     for (unsigned i=0, j=0; i<tree->count; i++,node++) {
         if (node->revID.size > 0)
