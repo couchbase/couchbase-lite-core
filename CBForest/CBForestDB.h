@@ -66,8 +66,9 @@ typedef struct {
 @interface CBForestDB : NSObject
 
 /** Opens a database at the given filesystem path.
-    @param filename The name of the file containing the database
-    @param flags Additional flags for how the database should be opened. */
+    @param filePath The name of the file containing the database
+    @param options Additional flags for how the database should be opened
+    @param outError  On failure, will be set to the error that occurred */
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
               error: (NSError**)outError;
@@ -161,7 +162,7 @@ typedef struct {
 
 /** Iterates over documents, in ascending order by sequence.
     @param startSequence  The sequence number to start at (1 to start from the beginning.)
-    @param endID  The sequence number to end at, or kCBForestMaxSequence to go to the end.
+    @param endSequence  The sequence number to end at, or kCBForestMaxSequence to go to the end.
     @param options  Iteration options, or NULL to use the default options.
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.
