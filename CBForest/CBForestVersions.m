@@ -9,7 +9,7 @@
 #import "CBForestVersions.h"
 #import "CBForestPrivate.h"
 #import "rev_tree.h"
-#import "forestdb_x.h"
+#import "option.h"
 
 
 #define kDefaultMaxDepth 100
@@ -151,9 +151,9 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 #ifdef REVTREE_USES_FILE_OFFSETS
     else if (node->oldBodyOffset > 0) {
         // Look up old document from the saved oldBodyOffset:
-        fdb_doc doc = {.bodylen = node->oldBodySize};
-        if (!Check(x_fdb_read_body(db, &doc, node->oldBodyOffset), outError))
-            return nil;
+        fdb_doc doc = {.seqnum = node->sequence};
+        if (!Check(fdb_get_byoffset(db, &doc, node->oldBodyOffset), outError))
+            return nil; // This will happen if the old doc body was lost by compaction.
         RevTree* oldTree = RevTreeDecode((sized_buf){doc.body, doc.bodylen}, 0, 0, 0);
         if (oldTree) {
             // Now look up the revision, which still has a body in this old doc:

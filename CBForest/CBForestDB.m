@@ -9,7 +9,6 @@
 #import "CBForestDB.h"
 #import "CBForestPrivate.h"
 #import "rev_tree.h"
-#import "forestdb_x.h"
 
 
 NSString* const CBForestErrorDomain = @"CBForest";
@@ -73,7 +72,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_info info;
     fdb_get_dbinfo(self.db, &info);
     return (CBForestDBInfo) {
-        //.headerRevNum  = _db.cur_header_revnum,
+        //.headerRevNum = _db.cur_header_revnum,
         .dataSize       = info.space_used,
         .fileSize       = info.file_size,
         .documentCount  = info.doc_count,
@@ -88,10 +87,6 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (BOOL) compact: (NSError**)outError
 {
-#if 1
-    //FIX: Disabled. There seem to be some problems with compaction in ForestDB. See MB-10811.
-    return YES;
-#else
     NSString* filename = self.filename;
     NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
     [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
@@ -109,7 +104,6 @@ NSString* const CBForestErrorDomain = @"CBForest";
         return NO;
     }
     return [self open: filename error: outError];
-#endif
 }
 
 #pragma mark - KEYS/VALUES:

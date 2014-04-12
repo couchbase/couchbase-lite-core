@@ -130,7 +130,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssert(encoded.buf != NULL);
     XCTAssert(encoded.size > 20);
 
-    tree = RevTreeDecode(encoded, 1, 0, 123);
+    tree = RevTreeDecode(encoded, 1, 88, 123);
     XCTAssert(tree != NULL);
     XCTAssertEqual(RevTreeGetCount(tree), 1);
     const RevNode* rev1 = RevTreeFindNode(tree, revID1);
@@ -149,7 +149,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 #ifdef REVTREE_USES_FILE_OFFSETS
     XCTAssert(rev1->data.buf == NULL);
     XCTAssertEqual(rev1->oldBodyOffset, 123);
-    XCTAssertEqual(rev1->oldBodySize, encoded.size);
+    XCTAssertEqual(rev1->sequence, 88);
 #endif
     const RevNode* rev2 = RevTreeFindNode(tree, revID2);
     XCTAssert(rev2->data.buf != NULL);

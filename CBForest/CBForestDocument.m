@@ -8,7 +8,6 @@
 
 #import "CBForestDocument.h"
 #import "CBForestPrivate.h"
-#import "forestdb_x.h"
 
 
 @implementation CBForestDocument
@@ -116,7 +115,7 @@
             return nil;
         assert(_bodyOffset > 0);
     }
-    if (!Check(x_fdb_read_body(_db.db, &_info, _bodyOffset), outError))
+    if (!Check(fdb_get_byoffset(_db.db, &_info, _bodyOffset), outError))
         return nil;
     NSData* body = [NSData dataWithBytesNoCopy: _info.body length: _info.bodylen freeWhenDone: YES];
     _info.body = NULL;

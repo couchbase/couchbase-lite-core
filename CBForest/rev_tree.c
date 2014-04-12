@@ -27,7 +27,7 @@ struct RevTree {
     unsigned    count;          // Number of nodes in tree
     unsigned    capacity;       // Capacity of node[] array
     uint64_t    bodyOffset;     // File offset of body this tree was read from
-    uint64_t    bodySize;
+    uint64_t    bodySequence;
     bool        sorted;         // Are the nodes currently sorted?
     RevNode     node[1];        // Actual dimension is [.capacity]
 };
@@ -136,7 +136,7 @@ RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
     }
     tree->count = count;
     tree->bodyOffset = oldBodyOffset;
-    tree->bodySize = raw_tree.size;
+    tree->bodySequence = sequence;
     return tree;
 }
 
@@ -156,7 +156,6 @@ sized_buf RevTreeEncode(RevTree *tree)
             node->data.buf = NULL;
             node->data.size = 0;
             node->oldBodyOffset = tree->bodyOffset;
-            node->oldBodySize = tree->bodySize;
         }
 #endif
         size += sizeForRawNode(node++);
@@ -191,7 +190,6 @@ sized_buf RevTreeEncode(RevTree *tree)
 #ifdef REVTREE_USES_FILE_OFFSETS
         else if (dst->flags & kRevNodeHasBodyOffset) {
             dstData += WriteUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
-            WriteUVarInt(dstData, src->oldBodySize ?: tree->bodySize);
         }
 #endif
 
@@ -474,7 +472,7 @@ static size_t sizeForRawNode(const RevNode *node)
         size += node->data.size;
 #ifdef REVTREE_USES_FILE_OFFSETS
     else if (node->oldBodyOffset > 0)
-        size += SizeOfVarInt(node->oldBodyOffset) + SizeOfVarInt(node->oldBodySize);
+        size += SizeOfVarInt(node->oldBodyOffset);
 #endif
     return size;
 }
@@ -500,7 +498,7 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
     const void *data = offsetby(&src->revID, src->revIDLen);
     data += ReadUVarInt((sized_buf){(void*)data, end-data}, &dst->sequence);
 #ifdef REVTREE_USES_FILE_OFFSETS
-    dst->oldBodyOffset = dst->oldBodySize = 0;
+    dst->oldBodyOffset = 0;
 #endif
     if (src->flags & kRevNodeHasData) {
         dst->data.buf = (char*)data;
@@ -514,7 +512,6 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
             size_t nBytes = ReadUVarInt(buf, &dst->oldBodyOffset);
             buf.buf += nBytes;
             buf.size -= nBytes;
-            ReadUVarInt(buf, &dst->oldBodySize);
         }
 #endif
     }

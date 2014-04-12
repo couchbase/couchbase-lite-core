@@ -43,7 +43,8 @@ enum {
 /** Returns the data of the revision with the given ID, or nil if it's not found. */
 - (NSData*) dataOfRevision: (NSString*)revID;
 
-/** Is the revision with the given ID a deletion (tombstone)? */
+/** Is the revision with the given ID a deletion (tombstone)?
+    This is NOT the same thing as the ForestDB document itself being deleted. */
 - (BOOL) isRevisionDeleted: (NSString*)revID;
 
 /** Does the document have active conflicts? */

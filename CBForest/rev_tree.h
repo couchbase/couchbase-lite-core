@@ -49,10 +49,9 @@ typedef struct RevNode {
     sized_buf   revID;          /**< Revision ID */
     sized_buf   data;           /**< Revision body (JSON), or empty if not stored in this tree */
 #ifdef REVTREE_USES_FILE_OFFSETS
-    uint64_t    oldBodyOffset;    /**< File offset of Doc containing revision body, or else 0 */
-    uint64_t    oldBodySize;       /**< Length of Doc containing revision body, or else 0 */
+    uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
 #endif
-    fdb_seqnum_t sequence;       /**< DB sequence number that this revision has/had */
+    fdb_seqnum_t sequence;      /**< DB sequence number that this revision has/had */
     uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
     RevNodeFlags flags;         /**< Leaf/deleted flags */
 } RevNode;

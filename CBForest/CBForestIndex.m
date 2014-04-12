@@ -10,7 +10,6 @@
 #import "CBForestPrivate.h"
 #import "CBCollatable.h"
 #import <forestdb.h>
-#import "forestdb_x.h"
 
 
 id kCBForestIndexNoValue;
@@ -107,8 +106,8 @@ id kCBForestIndexNoValue;
                                    error: outError
                                withBlock: ^BOOL(const fdb_doc *doc, uint64_t bodyOffset)
     {
-        NSLog(@"Query enumerated key=%@", BufToData(doc->key, doc->keylen));//TEMP
-        if (!Check(x_fdb_read_body(self.db, (fdb_doc *)doc, bodyOffset), outError))
+        //NSLog(@"Query enumerated key=%@", BufToData(doc->key, doc->keylen));//TEMP
+        if (!Check(fdb_get_byoffset(self.db, (fdb_doc *)doc, bodyOffset), outError))
             return false;
         NSArray* body = BufToJSON((sized_buf){doc->body, doc->bodylen}, NULL);
         id key = body[0];
