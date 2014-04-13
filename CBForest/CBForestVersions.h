@@ -68,7 +68,18 @@ enum {
             parentID: (NSString*)parentRevID
        allowConflict: (BOOL)allowConflict;
 
+/** Adds a revision to the tree, plus its ancestry.
+    history[0] is the new revision's ID, history[1] is its parent, etc.
+    Returns the index in history of the common ancestor, the 1st rev that already existed.,
+    or -1 on error. */
+- (NSInteger) addRevision: (NSData *)data
+                 deletion: (BOOL)deletion
+                  history: (NSArray*)history;
+
 /** Saves changes made by -addRevision:. No-op if there haven't been any changes. */
 - (BOOL) save: (NSError**)outError;
+
+/** Returns a dump of info about all the revisions, for debugging. */
+- (NSString*) dump;
 
 @end

@@ -318,11 +318,11 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity)
 }
 
 
-static void _revTreeInsert(RevTree *tree,
-                           sized_buf revID,
-                           sized_buf data,
-                           const RevNode *parentNode,
-                           bool deleted)
+static const RevNode* _revTreeInsert(RevTree *tree,
+                                     sized_buf revID,
+                                     sized_buf data,
+                                     const RevNode *parentNode,
+                                     bool deleted)
 {
     assert(tree->count < tree->capacity);
     RevNode *newNode = &tree->node[tree->count++];
@@ -346,6 +346,47 @@ static void _revTreeInsert(RevTree *tree,
 
     if (tree->count > 1)
         tree->sorted = false;
+    return newNode;
+}
+
+
+const RevNode* RevTreeInsertPtr(RevTree **treeP,
+                                sized_buf revID,
+                                sized_buf data,
+                                bool deleted,
+                                const RevNode* parent,
+                                bool allowConflict)
+{
+    if (!RevTreeReserveCapacity(treeP, 1))
+        return false;
+
+    // Make sure the given revID is valid:
+    uint32_t newGen;
+    if (!RevIDParseCompacted(revID, &newGen, NULL))
+        return false;
+#if DEBUG
+    assert(!RevTreeFindNode(*treeP, revID));
+#endif
+
+    // Find the parent node, if a parent ID is given:
+    uint32_t parentGen;
+    if (parent) {
+        if (!allowConflict && !(parent->flags & kRevNodeIsLeaf))
+            return NULL;
+        if (!RevIDParseCompacted(parent->revID, &parentGen, NULL))
+            return NULL;
+    } else {
+        if (!allowConflict && (*treeP)->count > 0)
+            return NULL;
+        parentGen = 0;
+    }
+    
+    // Enforce that generation number went up by 1 from the parent:
+    if (newGen != parentGen + 1)
+        return NULL;
+
+    // Finally, insert:
+    return _revTreeInsert(*treeP, revID, data, parent, deleted);
 }
 
 
@@ -356,37 +397,60 @@ bool RevTreeInsert(RevTree **treeP,
                    sized_buf parentRevID,
                    bool allowConflict)
 {
-    if (!RevTreeReserveCapacity(treeP, 1))
-        return false;
-
-    // Make sure the given revID is valid but doesn't exist yet:
-    uint32_t newGen;
-    if (!RevIDParseCompacted(revID, &newGen, NULL))
-        return false;
     if (RevTreeFindNode(*treeP, revID))
         return false;
-
-    // Find the parent node, if a parent ID is given:
     const RevNode* parent = NULL;
-    uint32_t parentGen = 0;
     if (parentRevID.buf) {
         parent = RevTreeFindNode(*treeP, parentRevID);
-        if (!parent || !RevIDParseCompacted(parentRevID, &parentGen, NULL))
-            return false;
-        if (!allowConflict && !(parent->flags & kRevNodeIsLeaf))
-            return false;
-    } else {
-        if (!allowConflict && (*treeP)->count > 0)
+        if (!parent)
             return false;
     }
-    
-    // Enforce that generation number went up by 1 from the parent:
-    if (newGen != parentGen + 1)
-        return false;
+    return RevTreeInsertPtr(treeP, revID, data, deleted, parent, allowConflict);
+}
 
-    // Finally, insert:
-    _revTreeInsert(*treeP, revID, data, parent, deleted);
-    return true;
+
+int RevTreeInsertWithHistory(RevTree** treeP,
+                             const sized_buf history[],
+                             unsigned historyCount,
+                             sized_buf data,
+                             bool deleted)
+{
+    assert(historyCount > 0);
+    // Find the common ancestor, if any. Along the way, preflight revision IDs:
+    int i;
+    unsigned lastGen = 0;
+    const RevNode* commonAncestor = NULL;
+    for (i = 0; i < historyCount; i++) {
+        unsigned gen;
+        if (!RevIDParseCompacted(history[i], &gen, NULL))
+            return -1;
+        if (lastGen > 0 && gen != lastGen - 1)
+            return -1;
+        lastGen = gen;
+
+        commonAncestor = RevTreeFindNode(*treeP, history[i]);
+        if (commonAncestor)
+            break;
+    }
+    int commonAncestorIndex = i;
+    if (commonAncestorIndex == 0)
+        return 0; // already have it
+
+    ptrdiff_t ancestorPos = commonAncestor - (*treeP)->node;
+    RevTreeReserveCapacity(treeP, i);
+    if (commonAncestor)
+        commonAncestor = &(*treeP)->node[ancestorPos];
+
+    // Insert all the new revisions in chronological order:
+    const RevNode* parent = commonAncestor;
+    while (--i >= 0) {
+        parent = _revTreeInsert(*treeP,
+                                history[i],
+                                (i==0 ? data : (sized_buf){}),
+                                parent,
+                                (i==0 && deleted));
+    }
+    return commonAncestorIndex;
 }
 
 

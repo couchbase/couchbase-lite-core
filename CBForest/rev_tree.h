@@ -120,6 +120,29 @@ bool RevTreeInsert(RevTree **treeP,
                    sized_buf parentRevID,
                    bool allowConflict);
 
+/** Somewhat lower-level version of RevTreeInsert that takes a RevNode* for the parent and returns
+    a RevNode* for the new node. It also does _not_ verify that the new revID doesn't exist! */
+const RevNode* RevTreeInsertPtr(RevTree **treeP,
+                                sized_buf revID,
+                                sized_buf data,
+                                bool deleted,
+                                const RevNode* parent,
+                                bool allowConflict);
+
+/** Adds a revision along with its ancestry.
+    @param treeP  Pointer to the RevTree (may be changed if the tree has to be grown)
+    @param history  Rev IDs of new revision and its ancestors (reverse chronological order)
+    @param historyCount  Number of items in the history array
+    @param data  The body of the new revision
+    @param deleted  True if the new revision is a deletion/tombstone
+    @return  The number of revisions added, or 0 if the new revision already exists,
+             or a negative number on failure. */
+int RevTreeInsertWithHistory(RevTree** treeP,
+                             const sized_buf history[],
+                             unsigned historyCount,
+                             sized_buf data,
+                             bool deleted);
+
 /** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
 void RevTreePrune(RevTree* tree, unsigned maxDepth);
 

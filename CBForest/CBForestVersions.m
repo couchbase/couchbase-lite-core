@@ -172,26 +172,30 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     return result;
 }
 
+- (const RevNode*) nodeWithID: (NSString*)revID {
+    return RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+}
+
 - (NSData*) currentRevisionData {
     RevTreeSort(_tree);
     return dataForNode(self.db.handle, RevTreeGetNode(_tree, 0), NULL);
 }
 
 - (NSData*) dataOfRevision: (NSString*)revID {
-    return dataForNode(self.db.handle, RevTreeFindNode(_tree, CompactRevIDToBuf(revID)), NULL);
+    return dataForNode(self.db.handle, [self nodeWithID: revID], NULL);
 }
 
 - (BOOL) isRevisionDeleted: (NSString*)revID {
-    const RevNode* node = RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+    const RevNode* node = [self nodeWithID: revID];
     return node && (node->flags & kRevNodeIsDeleted);
 }
 
 - (BOOL) hasRevision: (NSString*)revID {
-    return RevTreeFindNode(_tree, CompactRevIDToBuf(revID)) != NULL;
+    return [self nodeWithID: revID] != NULL;
 }
 
 - (BOOL) hasRevision: (NSString*)revID isLeaf:(BOOL *)outIsLeaf {
-    const RevNode* node = RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+    const RevNode* node = [self nodeWithID: revID];
     if (!node)
         return NO;
     if (outIsLeaf)
@@ -223,7 +227,7 @@ static BOOL nodeIsActive(const RevNode* node) {
     RevTreeSort(_tree);
     const RevNode* node;
     if (revID)
-        node = RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+        node = [self nodeWithID: revID];
     else
         node = RevTreeGetNode(_tree, 0);
     
@@ -236,29 +240,25 @@ static BOOL nodeIsActive(const RevNode* node) {
 }
 
 
-- (BOOL) addRevision: (NSData*)data
-            deletion: (BOOL)deletion
-              withID: (NSString*)revID
-            parentID: (NSString*)parentRevID
-       allowConflict: (BOOL)allowConflict
-{
-    NSData* revIDData = CompactRevID(revID);
-    data = [data copy];
+#pragma mark - INSERTION:
 
-    if (!RevTreeInsert(&_tree, DataToBuf(revIDData), DataToBuf(data), deletion,
-                       CompactRevIDToBuf(parentRevID), allowConflict))
-        return NO;
 
-    // Keep references to the NSData objects that the sized_bufs point to, so their contents
-    // aren't destroyed, because _tree now contains pointers to them:
+// Use this to get a sized_buf for any data that's going to be added to the RevTree.
+// It adds a reference to the NSData so it won't be dealloced and invalidate the sized_buf.
+- (sized_buf) rememberData: (NSData*)data {
+    if (!data)
+        return (sized_buf){NULL, 0};
+    data = [data copy]; // in case it's mutable
     if (!_insertedData)
         _insertedData = [NSMutableArray array];
-    [_insertedData addObject: revIDData];
-    if (data)
-        [_insertedData addObject: data];
+    [_insertedData addObject: data];
+    return DataToBuf(data);
+}
 
-    // Update the flags and current revision ID.
-    // (Remember that the newly-inserted revision did not necessarily become the current one!)
+
+// Update the flags and current revision ID.
+- (void) updateAfterInsert {
+    RevTreeSort(_tree);
     const RevNode* curNode = RevTreeGetCurrentNode(_tree);
     CBForestVersionsFlags flags = 0;
     if (curNode->flags & kRevNodeIsDeleted)
@@ -267,9 +267,44 @@ static BOOL nodeIsActive(const RevNode* node) {
         flags |= kCBForestDocConflicted;
     self.flags = flags;
     self.revID = ExpandRevID(curNode->revID);
-
     _changed = YES;
+}
+
+
+- (BOOL) addRevision: (NSData*)data
+            deletion: (BOOL)deletion
+              withID: (NSString*)revID
+            parentID: (NSString*)parentRevID
+       allowConflict: (BOOL)allowConflict
+{
+    if (!RevTreeInsert(&_tree,
+                       [self rememberData: CompactRevID(revID)],
+                       [self rememberData: data],
+                       deletion,
+                       CompactRevIDToBuf(parentRevID),
+                       allowConflict))
+        return NO;
+    [self updateAfterInsert];
     return YES;
+}
+
+
+- (NSInteger) addRevision: (NSData *)data
+                 deletion: (BOOL)deletion
+                  history: (NSArray*)history // history[0] is new rev's ID
+{
+    NSUInteger historyCount = history.count;
+    sized_buf *historyBufs = malloc(historyCount * sizeof(sized_buf));
+    if (!historyBufs)
+        return -1;
+    for (NSUInteger i=0; i<historyCount; i++)
+        historyBufs[i] = [self rememberData: CompactRevID(history[i])];
+    int numAdded = RevTreeInsertWithHistory(&_tree, historyBufs, (unsigned)historyCount,
+                                            [self rememberData: data], deletion);
+    free(historyBufs);
+    if (numAdded > 0)
+        [self updateAfterInsert];
+    return numAdded;
 }
 
 
@@ -285,6 +320,27 @@ static BOOL nodeIsActive(const RevNode* node) {
             return NO;
     }
     return YES;
+}
+
+
+- (NSString*) dump {
+    NSMutableString* out = [NSMutableString stringWithFormat: @"Doc %@ / %@\n",
+                            self.docID, self.revID];
+    RevTreeSort(_tree);
+    for (int i=0; i<RevTreeGetCount(_tree); i++) {
+        const RevNode* node = RevTreeGetNode(_tree, i);
+        [out appendFormat: @"  #%2d: %@", i, ExpandRevID(node->revID)];
+        if (node->flags & kRevNodeIsDeleted)
+            [out appendString: @" (DEL)"];
+        if (node->flags & kRevNodeIsLeaf)
+            [out appendString: @" (leaf)"];
+        if (node->flags & kRevNodeIsNew)
+            [out appendString: @" (new)"];
+        if (node->parentIndex != kRevNodeParentIndexNone)
+            [out appendFormat: @" ^%d", node->parentIndex];
+        [out appendFormat: @"\n"];
+    }
+    return out;
 }
 
 
