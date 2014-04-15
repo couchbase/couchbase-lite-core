@@ -79,7 +79,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 - (void) testInsertRev {
     // Create a tree and insert a revision:
     tree = RevTreeNew(1);
-    RevTreeInsert(&tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), (sized_buf){}, false);
+    RevTreeInsert(&tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), false, (sized_buf){}, false);
     XCTAssertEqual(RevTreeGetCount(tree), 1);
     const RevNode* node = RevTreeGetNode(tree, 0);
     XCTAssert(node != nil);
@@ -102,7 +102,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssert(bufequalstr(node->revID, "1-f00"));
 
     // Insert a new revision:
-    RevTreeInsert(&tree, strtobuf("2-ba4"), strtobuf("{\"hi\":false}"), node->revID, false);
+    RevTreeInsert(&tree, strtobuf("2-ba4"), strtobuf("{\"hi\":false}"), false, node->revID, false);
     XCTAssertEqual(RevTreeGetCount(tree), 2);
     const RevNode* node2 = RevTreeGetNode(tree, 1);
     XCTAssert(node2 != nil);
@@ -125,7 +125,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 - (void) testEncode {
     tree = RevTreeNew(1);
     sized_buf revID1 = strtobuf("1-f000");
-    RevTreeInsert(&tree, revID1, strtobuf("{\"hi\":true}"), (sized_buf){}, false);
+    RevTreeInsert(&tree, revID1, strtobuf("{\"hi\":true}"), false, (sized_buf){}, false);
     sized_buf encoded = RevTreeEncode(tree);
     XCTAssert(encoded.buf != NULL);
     XCTAssert(encoded.size > 20);
@@ -136,7 +136,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     const RevNode* rev1 = RevTreeFindNode(tree, revID1);
     XCTAssert(rev1->data.buf != NULL);
     sized_buf revID2 = strtobuf("2-ba22");
-    RevTreeInsert(&tree, revID2, strtobuf("{\"hi\":false}"), revID1, false);
+    RevTreeInsert(&tree, revID2, strtobuf("{\"hi\":false}"), false, revID1, false);
 
     sized_buf encoded2 = RevTreeEncode(tree);
     XCTAssert(encoded2.buf != NULL);

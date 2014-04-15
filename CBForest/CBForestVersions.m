@@ -1,5 +1,5 @@
 //
-//  CBForestVersions.h
+//  CBForestVersions.m
 //  CBForest
 //
 //  Created by Jens Alfke on 12/3/12.
@@ -44,12 +44,19 @@
 }
 
 - (id) initWithDB: (CBForestDB*)store
-                info: (const fdb_doc*)info
-              offset: (uint64_t)bodyOffset
+             info: (const fdb_doc*)info
+           offset: (uint64_t)bodyOffset
+          options: (CBForestContentOptions)options
+            error:(NSError**)outError
 {
-    self = [super initWithDB: store info: info offset: bodyOffset];
+    self = [super initWithDB: store info: info offset: bodyOffset options: options error: outError];
     if (self) {
         _maxDepth = kDefaultMaxDepth;
+        [self parseMeta];
+        if (!(options & kCBForestDBMetaOnly)) {
+            if (![self readTree: outError])
+                return nil;
+        }
     }
     return self;
 }
@@ -86,26 +93,47 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 }
 
 
-- (BOOL) reloadMeta:(NSError *__autoreleasing *)outError {
-    if (![super reloadMeta: outError])
-        return NO;
-    // Decode flags & revID from metadata:
+// Interprets the metadata and returns YES if my flags or revID properties changed.
+- (BOOL) parseMeta {
+    CBForestVersionsFlags flags = 0;
+    NSString* revID = nil;
     NSData* meta = self.metadata;
     if (meta.length >= 1) {
         const void* metabytes = meta.bytes;
-        CBForestVersionsFlags flags = *(uint8_t*)metabytes;
-        NSString* revID = ExpandRevID((sized_buf){(void*)metabytes+1, meta.length-1});
-        if (flags != _flags || ![revID isEqualToString: _revID]) {
-            self.flags = flags;
-            self.revID = revID;
-            if (![self readTree: outError])
-                return NO;
-        }
-    } else {
-        self.flags = 0;
-        self.revID = nil;
+        flags = *(uint8_t*)metabytes;
+        revID = ExpandRevID((sized_buf){(void*)metabytes+1, meta.length-1});
     }
+    if (flags == _flags && [revID isEqualToString: _revID])
+        return NO;
+    // Metadata has changed:
+    self.flags = flags;
+    self.revID = revID;
+    RevTreeFree(_tree);
+    _tree = NULL;
     return YES;
+}
+
+
+- (BOOL) reloadMeta:(NSError **)outError {
+    if (![super reloadMeta: outError])
+        return NO;
+    [self parseMeta];
+    return YES;
+}
+
+
+- (BOOL) reload: (CBForestContentOptions)options error: (NSError **)outError {
+    if (![self reloadMeta: outError])
+        return NO;
+    else if ((options & kCBForestDBMetaOnly) || _tree)
+        return YES;
+    else if (self.bodyFileOffset > 0)
+        return [self readTree: outError];
+    else if (options & kCBForestDBCreate) {
+        _tree = RevTreeNew(1);
+        return YES;
+    } else
+        return Check(FDB_RESULT_KEY_NOT_FOUND, outError);
 }
 
 
@@ -136,6 +164,17 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 
 - (NSUInteger) revisionCount {
     return RevTreeGetCount(_tree);
+}
+
+
+// internal method that looks up a RevNode. If revID is nil, returns the current node.
+- (const RevNode*) nodeWithID: (NSString*)revID {
+    if (revID)
+        return RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+    else {
+        RevTreeSort(_tree);
+        return RevTreeGetNode(_tree, 0);
+    }
 }
 
 
@@ -172,13 +211,9 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     return result;
 }
 
-- (const RevNode*) nodeWithID: (NSString*)revID {
-    return RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
-}
-
-- (NSData*) currentRevisionData {
-    RevTreeSort(_tree);
-    return dataForNode(self.db.handle, RevTreeGetNode(_tree, 0), NULL);
+- (NSString*) currentRevisionID {
+    const RevNode* current = [self nodeWithID: nil];
+    return current ? ExpandRevID(current->revID) : nil;
 }
 
 - (NSData*) dataOfRevision: (NSString*)revID {
@@ -194,13 +229,22 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     return [self nodeWithID: revID] != NULL;
 }
 
-- (BOOL) hasRevision: (NSString*)revID isLeaf:(BOOL *)outIsLeaf {
+- (CBForestRevisionFlags) flagsOfRevision: (NSString*)revID {
     const RevNode* node = [self nodeWithID: revID];
     if (!node)
-        return NO;
-    if (outIsLeaf)
-        *outIsLeaf = (node->flags & kRevNodeIsLeaf) != 0;
-    return YES;
+        return 0;
+    CBForestRevisionFlags flags = (CBForestRevisionFlags)node->flags | kCBForestRevisionKnown;
+    if (node->data.buf != NULL || node->oldBodyOffset != 0)
+        flags |= kCBForestRevisionHasBody;
+    return flags;
+}
+
+- (NSString*) parentIDOfRevision: (NSString*)revID {
+    const RevNode* node = [self nodeWithID: revID];
+    if (!node || node->parentIndex == kRevNodeParentIndexNone)
+        return nil;
+    const RevNode* parent = RevTreeGetNode(_tree, node->parentIndex);
+    return ExpandRevID(parent->revID);
 }
 
 static BOOL nodeIsActive(const RevNode* node) {
@@ -209,6 +253,14 @@ static BOOL nodeIsActive(const RevNode* node) {
 
 - (BOOL) hasConflicts {
     return RevTreeHasConflict(_tree);
+}
+
+- (NSArray*) allRevisionIDs {
+    NSMutableArray* revIDs = [[NSMutableArray alloc] initWithCapacity: RevTreeGetCount(_tree)];
+    for (unsigned i = 0; i < RevTreeGetCount(_tree); ++i) {
+        [revIDs addObject: ExpandRevID(RevTreeGetNode(_tree, i)->revID)];
+    }
+    return revIDs;
 }
 
 - (NSArray*) currentRevisionIDs {

@@ -357,8 +357,11 @@ const RevNode* RevTreeInsertPtr(RevTree **treeP,
                                 const RevNode* parent,
                                 bool allowConflict)
 {
+    ptrdiff_t parentIndex = parent - &(*treeP)->node[0];
     if (!RevTreeReserveCapacity(treeP, 1))
         return false;
+    if (parent)
+        parent = &(*treeP)->node[parentIndex];
 
     // Make sure the given revID is valid:
     uint32_t newGen;

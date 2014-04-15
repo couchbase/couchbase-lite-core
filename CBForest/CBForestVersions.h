@@ -9,11 +9,21 @@
 #import "CBForest/CBForestDocument.h"
 
 
+/** Flags for a versioned document. */
 typedef UInt8 CBForestVersionsFlags;
 enum {
     kCBForestDocDeleted    = 0x01,
     kCBForestDocConflicted = 0x02,
 };
+
+/** Flags for a single revision of a document. */
+typedef enum {
+    kCBForestRevisionDeleted = 0x001,    /**< Is this revision a deletion/tombstone? */
+    kCBForestRevisionLeaf    = 0x002,    /**< Is this revision a leaf (no children?) */
+    kCBForestRevisionNew     = 0x004,    /**< Has this node been inserted since decoding? */
+    kCBForestRevisionHasBody = 0x100,    /**< Does this revision still have a JSON body? */
+    kCBForestRevisionKnown   = 0x200     /**< Do we know that this revision existed? */
+} CBForestRevisionFlags;
 
 
 /** Version-tracking document.
@@ -31,27 +41,31 @@ enum {
 /** Max depth the tree can grow to; older revisions will be pruned to enforce this. */
 @property unsigned maxDepth;
 
-/** Body of the current revision. */
-@property (readonly) NSData* currentRevisionData;
-
 /** Number of revisions stored. */
 @property (readonly) NSUInteger revisionCount;
+
+/** The ID of the current revision. (If there are conflicts the "winning" revision is used.) */
+@property (readonly) NSString* currentRevisionID;
 
 /** Is there a revision with the given ID? */
 - (BOOL) hasRevision: (NSString*)revID;
 
-/** Is there a revision with the given ID? */
-- (BOOL) hasRevision: (NSString*)revID isLeaf: (BOOL*)outIsLeaf;
+/** Flags of the revision with the given ID, or 0 if the revision is unknown. */
+- (CBForestRevisionFlags) flagsOfRevision: (NSString*)revID;
+
+- (BOOL) isRevisionDeleted: (NSString*)revID;
 
 /** Returns the data of the revision with the given ID, or nil if it's not found. */
 - (NSData*) dataOfRevision: (NSString*)revID;
 
-/** Is the revision with the given ID a deletion (tombstone)?
-    This is NOT the same thing as the ForestDB document itself being deleted. */
-- (BOOL) isRevisionDeleted: (NSString*)revID;
+/** Returns the rev ID of the revision's parent, or nil if revID is unknown or is a root. */
+- (NSString*) parentIDOfRevision: (NSString*)revID;
 
 /** Does the document have active conflicts? */
 @property (readonly) BOOL hasConflicts;
+
+/** The IDs of all revisions. */
+@property (readonly) NSArray* allRevisionIDs;
 
 /** The IDs of all non-deleted leaf revisions, i.e. conflicts.
     If there is no conflict, only the current revision's ID is returned. */

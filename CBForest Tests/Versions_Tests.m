@@ -65,7 +65,7 @@
 
 
 - (void) test01_Empty {
-    XCTAssertNil(vers.currentRevisionData);
+    XCTAssertNil([vers dataOfRevision: nil]);
     XCTAssertEqual(vers.revisionCount, 0);
     XCTAssert(!vers.hasConflicts);
     XCTAssertEqual(vers.currentRevisionIDs.count, 0);
@@ -75,7 +75,7 @@
 - (void) test02_AddRevision {
     NSData* body = [@"{\"hello\":true}" dataUsingEncoding: NSUTF8StringEncoding];
     NSString* revID = @"1-fadebead";
-    XCTAssert([vers addRevision: body deletion: NO withID: revID parentID: nil]);
+    XCTAssert([vers addRevision: body deletion: NO withID: revID parentID: nil allowConflict: NO]);
     XCTAssert([vers hasRevision: revID]);
     XCTAssertEqualObjects([vers dataOfRevision: revID], body);
     XCTAssert(![vers isRevisionDeleted: revID]);
@@ -114,7 +114,9 @@
         NSString* revID = [NSString stringWithFormat: @"%d-xxxx", i];
         XCTAssert([vers addRevision: [bodyStr dataUsingEncoding: NSUTF8StringEncoding]
                            deletion: NO
-                             withID: revID parentID: parentID]);
+                             withID: revID
+                           parentID: parentID
+                      allowConflict: NO]);
         parentID = revID;
     }
 
@@ -141,7 +143,9 @@
     // Add a conflict:
     XCTAssert([vers addRevision: [@"{\"isConflict\":true}" dataUsingEncoding: NSUTF8StringEncoding]
                        deletion: NO
-                         withID: @"51-yyyy" parentID: @"50-xxxx"]);
+                         withID: @"51-yyyy"
+                       parentID: @"50-xxxx"
+                  allowConflict: YES]);
     XCTAssert(vers.hasConflicts);
     XCTAssertEqual(vers.flags, kCBForestDocConflicted);
     XCTAssertEqualObjects(vers.revID, parentID);
@@ -170,7 +174,9 @@
     // Delete one branch to resolve the conflict:
     XCTAssert([vers addRevision: nil
                        deletion: YES
-                         withID: @"100-zzzz" parentID: @"99-xxxx"]);
+                         withID: @"100-zzzz"
+                       parentID: @"99-xxxx"
+                  allowConflict: NO]);
     XCTAssert(!vers.hasConflicts);
     XCTAssertEqual(vers.flags, 0);
     XCTAssertEqualObjects(vers.revID, @"51-yyyy");

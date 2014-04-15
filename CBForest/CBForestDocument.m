@@ -41,8 +41,10 @@
 
 
 - (id) initWithDB: (CBForestDB*)store
-                info: (const fdb_doc*)info
-              offset: (uint64_t)bodyOffset
+             info: (const fdb_doc*)info
+           offset: (uint64_t)bodyOffset
+          options: (CBForestContentOptions)options
+            error: (NSError**)outError
 {
     self = [super init];
     if (self) {
@@ -105,6 +107,10 @@
     _metadata = nil; // forget old cached metadata
     _bodyOffset = newBodyOffset;
     return YES;
+}
+
+- (BOOL) reload: (CBForestContentOptions)options error: (NSError **)outError {
+    return [self reloadMeta: outError];
 }
 
 

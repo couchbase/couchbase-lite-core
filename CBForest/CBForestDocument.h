@@ -42,6 +42,8 @@
     is set to nil*/
 - (BOOL) reloadMeta: (NSError**)outError;
 
+- (BOOL) reload: (CBForestContentOptions)options error: (NSError **)outError;
+
 /** Writes the document to the database. */
 - (BOOL) writeBody: (NSData*)body
           metadata: (NSData*)metadata

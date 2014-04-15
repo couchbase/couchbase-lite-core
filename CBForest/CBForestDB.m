@@ -243,7 +243,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
                                error: (NSError**)outError
 {
     CBForestDocument* doc = [[_documentClass alloc] initWithDB: self docID: docID];
-    if (![doc reloadMeta: outError])
+    if (![doc reload: options error: outError])
         return nil;
     if (!(options & kCBForestDBCreateDoc) && !doc.exists) {
         Check(FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -263,7 +263,11 @@ NSString* const CBForestErrorDomain = @"CBForest";
     uint64_t bodyOffset = 0;
     if (!Check(fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset), outError))
         return nil;
-    return [[_documentClass alloc] initWithDB: self info: &doc offset: bodyOffset];
+    return [[_documentClass alloc] initWithDB: self
+                                         info: &doc
+                                       offset: bodyOffset
+                                      options: options
+                                        error: outError];
 }
 
 
@@ -276,23 +280,32 @@ NSString* const CBForestErrorDomain = @"CBForest";
                        error: (NSError**)outError
                    withBlock: (CBForestDocIterator)block
 {
-    return [self _enumerateValuesFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
-                                   toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
-                                 options: options
-                                   error: outError
-                               withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
+    CBForestContentOptions contentOptions = (options ? options->contentOptions : 0);
+    __block BOOL docOK = YES;
+    BOOL ok = [self _enumerateValuesFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
+                                      toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
+                                    options: options
+                                      error: outError
+                                  withBlock: ^BOOL(const fdb_doc *docinfo, uint64_t bodyOffset)
     {
         @autoreleasepool {
             if (![_documentClass docInfo: docinfo matchesOptions: options])
                 return true;
             CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
                                                                   info: docinfo
-                                                                offset: bodyOffset];
+                                                                offset: bodyOffset
+                                                               options: contentOptions
+                                                                 error: outError];
+            if (!doc) {
+                docOK = NO;
+                return NO;
+            }
             BOOL stop = NO;
             block(doc, &stop);
             return !stop;
         }
     }];
+    return ok && docOK;
 }
 
 

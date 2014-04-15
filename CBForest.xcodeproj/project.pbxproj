@@ -716,9 +716,9 @@
 			productReference = 27139B1B18F8E9750021A9A3 /* CBForest.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		27139B2F18F8E9750021A9A3 /* CBForestTests */ = {
+		27139B2F18F8E9750021A9A3 /* CBForest Tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForestTests" */;
+			buildConfigurationList = 27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */;
 			buildPhases = (
 				27139B2C18F8E9750021A9A3 /* Sources */,
 				27139B2D18F8E9750021A9A3 /* Frameworks */,
@@ -729,7 +729,7 @@
 			dependencies = (
 				27139B3418F8E9750021A9A3 /* PBXTargetDependency */,
 			);
-			name = CBForestTests;
+			name = "CBForest Tests";
 			productName = CBForestTests;
 			productReference = 27139B3018F8E9750021A9A3 /* CBForestTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -769,9 +769,9 @@
 			productReference = 27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		27139BA118F8EE3A0021A9A3 /* CBForest-iOSTests */ = {
+		27139BA118F8EE3A0021A9A3 /* CBForest-iOS Tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOSTests" */;
+			buildConfigurationList = 27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS Tests" */;
 			buildPhases = (
 				27139B9E18F8EE3A0021A9A3 /* Sources */,
 				27139B9F18F8EE3A0021A9A3 /* Frameworks */,
@@ -782,7 +782,7 @@
 			dependencies = (
 				27139BA818F8EE3A0021A9A3 /* PBXTargetDependency */,
 			);
-			name = "CBForest-iOSTests";
+			name = "CBForest-iOS Tests";
 			productName = "CBForest-iOSTests";
 			productReference = 27139BA218F8EE3A0021A9A3 /* CBForest-iOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -817,7 +817,7 @@
 						TestTargetID = 27139B1A18F8E9750021A9A3;
 					};
 					27139BA118F8EE3A0021A9A3 = {
-						TestTargetID = 27139B1A18F8E9750021A9A3;
+						TestTargetID = 27139B9418F8EE3A0021A9A3;
 					};
 				};
 			};
@@ -835,8 +835,8 @@
 			targets = (
 				27139B1A18F8E9750021A9A3 /* CBForest */,
 				27139B9418F8EE3A0021A9A3 /* CBForest-iOS */,
-				27139B2F18F8E9750021A9A3 /* CBForestTests */,
-				27139BA118F8EE3A0021A9A3 /* CBForest-iOSTests */,
+				27139B2F18F8E9750021A9A3 /* CBForest Tests */,
+				27139BA118F8EE3A0021A9A3 /* CBForest-iOS Tests */,
 				275072C218E4AA4400A80C5A /* forestdb */,
 				27139B5A18F8EDA20021A9A3 /* forestdb iOS */,
 				27B7E0F118F8FB4700044EBA /* All */,
@@ -1096,7 +1096,6 @@
 		27139B4218F8E9750021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1110,7 +1109,6 @@
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1118,7 +1116,6 @@
 		27139B4318F8E9750021A9A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1128,7 +1125,6 @@
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
@@ -1219,7 +1215,6 @@
 		27139BB618F8EE3A0021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -1235,7 +1230,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1243,7 +1237,6 @@
 		27139BB718F8EE3A0021A9A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -1255,7 +1248,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = xctest;
 			};
@@ -1415,7 +1407,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForestTests" */ = {
+		27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27139B4218F8E9750021A9A3 /* Debug */,
@@ -1442,7 +1434,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOSTests" */ = {
+		27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27139BB618F8EE3A0021A9A3 /* Debug */,

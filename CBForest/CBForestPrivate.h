@@ -58,7 +58,11 @@ typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
 
 @interface CBForestDocument ()
 - (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID;
-- (id) initWithDB: (CBForestDB*)store info: (const fdb_doc*)info offset: (uint64_t)bodyOffset;
+- (id) initWithDB: (CBForestDB*)store
+             info: (const fdb_doc*)info
+           offset: (uint64_t)bodyOffset
+          options: (CBForestContentOptions)options
+            error: (NSError**)outError;
 @property (readonly) sized_buf rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
