@@ -341,22 +341,52 @@ static BOOL nodeIsActive(const RevNode* node) {
 }
 
 
+// Given an NSArray of revision ID strings, converts them to a C array of sized_bufs pointing
+// to their compact forms.
+- (sized_buf*) revStringsToBufs: (NSArray*)revIDs remember: (BOOL)remember {
+    NSUInteger numRevs = revIDs.count;
+    sized_buf *revBufs = malloc(numRevs * sizeof(sized_buf));
+    if (!revBufs)
+        return NULL;
+    for (NSUInteger i=0; i<numRevs; i++) {
+        NSData* revData = CompactRevID(revIDs[i]);
+        if (remember)
+            [self rememberData: revData];
+        revBufs[i] = DataToBuf(revData);
+    }
+    return revBufs;
+}
+
+
 - (NSInteger) addRevision: (NSData *)data
                  deletion: (BOOL)deletion
                   history: (NSArray*)history // history[0] is new rev's ID
 {
-    NSUInteger historyCount = history.count;
-    sized_buf *historyBufs = malloc(historyCount * sizeof(sized_buf));
+    sized_buf *historyBufs = [self revStringsToBufs: history remember: YES];
     if (!historyBufs)
         return -1;
-    for (NSUInteger i=0; i<historyCount; i++)
-        historyBufs[i] = [self rememberData: CompactRevID(history[i])];
-    int numAdded = RevTreeInsertWithHistory(&_tree, historyBufs, (unsigned)historyCount,
+    int numAdded = RevTreeInsertWithHistory(&_tree, historyBufs, (unsigned)history.count,
                                             [self rememberData: data], deletion);
     free(historyBufs);
     if (numAdded > 0)
         [self updateAfterInsert];
     return numAdded;
+}
+
+
+- (NSArray*) purgeRevisions: (NSArray*)revIDs {
+    sized_buf *revBufs = [self revStringsToBufs: revIDs remember: NO];
+    if (!revBufs)
+        return nil;
+    int numPurged = RevTreePurge(_tree, revBufs, (unsigned)revIDs.count);
+    if (numPurged > 0)
+        _changed = YES;
+    NSMutableArray* result = [NSMutableArray array];
+    for (NSUInteger i=0; i<revIDs.count; i++) {
+        if (revBufs[i].size == 0)  // RevTreePurge removed this rev
+            [result addObject: revIDs[i]];
+    }
+    return result;
 }
 
 

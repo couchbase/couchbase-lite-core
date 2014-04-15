@@ -457,34 +457,11 @@ int RevTreeInsertWithHistory(RevTree** treeP,
 }
 
 
-void RevTreePrune(RevTree* tree, unsigned maxDepth) {
-    if (maxDepth == 0 || tree->count <= maxDepth)
-        return;
-
-    // First find all the leaves, and walk from each one down to its root:
-    bool pruned = false;
-    RevNode* node = &tree->node[0];
-    for (unsigned i=0; i<tree->count; i++,node++) {
-        if (nodeIsLeaf(node)) {
-            // Starting from a leaf node, trace its ancestry to find its depth:
-            unsigned depth = 0;
-            for (RevNode* anc = node; anc; anc = parentNode(tree, anc)) {
-                if (++depth > maxDepth) {
-                    // Mark nodes that are too far away:
-                    anc->revID.size = 0;
-                    pruned = true;
-                }
-            }
-        } else if (tree->sorted) {
-            break;
-        }
-    }
-    if (!pruned)
-        return;
-
-    // Next, create a mapping from current to new node indexes (after removing pruned nodes)
+// Remove all revisions with empty revIDs
+static void compactTree(RevTree* tree) {
+    // Create a mapping from current to new node indexes (after removing pruned/purged nodes)
     uint16_t* map = malloc(tree->count * sizeof(uint16_t));
-    node = &tree->node[0];
+    RevNode* node = &tree->node[0];
     for (unsigned i=0, j=0; i<tree->count; i++,node++) {
         if (node->revID.size > 0)
             map[i] = j++;
@@ -505,6 +482,62 @@ void RevTreePrune(RevTree* tree, unsigned maxDepth) {
     }
     tree->count = (unsigned)(dst - &tree->node[0]);
     free(map);
+}
+
+
+int RevTreePrune(RevTree* tree, unsigned maxDepth) {
+    if (maxDepth == 0 || tree->count <= maxDepth)
+        return 0;
+
+    // First find all the leaves, and walk from each one down to its root:
+    int numPruned = 0;
+    RevNode* node = &tree->node[0];
+    for (unsigned i=0; i<tree->count; i++,node++) {
+        if (nodeIsLeaf(node)) {
+            // Starting from a leaf node, trace its ancestry to find its depth:
+            unsigned depth = 0;
+            for (RevNode* anc = node; anc; anc = parentNode(tree, anc)) {
+                if (++depth > maxDepth) {
+                    // Mark nodes that are too far away:
+                    anc->revID.size = 0;
+                    numPruned++;
+                }
+            }
+        } else if (tree->sorted) {
+            break;
+        }
+    }
+    if (numPruned > 0)
+        compactTree(tree);
+    return numPruned;
+}
+
+
+int RevTreePurge(RevTree* tree, sized_buf revBufs[], unsigned nRevs) {
+    int numPurged = 0;
+    bool madeProgress, foundNonLeaf;
+    do {
+        madeProgress = foundNonLeaf = false;
+        for (unsigned i=0; i<nRevs; i++) {
+            RevNode* node = (RevNode*)RevTreeFindNode(tree, revBufs[i]);
+            if (node) {
+                if (nodeIsLeaf(node)) {
+                    numPurged++;
+                    madeProgress = true;
+                    node->revID.size = 0; // mark for purge
+                    revBufs[i].size = 0;
+                    revBufs[i].buf = NULL; // mark as used
+                    if (node->parentIndex != kRevNodeParentIndexNone)
+                        tree->node[node->parentIndex].flags |= kRevNodeIsLeaf;
+                } else {
+                    foundNonLeaf = true;
+                }
+            }
+        }
+    } while (madeProgress && foundNonLeaf);
+    if (numPurged > 0)
+        compactTree(tree);
+    return numPurged;
 }
 
 

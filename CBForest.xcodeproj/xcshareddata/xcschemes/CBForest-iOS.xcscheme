@@ -33,7 +33,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "27139BA118F8EE3A0021A9A3"
-               BuildableName = "CBForest-iOSTests.xctest"
+               BuildableName = "CBForest-iOS Tests.xctest"
                BlueprintName = "CBForest-iOS Tests"
                ReferencedContainer = "container:CBForest.xcodeproj">
             </BuildableReference>

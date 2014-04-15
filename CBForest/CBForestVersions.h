@@ -90,6 +90,10 @@ typedef enum {
                  deletion: (BOOL)deletion
                   history: (NSArray*)history;
 
+/** Removes revisions from the tree, as long as it doesn't break the tree structure; i.e. only
+    leaf revisions or entire subtrees can be removed. */
+- (NSArray*) purgeRevisions: (NSArray*)revIDs;
+
 /** Saves changes made by -addRevision:. No-op if there haven't been any changes. */
 - (BOOL) save: (NSError**)outError;
 

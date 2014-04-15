@@ -144,7 +144,16 @@ int RevTreeInsertWithHistory(RevTree** treeP,
                              bool deleted);
 
 /** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
-void RevTreePrune(RevTree* tree, unsigned maxDepth);
+int RevTreePrune(RevTree* tree, unsigned maxDepth);
+
+/** Removes revisions from the tree, as long as it doesn't break the tree structure; i.e. only
+    leaf revisions or entire subtrees can be removed.
+    @param tree  The revision tre
+    @param revBufs  Array of revision IDs. Revisions that are purged will have their IDs in this
+            array nulled out.
+    @param nRevs  Size of the revBufs array
+    @return  The number of revisions removed. */
+int RevTreePurge(RevTree* tree, sized_buf revBufs[], unsigned nRevs);
 
 /** Sorts the nodes of a tree so that the current node(s) come first.
     Nodes are normally sorted already, but RevTreeInsert will leave them unsorted.
@@ -158,6 +167,9 @@ void RevTreeSort(RevTree *tree);
     Returns true if any changes were made. */
 bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree);
 #endif
+
+
+#pragma mark - REVISION ID UTILITIES:
 
 
 /** Parses a revision ID into its generation-number prefix and digest suffix.
