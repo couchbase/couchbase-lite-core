@@ -148,6 +148,8 @@ typedef struct {
                                    options: (CBForestContentOptions)options
                                      error: (NSError**)outError;
 
+- (BOOL) deleteDocument: (CBForestDocument*)doc error: (NSError**)outError;
+
 /** Iterates over documents, in ascending order by key.
     @param startID  The document ID to start at, or nil to start from the beginning.
     @param endID  The last document ID to enumerate, or nil to go to the end.
