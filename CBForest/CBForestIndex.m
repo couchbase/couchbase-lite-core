@@ -93,23 +93,21 @@ id kCBForestIndexNoValue;
 
 
 - (BOOL) queryStartKey: (id)startKey
+            startDocID: (NSString*)startDocID
                 endKey: (id)endKey
+              endDocID: (NSString*)endDocID
                options: (const CBForestEnumerationOptions*)options
                  error: (NSError**)outError
                  block: (CBForestQueryCallbackBlock)block
 {
-    NSData *startKeyData=nil, *endKeyData=nil;
-    if (options && options->descending) {
-        endKeyData = CBCreateCollatable([NSArray arrayWithObjects: endKey, nil]);
-        if (startKey)
-            startKeyData = CBCreateCollatable(@[startKey, @{}]);
-    } else {
-        startKeyData = CBCreateCollatable([NSArray arrayWithObjects: startKey, nil]);
-        if (endKey)
-            endKeyData = CBCreateCollatable(@[endKey, @{}]);
-    }
+    // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
+    NSMutableArray* realStartKey = [NSMutableArray arrayWithObjects: startKey, startDocID, nil];
+    NSMutableArray* realEndKey = [NSMutableArray arrayWithObjects: endKey, endDocID, nil];
+    NSMutableArray* maxKey = (options && options->descending) ? realStartKey : realEndKey;
+    [maxKey addObject: @{}];
 
-    return [self _enumerateValuesFromKey: startKeyData toKey: endKeyData
+    return [self _enumerateValuesFromKey: CBCreateCollatable(realStartKey)
+                                   toKey: CBCreateCollatable(realEndKey)
                                  options: options
                                    error: outError
                                withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)

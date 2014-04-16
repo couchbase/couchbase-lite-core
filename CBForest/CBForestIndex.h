@@ -34,7 +34,9 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 
 /** Queries the index, calling the block once for each result. */
 - (BOOL) queryStartKey: (id)startKey
+            startDocID: (NSString*)startDocID
                 endKey: (id)endKey
+              endDocID: (NSString*)endDocID
                options: (const CBForestEnumerationOptions*)options
                  error: (NSError**)outError
                  block: (CBForestQueryCallbackBlock)block;
