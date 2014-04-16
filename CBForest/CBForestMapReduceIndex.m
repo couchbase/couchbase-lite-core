@@ -41,15 +41,29 @@
 }
 
 
-- (BOOL) updateIndex: (NSError**)outError {
-    NSAssert(_sourceDatabase, @"No source database set!");
-    NSAssert(_map, @"No map function set!");
+- (uint64_t) nextSequence: (NSError**)outError {
     if (!_readNextSequence) {
         _nextSequence = [self readNextSequence: outError];
         if (_nextSequence == UINT64_MAX)
-            return NO;
+            return 0;
         _readNextSequence = YES;
     }
+    return _nextSequence;
+}
+
+
+- (uint64_t) lastSequenceIndexed {
+    uint64_t next = [self nextSequence: NULL];
+    return next > 0 ? next-1 : 0;
+}
+
+
+- (BOOL) updateIndex: (NSError**)outError {
+    NSAssert(_sourceDatabase, @"No source database set!");
+    NSAssert(_map, @"No map function set!");
+
+    if ([self nextSequence: outError] == 0)
+        return NO;
 
     NSMutableArray* keys = [NSMutableArray array];
     NSMutableArray* values = [NSMutableArray array];
@@ -74,7 +88,11 @@
         [keys removeAllObjects];
         [values removeAllObjects];
         _map(doc, emit);
-        if (![self setKeys: keys values: values forDocument: doc.docID error: outError]) {
+        if (![self setKeys: keys
+                    values: values
+               forDocument: doc.docID
+                atSequence: doc.sequence
+                     error: outError]) {
             *stop = gotError = YES;
             return;
         }

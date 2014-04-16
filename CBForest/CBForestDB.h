@@ -35,6 +35,7 @@ typedef enum {
 typedef struct {
     unsigned                skip;
     unsigned                limit;
+    BOOL                    descending;
     BOOL                    inclusiveEnd;
     BOOL                    includeDeleted;
     BOOL                    onlyConflicts;

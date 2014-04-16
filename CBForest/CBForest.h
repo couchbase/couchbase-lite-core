@@ -9,3 +9,4 @@
 #import <CBForest/CBForestDB.h>
 #import <CBForest/CBForestDocument.h>
 #import <CBForest/CBForestVersions.h>
+#import <CBForest/CBForestMapReduceIndex.h>

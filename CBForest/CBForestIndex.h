@@ -15,8 +15,9 @@ extern id kCBForestIndexNoValue;
 
 /** Callback block for a CBForestIndex query. */
 typedef void (^CBForestQueryCallbackBlock)(id key,
-                                           NSString* docID,
                                            id value,
+                                           NSString* docID,
+                                           uint64_t sequence,
                                            BOOL *stop);
 
 
@@ -28,6 +29,7 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 - (BOOL) setKeys: (NSArray*)keys
           values: (NSArray*)values
      forDocument: (NSString*)docID
+      atSequence: (uint64_t)docSequence
            error: (NSError**)outError;
 
 /** Queries the index, calling the block once for each result. */

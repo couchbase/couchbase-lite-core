@@ -43,7 +43,8 @@ sized_buf CompactRevIDToBuf(NSString* revID);
 NSString* ExpandRevID(sized_buf compressedRevID);
 
 
-typedef BOOL (^CBForest_Iterator)(const fdb_doc *doc, uint64_t bodyOffset);
+// The block is responsible for freeing the doc!
+typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 
 
 @interface CBForestDB ()
