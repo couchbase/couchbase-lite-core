@@ -75,15 +75,18 @@ typedef struct {
             options: (CBForestFileOptions)options
               error: (NSError**)outError;
 
-/** Closes the database. It's not strictly necessary to call this -- the database will be closed when this object is deallocated -- but it's a good way to ensure it gets closed in a timely manner.
-    It's illegal to call any other of the methods defined here after closing the database; they will all raise exceptions. */
-- (void) close;
-
 /** The filesystem path the database was opened on. */
 @property (readonly) NSString* filename;
 
 /** Some stats about the database. */
 @property (readonly) CBForestDBInfo info;
+
+/** Closes the database. It's not strictly necessary to call this -- the database will be closed when this object is deallocated -- but it's a good way to ensure it gets closed in a timely manner.
+    It's illegal to call any other of the methods defined here after closing the database; they will all raise exceptions. */
+- (void) close;
+
+/** Closes the database and deletes its file. */
+- (BOOL) delete: (NSError**)outError;
 
 /** Updates the database file header and makes sure all writes have been flushed to the disk.
     Until this happens, no changes made will persist: they aren't visible to any other client
@@ -93,6 +96,9 @@ typedef struct {
 /** Copies current versions of all documents to a new file, then replaces the current database
     file with the new one. */
 - (BOOL) compact: (NSError**)outError;
+
+/** Erase the contents of the file. This actually closes, deletes and re-opens the database. */
+- (BOOL) erase: (NSError**)outError;
 
 // KEYS/VALUES:
 

@@ -8,62 +8,75 @@
 
 #import "CBForestMapReduceIndex.h"
 #import "CBForestDocument.h"
+#import "CBForestPrivate.h"
 #import "CBCollatable.h"
 #import <forestdb.h>
 
 
 @implementation CBForestMapReduceIndex
 {
-    CBForestSequence _nextSequence;
-    BOOL _readNextSequence;
+    NSString* _lastMapVersion;
 }
 
-@synthesize sourceDatabase=_sourceDatabase, map=_map;
+@synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion, lastSequenceIndexed=_lastSequenceIndexed;
 
 
-- (CBForestSequence) readNextSequence: (NSError**)outError {
-    // (All keys in this db are in collatable form. So use 'null' for this key)
-    NSData* nextSeqKey = CBCreateCollatable([NSNull null]);
-    NSData* nextSeqData;
-    if (![self getValue: &nextSeqData meta: NULL forKey: nextSeqKey error: outError])
-        return UINT64_MAX;
-    if (nextSeqData.length != sizeof(CBForestSequence))
-        return 1;
-    return NSSwapBigLongLongToHost(*(CBForestSequence*)nextSeqData.bytes);
-}
-
-
-- (BOOL) writeNextSequence: (CBForestSequence)nextSequence error: (NSError**)outError {
-    NSData* nextSeqKey = CBCreateCollatable([NSNull null]);
-    CBForestSequence bigEndian = NSSwapHostLongLongToBig(nextSequence);
-    NSData* nextSeqData = [NSData dataWithBytes: &bigEndian length: sizeof(bigEndian)];
-    return [self setValue: nextSeqData meta: nil forKey: nextSeqKey error: outError];
-}
-
-
-- (uint64_t) nextSequence: (NSError**)outError {
-    if (!_readNextSequence) {
-        _nextSequence = [self readNextSequence: outError];
-        if (_nextSequence == UINT64_MAX)
-            return 0;
-        _readNextSequence = YES;
+- (id) initWithFile: (NSString*)filePath
+            options: (CBForestFileOptions)options
+              error: (NSError**)outError
+{
+    self = [super initWithFile: filePath options: options error: outError];
+    if (self) {
+        // Read the last-sequence and version properties.
+        // (All keys in this db are in collatable form. So use 'null' for this key)
+        NSData* stateKey = CBCreateCollatable([NSNull null]);
+        NSData* stateData;
+        if (![self getValue: &stateData meta: NULL forKey: stateKey error: outError])
+            return nil;
+        if (stateData) {
+            NSDictionary* state = DataToJSON(stateData, NULL);
+            _lastSequenceIndexed = [state[@"lastSequence"] unsignedLongLongValue];
+            _lastMapVersion = state[@"mapVersion"];
+        }
     }
-    return _nextSequence;
+    return self;
 }
 
 
-- (uint64_t) lastSequenceIndexed {
-    uint64_t next = [self nextSequence: NULL];
-    return next > 0 ? next-1 : 0;
+- (BOOL) saveState: (NSError**)outError {
+    NSMutableDictionary* state = [NSMutableDictionary dictionary];
+    state[@"lastSequence"] = @(_lastSequenceIndexed);
+    if (_mapVersion)
+        state[@"mapVersion"] = _lastMapVersion;
+    NSData* stateData = JSONToData(state, NULL);
+
+    NSData* stateKey = CBCreateCollatable([NSNull null]);
+    return [self setValue: stateData meta: nil forKey: stateKey error: outError];
+}
+
+
+- (void) setMapVersion:(NSString *)mapVersion {
+    _mapVersion = mapVersion.copy;
+    if (_lastMapVersion && ![_lastMapVersion isEqualToString: _mapVersion]) {
+        [self erase: NULL];
+        _lastSequenceIndexed = 0;
+        _lastMapVersion = nil;
+    }
 }
 
 
 - (BOOL) updateIndex: (NSError**)outError {
     NSAssert(_sourceDatabase, @"No source database set!");
     NSAssert(_map, @"No map function set!");
+    NSAssert(_mapVersion, @"No map version set!");
 
-    if ([self nextSequence: outError] == 0)
-        return NO;
+    // If the map function has changed, erase the index and start over:
+    if (_lastMapVersion && ![_lastMapVersion isEqualToString: _mapVersion]) {
+        if (![self erase: outError])
+            return NO;
+        _lastSequenceIndexed = 0;
+        _lastMapVersion = nil;
+    }
 
     NSMutableArray* keys = [NSMutableArray array];
     NSMutableArray* values = [NSMutableArray array];
@@ -77,7 +90,7 @@
         }
     };
 
-    CBForestSequence startSequence = _nextSequence;
+    CBForestSequence startSequence = _lastSequenceIndexed + 1;
     __block BOOL gotError = NO;
     BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
                                               toSequence: kCBForestMaxSequence
@@ -96,11 +109,12 @@
             *stop = gotError = YES;
             return;
         }
-        _nextSequence = doc.sequence + 1;
+        _lastSequenceIndexed = doc.sequence;
     }];
 
-    if (_nextSequence > startSequence)
-        ok = [self writeNextSequence: _nextSequence error: (gotError ?NULL :outError)];
+    _lastMapVersion = _mapVersion;
+    if (_lastSequenceIndexed >= startSequence)
+        ok = [self saveState: (gotError ?NULL :outError)];
     
     if (!ok || gotError)
         return NO;

@@ -49,6 +49,7 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 
 @interface CBForestDB ()
 @property (readonly) fdb_handle* handle;
+- (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError;
 - (BOOL) _enumerateValuesFromKey: (NSData*)startKey
                            toKey: (NSData*)endKey
                          options: (const CBForestEnumerationOptions*)options

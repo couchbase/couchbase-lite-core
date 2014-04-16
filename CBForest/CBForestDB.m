@@ -33,14 +33,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
         assert(kCBForestDBCreate == FDB_OPEN_FLAG_CREATE);
         assert(kCBForestDBReadOnly == FDB_OPEN_FLAG_RDONLY);
         _openFlags = (fdb_open_flags)options;
-        // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag. --4/2014
-        if (!(options & FDB_OPEN_FLAG_CREATE)) {
-            if (![[NSFileManager defaultManager] fileExistsAtPath: filePath]) {
-                Check(FDB_RESULT_NO_SUCH_FILE, outError);
-                return nil;
-            }
-        }
-        if (![self open: filePath error: outError])
+        if (![self open: filePath options: options error: outError])
             return nil;
     }
     return self;
@@ -50,9 +43,15 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_close(_db);
 }
 
-- (BOOL) open: (NSString*)filePath error: (NSError**)outError {
+- (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError
+{
     NSAssert(!_db, @"Already open");
-    return Check(fdb_open(&_db, filePath.fileSystemRepresentation, _openFlags, NULL), outError);
+    // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag. --4/2014
+    if (!(options & FDB_OPEN_FLAG_CREATE)) {
+        if (![[NSFileManager defaultManager] fileExistsAtPath: filePath])
+            return Check(FDB_RESULT_NO_SUCH_FILE, outError);
+    }
+    return Check(fdb_open(&_db, filePath.fileSystemRepresentation, options, NULL), outError);
 }
 
 - (fdb_handle*) handle {
@@ -89,12 +88,33 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (BOOL) commit: (NSError**)outError {
+    if (_openFlags & FDB_OPEN_FLAG_RDONLY)
+        return YES; // no-op if read-only
     return Check(fdb_commit(self.handle), outError)
         && Check(fdb_flush_wal(_db), outError);
 }
 
+
+- (BOOL) delete: (NSError**)outError {
+    if (_openFlags & FDB_OPEN_FLAG_RDONLY)
+        return Check(FDB_RESULT_RONLY_VIOLATION, outError);
+    NSString* path = self.filename;
+    [self close];
+    return [[NSFileManager defaultManager] removeItemAtPath: path error: outError];
+}
+
+
+- (BOOL) erase: (NSError**)outError {
+    NSString* path = self.filename;
+    return [self delete: outError]
+        && [self open: path options: (_openFlags | kCBForestDBCreate) error: outError];
+}
+
+            
 - (BOOL) compact: (NSError**)outError
 {
+    if (_openFlags & FDB_OPEN_FLAG_RDONLY)
+        return Check(FDB_RESULT_RONLY_VIOLATION, outError);
     NSString* filename = self.filename;
     NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
     [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
@@ -108,10 +128,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
         if (outError)
             *outError = [NSError errorWithDomain: NSPOSIXErrorDomain code: errno userInfo: nil];
         [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-        [self open: filename error: NULL];
+        [self open: filename options: _openFlags error: NULL];
         return NO;
     }
-    return [self open: filename error: outError];
+    return [self open: filename options: _openFlags error: outError];
 }
 
 #pragma mark - KEYS/VALUES:
