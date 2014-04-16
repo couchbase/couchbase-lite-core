@@ -15,6 +15,7 @@
 extern NSString* const CBForestErrorDomain;
 
 enum {
+    kCBForestErrorNotFound = -9,
     kCBForestErrorDataCorrupt = -1000
 };
 

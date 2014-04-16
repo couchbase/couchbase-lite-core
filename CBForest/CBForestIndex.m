@@ -112,7 +112,6 @@ id kCBForestIndexNoValue;
                                    error: outError
                                withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
     {
-        //NSLog(@"Query enumerated key=%@", BufToData(doc->key, doc->keylen));//TEMP
         if (!Check(fdb_get_byoffset(self.handle, doc, bodyOffset), outError)) {
             fdb_doc_free(doc);
             return false;
