@@ -47,7 +47,7 @@ typedef struct {
 /** Sequence number type. Sequences are allocated starting from 1. */
 typedef uint64_t CBForestSequence;
 
-#define kCBForestNoSequence     ((uint64_t)0)   // Means "no sequence assigned/known"
+#define kCBForestNoSequence     ((CBForestSequence)0)   // Means "no sequence assigned/known"
 #define kCBForestMaxSequence    UINT64_MAX      // Max possible sequence, for use when enumerating
 
 

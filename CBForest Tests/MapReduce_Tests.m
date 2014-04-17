@@ -78,6 +78,7 @@
         for (NSString* city in body[@"cities"])
             emit(city, body[@"name"]);
     };
+    index.mapVersion = @"1";
 
     NSLog(@"--- Updating index");
     NSError* error;
@@ -87,11 +88,14 @@
 
     NSLog(@"--- First query");
     __block int nRows = 0;
-    BOOL ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                             block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+    BOOL ok = [index queryStartKey: nil startDocID: nil
+                            endKey: nil endDocID: nil
+                           options: NULL
+                             error: &error
+                             block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
     {
         nRows++;
-        NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+        NSLog(@"key = %@, value=%@, seq=%llu, docID = %@", key, value, sequence, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 8);
@@ -106,11 +110,14 @@
 
     NSLog(@"--- After updating OR");
     nRows = 0;
-    ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+    ok = [index queryStartKey: nil startDocID: nil
+                       endKey: nil endDocID: nil
+                      options: NULL
+                        error: &error
+                        block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
           {
               nRows++;
-              NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+              NSLog(@"key = %@, value=%@, docID = %@, seq=%llu", key, value, docID, sequence);
           }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 9);
@@ -122,11 +129,14 @@
 
     NSLog(@"--- After removing CA:");
     nRows = 0;
-    ok = [index queryStartKey: nil endKey: nil options: NULL error: &error
-                        block: ^(id key, NSString *docID, NSData *rawValue, BOOL *stop)
+    ok = [index queryStartKey: nil startDocID: nil
+                       endKey: nil endDocID: nil
+                      options: NULL
+                        error: &error
+                        block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
           {
               nRows++;
-              NSLog(@"key = %@, value=%@, docID = %@", key, rawValue, docID);
+              NSLog(@"key = %@, value=%@, docID = %@, seq = %llu", key, value, docID, sequence);
           }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 6);

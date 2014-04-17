@@ -247,10 +247,6 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     return ExpandRevID(parent->revID);
 }
 
-static BOOL nodeIsActive(const RevNode* node) {
-    return node && (node->flags & kRevNodeIsLeaf) && !(node->flags & kRevNodeIsDeleted);
-}
-
 - (BOOL) hasConflicts {
     return RevTreeHasConflict(_tree);
 }
@@ -265,14 +261,15 @@ static BOOL nodeIsActive(const RevNode* node) {
 
 - (NSArray*) currentRevisionIDs {
     RevTreeSort(_tree);
-    NSMutableArray* conflicts = [NSMutableArray array];
+    NSMutableArray* current = [NSMutableArray array];
     for (unsigned i = 0; YES; ++i) {
         const RevNode* node = RevTreeGetNode(_tree, i);
-        if (!nodeIsActive(node))
+        if (!node)
             break;
-        [conflicts addObject: ExpandRevID(node->revID)];
+        if (node->flags & kRevNodeIsLeaf)
+            [current addObject: ExpandRevID(node->revID)];
     }
-    return conflicts;
+    return current;
 }
 
 - (NSArray*) historyOfRevision: (NSString*)revID {
