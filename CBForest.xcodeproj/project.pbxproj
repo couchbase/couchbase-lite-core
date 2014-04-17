@@ -231,11 +231,11 @@
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		27139B2118F8E9750021A9A3 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
-		27139B3018F8E9750021A9A3 /* CBForestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBForestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B5918F8ECB10021A9A3 /* CBForest.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = CBForest.exp; sourceTree = "<group>"; };
 		27139B9018F8EDA20021A9A3 /* libforestdb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libforestdb.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		27139BA218F8EE3A0021A9A3 /* CBForest-iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA518F8EE3A0021A9A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
@@ -447,10 +447,10 @@
 			children = (
 				275072C318E4AA4400A80C5A /* libforestdb.a */,
 				27139B1B18F8E9750021A9A3 /* CBForest.framework */,
-				27139B3018F8E9750021A9A3 /* CBForestTests.xctest */,
+				27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */,
 				27139B9018F8EDA20021A9A3 /* libforestdb.a */,
 				27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */,
-				27139BA218F8EE3A0021A9A3 /* CBForest-iOSTests.xctest */,
+				27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -731,7 +731,7 @@
 			);
 			name = "CBForest Tests";
 			productName = CBForestTests;
-			productReference = 27139B3018F8E9750021A9A3 /* CBForestTests.xctest */;
+			productReference = 27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		27139B5A18F8EDA20021A9A3 /* forestdb iOS */ = {
@@ -784,7 +784,7 @@
 			);
 			name = "CBForest-iOS Tests";
 			productName = "CBForest-iOSTests";
-			productReference = 27139BA218F8EE3A0021A9A3 /* CBForest-iOSTests.xctest */;
+			productReference = 27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		275072C218E4AA4400A80C5A /* forestdb */ = {
