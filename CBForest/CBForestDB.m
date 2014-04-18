@@ -18,6 +18,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 {
     fdb_handle *_db;
     fdb_open_flags _openFlags;
+    int _transactionLevel;
 }
 
 @synthesize documentClass=_documentClass;
@@ -134,13 +135,44 @@ NSString* const CBForestErrorDomain = @"CBForest";
     return [self open: filename options: _openFlags error: outError];
 }
 
+
+#pragma mark - TRANSACTIONS:
+
+
+- (void) beginTransaction {
+    ++_transactionLevel;
+}
+
+
+- (BOOL) endTransaction: (NSError**)outError {
+    NSAssert(_transactionLevel > 0, @"CBForestDB: endTransaction without beginTransaction");
+    return --_transactionLevel > 0 || [self commit: outError];
+}
+
+
+- (BOOL) inTransaction: (BOOL(^)())block {
+    BOOL ok;
+    [self beginTransaction];
+    @try {
+        ok = block();
+    } @catch (NSException* x) {
+        // MYReportException(x, @"CBForestDB transaction");
+        NSLog(@"WARNING: Exception in CBForestDB transaction: %@", x);
+        ok = NO;
+    } @finally {
+        ok = [self endTransaction: NULL] && ok;
+    }
+    return ok;
+}
+
+
 #pragma mark - KEYS/VALUES:
 
 
 - (CBForestSequence) setValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
                         error: (NSError**)outError
 {
-    fdb_doc doc = {
+    __block fdb_doc doc = {
         .key = (void*)key.bytes,
         .keylen = key.length,
         .body = (void*)value.bytes,
@@ -148,13 +180,16 @@ NSString* const CBForestErrorDomain = @"CBForest";
         .meta = (void*)meta.bytes,
         .metalen = meta.length
     };
-    if (!Check(fdb_set(self.handle, &doc), outError))
-        return kCBForestNoSequence;
-    return doc.seqnum;
+    BOOL ok = [self inTransaction: ^BOOL{
+        return Check(fdb_set(self.handle, &doc), outError);
+    }];
+    return ok ? doc.seqnum : kCBForestNoSequence;
 }
 
 
-- (BOOL) getValue: (NSData**)value meta: (NSData**)meta forKey: (NSData*)key error: (NSError**)outError {
+- (BOOL) getValue: (NSData**)value meta: (NSData**)meta forKey: (NSData*)key
+            error: (NSError**)outError
+{
     fdb_doc doc = {
         .key = (void*)key.bytes,
         .keylen = key.length,
@@ -175,16 +210,18 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 - (BOOL) deleteSequence: (CBForestSequence)sequence error: (NSError**)outError {
-    fdb_doc doc = {.seqnum = sequence};
-    uint64_t bodyOffset;
-    fdb_status status = fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset);
-    if (status == FDB_RESULT_KEY_NOT_FOUND)
-        return YES;
-    else if (!Check(status, outError))
-        return NO;
-    doc.body = doc.meta = NULL;
-    doc.bodylen = doc.metalen = 0;
-    return Check(fdb_set(self.handle, &doc), outError);
+    return [self inTransaction: ^BOOL{
+        fdb_doc doc = {.seqnum = sequence};
+        uint64_t bodyOffset;
+        fdb_status status = fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset);
+        if (status == FDB_RESULT_KEY_NOT_FOUND)
+            return YES;
+        else if (!Check(status, outError))
+            return NO;
+        doc.body = doc.meta = NULL;
+        doc.bodylen = doc.metalen = 0;
+        return Check(fdb_set(self.handle, &doc), outError);
+    }];
 }
 
 
@@ -430,6 +467,18 @@ NSString* const CBForestErrorDomain = @"CBForest";
             break;
     }
     return YES;
+}
+
+
+- (NSString*) dump {
+    NSMutableString* dump = [NSMutableString stringWithCapacity: 1000];
+    [self enumerateDocsFromID: nil toID: nil options: 0 error: NULL
+                    withBlock: ^(CBForestDocument *doc, BOOL *stop)
+    {
+        [dump appendFormat: @"\t\"%@\": %lu meta, %llu body\n",
+                             doc.docID, (unsigned long)doc.metadata.length, doc.bodyLength];
+    }];
+    return dump;
 }
 
 

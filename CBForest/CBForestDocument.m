@@ -137,34 +137,38 @@
 
 
 - (BOOL) writeBody: (NSData*)body metadata: (NSData*)metadata error: (NSError**)outError {
-    fdb_doc newDoc = {
-        .key = _info.key,
-        .keylen = _info.keylen,
-        .meta = (void*)metadata.bytes,
-        .metalen = metadata.length,
-        .body = (void*)body.bytes,
-        .bodylen = body.length,
-    };
-    if (!Check(fdb_set(_db.handle, &newDoc), outError))
-        return NO;
-    _metadata = [metadata copy];
-    free(_info.meta);
-    _info.meta = NULL;
-    _info.bodylen = newDoc.bodylen;
-    _info.seqnum = newDoc.seqnum;
-    _bodyOffset = 0; // don't know its new offset
-    return YES;
+    return [_db inTransaction: ^BOOL{
+        fdb_doc newDoc = {
+            .key = _info.key,
+            .keylen = _info.keylen,
+            .meta = (void*)metadata.bytes,
+            .metalen = metadata.length,
+            .body = (void*)body.bytes,
+            .bodylen = body.length,
+        };
+        if (!Check(fdb_set(_db.handle, &newDoc), outError))
+            return NO;
+        _metadata = [metadata copy];
+        free(_info.meta);
+        _info.meta = NULL;
+        _info.bodylen = newDoc.bodylen;
+        _info.seqnum = newDoc.seqnum;
+        _bodyOffset = 0; // don't know its new offset
+        return YES;
+    }];
 }
 
 
 - (BOOL) deleteDocument: (NSError**)outError {
-    _info.body = NULL;
-    _info.bodylen = 0;
-    if (!Check(fdb_set(_db.handle, &_info), outError))
-        return NO;
-    _bodyOffset = 0;
-    _info.seqnum = kCBForestNoSequence;
-    return YES;
+    return [_db inTransaction: ^BOOL{
+        _info.body = NULL;
+        _info.bodylen = 0;
+        if (!Check(fdb_set(_db.handle, &_info), outError))
+            return NO;
+        _bodyOffset = 0;
+        _info.seqnum = kCBForestNoSequence;
+        return YES;
+    }];
 }
 
 

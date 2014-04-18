@@ -89,6 +89,14 @@ typedef struct {
 /** Closes the database and deletes its file. */
 - (BOOL) delete: (NSError**)outError;
 
+/** Runs the block, then calls -commit:. If transactions are nested (i.e. -inTransaction: is called
+    while in the block) only the outermost transaction calls -commit:.
+    The block can return NO to signal failure, but this doesn't prevent the commit (since ForestDB
+    doesn't currently have any way to roll-back changes); it just causes the -inTransaction: call
+    to return NO as well, as a convenience to the caller.
+    @return  YES if the block returned YES and the commit succeeded; else NO. */
+- (BOOL) inTransaction: (BOOL(^)())block;
+
 /** Updates the database file header and makes sure all writes have been flushed to the disk.
     Until this happens, no changes made will persist: they aren't visible to any other client
     who opens the database, and will be lost if you close and re-open the database. */
@@ -184,4 +192,6 @@ typedef struct {
                              error: (NSError**)outError
                          withBlock: (CBForestDocIterator)block;
 
+/** Returns a dump of every document in the database with its metadata and body sizes. */
+- (NSString*) dump;
 @end
