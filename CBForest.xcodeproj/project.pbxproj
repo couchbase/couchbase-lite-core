@@ -128,6 +128,10 @@
 		273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3DB18F5E8D8007D8C23 /* snappy.h */; };
 		273AD3E918F5EB15007D8C23 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E718F5EB15007D8C23 /* config.h */; };
 		273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
+		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
+		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
+		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
+		274415221900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
 		275072C718E4AA5000A80C5A /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
 		275072C818E4AA5000A80C5A /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
 		275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
@@ -263,6 +267,8 @@
 		273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBCollatable_Tests.m; sourceTree = "<group>"; };
 		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
 		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
+		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
+		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724418E3E52800A80C5A /* CBForest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CBForest-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
@@ -331,7 +337,6 @@
 		2750730818E504FC00A80C5A /* rev_tree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rev_tree.h; sourceTree = "<group>"; };
 		2750730A18E5EB7200A80C5A /* RevTree_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RevTree_Tests.m; sourceTree = "<group>"; };
 		2750730E18E621C000A80C5A /* Versions_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Versions_Tests.m; sourceTree = "<group>"; };
-		2750731018E6493F00A80C5A /* forestdb_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb_types.h; path = libforestdb/forestdb_types.h; sourceTree = "<group>"; };
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
@@ -522,8 +527,9 @@
 		2750725E18E3E72900A80C5A /* include */ = {
 			isa = PBXGroup;
 			children = (
-				2750731018E6493F00A80C5A /* forestdb_types.h */,
 				2750731118E6493F00A80C5A /* forestdb.h */,
+				2744151D1900E8D800964583 /* fdb_errors.h */,
+				2744151E1900E8D800964583 /* fdb_types.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -649,6 +655,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27139B7B18F8EDA20021A9A3 /* iniparser.h in Headers */,
+				274415201900E8D800964583 /* fdb_errors.h in Headers */,
 				27139B7C18F8EDA20021A9A3 /* snappy.h in Headers */,
 				27139B7D18F8EDA20021A9A3 /* config.h in Headers */,
 				27139B7E18F8EDA20021A9A3 /* memleak.h in Headers */,
@@ -660,6 +667,7 @@
 				27139B8418F8EDA20021A9A3 /* configuration.h in Headers */,
 				27139B8518F8EDA20021A9A3 /* debug.h in Headers */,
 				27139B8618F8EDA20021A9A3 /* snappy-stubs-public.h in Headers */,
+				274415221900E8D800964583 /* fdb_types.h in Headers */,
 				27139B8718F8EDA20021A9A3 /* crc32.h in Headers */,
 				27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */,
 				27139B8918F8EDA20021A9A3 /* btree_prefix_kv.h in Headers */,
@@ -674,6 +682,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				275072FB18E4ACE100A80C5A /* iniparser.h in Headers */,
+				2744151F1900E8D800964583 /* fdb_errors.h in Headers */,
 				273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */,
 				273AD3E918F5EB15007D8C23 /* config.h in Headers */,
 				275072FE18E4ACE100A80C5A /* memleak.h in Headers */,
@@ -685,6 +694,7 @@
 				273AD3C018EF263B007D8C23 /* configuration.h in Headers */,
 				275072F618E4ACE100A80C5A /* debug.h in Headers */,
 				273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */,
+				274415211900E8D800964583 /* fdb_types.h in Headers */,
 				275072F318E4ACE100A80C5A /* crc32.h in Headers */,
 				275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */,
 				2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */,

@@ -11,7 +11,7 @@
 
 // Stuff that should be in the ForestDB API
 
-#include "forestdb_types.h"
+#include "fdb_types.h"
 
 #ifdef __cplusplus
 extern "C" {
