@@ -91,34 +91,35 @@
     };
 
     CBForestSequence startSequence = _lastSequenceIndexed + 1;
-    __block BOOL gotError = NO;
-    BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
-                                              toSequence: kCBForestMaxSequence
-                                                 options: NULL
-                                                   error: outError
-                                               withBlock: ^(CBForestDocument *doc, BOOL *stop)
-    {
-        [keys removeAllObjects];
-        [values removeAllObjects];
-        _map(doc, emit);
-        if (![self setKeys: keys
-                    values: values
-               forDocument: doc.docID
-                atSequence: doc.sequence
-                     error: outError]) {
-            *stop = gotError = YES;
-            return;
-        }
-        _lastSequenceIndexed = doc.sequence;
-    }];
 
-    _lastMapVersion = _mapVersion;
-    if (_lastSequenceIndexed >= startSequence)
-        ok = [self saveState: (gotError ?NULL :outError)];
-    
-    if (!ok || gotError)
-        return NO;
-    return [self commit: outError];
+    return [self inTransaction: ^BOOL {
+        __block BOOL gotError = NO;
+        BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
+                                                  toSequence: kCBForestMaxSequence
+                                                     options: NULL
+                                                       error: outError
+                                                   withBlock: ^(CBForestDocument *doc, BOOL *stop)
+        {
+            [keys removeAllObjects];
+            [values removeAllObjects];
+            _map(doc, emit);
+            if (![self setKeys: keys
+                        values: values
+                   forDocument: doc.docID
+                    atSequence: doc.sequence
+                         error: outError]) {
+                *stop = gotError = YES;
+                return;
+            }
+            _lastSequenceIndexed = doc.sequence;
+        }];
+
+        _lastMapVersion = _mapVersion;
+        if (_lastSequenceIndexed >= startSequence)
+            ok = [self saveState: (gotError ?NULL :outError)];
+        
+        return ok && !gotError;
+    }];
 }
 
 

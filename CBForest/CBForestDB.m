@@ -89,10 +89,10 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (BOOL) commit: (NSError**)outError {
+//  NSLog(@"~~~~~ COMMIT ~~~~~");
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return YES; // no-op if read-only
-    return Check(fdb_commit(self.handle), outError)
-        && Check(fdb_flush_wal(_db), outError);
+    return Check(fdb_commit(_db), outError);
 }
 
 
