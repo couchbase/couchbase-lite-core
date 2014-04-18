@@ -1156,6 +1156,7 @@
 					"$(inherited)",
 					"vendor/forestdb/**",
 				);
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = forestdb;
 				SDKROOT = iphoneos;
 			};
@@ -1195,6 +1196,7 @@
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

@@ -87,7 +87,7 @@ typedef struct {
 - (void) close;
 
 /** Closes the database and deletes its file. */
-- (BOOL) delete: (NSError**)outError;
+- (BOOL) deleteDatabase: (NSError**)outError;
 
 /** Runs the block, then calls -commit:. If transactions are nested (i.e. -inTransaction: is called
     while in the block) only the outermost transaction calls -commit:.

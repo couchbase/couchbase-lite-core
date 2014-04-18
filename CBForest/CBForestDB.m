@@ -96,7 +96,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (BOOL) delete: (NSError**)outError {
+- (BOOL) deleteDatabase: (NSError**)outError {
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return Check(FDB_RESULT_RONLY_VIOLATION, outError);
     NSString* path = self.filename;
@@ -107,7 +107,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (BOOL) erase: (NSError**)outError {
     NSString* path = self.filename;
-    return [self delete: outError]
+    return [self deleteDatabase: outError]
         && [self open: path options: (_openFlags | kCBForestDBCreate) error: outError];
 }
 
