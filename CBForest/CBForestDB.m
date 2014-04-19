@@ -234,13 +234,28 @@ NSString* const CBForestErrorDomain = @"CBForest";
         status = fdb_get(self.handle, &doc);
         *value = BufToData(doc.body, doc.bodylen);
     } else {
-        status = fdb_get_metaonly(self.handle, &doc, NULL);
+        uint64_t offset;
+        status = fdb_get_metaonly(self.handle, &doc, &offset);
     }
     if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
         return NO;
     if (meta)
         *meta = BufToData(doc.meta, doc.metalen);
+    else
+        free(doc.meta);
     return YES;
+}
+
+
+- (BOOL) hasValueForKey: (NSData*)key {
+    fdb_doc doc = {
+        .key = (void*)key.bytes,
+        .keylen = key.length,
+    };
+    uint64_t offset;
+    fdb_status status = fdb_get_metaonly(self.handle, &doc, &offset);
+    free(doc.meta);
+    return status == FDB_RESULT_SUCCESS;
 }
 
 

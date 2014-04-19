@@ -125,6 +125,8 @@ typedef struct {
            forKey: (NSData*)key
             error: (NSError**)outError;
 
+- (BOOL) hasValueForKey: (NSData*)key;
+
 /** Iterates over values, in ascending order by key.
     @param startKey  The key to start at, or nil to start from the beginning.
     @param endKey  The last key to enumerate, or nil to go to the end.
