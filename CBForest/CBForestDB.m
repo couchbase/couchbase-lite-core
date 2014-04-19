@@ -488,35 +488,39 @@ NSString* const CBForestErrorDomain = @"CBForest";
     if (startSequence > self.info.lastSequence || endSequence < startSequence)
         return YES; // no-op
 
-    NSMutableArray* sequences = [[NSMutableArray alloc] init];
-    BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
-                                  withBlock: ^BOOL(fdb_doc *docinfo, uint64_t bodyOffset)
-    {
-        fdb_seqnum_t sequence = docinfo->seqnum;
-        fdb_doc_free(docinfo);
-        if (sequence >= startSequence && sequence <= endSequence)
-            [sequences addObject: @(sequence)];
-        return true;
-    }];
-    if (!ok)
-        return NO;
-
-    [sequences sortUsingSelector: @selector(compare:)];
-
-    CBForestContentOptions contentOptions = 0;
-    if (options)
-        contentOptions = options->contentOptions;
-    for (NSNumber* sequence in sequences) {
-        CBForestDocument* doc = [self documentWithSequence: sequence.unsignedLongLongValue
-                                                   options: contentOptions error: outError];
-        if (!doc)
+    @autoreleasepool {
+        NSMutableArray* sequences = [[NSMutableArray alloc] init];
+        BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
+                                      withBlock: ^BOOL(fdb_doc *docinfo, uint64_t bodyOffset)
+        {
+            fdb_seqnum_t sequence = docinfo->seqnum;
+            fdb_doc_free(docinfo);
+            if (sequence >= startSequence && sequence <= endSequence)
+                [sequences addObject: @(sequence)];
+            return true;
+        }];
+        if (!ok)
             return NO;
-        BOOL stop = NO;
-        block(doc, &stop);
-        if (stop)
-            break;
+
+        [sequences sortUsingSelector: @selector(compare:)];
+
+        CBForestContentOptions contentOptions = 0;
+        if (options)
+            contentOptions = options->contentOptions;
+        for (NSNumber* sequence in sequences) {
+            @autoreleasepool {
+                CBForestDocument* doc = [self documentWithSequence: sequence.unsignedLongLongValue
+                                                           options: contentOptions error: outError];
+                if (!doc)
+                    return NO;
+                BOOL stop = NO;
+                block(doc, &stop);
+                if (stop)
+                    break;
+            }
+        }
+        return YES;
     }
-    return YES;
 }
 
 

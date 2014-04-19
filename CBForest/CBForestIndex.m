@@ -115,22 +115,24 @@ id kCBForestIndexNoValue;
                                    error: outError
                                withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
     {
-        if (!Check(fdb_get_byoffset(self.handle, doc, bodyOffset), outError)) {
+        @autoreleasepool {
+            if (!Check(fdb_get_byoffset(self.handle, doc, bodyOffset), outError)) {
+                fdb_doc_free(doc);
+                return false;
+            }
+            NSArray* body = BufToJSON((sized_buf){doc->body, doc->bodylen}, NULL);
             fdb_doc_free(doc);
-            return false;
+            id key = body[0];
+            if (options && !options->inclusiveEnd && endKey && [endKey isEqual: key]) {
+                return false;
+            }
+            NSString* docID = body[1];
+            CBForestSequence docSequence = [body[2] unsignedLongLongValue];
+            id value = body.count > 3 ? body[3] : nil;
+            BOOL stop = NO;
+            block(key, value, docID, docSequence, &stop);
+            return !stop;
         }
-        NSArray* body = BufToJSON((sized_buf){doc->body, doc->bodylen}, NULL);
-        fdb_doc_free(doc);
-        id key = body[0];
-        if (options && !options->inclusiveEnd && endKey && [endKey isEqual: key]) {
-            return false;
-        }
-        NSString* docID = body[1];
-        CBForestSequence docSequence = [body[2] unsignedLongLongValue];
-        id value = body.count > 3 ? body[3] : nil;
-        BOOL stop = NO;
-        block(key, value, docID, docSequence, &stop);
-        return !stop;
     }];
 }
 
