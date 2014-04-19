@@ -19,6 +19,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_handle *_db;
     fdb_open_flags _openFlags;
     int _transactionLevel;
+    NSRecursiveLock* _writeLock;
 }
 
 @synthesize documentClass=_documentClass;
@@ -30,6 +31,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 {
     self = [super init];
     if (self) {
+        _writeLock = [[self class] lockForFile: filePath];
         _documentClass = [CBForestDocument class];
         assert(kCBForestDBCreate == FDB_OPEN_FLAG_CREATE);
         assert(kCBForestDBReadOnly == FDB_OPEN_FLAG_RDONLY);
@@ -42,6 +44,24 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 - (void) dealloc {
     fdb_close(_db);
+}
+
+// Vends a recursive lock for any filesystem path. This ensures that two CBForestDB instances on
+// the same file have the same lock, so they can get exclusive write access.
++ (NSRecursiveLock*) lockForFile: (NSString*)path {
+    path = path.stringByResolvingSymlinksInPath.stringByStandardizingPath;
+    NSMapTable* sCache;
+    @synchronized(self) {
+        if (!sCache)
+            sCache = [NSMapTable strongToWeakObjectsMapTable];
+        NSRecursiveLock* lock = [sCache objectForKey: path];
+        if (!lock) {
+            lock = [[NSRecursiveLock alloc] init];
+            lock.name = path;
+            [sCache setObject: lock forKey: path];
+        }
+        return lock;
+    }
 }
 
 - (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError
@@ -89,6 +109,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (BOOL) commit: (NSError**)outError {
+    NSAssert(_transactionLevel > 0, @"-commit can only be used inside a transaction");
 //  NSLog(@"~~~~~ COMMIT ~~~~~");
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return YES; // no-op if read-only
@@ -99,16 +120,20 @@ NSString* const CBForestErrorDomain = @"CBForest";
 - (BOOL) deleteDatabase: (NSError**)outError {
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return Check(FDB_RESULT_RONLY_VIOLATION, outError);
-    NSString* path = self.filename;
-    [self close];
-    return [[NSFileManager defaultManager] removeItemAtPath: path error: outError];
+    return [self inTransaction: ^BOOL {
+        NSString* path = self.filename;
+        [self close];
+        return [[NSFileManager defaultManager] removeItemAtPath: path error: outError];
+    }];
 }
 
 
 - (BOOL) erase: (NSError**)outError {
-    NSString* path = self.filename;
-    return [self deleteDatabase: outError]
-        && [self open: path options: (_openFlags | kCBForestDBCreate) error: outError];
+    return [self inTransaction: ^BOOL {
+        NSString* path = self.filename;
+        return [self deleteDatabase: outError]
+            && [self open: path options: (_openFlags | kCBForestDBCreate) error: outError];
+    }];
 }
 
             
@@ -116,23 +141,25 @@ NSString* const CBForestErrorDomain = @"CBForest";
 {
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return Check(FDB_RESULT_RONLY_VIOLATION, outError);
-    NSString* filename = self.filename;
-    NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
-    [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-    if (!Check(fdb_compact(self.handle, tempFile.fileSystemRepresentation), outError)) {
+    return [self inTransaction: ^BOOL {
+        NSString* filename = self.filename;
+        NSString* tempFile = [filename stringByAppendingPathExtension: @"cpt"];
         [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-        return NO;
-    }
-    // Now replace the original file with the compacted one and re-open it:
-    [self close];
-    if (rename(tempFile.fileSystemRepresentation, filename.fileSystemRepresentation) < 0) {
-        if (outError)
-            *outError = [NSError errorWithDomain: NSPOSIXErrorDomain code: errno userInfo: nil];
-        [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
-        [self open: filename options: _openFlags error: NULL];
-        return NO;
-    }
-    return [self open: filename options: _openFlags error: outError];
+        if (!Check(fdb_compact(self.handle, tempFile.fileSystemRepresentation), outError)) {
+            [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
+            return NO;
+        }
+        // Now replace the original file with the compacted one and re-open it:
+        [self close];
+        if (rename(tempFile.fileSystemRepresentation, filename.fileSystemRepresentation) < 0) {
+            if (outError)
+                *outError = [NSError errorWithDomain: NSPOSIXErrorDomain code: errno userInfo: nil];
+            [[NSFileManager defaultManager] removeItemAtPath: tempFile error: NULL];
+            [self open: filename options: _openFlags error: NULL];
+            return NO;
+        }
+        return [self open: filename options: _openFlags error: outError];
+    }];
 }
 
 
@@ -140,13 +167,21 @@ NSString* const CBForestErrorDomain = @"CBForest";
 
 
 - (void) beginTransaction {
+    if (_transactionLevel == 0)
+        [_writeLock lock];
     ++_transactionLevel;
 }
 
 
 - (BOOL) endTransaction: (NSError**)outError {
     NSAssert(_transactionLevel > 0, @"CBForestDB: endTransaction without beginTransaction");
-    return --_transactionLevel > 0 || [self commit: outError];
+    if (--_transactionLevel > 0)
+        return YES;
+
+    // Ending the outermost transaction:
+    BOOL result = _db == NULL || Check(fdb_commit(_db, FDB_COMMIT_NORMAL), outError);
+    [_writeLock unlock];
+    return result;
 }
 
 
