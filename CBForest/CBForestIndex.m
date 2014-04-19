@@ -86,10 +86,11 @@ id kCBForestIndexNoValue;
         }
 
         // Update the list of sequences used for this document:
-        return [self setValue: seqData
+        CBForestSequence seq = [self setValue: seqData
                          meta: nil
                        forKey: docIDData
                         error: outError];
+        return seq != kCBForestNoSequence;
     }];
 }
 

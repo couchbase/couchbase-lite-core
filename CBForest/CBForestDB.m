@@ -431,7 +431,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
 - (BOOL) deleteDocument: (CBForestDocument*)doc error: (NSError**)outError {
     return [self setValue: nil meta: nil
                    forKey: [doc.docID dataUsingEncoding: NSUTF8StringEncoding]
-                    error: outError];
+                    error: outError] != kCBForestNoSequence;
 }
 
 

@@ -464,7 +464,7 @@ static void compactTree(RevTree* tree) {
     RevNode* node = &tree->node[0];
     for (unsigned i=0, j=0; i<tree->count; i++,node++) {
         if (node->revID.size > 0)
-            map[i] = j++;
+            map[i] = (uint16_t)(j++);
         else
             map[i] = kRevNodeParentIndexNone;
     }
@@ -705,7 +705,7 @@ bool RevIDCompact(sized_buf srcrev, sized_buf *dstrev) {
     char* buf = dstrev->buf, *dst = buf;
     *dst++ = encodedGen;
     for (unsigned i=0; i<digest.size; i+=2)
-        *dst++ = 16*digittoint(src[i]) + digittoint(src[i+1]);
+        *dst++ = (char)(16*digittoint(src[i]) + digittoint(src[i+1]));
     dstrev->size = dst - buf;
     return true;
 }

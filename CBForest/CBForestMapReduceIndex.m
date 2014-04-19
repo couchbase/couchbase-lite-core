@@ -51,7 +51,7 @@
     NSData* stateData = JSONToData(state, NULL);
 
     NSData* stateKey = CBCreateCollatable([NSNull null]);
-    return [self setValue: stateData meta: nil forKey: stateKey error: outError];
+    return [self setValue: stateData meta: nil forKey: stateKey error: outError] != kCBForestNoSequence;
 }
 
 

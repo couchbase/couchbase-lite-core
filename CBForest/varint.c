@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
+#include "varint.h"
 #include <stdio.h>
 #include "rev_tree.h" // just for sized_buf -- FIX
 
@@ -26,7 +27,7 @@ size_t WriteUVarInt(void *buf, uint64_t n) {
         *dst++ = (n & 0xFF) | 0x80;
         n >>= 7;
     }
-    *dst++ = n;
+    *dst++ = (uint8_t)n;
     return dst - (uint8_t*)buf;
 }
 

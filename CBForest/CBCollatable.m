@@ -84,7 +84,7 @@ static void encodeNumber(NSNumber* number, NSMutableData* output) {
                 break;
         if (n<0)
             i--;
-        int nBytes = 8-i;
+        uint8_t nBytes = (uint8_t)(8-i);
 
         // Encode the length/flag byte and then the number itself:
         uint8_t lenByte =  n>=0 ? (0x80 | nBytes) : (127 - nBytes);
@@ -167,7 +167,7 @@ static uint8_t* getCharPriorityMap(void) {
         for (int i=0; i<strlen(kInverseMap); i++)
             kCharPriority[kInverseMap[i]] = priority++;
         for (int i=128; i<256; i++)
-            kCharPriority[i] = i;
+            kCharPriority[i] = (uint8_t)i;
     });
     return kCharPriority;
 }

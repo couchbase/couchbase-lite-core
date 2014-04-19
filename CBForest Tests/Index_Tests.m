@@ -56,11 +56,9 @@
                   @"Indexing failed: %@", error);
     }
 
-    NSError* error;
-    XCTAssert([index commit: &error], @"Commit failed: %@", error);
-
     NSLog(@"--- First query");
     __block int nRows = 0;
+    NSError* error;
     BOOL ok = [index queryStartKey: nil startDocID: nil
                             endKey: nil endDocID: nil
                            options: NULL
@@ -77,7 +75,6 @@
                        values: @[@"Oregon", @"Oregon", @"Oregon"]
                   forDocument: @"OR" atSequence: 2 error: &error]),
               @"Indexing failed: %@", error);
-    XCTAssert([index commit: &error], @"Commit failed: %@", error);
 
     NSLog(@"--- After updating OR");
     nRows = 0;

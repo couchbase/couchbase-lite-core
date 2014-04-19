@@ -41,8 +41,10 @@
 
 - (void) test01_Basics {
     XCTAssertEqualObjects(_db.filename, kDBPath);
-    NSError* error;
-    XCTAssert([_db commit: &error], @"Commit failed: %@", error);
+    BOOL ok = [_db inTransaction: ^BOOL{
+        return YES;
+    }];
+    XCTAssert(ok);
     XCTAssert([[NSFileManager defaultManager] fileExistsAtPath: kDBPath]);
 }
 
@@ -71,7 +73,6 @@
 
     NSError* error;
     XCTAssert([doc writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
-    XCTAssert([_db commit: &error], @"Commit failed: %@", error);
     [self logDbInfo];
 
     XCTAssertEqualObjects([doc readBody: &error], body, @"Read failed, err=%@", error);
@@ -89,7 +90,6 @@
     body = [@"Bye!" dataUsingEncoding: NSUTF8StringEncoding];
     meta = [@"meatmeatmeat" dataUsingEncoding: NSUTF8StringEncoding];
     XCTAssert([doc2 writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
-    XCTAssert([_db commit: &error], @"Commit failed: %@", error);
     [self logDbInfo];
 
     CBForestDocument* doc3 = [_db documentWithID: @"foo" options: 0 error: &error];
@@ -131,7 +131,6 @@
                               [docID dataUsingEncoding: NSUTF8StringEncoding],
                               @"(i=%d)", i);
     }
-    XCTAssert([_db commit: &error], @"Commit failed: %@", error);
     XCTAssert([_db compact: &error], @"Compact failed: %@", error);
 
     __block int i = 5;
@@ -142,8 +141,8 @@
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
         XCTAssertEqual(doc.sequence, i);
-        NSError* error;
-        XCTAssertEqualObjects([doc readBody: &error],
+        NSError* innerError;
+        XCTAssertEqualObjects([doc readBody: &innerError],
                               [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
                               @"(i=%d)", i);
         i++;
@@ -161,8 +160,8 @@
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
         XCTAssertEqual(doc.sequence, i);
-        NSError* error;
-        XCTAssertEqualObjects([doc readBody: &error],
+        NSError* innerError;
+        XCTAssertEqualObjects([doc readBody: &innerError],
                               [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
                               @"(i=%d)", i);
         i++;

@@ -9,6 +9,9 @@
 #ifndef CBForest_varint_h
 #define CBForest_varint_h
 
+#include <stddef.h>
+#include "rev_tree.h" // for sized_buf
+
 // Based on varint implementation from the Go language (src/pkg/encoding/binary/varint.go)
 
 // This file implements "varint" encoding of 64-bit integers.
