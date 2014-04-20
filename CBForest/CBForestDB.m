@@ -275,8 +275,9 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (BOOL) _enumerateValuesFromKey: (NSData*)startKey
-                           toKey: (NSData*)endKey
+// Keys can be NSData (by ID) or NSNumber (by sequence)
+- (BOOL) _enumerateValuesFromKey: (id)startKey
+                           toKey: (id)endKey
                          options: (const CBForestEnumerationOptions*)options
                            error: (NSError**)outError
                        withBlock: (CBForest_Iterator)block
@@ -291,12 +292,33 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
     if (!(options && options->includeDeleted))
         fdbOptions |= FDB_ITR_NO_DELETES;
-    const void* endKeyBytes = endKey.bytes;
-    size_t endKeyLength = endKey.length;
+
+    fdb_status status;
     fdb_iterator *iterator;
-    fdb_status status = fdb_iterator_init(self.handle, &iterator,
-                                          startKey.bytes, startKey.length,
-                                          endKeyBytes, endKeyLength, fdbOptions);
+    if ([startKey isKindOfClass: [NSNumber class]]) {
+        // By sequence:
+        CBForestSequence startSequence = [startKey unsignedLongLongValue];
+        CBForestSequence endSequence = [endKey unsignedLongLongValue];
+        if (options && !options->inclusiveEnd && endSequence > 0)
+            endSequence--;
+        if (startSequence > self.info.lastSequence || endSequence < startSequence)
+            return YES; // no-op
+        status = fdb_iterator_sequence_init(self.handle, &iterator,
+                                            startSequence, endSequence, fdbOptions);
+    } else {
+        // By ID:
+        const void* endKeyBytes = [endKey bytes];
+        size_t endKeyLength = [endKey length];
+        if (options && !options->inclusiveEnd && endKeyBytes)
+            block = ^BOOL(fdb_doc *doc, uint64_t bodyOffset) {
+                if (doc->keylen == endKeyLength && memcmp(doc->key, endKeyBytes, endKeyLength)==0)
+                    return false;   // stop _before_ the endKey
+                return block(doc, bodyOffset);
+            };
+        status = fdb_iterator_init(self.handle, &iterator,
+                                   [startKey bytes], [startKey length],
+                                   endKeyBytes, endKeyLength, fdbOptions);
+    }
     if (!Check(status, outError))
         return NO;
 
@@ -314,10 +336,6 @@ NSString* const CBForestErrorDomain = @"CBForest";
             skip--;
             continue;
         }
-        if (options && !options->inclusiveEnd && endKeyBytes
-                && docinfo->keylen == endKeyLength
-                && memcmp(docinfo->key, endKeyBytes, endKeyLength)==0)
-            break;
 
         if (!block(docinfo, bodyOffset))
             break;
@@ -331,8 +349,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
-- (BOOL) _reverseEnumerateValuesFromKey: (NSData*)startKey
-                                  toKey: (NSData*)endKey
+- (BOOL) _reverseEnumerateValuesFromKey: (id)startKey
+                                  toKey: (id)endKey
                                 options: (const CBForestEnumerationOptions*)options
                                   error: (NSError**)outError
                               withBlock: (CBForest_Iterator)block
@@ -438,25 +456,25 @@ NSString* const CBForestErrorDomain = @"CBForest";
 #pragma mark - ITERATION:
 
 
-- (BOOL) enumerateDocsFromID: (NSString*)startID
-                        toID: (NSString*)endID
-                     options: (const CBForestEnumerationOptions*)options
-                       error: (NSError**)outError
-                   withBlock: (CBForestDocIterator)block
+- (BOOL) _enumerateDocsFromKey: (id)startKey
+                         toKey: (id)endKey
+                       options: (const CBForestEnumerationOptions*)options
+                         error: (NSError**)outError
+                     withBlock: (CBForestDocIterator)block
 {
     CBForestContentOptions contentOptions = (options ? options->contentOptions : 0);
     __block BOOL docOK = YES;
-    BOOL ok = [self _enumerateValuesFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
-                                      toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
+    BOOL ok = [self _enumerateValuesFromKey: startKey
+                                      toKey: endKey
                                     options: options
                                       error: outError
                                   withBlock: ^BOOL(fdb_doc *docinfo, uint64_t bodyOffset)
     {
+        if (![_documentClass docInfo: docinfo matchesOptions: options]) {
+            fdb_doc_free(docinfo);
+            return true;
+        }
         @autoreleasepool {
-            if (![_documentClass docInfo: docinfo matchesOptions: options]) {
-                fdb_doc_free(docinfo);
-                return true;
-            }
             CBForestDocument* doc = [[_documentClass alloc] initWithDB: self
                                                                   info: docinfo
                                                                 offset: bodyOffset
@@ -475,52 +493,26 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 
+- (BOOL) enumerateDocsFromID: (NSString*)startID
+                        toID: (NSString*)endID
+                     options: (const CBForestEnumerationOptions*)options
+                       error: (NSError**)outError
+                   withBlock: (CBForestDocIterator)block
+{
+    return [self _enumerateDocsFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
+                                 toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
+                               options: options error: outError withBlock: block];
+}
+
+
 - (BOOL) enumerateDocsFromSequence: (CBForestSequence)startSequence
                         toSequence: (CBForestSequence)endSequence
                            options: (const CBForestEnumerationOptions*)options
                              error: (NSError**)outError
                          withBlock: (CBForestDocIterator)block
 {
-    // FIX: This hasn't been implemented in ForestDB, so we shall have to simulate it:
-
-    if (options && !options->inclusiveEnd && endSequence > 0)
-        endSequence--;
-    if (startSequence > self.info.lastSequence || endSequence < startSequence)
-        return YES; // no-op
-
-    @autoreleasepool {
-        NSMutableArray* sequences = [[NSMutableArray alloc] init];
-        BOOL ok = [self _enumerateValuesFromKey: nil toKey: nil options: options error: outError
-                                      withBlock: ^BOOL(fdb_doc *docinfo, uint64_t bodyOffset)
-        {
-            fdb_seqnum_t sequence = docinfo->seqnum;
-            fdb_doc_free(docinfo);
-            if (sequence >= startSequence && sequence <= endSequence)
-                [sequences addObject: @(sequence)];
-            return true;
-        }];
-        if (!ok)
-            return NO;
-
-        [sequences sortUsingSelector: @selector(compare:)];
-
-        CBForestContentOptions contentOptions = 0;
-        if (options)
-            contentOptions = options->contentOptions;
-        for (NSNumber* sequence in sequences) {
-            @autoreleasepool {
-                CBForestDocument* doc = [self documentWithSequence: sequence.unsignedLongLongValue
-                                                           options: contentOptions error: outError];
-                if (!doc)
-                    return NO;
-                BOOL stop = NO;
-                block(doc, &stop);
-                if (stop)
-                    break;
-            }
-        }
-        return YES;
-    }
+    return [self _enumerateDocsFromKey: @(startSequence) toKey: @(endSequence)
+                               options: options error: outError withBlock: block];
 }
 
 

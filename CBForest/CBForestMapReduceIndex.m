@@ -92,11 +92,15 @@
 
     CBForestSequence startSequence = _lastSequenceIndexed + 1;
 
+    CBForestEnumerationOptions options = {
+        .includeDeleted = YES,
+    };
+
     return [self inTransaction: ^BOOL {
         __block BOOL gotError = NO;
         BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
                                                   toSequence: kCBForestMaxSequence
-                                                     options: NULL
+                                                     options: &options
                                                        error: outError
                                                    withBlock: ^(CBForestDocument *doc, BOOL *stop)
         {
