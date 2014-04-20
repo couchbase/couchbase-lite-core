@@ -86,7 +86,8 @@ NSString* const CBForestErrorDomain = @"CBForest";
 }
 
 - (NSString*) description {
-    return [NSString stringWithFormat: @"%@[%@]", [self class], self.filename];
+    return [NSString stringWithFormat: @"%@[%@]", [self class],
+            (_db ? self.filename : @"closed")];
 }
 
 - (NSString*) filename {

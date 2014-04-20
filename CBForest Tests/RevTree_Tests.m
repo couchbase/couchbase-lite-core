@@ -41,11 +41,11 @@ static bool bufequalstr(sized_buf buf, const char* str) {
         0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF};
     uint8_t buf[kMaxVarintLen64];
     for (int i=0; i<9; i++) {
-        size_t len = WriteUVarInt(buf, tests[i]);
+        size_t len = PutUVarInt(buf, tests[i]);
         XCTAssert(len > 0 && len <= kMaxVarintLen64);
         XCTAssertEqual(len, SizeOfVarInt(tests[i]));
         uint64_t readNum;
-        size_t readLen = ReadUVarInt((sized_buf){buf, len}, &readNum);
+        size_t readLen = GetUVarInt((sized_buf){buf, len}, &readNum);
         XCTAssertEqual(readLen, len);
         XCTAssertEqual(readNum, tests[i]);
     }

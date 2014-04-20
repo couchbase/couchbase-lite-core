@@ -9,6 +9,7 @@
 #import "CBForestIndex.h"
 #import "CBForestPrivate.h"
 #import "CBCollatable.h"
+#import "varint.h"
 #import <forestdb.h>
 
 
@@ -37,10 +38,11 @@ id kCBForestIndexNoValue;
         if (![self getValue: &seqData meta: NULL forKey: docIDData error: outError])
             return NO;
         if (seqData) {
-            NSArray* oldSeqs = DataToJSON(seqData, outError);
-            for (NSNumber* seq in oldSeqs) {
-                //NSLog(@"INDEX: Deleting seq %@ for doc %@", seq, docID);
-                [self deleteSequence: seq.unsignedLongLongValue error: outError];
+            // Decode a series of sequences from packed varint data:
+            sized_buf seqBuf = DataToBuf(seqData);
+            uint64_t seq;
+            while (ReadUVarInt(&seqBuf, &seq)) {
+                [self deleteSequence: seq error: NULL];
             }
         }
 
@@ -80,7 +82,14 @@ id kCBForestIndexNoValue;
                     //NSLog(@"INDEX: Seq %llu = %@ --> %@", seq, keyData, body);
                 }
             }
-            seqData = JSONToData(seqs, NULL);
+
+            // Encode the sequences into a packed series of varints:
+            NSMutableData* newSeqData = [NSMutableData dataWithLength: seqs.count*kMaxVarintLen64];
+            sized_buf seqBuf = DataToBuf(newSeqData);
+            for (NSNumber* seq in seqs)
+                WriteUVarInt(&seqBuf, seq.unsignedLongLongValue);
+            newSeqData.length = seqBuf.buf - newSeqData.mutableBytes;
+            seqData = newSeqData;
         } else {
             seqData = nil;
         }

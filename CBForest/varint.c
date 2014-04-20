@@ -21,7 +21,7 @@ size_t SizeOfVarInt(uint64_t n) {
 }
 
 
-size_t WriteUVarInt(void *buf, uint64_t n) {
+size_t PutUVarInt(void *buf, uint64_t n) {
     uint8_t* dst = buf;
     while (n >= 0x80) {
         *dst++ = (n & 0xFF) | 0x80;
@@ -32,7 +32,7 @@ size_t WriteUVarInt(void *buf, uint64_t n) {
 }
 
 
-size_t ReadUVarInt(sized_buf buf, uint64_t *n) {
+size_t GetUVarInt(sized_buf buf, uint64_t *n) {
     uint64_t result = 0;
     int shift = 0;
     for (int i = 0; i < buf.size; i++) {
@@ -48,4 +48,26 @@ size_t ReadUVarInt(sized_buf buf, uint64_t *n) {
         }
     }
     return 0; // buffer too short
+}
+
+
+bool ReadUVarInt(sized_buf *buf, uint64_t *n) {
+    if (buf->size == 0)
+        return false;
+    size_t bytesRead = GetUVarInt(*buf, n);
+    if (bytesRead == 0)
+        return false;
+    buf->buf += bytesRead;
+    buf->size -= bytesRead;
+    return true;
+}
+
+
+bool WriteUVarInt(sized_buf *buf, uint64_t n) {
+    if (buf->size < kMaxVarintLen64 && buf->size < SizeOfVarInt(n))
+        return false;
+    size_t bytesWritten = PutUVarInt(buf->buf, n);
+    buf->buf += bytesWritten;
+    buf->size -= bytesWritten;
+    return true;
 }

@@ -185,13 +185,13 @@ sized_buf RevTreeEncode(RevTree *tree)
 #endif
 
         void *dstData = (void*)offsetby(&dst->revID[0], src->revID.size);
-        dstData += WriteUVarInt(dstData, src->sequence);
+        dstData += PutUVarInt(dstData, src->sequence);
         if (dst->flags & kRevNodeHasData) {
             memcpy(dstData, src->data.buf, src->data.size);
         }
 #ifdef REVTREE_USES_FILE_OFFSETS
         else if (dst->flags & kRevNodeHasBodyOffset) {
-            dstData += WriteUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
+            dstData += PutUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
         }
 #endif
 
@@ -604,7 +604,7 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
     dst->flags = src->flags & kRevNodePublicPersistentFlags;
     dst->parentIndex = ntohs(src->parentIndex);
     const void *data = offsetby(&src->revID, src->revIDLen);
-    data += ReadUVarInt((sized_buf){(void*)data, end-data}, &dst->sequence);
+    data += GetUVarInt((sized_buf){(void*)data, end-data}, &dst->sequence);
 #ifdef REVTREE_USES_FILE_OFFSETS
     dst->oldBodyOffset = 0;
 #endif
@@ -617,7 +617,7 @@ static void nodeFromRawNode(const RawRevNode *src, RevNode *dst)
 #ifdef REVTREE_USES_FILE_OFFSETS
         if (src->flags & kRevNodeHasBodyOffset) {
             sized_buf buf = {(void*)data, end-data};
-            size_t nBytes = ReadUVarInt(buf, &dst->oldBodyOffset);
+            size_t nBytes = GetUVarInt(buf, &dst->oldBodyOffset);
             buf.buf += nBytes;
             buf.size -= nBytes;
         }
