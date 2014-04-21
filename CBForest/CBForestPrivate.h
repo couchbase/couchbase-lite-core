@@ -11,7 +11,7 @@
 #import "CBForestVersions.h"
 #import "forestdb.h"
 
-#import "rev_tree.h"
+#import "sized_buf.h"
 
 
 BOOL Check(fdb_status err, NSError** outError);
@@ -19,6 +19,7 @@ BOOL Check(fdb_status err, NSError** outError);
 sized_buf DataToBuf(NSData* data);
 sized_buf StringToBuf(NSString* docID);
 NSData* BufToData(const void* buf, size_t size);
+NSData* BufToTempData(const void* buf, size_t size);
 NSString* BufToString(const void* buf, size_t size);
 
 sized_buf CopyBuf(sized_buf buf);

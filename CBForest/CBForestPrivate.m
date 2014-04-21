@@ -7,6 +7,7 @@
 //
 
 #import "CBForestPrivate.h"
+#import "rev_tree.h"
 
 
 BOOL Check(fdb_status code, NSError** outError) {
@@ -60,6 +61,13 @@ NSData* BufToData(const void* buf, size_t size) {
     if (!buf)
         return nil;
     return [NSData dataWithBytes: buf length: size];
+}
+
+
+NSData* BufToTempData(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: NO];
 }
 
 

@@ -230,6 +230,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2704A1E219049E2300138320 /* sized_buf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sized_buf.h; sourceTree = "<group>"; };
 		27139B1B18F8E9750021A9A3 /* CBForest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CBForest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -491,6 +492,7 @@
 				273AD3C618EF374D007D8C23 /* CBForestMapReduceIndex.m */,
 				273AD3EB18F608B4007D8C23 /* CBCollatable.h */,
 				273AD3EC18F608B4007D8C23 /* CBCollatable.m */,
+				2704A1E219049E2300138320 /* sized_buf.h */,
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
 				27FDFC0018EA58BF00AC4647 /* varint.c */,

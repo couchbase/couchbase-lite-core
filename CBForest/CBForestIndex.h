@@ -15,7 +15,7 @@ extern id kCBForestIndexNoValue;
 
 /** Callback block for a CBForestIndex query. */
 typedef void (^CBForestQueryCallbackBlock)(id key,
-                                           id value,
+                                           NSData* valueJSON,
                                            NSString* docID,
                                            CBForestSequence sequence,
                                            BOOL *stop);

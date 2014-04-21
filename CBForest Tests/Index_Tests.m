@@ -63,9 +63,11 @@
                             endKey: nil endDocID: nil
                            options: NULL
                              error: &error
-                             block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
+                             block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
     {
         nRows++;
+        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
+        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
         NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
@@ -82,9 +84,11 @@
                        endKey: nil endDocID: nil
                       options: NULL
                         error: &error
-                        block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
+                        block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
     {
         nRows++;
+        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
+        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
         NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);
@@ -99,9 +103,11 @@
                        endKey: nil endDocID: nil
                       options: NULL
                         error: &error
-                        block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
+                        block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
     {
         nRows++;
+        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
+        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
         NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
     }];
     XCTAssert(ok, @"Query failed: %@", error);

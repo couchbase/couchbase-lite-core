@@ -9,18 +9,13 @@
 #ifndef COUCHSTORE_REV_TREE_H
 #define COUCHSTORE_REV_TREE_H
 #import "forestdb.h"
+#import "sized_buf.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
 
 // If defined, previous revision bodies will be stored as file offsets to their obsolete docs
 #define REVTREE_USES_FILE_OFFSETS
-
-
-typedef struct {
-    void* buf;
-    size_t size;
-} sized_buf;
 
 
 /** RevNode.parentIndex value denoting "no parent". */

@@ -8,7 +8,7 @@
 
 #include "varint.h"
 #include <stdio.h>
-#include "rev_tree.h" // just for sized_buf -- FIX
+#include "sized_buf.h"
 
 
 size_t SizeOfVarInt(uint64_t n) {

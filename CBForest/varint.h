@@ -10,7 +10,8 @@
 #define CBForest_varint_h
 
 #include <stddef.h>
-#include "rev_tree.h" // for sized_buf
+#include <stdbool.h>
+#include "sized_buf.h"
 
 // Based on varint implementation from the Go language (src/pkg/encoding/binary/varint.go)
 

@@ -17,18 +17,6 @@
 
 @implementation CBCollatable_Tests
 
-- (void)setUp
-{
-    [super setUp];
-    // Put setup code here. This method is called before the invocation of each test method in the class.
-}
-
-- (void)tearDown
-{
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
-    [super tearDown];
-}
-
 static int collate(id obj1, id obj2) {
     NSData* data1 = CBCreateCollatable(obj1);
     NSData* data2 = CBCreateCollatable(obj2);
@@ -109,6 +97,77 @@ static uint64_t randn(uint64_t limit) {
     XCTAssertEqual(collate(@{}, @{@"happy?":@NO}), -1);
     XCTAssertEqual(collate(@{@"a": @7}, @{@"a": @7, @"b": @8}), -1);
     XCTAssertEqual(collate(@{@"a": @7}, @{@"a": @8}), -1);
+}
+
+- (void) roundTrip: (id)value type: (CBCollatableType) type {
+    NSData* collatable = CBCreateCollatable(value);
+    XCTAssert(collatable != nil);
+    // First use ReadNext:
+    sized_buf buf = DataToBuf(collatable);
+    id output;
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), type);
+    if (![value isKindOfClass: [NSArray class]] && ![value isKindOfClass: [NSDictionary class]]) {
+        XCTAssertEqualObjects(output, value);
+        XCTAssertEqual(buf.size, 0);
+    }
+
+    // Now try Read:
+    XCTAssertEqualObjects(CBCollatableRead(DataToBuf(collatable)), value);
+}
+
+- (void) testReadScalars {
+    [self roundTrip: [NSNull null] type: kNullType];
+    [self roundTrip: @NO type: kFalseType];
+    [self roundTrip: @YES type: kTrueType];
+    [self roundTrip: @0 type: kNumberType];
+    [self roundTrip: @1 type: kNumberType];
+    [self roundTrip: @12345 type: kNumberType];
+    [self roundTrip: @1234512345 type: kNumberType];
+    [self roundTrip: @-1 type: kNumberType];
+    [self roundTrip: @-12345 type: kNumberType];
+    [self roundTrip: @"" type: kStringType];
+    [self roundTrip: @"Four score & 7 yrs. ago" type: kStringType];
+    [self roundTrip: @"I &heart; ÜTF-∞" type: kStringType];
+
+    [self roundTrip: @[] type: kArrayType];
+    [self roundTrip: @[@"foo", @3141, @NO, @"bär"] type: kArrayType];
+    [self roundTrip: @[@YES, @[]] type: kArrayType];
+
+    [self roundTrip: @{} type: kDictionaryType];
+    [self roundTrip: @{@"key": @"value"} type: kDictionaryType];
+    [self roundTrip: @{@"key": @"value", @"": [NSNull null]} type: kDictionaryType];
+}
+
+- (void) testReadArray {
+    NSData* collatable = CBCreateCollatable(@[@"foo", @3141, @NO, @"bär"]);
+    XCTAssert(collatable != nil);
+    sized_buf buf = DataToBuf(collatable);
+    id output;
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kArrayType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqualObjects(output, @"foo");
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kNumberType);
+    XCTAssertEqualObjects(output, @3141);
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kFalseType);
+    XCTAssertEqualObjects(output, @NO);
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqualObjects(output, @"bär");
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kEndSequenceType);
+    XCTAssertEqual(buf.size, 0);
+}
+
+- (void) testReadDictionary {
+    NSData* collatable = CBCreateCollatable(@{@"key": @-2});
+    XCTAssert(collatable != nil);
+    sized_buf buf = DataToBuf(collatable);
+    id output;
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kDictionaryType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqualObjects(output, @"key");
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kNumberType);
+    XCTAssertEqualObjects(output, @-2);
+    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kEndSequenceType);
+    XCTAssertEqual(buf.size, 0);
 }
 
 @end

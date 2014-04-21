@@ -8,7 +8,7 @@
 
 #import "CBForestDB.h"
 #import "CBForestPrivate.h"
-#import "rev_tree.h"
+#import "sized_buf.h"
 
 
 NSString* const CBForestErrorDomain = @"CBForest";

@@ -7,6 +7,8 @@
 //
 
 #import "CBCollatable.h"
+#import "sized_buf.h"
+#import "CBForestPrivate.h"
 
 
 /* Here's the data format:
@@ -52,6 +54,7 @@
 static NSComparisonResult compareCanonStrings( id s1, id s2, void *context);
 static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t));
 static uint8_t* getCharPriorityMap(void);
+static uint8_t* getInverseCharPriorityMap(void);
 
 
 NSData* CBCreateCollatable(id object) {
@@ -146,6 +149,155 @@ void CBCollatableBeginArray(NSMutableData* output)   {[output appendBytes: "\6" 
 void CBCollatableEndArray(NSMutableData* output)     {[output appendBytes: "\0" length: 1];}
 
 
+#pragma mark - DECODING:
+
+
+static const BOOL decodeValue(sized_buf* input, size_t size, void* output) {
+    if (input->size < size)
+        return NO;
+    memcpy(output, input->buf, size);
+    input->buf += size;
+    input->size -= size;
+    return YES;
+}
+
+#define DECODE(INPUT,OUTPUT) decodeValue((INPUT), sizeof(*(OUTPUT)), (OUTPUT))
+
+
+static BOOL decodeNumber(sized_buf* input, NSNumber **outNumber) {
+    unsigned nBytes;
+    uint8_t lenByte;
+    union {
+        int64_t asBigEndian;
+        uint8_t asBytes[8];
+    } numBuf;
+    if (!DECODE(input, &lenByte))
+        return NO;
+    if (lenByte & 0x80) {
+        nBytes = lenByte & 0x7F;
+        numBuf.asBigEndian = 0;
+    } else {
+        nBytes = 127 - lenByte;
+        numBuf.asBigEndian = -1;
+    }
+    if (nBytes > 8)
+        return NO;
+    if (!decodeValue(input, nBytes, &numBuf.asBytes[8-nBytes]))
+        return NO;
+    uint64_t number = NSSwapBigLongLongToHost(numBuf.asBigEndian);
+    if (lenByte & 0x80)
+        *outNumber = @(number);
+    else
+        *outNumber = @((int64_t)number);
+    return YES;
+}
+
+
+static BOOL decodeString(sized_buf* input, NSString** outString) {
+    // Find the length:
+    void* end = memchr(input->buf, '\0', input->size);
+    if (!end)
+        return NO;
+    size_t nBytes = end - input->buf;
+    uint8_t* temp = malloc(nBytes);
+    if (!temp)
+        return NO;
+    decodeValue(input, nBytes, temp);
+    input->buf++; // skip null byte
+    input->size--;
+    const uint8_t* toChar = getInverseCharPriorityMap();
+    for (int i=0; i<nBytes; i++)
+        temp[i] = toChar[temp[i]];
+    *outString = [[NSString alloc] initWithBytes: temp length: nBytes encoding: NSUTF8StringEncoding];
+    free(temp);
+    return (*outString != NULL);
+}
+
+
+static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL recurse) {
+    uint8_t type;
+    if (!DECODE(input, &type))
+        return kErrorType;
+    switch(type) {
+        case kNullType:
+            *output = (id)kCFNull;
+            break;
+        case kFalseType:
+            *output = (id)kCFBooleanFalse;
+            break;
+        case kTrueType:
+            *output = (id)kCFBooleanTrue;
+            break;
+        case kNumberType:
+            if (!decodeNumber(input, output))
+                return kErrorType;
+            break;
+        case kStringType:
+            if (!decodeString(input, output))
+                return kErrorType;
+            break;
+        case kEndSequenceType:
+            *output = nil;
+            break;
+        case kArrayType: {
+            if (!recurse) {
+                *output = nil;
+                break;
+            }
+            NSMutableArray* result = [NSMutableArray array];
+            for(;;) {
+                id item;
+                CBCollatableType subtype = _CBCollatableReadNext(input, &item, YES);
+                if (subtype == kErrorType)
+                    return kErrorType;
+                else if (subtype == kEndSequenceType)
+                    break;
+                [result addObject: item];
+            }
+            *output = result;
+            break;
+        }
+        case kDictionaryType: {
+            if (!recurse) {
+                *output = nil;
+                break;
+            }
+            NSMutableDictionary* result = [NSMutableDictionary dictionary];
+            for(;;) {
+                id key, value;
+                CBCollatableType subtype = _CBCollatableReadNext(input, &key, NO);
+                if (subtype == kEndSequenceType)
+                    break;
+                else if (subtype != kStringType)
+                    return kErrorType;
+                subtype = _CBCollatableReadNext(input, &value, YES);
+                if (subtype == kErrorType || subtype == kEndSequenceType)
+                    return kErrorType;
+                result[key] = value;
+            }
+            *output = result;
+            break;
+        }
+        default:
+            return kErrorType;
+    }
+    return type;
+}
+
+
+CBCollatableType CBCollatableReadNext(sized_buf *input, id *output) {
+    return _CBCollatableReadNext(input, output, NO);
+}
+
+
+id CBCollatableRead(sized_buf input) {
+    id output;
+    if (_CBCollatableReadNext(&input, &output, YES) == kErrorType || input.size > 0)
+        output = nil;
+    return output;
+}
+
+
 #pragma mark - STRING UTILITIES:
 
 
@@ -170,6 +322,19 @@ static uint8_t* getCharPriorityMap(void) {
             kCharPriority[i] = (uint8_t)i;
     });
     return kCharPriority;
+}
+
+
+static uint8_t* getInverseCharPriorityMap(void) {
+    static uint8_t kMap[256];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // Control characters have zero priority:
+        uint8_t* priorityMap = getCharPriorityMap();
+        for (int i=0; i<256; i++)
+            kMap[priorityMap[i]] = (uint8_t)i;
+    });
+    return kMap;
 }
 
 

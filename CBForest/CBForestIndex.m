@@ -57,19 +57,20 @@ id kCBForestIndexNoValue;
                     CBCollatableBeginArray(keyData);
                     CBAddCollatable(keys[i], keyData);
                     CBAddCollatable(docID, keyData);
-                    if (i > 0)
-                        CBAddCollatable(@(i), keyData);
+                    CBAddCollatable(@(docSequence), keyData);
                     CBCollatableEndArray(keyData);
 
-                    NSMutableArray* body = [NSMutableArray arrayWithObjects: keys[i], docID,
-                                                                                @(docSequence), nil];
+                    NSData* bodyData;
                     id value = values[i];
-                    if (value != kCBForestIndexNoValue)
-                        [body addObject: value];
-                    NSData* bodyData = JSONToData(body, NULL);
-                    if (!bodyData) {
-                        NSLog(@"WARNING: Can't index non-JSON value %@", value);
-                        continue;
+                    if (value != kCBForestIndexNoValue) {
+                        bodyData = JSONToData(value, NULL);
+                        if (!bodyData) {
+                            NSLog(@"WARNING: Can't index non-JSON value %@", value);
+                            continue;
+                        }
+                    } else {
+                        // Can't use an empty value or ForestDB will just delete the doc instead
+                        bodyData = [[NSData alloc] initWithBytes: "\0" length: 1];
                     }
 
                     CBForestSequence seq = [self setValue: bodyData
@@ -129,17 +130,27 @@ id kCBForestIndexNoValue;
                 fdb_doc_free(doc);
                 return false;
             }
-            NSArray* body = BufToJSON((sized_buf){doc->body, doc->bodylen}, NULL);
+
+            // Decode the key from collatable form:
+            NSArray* indexKey = CBCollatableRead((sized_buf){doc->key, doc->keylen});
+            if (![indexKey isKindOfClass: [NSArray class]] || indexKey.count != 3)
+                return false;
+
+            // Decode the value -- if there's no value, the body will be just a null byte:
+            NSData* valueData = nil;
+            if (doc->bodylen > 1)
+                valueData = BufToData(doc->body, doc->bodylen);
             fdb_doc_free(doc);
-            id key = body[0];
+
+            // Now take apart the key into [key, docID, sequence] and call the block:
+            id key = indexKey[0];
             if (options && !options->inclusiveEnd && endKey && [endKey isEqual: key]) {
                 return false;
             }
-            NSString* docID = body[1];
-            CBForestSequence docSequence = [body[2] unsignedLongLongValue];
-            id value = body.count > 3 ? body[3] : nil;
+            NSString* docID = indexKey[1];
+            CBForestSequence docSequence = [indexKey[2] unsignedLongLongValue];
             BOOL stop = NO;
-            block(key, value, docID, docSequence, &stop);
+            block(key, valueData, docID, docSequence, &stop);
             return !stop;
         }
     }];
