@@ -105,7 +105,7 @@ static uint64_t randn(uint64_t limit) {
     // First use ReadNext:
     sized_buf buf = DataToBuf(collatable);
     id output;
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), type);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), type);
     if (![value isKindOfClass: [NSArray class]] && ![value isKindOfClass: [NSDictionary class]]) {
         XCTAssertEqualObjects(output, value);
         XCTAssertEqual(buf.size, 0);
@@ -143,16 +143,16 @@ static uint64_t randn(uint64_t limit) {
     XCTAssert(collatable != nil);
     sized_buf buf = DataToBuf(collatable);
     id output;
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kArrayType);
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kArrayType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kStringType);
     XCTAssertEqualObjects(output, @"foo");
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kNumberType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kNumberType);
     XCTAssertEqualObjects(output, @3141);
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kFalseType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kFalseType);
     XCTAssertEqualObjects(output, @NO);
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kStringType);
     XCTAssertEqualObjects(output, @"bär");
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kEndSequenceType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kEndSequenceType);
     XCTAssertEqual(buf.size, 0);
 }
 
@@ -161,12 +161,12 @@ static uint64_t randn(uint64_t limit) {
     XCTAssert(collatable != nil);
     sized_buf buf = DataToBuf(collatable);
     id output;
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kDictionaryType);
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kStringType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kDictionaryType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kStringType);
     XCTAssertEqualObjects(output, @"key");
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kNumberType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kNumberType);
     XCTAssertEqualObjects(output, @-2);
-    XCTAssertEqual(CBCollatableReadNext(&buf, &output), kEndSequenceType);
+    XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kEndSequenceType);
     XCTAssertEqual(buf.size, 0);
 }
 

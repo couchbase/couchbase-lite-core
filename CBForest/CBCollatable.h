@@ -39,7 +39,9 @@ typedef enum {
     If the type returned is kArrayType or kDictionaryType, no value is placed in *output;
     the function should be called again to get the contents until type kEndSequenceType is
     returned. */
-CBCollatableType CBCollatableReadNext(sized_buf *input, id *output);
+CBCollatableType CBCollatableReadNext(sized_buf *input, BOOL recurse, id *output);
+
+BOOL CBCollatableReadNextNumber(sized_buf *input, int64_t *output);
 
 /** Reads an entire object stored in collatable form. Returns nil on error. */
 id CBCollatableRead(sized_buf input);

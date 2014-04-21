@@ -681,6 +681,13 @@ static void copyBuf(sized_buf srcrev, sized_buf *dstrev) {
     memcpy(dstrev->buf, srcrev.buf, srcrev.size);
 }
 
+static inline char* byteToHex(char *dst, uint8_t byte) {
+    static const char hexchar[16] = "0123456789abcdef";
+    dst[0] = hexchar[byte >> 4];
+    dst[1] = hexchar[byte & 0x0F];
+    return dst + 2;
+}
+
 
 bool RevIDCompact(sized_buf srcrev, sized_buf *dstrev) {
     unsigned generation;
@@ -734,7 +741,7 @@ void RevIDExpand(sized_buf rev, sized_buf* expanded_rev) {
     char *buf = expanded_rev->buf, *dst = buf;
     dst += sprintf(dst, "%u-", generation);
     for (unsigned i=1; i<rev.size; i++)
-        dst += sprintf(dst, "%02x", src[i]);
+        dst = byteToHex(dst, src[i]);
     expanded_rev->size = dst - buf;
 }
 

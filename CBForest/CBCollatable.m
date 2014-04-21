@@ -164,7 +164,7 @@ static const BOOL decodeValue(sized_buf* input, size_t size, void* output) {
 #define DECODE(INPUT,OUTPUT) decodeValue((INPUT), sizeof(*(OUTPUT)), (OUTPUT))
 
 
-static BOOL decodeNumber(sized_buf* input, NSNumber **outNumber) {
+static BOOL decodeNumber(sized_buf* input, int64_t *outNumber) {
     unsigned nBytes;
     uint8_t lenByte;
     union {
@@ -184,11 +184,7 @@ static BOOL decodeNumber(sized_buf* input, NSNumber **outNumber) {
         return NO;
     if (!decodeValue(input, nBytes, &numBuf.asBytes[8-nBytes]))
         return NO;
-    uint64_t number = NSSwapBigLongLongToHost(numBuf.asBigEndian);
-    if (lenByte & 0x80)
-        *outNumber = @(number);
-    else
-        *outNumber = @((int64_t)number);
+    *outNumber = NSSwapBigLongLongToHost(numBuf.asBigEndian);
     return YES;
 }
 
@@ -199,22 +195,35 @@ static BOOL decodeString(sized_buf* input, NSString** outString) {
     if (!end)
         return NO;
     size_t nBytes = end - input->buf;
-    uint8_t* temp = malloc(nBytes);
-    if (!temp)
-        return NO;
+    uint8_t tempBuf[256];
+    uint8_t* temp;
+    if (nBytes <= sizeof(tempBuf))
+        temp = tempBuf;
+    else {
+        temp = malloc(nBytes);
+        if (!temp)
+            return NO;
+    }
     decodeValue(input, nBytes, temp);
-    input->buf++; // skip null byte
+    input->buf++; // consume null byte
     input->size--;
     const uint8_t* toChar = getInverseCharPriorityMap();
     for (int i=0; i<nBytes; i++)
         temp[i] = toChar[temp[i]];
     *outString = [[NSString alloc] initWithBytes: temp length: nBytes encoding: NSUTF8StringEncoding];
-    free(temp);
+    if (temp != tempBuf)
+        free(temp);
     return (*outString != NULL);
 }
 
 
-static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL recurse) {
+BOOL CBCollatableReadNextNumber(sized_buf *input, int64_t *output) {
+    uint8_t type;
+    return DECODE(input, &type) && type == kNumberType && decodeNumber(input, output);
+}
+
+
+CBCollatableType CBCollatableReadNext(sized_buf *input, BOOL recurse, id *output) {
     uint8_t type;
     if (!DECODE(input, &type))
         return kErrorType;
@@ -228,10 +237,13 @@ static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL
         case kTrueType:
             *output = (id)kCFBooleanTrue;
             break;
-        case kNumberType:
-            if (!decodeNumber(input, output))
+        case kNumberType: {
+            int64_t number;
+            if (!decodeNumber(input, &number))
                 return kErrorType;
+            *output = @(number);
             break;
+        }
         case kStringType:
             if (!decodeString(input, output))
                 return kErrorType;
@@ -247,7 +259,7 @@ static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL
             NSMutableArray* result = [NSMutableArray array];
             for(;;) {
                 id item;
-                CBCollatableType subtype = _CBCollatableReadNext(input, &item, YES);
+                CBCollatableType subtype = CBCollatableReadNext(input, YES, &item);
                 if (subtype == kErrorType)
                     return kErrorType;
                 else if (subtype == kEndSequenceType)
@@ -265,12 +277,12 @@ static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL
             NSMutableDictionary* result = [NSMutableDictionary dictionary];
             for(;;) {
                 id key, value;
-                CBCollatableType subtype = _CBCollatableReadNext(input, &key, NO);
+                CBCollatableType subtype = CBCollatableReadNext(input, NO, &key);
                 if (subtype == kEndSequenceType)
                     break;
                 else if (subtype != kStringType)
                     return kErrorType;
-                subtype = _CBCollatableReadNext(input, &value, YES);
+                subtype = CBCollatableReadNext(input, YES, &value);
                 if (subtype == kErrorType || subtype == kEndSequenceType)
                     return kErrorType;
                 result[key] = value;
@@ -285,14 +297,9 @@ static CBCollatableType _CBCollatableReadNext(sized_buf *input, id *output, BOOL
 }
 
 
-CBCollatableType CBCollatableReadNext(sized_buf *input, id *output) {
-    return _CBCollatableReadNext(input, output, NO);
-}
-
-
 id CBCollatableRead(sized_buf input) {
     id output;
-    if (_CBCollatableReadNext(&input, &output, YES) == kErrorType || input.size > 0)
+    if (CBCollatableReadNext(&input, YES, &output) == kErrorType || input.size > 0)
         output = nil;
     return output;
 }
