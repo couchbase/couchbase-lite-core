@@ -20,7 +20,7 @@
 static int collate(id obj1, id obj2) {
     NSData* data1 = CBCreateCollatable(obj1);
     NSData* data2 = CBCreateCollatable(obj2);
-    int cmp = CompareBufs(DataToBuf(data1), DataToBuf(data2));
+    int cmp = slicecmp(DataToSlice(data1), DataToSlice(data2));
     return cmp<0 ? -1 : (cmp>0 ? 1 : 0);
 }
 
@@ -103,7 +103,7 @@ static uint64_t randn(uint64_t limit) {
     NSData* collatable = CBCreateCollatable(value);
     XCTAssert(collatable != nil);
     // First use ReadNext:
-    sized_buf buf = DataToBuf(collatable);
+    slice buf = DataToSlice(collatable);
     id output;
     XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), type);
     if (![value isKindOfClass: [NSArray class]] && ![value isKindOfClass: [NSDictionary class]]) {
@@ -112,7 +112,7 @@ static uint64_t randn(uint64_t limit) {
     }
 
     // Now try Read:
-    XCTAssertEqualObjects(CBCollatableRead(DataToBuf(collatable)), value);
+    XCTAssertEqualObjects(CBCollatableRead(DataToSlice(collatable)), value);
 }
 
 - (void) testReadScalars {
@@ -141,7 +141,7 @@ static uint64_t randn(uint64_t limit) {
 - (void) testReadArray {
     NSData* collatable = CBCreateCollatable(@[@"foo", @3141, @NO, @"bär"]);
     XCTAssert(collatable != nil);
-    sized_buf buf = DataToBuf(collatable);
+    slice buf = DataToSlice(collatable);
     id output;
     XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kArrayType);
     XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kStringType);
@@ -159,7 +159,7 @@ static uint64_t randn(uint64_t limit) {
 - (void) testReadDictionary {
     NSData* collatable = CBCreateCollatable(@{@"key": @-2});
     XCTAssert(collatable != nil);
-    sized_buf buf = DataToBuf(collatable);
+    slice buf = DataToSlice(collatable);
     id output;
     XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kDictionaryType);
     XCTAssertEqual(CBCollatableReadNext(&buf, NO, &output), kStringType);

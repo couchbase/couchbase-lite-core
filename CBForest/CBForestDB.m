@@ -8,7 +8,7 @@
 
 #import "CBForestDB.h"
 #import "CBForestPrivate.h"
-#import "sized_buf.h"
+#import "slice.h"
 
 
 NSString* const CBForestErrorDomain = @"CBForest";
@@ -233,7 +233,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     fdb_status status;
     if (value) {
         status = fdb_get(self.handle, &doc);
-        *value = BufToData(doc.body, doc.bodylen);
+        *value = SliceToData(doc.body, doc.bodylen);
     } else {
         uint64_t offset;
         status = fdb_get_metaonly(self.handle, &doc, &offset);
@@ -241,7 +241,7 @@ NSString* const CBForestErrorDomain = @"CBForest";
     if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
         return NO;
     if (meta)
-        *meta = BufToData(doc.meta, doc.metalen);
+        *meta = SliceToData(doc.meta, doc.metalen);
     else
         free(doc.meta);
     return YES;
@@ -394,9 +394,9 @@ NSString* const CBForestErrorDomain = @"CBForest";
                                withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
     {
         @autoreleasepool {
-            NSData* key = BufToData(doc->key, doc->keylen);
-            NSData* value = BufToData(doc->body, doc->bodylen);
-            NSData* meta = BufToData(doc->meta, doc->metalen);
+            NSData* key = SliceToData(doc->key, doc->keylen);
+            NSData* value = SliceToData(doc->body, doc->bodylen);
+            NSData* meta = SliceToData(doc->meta, doc->metalen);
             fdb_doc_free(doc);
             BOOL stop = NO;
             block(key, value, meta, &stop);

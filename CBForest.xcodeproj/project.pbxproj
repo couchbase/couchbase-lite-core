@@ -22,6 +22,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		2704A1E51905FAA700138320 /* slice.c in Sources */ = {isa = PBXBuildFile; fileRef = 2704A1E41905FAA700138320 /* slice.c */; };
+		2704A1E61905FAA700138320 /* slice.c in Sources */ = {isa = PBXBuildFile; fileRef = 2704A1E41905FAA700138320 /* slice.c */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1C18F8E9750021A9A3 /* Cocoa.framework */; };
 		27139B3518F8E9750021A9A3 /* CBForest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1B18F8E9750021A9A3 /* CBForest.framework */; };
@@ -230,7 +232,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2704A1E219049E2300138320 /* sized_buf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sized_buf.h; sourceTree = "<group>"; };
+		2704A1E219049E2300138320 /* slice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slice.h; sourceTree = "<group>"; };
+		2704A1E41905FAA700138320 /* slice.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = slice.c; sourceTree = "<group>"; };
 		27139B1B18F8E9750021A9A3 /* CBForest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CBForest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -265,7 +268,7 @@
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
 		273AD3EB18F608B4007D8C23 /* CBCollatable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBCollatable.h; sourceTree = "<group>"; };
 		273AD3EC18F608B4007D8C23 /* CBCollatable.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBCollatable.m; sourceTree = "<group>"; };
-		273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBCollatable_Tests.m; sourceTree = "<group>"; };
+		273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = CBCollatable_Tests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb_x.cc; sourceTree = "<group>"; };
 		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_x.h; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
@@ -276,11 +279,11 @@
 		2750724E18E3E60900A80C5A /* CBForestDB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDB.h; sourceTree = "<group>"; };
 		2750724F18E3E60900A80C5A /* CBForestDB.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDB.m; sourceTree = "<group>"; };
 		2750725018E3E60900A80C5A /* CBForestDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDocument.h; sourceTree = "<group>"; };
-		2750725118E3E60900A80C5A /* CBForestDocument.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDocument.m; sourceTree = "<group>"; };
+		2750725118E3E60900A80C5A /* CBForestDocument.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = CBForestDocument.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		2750725218E3E60900A80C5A /* CBForestVersions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestVersions.h; sourceTree = "<group>"; };
-		2750725318E3E60900A80C5A /* CBForestVersions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestVersions.m; sourceTree = "<group>"; };
-		2750725418E3E60900A80C5A /* CBForestPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestPrivate.h; sourceTree = "<group>"; };
-		2750725518E3E60900A80C5A /* CBForestPrivate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestPrivate.m; sourceTree = "<group>"; };
+		2750725318E3E60900A80C5A /* CBForestVersions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = CBForestVersions.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
+		2750725418E3E60900A80C5A /* CBForestPrivate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = CBForestPrivate.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		2750725518E3E60900A80C5A /* CBForestPrivate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = CBForestPrivate.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		2750726118E3E72900A80C5A /* option.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = option.h; sourceTree = "<group>"; };
 		2750726318E3E72900A80C5A /* arch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = arch.h; sourceTree = "<group>"; };
 		2750726518E3E72900A80C5A /* avltree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = avltree.h; sourceTree = "<group>"; };
@@ -337,7 +340,7 @@
 		2750730718E504FC00A80C5A /* rev_tree.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rev_tree.c; sourceTree = "<group>"; };
 		2750730818E504FC00A80C5A /* rev_tree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rev_tree.h; sourceTree = "<group>"; };
 		2750730A18E5EB7200A80C5A /* RevTree_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RevTree_Tests.m; sourceTree = "<group>"; };
-		2750730E18E621C000A80C5A /* Versions_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Versions_Tests.m; sourceTree = "<group>"; };
+		2750730E18E621C000A80C5A /* Versions_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = Versions_Tests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
@@ -345,7 +348,7 @@
 		27FDFC0018EA58BF00AC4647 /* varint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = varint.c; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = varint.h; sourceTree = "<group>"; };
 		27FDFC0418EB803F00AC4647 /* CBForestIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestIndex.h; sourceTree = "<group>"; };
-		27FDFC0518EB803F00AC4647 /* CBForestIndex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestIndex.m; sourceTree = "<group>"; };
+		27FDFC0518EB803F00AC4647 /* CBForestIndex.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = CBForestIndex.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		27FDFC0818EC584500AC4647 /* Index_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Index_Tests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -492,7 +495,8 @@
 				273AD3C618EF374D007D8C23 /* CBForestMapReduceIndex.m */,
 				273AD3EB18F608B4007D8C23 /* CBCollatable.h */,
 				273AD3EC18F608B4007D8C23 /* CBCollatable.m */,
-				2704A1E219049E2300138320 /* sized_buf.h */,
+				2704A1E219049E2300138320 /* slice.h */,
+				2704A1E41905FAA700138320 /* slice.c */,
 				2750730718E504FC00A80C5A /* rev_tree.c */,
 				2750730818E504FC00A80C5A /* rev_tree.h */,
 				27FDFC0018EA58BF00AC4647 /* varint.c */,
@@ -890,6 +894,7 @@
 				27139B4818F8EB300021A9A3 /* CBForestVersions.m in Sources */,
 				27139B4918F8EB300021A9A3 /* CBForestPrivate.m in Sources */,
 				27139B4A18F8EB300021A9A3 /* CBForestIndex.m in Sources */,
+				2704A1E51905FAA700138320 /* slice.c in Sources */,
 				27139B4B18F8EB300021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139B4C18F8EB300021A9A3 /* CBCollatable.m in Sources */,
 				27139B4D18F8EB300021A9A3 /* rev_tree.c in Sources */,
@@ -956,6 +961,7 @@
 				27139BBC18F8EEBE0021A9A3 /* CBForestVersions.m in Sources */,
 				27139BBD18F8EEBE0021A9A3 /* CBForestPrivate.m in Sources */,
 				27139BBE18F8EEBE0021A9A3 /* CBForestIndex.m in Sources */,
+				2704A1E61905FAA700138320 /* slice.c in Sources */,
 				27139BBF18F8EEBE0021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139BC018F8EEBE0021A9A3 /* CBCollatable.m in Sources */,
 				27139BC118F8EEBE0021A9A3 /* rev_tree.c in Sources */,

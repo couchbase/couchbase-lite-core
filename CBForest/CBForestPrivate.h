@@ -11,20 +11,16 @@
 #import "CBForestVersions.h"
 #import "forestdb.h"
 
-#import "sized_buf.h"
+#import "slice.h"
 
 
 BOOL Check(fdb_status err, NSError** outError);
 
-sized_buf DataToBuf(NSData* data);
-sized_buf StringToBuf(NSString* docID);
-NSData* BufToData(const void* buf, size_t size);
-NSData* BufToTempData(const void* buf, size_t size);
-NSString* BufToString(const void* buf, size_t size);
-
-sized_buf CopyBuf(sized_buf buf);
-
-int CompareBufs(sized_buf a, sized_buf b);
+slice DataToSlice(NSData* data);
+slice StringToSlice(NSString* docID);
+NSData* SliceToData(const void* buf, size_t size);
+NSData* SliceToTempData(const void* buf, size_t size);
+NSString* SliceToString(const void* buf, size_t size);
 
 NSData* JSONToData(id obj, NSError** outError) ;
 
@@ -34,14 +30,14 @@ static inline id DataToJSON(NSData* data, NSError** outError) {
                                              error: NULL];
 }
 
-id BufToJSON(sized_buf, NSError** outError);
+id SliceToJSON(slice, NSError** outError);
 
 void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcLen);
 void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
 NSData* CompactRevID(NSString* revID);
-sized_buf CompactRevIDToBuf(NSString* revID);
-NSString* ExpandRevID(sized_buf compressedRevID);
+slice CompactRevIDToSlice(NSString* revID);
+NSString* ExpandRevID(slice compressedRevID);
 
 
 // The block is responsible for freeing the doc!
@@ -66,7 +62,7 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
            offset: (uint64_t)bodyOffset
           options: (CBForestContentOptions)options
             error: (NSError**)outError;
-@property (readonly) sized_buf rawID;
+@property (readonly) slice rawID;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
 + (BOOL) docInfo: (const fdb_doc*)docInfo

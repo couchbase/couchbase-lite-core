@@ -7,7 +7,7 @@
 //
 
 #import "CBCollatable.h"
-#import "sized_buf.h"
+#import "slice.h"
 #import "CBForestPrivate.h"
 
 
@@ -152,7 +152,7 @@ void CBCollatableEndArray(NSMutableData* output)     {[output appendBytes: "\0" 
 #pragma mark - DECODING:
 
 
-static const BOOL decodeValue(sized_buf* input, size_t size, void* output) {
+static const BOOL decodeValue(slice* input, size_t size, void* output) {
     if (input->size < size)
         return NO;
     memcpy(output, input->buf, size);
@@ -164,7 +164,7 @@ static const BOOL decodeValue(sized_buf* input, size_t size, void* output) {
 #define DECODE(INPUT,OUTPUT) decodeValue((INPUT), sizeof(*(OUTPUT)), (OUTPUT))
 
 
-static BOOL decodeNumber(sized_buf* input, int64_t *outNumber) {
+static BOOL decodeNumber(slice* input, int64_t *outNumber) {
     unsigned nBytes;
     uint8_t lenByte;
     union {
@@ -189,7 +189,7 @@ static BOOL decodeNumber(sized_buf* input, int64_t *outNumber) {
 }
 
 
-static BOOL decodeString(sized_buf* input, NSString** outString) {
+static BOOL decodeString(slice* input, NSString** outString) {
     // Find the length:
     void* end = memchr(input->buf, '\0', input->size);
     if (!end)
@@ -217,13 +217,13 @@ static BOOL decodeString(sized_buf* input, NSString** outString) {
 }
 
 
-BOOL CBCollatableReadNextNumber(sized_buf *input, int64_t *output) {
+BOOL CBCollatableReadNextNumber(slice *input, int64_t *output) {
     uint8_t type;
     return DECODE(input, &type) && type == kNumberType && decodeNumber(input, output);
 }
 
 
-CBCollatableType CBCollatableReadNext(sized_buf *input, BOOL recurse, id *output) {
+CBCollatableType CBCollatableReadNext(slice *input, BOOL recurse, id *output) {
     uint8_t type;
     if (!DECODE(input, &type))
         return kErrorType;
@@ -297,7 +297,7 @@ CBCollatableType CBCollatableReadNext(sized_buf *input, BOOL recurse, id *output
 }
 
 
-id CBCollatableRead(sized_buf input) {
+id CBCollatableRead(slice input) {
     id output;
     if (CBCollatableReadNext(&input, YES, &output) == kErrorType || input.size > 0)
         output = nil;

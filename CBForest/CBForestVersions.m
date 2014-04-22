@@ -63,7 +63,7 @@
     if (!_rawTree)
         return NO;
     NSAssert(self.bodyFileOffset > 0, @"Body offset unknown");
-    RevTree* tree = RevTreeDecode(DataToBuf(_rawTree), 1, self.sequence, self.bodyFileOffset);
+    RevTree* tree = RevTreeDecode(DataToSlice(_rawTree), 1, self.sequence, self.bodyFileOffset);
     if (!tree) {
         if (outError)
             *outError = [NSError errorWithDomain: CBForestErrorDomain
@@ -103,7 +103,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         NSData* meta = self.metadata;
         if (meta.length > 1) {
             const void* metabytes = meta.bytes;
-            _revID = ExpandRevID((sized_buf){(void*)metabytes+1, meta.length-1});
+            _revID = ExpandRevID((slice){(void*)metabytes+1, meta.length-1});
         }
     }
     return _revID;
@@ -144,20 +144,20 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         return YES;
 
     RevTreePrune(_tree, _maxDepth);
-    sized_buf encoded = RevTreeEncode(_tree);
+    slice encoded = RevTreeEncode(_tree);
 
     // Encode flags & revID into metadata:
     NSMutableData* metadata = [NSMutableData dataWithLength: 1 + _revID.length];
     void* bytes = metadata.mutableBytes;
     *(uint8_t*)bytes = _flags;
-    sized_buf dstRev = {bytes+1, metadata.length-1};
-    RevIDCompact(StringToBuf(_revID), &dstRev);
+    slice dstRev = {bytes+1, metadata.length-1};
+    RevIDCompact(StringToSlice(_revID), &dstRev);
     metadata.length = 1 + dstRev.size;
 
-    BOOL ok = [self writeBody: BufToData(encoded.buf, encoded.size)
+    BOOL ok = [self writeBody: SliceToData(encoded.buf, encoded.size)
                      metadata: metadata
                         error: outError];
-    free(encoded.buf);
+    free((void*)encoded.buf);
     if (ok)
         _changed = NO;
     return ok;
@@ -172,7 +172,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 // internal method that looks up a RevNode. If revID is nil, returns the current node.
 - (const RevNode*) nodeWithID: (NSString*)revID {
     if (revID)
-        return RevTreeFindNode(_tree, CompactRevIDToBuf(revID));
+        return RevTreeFindNode(_tree, CompactRevIDToSlice(revID));
     else {
         RevTreeSort(_tree);
         return RevTreeGetNode(_tree, 0);
@@ -187,7 +187,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
         return nil;
     NSData* result = nil;
     if (node->data.size > 0) {
-        result = BufToData(node->data.buf, node->data.size);
+        result = SliceToData(node->data.buf, node->data.size);
     }
 #ifdef REVTREE_USES_FILE_OFFSETS
     else if (node->oldBodyOffset > 0) {
@@ -195,12 +195,12 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
         fdb_doc doc = {.seqnum = node->sequence};
         if (!Check(fdb_get_byoffset(db, &doc, node->oldBodyOffset), outError))
             return nil; // This will happen if the old doc body was lost by compaction.
-        RevTree* oldTree = RevTreeDecode((sized_buf){doc.body, doc.bodylen}, 0, 0, 0);
+        RevTree* oldTree = RevTreeDecode((slice){doc.body, doc.bodylen}, 0, 0, 0);
         if (oldTree) {
             // Now look up the revision, which still has a body in this old doc:
             const RevNode* oldNode = RevTreeFindNode(oldTree, node->revID);
             if (oldNode && oldNode->data.buf)
-                result = BufToData(oldNode->data.buf, oldNode->data.size);
+                result = SliceToData(oldNode->data.buf, oldNode->data.size);
             RevTreeFree(oldTree);
         }
         free(doc.body);
@@ -296,14 +296,14 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 
 // Use this to get a sized_buf for any data that's going to be added to the RevTree.
 // It adds a reference to the NSData so it won't be dealloced and invalidate the sized_buf.
-- (sized_buf) rememberData: (NSData*)data {
+- (slice) rememberData: (NSData*)data {
     if (!data)
-        return (sized_buf){NULL, 0};
+        return (slice){NULL, 0};
     data = [data copy]; // in case it's mutable
     if (!_insertedData)
         _insertedData = [NSMutableArray array];
     [_insertedData addObject: data];
-    return DataToBuf(data);
+    return DataToSlice(data);
 }
 
 
@@ -332,7 +332,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
                        [self rememberData: CompactRevID(revID)],
                        [self rememberData: data],
                        deletion,
-                       CompactRevIDToBuf(parentRevID),
+                       CompactRevIDToSlice(parentRevID),
                        allowConflict))
         return NO;
     [self updateAfterInsert];
@@ -342,16 +342,16 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 
 // Given an NSArray of revision ID strings, converts them to a C array of sized_bufs pointing
 // to their compact forms.
-- (sized_buf*) revStringsToBufs: (NSArray*)revIDs remember: (BOOL)remember {
+- (slice*) revStringsToBufs: (NSArray*)revIDs remember: (BOOL)remember {
     NSUInteger numRevs = revIDs.count;
-    sized_buf *revBufs = malloc(numRevs * sizeof(sized_buf));
+    slice *revBufs = malloc(numRevs * sizeof(slice));
     if (!revBufs)
         return NULL;
     for (NSUInteger i=0; i<numRevs; i++) {
         NSData* revData = CompactRevID(revIDs[i]);
         if (remember)
             [self rememberData: revData];
-        revBufs[i] = DataToBuf(revData);
+        revBufs[i] = DataToSlice(revData);
     }
     return revBufs;
 }
@@ -361,7 +361,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
                  deletion: (BOOL)deletion
                   history: (NSArray*)history // history[0] is new rev's ID
 {
-    sized_buf *historyBufs = [self revStringsToBufs: history remember: YES];
+    slice *historyBufs = [self revStringsToBufs: history remember: YES];
     if (!historyBufs)
         return -1;
     int numAdded = RevTreeInsertWithHistory(&_tree, historyBufs, (unsigned)history.count,
@@ -374,7 +374,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
 
 
 - (NSArray*) purgeRevisions: (NSArray*)revIDs {
-    sized_buf *revBufs = [self revStringsToBufs: revIDs remember: NO];
+    slice *revBufs = [self revStringsToBufs: revIDs remember: NO];
     if (!revBufs)
         return nil;
     int numPurged = RevTreePurge(_tree, revBufs, (unsigned)revIDs.count);

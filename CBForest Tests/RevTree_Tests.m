@@ -11,8 +11,8 @@
 #import "varint.h"
 
 
-static sized_buf strtobuf(const char* str) {return (sized_buf){(void*)str, strlen(str)};}
-static bool bufequalstr(sized_buf buf, const char* str) {
+static slice strtobuf(const char* str) {return (slice){(void*)str, strlen(str)};}
+static bool bufequalstr(slice buf, const char* str) {
     return buf.size == strlen(str) && memcmp(buf.buf, str, buf.size) == 0;
 }
 
@@ -45,7 +45,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
         XCTAssert(len > 0 && len <= kMaxVarintLen64);
         XCTAssertEqual(len, SizeOfVarInt(tests[i]));
         uint64_t readNum;
-        size_t readLen = GetUVarInt((sized_buf){buf, len}, &readNum);
+        size_t readLen = GetUVarInt((slice){buf, len}, &readNum);
         XCTAssertEqual(readLen, len);
         XCTAssertEqual(readNum, tests[i]);
     }
@@ -53,7 +53,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 
 - (void) testParseRevID {
     unsigned sequence;
-    sized_buf digest;
+    slice digest;
     XCTAssert(RevIDParse(strtobuf("42-cafebabe"), &sequence, &digest));
     XCTAssertEqual(sequence, 42);
     XCTAssert(bufequalstr(digest, "cafebabe"));
@@ -79,7 +79,7 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 - (void) testInsertRev {
     // Create a tree and insert a revision:
     tree = RevTreeNew(1);
-    RevTreeInsert(&tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), false, (sized_buf){}, false);
+    RevTreeInsert(&tree, strtobuf("1-f00"), strtobuf("{\"hi\":true}"), false, (slice){}, false);
     XCTAssertEqual(RevTreeGetCount(tree), 1);
     const RevNode* node = RevTreeGetNode(tree, 0);
     XCTAssert(node != nil);
@@ -124,9 +124,9 @@ static bool bufequalstr(sized_buf buf, const char* str) {
 
 - (void) testEncode {
     tree = RevTreeNew(1);
-    sized_buf revID1 = strtobuf("1-f000");
-    RevTreeInsert(&tree, revID1, strtobuf("{\"hi\":true}"), false, (sized_buf){}, false);
-    sized_buf encoded = RevTreeEncode(tree);
+    slice revID1 = strtobuf("1-f000");
+    RevTreeInsert(&tree, revID1, strtobuf("{\"hi\":true}"), false, (slice){}, false);
+    slice encoded = RevTreeEncode(tree);
     XCTAssert(encoded.buf != NULL);
     XCTAssert(encoded.size > 20);
 
@@ -135,10 +135,10 @@ static bool bufequalstr(sized_buf buf, const char* str) {
     XCTAssertEqual(RevTreeGetCount(tree), 1);
     const RevNode* rev1 = RevTreeFindNode(tree, revID1);
     XCTAssert(rev1->data.buf != NULL);
-    sized_buf revID2 = strtobuf("2-ba22");
+    slice revID2 = strtobuf("2-ba22");
     RevTreeInsert(&tree, revID2, strtobuf("{\"hi\":false}"), false, revID1, false);
 
-    sized_buf encoded2 = RevTreeEncode(tree);
+    slice encoded2 = RevTreeEncode(tree);
     XCTAssert(encoded2.buf != NULL);
     XCTAssert(encoded2.size > 20);
 

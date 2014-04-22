@@ -9,7 +9,7 @@
 #ifndef COUCHSTORE_REV_TREE_H
 #define COUCHSTORE_REV_TREE_H
 #import "forestdb.h"
-#import "sized_buf.h"
+#import "slice.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -41,8 +41,8 @@ typedef uint8_t RevNodeFlags;
 
 /** In-memory representation of a single revision's metadata. */
 typedef struct RevNode {
-    sized_buf   revID;          /**< Revision ID */
-    sized_buf   data;           /**< Revision body (JSON), or empty if not stored in this tree */
+    slice   revID;          /**< Revision ID */
+    slice   data;           /**< Revision body (JSON), or empty if not stored in this tree */
 #ifdef REVTREE_USES_FILE_OFFSETS
     uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
 #endif
@@ -70,11 +70,11 @@ static inline void RevTreeFree(RevTree *tree) {free(tree);}
  *  @param extraCapacity  Number of extra nodes to leave room for as an optimization.
  *  @param sequence  The sequence # of the document the raw tree is read from.
  *  @param bodyOffset  The file offset of the document body containing the serialized tree. */
-RevTree* RevTreeDecode(sized_buf raw_tree, unsigned extraCapacity,
+RevTree* RevTreeDecode(slice raw_tree, unsigned extraCapacity,
                        fdb_seqnum_t sequence, uint64_t bodyOffset);
 
 /** Serializes a RevTree. Caller is responsible for freeing the returned block. */
-sized_buf RevTreeEncode(RevTree *tree);
+slice RevTreeEncode(RevTree *tree);
 
 
 /** Returns the number of nodes in a tree. */
@@ -87,16 +87,16 @@ const RevNode* RevTreeGetCurrentNode(RevTree *tree);
 const RevNode* RevTreeGetNode(RevTree *tree, unsigned index);
 
 /** Finds a node in a tree given its rev ID. */
-const RevNode* RevTreeFindNode(RevTree *tree, sized_buf revID);
+const RevNode* RevTreeFindNode(RevTree *tree, slice revID);
 
 /** Gets a node in a rev tree by index, without parsing it first.
  *  This is more efficient if you only need to look up one node.
  *  Returns NULL if index is out of range. */
-bool RevTreeRawGetNode(sized_buf raw_tree, unsigned index, RevNode *outNode);
+bool RevTreeRawGetNode(slice raw_tree, unsigned index, RevNode *outNode);
 
 /** Finds a node in a rev tree without parsing it first.
  *  This is more efficient if you only need to look up one node. */
-bool RevTreeRawFindNode(sized_buf raw_tree, sized_buf revID, RevNode *outNode);
+bool RevTreeRawFindNode(slice raw_tree, slice revID, RevNode *outNode);
 
 /** Returns true if the tree has a conflict (multiple nondeleted leaf revisions.) */
 bool RevTreeHasConflict(RevTree *tree);
@@ -109,17 +109,17 @@ bool RevTreeReserveCapacity(RevTree **pTree, unsigned extraCapacity);
 /** Adds a revision to a tree. The tree's capacity MUST be greater than its count.
  *  The memory pointed to by revID and data MUST remain valid until after the tree is freed. */
 bool RevTreeInsert(RevTree **treeP,
-                   sized_buf revID,
-                   sized_buf data,
+                   slice revID,
+                   slice data,
                    bool deleted,
-                   sized_buf parentRevID,
+                   slice parentRevID,
                    bool allowConflict);
 
 /** Somewhat lower-level version of RevTreeInsert that takes a RevNode* for the parent and returns
     a RevNode* for the new node. It also does _not_ verify that the new revID doesn't exist! */
 const RevNode* RevTreeInsertPtr(RevTree **treeP,
-                                sized_buf revID,
-                                sized_buf data,
+                                slice revID,
+                                slice data,
                                 bool deleted,
                                 const RevNode* parent,
                                 bool allowConflict);
@@ -133,9 +133,9 @@ const RevNode* RevTreeInsertPtr(RevTree **treeP,
     @return  The number of revisions added, or 0 if the new revision already exists,
              or a negative number on failure. */
 int RevTreeInsertWithHistory(RevTree** treeP,
-                             const sized_buf history[],
+                             const slice history[],
                              unsigned historyCount,
-                             sized_buf data,
+                             slice data,
                              bool deleted);
 
 /** Limits the maximum depth of the tree by removing the oldest nodes, if necessary. */
@@ -148,7 +148,7 @@ int RevTreePrune(RevTree* tree, unsigned maxDepth);
             array nulled out.
     @param nRevs  Size of the revBufs array
     @return  The number of revisions removed. */
-int RevTreePurge(RevTree* tree, sized_buf revBufs[], unsigned nRevs);
+int RevTreePurge(RevTree* tree, slice revBufs[], unsigned nRevs);
 
 /** Sorts the nodes of a tree so that the current node(s) come first.
     Nodes are normally sorted already, but RevTreeInsert will leave them unsorted.
@@ -160,7 +160,7 @@ void RevTreeSort(RevTree *tree);
 /** Removes all body file offsets in an encoded tree; should be called as part of a document
     mutator during compaction, since compaction invalidates all existing file offsets.
     Returns true if any changes were made. */
-bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree);
+bool RevTreeRawClearBodyOffsets(slice *raw_tree);
 #endif
 
 
@@ -170,24 +170,24 @@ bool RevTreeRawClearBodyOffsets(sized_buf *raw_tree);
 /** Parses a revision ID into its generation-number prefix and digest suffix.
     The generation number will be nonzero. The digest will be non-empty.
     Returns false if the ID is not of the right form. */
-bool RevIDParse(sized_buf rev, unsigned *generation, sized_buf *digest);
+bool RevIDParse(slice rev, unsigned *generation, slice *digest);
 
 /** Parses a compacted revision ID. */
-bool RevIDParseCompacted(sized_buf rev, unsigned *generation, sized_buf *digest);
+bool RevIDParseCompacted(slice rev, unsigned *generation, slice *digest);
 
 /** Compacts a compressed revision ID. The compact form is written to dstrev->buf (which must
     be large enough to contain it), and dstrev->size is updated.
     Returns false if the input ID is not parseable. */
-bool RevIDCompact(sized_buf srcrev, sized_buf *dstrev);
+bool RevIDCompact(slice srcrev, slice *dstrev);
 
 /** Returns the expanded size of a compressed revision ID: the number of bytes of the expanded form.
     If an uncompressed revision ID is given, 0 is returned to signal that expansion isn't needed. */
-size_t RevIDExpandedSize(sized_buf rev);
+size_t RevIDExpandedSize(slice rev);
 
 /** Expands a compressed revision ID. The expanded form is written to expanded_rev->buf (which must
     be large enough to contain it), and expanded_rev->size is updated.
     If the revision ID is not compressed, it's copied as-is to expanded_rev. */
-void RevIDExpand(sized_buf rev, sized_buf* expanded_rev);
+void RevIDExpand(slice rev, slice* expanded_rev);
 
 
 #endif

@@ -31,9 +31,9 @@
     if (self) {
         _db = store;
         _docID = [docID copy];
-        sized_buf idbuf = CopyBuf(StringToBuf(docID));
+        slice idbuf = slicecopy(StringToSlice(docID));
         _info.keylen = idbuf.size;
-        _info.key = idbuf.buf;
+        _info.key = (void*)idbuf.buf;
         _info.seqnum = kCBForestNoSequence;
     }
     return self;
@@ -50,7 +50,7 @@
     if (self) {
         _db = store;
         _info = *info;
-        _docID = BufToString(_info.key, _info.keylen);
+        _docID = SliceToString(_info.key, _info.keylen);
         _bodyOffset = bodyOffset;
     }
     return self;
@@ -80,7 +80,7 @@
 }
 
 
-- (sized_buf) rawID                 {return (sized_buf){_info.key, _info.keylen};}
+- (slice) rawID                 {return (slice){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
 - (CBForestSequence) sequence       {return _info.seqnum;}
 - (BOOL) exists                     {return _info.seqnum != kCBForestNoSequence;}

@@ -46,32 +46,31 @@ BOOL Check(fdb_status code, NSError** outError) {
 }
 
 
-sized_buf DataToBuf(NSData* data) {
-    sized_buf buf = {(char*)data.bytes, data.length};
-    return buf;
+slice DataToSlice(NSData* data) {
+    return (slice){data.bytes, data.length};
 }
 
 
-sized_buf StringToBuf(NSString* string) {
-    return DataToBuf([string dataUsingEncoding: NSUTF8StringEncoding]);
+slice StringToSlice(NSString* string) {
+    return DataToSlice([string dataUsingEncoding: NSUTF8StringEncoding]);
 }
 
 
-NSData* BufToData(const void* buf, size_t size) {
+NSData* SliceToData(const void* buf, size_t size) {
     if (!buf)
         return nil;
     return [NSData dataWithBytes: buf length: size];
 }
 
 
-NSData* BufToTempData(const void* buf, size_t size) {
+NSData* SliceToTempData(const void* buf, size_t size) {
     if (!buf)
         return nil;
     return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: NO];
 }
 
 
-NSString* BufToString(const void* buf, size_t size) {
+NSString* SliceToString(const void* buf, size_t size) {
     if (!buf)
         return nil;
     return [[NSString alloc] initWithBytes: buf
@@ -91,35 +90,14 @@ NSData* JSONToData(id obj, NSError** outError) {
 }
 
 
-id BufToJSON(sized_buf buf, NSError** outError) {
+id SliceToJSON(slice buf, NSError** outError) {
     if (buf.size == 0)
         return nil;
-    NSCAssert(buf.buf != NULL, @"BufToJSON(NULL)");
-    NSData* data = [[NSData alloc] initWithBytesNoCopy: buf.buf length: buf.size freeWhenDone: NO];
+    NSCAssert(buf.buf != NULL, @"SliceToJSON(NULL)");
+    NSData* data = [[NSData alloc] initWithBytesNoCopy: (void*)buf.buf
+                                                length: buf.size
+                                          freeWhenDone: NO];
     return DataToJSON(data, outError);
-}
-
-
-sized_buf CopyBuf(sized_buf buf) {
-    if (buf.size > 0) {
-        void* newBuf = malloc(buf.size);
-        memcpy(newBuf, buf.buf, buf.size);
-        buf.buf = newBuf;
-    }
-    return buf;
-}
-
-
-int CompareBufs(sized_buf a, sized_buf b) {
-    size_t minSize = a.size < b.size ? a.size : b.size;
-    int result = memcmp(a.buf, b.buf, minSize);
-    if (result == 0) {
-        if (a.size < b.size)
-            result = -1;
-        else if (a.size > b.size)
-            result = 1;
-    }
-    return result;
 }
 
 
@@ -136,16 +114,14 @@ void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcL
 
 void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data) {
     UpdateBuffer(outBuf, outLen, data.bytes, data.length);
-
 }
 
 
+#pragma mark - REVISION IDS:
 
 
-
-
-sized_buf CompactRevIDToBuf(NSString* revID) {
-    return DataToBuf(CompactRevID(revID));
+slice CompactRevIDToSlice(NSString* revID) {
+    return DataToSlice(CompactRevID(revID));
 }
 
 
@@ -153,9 +129,9 @@ NSData* CompactRevID(NSString* revID) {
     if (!revID)
         return nil;
     //OPT: This is not very efficient.
-    sized_buf src = StringToBuf(revID);
+    slice src = StringToSlice(revID);
     NSMutableData* data = [[NSMutableData alloc] initWithLength: src.size];
-    sized_buf dst = DataToBuf(data);
+    slice dst = DataToSlice(data);
     if (!RevIDCompact(src, &dst))
         return nil; // error
     data.length = dst.size;
@@ -163,13 +139,13 @@ NSData* CompactRevID(NSString* revID) {
 }
 
 
-NSString* ExpandRevID(sized_buf compressedRevID) {
+NSString* ExpandRevID(slice compressedRevID) {
     //OPT: This is not very efficient.
     size_t size = RevIDExpandedSize(compressedRevID);
     if (size == 0)
-        return BufToString(compressedRevID.buf, compressedRevID.size);
+        return SliceToString(compressedRevID.buf, compressedRevID.size);
     NSMutableData* data = [[NSMutableData alloc] initWithLength: size];
-    sized_buf buf = DataToBuf(data);
+    slice buf = DataToSlice(data);
     RevIDExpand(compressedRevID, &buf);
     data.length = buf.size;
     return [[NSString alloc] initWithData: data encoding: NSASCIIStringEncoding];

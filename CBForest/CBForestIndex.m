@@ -39,7 +39,7 @@ id kCBForestIndexNoValue;
             return NO;
         if (oldSeqData) {
             // Decode a series of sequences from packed varint data:
-            sized_buf seqBuf = DataToBuf(oldSeqData);
+            slice seqBuf = DataToSlice(oldSeqData);
             uint64_t seq;
             while (ReadUVarInt(&seqBuf, &seq)) {
                 // ...and delete the old key/values with those sequences:
@@ -89,7 +89,7 @@ id kCBForestIndexNoValue;
 
             // Encode the new sequences into a packed series of varints:
             NSMutableData* seqData = [NSMutableData dataWithLength: seqs.count*kMaxVarintLen64];
-            sized_buf seqBuf = DataToBuf(seqData);
+            slice seqBuf = DataToSlice(seqData);
             for (NSNumber* seq in seqs)
                 WriteUVarInt(&seqBuf, seq.unsignedLongLongValue);
             seqData.length = seqBuf.buf - seqData.mutableBytes;
@@ -139,7 +139,7 @@ id kCBForestIndexNoValue;
             }
 
             // Decode the key from collatable form:
-            sized_buf indexKey = {doc->key, doc->keylen};
+            slice indexKey = {doc->key, doc->keylen};
             id key;
             NSString* docID;
             int64_t docSequence;
@@ -152,7 +152,7 @@ id kCBForestIndexNoValue;
             // if there's no value, the body will be just a null byte (MB-10915)
             NSData* valueData = nil;
             if (doc->bodylen > 1)
-                valueData = BufToData(doc->body, doc->bodylen);
+                valueData = SliceToData(doc->body, doc->bodylen);
             fdb_doc_free(doc);
 
             if (options && !options->inclusiveEnd && endKey && [endKey isEqual: key]) {

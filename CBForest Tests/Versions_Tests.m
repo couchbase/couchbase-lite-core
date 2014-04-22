@@ -50,7 +50,7 @@
         NSData* compact = CompactRevID(revID);
         XCTAssert(compact != nil);
         XCTAssert(compact.length < revID.length);
-        NSString* expanded = ExpandRevID(DataToBuf(compact));
+        NSString* expanded = ExpandRevID(DataToSlice(compact));
         XCTAssertEqualObjects(expanded, revID);
     }
 
@@ -58,7 +58,7 @@
     for (NSString* revID in allowableRevs) {
         NSData* compact = CompactRevID(revID);
         XCTAssert(compact != nil);
-        NSString* expanded = ExpandRevID(DataToBuf(compact));
+        NSString* expanded = ExpandRevID(DataToSlice(compact));
         XCTAssertEqualObjects(expanded, revID);
     }
 }
