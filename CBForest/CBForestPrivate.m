@@ -15,7 +15,7 @@ BOOL Check(fdb_status code, NSError** outError) {
         if (outError)
             *outError = nil;
         return YES;
-    } else if (outError) {
+    } else {
         static NSString* const kErrorNames[] = {
             nil,
             @"Invalid arguments",
@@ -39,10 +39,14 @@ BOOL Check(fdb_status code, NSError** outError) {
             errorName = @"Revision data is corrupted";
         else
             errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
-        NSDictionary* info = @{NSLocalizedDescriptionKey: errorName};
-        *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
+        if (outError) {
+            NSDictionary* info = @{NSLocalizedDescriptionKey: errorName};
+            *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
+        } else {
+            NSLog(@"Warning: CBForest error %d (%@)", code, errorName);
+        }
+        return NO;
     }
-    return NO;
 }
 
 
@@ -150,3 +154,108 @@ NSString* ExpandRevID(slice compressedRevID) {
     data.length = buf.size;
     return [[NSString alloc] initWithData: data encoding: NSASCIIStringEncoding];
 }
+
+
+#if 0 // unused
+@implementation CBForestQueue
+{
+    NSUInteger _capacity;
+    NSMutableArray* _array;
+    dispatch_queue_t _q;
+    dispatch_semaphore_t _availableCount, _usedCount;
+    BOOL _closed;
+}
+
+- (instancetype) initWithCapacity: (NSUInteger)capacity {
+    self = [super init];
+    if (self) {
+        _capacity = capacity;
+        _array = [[NSMutableArray alloc] initWithCapacity: capacity];
+        _q = dispatch_queue_create("CBForestQueue", DISPATCH_QUEUE_SERIAL);
+        _availableCount = dispatch_semaphore_create(capacity);
+        _usedCount = dispatch_semaphore_create(0);
+    }
+    return self;
+}
+
+- (BOOL) push: (id)value {
+    dispatch_semaphore_wait(_availableCount, DISPATCH_TIME_FOREVER);
+    __block BOOL success;
+    dispatch_sync(_q, ^{
+        if (_closed) {
+            success = NO;
+        } else {
+            NSAssert(_array.count < _capacity, @"Queue overflow!");
+            [_array addObject: value];
+            dispatch_semaphore_signal(_usedCount);
+            success = YES;
+        }
+    });
+    return success;
+}
+
+- (id) pop {
+    dispatch_semaphore_wait(_usedCount, DISPATCH_TIME_FOREVER);
+    __block id value;
+    dispatch_sync(_q, ^{
+        if (_array.count > 0) {
+            value = [_array firstObject];
+            [_array removeObjectAtIndex: 0];
+            dispatch_semaphore_signal(_availableCount);
+        } else {
+            NSAssert(_closed, @"Queue underflow!");
+            value = nil;
+            dispatch_semaphore_signal(_usedCount); // so next -pop call won't block
+        }
+    });
+    return value;
+}
+
+- (void) close {
+    dispatch_async(_q, ^{
+        if (!_closed) {
+            _closed = YES;
+            dispatch_semaphore_signal(_usedCount); // so that -pop calls will never block
+        }
+    });
+}
+
+@end
+#endif
+
+
+
+@implementation CBForestToken
+{
+    id _owner;
+    NSCondition* _condition;
+}
+
+@synthesize name=_name;
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _condition = [[NSCondition alloc] init];
+    }
+    return self;
+}
+
+- (void) lockWithOwner: (id)owner {
+    NSParameterAssert(owner != nil);
+    [_condition lock];
+    while (_owner != nil && _owner != owner)
+        [_condition wait];
+    _owner = owner;
+    [_condition unlock];
+}
+
+- (void) unlockWithOwner: (id)oldOwner {
+    NSParameterAssert(oldOwner != nil);
+    [_condition lock];
+    NSAssert(oldOwner == _owner, @"clearing wrong owner! (%p, expected %p)", oldOwner, _owner);
+    _owner = nil;
+    [_condition broadcast];
+    [_condition unlock];
+}
+@end

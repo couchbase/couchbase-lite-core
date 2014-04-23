@@ -170,4 +170,46 @@
     XCTAssertEqual(i, 51);
 }
 
+/*
+- (void) test05_Queue {
+    CBForestQueue* queue = [[CBForestQueue alloc] initWithCapacity: 4];
+    dispatch_queue_t dq = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    const int participants = 20, iterations = 1000;
+    __block int32_t readCount=0, writeCount=0, failedWriteCount=0;
+    dispatch_apply(participants, dq, ^(size_t i) {
+        if (i % 2) {
+            NSLog(@"Writer #%d started", (int)i);
+            for (int j = 0; j < iterations; j++) {
+                usleep(random() % 100);
+                NSString* value = [NSString stringWithFormat: @"%03d-%03d", (int)i, j];
+                if ([queue push: value])
+                    OSAtomicIncrement32(&writeCount);
+                else {
+                    OSAtomicIncrement32(&failedWriteCount);
+                    //NSLog(@"Writer #%d: write #%d failed", (int)i, j);
+                }
+            }
+            NSLog(@"Writer #%d finished", (int)i);
+            if (i == participants-1) {
+                NSLog(@"Closing queue!");
+                [queue close];
+            }
+        } else {
+            int j = 0;
+            id value;
+            do {
+                usleep(random() % 100);
+                value = [queue pop];
+                //NSLog(@"Reader #%d iter #%d Popped: %@", (int)i, j, value);
+                if (value)
+                    OSAtomicIncrement32(&readCount);
+                j++;
+            } while (value);
+            NSLog(@"Reader #%d stopped", (int)i/2);
+        }
+    });
+    XCTAssertEqual(readCount, participants/2*iterations);
+    XCTAssertEqual(writeCount+failedWriteCount, participants/2*iterations);
+}
+*/
 @end

@@ -45,8 +45,12 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 
 
 @interface CBForestDB ()
-@property (readonly) fdb_handle* handle;
 - (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError;
+- (void) beginTransaction;
+- (BOOL) endTransaction: (NSError**)outError;
+- (fdb_status) rawGetMeta: (fdb_doc*)doc offset: (uint64_t*)outOffset;
+- (fdb_status) rawGetBody: (fdb_doc*)doc byOffset: (uint64_t)offset;
+- (BOOL) rawSet: (fdb_doc*)doc error: (NSError**)outError;
 - (BOOL) _enumerateValuesFromKey: (NSData*)startKey
                            toKey: (NSData*)endKey
                          options: (const CBForestEnumerationOptions*)options
@@ -67,4 +71,21 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 @property (readonly) uint64_t bodyFileOffset;
 + (BOOL) docInfo: (const fdb_doc*)docInfo
   matchesOptions: (const CBForestEnumerationOptions*)options;
+@end
+
+
+#if 0 // unused
+@interface CBForestQueue : NSObject
+- (instancetype) initWithCapacity: (NSUInteger)capacity;
+- (BOOL) push: (id)value;
+- (id) pop;
+- (void) close;
+@end
+#endif
+
+
+@interface CBForestToken : NSObject
+@property (copy) NSString* name;
+- (void) lockWithOwner: (id)owner;
+- (void) unlockWithOwner: (id)oldOwner;
 @end

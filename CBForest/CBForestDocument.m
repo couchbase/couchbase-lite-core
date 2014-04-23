@@ -80,7 +80,7 @@
 }
 
 
-- (slice) rawID                 {return (slice){_info.key, _info.keylen};}
+- (slice) rawID                     {return (slice){_info.key, _info.keylen};}
 - (fdb_doc*) info                   {return &_info;}
 - (CBForestSequence) sequence       {return _info.seqnum;}
 - (BOOL) exists                     {return _info.seqnum != kCBForestNoSequence;}
@@ -97,7 +97,7 @@
 
 - (BOOL) reloadMeta: (NSError**)outError {
     uint64_t newBodyOffset;
-    fdb_status status = fdb_get_metaonly(_db.handle, &_info, &newBodyOffset);
+    fdb_status status = [_db rawGetMeta: &_info offset: &newBodyOffset];
     if (status == FDB_RESULT_KEY_NOT_FOUND) {
         _info.seqnum = kCBForestNoSequence;
         newBodyOffset = 0;
@@ -128,7 +128,7 @@
             return nil;
         }
     }
-    if (!Check(fdb_get_byoffset(_db.handle, &_info, _bodyOffset), outError))
+    if (!Check([_db rawGetBody: &_info byOffset: _bodyOffset], outError))
         return nil;
     NSData* body = [NSData dataWithBytesNoCopy: _info.body length: _info.bodylen freeWhenDone: YES];
     _info.body = NULL;
@@ -146,7 +146,7 @@
             .body = (void*)body.bytes,
             .bodylen = body.length,
         };
-        if (!Check(fdb_set(_db.handle, &newDoc), outError))
+        if (![_db rawSet: &newDoc error: outError])
             return NO;
         _metadata = [metadata copy];
         free(_info.meta);
@@ -160,15 +160,13 @@
 
 
 - (BOOL) deleteDocument: (NSError**)outError {
-    return [_db inTransaction: ^BOOL{
-        _info.body = NULL;
-        _info.bodylen = 0;
-        if (!Check(fdb_set(_db.handle, &_info), outError))
-            return NO;
-        _bodyOffset = 0;
-        _info.seqnum = kCBForestNoSequence;
-        return YES;
-    }];
+    _info.body = NULL;
+    _info.bodylen = 0;
+    if (![_db rawSet: &_info error: outError])
+        return NO;
+    _bodyOffset = 0;
+    _info.seqnum = kCBForestNoSequence;
+    return YES;
 }
 
 

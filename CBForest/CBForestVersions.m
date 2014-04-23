@@ -180,9 +180,20 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 }
 
 
-static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outError) {
+- (NSString*) currentRevisionID {
+    const RevNode* current = [self nodeWithID: nil];
+    return current ? ExpandRevID(current->revID) : nil;
+}
+
+
+- (NSData*) dataOfRevision: (NSString*)revID {
+    return [self dataOfRevision: revID error: NULL];
+}
+
+- (NSData*) dataOfRevision: (NSString*)revID error: (NSError**)outError {
     if (outError)
         *outError = nil;
+    const RevNode* node = [self nodeWithID: revID];
     if (!node)
         return nil;
     NSData* result = nil;
@@ -193,7 +204,7 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     else if (node->oldBodyOffset > 0) {
         // Look up old document from the saved oldBodyOffset:
         fdb_doc doc = {.seqnum = node->sequence};
-        if (!Check(fdb_get_byoffset(db, &doc, node->oldBodyOffset), outError))
+        if (!Check([self.db rawGetBody: &doc byOffset: node->oldBodyOffset], outError))
             return nil; // This will happen if the old doc body was lost by compaction.
         RevTree* oldTree = RevTreeDecode((slice){doc.body, doc.bodylen}, 0, 0, 0);
         if (oldTree) {
@@ -211,15 +222,6 @@ static NSData* dataForNode(fdb_handle* db, const RevNode* node, NSError** outErr
     }
 #endif
     return result;
-}
-
-- (NSString*) currentRevisionID {
-    const RevNode* current = [self nodeWithID: nil];
-    return current ? ExpandRevID(current->revID) : nil;
-}
-
-- (NSData*) dataOfRevision: (NSString*)revID {
-    return dataForNode(self.db.handle, [self nodeWithID: revID], NULL);
 }
 
 - (BOOL) isRevisionDeleted: (NSString*)revID {

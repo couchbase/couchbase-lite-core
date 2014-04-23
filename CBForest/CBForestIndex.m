@@ -133,7 +133,7 @@ id kCBForestIndexNoValue;
                                withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
     {
         @autoreleasepool {
-            if (!Check(fdb_get_byoffset(self.handle, doc, bodyOffset), outError)) {
+            if (!Check([self rawGetBody: doc byOffset: bodyOffset], outError)) {
                 fdb_doc_free(doc);
                 return false;
             }
