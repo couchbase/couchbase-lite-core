@@ -69,10 +69,9 @@
 
     // Initialize the index:
     __block int nMapCalls = 0;
-    index.map = ^(CBForestDocument* doc, CBForestIndexEmitBlock emit) {
+    index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
         nMapCalls++;
         NSError* error;
-        NSData* rawBody = [doc readBody: &error];
         XCTAssert(rawBody, @"Couldn't read doc body: %@", error);
         NSDictionary* body = DataToJSON(rawBody, NULL);
         for (NSString* city in body[@"cities"])
@@ -140,6 +139,51 @@
           }];
     XCTAssert(ok, @"Query failed: %@", error);
     XCTAssertEqual(nRows, 6);
+}
+
+
+- (void) testBigMapReduce {
+    NSLog(@"Writing documents...");
+    const int kNumDocs = 10000;
+    NSArray* colors = @[@"red", @"orange", @"yellow", @"green", @"blue", @"violet"];
+    for (int i=0; i<kNumDocs; i++) {
+        @autoreleasepool {
+            NSDictionary* body = @{@"color": colors[random() % colors.count],
+                                   @"n": @(random())};
+            NSString* docID = [NSString stringWithFormat: @"doc-%06d", i];
+            [self writeJSONBody: body ofDocumentID: docID];
+        }
+    }
+
+    index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
+        NSDictionary* body = DataToJSON(rawBody, NULL);
+        emit(body[@"color"], body[@"n"]);
+        //usleep(1000);
+    };
+    index.mapVersion = @"1";
+
+    NSLog(@"Updating index...");
+    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    NSError* error;
+    XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+    NSLog(@"  ...updating index took %.3f sec", (CFAbsoluteTimeGetCurrent()-start));
+
+    NSLog(@"Querying...");
+    __block int nRows = 0;
+    NSCountedSet* colorSet = [[NSCountedSet alloc] init];
+    BOOL ok = [index queryStartKey: nil startDocID: nil
+                       endKey: nil endDocID: nil
+                      options: NULL
+                        error: &error
+                        block: ^(id key, id value, NSString* docID, CBForestSequence sequence, BOOL *stop)
+          {
+              nRows++;
+              [colorSet addObject: key];
+              //NSLog(@"key = %@, value=%@, docID = %@, seq = %llu", key, value, docID, sequence);
+          }];
+    XCTAssert(ok, @"Query failed: %@", error);
+    XCTAssertEqual(nRows, kNumDocs);
+    NSLog(@"Query completed: %@", colorSet);
 }
 
 @end

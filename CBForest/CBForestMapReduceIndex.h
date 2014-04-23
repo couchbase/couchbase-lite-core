@@ -11,6 +11,7 @@
 
 typedef void (^CBForestIndexEmitBlock)(id key, id value);
 typedef void (^CBForestIndexMapBlock)(CBForestDocument* doc,
+                                      NSData* body,
                                       CBForestIndexEmitBlock emit);
 
 
