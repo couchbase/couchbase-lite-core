@@ -43,6 +43,8 @@ typedef struct {
     CBForestContentOptions  contentOptions;
 } CBForestEnumerationOptions;
 
+extern const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault;
+
 
 /** Sequence number type. Sequences are allocated starting from 1. */
 typedef uint64_t CBForestSequence;
@@ -175,11 +177,10 @@ typedef struct {
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.
     @return  YES on success, NO on failure. */
-- (BOOL) enumerateDocsFromID: (NSString*)startID
-                        toID: (NSString*)endID
-                     options: (const CBForestEnumerationOptions*)options
-                       error: (NSError**)outError
-                   withBlock: (CBForestDocIterator)block;
+- (NSEnumerator*) enumerateDocsFromID: (NSString*)startID
+                                 toID: (NSString*)endID
+                              options: (const CBForestEnumerationOptions*)options
+                                error: (NSError**)outError;
 
 /** Iterates over documents, in ascending order by sequence.
     @param startSequence  The sequence number to start at (1 to start from the beginning.)
@@ -188,12 +189,12 @@ typedef struct {
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
     @param block  The block to call for every document.
     @return  YES on success, NO on failure. */
-- (BOOL) enumerateDocsFromSequence: (CBForestSequence)startSequence
-                        toSequence: (CBForestSequence)endSequence
-                           options: (const CBForestEnumerationOptions*)options
-                             error: (NSError**)outError
-                         withBlock: (CBForestDocIterator)block;
+- (NSEnumerator*) enumerateDocsFromSequence: (CBForestSequence)startSequence
+                                 toSequence: (CBForestSequence)endSequence
+                                    options: (const CBForestEnumerationOptions*)options
+                                      error: (NSError**)outError;
 
 /** Returns a dump of every document in the database with its metadata and body sizes. */
 - (NSString*) dump;
+
 @end

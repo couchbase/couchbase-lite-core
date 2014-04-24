@@ -13,7 +13,7 @@
 #import <forestdb.h>
 
 
-#define MAP_PARALLELISM 4 /* If defined, number of GCD tasks to use for map functions */
+#define MAP_PARALLELISM 2 /* If defined, min number of GCD tasks to use for map functions */
 
 
 @implementation CBForestMapReduceIndex
@@ -88,75 +88,61 @@
     };
 
 #ifdef MAP_PARALLELISM
-    dispatch_semaphore_t mapCounter = dispatch_semaphore_create(MAP_PARALLELISM);
+    dispatch_semaphore_t mapCounter = dispatch_semaphore_create(MAX(MAP_PARALLELISM, CPUCount()/2));
     dispatch_group_t mapGroup = dispatch_group_create();
     dispatch_queue_t mapQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-    dispatch_queue_t updateQueue = dispatch_queue_create("viewUpdate", DISPATCH_QUEUE_SERIAL);
-
-    dispatch_sync(updateQueue, ^{
-        [self beginTransaction];
-    });
-#else
-    [self beginTransaction];
 #endif
-
     __block BOOL gotError = NO;
-    BOOL ok = [_sourceDatabase enumerateDocsFromSequence: startSequence
-                                              toSequence: kCBForestMaxSequence
-                                                 options: &options
-                                                   error: outError
-                                               withBlock: ^(CBForestDocument *doc, BOOL *stop)
-    {
-        NSData* body = [doc readBody: NULL];
+    [self inTransaction: ^BOOL {
+        NSEnumerator* e = [_sourceDatabase enumerateDocsFromSequence: startSequence
+                                                          toSequence: kCBForestMaxSequence
+                                                             options: &options
+                                                               error: outError];
+        if (!e)
+            return NO;
+        for (CBForestDocument* doc in e) {
+            @autoreleasepool {
+                NSData* body = [doc readBody: NULL];
 #ifdef MAP_PARALLELISM
-       dispatch_semaphore_wait(mapCounter, DISPATCH_TIME_FOREVER); // reserve space in map queue
-        dispatch_group_async(mapGroup, mapQueue, ^{
+                dispatch_semaphore_wait(mapCounter, DISPATCH_TIME_FOREVER);
+                dispatch_group_async(mapGroup, mapQueue, ^{
 #endif
-            NSMutableArray* keys = [NSMutableArray array];
-            NSMutableArray* values = [NSMutableArray array];
-            CBForestIndexEmitBlock emit = ^(id key, id value) {
-                [keys addObject: key];
-                [values addObject: value ?: kCBForestIndexNoValue];
-            };
-            @try {
-                _map(doc, body, emit);
-            } @catch (NSException* x) {
-                NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
+                    NSMutableArray* keys = [NSMutableArray array];
+                    NSMutableArray* values = [NSMutableArray array];
+                    CBForestIndexEmitBlock emit = ^(id key, id value) {
+                        [keys addObject: key];
+                        [values addObject: value ?: kCBForestIndexNoValue];
+                    };
+                    @try {
+                        _map(doc, body, emit);
+                    } @catch (NSException* x) {
+                        NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
+                    }
+                    [self setKeys: keys
+                           values: values
+                      forDocument: doc.docID
+                       atSequence: doc.sequence
+                            error: outError];
+#ifdef MAP_PARALLELISM
+                    dispatch_semaphore_signal(mapCounter);
+                });
+#endif
+                _lastSequenceIndexed = doc.sequence;
             }
-#ifdef MAP_PARALLELISM
-            dispatch_group_async(mapGroup, updateQueue, ^{
-#endif
-                [self setKeys: keys
-                       values: values
-                  forDocument: doc.docID
-                   atSequence: doc.sequence
-                        error: outError];
-#ifdef MAP_PARALLELISM
-                dispatch_semaphore_signal(mapCounter);
-            });
-        });
-#endif
-        _lastSequenceIndexed = doc.sequence;
+        }
+
+    #ifdef MAP_PARALLELISM
+        // Wait for all the blocks to be processed on both the mapQueue and updateQueue:
+        dispatch_group_wait(mapGroup, DISPATCH_TIME_FOREVER);
+    #endif
+
+        _lastMapVersion = _mapVersion;
+        if (_lastSequenceIndexed >= startSequence)
+            if (![self saveState: (gotError ?NULL :outError)])
+                gotError = YES;
+        return YES;
     }];
-
-#ifdef MAP_PARALLELISM
-    // Wait for all the blocks to be processed on both the mapQueue and updateQueue:
-    dispatch_group_wait(mapGroup, DISPATCH_TIME_FOREVER);
-#endif
-
-    _lastMapVersion = _mapVersion;
-    if (_lastSequenceIndexed >= startSequence)
-        ok = [self saveState: (gotError ?NULL :outError)];
-    
-#ifdef MAP_PARALLELISM
-    dispatch_sync(updateQueue, ^{
-        [self endTransaction: outError];
-    });
-#else
-    [self endTransaction: outError];
-#endif
-
-    return ok && !gotError;
+    return !gotError;
 }
 
 

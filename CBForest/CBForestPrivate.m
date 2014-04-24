@@ -156,7 +156,16 @@ NSString* ExpandRevID(slice compressedRevID) {
 }
 
 
-#if 0 // unused
+NSUInteger CPUCount(void) {
+    __block NSUInteger sCount;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sCount = [[NSProcessInfo processInfo] processorCount];
+    });
+    return sCount;
+}
+
+
 @implementation CBForestQueue
 {
     NSUInteger _capacity;
@@ -212,7 +221,7 @@ NSString* ExpandRevID(slice compressedRevID) {
 }
 
 - (void) close {
-    dispatch_async(_q, ^{
+    dispatch_sync(_q, ^{
         if (!_closed) {
             _closed = YES;
             dispatch_semaphore_signal(_usedCount); // so that -pop calls will never block
@@ -221,7 +230,6 @@ NSString* ExpandRevID(slice compressedRevID) {
 }
 
 @end
-#endif
 
 
 

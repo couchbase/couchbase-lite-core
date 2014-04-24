@@ -134,9 +134,9 @@
     XCTAssert([_db compact: &error], @"Compact failed: %@", error);
 
     __block int i = 5;
-    BOOL ok = [_db enumerateDocsFromID: @"doc-005" toID: @"doc-050" options: 0 error: &error
-                             withBlock: ^(CBForestDocument *doc, BOOL *stop)
-    {
+    NSEnumerator* e = [_db enumerateDocsFromID: @"doc-005" toID: @"doc-050" options: 0 error: &error ];
+    XCTAssert(e);
+    for (CBForestDocument* doc in e) {
         XCTAssertEqual(doc.db, _db);
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         XCTAssertEqualObjects(doc.docID, expectedDocID);
@@ -146,15 +146,14 @@
                               [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
                               @"(i=%d)", i);
         i++;
-    }];
-    XCTAssert(ok);
+    }
     XCTAssertEqual(i, 51);
 
 
     i = 5;
-    ok = [_db enumerateDocsFromSequence: 5 toSequence: 50 options: 0 error: &error
-                              withBlock: ^(CBForestDocument *doc, BOOL *stop)
-    {
+    e = [_db enumerateDocsFromSequence: 5 toSequence: 50 options: 0 error: &error];
+    XCTAssert(e);
+    for (CBForestDocument* doc in e) {
         NSLog(@"i=%2d, doc=%@", i, doc);
         XCTAssertEqual(doc.db, _db);
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
@@ -165,8 +164,7 @@
                               [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
                               @"(i=%d)", i);
         i++;
-    }];
-    XCTAssert(ok);
+    }
     XCTAssertEqual(i, 51);
 }
 

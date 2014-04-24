@@ -146,14 +146,26 @@
     NSLog(@"Writing documents...");
     const int kNumDocs = 10000;
     NSArray* colors = @[@"red", @"orange", @"yellow", @"green", @"blue", @"violet"];
-    for (int i=0; i<kNumDocs; i++) {
-        @autoreleasepool {
-            NSDictionary* body = @{@"color": colors[random() % colors.count],
-                                   @"n": @(random())};
-            NSString* docID = [NSString stringWithFormat: @"doc-%06d", i];
-            [self writeJSONBody: body ofDocumentID: docID];
-        }
-    }
+
+    void (^addDocBlock)(size_t) = ^(size_t i) {
+        NSDictionary* body = @{@"color": colors[random() % colors.count],
+                               @"n": @(random())};
+        NSString* docID = [NSString stringWithFormat: @"doc-%06d", (int)i];
+        [self writeJSONBody: body ofDocumentID: docID];
+    };
+
+    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    [db inTransaction: ^BOOL {
+#if 1
+        dispatch_apply(kNumDocs, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+                       addDocBlock);
+#else
+        for (size_t i=0; i<kNumDocs; i++)
+            addDocBlock(i);
+#endif
+        return YES;
+    }];
+    NSLog(@"  ...writing docs took %.3f sec", (CFAbsoluteTimeGetCurrent()-start));
 
     index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
         NSDictionary* body = DataToJSON(rawBody, NULL);
@@ -163,7 +175,7 @@
     index.mapVersion = @"1";
 
     NSLog(@"Updating index...");
-    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    start = CFAbsoluteTimeGetCurrent();
     NSError* error;
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     NSLog(@"  ...updating index took %.3f sec", (CFAbsoluteTimeGetCurrent()-start));

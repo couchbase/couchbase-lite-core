@@ -74,14 +74,15 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 @end
 
 
-#if 0 // unused
+NSUInteger CPUCount(void);
+
+
 @interface CBForestQueue : NSObject
 - (instancetype) initWithCapacity: (NSUInteger)capacity;
 - (BOOL) push: (id)value;
 - (id) pop;
 - (void) close;
 @end
-#endif
 
 
 @interface CBForestToken : NSObject
