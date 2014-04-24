@@ -191,7 +191,7 @@ slice RevTreeEncode(RevTree *tree)
         }
 #ifdef REVTREE_USES_FILE_OFFSETS
         else if (dst->flags & kRevNodeHasBodyOffset) {
-            dstData += PutUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
+            /*dstData +=*/ PutUVarInt(dstData, src->oldBodyOffset ?: tree->bodyOffset);
         }
 #endif
 
@@ -360,6 +360,7 @@ const RevNode* RevTreeInsertPtr(RevTree **treeP,
     ptrdiff_t parentIndex = parent - &(*treeP)->node[0];
     if (!RevTreeReserveCapacity(treeP, 1))
         return false;
+    assert(*treeP); // appeases the static analyzer
     if (parent)
         parent = &(*treeP)->node[parentIndex];
 

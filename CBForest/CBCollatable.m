@@ -152,12 +152,17 @@ void CBCollatableEndArray(NSMutableData* output)     {[output appendBytes: "\0" 
 #pragma mark - DECODING:
 
 
-static const BOOL decodeValue(slice* input, size_t size, void* output) {
-    if (input->size < size)
-        return NO;
+// Reads 'size' bytes from 'input' to 'output', advancing 'input' past the read bytes.
+static void uncheckedDecodeValue(slice* input, size_t size, void* output) {
     memcpy(output, input->buf, size);
     input->buf += size;
     input->size -= size;
+}
+
+static BOOL decodeValue(slice* input, size_t size, void* output) {
+    if (input->size < size)
+        return NO;
+    uncheckedDecodeValue(input, size, output);
     return YES;
 }
 
@@ -204,7 +209,7 @@ static BOOL decodeString(slice* input, NSString** outString) {
         if (!temp)
             return NO;
     }
-    decodeValue(input, nBytes, temp);
+    uncheckedDecodeValue(input, nBytes, temp);
     input->buf++; // consume null byte
     input->size--;
     const uint8_t* toChar = getInverseCharPriorityMap();
