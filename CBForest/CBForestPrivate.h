@@ -17,6 +17,7 @@ slice DataToSlice(NSData* data);
 slice StringToSlice(NSString* docID);
 NSData* SliceToData(const void* buf, size_t size);
 NSData* SliceToTempData(const void* buf, size_t size);
+NSData* SliceToAdoptingData(const void* buf, size_t size);
 NSString* SliceToString(const void* buf, size_t size);
 
 NSData* JSONToData(id obj, NSError** outError) ;
@@ -42,7 +43,9 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 
 
 @interface CBForestDB ()
-- (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError;
+- (BOOL) open: (NSString*)filePath
+      options: (CBForestFileOptions)options
+        error: (NSError**)outError;
 - (void) beginTransaction;
 - (BOOL) endTransaction: (NSError**)outError;
 - (fdb_status) rawGetMeta: (fdb_doc*)doc offset: (uint64_t*)outOffset;
@@ -68,6 +71,7 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
           options: (CBForestContentOptions)options
             error: (NSError**)outError;
 @property (readonly) slice rawID;
+@property (readonly) slice rawMeta;
 @property (readonly) fdb_doc* info;
 @property (readonly) uint64_t bodyFileOffset;
 + (BOOL) docInfo: (const fdb_doc*)docInfo

@@ -13,7 +13,7 @@
 #import <forestdb.h>
 
 
-#define MAP_PARALLELISM 2 /* If defined, min number of GCD tasks to use for map functions */
+#define MAP_PARALLELISM 4 /* If defined, min number of GCD tasks to use for map functions */
 
 
 @implementation CBForestMapReduceIndex
@@ -26,9 +26,10 @@
 
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
+             config: (const CBForestDBConfig*)config
               error: (NSError**)outError
 {
-    self = [super initWithFile: filePath options: options error: outError];
+    self = [super initWithFile: filePath options: options config: config error: outError];
     if (self) {
         // Read the last-sequence and version properties.
         // (All keys in this db are in collatable form. So use 'null' for this key)
@@ -100,30 +101,41 @@
                                                                error: outError];
         if (!e)
             return NO;
-        for (CBForestDocument* doc in e) {
+        while(true) {
             @autoreleasepool {
+                CBForestDocument* doc = e.nextObject;
+                if (!doc)
+                    break;
                 NSData* body = [doc readBody: NULL];
 #ifdef MAP_PARALLELISM
                 dispatch_semaphore_wait(mapCounter, DISPATCH_TIME_FOREVER);
                 dispatch_group_async(mapGroup, mapQueue, ^{
+                    @autoreleasepool {
 #endif
-                    NSMutableArray* keys = [NSMutableArray array];
-                    NSMutableArray* values = [NSMutableArray array];
-                    CBForestIndexEmitBlock emit = ^(id key, id value) {
-                        [keys addObject: key];
-                        [values addObject: value ?: kCBForestIndexNoValue];
-                    };
-                    @try {
-                        _map(doc, body, emit);
-                    } @catch (NSException* x) {
-                        NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
-                    }
-                    [self setKeys: keys
-                           values: values
-                      forDocument: doc.docID
-                       atSequence: doc.sequence
-                            error: outError];
+                        __block NSMutableArray *keys = nil, *values = nil;
+                        CBForestIndexEmitBlock emit = ^(id key, id value) {
+                            if (!value)
+                                value = kCBForestIndexNoValue;
+                            if (!keys) {
+                                keys = [[NSMutableArray alloc] initWithObjects: &key count: 1];
+                                values = [[NSMutableArray alloc] initWithObjects: &value count: 1];
+                            } else {
+                                [keys addObject: key];
+                                [values addObject: value];
+                            }
+                        };
+                        @try {
+                            _map(doc, body, emit);
+                        } @catch (NSException* x) {
+                            NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
+                        }
+                        [self setKeys: keys
+                               values: values
+                          forDocument: doc.docID
+                           atSequence: doc.sequence
+                                error: outError];
 #ifdef MAP_PARALLELISM
+                    }
                     dispatch_semaphore_signal(mapCounter);
                 });
 #endif

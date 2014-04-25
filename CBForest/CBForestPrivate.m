@@ -74,6 +74,13 @@ NSData* SliceToTempData(const void* buf, size_t size) {
 }
 
 
+NSData* SliceToAdoptingData(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: YES];
+}
+
+
 NSString* SliceToString(const void* buf, size_t size) {
     if (!buf)
         return nil;

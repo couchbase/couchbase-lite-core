@@ -27,10 +27,18 @@ typedef enum {
 } CBForestFileOptions;
 
 
+typedef struct {
+    uint64_t bufferCacheSize;
+    uint64_t walThreshold;
+    BOOL enableSequenceTree;
+    BOOL compressDocBodies;
+} CBForestDBConfig;
+
+
 /** Option flag bits for loading & enumerating documents in a CBForest. */
 typedef enum {
-    kCBForestDBCreateDoc    = 0x01,
-    kCBForestDBMetaOnly     = 0x02 // UNUSED
+    kCBForestDBCreateDoc    = 0x01, // used only by -documentWithID:
+    kCBForestDBMetaOnly     = 0x02  // used by enumerateDocs methods
 } CBForestContentOptions;
 
 typedef struct {
@@ -76,6 +84,7 @@ typedef struct {
     @param outError  On failure, will be set to the error that occurred */
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
+             config: (const CBForestDBConfig*)config
               error: (NSError**)outError;
 
 /** The filesystem path the database was opened on. */

@@ -37,11 +37,6 @@
 /** Reads the document's body from the database. */
 - (NSData*) readBody: (NSError**)outError;
 
-/** Refreshes the cached metadata from the latest revision on disk.
-    If the document doesn't exist or has been deleted, no error is returned but the metadata
-    is set to nil*/
-- (BOOL) reloadMeta: (NSError**)outError;
-
 - (BOOL) reload: (CBForestContentOptions)options error: (NSError **)outError;
 
 /** Writes the document to the database. */

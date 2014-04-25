@@ -95,20 +95,19 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 
 
 - (void) readFlags {
-    NSData* meta = self.metadata;
-    if (meta.length < 1)
+    slice meta = self.rawMeta;
+    if (meta.size < 1)
         _flags = 0;
     else
-        _flags = *(uint8_t*)meta.bytes;
+        _flags = *(uint8_t*)meta.buf;
 }
 
 
 - (NSString*) revID {
     if (!_revID) {
-        NSData* meta = self.metadata;
-        if (meta.length > 1) {
-            const void* metabytes = meta.bytes;
-            _revID = ExpandRevID((slice){(void*)metabytes+1, meta.length-1});
+        slice meta = self.rawMeta;
+        if (meta.size > 1) {
+            _revID = ExpandRevID((slice){meta.buf+1, meta.size-1});
         }
     }
     return _revID;
@@ -117,7 +116,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 
 - (BOOL) reloadMeta:(NSError **)outError {
     CBForestSequence oldSequence = self.sequence;
-    if (![super reloadMeta: outError])
+    if (![super reload: kCBForestDBMetaOnly error: outError])
         return NO;
     [self readFlags];
     _revID = nil;

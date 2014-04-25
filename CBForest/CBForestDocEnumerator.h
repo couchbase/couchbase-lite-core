@@ -12,7 +12,7 @@
 
 // INTERNAL HEADER!
 
-typedef fdb_status (^CBForestDocEnumeratorNextBlock)(fdb_doc**, uint64_t *bodyOffset);
+typedef fdb_status (^CBForestDocEnumeratorNextBlock)(unsigned *n, fdb_doc** docs, uint64_t *bodyOffsets);
 typedef void (^CBForestDocEnumeratorFinishBlock)();
 
 @interface CBForestDocEnumerator : CBForestEnumerator

@@ -12,6 +12,8 @@
 #import "slice.h"
 
 
+//#define ASYNC_COMMIT
+
 // Macro to run a ForestDB call returning a fdb_status on the _queue.
 #define ONQUEUE(FNCALL) \
     ({ __block fdb_status _status; \
@@ -36,6 +38,8 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 {
     fdb_handle *_db;
     fdb_open_flags _openFlags;
+    CBForestDBConfig _config;
+    BOOL _customConfig;
     int _transactionLevel;
     dispatch_queue_t _queue;
     CBForestToken* _writeLock;
@@ -46,6 +50,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
+             config: (const CBForestDBConfig*)config
               error: (NSError**)outError
 {
     self = [super init];
@@ -59,6 +64,10 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
         assert(kCBForestDBCreate == FDB_OPEN_FLAG_CREATE); // sanity check
         assert(kCBForestDBReadOnly == FDB_OPEN_FLAG_RDONLY);
         _openFlags = (fdb_open_flags)options;
+        if (config) {
+            _customConfig = YES;
+            _config = *config;
+        }
         if (![self open: filePath options: options error: outError])
             return nil;
     }
@@ -91,18 +100,43 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
     }
 }
 
-- (BOOL) open: (NSString*)filePath options: (CBForestFileOptions)options error: (NSError**)outError
+static NSDictionary* mkConfig(id value) {
+    return @{@"default": value,
+             @"validator": @{@"range": @{@"min": @0, @"max": @(1.0e30)}}};
+}
+
+- (BOOL) open: (NSString*)filePath
+      options: (CBForestFileOptions)options
+        error: (NSError**)outError
 {
     NSAssert(!_db, @"Already open");
+
+    NSString* configPath = nil;
+    if (_customConfig) {
+        NSDictionary* config = @{@"buffer_cache_size": mkConfig(@(_config.bufferCacheSize)),
+                                 @"wal_threshold":     mkConfig(@(_config.walThreshold)),
+                                 @"enable_sequence_tree": mkConfig(_config.enableSequenceTree? @YES : @NO),
+                                 @"compress_document_body": mkConfig(_config.compressDocBodies ? @YES : @NO)};
+        configPath = [filePath stringByAppendingString: @".config"];
+        NSDictionary* rootConfig = @{@"configs": config};
+        NSData* json = [NSJSONSerialization dataWithJSONObject: rootConfig options: 0 error: NULL];
+        [json writeToFile: configPath atomically: YES];
+    }
+
     __block fdb_status status;
     dispatch_sync(_queue, ^{
         // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag. --4/2014
         if ((options & FDB_OPEN_FLAG_CREATE)
                 || [[NSFileManager defaultManager] fileExistsAtPath: filePath])
-            status = fdb_open(&_db, filePath.fileSystemRepresentation, options, NULL);
+            status = fdb_open(&_db, filePath.fileSystemRepresentation, options,
+                              configPath.fileSystemRepresentation);
         else
             status = FDB_RESULT_NO_SUCH_FILE;
     });
+
+    if (configPath)
+        [[NSFileManager defaultManager] removeItemAtPath: configPath error: NULL];
+
     return Check(status, outError);
 }
 
@@ -148,11 +182,19 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 }
 
 - (BOOL) commit: (NSError**)outError {
-    NSAssert(!self.isInTransaction, @"-commit can only be used inside a transaction");
 //  NSLog(@"~~~~~ COMMIT ~~~~~");
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return YES; // no-op if read-only
+#ifdef ASYNC_COMMIT
+    dispatch_async(_queue, ^{
+        fdb_status status = fdb_commit(_db, FDB_COMMIT_NORMAL);
+        if (status != FDB_RESULT_SUCCESS)
+            NSLog(@"WARNING: fdb_commit failed, status=%d", status);
+    });
+    return YES;
+#else
     return CHECK_ONQUEUE(fdb_commit(_db, FDB_COMMIT_NORMAL), outError);
+#endif
 }
 
 
@@ -171,7 +213,9 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
     return [self inTransaction: ^BOOL {
         NSString* path = self.filename;
         return [self deleteDatabase: outError]
-            && [self open: path options: (_openFlags | kCBForestDBCreate) error: outError];
+            && [self open: path
+                  options: (_openFlags | kCBForestDBCreate)
+                    error: outError];
     }];
 }
 
@@ -217,7 +261,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 
 
 - (void) beginTransaction {
-    dispatch_async(_queue, ^{
+    dispatch_sync(_queue, ^{
         if (_transactionLevel++ == 0)
             [_writeLock lockWithOwner: self];
     });
@@ -230,8 +274,13 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
         NSAssert(_transactionLevel > 0, @"CBForestDB: endTransaction without beginTransaction");
         if (--_transactionLevel == 0) {
             // Ending the outermost transaction:
-            if (_db)
+            if (_db) {
+#ifdef ASYNC_COMMIT
+                [self commit: outError];
+#else
                 result = Check(fdb_commit(_db, FDB_COMMIT_NORMAL), outError);
+#endif
+            }
             [_writeLock unlockWithOwner: self];
         }
     });
@@ -291,7 +340,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
     dispatch_sync(_queue, ^{
         if (value) {
             status = fdb_get(self.handle, &doc);
-            *value = SliceToData(doc.body, doc.bodylen);
+            *value = SliceToAdoptingData(doc.body, doc.bodylen);
         } else {
             uint64_t offset;
             status = fdb_get_metaonly(self.handle, &doc, &offset);
@@ -313,7 +362,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 }
 
 - (fdb_status) rawGetBody: (fdb_doc*)doc byOffset: (uint64_t)offset {
-    return ONQUEUE(fdb_get_byoffset(self.handle, doc, offset));
+    return ONQUEUE(offset ? fdb_get_byoffset(self.handle, doc, offset) : fdb_get(self.handle, doc));
 }
 
 
@@ -540,19 +589,24 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
                               options: options error: outError];
 }
 
+static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* options) {
+    fdb_iterator_opt_t fdbOptions = 0;
+    if (options && (options->contentOptions & kCBForestDBMetaOnly))
+        fdbOptions |= FDB_ITR_METAONLY;
+    if (!(options && options->includeDeleted))
+        fdbOptions |= FDB_ITR_NO_DELETES;
+    return fdbOptions;
+}
+
 - (CBForestEnumerator*) enumerateDocsFromKey: (NSData*)startKey
                                        toKey: (NSData*)endKey
                                      options: (const CBForestEnumerationOptions*)options
                                        error: (NSError**)outError
 {
-    fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
-    if (!(options && options->includeDeleted))
-        fdbOptions |= FDB_ITR_NO_DELETES;
-
     __block fdb_iterator *iterator;
     if (!CHECK_ONQUEUE(fdb_iterator_init(self.handle, &iterator,
                                          startKey.bytes, startKey.length,
-                                         endKey.bytes, endKey.length, fdbOptions),
+                                         endKey.bytes, endKey.length, iteratorOptions(options)),
                        outError))
         return nil;
     return [self enumeratorForIterator: iterator options: options endKey: endKey];
@@ -564,20 +618,34 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
                                           options: (const CBForestEnumerationOptions*)options
                                             error: (NSError**)outError
 {
-    fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
-    if (!(options && options->includeDeleted))
-        fdbOptions |= FDB_ITR_NO_DELETES;
-
     if (options && !options->inclusiveEnd && endSequence > 0)
         endSequence--;
     if (startSequence > self.info.lastSequence || endSequence < startSequence)
         return [[CBForestDocEnumerator alloc] init]; // no-op; return empty enumerator
     __block fdb_iterator *iterator;
     if (!CHECK_ONQUEUE(fdb_iterator_sequence_init(self.handle, &iterator,
-                                                  startSequence, endSequence, fdbOptions),
+                                                  startSequence, endSequence,
+                                                  iteratorOptions(options)),
                        outError))
         return nil;
     return [self enumeratorForIterator: iterator options: options endKey: nil];
+}
+
+
+static fdb_status iteratorNextMultiple(fdb_handle *db, fdb_iterator *iterator, BOOL metaOnly,
+                                       unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets)
+{
+    fdb_status status = FDB_RESULT_SUCCESS;
+    unsigned i;
+    for (i=0; i<*n; i++) {
+        status = fdb_iterator_next_offset(iterator, &docinfos[i], &bodyOffsets[i]);
+        if (status == FDB_RESULT_SUCCESS && !metaOnly)
+            status = fdb_get_byoffset(db, docinfos[i], bodyOffsets[i]);
+        if (status != FDB_RESULT_SUCCESS)
+            break;
+    }
+    *n = i;
+    return status;
 }
 
 
@@ -585,12 +653,13 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
                                       options: (const CBForestEnumerationOptions*)options
                                        endKey: (NSData*)endKey
 {
+    BOOL metaOnly = options && (options->contentOptions & kCBForestDBMetaOnly);
     return [[CBForestDocEnumerator alloc] initWithDatabase: self
                                                    options: options
                                                     endKey: endKey
                                                  nextBlock:
-            ^fdb_status(fdb_doc** docinfo, uint64_t *bodyOffset) {
-                return ONQUEUE(fdb_iterator_next_offset(iterator, docinfo, bodyOffset));
+            ^fdb_status(unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets) {
+                return ONQUEUE(iteratorNextMultiple(_db, iterator, metaOnly, n, docinfos, bodyOffsets));
             }
                                                finishBlock:
             ^{

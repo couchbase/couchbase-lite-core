@@ -132,8 +132,11 @@ id kCBForestIndexNoValue;
                                                options: options error: outError];
     if (!e)
         return NO;
-    for (CBForestDocument* doc in e) {
+    while(true) {
         @autoreleasepool {
+            CBForestDocument* doc = e.nextObject;
+            if (!doc)
+                break;
             // Decode the key from collatable form:
             slice indexKey = doc.rawID;
             id key;
