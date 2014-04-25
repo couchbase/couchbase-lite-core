@@ -16,49 +16,110 @@
 #define PARALLEL_QUEUE_SIZE 4
 
 
-@implementation CBForestDocEnumerator
+@interface CBForestEnumerator ()
+@property (readwrite) NSError* error;
+@end
+
+
+@implementation CBForestEnumerator
 {
+#ifdef PARALLEL
+    @protected
     CBForestDB* _db;
     CBForestEnumerationOptions _options;
-    CBForestDocEnumeratorNextBlock _next;
-    CBForestDocEnumeratorFinishBlock _finish;
-    Class _documentClass;
-#ifdef PARALLEL
-    dispatch_queue_t _dispatch;
+    NSData* _stopBeforeKey;
     CBForestQueue* _rows;
 #endif
 }
 
 
-@synthesize stopBeforeKey=_stopBeforeKey, error=_error;
+@synthesize error=_error;
 
 
-- (instancetype) init {
-    return [super init];
+- (instancetype) initWithDatabase: (CBForestDB*)db
+                          options: (const CBForestEnumerationOptions*)options
+                           endKey: (NSData*)endKey
+{
+    self = [super init];
+    if (self) {
+        _db = db;
+        _options = options ? *options : kCBForestEnumerationOptionsDefault;
+        if (!_options.inclusiveEnd)
+            _stopBeforeKey = endKey;
+
+    }
+    return self;
+}
+
+
+- (void) start {
+#ifdef PARALLEL
+    _rows = [[CBForestQueue alloc] initWithCapacity: PARALLEL_QUEUE_SIZE];
+    [self generateRows];
+#endif
+}
+
+
+- (id) nextObject {
+#ifdef PARALLEL
+    return [_rows pop];
+#else
+    return [self generateRow];
+#endif
+}
+
+
+- (id) generateRow {
+    return nil; // abstract
+}
+
+
+#ifdef PARALLEL
+- (void) generateRows {
+    CBForestQueue* rows = _rows;
+    __weak CBForestEnumerator* weakSelf = self;
+    dispatch_queue_t dispatch = dispatch_queue_create("CBForestDocEnumerator", NULL);
+    dispatch_async(dispatch, ^{
+        while(true) {
+            @autoreleasepool {
+                id row = [weakSelf generateRow];
+                if (row)
+                    [rows push: row];
+                else
+                    break;
+            }
+        }
+        [rows close];
+    });
+}
+#endif
+
+
+@end
+
+
+
+
+@implementation CBForestDocEnumerator
+{
+    CBForestDocEnumeratorNextBlock _next;
+    CBForestDocEnumeratorFinishBlock _finish;
+    Class _documentClass;
 }
 
 
 - (instancetype) initWithDatabase: (CBForestDB*)db
                           options: (const CBForestEnumerationOptions*)options
+                           endKey: (NSData*)endKey
                         nextBlock: (CBForestDocEnumeratorNextBlock)nextBlock
                       finishBlock: (CBForestDocEnumeratorFinishBlock)finishBlock
 {
-    self = [super init];
+    self = [super initWithDatabase: db options: options endKey: endKey];
     if (self) {
-        _db = db;
         _documentClass = _db.documentClass;
-        if (options)
-            _options = *options;
         _next = nextBlock;
         _finish = finishBlock;
-
-#ifdef PARALLEL
-        _rows = [[CBForestQueue alloc] initWithCapacity: PARALLEL_QUEUE_SIZE];
-        _dispatch = dispatch_queue_create("CBForestDocEnumerator", NULL);
-        dispatch_async(_dispatch, ^{
-            [self generateRows];
-        });
-#endif
+        [self start];
     }
     return self;
 }
@@ -79,7 +140,7 @@
 }
 
 
-- (id) _nextRow {
+- (id) generateRow {
     if (!_next)
         return nil;
 
@@ -95,8 +156,8 @@
             // Skip this one
             fdb_doc_free(docinfo);
             --_options.skip;
-        } else if (_stopBeforeKey && slicecmp(DataToSlice(_stopBeforeKey),
-                                              (slice){docinfo->key, docinfo->keylen})) {
+        } else if (_stopBeforeKey && 0 == slicecmp(DataToSlice(_stopBeforeKey),
+                                                   (slice){docinfo->key, docinfo->keylen})) {
             // Stop before this key, i.e. this is the endKey and inclusiveEnd is false
             [self stop];
             return nil;
@@ -120,35 +181,9 @@
                                                          error: &error];
     free(docinfo);
     if (!doc)
-        _error = error;
+        self.error = error;
     return doc;
 }
-
-
-- (id) nextObject {
-#ifdef PARALLEL
-    return [_rows pop];
-#else
-    return [self _nextRow];
-#endif
-}
-
-
-#ifdef PARALLEL
-- (void) generateRows {
-    while(true) {
-        id row;
-        do {
-            @autoreleasepool {
-                row = [self _nextRow];
-                if (row)
-                    [_rows push: row];
-            }
-        } while (row);
-        [_rows close];
-    }
-}
-#endif
 
 
 @end

@@ -6,26 +6,21 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#import "CBForestDB.h"
+#import <CBForest/CBForestDB.h>
 #import <forestdb.h>
 
+
+// INTERNAL HEADER!
 
 typedef fdb_status (^CBForestDocEnumeratorNextBlock)(fdb_doc**, uint64_t *bodyOffset);
 typedef void (^CBForestDocEnumeratorFinishBlock)();
 
-
-@interface CBForestDocEnumerator : NSEnumerator
-
-- (instancetype) init; // empty enumerator
+@interface CBForestDocEnumerator : CBForestEnumerator
 
 - (instancetype) initWithDatabase: (CBForestDB*)db
                           options: (const CBForestEnumerationOptions*)options
+                           endKey: (NSData*)endKey
                         nextBlock: (CBForestDocEnumeratorNextBlock)nextBlock
                       finishBlock: (CBForestDocEnumeratorFinishBlock)finishBlock;
-
-/** If this is set, enumeration will stop and return nil when this key is reached. */
-@property NSData* stopBeforeKey;
-
-@property (readonly) NSError* error;
 
 @end

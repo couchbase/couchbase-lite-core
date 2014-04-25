@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-@class CBForestDocument;
+@class CBForestDocument, CBForestEnumerator;
 
 
 /** NSError domain string for errors specific to CBForest; the error codes correspond to the
@@ -175,26 +175,30 @@ typedef struct {
     @param endID  The last document ID to enumerate, or nil to go to the end.
     @param options  Iteration options, or NULL to use the default options.
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
-    @param block  The block to call for every document.
-    @return  YES on success, NO on failure. */
-- (NSEnumerator*) enumerateDocsFromID: (NSString*)startID
-                                 toID: (NSString*)endID
-                              options: (const CBForestEnumerationOptions*)options
-                                error: (NSError**)outError;
+    @return  An enumerator object. */
+- (CBForestEnumerator*) enumerateDocsFromID: (NSString*)startID
+                                          toID: (NSString*)endID
+                                       options: (const CBForestEnumerationOptions*)options
+                                         error: (NSError**)outError;
 
 /** Iterates over documents, in ascending order by sequence.
     @param startSequence  The sequence number to start at (1 to start from the beginning.)
     @param endSequence  The sequence number to end at, or kCBForestMaxSequence to go to the end.
     @param options  Iteration options, or NULL to use the default options.
     @param outError  On failure, an NSError will be stored here (unless it's NULL).
-    @param block  The block to call for every document.
-    @return  YES on success, NO on failure. */
-- (NSEnumerator*) enumerateDocsFromSequence: (CBForestSequence)startSequence
-                                 toSequence: (CBForestSequence)endSequence
-                                    options: (const CBForestEnumerationOptions*)options
-                                      error: (NSError**)outError;
+    @return  An enumerator object. */
+- (CBForestEnumerator*) enumerateDocsFromSequence: (CBForestSequence)startSequence
+                                          toSequence: (CBForestSequence)endSequence
+                                             options: (const CBForestEnumerationOptions*)options
+                                               error: (NSError**)outError;
 
 /** Returns a dump of every document in the database with its metadata and body sizes. */
 - (NSString*) dump;
 
+@end
+
+
+
+@interface CBForestEnumerator : NSEnumerator
+@property (readonly) NSError* error;
 @end

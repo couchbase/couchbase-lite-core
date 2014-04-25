@@ -6,11 +6,8 @@
 //  Copyright (c) 2012 Couchbase, Inc. All rights reserved.
 //
 
-#import "CBForestDB.h"
-#import "CBForestDocument.h"
-#import "CBForestVersions.h"
+#import "CBForest.h"
 #import "forestdb.h"
-
 #import "slice.h"
 
 
@@ -56,6 +53,10 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
                          options: (const CBForestEnumerationOptions*)options
                            error: (NSError**)outError
                        withBlock: (CBForest_Iterator)block;
+- (CBForestEnumerator*) enumerateDocsFromKey: (NSData*)startKey
+                                       toKey: (NSData*)endKey
+                                     options: (const CBForestEnumerationOptions*)options
+                                       error: (NSError**)outError;
 @end
 
 

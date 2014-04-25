@@ -8,6 +8,7 @@
 
 #import "CBForestIndex.h"
 #import "CBForestPrivate.h"
+#import "CBForestDocEnumerator.h"
 #import "CBCollatable.h"
 #import "varint.h"
 #import <forestdb.h>
@@ -126,20 +127,15 @@ id kCBForestIndexNoValue;
     NSMutableArray* maxKey = (options && options->descending) ? realStartKey : realEndKey;
     [maxKey addObject: @{}];
 
-    return [self _enumerateValuesFromKey: CBCreateCollatable(realStartKey)
-                                   toKey: CBCreateCollatable(realEndKey)
-                                 options: options
-                                   error: outError
-                               withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
-    {
+    CBForestEnumerator* e = [self enumerateDocsFromKey: CBCreateCollatable(realStartKey)
+                                                 toKey: CBCreateCollatable(realEndKey)
+                                               options: options error: outError];
+    if (!e)
+        return NO;
+    for (CBForestDocument* doc in e) {
         @autoreleasepool {
-            if (!Check([self rawGetBody: doc byOffset: bodyOffset], outError)) {
-                fdb_doc_free(doc);
-                return false;
-            }
-
             // Decode the key from collatable form:
-            slice indexKey = {doc->key, doc->keylen};
+            slice indexKey = doc.rawID;
             id key;
             NSString* docID;
             int64_t docSequence;
@@ -147,22 +143,26 @@ id kCBForestIndexNoValue;
             CBCollatableReadNext(&indexKey, YES, &key);
             CBCollatableReadNext(&indexKey, NO, &docID);
             CBCollatableReadNextNumber(&indexKey, &docSequence);
+            NSAssert(key && docID, @"Bogus view key");
+
+            if (options && !options->inclusiveEnd && endKey && [key isEqual: endKey])
+                break;
 
             // Decode the value:
             // if there's no value, the body will be just a null byte (MB-10915)
             NSData* valueData = nil;
-            if (doc->bodylen > 1)
-                valueData = SliceToData(doc->body, doc->bodylen);
-            fdb_doc_free(doc);
-
-            if (options && !options->inclusiveEnd && endKey && [endKey isEqual: key]) {
-                return false;
+            if (doc.bodyLength > 1) {
+                valueData = [doc readBody: outError];
+                if (!valueData)
+                    return NO;
             }
             BOOL stop = NO;
             block(key, valueData, docID, docSequence, &stop);
-            return !stop;
+            if (stop)
+                break;
         }
-    }];
+    }
+    return YES;
 }
 
 

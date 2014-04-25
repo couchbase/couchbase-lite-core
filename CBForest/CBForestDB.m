@@ -397,8 +397,8 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 
     __block unsigned skip  = options ? options->skip  : 0;
     __block unsigned limit = options ? options->limit : 0;
-                          for (;;) {
-                            __block fdb_doc *docinfo;
+    for (;;) {
+        __block fdb_doc *docinfo;
         __block uint64_t bodyOffset;
         fdb_status status = ONQUEUE(fdb_iterator_next_offset(iterator, &docinfo, &bodyOffset));
         if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
@@ -530,34 +530,39 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 #pragma mark - ITERATION:
 
 
-- (NSEnumerator*) enumerateDocsFromID: (NSString*)startID
-                                 toID: (NSString*)endID
-                              options: (const CBForestEnumerationOptions*)options
-                                error: (NSError**)outError
+- (CBForestEnumerator*) enumerateDocsFromID: (NSString*)startID
+                                       toID: (NSString*)endID
+                                    options: (const CBForestEnumerationOptions*)options
+                                      error: (NSError**)outError
+{
+    return [self enumerateDocsFromKey: [startID dataUsingEncoding: NSUTF8StringEncoding]
+                                toKey: [endID dataUsingEncoding: NSUTF8StringEncoding]
+                              options: options error: outError];
+}
+
+- (CBForestEnumerator*) enumerateDocsFromKey: (NSData*)startKey
+                                       toKey: (NSData*)endKey
+                                     options: (const CBForestEnumerationOptions*)options
+                                       error: (NSError**)outError
 {
     fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
     if (!(options && options->includeDeleted))
         fdbOptions |= FDB_ITR_NO_DELETES;
 
-    NSData* startKey = [startID dataUsingEncoding: NSUTF8StringEncoding];
-    NSData* endKey = [endID dataUsingEncoding: NSUTF8StringEncoding];
     __block fdb_iterator *iterator;
     if (!CHECK_ONQUEUE(fdb_iterator_init(self.handle, &iterator,
                                          startKey.bytes, startKey.length,
                                          endKey.bytes, endKey.length, fdbOptions),
                        outError))
         return nil;
-    CBForestDocEnumerator* e = [self enumeratorForIterator: iterator options: options];
-    if (options && !options->inclusiveEnd && endKey)
-        e.stopBeforeKey = endKey;
-    return e;
+    return [self enumeratorForIterator: iterator options: options endKey: endKey];
 }
 
 
-- (NSEnumerator*) enumerateDocsFromSequence: (CBForestSequence)startSequence
-                                 toSequence: (CBForestSequence)endSequence
-                                    options: (const CBForestEnumerationOptions*)options
-                                      error: (NSError**)outError
+- (CBForestEnumerator*) enumerateDocsFromSequence: (CBForestSequence)startSequence
+                                       toSequence: (CBForestSequence)endSequence
+                                          options: (const CBForestEnumerationOptions*)options
+                                            error: (NSError**)outError
 {
     fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
     if (!(options && options->includeDeleted))
@@ -572,15 +577,17 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
                                                   startSequence, endSequence, fdbOptions),
                        outError))
         return nil;
-    return [self enumeratorForIterator: iterator options: options];
+    return [self enumeratorForIterator: iterator options: options endKey: nil];
 }
 
 
-- (CBForestDocEnumerator*) enumeratorForIterator: (fdb_iterator*)iterator
-                                         options: (const CBForestEnumerationOptions*)options
+- (CBForestEnumerator*) enumeratorForIterator: (fdb_iterator*)iterator
+                                      options: (const CBForestEnumerationOptions*)options
+                                       endKey: (NSData*)endKey
 {
     return [[CBForestDocEnumerator alloc] initWithDatabase: self
                                                    options: options
+                                                    endKey: endKey
                                                  nextBlock:
             ^fdb_status(fdb_doc** docinfo, uint64_t *bodyOffset) {
                 return ONQUEUE(fdb_iterator_next_offset(iterator, docinfo, bodyOffset));
@@ -596,7 +603,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 
 - (NSString*) dump {
     NSMutableString* dump = [NSMutableString stringWithCapacity: 1000];
-    NSEnumerator* e = [self enumerateDocsFromID: nil toID: nil options: 0 error: NULL];
+    CBForestEnumerator* e = [self enumerateDocsFromID: nil toID: nil options: 0 error: NULL];
     for (CBForestDocument* doc in e) {
         [dump appendFormat: @"\t\"%@\": %lu meta, %llu body\n",
                              doc.docID, (unsigned long)doc.metadata.length, doc.bodyLength];

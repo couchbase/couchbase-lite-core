@@ -166,7 +166,7 @@
 		2750730318E4ACE100A80C5A /* time_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072EF18E4ACE100A80C5A /* time_utils.h */; };
 		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
-		278E5F5F19088F4A00D203BF /* CBForestDocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278E5F5D19088F4A00D203BF /* CBForestDocEnumerator.h */; };
+		278E5F5F19088F4A00D203BF /* CBForestDocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278E5F5D19088F4A00D203BF /* CBForestDocEnumerator.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		278E5F6019088F4A00D203BF /* CBForestDocEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */; };
 		278E5F6119088F4A00D203BF /* CBForestDocEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */; };
 		27B7E0EB18F8FACB00044EBA /* CBForest_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 275072B318E4A68E00A80C5A /* CBForest_Tests.m */; };

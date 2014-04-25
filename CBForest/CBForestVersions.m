@@ -59,7 +59,7 @@
 
 
 - (BOOL) readTree: (NSError**)outError {
-    _rawTree = [self readBody: outError];
+    _rawTree = [super readBody: outError];
     if (!_rawTree)
         return NO;
     NSAssert(self.bodyFileOffset > 0, @"Body offset unknown");
@@ -74,6 +74,11 @@
     RevTreeFree(_tree);
     _tree = tree;
     return YES;
+}
+
+
+- (NSData*) readBody: (NSError**)outError {
+    return _rawTree ?: [super readBody: outError];
 }
 
 
