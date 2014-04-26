@@ -10,6 +10,7 @@
 #import "CBForestPrivate.h"
 #import "CBForestDocEnumerator.h"
 #import "slice.h"
+#import <libkern/OSAtomic.h>
 
 
 //#define ASYNC_COMMIT
@@ -40,7 +41,7 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
     fdb_open_flags _openFlags;
     CBForestDBConfig _config;
     BOOL _customConfig;
-    int _transactionLevel;
+    int32_t _transactionLevel;
     dispatch_queue_t _queue;
     CBForestToken* _writeLock;
 }
@@ -262,28 +263,19 @@ static NSDictionary* mkConfig(id value) {
 
 - (void) beginTransaction {
     dispatch_sync(_queue, ^{
-        if (_transactionLevel++ == 0)
+        if (OSAtomicIncrement32(&_transactionLevel) == 1)
             [_writeLock lockWithOwner: self];
     });
 }
 
 
 - (BOOL) endTransaction: (NSError**)outError {
-    __block BOOL result = YES;
-    dispatch_sync(_queue, ^{
-        NSAssert(_transactionLevel > 0, @"CBForestDB: endTransaction without beginTransaction");
-        if (--_transactionLevel == 0) {
-            // Ending the outermost transaction:
-            if (_db) {
-#ifdef ASYNC_COMMIT
-                [self commit: outError];
-#else
-                result = Check(fdb_commit(_db, FDB_COMMIT_NORMAL), outError);
-#endif
-            }
-            [_writeLock unlockWithOwner: self];
-        }
-    });
+    BOOL result = YES;
+    if (OSAtomicDecrement32(&_transactionLevel) == 0) {
+        // Ending the outermost transaction:
+        if (_db)
+            result = [self commit: outError];
+    }
     return result;
 }
 
