@@ -183,3 +183,28 @@
 
 
 @end
+
+
+
+@implementation CBForestReverseEnumerator
+{
+    NSEnumerator* _baseEnumerator;
+}
+
+- (id) initWithEnumerator: (CBForestEnumerator*)e {
+    self = [super init];
+    if (self) {
+        //FIX: //OPT: Inefficient. Hopefully ForestDB will implement support for revers iteration.
+        _baseEnumerator = e.allObjects.reverseObjectEnumerator;
+        self.error = e.error;
+    }
+    return self;
+}
+
+
+- (id) nextObject {
+    return _baseEnumerator.nextObject;
+}
+
+
+@end

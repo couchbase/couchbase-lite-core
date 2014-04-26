@@ -138,19 +138,6 @@ typedef struct {
 
 - (BOOL) hasValueForKey: (NSData*)key;
 
-/** Iterates over values, in ascending order by key.
-    @param startKey  The key to start at, or nil to start from the beginning.
-    @param endKey  The last key to enumerate, or nil to go to the end.
-    @param options  Iteration options, or NULL to use the default options.
-    @param outError  On failure, an NSError will be stored here (unless it's NULL).
-    @param block  The block to call for every value.
-    @return  YES on success, NO on failure. */
-- (BOOL) enumerateValuesFromKey: (NSData*)startKey
-                          toKey: (NSData*)endKey
-                        options: (const CBForestEnumerationOptions*)options
-                          error: (NSError**)outError
-                      withBlock: (CBForestValueIterator)block;
-
 /** Deletes the document/value with the given sequence. */
 - (BOOL) deleteSequence: (CBForestSequence)sequence
                   error: (NSError**)outError;

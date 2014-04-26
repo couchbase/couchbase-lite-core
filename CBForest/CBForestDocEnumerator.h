@@ -24,3 +24,8 @@ typedef void (^CBForestDocEnumeratorFinishBlock)();
                       finishBlock: (CBForestDocEnumeratorFinishBlock)finishBlock;
 
 @end
+
+
+@interface CBForestReverseEnumerator : CBForestEnumerator
+- (id) initWithEnumerator: (CBForestEnumerator*)e;
+@end

@@ -396,138 +396,6 @@ static NSDictionary* mkConfig(id value) {
 }
 
 
-// Keys can be NSData (by ID) or NSNumber (by sequence)
-- (BOOL) _enumerateValuesFromKey: (id)startKey
-                           toKey: (id)endKey
-                         options: (const CBForestEnumerationOptions*)options
-                           error: (NSError**)outError
-                       withBlock: (CBForest_Iterator)block
-{
-    if (options && options->descending)
-        return [self _reverseEnumerateValuesFromKey: startKey
-                                              toKey: endKey
-                                            options: options
-                                              error: outError
-                                          withBlock: block];
-
-    fdb_iterator_opt_t fdbOptions = FDB_ITR_METAONLY;
-    if (!(options && options->includeDeleted))
-        fdbOptions |= FDB_ITR_NO_DELETES;
-
-    __block fdb_iterator *iterator;
-    if ([startKey isKindOfClass: [NSNumber class]]) {
-        // By sequence:
-        CBForestSequence startSequence = [startKey unsignedLongLongValue];
-        CBForestSequence endSequence = [endKey unsignedLongLongValue];
-        if (options && !options->inclusiveEnd && endSequence > 0)
-            endSequence--;
-        if (startSequence > self.info.lastSequence || endSequence < startSequence)
-            return YES; // no-op
-        if (!CHECK_ONQUEUE(fdb_iterator_sequence_init(self.handle, &iterator,
-                                                startSequence, endSequence, fdbOptions),
-                     outError))
-            return NO;
-    } else {
-        // By ID:
-        const void* endKeyBytes = [endKey bytes];
-        size_t endKeyLength = [endKey length];
-        if (options && !options->inclusiveEnd && endKeyBytes)
-            block = ^BOOL(fdb_doc *doc, uint64_t bodyOffset) {
-                if (doc->keylen == endKeyLength && memcmp(doc->key, endKeyBytes, endKeyLength)==0)
-                    return false;   // stop _before_ the endKey
-                return block(doc, bodyOffset);
-            };
-        if (!CHECK_ONQUEUE(fdb_iterator_init(self.handle, &iterator,
-                                       [startKey bytes], [startKey length],
-                                       endKeyBytes, endKeyLength, fdbOptions),
-                     outError))
-            return NO;
-    }
-
-    __block unsigned skip  = options ? options->skip  : 0;
-    __block unsigned limit = options ? options->limit : 0;
-    for (;;) {
-        __block fdb_doc *docinfo;
-        __block uint64_t bodyOffset;
-        fdb_status status = ONQUEUE(fdb_iterator_next_offset(iterator, &docinfo, &bodyOffset));
-        if (status != FDB_RESULT_SUCCESS || docinfo == NULL)
-            break; // FDB returns FDB_RESULT_FAIL at end of iteration
-
-        if (skip > 0) {
-            skip--;
-            continue;
-        }
-
-        if (!block(docinfo, bodyOffset))
-            break;
-        // We assume the block either freed docinfo or will free it later.
-
-        if (limit > 0 && --limit == 0)
-            break;
-    }
-    dispatch_sync(_queue, ^{
-        fdb_iterator_close(iterator);
-    });
-    return YES;
-}
-
-
-- (BOOL) _reverseEnumerateValuesFromKey: (id)startKey
-                                  toKey: (id)endKey
-                                options: (const CBForestEnumerationOptions*)options
-                                  error: (NSError**)outError
-                              withBlock: (CBForest_Iterator)block
-{
-    @autoreleasepool {
-        // Handle descending mode by buffering up all the docs:
-        CBForestEnumerationOptions fwdOptions = *options;
-        fwdOptions.descending = NO;
-        NSMutableArray* docs = [[NSMutableArray alloc] init];
-        NSMutableArray* offsets = [[NSMutableArray alloc] init];
-        BOOL ok = [self _enumerateValuesFromKey: endKey toKey: startKey options: &fwdOptions
-                                          error: outError
-                                      withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
-        {
-            [docs addObject: [NSValue valueWithPointer: doc]];
-            [offsets addObject: @(bodyOffset)];
-            return true;
-        }];
-        if (!ok)
-            return NO;
-
-        for (NSInteger i = docs.count-1; i >= 0; i--) {
-            fdb_doc *doc = [docs[i] pointerValue];
-            uint64_t bodyOffset = [offsets[i] unsignedLongLongValue];
-            if (!block(doc, bodyOffset))
-                break;
-        }
-        return YES;
-    }
-}
-
-
-- (BOOL) enumerateValuesFromKey: (NSData*)startKey
-                          toKey: (NSData*)endKey
-                        options: (const CBForestEnumerationOptions*)options
-                          error: (NSError**)outError
-                      withBlock: (CBForestValueIterator)block
-{
-    return [self _enumerateValuesFromKey: startKey toKey: endKey options: options error: outError
-                               withBlock: ^BOOL(fdb_doc *doc, uint64_t bodyOffset)
-    {
-        @autoreleasepool {
-            NSData* key = SliceToData(doc->key, doc->keylen);
-            NSData* value = SliceToData(doc->body, doc->bodylen);
-            NSData* meta = SliceToData(doc->meta, doc->metalen);
-            fdb_doc_free(doc);
-            BOOL stop = NO;
-            block(key, value, meta, &stop);
-            return !stop;
-        }
-    }];
-}
-
-
 #pragma mark - DOCUMENTS:
 
 
@@ -589,6 +457,7 @@ static NSDictionary* mkConfig(id value) {
                               options: options error: outError];
 }
 
+
 static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* options) {
     fdb_iterator_opt_t fdbOptions = 0;
     if (options && (options->contentOptions & kCBForestDBMetaOnly))
@@ -598,11 +467,17 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
     return fdbOptions;
 }
 
+
 - (CBForestEnumerator*) enumerateDocsFromKey: (NSData*)startKey
                                        toKey: (NSData*)endKey
                                      options: (const CBForestEnumerationOptions*)options
                                        error: (NSError**)outError
 {
+    if (options && options->descending) {
+        NSData* temp = startKey;
+        startKey = endKey;
+        endKey = temp;
+    }
     __block fdb_iterator *iterator;
     if (!CHECK_ONQUEUE(fdb_iterator_init(self.handle, &iterator,
                                          startKey.bytes, startKey.length,
@@ -622,6 +497,11 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
         endSequence--;
     if (startSequence > self.info.lastSequence || endSequence < startSequence)
         return [[CBForestDocEnumerator alloc] init]; // no-op; return empty enumerator
+    if (options && options->descending) {
+        CBForestSequence temp = startSequence;
+        startSequence = endSequence;
+        endSequence = temp;
+    }
     __block fdb_iterator *iterator;
     if (!CHECK_ONQUEUE(fdb_iterator_sequence_init(self.handle, &iterator,
                                                   startSequence, endSequence,
@@ -654,7 +534,7 @@ static fdb_status iteratorNextMultiple(fdb_handle *db, fdb_iterator *iterator, B
                                        endKey: (NSData*)endKey
 {
     BOOL metaOnly = options && (options->contentOptions & kCBForestDBMetaOnly);
-    return [[CBForestDocEnumerator alloc] initWithDatabase: self
+    CBForestEnumerator* e = [[CBForestDocEnumerator alloc] initWithDatabase: self
                                                    options: options
                                                     endKey: endKey
                                                  nextBlock:
@@ -667,6 +547,9 @@ static fdb_status iteratorNextMultiple(fdb_handle *db, fdb_iterator *iterator, B
                     fdb_iterator_close(iterator);
                 });
             }];
+    if (options && options->descending)
+        e = [[CBForestReverseEnumerator alloc] initWithEnumerator: e];
+    return e;
 }
 
 
