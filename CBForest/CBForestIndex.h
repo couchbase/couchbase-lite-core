@@ -7,6 +7,7 @@
 //
 
 #import "CBForestDB.h"
+@class CBForestQueryEnumerator;
 
 
 /** Use this in the values passed to -setKeys:values:forDocument:error: to indicate no value */
@@ -32,13 +33,34 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
       atSequence: (CBForestSequence)docSequence
            error: (NSError**)outError;
 
-/** Queries the index, calling the block once for each result. */
-- (BOOL) queryStartKey: (id)startKey
-            startDocID: (NSString*)startDocID
-                endKey: (id)endKey
-              endDocID: (NSString*)endDocID
-               options: (const CBForestEnumerationOptions*)options
-                 error: (NSError**)outError
-                 block: (CBForestQueryCallbackBlock)block;
+@end
+
+
+/** An enumerator over an index.
+    The -nextObject method advances the iterator and returns the current key, or nil at the end.
+    The corresponding value, document ID and sequence can be gotten from properties. */
+@interface CBForestQueryEnumerator : NSEnumerator
+
+/** Queries an index for a contiguous range of keys. */
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                      startKey: (id)startKey
+                    startDocID: (NSString*)startDocID
+                        endKey: (id)endKey
+                      endDocID: (NSString*)endDocID
+                       options: (const CBForestEnumerationOptions*)options
+                         error: (NSError**)outError;
+
+/** Queries an index for a set of keys. */
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                          keys: (NSEnumerator*)keys
+                       options: (const CBForestEnumerationOptions*)options
+                         error: (NSError**)outError;
+
+@property (readonly, nonatomic) id key, value;
+@property (readonly, nonatomic) NSData* valueData;
+@property (readonly, nonatomic) NSString* docID;
+@property (readonly, nonatomic) CBForestSequence sequence;
+@property (readonly, nonatomic) NSError* error;
 
 @end
+

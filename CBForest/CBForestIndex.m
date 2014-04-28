@@ -121,60 +121,148 @@ id kCBForestIndexNoValue;
 }
 
 
-- (BOOL) queryStartKey: (id)startKey
-            startDocID: (NSString*)startDocID
-                endKey: (id)endKey
-              endDocID: (NSString*)endDocID
-               options: (const CBForestEnumerationOptions*)options
-                 error: (NSError**)outError
-                 block: (CBForestQueryCallbackBlock)block
+@end
+
+
+
+
+@implementation CBForestQueryEnumerator
 {
-    // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
-    NSMutableArray* realStartKey = [NSMutableArray arrayWithObjects: startKey, startDocID, nil];
-    NSMutableArray* realEndKey = [NSMutableArray arrayWithObjects: endKey, endDocID, nil];
-    NSMutableArray* maxKey = (options && options->descending) ? realStartKey : realEndKey;
-    [maxKey addObject: @{}];
+    CBForestIndex* _index;
+    CBForestEnumerationOptions _options;
+    CBForestEnumerator* _indexEnum;
+    id _stopBeforeKey;
+    NSEnumerator* _keys;
+    NSData* _valueData;
+    id _value;
+}
 
-    CBForestEnumerator* e = [self enumerateDocsFromKey: CBCreateCollatable(realStartKey)
-                                                 toKey: CBCreateCollatable(realEndKey)
-                                               options: options error: outError];
-    if (!e)
-        return NO;
-    while(true) {
-        @autoreleasepool {
-            CBForestDocument* doc = e.nextObject;
-            if (!doc)
-                break;
-            // Decode the key from collatable form:
-            slice indexKey = doc.rawID;
-            id key;
-            NSString* docID;
-            int64_t docSequence;
-            CBCollatableReadNext(&indexKey, NO, &key); // array marker
-            CBCollatableReadNext(&indexKey, YES, &key);
-            CBCollatableReadNext(&indexKey, NO, &docID);
-            CBCollatableReadNextNumber(&indexKey, &docSequence);
-            NSAssert(key && docID, @"Bogus view key");
+@synthesize key=_key, valueData=_valueData, docID=_docID, sequence=_sequence, error=_error;
 
-            if (options && !options->inclusiveEnd && endKey && [key isEqual: endKey])
-                break;
 
-            // Decode the value:
-            // if there's no value, the body will be just a null byte (MB-10915)
-            NSData* valueData = nil;
-            if (doc.bodyLength > 1) {
-                valueData = [doc readBody: outError];
-                if (!valueData)
-                    return NO;
-            }
-            BOOL stop = NO;
-            block(key, valueData, docID, docSequence, &stop);
-            if (stop)
-                break;
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                      startKey: (id)startKey
+                    startDocID: (NSString*)startDocID
+                        endKey: (id)endKey
+                      endDocID: (NSString*)endDocID
+                       options: (const CBForestEnumerationOptions*)options
+                         error: (NSError**)outError
+{
+    self = [super init];
+    if (self) {
+        _index = index;
+        _options = options ? *options : kCBForestEnumerationOptionsDefault;
+
+        // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
+        NSMutableArray* realStartKey = [NSMutableArray arrayWithObjects: startKey, startDocID, nil];
+        NSMutableArray* realEndKey = [NSMutableArray arrayWithObjects: endKey, endDocID, nil];
+        NSMutableArray* maxKey = (options && options->descending) ? realStartKey : realEndKey;
+        [maxKey addObject: @{}];
+
+        _stopBeforeKey = (options && !options->inclusiveEnd) ? endKey : nil;
+
+        if (![self iterateFromKey: realStartKey toKey: realEndKey error: outError])
+            return nil;
+    }
+    return self;
+}
+
+
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                          keys: (NSEnumerator*)keys
+                       options: (const CBForestEnumerationOptions*)options
+                         error: (NSError**)outError
+{
+    self = [super init];
+    if (self) {
+        _index = index;
+        _options = options ? *options : kCBForestEnumerationOptionsDefault;
+        _keys = keys;
+        if (![self nextKey]) {
+            if (outError)
+                *outError = _error;
+            return nil;
         }
+    }
+    return self;
+}
+
+
+- (BOOL) iterateFromKey: (id)realStartKey toKey: (id)realEndKey error: (NSError**)outError {
+    _indexEnum = [_index enumerateDocsFromKey: CBCreateCollatable(realStartKey)
+                                        toKey: CBCreateCollatable(realEndKey)
+                                      options: &_options
+                                        error: outError];
+    return (_indexEnum != nil);
+}
+
+
+// go on to the next key in the array
+- (BOOL) nextKey {
+    id key = _keys.nextObject;
+    if (!key)
+        return NO;
+    NSError* error;
+    if (![self iterateFromKey: @[key] toKey: @[key, @{}] error: &error]) {
+        _error = error;
+        return NO;
     }
     return YES;
 }
 
+
+- (id) nextObject {
+    _error = nil;
+
+    CBForestDocument* doc;
+    do {
+        doc = _indexEnum.nextObject;
+        if (!doc && ![self nextKey])
+            return nil;
+    } while (!doc);
+
+    // Decode the key from collatable form:
+    slice indexKey = doc.rawID;
+    id key;
+    NSString* docID;
+    int64_t docSequence;
+    CBCollatableReadNext(&indexKey, NO, &key); // array marker
+    CBCollatableReadNext(&indexKey, YES, &key);
+    CBCollatableReadNext(&indexKey, NO, &docID);
+    CBCollatableReadNextNumber(&indexKey, &docSequence);
+    NSAssert(key && docID, @"Bogus view key");
+
+    if ([_stopBeforeKey isEqual: key])
+        return nil;
+
+    // Decode the value:
+    // if there's no value, the body will be just a null byte (MB-10915)
+    NSData* valueData = nil;
+    if (doc.bodyLength > 1) {
+        NSError* error;
+        valueData = [doc readBody: &error];
+        if (!valueData) {
+            _error = error;
+            return nil;
+        }
+    }
+
+    _key = key;
+    _docID = docID;
+    _value = nil;
+    _valueData = valueData;
+    _sequence = docSequence;
+    return _key;
+}
+
+
+- (id) value {
+    if (!_value && _valueData) {
+        _value = [NSJSONSerialization JSONObjectWithData: _valueData
+                                                 options: NSJSONReadingAllowFragments
+                                                   error: NULL];
+    }
+    return _value;
+}
 
 @end

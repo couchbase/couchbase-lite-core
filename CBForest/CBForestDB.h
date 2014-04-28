@@ -188,6 +188,15 @@ typedef struct {
                                              options: (const CBForestEnumerationOptions*)options
                                                error: (NSError**)outError;
 
+/** Iterates over a documents, given an array of keys.
+    @param keys  The keys (NSData*) or document-IDs (NSString*) to iterate over.
+    @param options  Iteration options, or NULL to use the default options.
+    @param outError  On failure, an NSError will be stored here (unless it's NULL).
+    @return  An enumerator object. */
+- (CBForestEnumerator*) enumerateDocsWithKeys: (NSArray*)keys
+                                      options: (const CBForestEnumerationOptions*)options
+                                        error: (NSError**)outError;
+
 /** Returns a dump of every document in the database with its metadata and body sizes. */
 - (NSString*) dump;
 

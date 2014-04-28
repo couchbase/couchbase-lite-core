@@ -504,6 +504,61 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
 }
 
 
+static fdb_status keysNextMultiple(fdb_handle *db, NSEnumerator* keyEnum, BOOL metaOnly,
+                                   unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets)
+{
+    fdb_status status = FDB_RESULT_SUCCESS;
+    unsigned i;
+    for (i=0; i<*n; i++) {
+        NSData* key = keyEnum.nextObject;
+        if (!key) {
+            status = FDB_RESULT_KEY_NOT_FOUND;
+            break;
+        } else if ([key isKindOfClass: [NSString class]]) {
+            key = [(NSString*)key dataUsingEncoding: NSUTF8StringEncoding];
+        }
+        fdb_doc* doc;
+        fdb_doc_create(&doc, key.bytes, key.length, NULL, 0, NULL, 0);
+        status = fdb_get_metaonly(db, doc, &bodyOffsets[i]);
+        if (status == FDB_RESULT_KEY_NOT_FOUND) {
+            bodyOffsets[i] = 0;
+        } else {
+            if (status == FDB_RESULT_SUCCESS && !metaOnly)
+                status = fdb_get_byoffset(db, doc, bodyOffsets[i]);
+            if (status != FDB_RESULT_SUCCESS) {
+                fdb_doc_free(doc);
+                break;
+            }
+        }
+        docinfos[i] = doc;
+    }
+    *n = i;
+    return status;
+}
+
+
+- (CBForestEnumerator*) enumerateDocsWithKeys: (NSArray*)keys
+                                      options: (const CBForestEnumerationOptions*)options
+                                        error: (NSError**)outError
+{
+    BOOL metaOnly = options && (options->contentOptions & kCBForestDBMetaOnly);
+    NSEnumerator* keyEnum;
+    if (options && options->descending)
+        keyEnum = keys.reverseObjectEnumerator;
+    else
+        keyEnum = keys.objectEnumerator;
+
+    return [[CBForestDocEnumerator alloc] initWithDatabase: self
+                                                   options: options
+                                                    endKey: nil
+                                                 nextBlock:
+            ^fdb_status(unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets) {
+                return ONQUEUE(keysNextMultiple(_db, keyEnum, metaOnly, n, docinfos, bodyOffsets));
+            }
+                                               finishBlock: nil];
+}
+
+
 static fdb_status iteratorNextMultiple(fdb_handle *db, fdb_iterator *iterator, BOOL metaOnly,
                                        unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets)
 {
@@ -526,14 +581,15 @@ static fdb_status iteratorNextMultiple(fdb_handle *db, fdb_iterator *iterator, B
                                        endKey: (NSData*)endKey
 {
     BOOL metaOnly = options && (options->contentOptions & kCBForestDBMetaOnly);
-    CBForestEnumerator* e = [[CBForestDocEnumerator alloc] initWithDatabase: self
-                                                   options: options
-                                                    endKey: endKey
-                                                 nextBlock:
+    CBForestEnumerator* e;
+    e = [[CBForestDocEnumerator alloc] initWithDatabase: self
+                                                options: options
+                                                 endKey: endKey
+                                              nextBlock:
             ^fdb_status(unsigned *n, fdb_doc** docinfos, uint64_t *bodyOffsets) {
                 return ONQUEUE(iteratorNextMultiple(_db, iterator, metaOnly, n, docinfos, bodyOffsets));
             }
-                                               finishBlock:
+                                            finishBlock:
             ^{
                 dispatch_async(_queue, ^{
                     fdb_iterator_close(iterator);

@@ -155,9 +155,9 @@
                                                                     offset: bodyOffsets[i]
                                                                    options: _options.contentOptions
                                                                      error: &error];
+                free(docinfo);
+                docs[i] = NULL; // Document object adopts doc's key/meta/body, so don't free them
                 if (doc) {
-                    free(docinfo);
-                    docs[i] = NULL;
                     [_rows push: doc];
 
                     if (_options.limit > 0 && --_options.limit == 0) {

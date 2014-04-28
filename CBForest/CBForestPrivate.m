@@ -194,6 +194,13 @@ NSUInteger CPUCount(void) {
     return self;
 }
 
+- (void)dealloc
+{
+    //FIX: This is a hacky workaround for dispatch_semaphore's assertion failure
+    for (NSUInteger i = _array.count; i>0; i--)
+        dispatch_semaphore_signal(_availableCount);
+}
+
 - (BOOL) push: (id)value {
     dispatch_semaphore_wait(_availableCount, DISPATCH_TIME_FOREVER);
     __block BOOL success;
