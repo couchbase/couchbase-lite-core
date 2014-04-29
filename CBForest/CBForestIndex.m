@@ -8,7 +8,6 @@
 
 #import "CBForestIndex.h"
 #import "CBForestPrivate.h"
-#import "CBForestDocEnumerator.h"
 #import "CBCollatable.h"
 #import "varint.h"
 #import <forestdb.h>
@@ -130,7 +129,7 @@ id kCBForestIndexNoValue;
 {
     CBForestIndex* _index;
     CBForestEnumerationOptions _options;
-    CBForestEnumerator* _indexEnum;
+    NSEnumerator* _indexEnum;
     id _stopBeforeKey;
     NSEnumerator* _keys;
     NSData* _valueData;

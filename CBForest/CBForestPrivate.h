@@ -51,10 +51,10 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 - (fdb_status) rawGetMeta: (fdb_doc*)doc offset: (uint64_t*)outOffset;
 - (fdb_status) rawGetBody: (fdb_doc*)doc byOffset: (uint64_t)offset;
 - (BOOL) rawSet: (fdb_doc*)doc error: (NSError**)outError;
-- (CBForestEnumerator*) enumerateDocsFromKey: (NSData*)startKey
-                                       toKey: (NSData*)endKey
-                                     options: (const CBForestEnumerationOptions*)options
-                                       error: (NSError**)outError;
+- (NSEnumerator*) enumerateDocsFromKey: (NSData*)startKey
+                                 toKey: (NSData*)endKey
+                               options: (const CBForestEnumerationOptions*)options
+                                 error: (NSError**)outError;
 @end
 
 
@@ -75,14 +75,6 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 
 
 NSUInteger CPUCount(void);
-
-
-@interface CBForestQueue : NSObject
-- (instancetype) initWithCapacity: (NSUInteger)capacity;
-- (BOOL) push: (id)value;
-- (id) pop;
-- (void) close;
-@end
 
 
 @interface CBForestToken : NSObject

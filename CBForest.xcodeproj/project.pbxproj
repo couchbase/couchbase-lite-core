@@ -166,15 +166,15 @@
 		2750730318E4ACE100A80C5A /* time_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072EF18E4ACE100A80C5A /* time_utils.h */; };
 		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
-		278E5F5F19088F4A00D203BF /* CBForestDocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278E5F5D19088F4A00D203BF /* CBForestDocEnumerator.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		278E5F6019088F4A00D203BF /* CBForestDocEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */; };
-		278E5F6119088F4A00D203BF /* CBForestDocEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */; };
 		27B7E0EB18F8FACB00044EBA /* CBForest_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 275072B318E4A68E00A80C5A /* CBForest_Tests.m */; };
 		27B7E0EC18F8FACB00044EBA /* RevTree_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730A18E5EB7200A80C5A /* RevTree_Tests.m */; };
 		27B7E0ED18F8FACB00044EBA /* Versions_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730E18E621C000A80C5A /* Versions_Tests.m */; };
 		27B7E0EE18F8FACB00044EBA /* Index_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0818EC584500AC4647 /* Index_Tests.m */; };
 		27B7E0EF18F8FACB00044EBA /* MapReduce_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3C918F32DC3007D8C23 /* MapReduce_Tests.m */; };
 		27B7E0F018F8FACB00044EBA /* CBCollatable_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */; };
+		27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */; };
+		27BAA292190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
+		27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -347,9 +347,9 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
-		278E5F5D19088F4A00D203BF /* CBForestDocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestDocEnumerator.h; sourceTree = "<group>"; };
-		278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBForestDocEnumerator.m; sourceTree = "<group>"; };
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
+		27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBEnumerator.h; sourceTree = "<group>"; };
+		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
 		27FDFC0018EA58BF00AC4647 /* varint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = varint.c; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = varint.h; sourceTree = "<group>"; };
 		27FDFC0418EB803F00AC4647 /* CBForestIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestIndex.h; sourceTree = "<group>"; };
@@ -488,8 +488,6 @@
 				2750730518E4E05100A80C5A /* CBForest.h */,
 				2750724E18E3E60900A80C5A /* CBForestDB.h */,
 				2750724F18E3E60900A80C5A /* CBForestDB.m */,
-				278E5F5D19088F4A00D203BF /* CBForestDocEnumerator.h */,
-				278E5F5E19088F4A00D203BF /* CBForestDocEnumerator.m */,
 				2750725018E3E60900A80C5A /* CBForestDocument.h */,
 				2750725118E3E60900A80C5A /* CBForestDocument.m */,
 				2750725218E3E60900A80C5A /* CBForestVersions.h */,
@@ -502,6 +500,8 @@
 				273AD3EC18F608B4007D8C23 /* CBCollatable.m */,
 				2750725418E3E60900A80C5A /* CBForestPrivate.h */,
 				2750725518E3E60900A80C5A /* CBForestPrivate.m */,
+				27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */,
+				27BAA290190F11CA00C3AD1A /* CBEnumerator.m */,
 				2740498318E7A32A0036333A /* forestdb_x.cc */,
 				2740498518E7A3360036333A /* forestdb_x.h */,
 				2750730718E504FC00A80C5A /* rev_tree.c */,
@@ -654,11 +654,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				27139B5718F8EB820021A9A3 /* CBForestMapReduceIndex.h in Headers */,
+				27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */,
 				27139B5418F8EB820021A9A3 /* CBForestDocument.h in Headers */,
 				27139B5818F8EB8A0021A9A3 /* CBForestPrivate.h in Headers */,
 				27139B5518F8EB820021A9A3 /* CBForestVersions.h in Headers */,
 				27139B5318F8EB820021A9A3 /* CBForestDB.h in Headers */,
-				278E5F5F19088F4A00D203BF /* CBForestDocEnumerator.h in Headers */,
 				27139B5218F8EB820021A9A3 /* CBForest.h in Headers */,
 				27139B5618F8EB820021A9A3 /* CBForestIndex.h in Headers */,
 			);
@@ -906,8 +906,8 @@
 				27139B4B18F8EB300021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139B4C18F8EB300021A9A3 /* CBCollatable.m in Sources */,
 				27139B4D18F8EB300021A9A3 /* rev_tree.c in Sources */,
+				27BAA292190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
 				27139B4E18F8EB300021A9A3 /* varint.c in Sources */,
-				278E5F6019088F4A00D203BF /* CBForestDocEnumerator.m in Sources */,
 				27139B4F18F8EB300021A9A3 /* forestdb_x.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -974,8 +974,8 @@
 				27139BBF18F8EEBE0021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139BC018F8EEBE0021A9A3 /* CBCollatable.m in Sources */,
 				27139BC118F8EEBE0021A9A3 /* rev_tree.c in Sources */,
+				27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.c in Sources */,
-				278E5F6119088F4A00D203BF /* CBForestDocEnumerator.m in Sources */,
 				27139BC318F8EEBE0021A9A3 /* forestdb_x.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

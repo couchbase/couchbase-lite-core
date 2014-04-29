@@ -49,7 +49,7 @@
     if (self) {
         _maxDepth = kDefaultMaxDepth;
         [self readFlags];
-        if (!(options & kCBForestDBMetaOnly) && info->body) {
+        if (!(options & kCBForestDBMetaOnly) && self.exists) {
             if (![self readTree: outError])
                 return nil;
         }
