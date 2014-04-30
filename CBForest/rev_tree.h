@@ -8,6 +8,7 @@
 
 #ifndef COUCHSTORE_REV_TREE_H
 #define COUCHSTORE_REV_TREE_H
+#include <stdbool.h>    //FIX: workaround for MB-11006
 #import "forestdb.h"
 #import "slice.h"
 #include <stdbool.h>

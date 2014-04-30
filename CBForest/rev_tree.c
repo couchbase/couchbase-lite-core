@@ -8,6 +8,7 @@
 
 #include "rev_tree.h"
 #include "varint.h"
+#include <stdbool.h>    //FIX: workaround for MB-11006
 #include <forestdb.h>
 #include <assert.h>
 #include <ctype.h>

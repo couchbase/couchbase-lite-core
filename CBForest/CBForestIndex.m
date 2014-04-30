@@ -95,9 +95,7 @@ id kCBForestIndexNoValue;
                             continue;
                         }
                     } else {
-                        // Can't use an empty value or ForestDB will just delete the doc instead
-                        // (MB-10915)
-                        bodyData = [[NSData alloc] initWithBytes: "\0" length: 1];
+                        bodyData = [NSData data];
                     }
 
                     CBForestSequence seq = [self setValue: bodyData
@@ -235,9 +233,8 @@ id kCBForestIndexNoValue;
         return nil;
 
     // Decode the value:
-    // if there's no value, the body will be just a null byte (MB-10915)
     NSData* valueData = nil;
-    if (doc.bodyLength > 1) {
+    if (doc.bodyLength > 0) {
         NSError* error;
         valueData = [doc readBody: &error];
         if (!valueData) {

@@ -154,6 +154,7 @@
             .metalen = metadata.length,
             .body = (void*)body.bytes,
             .bodylen = body.length,
+            .deleted = (body == nil),
         };
         if (![_db rawSet: &newDoc error: outError])
             return NO;
@@ -172,6 +173,7 @@
 - (BOOL) deleteDocument: (NSError**)outError {
     _info.body = NULL;
     _info.bodylen = 0;
+    _info.deleted = true;
     if (![_db rawSet: &_info error: outError])
         return NO;
     _bodyOffset = 0;

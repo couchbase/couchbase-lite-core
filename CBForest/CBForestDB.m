@@ -325,7 +325,8 @@ static NSDictionary* mkConfig(id value) {
         .body = (void*)value.bytes,
         .bodylen = value.length,
         .meta = (void*)meta.bytes,
-        .metalen = meta.length
+        .metalen = meta.length,
+        .deleted = (value == nil)
     };
     return [self rawSet: &doc error: outError] ? doc.seqnum : kCBForestNoSequence;
 }
@@ -397,6 +398,7 @@ static NSDictionary* mkConfig(id value) {
             if (status == FDB_RESULT_SUCCESS) {
                 doc.body = doc.meta = NULL;
                 doc.bodylen = doc.metalen = 0;
+                doc.deleted = true;
                 status = fdb_set(self.handle, &doc);
             }
         });

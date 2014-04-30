@@ -175,6 +175,10 @@
 		27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */; };
 		27BAA292190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
 		27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
+		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
+		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
+		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
+		27EF7F921911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -350,6 +354,8 @@
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBEnumerator.h; sourceTree = "<group>"; };
 		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
+		27EF7F8D1911A85800A327B9 /* snapshot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = snapshot.cc; sourceTree = "<group>"; };
+		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27FDFC0018EA58BF00AC4647 /* varint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = varint.c; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = varint.h; sourceTree = "<group>"; };
 		27FDFC0418EB803F00AC4647 /* CBForestIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestIndex.h; sourceTree = "<group>"; };
@@ -576,6 +582,7 @@
 				275072A018E4857900A80C5A /* hbtrie.cc */,
 				275072A118E4857900A80C5A /* iterator.cc */,
 				275072A218E4857900A80C5A /* list.cc */,
+				27EF7F8D1911A85800A327B9 /* snapshot.cc */,
 				275072A318E4857900A80C5A /* wal.cc */,
 				2750726318E3E72900A80C5A /* arch.h */,
 				2750726518E3E72900A80C5A /* avltree.h */,
@@ -595,6 +602,7 @@
 				2750728718E3E72900A80C5A /* hbtrie.h */,
 				273AD3CE18F45E05007D8C23 /* internal_types.h */,
 				2750728B18E3E72900A80C5A /* list.h */,
+				27EF7F8E1911A85800A327B9 /* snapshot.h */,
 				2750729118E3E72900A80C5A /* wal.h */,
 			);
 			path = src;
@@ -671,6 +679,7 @@
 				27139B7B18F8EDA20021A9A3 /* iniparser.h in Headers */,
 				274415201900E8D800964583 /* fdb_errors.h in Headers */,
 				27139B7C18F8EDA20021A9A3 /* snappy.h in Headers */,
+				27EF7F921911A85800A327B9 /* snapshot.h in Headers */,
 				27139B7D18F8EDA20021A9A3 /* config.h in Headers */,
 				27139B7E18F8EDA20021A9A3 /* memleak.h in Headers */,
 				27139B7F18F8EDA20021A9A3 /* snappy-stubs-internal.h in Headers */,
@@ -698,6 +707,7 @@
 				275072FB18E4ACE100A80C5A /* iniparser.h in Headers */,
 				2744151F1900E8D800964583 /* fdb_errors.h in Headers */,
 				273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */,
+				27EF7F911911A85800A327B9 /* snapshot.h in Headers */,
 				273AD3E918F5EB15007D8C23 /* config.h in Headers */,
 				275072FE18E4ACE100A80C5A /* memleak.h in Headers */,
 				273AD3E218F5E8D8007D8C23 /* snappy-stubs-internal.h in Headers */,
@@ -940,6 +950,7 @@
 				27139B6418F8EDA20021A9A3 /* crc32.cc in Sources */,
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
+				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
 				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
 				27139B6918F8EDA20021A9A3 /* list.cc in Sources */,
@@ -1008,6 +1019,7 @@
 				275072F218E4ACE100A80C5A /* crc32.cc in Sources */,
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
+				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
 				275072D618E4AA5000A80C5A /* list.cc in Sources */,

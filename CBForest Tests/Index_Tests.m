@@ -61,18 +61,17 @@
     NSLog(@"--- First query");
     __block int nRows = 0;
     NSError* error;
-    BOOL ok = [index queryStartKey: nil startDocID: nil
+    CBForestQueryEnumerator* e = [[CBForestQueryEnumerator alloc] initWithIndex: index
+                          startKey: nil startDocID: nil
                             endKey: nil endDocID: nil
                            options: NULL
-                             error: &error
-                             block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
-    {
+                             error: &error];
+    XCTAssert(e, @"Couldn't create query enumerator: %@", error);
+    while (e.nextObject) {
         nRows++;
-        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
-        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
-        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
-    }];
-    XCTAssert(ok, @"Query failed: %@", error);
+        XCTAssert([e.value isKindOfClass: [NSString class]], @"Bad value %@", e.valueData);
+        NSLog(@"key = %@, value=%@, docID = %@", e.key, e.value, e.docID);
+    }
     XCTAssertEqual(nRows, 8);
 
     XCTAssert(([index setKeys: @[@"Portland", @"Walla Walla", @"Salem"]
@@ -82,18 +81,17 @@
 
     NSLog(@"--- After updating OR");
     nRows = 0;
-    ok = [index queryStartKey: nil startDocID: nil
-                       endKey: nil endDocID: nil
-                      options: NULL
-                        error: &error
-                        block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
-    {
+    e = [[CBForestQueryEnumerator alloc] initWithIndex: index
+                                              startKey: nil startDocID: nil
+                                                endKey: nil endDocID: nil
+                                               options: NULL
+                                                 error: &error];
+    XCTAssert(e, @"Couldn't create query enumerator: %@", error);
+    while (e.nextObject) {
         nRows++;
-        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
-        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
-        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
-    }];
-    XCTAssert(ok, @"Query failed: %@", error);
+        XCTAssert([e.value isKindOfClass: [NSString class]], @"Bad value %@", e.valueData);
+        NSLog(@"key = %@, value=%@, docID = %@", e.key, e.value, e.docID);
+    }
     XCTAssertEqual(nRows, 9);
 
     XCTAssert(([index setKeys: nil values: nil forDocument: @"CA" atSequence: 3 error: &error]),
@@ -101,18 +99,17 @@
 
     NSLog(@"--- After removing CA:");
     nRows = 0;
-    ok = [index queryStartKey: nil startDocID: nil
-                       endKey: nil endDocID: nil
-                      options: NULL
-                        error: &error
-                        block: ^(id key, NSData* valueData, NSString* docID, CBForestSequence sequence, BOOL *stop)
-    {
+    e = [[CBForestQueryEnumerator alloc] initWithIndex: index
+                                              startKey: nil startDocID: nil
+                                                endKey: nil endDocID: nil
+                                               options: NULL
+                                                 error: &error];
+    XCTAssert(e, @"Couldn't create query enumerator: %@", error);
+    while (e.nextObject) {
         nRows++;
-        id value = [NSJSONSerialization JSONObjectWithData: valueData options: NSJSONReadingAllowFragments error: NULL];
-        XCTAssert([value isKindOfClass: [NSString class]], @"Bad value %@", valueData);
-        NSLog(@"key = %@, value=%@, docID = %@", key, value, docID);
-    }];
-    XCTAssert(ok, @"Query failed: %@", error);
+        XCTAssert([e.value isKindOfClass: [NSString class]], @"Bad value %@", e.valueData);
+        NSLog(@"key = %@, value=%@, docID = %@", e.key, e.value, e.docID);
+    }
     XCTAssertEqual(nRows, 6);
 
 }
