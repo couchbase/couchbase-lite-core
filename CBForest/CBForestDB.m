@@ -14,6 +14,9 @@
 
 
 //#define ASYNC_COMMIT
+//#define LOGGING
+
+#define kEnumeratorBufferSize 16
 
 // Macro to run a ForestDB call returning a fdb_status on the _queue.
 #define ONQUEUE(FNCALL) \
@@ -49,9 +52,15 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
 @synthesize documentClass=_documentClass;
 
 
+#ifdef LOGGING
 static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
     [(__bridge CBForestDB*)ctx_data logError: err_code message: err_msg];
 }
+
+- (void) logError: (int)status message: (const char*)message {
+    NSLog(@"ForestDB error %d: %s", status, message);
+}
+#endif
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -76,8 +85,9 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
         }
         if (![self open: filePath options: options error: outError])
             return nil;
-
+#ifdef LOGGING
         fdb_set_log_callback(_db, &forestdbLog, (__bridge void*)(self));
+#endif
     }
     return self;
 }
@@ -88,10 +98,6 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
             fdb_close(_db);
         });
     }
-}
-
-- (void) logError: (int)status message: (const char*)message {
-    NSLog(@"ForestDB error %d: %s", status, message);
 }
 
 // Vends a recursive lock for any filesystem path. This ensures that two CBForestDB instances on
@@ -538,7 +544,17 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
                             options: options.contentOptions | kCBForestDBCreateDoc
                               error: NULL];
     };
-    return CBEnumeratorBlockToObject(CBBufferedEnumerator(8, enumerator));
+    return CBEnumeratorBlockToObject(CBBufferedEnumerator(kEnumeratorBufferSize, enumerator));
+}
+
+
+static fdb_status my_iterator_next(fdb_iterator *iterator, fdb_handle *handle,
+                                   fdb_doc **docinfo, uint64_t *bodyOffset)
+{
+    fdb_status status = fdb_iterator_next_offset(iterator, docinfo, bodyOffset);
+    if (status == FDB_RESULT_SUCCESS && handle != NULL)
+        status = fdb_get_byoffset(handle, *docinfo, *bodyOffset);
+    return status;
 }
 
 
@@ -548,6 +564,7 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
 {
     __block CBForestEnumerationOptions options = optionsP ? *optionsP
                                                           : kCBForestEnumerationOptionsDefault;
+    BOOL metaOnly = (options.contentOptions & kCBForestDBMetaOnly) != 0;
     __block BOOL done = NO;
     CBEnumeratorBlock enumerator = ^id {
         if (done)
@@ -557,7 +574,9 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
             // Get a fdb_doc from ForestDB:
             __block fdb_doc *docinfo;
             __block uint64_t bodyOffset;
-            fdb_status status = ONQUEUE(fdb_iterator_next_offset(iterator, &docinfo, &bodyOffset));
+            fdb_status status = ONQUEUE(my_iterator_next(iterator,
+                                                         (metaOnly ? NULL : _db),
+                                                         &docinfo, &bodyOffset));
             if (status != FDB_RESULT_SUCCESS)
                 break;
 
@@ -595,7 +614,7 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
     if (options.descending)
         return CBEnumeratorBlockReversedToObject(enumerator);
     else
-        return CBEnumeratorBlockToObject(CBBufferedEnumerator(8, enumerator));
+        return CBEnumeratorBlockToObject(CBBufferedEnumerator(kEnumeratorBufferSize, enumerator));
 }
 
 
