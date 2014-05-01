@@ -14,7 +14,7 @@
 
 
 //#define ASYNC_COMMIT
-//#define LOGGING
+#define LOGGING
 
 #define kEnumeratorBufferSize 16
 

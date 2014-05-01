@@ -69,8 +69,8 @@ static NSData* toData(NSString* str) {
 
 - (void) test03_SaveDoc {
     [self logDbInfo];
-    NSData* body = [@"Hello ForestDB" dataUsingEncoding: NSUTF8StringEncoding];
-    NSData* meta = [@"metametameta" dataUsingEncoding: NSUTF8StringEncoding];
+    NSData* body = toData(@"Hello ForestDB");
+    NSData* meta = toData(@"metametameta");
 
     CBForestDocument* doc = [_db makeDocumentWithID: @"foo"];
     XCTAssertNil(doc.metadata);
@@ -92,8 +92,8 @@ static NSData* toData(NSString* str) {
     XCTAssertEqualObjects(doc2.metadata, meta);
     XCTAssertEqual(doc2.sequence, 1);
 
-    body = [@"Bye!" dataUsingEncoding: NSUTF8StringEncoding];
-    meta = [@"meatmeatmeat" dataUsingEncoding: NSUTF8StringEncoding];
+    body = toData(@"Bye!");
+    meta = toData(@"meatmeatmeat");
     XCTAssert([doc2 writeBody: body metadata: meta error: &error], @"Save failed: %@", error);
     [self logDbInfo];
 
@@ -128,12 +128,12 @@ static NSData* toData(NSString* str) {
     for (int i = 1; i <= 100; i++) {
         NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
         CBForestDocument* doc = [_db makeDocumentWithID: docID];
-        XCTAssert([doc writeBody: [docID dataUsingEncoding: NSUTF8StringEncoding]
+        XCTAssert([doc writeBody: toData(docID)
                         metadata: nil
                            error: &error], @"Save failed: %@", error);
         XCTAssertEqual(doc.sequence, i);
         XCTAssertEqualObjects([doc readBody: &error],
-                              [docID dataUsingEncoding: NSUTF8StringEncoding],
+                              toData(docID),
                               @"(i=%d)", i);
     }
     XCTAssert([_db compact: &error], @"Compact failed: %@", error);
@@ -148,7 +148,7 @@ static NSData* toData(NSString* str) {
         XCTAssertEqual(doc.sequence, i);
         NSError* innerError;
         XCTAssertEqualObjects([doc readBody: &innerError],
-                              [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
+                              toData(expectedDocID),
                               @"(i=%d)", i);
         i++;
     }
@@ -166,13 +166,14 @@ static NSData* toData(NSString* str) {
         XCTAssertEqual(doc.sequence, i);
         NSError* innerError;
         XCTAssertEqualObjects([doc readBody: &innerError],
-                              [expectedDocID dataUsingEncoding: NSUTF8StringEncoding],
+                              toData(expectedDocID),
                               @"(i=%d)", i);
         i++;
     }
     XCTAssertEqual(i, 51);
 }
 
+/* FIX: Disabled because of MB-11014
 - (void) test05_SnapshotAndRollback {
     // Make some changes:
     XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
@@ -210,6 +211,7 @@ static NSData* toData(NSString* str) {
     XCTAssertNil(value);
     XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
 }
+ */
 
 /*
 - (void) test05_Queue {

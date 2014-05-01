@@ -229,6 +229,10 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 }
 
 - (BOOL) isRevisionDeleted: (NSString*)revID {
+    if (!_tree) {
+        NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
+        return (self.flags & kCBForestRevisionDeleted) != 0;
+    }
     const RevNode* node = [self nodeWithID: revID];
     return node && (node->flags & kRevNodeIsDeleted);
 }
@@ -238,6 +242,10 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 }
 
 - (CBForestRevisionFlags) flagsOfRevision: (NSString*)revID {
+    if (!_tree) {
+        NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
+        return self.flags;
+    }
     const RevNode* node = [self nodeWithID: revID];
     if (!node)
         return 0;
