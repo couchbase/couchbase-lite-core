@@ -113,6 +113,10 @@ typedef struct {
     who opens the database, and will be lost if you close and re-open the database. */
 - (BOOL) commit: (NSError**)outError;
 
+/** Reverts the database to the state it was in at the given sequence number. */
+- (BOOL) rollbackToSequence: (CBForestSequence)oldSequence
+                      error: (NSError**)outError;
+
 /** Copies current versions of all documents to a new file, then replaces the current database
     file with the new one. */
 - (BOOL) compact: (NSError**)outError;

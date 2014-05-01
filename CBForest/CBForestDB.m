@@ -200,7 +200,6 @@ static NSDictionary* mkConfig(id value) {
 }
 
 - (BOOL) commit: (NSError**)outError {
-//  NSLog(@"~~~~~ COMMIT ~~~~~");
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return YES; // no-op if read-only
 #ifdef ASYNC_COMMIT
@@ -213,6 +212,11 @@ static NSDictionary* mkConfig(id value) {
 #else
     return CHECK_ONQUEUE(fdb_commit(_db, FDB_COMMIT_NORMAL), outError);
 #endif
+}
+
+
+- (BOOL) rollbackToSequence: (CBForestSequence)oldSequence error: (NSError**)outError {
+    return CHECK_ONQUEUE(fdb_rollback(&_db, oldSequence), outError);
 }
 
 

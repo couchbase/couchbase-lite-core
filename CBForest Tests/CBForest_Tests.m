@@ -15,6 +15,11 @@
 #define kDBPath @"/tmp/forest.db"
 
 
+static NSData* toData(NSString* str) {
+    return [str dataUsingEncoding: NSUTF8StringEncoding];
+}
+
+
 @interface CBForest_Tests : XCTestCase
 @end
 
@@ -166,6 +171,24 @@
         i++;
     }
     XCTAssertEqual(i, 51);
+}
+
+- (void) test05_Rollback {
+    XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
+    CBForestSequence sequenceBefore = _db.info.lastSequence;
+    BOOL result = [_db inTransaction: ^BOOL{
+        XCTAssert([_db setValue: toData(@"OOPSIE") meta: nil forKey: toData(@"key1") error: NULL]);
+        XCTAssert([_db setValue: toData(@"VALOO") meta: nil forKey: toData(@"KII") error: NULL]);
+        return NO; // abort!
+    }];
+    XCTAssertFalse(result);
+
+    NSData* value;
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"value1"));
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);
+    XCTAssertNil(value);
+    XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
 }
 
 /*
