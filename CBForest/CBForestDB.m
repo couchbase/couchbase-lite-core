@@ -66,7 +66,6 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
              config: (const CBForestDBConfig*)config
-              error: (NSError**)outError
 {
     self = [super init];
     if (self) {
@@ -83,8 +82,34 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
             _customConfig = YES;
             _config = *config;
         }
+    }
+    return self;
+}
+
+- (id) initWithFile: (NSString*)filePath
+            options: (CBForestFileOptions)options
+             config: (const CBForestDBConfig*)config
+              error: (NSError**)outError
+{
+    self = [self initWithFile: filePath options: options config: config];
+    if (self) {
         if (![self open: filePath options: options error: outError])
             return nil;
+#ifdef LOGGING
+        fdb_set_log_callback(_db, &forestdbLog, (__bridge void*)(self));
+#endif
+    }
+    return self;
+}
+
+- (id) initWithFile: (NSString*)filePath
+            options: (CBForestFileOptions)options
+             config: (const CBForestDBConfig*)config
+           snapshot: (fdb_handle*)snapshot
+{
+    self = [self initWithFile: filePath options: options config: config];
+    if (self) {
+        _db = snapshot;
 #ifdef LOGGING
         fdb_set_log_callback(_db, &forestdbLog, (__bridge void*)(self));
 #endif
@@ -267,6 +292,19 @@ static NSDictionary* mkConfig(id value) {
         }
         return [self open: filename options: _openFlags error: outError];
     }];
+}
+
+
+- (CBForestDB*) openSnapshotAtSequence: (CBForestSequence)sequence
+                                 error: (NSError**)outError
+{
+    __block fdb_handle *snapshotHandle;
+    if (!CHECK_ONQUEUE(fdb_snapshot_open(self.handle, &snapshotHandle, sequence), outError))
+        return nil;
+    return [[[self class] alloc] initWithFile: self.filename
+                                      options: _openFlags | kCBForestDBReadOnly
+                                       config: &_config
+                                     snapshot: snapshotHandle];
 }
 
 

@@ -173,17 +173,37 @@ static NSData* toData(NSString* str) {
     XCTAssertEqual(i, 51);
 }
 
-- (void) test05_Rollback {
+- (void) test05_SnapshotAndRollback {
+    // Make some changes:
     XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
     CBForestSequence sequenceBefore = _db.info.lastSequence;
-    BOOL result = [_db inTransaction: ^BOOL{
-        XCTAssert([_db setValue: toData(@"OOPSIE") meta: nil forKey: toData(@"key1") error: NULL]);
-        XCTAssert([_db setValue: toData(@"VALOO") meta: nil forKey: toData(@"KII") error: NULL]);
-        return NO; // abort!
-    }];
-    XCTAssertFalse(result);
+    XCTAssert([_db setValue: toData(@"OOPSIE") meta: nil forKey: toData(@"key1") error: NULL]);
+    XCTAssert([_db setValue: toData(@"VALOO") meta: nil forKey: toData(@"KII") error: NULL]);
+    CBForestSequence sequenceAfter = _db.info.lastSequence;
+    XCTAssert(sequenceAfter > sequenceBefore);
+
+    // Make a snapshot from right after the first change:
+    NSError* error;
+    CBForestDB* snapshot = [_db openSnapshotAtSequence: sequenceBefore error: &error];
+    XCTAssert(snapshot, @"Couldn't open snapshot: %@", error);
 
     NSData* value;
+    XCTAssert([snapshot getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"value1"));
+    XCTAssert([snapshot getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);
+    XCTAssertNil(value);
+    XCTAssertEqual(snapshot.info.lastSequence, sequenceBefore);
+    [snapshot close];
+
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"OOPSIE"));
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"VALOO"));
+    XCTAssertEqual(_db.info.lastSequence, sequenceAfter);
+
+    // Roll-back the main handle to right after the first change:
+    XCTAssert([_db rollbackToSequence: sequenceBefore error: &error]);
+
     XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
     XCTAssertEqualObjects(value, toData(@"value1"));
     XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);

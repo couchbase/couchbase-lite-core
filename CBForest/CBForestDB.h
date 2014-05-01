@@ -117,6 +117,11 @@ typedef struct {
 - (BOOL) rollbackToSequence: (CBForestSequence)oldSequence
                       error: (NSError**)outError;
 
+/** Opens a new database handle on this file, a read-only snapshot containing the database
+    contents as of the given sequence. */
+- (CBForestDB*) openSnapshotAtSequence: (CBForestSequence)sequence
+                                 error: (NSError**)outError;
+
 /** Copies current versions of all documents to a new file, then replaces the current database
     file with the new one. */
 - (BOOL) compact: (NSError**)outError;
