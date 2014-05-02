@@ -173,7 +173,6 @@ static NSData* toData(NSString* str) {
     XCTAssertEqual(i, 51);
 }
 
-/* FIX: Disabled because of MB-11014
 - (void) test05_SnapshotAndRollback {
     // Make some changes:
     XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
@@ -211,7 +210,6 @@ static NSData* toData(NSString* str) {
     XCTAssertNil(value);
     XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
 }
- */
 
 /*
 - (void) test05_Queue {
