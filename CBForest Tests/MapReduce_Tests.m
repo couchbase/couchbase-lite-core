@@ -200,4 +200,53 @@
     NSLog(@"Query completed: %@", colorSet);
 }
 
+- (void) testFullTextIndex {
+    NSArray* text = @[@"I must not fear.",
+                      @"Fear is the mind-killer.",
+                      @"Fear is the little-death that brings total obliteration.",
+                      @"I will face my fear.",
+                      @"I will permit it to pass over me and through me.",
+                      @"And when it has gone past I will turn the inner eye to see its path.",
+                      @"Where the fear has gone there will be nothing....only I will remain."];
+    int lineNo = 1;
+    for (NSString* line in text)
+        [self writeJSONBody: @{@"text": line}
+               ofDocumentID: [NSString stringWithFormat: @"line-%d", lineNo++]];
+
+    index.indexWords = YES;
+    index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
+        NSDictionary* body = DataToJSON(rawBody, NULL);
+        emit(body[@"text"], nil);
+    };
+    index.mapVersion = @"1";
+
+    NSError* error;
+    XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+
+    NSMutableArray* docs = [NSMutableArray array];
+    CBForestQueryEnumerator* e;
+    e = [[CBForestQueryEnumerator alloc] initWithIndex: index
+                                              startKey: @"fear" startDocID: nil
+                                                endKey: @"fear" endDocID: nil
+                                               options: NULL
+                                                 error: &error];
+    XCTAssert(e, @"Couldn't create query enumerator: %@", error);
+    int nRows = 0;
+    while (e.nextObject) {
+        nRows++;
+        NSLog(@"key = %@, value=%@, docID = %@, seq = %llu", e.key, e.value, e.docID, e.sequence);
+        XCTAssertEqualObjects(e.key, @"fear");
+        [docs addObject: e.docID];
+    }
+    XCTAssertEqualObjects(docs, (@[@"line-1", @"line-2", @"line-3", @"line-4", @"line-7"]));
+
+    CBForestQueryIntersectionEnumerator* ie;
+    ie = [[CBForestQueryIntersectionEnumerator alloc] initWithIndex: index
+                                                               keys: @[@"fear", @"face"]
+                                                       intersection: YES
+                                                              error: &error];
+    XCTAssert(ie, @"Couldn't create query enumerator: %@", error);
+    XCTAssertEqualObjects(ie.allObjects, @[@"line-4"]);
+}
+
 @end

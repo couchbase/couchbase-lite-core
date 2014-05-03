@@ -7,6 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
+#import "CBForest.h"
 #import "CBTextTokenizer.h"
 #import "CBForestPrivate.h"
 
@@ -36,6 +37,9 @@
         XCTAssert(r.location < string.length);
         [tokens addObject: token];
     }];
+
+    XCTAssertEqualObjects(tokens, [tokenizer tokenize: string]);
+
     return tokens;
 }
 

@@ -10,6 +10,7 @@
 #import "CBForestDocument.h"
 #import "CBForestPrivate.h"
 #import "CBCollatable.h"
+#import "CBTextTokenizer.h"
 #import <forestdb.h>
 
 
@@ -21,7 +22,8 @@
     NSString* _lastMapVersion;
 }
 
-@synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion, lastSequenceIndexed=_lastSequenceIndexed;
+@synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion,
+            indexWords=_indexWords, lastSequenceIndexed=_lastSequenceIndexed;
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -116,12 +118,26 @@
                         CBForestIndexEmitBlock emit = ^(id key, id value) {
                             if (!value)
                                 value = kCBForestIndexNoValue;
-                            if (!keys) {
-                                keys = [[NSMutableArray alloc] initWithObjects: &key count: 1];
-                                values = [[NSMutableArray alloc] initWithObjects: &value count: 1];
+                            if (_indexWords && [key isKindOfClass: [NSString class]]) {
+                                //FIX: Should reuse tokenizer, but in a thread-safe way
+                                CBTextTokenizer* tok = [[CBTextTokenizer alloc] init];
+                                NSArray* words = [tok tokenize: (NSString*)key];
+                                if (keys) {
+                                    [keys addObjectsFromArray: words];
+                                } else {
+                                    keys = [words mutableCopy];
+                                    values = [[NSMutableArray alloc] init];
+                                }
+                                for (NSInteger i = words.count; i >=0; i--)
+                                    [values addObject: value];
                             } else {
-                                [keys addObject: key];
-                                [values addObject: value];
+                                if (!keys) {
+                                    keys = [[NSMutableArray alloc] initWithObjects: &key count: 1];
+                                    values = [[NSMutableArray alloc] initWithObjects: &value count: 1];
+                                } else {
+                                    [keys addObject: key];
+                                    [values addObject: value];
+                                }
                             }
                         };
                         @try {

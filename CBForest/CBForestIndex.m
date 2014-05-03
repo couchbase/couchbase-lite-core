@@ -122,6 +122,17 @@ id kCBForestIndexNoValue;
 
 
 
+static void parseKey(CBForestDocument* doc,
+                     id* key, NSString** docID, CBForestSequence* sequence)
+{
+    slice indexKey = doc.rawID;
+    CBCollatableReadNext(&indexKey, NO, key); // array marker
+    CBCollatableReadNext(&indexKey, YES, key);
+    CBCollatableReadNext(&indexKey, NO, docID);
+    CBCollatableReadNextNumber(&indexKey, (int64_t*)sequence);
+}
+
+
 
 @implementation CBForestQueryEnumerator
 {
@@ -219,14 +230,10 @@ id kCBForestIndexNoValue;
     } while (!doc);
 
     // Decode the key from collatable form:
-    slice indexKey = doc.rawID;
     id key;
     NSString* docID;
-    int64_t docSequence;
-    CBCollatableReadNext(&indexKey, NO, &key); // array marker
-    CBCollatableReadNext(&indexKey, YES, &key);
-    CBCollatableReadNext(&indexKey, NO, &docID);
-    CBCollatableReadNextNumber(&indexKey, &docSequence);
+    CBForestSequence docSequence;
+    parseKey(doc, &key, &docID, &docSequence);
     NSAssert(key && docID, @"Bogus view key");
 
     if ([_stopBeforeKey isEqual: key])
@@ -259,6 +266,102 @@ id kCBForestIndexNoValue;
                                                    error: NULL];
     }
     return _value;
+}
+
+@end
+
+
+
+static NSString* nextObjectDocID(NSEnumerator* e) {
+    CBForestDocument* doc = e.nextObject;
+    if (!doc)
+        return nil;
+    id key;
+    NSString* docID;
+    CBForestSequence docSequence;
+    parseKey(doc, &key, &docID, &docSequence);
+    return docID;
+}
+
+
+
+@implementation CBForestQueryIntersectionEnumerator
+{
+    BOOL _intersection;
+    NSMutableArray* _enumerators;
+    NSMutableArray* _curDocIDs;
+}
+
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                          keys: (NSArray*)keys
+                  intersection: (BOOL)intersection
+                         error: (NSError**)outError
+{
+    self = [super init];
+    if (self) {
+        _intersection = intersection;
+        _curDocIDs = [NSMutableArray arrayWithCapacity: keys.count];
+        _enumerators = [NSMutableArray arrayWithCapacity: keys.count];
+        for (id key in keys) {
+            // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
+            NSEnumerator* e = [index enumerateDocsFromKey: CBCreateCollatable(@[key])
+                                                    toKey: CBCreateCollatable(@[key, @{}])
+                                                  options: NULL
+                                                    error: outError];
+            if (!e)
+                return nil;
+            NSString* docID = nextObjectDocID(e);
+            if (docID) {
+                [_curDocIDs addObject: docID];
+                [_enumerators addObject: e];
+            } else if (intersection) {
+                _curDocIDs = _enumerators = nil;
+                break;
+            }
+        }
+    }
+    return self;
+}
+
+- (id) nextObject {
+    if (_curDocIDs.count == 0)
+        return nil;
+
+    BOOL allEqual;
+    NSString* minDocID;
+    do {
+        // Find the minimum docID of any of the enumerators:
+        //FIX: -compare: doesn't use the same ordering as the collatable doc IDs in the index.
+        minDocID = nil;
+        for (NSString* docID in _curDocIDs)
+            if (!minDocID || [docID compare: minDocID] < 0)
+                minDocID = docID;
+
+        // Now advance all the iterator(s) that have that docID:
+        allEqual = YES;
+        BOOL reachedEnd = NO;
+        for (NSInteger i = _curDocIDs.count - 1; i >= 0; i--) {
+            if ([minDocID isEqualToString: _curDocIDs[i]]) {
+                NSString* docID;
+                do {
+                    docID = nextObjectDocID(_enumerators[i]);
+                } while ([minDocID isEqualToString: docID]);
+                if (docID) {
+                    _curDocIDs[i] = docID;
+                } else {
+                    reachedEnd = YES;
+                    [_curDocIDs removeObjectAtIndex: i];
+                    [_enumerators removeObjectAtIndex: i];
+                }
+            } else {
+                allEqual = NO;
+            }
+        }
+        if (reachedEnd && _intersection) {
+            _curDocIDs = _enumerators = nil;
+        }
+    } while (_intersection && !allEqual);
+    return minDocID;
 }
 
 @end

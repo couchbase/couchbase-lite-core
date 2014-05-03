@@ -30,4 +30,7 @@
 - (BOOL) tokenize: (NSString*)string
           onToken: (void (^)(NSString* word, NSRange byteRange))onToken;
 
+/** Tokenizes a string, returning an array of token strings. */
+- (NSArray*) tokenize: (NSString*)string;
+
 @end

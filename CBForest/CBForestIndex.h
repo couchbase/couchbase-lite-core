@@ -64,3 +64,11 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 
 @end
 
+
+@interface CBForestQueryIntersectionEnumerator : NSEnumerator
+
+- (instancetype) initWithIndex: (CBForestIndex*)index
+                          keys: (NSArray*)keys
+                  intersection: (BOOL)intersection
+                         error: (NSError**)outError;
+@end

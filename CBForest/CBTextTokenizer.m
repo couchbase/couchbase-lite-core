@@ -124,4 +124,13 @@ static NSDictionary* sLanguageToStopWords;
 }
 
 
+- (NSArray*) tokenize: (NSString*)string {
+    NSMutableArray* tokens = [NSMutableArray array];
+    [self tokenize: string onToken: ^(NSString* token, NSRange r) {
+        [tokens addObject: token];
+    }];
+    return tokens;
+}
+
+
 @end
