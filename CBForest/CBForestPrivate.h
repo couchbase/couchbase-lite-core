@@ -38,6 +38,11 @@ slice CompactRevIDToSlice(NSString* revID);
 NSString* ExpandRevID(slice compressedRevID);
 
 
+// Calls the given block, passing it a UTF-8 encoded version of the given string.
+// The UTF-8 data can be safely modified by the block but isn't valid after the block exits.
+BOOL WithMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t));
+
+
 // The block is responsible for freeing the doc!
 typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 

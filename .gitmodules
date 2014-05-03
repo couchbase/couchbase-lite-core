@@ -1,3 +1,6 @@
 [submodule "vendor/forestdb"]
 	path = vendor/forestdb
 	url = git@github.com:couchbaselabs/forestdb.git
+[submodule "vendor/sqlite3-unicodesn"]
+	path = vendor/sqlite3-unicodesn
+	url = https://github.com/snej/sqlite3-unicodesn.git

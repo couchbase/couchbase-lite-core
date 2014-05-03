@@ -179,6 +179,86 @@
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
 		27EF7F921911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
+		27EF7FFB1914296D00A327B9 /* fts3_tokenizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */; };
+		27EF80001914296D00A327B9 /* fts3_unicodesn.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */; };
+		27EF80011914296D00A327B9 /* fts3Int.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA91914296D00A327B9 /* fts3Int.h */; };
+		27EF80021914296D00A327B9 /* libstemmer.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FAA1914296D00A327B9 /* libstemmer.h */; };
+		27EF80061914296D00A327B9 /* modules_utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FAE1914296D00A327B9 /* modules_utf8.h */; };
+		27EF806C1914296D00A327B9 /* README in Resources */ = {isa = PBXBuildFile; fileRef = 27EF7FF71914296D00A327B9 /* README */; };
+		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
+		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
+		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
+		27EF807B19142C7E00A327B9 /* api_sq3.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB31914296D00A327B9 /* api_sq3.c */; };
+		27EF807C19142C7E00A327B9 /* utilities_sq3.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB51914296D00A327B9 /* utilities_sq3.c */; };
+		27EF807D19142C9900A327B9 /* stem_ISO_8859_1_danish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB71914296D00A327B9 /* stem_ISO_8859_1_danish.c */; };
+		27EF807E19142C9900A327B9 /* stem_ISO_8859_1_danish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FB81914296D00A327B9 /* stem_ISO_8859_1_danish.h */; };
+		27EF807F19142C9900A327B9 /* stem_ISO_8859_1_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB91914296D00A327B9 /* stem_ISO_8859_1_dutch.c */; };
+		27EF808019142C9900A327B9 /* stem_ISO_8859_1_dutch.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBA1914296D00A327B9 /* stem_ISO_8859_1_dutch.h */; };
+		27EF808119142C9900A327B9 /* stem_ISO_8859_1_english.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBB1914296D00A327B9 /* stem_ISO_8859_1_english.c */; };
+		27EF808219142C9900A327B9 /* stem_ISO_8859_1_english.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBC1914296D00A327B9 /* stem_ISO_8859_1_english.h */; };
+		27EF808319142C9900A327B9 /* stem_ISO_8859_1_finnish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBD1914296D00A327B9 /* stem_ISO_8859_1_finnish.c */; };
+		27EF808419142C9900A327B9 /* stem_ISO_8859_1_finnish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBE1914296D00A327B9 /* stem_ISO_8859_1_finnish.h */; };
+		27EF808519142C9900A327B9 /* stem_ISO_8859_1_french.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBF1914296D00A327B9 /* stem_ISO_8859_1_french.c */; };
+		27EF808619142C9900A327B9 /* stem_ISO_8859_1_french.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC01914296D00A327B9 /* stem_ISO_8859_1_french.h */; };
+		27EF808719142C9900A327B9 /* stem_ISO_8859_1_german.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC11914296D00A327B9 /* stem_ISO_8859_1_german.c */; };
+		27EF808819142C9900A327B9 /* stem_ISO_8859_1_german.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC21914296D00A327B9 /* stem_ISO_8859_1_german.h */; };
+		27EF808919142C9900A327B9 /* stem_ISO_8859_1_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */; };
+		27EF808A19142C9900A327B9 /* stem_ISO_8859_1_hungarian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC41914296D00A327B9 /* stem_ISO_8859_1_hungarian.h */; };
+		27EF808B19142C9900A327B9 /* stem_ISO_8859_1_italian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC51914296D00A327B9 /* stem_ISO_8859_1_italian.c */; };
+		27EF808C19142C9900A327B9 /* stem_ISO_8859_1_italian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC61914296D00A327B9 /* stem_ISO_8859_1_italian.h */; };
+		27EF808D19142C9900A327B9 /* stem_ISO_8859_1_norwegian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC71914296D00A327B9 /* stem_ISO_8859_1_norwegian.c */; };
+		27EF808E19142C9900A327B9 /* stem_ISO_8859_1_norwegian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC81914296D00A327B9 /* stem_ISO_8859_1_norwegian.h */; };
+		27EF808F19142C9900A327B9 /* stem_ISO_8859_1_porter.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC91914296D00A327B9 /* stem_ISO_8859_1_porter.c */; };
+		27EF809019142C9900A327B9 /* stem_ISO_8859_1_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCA1914296D00A327B9 /* stem_ISO_8859_1_porter.h */; };
+		27EF809119142C9900A327B9 /* stem_ISO_8859_1_portuguese.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCB1914296D00A327B9 /* stem_ISO_8859_1_portuguese.c */; };
+		27EF809219142C9900A327B9 /* stem_ISO_8859_1_portuguese.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCC1914296D00A327B9 /* stem_ISO_8859_1_portuguese.h */; };
+		27EF809319142C9900A327B9 /* stem_ISO_8859_1_spanish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCD1914296D00A327B9 /* stem_ISO_8859_1_spanish.c */; };
+		27EF809419142C9900A327B9 /* stem_ISO_8859_1_spanish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCE1914296D00A327B9 /* stem_ISO_8859_1_spanish.h */; };
+		27EF809519142C9900A327B9 /* stem_ISO_8859_1_swedish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCF1914296D00A327B9 /* stem_ISO_8859_1_swedish.c */; };
+		27EF809619142C9900A327B9 /* stem_ISO_8859_1_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD01914296D00A327B9 /* stem_ISO_8859_1_swedish.h */; };
+		27EF809719142C9900A327B9 /* stem_ISO_8859_2_romanian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD11914296D00A327B9 /* stem_ISO_8859_2_romanian.c */; };
+		27EF809819142C9900A327B9 /* stem_ISO_8859_2_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */; };
+		27EF809919142C9900A327B9 /* stem_KOI8_R_russian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD31914296D00A327B9 /* stem_KOI8_R_russian.c */; };
+		27EF809A19142C9900A327B9 /* stem_KOI8_R_russian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD41914296D00A327B9 /* stem_KOI8_R_russian.h */; };
+		27EF809B19142C9900A327B9 /* stem_UTF_8_danish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD51914296D00A327B9 /* stem_UTF_8_danish.c */; };
+		27EF809C19142C9900A327B9 /* stem_UTF_8_danish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD61914296D00A327B9 /* stem_UTF_8_danish.h */; };
+		27EF809D19142C9900A327B9 /* stem_UTF_8_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */; };
+		27EF809E19142C9900A327B9 /* stem_UTF_8_dutch.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD81914296D00A327B9 /* stem_UTF_8_dutch.h */; };
+		27EF809F19142C9900A327B9 /* stem_UTF_8_english.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD91914296D00A327B9 /* stem_UTF_8_english.c */; };
+		27EF80A019142C9900A327B9 /* stem_UTF_8_english.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDA1914296D00A327B9 /* stem_UTF_8_english.h */; };
+		27EF80A119142C9900A327B9 /* stem_UTF_8_finnish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDB1914296D00A327B9 /* stem_UTF_8_finnish.c */; };
+		27EF80A219142C9900A327B9 /* stem_UTF_8_finnish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDC1914296D00A327B9 /* stem_UTF_8_finnish.h */; };
+		27EF80A319142C9900A327B9 /* stem_UTF_8_french.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDD1914296D00A327B9 /* stem_UTF_8_french.c */; };
+		27EF80A419142C9900A327B9 /* stem_UTF_8_french.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDE1914296D00A327B9 /* stem_UTF_8_french.h */; };
+		27EF80A519142C9900A327B9 /* stem_UTF_8_german.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDF1914296D00A327B9 /* stem_UTF_8_german.c */; };
+		27EF80A619142C9900A327B9 /* stem_UTF_8_german.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE01914296D00A327B9 /* stem_UTF_8_german.h */; };
+		27EF80A719142C9900A327B9 /* stem_UTF_8_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE11914296D00A327B9 /* stem_UTF_8_hungarian.c */; };
+		27EF80A819142C9900A327B9 /* stem_UTF_8_hungarian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE21914296D00A327B9 /* stem_UTF_8_hungarian.h */; };
+		27EF80A919142C9900A327B9 /* stem_UTF_8_italian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE31914296D00A327B9 /* stem_UTF_8_italian.c */; };
+		27EF80AA19142C9900A327B9 /* stem_UTF_8_italian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE41914296D00A327B9 /* stem_UTF_8_italian.h */; };
+		27EF80AB19142C9900A327B9 /* stem_UTF_8_norwegian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE51914296D00A327B9 /* stem_UTF_8_norwegian.c */; };
+		27EF80AC19142C9900A327B9 /* stem_UTF_8_norwegian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE61914296D00A327B9 /* stem_UTF_8_norwegian.h */; };
+		27EF80AD19142C9900A327B9 /* stem_UTF_8_porter.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE71914296D00A327B9 /* stem_UTF_8_porter.c */; };
+		27EF80AE19142C9900A327B9 /* stem_UTF_8_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */; };
+		27EF80AF19142C9900A327B9 /* stem_UTF_8_portuguese.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE91914296D00A327B9 /* stem_UTF_8_portuguese.c */; };
+		27EF80B019142C9900A327B9 /* stem_UTF_8_portuguese.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEA1914296D00A327B9 /* stem_UTF_8_portuguese.h */; };
+		27EF80B119142C9900A327B9 /* stem_UTF_8_romanian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FEB1914296D00A327B9 /* stem_UTF_8_romanian.c */; };
+		27EF80B219142C9900A327B9 /* stem_UTF_8_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEC1914296D00A327B9 /* stem_UTF_8_romanian.h */; };
+		27EF80B319142C9900A327B9 /* stem_UTF_8_russian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FED1914296D00A327B9 /* stem_UTF_8_russian.c */; };
+		27EF80B419142C9900A327B9 /* stem_UTF_8_russian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEE1914296D00A327B9 /* stem_UTF_8_russian.h */; };
+		27EF80B519142C9900A327B9 /* stem_UTF_8_spanish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FEF1914296D00A327B9 /* stem_UTF_8_spanish.c */; };
+		27EF80B619142C9900A327B9 /* stem_UTF_8_spanish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF01914296D00A327B9 /* stem_UTF_8_spanish.h */; };
+		27EF80B719142C9900A327B9 /* stem_UTF_8_swedish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF11914296D00A327B9 /* stem_UTF_8_swedish.c */; };
+		27EF80B819142C9900A327B9 /* stem_UTF_8_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */; };
+		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
+		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
+		27EF80BD19142D1D00A327B9 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
+		27EF80C019142E6600A327B9 /* CBTextTokenizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF80BE19142E6600A327B9 /* CBTextTokenizer.h */; };
+		27EF80C2191430B400A327B9 /* CBTextTokenizer.m in Sources */ = {isa = PBXBuildFile; fileRef = 27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */; };
+		27EF80C3191430B500A327B9 /* CBTextTokenizer.m in Sources */ = {isa = PBXBuildFile; fileRef = 27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */; };
+		27EF80C5191438AD00A327B9 /* Tokenizer_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27EF80C4191438AD00A327B9 /* Tokenizer_Tests.m */; };
+		27EF80C6191438AD00A327B9 /* Tokenizer_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27EF80C4191438AD00A327B9 /* Tokenizer_Tests.m */; };
+		27EF80C9191445CF00A327B9 /* english_stopwords.h in Sources */ = {isa = PBXBuildFile; fileRef = 27EF80C7191445CF00A327B9 /* english_stopwords.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -223,6 +303,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27139B9418F8EE3A0021A9A3;
 			remoteInfo = "CBForest-iOS";
+		};
+		27EF80BB19142D1300A327B9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF807319142C2500A327B9;
+			remoteInfo = Tokenizer;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -356,6 +443,89 @@
 		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
 		27EF7F8D1911A85800A327B9 /* snapshot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = snapshot.cc; sourceTree = "<group>"; };
 		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
+		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
+		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
+		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
+		27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_unicodesn.h; sourceTree = "<group>"; };
+		27EF7FA91914296D00A327B9 /* fts3Int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3Int.h; sourceTree = "<group>"; };
+		27EF7FAA1914296D00A327B9 /* libstemmer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libstemmer.h; sourceTree = "<group>"; };
+		27EF7FAC1914296D00A327B9 /* libstemmer_c.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = libstemmer_c.in; sourceTree = "<group>"; };
+		27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = libstemmer_utf8.c; sourceTree = "<group>"; };
+		27EF7FAE1914296D00A327B9 /* modules_utf8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = modules_utf8.h; sourceTree = "<group>"; };
+		27EF7FAF1914296D00A327B9 /* modules_utf8.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = modules_utf8.txt; sourceTree = "<group>"; };
+		27EF7FB11914296D00A327B9 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		27EF7FB21914296D00A327B9 /* api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = api.h; sourceTree = "<group>"; };
+		27EF7FB31914296D00A327B9 /* api_sq3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = api_sq3.c; sourceTree = "<group>"; };
+		27EF7FB41914296D00A327B9 /* header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = header.h; sourceTree = "<group>"; };
+		27EF7FB51914296D00A327B9 /* utilities_sq3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities_sq3.c; sourceTree = "<group>"; };
+		27EF7FB71914296D00A327B9 /* stem_ISO_8859_1_danish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_danish.c; sourceTree = "<group>"; };
+		27EF7FB81914296D00A327B9 /* stem_ISO_8859_1_danish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_danish.h; sourceTree = "<group>"; };
+		27EF7FB91914296D00A327B9 /* stem_ISO_8859_1_dutch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_dutch.c; sourceTree = "<group>"; };
+		27EF7FBA1914296D00A327B9 /* stem_ISO_8859_1_dutch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_dutch.h; sourceTree = "<group>"; };
+		27EF7FBB1914296D00A327B9 /* stem_ISO_8859_1_english.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_english.c; sourceTree = "<group>"; };
+		27EF7FBC1914296D00A327B9 /* stem_ISO_8859_1_english.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_english.h; sourceTree = "<group>"; };
+		27EF7FBD1914296D00A327B9 /* stem_ISO_8859_1_finnish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_finnish.c; sourceTree = "<group>"; };
+		27EF7FBE1914296D00A327B9 /* stem_ISO_8859_1_finnish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_finnish.h; sourceTree = "<group>"; };
+		27EF7FBF1914296D00A327B9 /* stem_ISO_8859_1_french.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_french.c; sourceTree = "<group>"; };
+		27EF7FC01914296D00A327B9 /* stem_ISO_8859_1_french.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_french.h; sourceTree = "<group>"; };
+		27EF7FC11914296D00A327B9 /* stem_ISO_8859_1_german.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_german.c; sourceTree = "<group>"; };
+		27EF7FC21914296D00A327B9 /* stem_ISO_8859_1_german.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_german.h; sourceTree = "<group>"; };
+		27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_hungarian.c; sourceTree = "<group>"; };
+		27EF7FC41914296D00A327B9 /* stem_ISO_8859_1_hungarian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_hungarian.h; sourceTree = "<group>"; };
+		27EF7FC51914296D00A327B9 /* stem_ISO_8859_1_italian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_italian.c; sourceTree = "<group>"; };
+		27EF7FC61914296D00A327B9 /* stem_ISO_8859_1_italian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_italian.h; sourceTree = "<group>"; };
+		27EF7FC71914296D00A327B9 /* stem_ISO_8859_1_norwegian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_norwegian.c; sourceTree = "<group>"; };
+		27EF7FC81914296D00A327B9 /* stem_ISO_8859_1_norwegian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_norwegian.h; sourceTree = "<group>"; };
+		27EF7FC91914296D00A327B9 /* stem_ISO_8859_1_porter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_porter.c; sourceTree = "<group>"; };
+		27EF7FCA1914296D00A327B9 /* stem_ISO_8859_1_porter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_porter.h; sourceTree = "<group>"; };
+		27EF7FCB1914296D00A327B9 /* stem_ISO_8859_1_portuguese.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_portuguese.c; sourceTree = "<group>"; };
+		27EF7FCC1914296D00A327B9 /* stem_ISO_8859_1_portuguese.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_portuguese.h; sourceTree = "<group>"; };
+		27EF7FCD1914296D00A327B9 /* stem_ISO_8859_1_spanish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_spanish.c; sourceTree = "<group>"; };
+		27EF7FCE1914296D00A327B9 /* stem_ISO_8859_1_spanish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_spanish.h; sourceTree = "<group>"; };
+		27EF7FCF1914296D00A327B9 /* stem_ISO_8859_1_swedish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_1_swedish.c; sourceTree = "<group>"; };
+		27EF7FD01914296D00A327B9 /* stem_ISO_8859_1_swedish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_1_swedish.h; sourceTree = "<group>"; };
+		27EF7FD11914296D00A327B9 /* stem_ISO_8859_2_romanian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_ISO_8859_2_romanian.c; sourceTree = "<group>"; };
+		27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_ISO_8859_2_romanian.h; sourceTree = "<group>"; };
+		27EF7FD31914296D00A327B9 /* stem_KOI8_R_russian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_KOI8_R_russian.c; sourceTree = "<group>"; };
+		27EF7FD41914296D00A327B9 /* stem_KOI8_R_russian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_KOI8_R_russian.h; sourceTree = "<group>"; };
+		27EF7FD51914296D00A327B9 /* stem_UTF_8_danish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_danish.c; sourceTree = "<group>"; };
+		27EF7FD61914296D00A327B9 /* stem_UTF_8_danish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_danish.h; sourceTree = "<group>"; };
+		27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_dutch.c; sourceTree = "<group>"; };
+		27EF7FD81914296D00A327B9 /* stem_UTF_8_dutch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_dutch.h; sourceTree = "<group>"; };
+		27EF7FD91914296D00A327B9 /* stem_UTF_8_english.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_english.c; sourceTree = "<group>"; };
+		27EF7FDA1914296D00A327B9 /* stem_UTF_8_english.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_english.h; sourceTree = "<group>"; };
+		27EF7FDB1914296D00A327B9 /* stem_UTF_8_finnish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_finnish.c; sourceTree = "<group>"; };
+		27EF7FDC1914296D00A327B9 /* stem_UTF_8_finnish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_finnish.h; sourceTree = "<group>"; };
+		27EF7FDD1914296D00A327B9 /* stem_UTF_8_french.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_french.c; sourceTree = "<group>"; };
+		27EF7FDE1914296D00A327B9 /* stem_UTF_8_french.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_french.h; sourceTree = "<group>"; };
+		27EF7FDF1914296D00A327B9 /* stem_UTF_8_german.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_german.c; sourceTree = "<group>"; };
+		27EF7FE01914296D00A327B9 /* stem_UTF_8_german.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_german.h; sourceTree = "<group>"; };
+		27EF7FE11914296D00A327B9 /* stem_UTF_8_hungarian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_hungarian.c; sourceTree = "<group>"; };
+		27EF7FE21914296D00A327B9 /* stem_UTF_8_hungarian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_hungarian.h; sourceTree = "<group>"; };
+		27EF7FE31914296D00A327B9 /* stem_UTF_8_italian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_italian.c; sourceTree = "<group>"; };
+		27EF7FE41914296D00A327B9 /* stem_UTF_8_italian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_italian.h; sourceTree = "<group>"; };
+		27EF7FE51914296D00A327B9 /* stem_UTF_8_norwegian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_norwegian.c; sourceTree = "<group>"; };
+		27EF7FE61914296D00A327B9 /* stem_UTF_8_norwegian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_norwegian.h; sourceTree = "<group>"; };
+		27EF7FE71914296D00A327B9 /* stem_UTF_8_porter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_porter.c; sourceTree = "<group>"; };
+		27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_porter.h; sourceTree = "<group>"; };
+		27EF7FE91914296D00A327B9 /* stem_UTF_8_portuguese.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_portuguese.c; sourceTree = "<group>"; };
+		27EF7FEA1914296D00A327B9 /* stem_UTF_8_portuguese.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_portuguese.h; sourceTree = "<group>"; };
+		27EF7FEB1914296D00A327B9 /* stem_UTF_8_romanian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_romanian.c; sourceTree = "<group>"; };
+		27EF7FEC1914296D00A327B9 /* stem_UTF_8_romanian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_romanian.h; sourceTree = "<group>"; };
+		27EF7FED1914296D00A327B9 /* stem_UTF_8_russian.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_russian.c; sourceTree = "<group>"; };
+		27EF7FEE1914296D00A327B9 /* stem_UTF_8_russian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_russian.h; sourceTree = "<group>"; };
+		27EF7FEF1914296D00A327B9 /* stem_UTF_8_spanish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_spanish.c; sourceTree = "<group>"; };
+		27EF7FF01914296D00A327B9 /* stem_UTF_8_spanish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_spanish.h; sourceTree = "<group>"; };
+		27EF7FF11914296D00A327B9 /* stem_UTF_8_swedish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_swedish.c; sourceTree = "<group>"; };
+		27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_swedish.h; sourceTree = "<group>"; };
+		27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = stem_UTF_8_turkish.c; sourceTree = "<group>"; };
+		27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stem_UTF_8_turkish.h; sourceTree = "<group>"; };
+		27EF7FF71914296D00A327B9 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		27EF80BE19142E6600A327B9 /* CBTextTokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBTextTokenizer.h; sourceTree = "<group>"; };
+		27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBTextTokenizer.m; sourceTree = "<group>"; };
+		27EF80C4191438AD00A327B9 /* Tokenizer_Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Tokenizer_Tests.m; sourceTree = "<group>"; };
+		27EF80C7191445CF00A327B9 /* english_stopwords.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = english_stopwords.h; sourceTree = "<group>"; };
 		27FDFC0018EA58BF00AC4647 /* varint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = varint.c; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = varint.h; sourceTree = "<group>"; };
 		27FDFC0418EB803F00AC4647 /* CBForestIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBForestIndex.h; sourceTree = "<group>"; };
@@ -368,6 +538,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27EF80BD19142D1D00A327B9 /* libTokenizer.a in Frameworks */,
 				27139B5118F8EB670021A9A3 /* libforestdb.a in Frameworks */,
 				27139B5018F8EB630021A9A3 /* Foundation.framework in Frameworks */,
 			);
@@ -417,6 +588,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27EF807119142C2500A327B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -456,6 +634,7 @@
 				2750724018E3E52800A80C5A /* CBForest */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
 				273AD3D018F5E8B0007D8C23 /* snappy */,
+				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
@@ -471,6 +650,7 @@
 				27139B9018F8EDA20021A9A3 /* libforestdb.a */,
 				27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */,
 				27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */,
+				27EF807419142C2500A327B9 /* libTokenizer.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -516,6 +696,9 @@
 				27FDFC0218EA58DA00AC4647 /* varint.h */,
 				2704A1E41905FAA700138320 /* slice.c */,
 				2704A1E219049E2300138320 /* slice.h */,
+				27EF80BE19142E6600A327B9 /* CBTextTokenizer.h */,
+				27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */,
+				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -617,6 +800,7 @@
 				27FDFC0818EC584500AC4647 /* Index_Tests.m */,
 				273AD3C918F32DC3007D8C23 /* MapReduce_Tests.m */,
 				273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */,
+				27EF80C4191438AD00A327B9 /* Tokenizer_Tests.m */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
 			);
 			path = "CBForest Tests";
@@ -654,6 +838,132 @@
 			path = utils;
 			sourceTree = "<group>";
 		};
+		27EF7FAB1914296D00A327B9 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FAA1914296D00A327B9 /* libstemmer.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		27EF7FB01914296D00A327B9 /* libstemmer */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FAC1914296D00A327B9 /* libstemmer_c.in */,
+				27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */,
+				27EF7FAE1914296D00A327B9 /* modules_utf8.h */,
+				27EF7FAF1914296D00A327B9 /* modules_utf8.txt */,
+			);
+			path = libstemmer;
+			sourceTree = "<group>";
+		};
+		27EF7FB61914296D00A327B9 /* runtime */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FB21914296D00A327B9 /* api.h */,
+				27EF7FB31914296D00A327B9 /* api_sq3.c */,
+				27EF7FB41914296D00A327B9 /* header.h */,
+				27EF7FB51914296D00A327B9 /* utilities_sq3.c */,
+			);
+			path = runtime;
+			sourceTree = "<group>";
+		};
+		27EF7FF51914296D00A327B9 /* src_c */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FB71914296D00A327B9 /* stem_ISO_8859_1_danish.c */,
+				27EF7FB81914296D00A327B9 /* stem_ISO_8859_1_danish.h */,
+				27EF7FB91914296D00A327B9 /* stem_ISO_8859_1_dutch.c */,
+				27EF7FBA1914296D00A327B9 /* stem_ISO_8859_1_dutch.h */,
+				27EF7FBB1914296D00A327B9 /* stem_ISO_8859_1_english.c */,
+				27EF7FBC1914296D00A327B9 /* stem_ISO_8859_1_english.h */,
+				27EF7FBD1914296D00A327B9 /* stem_ISO_8859_1_finnish.c */,
+				27EF7FBE1914296D00A327B9 /* stem_ISO_8859_1_finnish.h */,
+				27EF7FBF1914296D00A327B9 /* stem_ISO_8859_1_french.c */,
+				27EF7FC01914296D00A327B9 /* stem_ISO_8859_1_french.h */,
+				27EF7FC11914296D00A327B9 /* stem_ISO_8859_1_german.c */,
+				27EF7FC21914296D00A327B9 /* stem_ISO_8859_1_german.h */,
+				27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */,
+				27EF7FC41914296D00A327B9 /* stem_ISO_8859_1_hungarian.h */,
+				27EF7FC51914296D00A327B9 /* stem_ISO_8859_1_italian.c */,
+				27EF7FC61914296D00A327B9 /* stem_ISO_8859_1_italian.h */,
+				27EF7FC71914296D00A327B9 /* stem_ISO_8859_1_norwegian.c */,
+				27EF7FC81914296D00A327B9 /* stem_ISO_8859_1_norwegian.h */,
+				27EF7FC91914296D00A327B9 /* stem_ISO_8859_1_porter.c */,
+				27EF7FCA1914296D00A327B9 /* stem_ISO_8859_1_porter.h */,
+				27EF7FCB1914296D00A327B9 /* stem_ISO_8859_1_portuguese.c */,
+				27EF7FCC1914296D00A327B9 /* stem_ISO_8859_1_portuguese.h */,
+				27EF7FCD1914296D00A327B9 /* stem_ISO_8859_1_spanish.c */,
+				27EF7FCE1914296D00A327B9 /* stem_ISO_8859_1_spanish.h */,
+				27EF7FCF1914296D00A327B9 /* stem_ISO_8859_1_swedish.c */,
+				27EF7FD01914296D00A327B9 /* stem_ISO_8859_1_swedish.h */,
+				27EF7FD11914296D00A327B9 /* stem_ISO_8859_2_romanian.c */,
+				27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */,
+				27EF7FD31914296D00A327B9 /* stem_KOI8_R_russian.c */,
+				27EF7FD41914296D00A327B9 /* stem_KOI8_R_russian.h */,
+				27EF7FD51914296D00A327B9 /* stem_UTF_8_danish.c */,
+				27EF7FD61914296D00A327B9 /* stem_UTF_8_danish.h */,
+				27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */,
+				27EF7FD81914296D00A327B9 /* stem_UTF_8_dutch.h */,
+				27EF7FD91914296D00A327B9 /* stem_UTF_8_english.c */,
+				27EF7FDA1914296D00A327B9 /* stem_UTF_8_english.h */,
+				27EF7FDB1914296D00A327B9 /* stem_UTF_8_finnish.c */,
+				27EF7FDC1914296D00A327B9 /* stem_UTF_8_finnish.h */,
+				27EF7FDD1914296D00A327B9 /* stem_UTF_8_french.c */,
+				27EF7FDE1914296D00A327B9 /* stem_UTF_8_french.h */,
+				27EF7FDF1914296D00A327B9 /* stem_UTF_8_german.c */,
+				27EF7FE01914296D00A327B9 /* stem_UTF_8_german.h */,
+				27EF7FE11914296D00A327B9 /* stem_UTF_8_hungarian.c */,
+				27EF7FE21914296D00A327B9 /* stem_UTF_8_hungarian.h */,
+				27EF7FE31914296D00A327B9 /* stem_UTF_8_italian.c */,
+				27EF7FE41914296D00A327B9 /* stem_UTF_8_italian.h */,
+				27EF7FE51914296D00A327B9 /* stem_UTF_8_norwegian.c */,
+				27EF7FE61914296D00A327B9 /* stem_UTF_8_norwegian.h */,
+				27EF7FE71914296D00A327B9 /* stem_UTF_8_porter.c */,
+				27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */,
+				27EF7FE91914296D00A327B9 /* stem_UTF_8_portuguese.c */,
+				27EF7FEA1914296D00A327B9 /* stem_UTF_8_portuguese.h */,
+				27EF7FEB1914296D00A327B9 /* stem_UTF_8_romanian.c */,
+				27EF7FEC1914296D00A327B9 /* stem_UTF_8_romanian.h */,
+				27EF7FED1914296D00A327B9 /* stem_UTF_8_russian.c */,
+				27EF7FEE1914296D00A327B9 /* stem_UTF_8_russian.h */,
+				27EF7FEF1914296D00A327B9 /* stem_UTF_8_spanish.c */,
+				27EF7FF01914296D00A327B9 /* stem_UTF_8_spanish.h */,
+				27EF7FF11914296D00A327B9 /* stem_UTF_8_swedish.c */,
+				27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */,
+				27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */,
+				27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */,
+			);
+			path = src_c;
+			sourceTree = "<group>";
+		};
+		27EF7FF61914296D00A327B9 /* libstemmer_c */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FAB1914296D00A327B9 /* include */,
+				27EF7FB01914296D00A327B9 /* libstemmer */,
+				27EF7FB11914296D00A327B9 /* README */,
+				27EF7FB61914296D00A327B9 /* runtime */,
+				27EF7FF51914296D00A327B9 /* src_c */,
+			);
+			path = libstemmer_c;
+			sourceTree = "<group>";
+		};
+		27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */ = {
+			isa = PBXGroup;
+			children = (
+				27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */,
+				27EF7FA61914296D00A327B9 /* fts3_unicode2.c */,
+				27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */,
+				27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */,
+				27EF7FA91914296D00A327B9 /* fts3Int.h */,
+				27EF7FF61914296D00A327B9 /* libstemmer_c */,
+				27EF7FF71914296D00A327B9 /* README */,
+			);
+			name = "sqlite3-unicodesn";
+			path = "vendor/sqlite3-unicodesn";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -661,14 +971,19 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27EF80061914296D00A327B9 /* modules_utf8.h in Headers */,
 				27139B5718F8EB820021A9A3 /* CBForestMapReduceIndex.h in Headers */,
 				27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */,
 				27139B5418F8EB820021A9A3 /* CBForestDocument.h in Headers */,
+				27EF80011914296D00A327B9 /* fts3Int.h in Headers */,
+				27EF7FFB1914296D00A327B9 /* fts3_tokenizer.h in Headers */,
 				27139B5818F8EB8A0021A9A3 /* CBForestPrivate.h in Headers */,
 				27139B5518F8EB820021A9A3 /* CBForestVersions.h in Headers */,
 				27139B5318F8EB820021A9A3 /* CBForestDB.h in Headers */,
 				27139B5218F8EB820021A9A3 /* CBForest.h in Headers */,
 				27139B5618F8EB820021A9A3 /* CBForestIndex.h in Headers */,
+				27EF80021914296D00A327B9 /* libstemmer.h in Headers */,
+				27EF80001914296D00A327B9 /* fts3_unicodesn.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -728,6 +1043,45 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27EF807219142C2500A327B9 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27EF80B419142C9900A327B9 /* stem_UTF_8_russian.h in Headers */,
+				27EF808C19142C9900A327B9 /* stem_ISO_8859_1_italian.h in Headers */,
+				27EF808E19142C9900A327B9 /* stem_ISO_8859_1_norwegian.h in Headers */,
+				27EF808019142C9900A327B9 /* stem_ISO_8859_1_dutch.h in Headers */,
+				27EF80B019142C9900A327B9 /* stem_UTF_8_portuguese.h in Headers */,
+				27EF808A19142C9900A327B9 /* stem_ISO_8859_1_hungarian.h in Headers */,
+				27EF809219142C9900A327B9 /* stem_ISO_8859_1_portuguese.h in Headers */,
+				27EF80A019142C9900A327B9 /* stem_UTF_8_english.h in Headers */,
+				27EF808619142C9900A327B9 /* stem_ISO_8859_1_french.h in Headers */,
+				27EF80AA19142C9900A327B9 /* stem_UTF_8_italian.h in Headers */,
+				27EF80A619142C9900A327B9 /* stem_UTF_8_german.h in Headers */,
+				27EF80B219142C9900A327B9 /* stem_UTF_8_romanian.h in Headers */,
+				27EF80C019142E6600A327B9 /* CBTextTokenizer.h in Headers */,
+				27EF80B819142C9900A327B9 /* stem_UTF_8_swedish.h in Headers */,
+				27EF80A819142C9900A327B9 /* stem_UTF_8_hungarian.h in Headers */,
+				27EF809A19142C9900A327B9 /* stem_KOI8_R_russian.h in Headers */,
+				27EF80AC19142C9900A327B9 /* stem_UTF_8_norwegian.h in Headers */,
+				27EF80A219142C9900A327B9 /* stem_UTF_8_finnish.h in Headers */,
+				27EF809E19142C9900A327B9 /* stem_UTF_8_dutch.h in Headers */,
+				27EF808419142C9900A327B9 /* stem_ISO_8859_1_finnish.h in Headers */,
+				27EF808819142C9900A327B9 /* stem_ISO_8859_1_german.h in Headers */,
+				27EF809419142C9900A327B9 /* stem_ISO_8859_1_spanish.h in Headers */,
+				27EF807E19142C9900A327B9 /* stem_ISO_8859_1_danish.h in Headers */,
+				27EF808219142C9900A327B9 /* stem_ISO_8859_1_english.h in Headers */,
+				27EF809619142C9900A327B9 /* stem_ISO_8859_1_swedish.h in Headers */,
+				27EF80A419142C9900A327B9 /* stem_UTF_8_french.h in Headers */,
+				27EF809C19142C9900A327B9 /* stem_UTF_8_danish.h in Headers */,
+				27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */,
+				27EF80B619142C9900A327B9 /* stem_UTF_8_spanish.h in Headers */,
+				27EF809019142C9900A327B9 /* stem_ISO_8859_1_porter.h in Headers */,
+				27EF809819142C9900A327B9 /* stem_ISO_8859_2_romanian.h in Headers */,
+				27EF80AE19142C9900A327B9 /* stem_UTF_8_porter.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -744,6 +1098,7 @@
 			);
 			dependencies = (
 				27139B4518F8EB040021A9A3 /* PBXTargetDependency */,
+				27EF80BC19142D1300A327B9 /* PBXTargetDependency */,
 			);
 			name = CBForest;
 			productName = CBForest;
@@ -838,6 +1193,23 @@
 			productReference = 275072C318E4AA4400A80C5A /* libforestdb.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		27EF807319142C2500A327B9 /* Tokenizer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27EF807519142C2500A327B9 /* Build configuration list for PBXNativeTarget "Tokenizer" */;
+			buildPhases = (
+				27EF807019142C2500A327B9 /* Sources */,
+				27EF807119142C2500A327B9 /* Frameworks */,
+				27EF807219142C2500A327B9 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Tokenizer;
+			productName = Tokenizer;
+			productReference = 27EF807419142C2500A327B9 /* libTokenizer.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -851,7 +1223,7 @@
 						TestTargetID = 27139B1A18F8E9750021A9A3;
 					};
 					27139BA118F8EE3A0021A9A3 = {
-						TestTargetID = 27139B9418F8EE3A0021A9A3;
+						TestTargetID = 27139B1A18F8E9750021A9A3;
 					};
 				};
 			};
@@ -874,6 +1246,7 @@
 				275072C218E4AA4400A80C5A /* forestdb */,
 				27139B5A18F8EDA20021A9A3 /* forestdb iOS */,
 				27B7E0F118F8FB4700044EBA /* All */,
+				27EF807319142C2500A327B9 /* Tokenizer */,
 			);
 		};
 /* End PBXProject section */
@@ -883,6 +1256,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27EF806C1914296D00A327B9 /* README in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -918,6 +1292,7 @@
 				27139B4D18F8EB300021A9A3 /* rev_tree.c in Sources */,
 				27BAA292190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
 				27139B4E18F8EB300021A9A3 /* varint.c in Sources */,
+				27EF80C2191430B400A327B9 /* CBTextTokenizer.m in Sources */,
 				27139B4F18F8EB300021A9A3 /* forestdb_x.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -930,6 +1305,7 @@
 				27139BC618F8F6510021A9A3 /* RevTree_Tests.m in Sources */,
 				27139BC718F8F6510021A9A3 /* Versions_Tests.m in Sources */,
 				27139BC818F8F6510021A9A3 /* Index_Tests.m in Sources */,
+				27EF80C5191438AD00A327B9 /* Tokenizer_Tests.m in Sources */,
 				27139BC918F8F6510021A9A3 /* MapReduce_Tests.m in Sources */,
 				27139BCA18F8F6510021A9A3 /* CBCollatable_Tests.m in Sources */,
 			);
@@ -985,8 +1361,10 @@
 				27139BBF18F8EEBE0021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139BC018F8EEBE0021A9A3 /* CBCollatable.m in Sources */,
 				27139BC118F8EEBE0021A9A3 /* rev_tree.c in Sources */,
+				27EF80C9191445CF00A327B9 /* english_stopwords.h in Sources */,
 				27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.c in Sources */,
+				27EF80C3191430B500A327B9 /* CBTextTokenizer.m in Sources */,
 				27139BC318F8EEBE0021A9A3 /* forestdb_x.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -999,6 +1377,7 @@
 				27B7E0EC18F8FACB00044EBA /* RevTree_Tests.m in Sources */,
 				27B7E0ED18F8FACB00044EBA /* Versions_Tests.m in Sources */,
 				27B7E0EE18F8FACB00044EBA /* Index_Tests.m in Sources */,
+				27EF80C6191438AD00A327B9 /* Tokenizer_Tests.m in Sources */,
 				27B7E0EF18F8FACB00044EBA /* MapReduce_Tests.m in Sources */,
 				27B7E0F018F8FACB00044EBA /* CBCollatable_Tests.m in Sources */,
 			);
@@ -1041,6 +1420,49 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27EF807019142C2500A327B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27EF809D19142C9900A327B9 /* stem_UTF_8_dutch.c in Sources */,
+				27EF808919142C9900A327B9 /* stem_ISO_8859_1_hungarian.c in Sources */,
+				27EF80B719142C9900A327B9 /* stem_UTF_8_swedish.c in Sources */,
+				27EF807F19142C9900A327B9 /* stem_ISO_8859_1_dutch.c in Sources */,
+				27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */,
+				27EF809F19142C9900A327B9 /* stem_UTF_8_english.c in Sources */,
+				27EF808719142C9900A327B9 /* stem_ISO_8859_1_german.c in Sources */,
+				27EF80A319142C9900A327B9 /* stem_UTF_8_french.c in Sources */,
+				27EF807C19142C7E00A327B9 /* utilities_sq3.c in Sources */,
+				27EF80A919142C9900A327B9 /* stem_UTF_8_italian.c in Sources */,
+				27EF808D19142C9900A327B9 /* stem_ISO_8859_1_norwegian.c in Sources */,
+				27EF809919142C9900A327B9 /* stem_KOI8_R_russian.c in Sources */,
+				27EF80A119142C9900A327B9 /* stem_UTF_8_finnish.c in Sources */,
+				27EF808119142C9900A327B9 /* stem_ISO_8859_1_english.c in Sources */,
+				27EF809B19142C9900A327B9 /* stem_UTF_8_danish.c in Sources */,
+				27EF808319142C9900A327B9 /* stem_ISO_8859_1_finnish.c in Sources */,
+				27EF80AF19142C9900A327B9 /* stem_UTF_8_portuguese.c in Sources */,
+				27EF809519142C9900A327B9 /* stem_ISO_8859_1_swedish.c in Sources */,
+				27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */,
+				27EF80B319142C9900A327B9 /* stem_UTF_8_russian.c in Sources */,
+				27EF808519142C9900A327B9 /* stem_ISO_8859_1_french.c in Sources */,
+				27EF80A519142C9900A327B9 /* stem_UTF_8_german.c in Sources */,
+				27EF80AD19142C9900A327B9 /* stem_UTF_8_porter.c in Sources */,
+				27EF807D19142C9900A327B9 /* stem_ISO_8859_1_danish.c in Sources */,
+				27EF80AB19142C9900A327B9 /* stem_UTF_8_norwegian.c in Sources */,
+				27EF808B19142C9900A327B9 /* stem_ISO_8859_1_italian.c in Sources */,
+				27EF80B119142C9900A327B9 /* stem_UTF_8_romanian.c in Sources */,
+				27EF807B19142C7E00A327B9 /* api_sq3.c in Sources */,
+				27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */,
+				27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */,
+				27EF809319142C9900A327B9 /* stem_ISO_8859_1_spanish.c in Sources */,
+				27EF809719142C9900A327B9 /* stem_ISO_8859_2_romanian.c in Sources */,
+				27EF80A719142C9900A327B9 /* stem_UTF_8_hungarian.c in Sources */,
+				27EF808F19142C9900A327B9 /* stem_ISO_8859_1_porter.c in Sources */,
+				27EF80B519142C9900A327B9 /* stem_UTF_8_spanish.c in Sources */,
+				27EF809119142C9900A327B9 /* stem_ISO_8859_1_portuguese.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1073,6 +1495,11 @@
 			isa = PBXTargetDependency;
 			target = 27139B9418F8EE3A0021A9A3 /* CBForest-iOS */;
 			targetProxy = 27B7E0F718F8FB5700044EBA /* PBXContainerItemProxy */;
+		};
+		27EF80BC19142D1300A327B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF807319142C2500A327B9 /* Tokenizer */;
+			targetProxy = 27EF80BB19142D1300A327B9 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1136,6 +1563,7 @@
 		27139B4218F8E9750021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1149,6 +1577,7 @@
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1156,6 +1585,7 @@
 		27139B4318F8E9750021A9A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1165,6 +1595,7 @@
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
@@ -1266,6 +1697,7 @@
 		27139BB618F8EE3A0021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -1281,6 +1713,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1288,6 +1721,7 @@
 		27139BB718F8EE3A0021A9A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -1299,6 +1733,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUNDLE_LOADER)";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = xctest;
 			};
@@ -1458,6 +1893,44 @@
 			};
 			name = Release;
 		};
+		27EF807619142C2500A327B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_SHADOW = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				OTHER_CFLAGS = (
+					"-DDOC_COMP",
+					"-DSQLITE_ENABLE_FTS4_UNICODE61",
+					"-DSQLITE_ENABLE_FTS4",
+					"-DWITH_STEMMER_english",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		27EF807719142C2500A327B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_SHADOW = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				OTHER_CFLAGS = (
+					"-DDOC_COMP",
+					"-DSQLITE_ENABLE_FTS4_UNICODE61",
+					"-DSQLITE_ENABLE_FTS4",
+					"-DWITH_STEMMER_english",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1532,6 +2005,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		27EF807519142C2500A327B9 /* Build configuration list for PBXNativeTarget "Tokenizer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27EF807619142C2500A327B9 /* Debug */,
+				27EF807719142C2500A327B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 /* End XCConfigurationList section */
 	};

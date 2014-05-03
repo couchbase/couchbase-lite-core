@@ -128,6 +128,40 @@ void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data) {
 }
 
 
+
+
+// Calls the given block, passing it a UTF-8 encoded version of the given string.
+// The UTF-8 data can be safely modified by the block but isn't valid after the block exits.
+BOOL WithMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
+    NSUInteger byteCount;
+    if (str.length < 256) {
+        // First try to copy the UTF-8 into a smallish stack-based buffer:
+        uint8_t stackBuf[256];
+        NSRange remaining;
+        BOOL ok = [str getBytes: stackBuf maxLength: sizeof(stackBuf) usedLength: &byteCount
+                       encoding: NSUTF8StringEncoding options: 0
+                          range: NSMakeRange(0, str.length) remainingRange: &remaining];
+        if (ok && remaining.length == 0) {
+            block(stackBuf, byteCount);
+            return YES;
+        }
+    }
+
+    // Otherwise malloc a buffer to copy the UTF-8 into:
+    NSUInteger maxByteCount = [str maximumLengthOfBytesUsingEncoding: NSUTF8StringEncoding];
+    uint8_t* buf = malloc(maxByteCount);
+    if (!buf)
+        return NO;
+    BOOL ok = [str getBytes: buf maxLength: maxByteCount usedLength: &byteCount
+                   encoding: NSUTF8StringEncoding options: 0
+                      range: NSMakeRange(0, str.length) remainingRange: NULL];
+    if (ok)
+        block(buf, byteCount);
+    free(buf);
+    return ok;
+}
+
+
 #pragma mark - REVISION IDS:
 
 

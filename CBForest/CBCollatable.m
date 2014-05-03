@@ -52,7 +52,6 @@
 
 
 static NSComparisonResult compareCanonStrings( id s1, id s2, void *context);
-static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t));
 static uint8_t* getCharPriorityMap(void);
 static uint8_t* getInverseCharPriorityMap(void);
 
@@ -98,7 +97,7 @@ static void encodeNumber(NSNumber* number, NSMutableData* output) {
 
 static void encodeString(NSString* str, NSMutableData* output) {
     [output appendBytes: "\5" length: 1];
-    withMutableUTF8(str, ^(uint8_t *utf8, size_t length) {
+    WithMutableUTF8(str, ^(uint8_t *utf8, size_t length) {
         const uint8_t* priority = getCharPriorityMap();
         for (int i=0; i<length; i++)
             utf8[i] = priority[utf8[i]];
@@ -347,36 +346,4 @@ static uint8_t* getInverseCharPriorityMap(void) {
             kMap[priorityMap[i]] = (uint8_t)i;
     });
     return kMap;
-}
-
-
-// Calls the given block, passing it a UTF-8 encoded version of the given string.
-// The UTF-8 data can be safely modified by the block but isn't valid after the block exits.
-static BOOL withMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
-    NSUInteger byteCount;
-    if (str.length < 256) {
-        // First try to copy the UTF-8 into a smallish stack-based buffer:
-        uint8_t stackBuf[256];
-        NSRange remaining;
-        BOOL ok = [str getBytes: stackBuf maxLength: sizeof(stackBuf) usedLength: &byteCount
-                       encoding: NSUTF8StringEncoding options: 0
-                          range: NSMakeRange(0, str.length) remainingRange: &remaining];
-        if (ok && remaining.length == 0) {
-            block(stackBuf, byteCount);
-            return YES;
-        }
-    }
-
-    // Otherwise malloc a buffer to copy the UTF-8 into:
-    NSUInteger maxByteCount = [str maximumLengthOfBytesUsingEncoding: NSUTF8StringEncoding];
-    uint8_t* buf = malloc(maxByteCount);
-    if (!buf)
-        return NO;
-    BOOL ok = [str getBytes: buf maxLength: maxByteCount usedLength: &byteCount
-                   encoding: NSUTF8StringEncoding options: 0
-                      range: NSMakeRange(0, str.length) remainingRange: NULL];
-    if (ok)
-        block(buf, byteCount);
-        free(buf);
-        return ok;
 }
