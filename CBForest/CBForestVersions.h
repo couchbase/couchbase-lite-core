@@ -55,6 +55,8 @@ typedef enum {
 
 - (BOOL) isRevisionDeleted: (NSString*)revID;
 
+- (CBForestSequence) sequenceOfRevision: (NSString*)revID;
+
 /** Returns the data of the revision with the given ID, or nil if it's not found. */
 - (NSData*) dataOfRevision: (NSString*)revID;
 

@@ -20,7 +20,7 @@
 }
 
 
-@synthesize db=_db, bodyFileOffset=_bodyOffset;
+@synthesize db=_db;
 
 
 - (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID
@@ -42,7 +42,6 @@
 
 - (id) initWithDB: (CBForestDB*)store
              info: (const fdb_doc*)info
-           offset: (uint64_t)bodyOffset
           options: (CBForestContentOptions)options
             error: (NSError**)outError
 {
@@ -50,7 +49,6 @@
     if (self) {
         _db = store;
         _info = *info;
-        _bodyOffset = bodyOffset;
     }
     return self;
 }
@@ -91,6 +89,7 @@
 - (fdb_doc*) info                   {return &_info;}
 - (CBForestSequence) sequence       {return _info.seqnum;}
 - (BOOL) exists                     {return _info.seqnum != kCBForestNoSequence;}
+- (uint64_t) fileOffset             {return _info.offset;}
 
 
 - (NSData*) metadata {
@@ -103,20 +102,13 @@
 }
 
 - (BOOL) reload: (CBForestContentOptions)options error: (NSError **)outError {
-    uint64_t newBodyOffset = 0;
-    fdb_status status;
-    if (options & kCBForestDBMetaOnly)
-        status = [_db rawGetMeta: &_info offset: &newBodyOffset];
-    else
-        status = [_db rawGetBody: &_info byOffset: 0];
+    fdb_status status = [_db rawGet: &_info options: options];
     if (status == FDB_RESULT_KEY_NOT_FOUND) {
         _info.seqnum = kCBForestNoSequence;
-        newBodyOffset = 0;
     } else if (!Check(status, outError)) {
         return NO;
     }
     _metadata = nil; // forget old cached metadata
-    _bodyOffset = newBodyOffset;
     return YES;
 }
 
@@ -128,12 +120,12 @@
 
 - (NSData*) readBody: (NSError**)outError {
     if (_info.body == NULL) {
-        if (_bodyOffset == 0) {
+        if (_info.offset == 0) {
             if (![self reload: 0 error: outError])
                 return nil;
             _metadata = nil;
         } else {
-            if (!Check([_db rawGetBody: &_info byOffset: _bodyOffset], outError))
+            if (!Check([_db rawGet: &_info options: 0], outError))
                 return nil;
         }
     }
@@ -164,7 +156,7 @@
         _info.body = NULL;
         _info.bodylen = newDoc.bodylen;
         _info.seqnum = newDoc.seqnum;
-        _bodyOffset = 0; // don't know its new offset
+        _info.offset = newDoc.offset;
         return YES;
     }];
 }
@@ -176,7 +168,7 @@
     _info.deleted = true;
     if (![_db rawSet: &_info error: outError])
         return NO;
-    _bodyOffset = 0;
+    _info.offset = 0;
     _info.seqnum = kCBForestNoSequence;
     return YES;
 }

@@ -53,8 +53,8 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
         error: (NSError**)outError;
 - (void) beginTransaction;
 - (BOOL) endTransaction: (NSError**)outError;
-- (fdb_status) rawGetMeta: (fdb_doc*)doc offset: (uint64_t*)outOffset;
-- (fdb_status) rawGetBody: (fdb_doc*)doc byOffset: (uint64_t)offset;
+- (fdb_status) rawGet: (fdb_doc*)doc
+              options: (CBForestContentOptions)options;
 - (BOOL) rawSet: (fdb_doc*)doc error: (NSError**)outError;
 - (NSEnumerator*) enumerateDocsFromKey: (NSData*)startKey
                                  toKey: (NSData*)endKey
@@ -67,13 +67,12 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 - (id) initWithDB: (CBForestDB*)store docID: (NSString*)docID;
 - (id) initWithDB: (CBForestDB*)store
              info: (const fdb_doc*)info
-           offset: (uint64_t)bodyOffset
           options: (CBForestContentOptions)options
             error: (NSError**)outError;
 @property (readonly) slice rawID;
 @property (readonly) slice rawMeta;
 @property (readonly) fdb_doc* info;
-@property (readonly) uint64_t bodyFileOffset;
+@property (readonly) uint64_t fileOffset;
 + (BOOL) docInfo: (const fdb_doc*)docInfo
   matchesOptions: (const CBForestEnumerationOptions*)options;
 @end

@@ -394,8 +394,7 @@ static NSDictionary* mkConfig(id value) {
             status = fdb_get(self.handle, &doc);
             *value = SliceToAdoptingData(doc.body, doc.bodylen);
         } else {
-            uint64_t offset;
-            status = fdb_get_metaonly(self.handle, &doc, &offset);
+            status = fdb_get_metaonly(self.handle, &doc);
         }
     });
     if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
@@ -409,12 +408,17 @@ static NSDictionary* mkConfig(id value) {
 
 
 // Used only by CBForestDocument
-- (fdb_status) rawGetMeta: (fdb_doc*)doc offset: (uint64_t*)outOffset {
-    return ONQUEUE(fdb_get_metaonly(self.handle, doc, outOffset));
-}
-
-- (fdb_status) rawGetBody: (fdb_doc*)doc byOffset: (uint64_t)offset {
-    return ONQUEUE(offset ? fdb_get_byoffset(self.handle, doc, offset) : fdb_get(self.handle, doc));
+- (fdb_status) rawGet: (fdb_doc*)doc options: (CBForestContentOptions)options {
+    __block fdb_status status;
+    dispatch_sync(_queue, ^{
+        if (options & kCBForestDBMetaOnly)
+            status = fdb_get_metaonly(self.handle, doc);
+        else if (doc->offset)
+            status = fdb_get_byoffset(self.handle, doc);
+        else
+            status = fdb_get(self.handle, doc);
+    });
+    return status;
 }
 
 
@@ -423,8 +427,7 @@ static NSDictionary* mkConfig(id value) {
         .key = (void*)key.bytes,
         .keylen = key.length,
     };
-    __block uint64_t offset;
-    BOOL result = CHECK_ONQUEUE(fdb_get_metaonly(self.handle, &doc, &offset), NULL);
+    BOOL result = CHECK_ONQUEUE(fdb_get_metaonly(self.handle, &doc), NULL);
     free(doc.meta);
     return result;
 }
@@ -435,8 +438,7 @@ static NSDictionary* mkConfig(id value) {
         __block fdb_doc doc = {.seqnum = sequence};
         __block fdb_status status;
         dispatch_sync(_queue, ^{
-            uint64_t bodyOffset;
-            status = fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset);
+            status = fdb_get_metaonly_byseq(self.handle, &doc);
             if (status == FDB_RESULT_SUCCESS) {
                 doc.body = doc.meta = NULL;
                 doc.bodylen = doc.metalen = 0;
@@ -479,12 +481,13 @@ static NSDictionary* mkConfig(id value) {
     __block fdb_doc doc = {
         .seqnum = sequence
     };
-    __block uint64_t bodyOffset = 0;
-    if (!CHECK_ONQUEUE(fdb_get_metaonly_byseq(self.handle, &doc, &bodyOffset), outError))
+    BOOL metaOnly = (options & kCBForestDBMetaOnly) != 0;
+    if (!CHECK_ONQUEUE(metaOnly ? fdb_get_metaonly_byseq(self.handle, &doc)
+                                : fdb_get_byseq(self.handle, &doc),
+                       outError))
         return nil;
     return [[_documentClass alloc] initWithDB: self
                                          info: &doc
-                                       offset: bodyOffset
                                       options: options
                                         error: outError];
 }
@@ -592,16 +595,6 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
 }
 
 
-static fdb_status my_iterator_next(fdb_iterator *iterator, fdb_handle *handle,
-                                   fdb_doc **docinfo, uint64_t *bodyOffset)
-{
-    fdb_status status = fdb_iterator_next_offset(iterator, docinfo, bodyOffset);
-    if (status == FDB_RESULT_SUCCESS && handle != NULL)
-        status = fdb_get_byoffset(handle, *docinfo, *bodyOffset);
-    return status;
-}
-
-
 - (NSEnumerator*) enumeratorForIterator: (fdb_iterator*)iterator
                                 options: (const CBForestEnumerationOptions*)optionsP
                                  endKey: (NSData*)endKey
@@ -617,10 +610,8 @@ static fdb_status my_iterator_next(fdb_iterator *iterator, fdb_handle *handle,
         do {
             // Get a fdb_doc from ForestDB:
             __block fdb_doc *docinfo;
-            __block uint64_t bodyOffset;
-            fdb_status status = ONQUEUE(my_iterator_next(iterator,
-                                                         (metaOnly ? NULL : _db),
-                                                         &docinfo, &bodyOffset));
+            fdb_status status = ONQUEUE(metaOnly ? fdb_iterator_next_metaonly(iterator, &docinfo)
+                                                 : fdb_iterator_next(iterator, &docinfo));
             if (status != FDB_RESULT_SUCCESS)
                 break;
 
@@ -641,7 +632,6 @@ static fdb_status my_iterator_next(fdb_iterator *iterator, fdb_handle *handle,
                 // Whew! Finally found a doc to return...
                 result = [[_documentClass alloc] initWithDB: self
                                                        info: docinfo
-                                                     offset: bodyOffset
                                                     options: options.contentOptions
                                                       error: NULL];
                 free(docinfo);

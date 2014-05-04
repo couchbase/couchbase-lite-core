@@ -41,11 +41,10 @@
 
 - (id) initWithDB: (CBForestDB*)store
              info: (const fdb_doc*)info
-           offset: (uint64_t)bodyOffset
           options: (CBForestContentOptions)options
             error:(NSError**)outError
 {
-    self = [super initWithDB: store info: info offset: bodyOffset options: options error: outError];
+    self = [super initWithDB: store info: info options: options error: outError];
     if (self) {
         _maxDepth = kDefaultMaxDepth;
         [self readFlags];
@@ -62,8 +61,8 @@
     _rawTree = [super readBody: outError];
     if (!_rawTree)
         return NO;
-    NSAssert(self.bodyFileOffset > 0, @"Body offset unknown");
-    RevTree* tree = RevTreeDecode(DataToSlice(_rawTree), 1, self.sequence, self.bodyFileOffset);
+    NSAssert(self.fileOffset > 0, @"Doc offset unknown");
+    RevTree* tree = RevTreeDecode(DataToSlice(_rawTree), 1, self.sequence, self.fileOffset);
     if (!tree) {
         if (outError)
             *outError = [NSError errorWithDomain: CBForestErrorDomain
@@ -133,7 +132,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         return NO;
     else if ((options & kCBForestDBMetaOnly) || _tree)
         return YES;
-    else if (self.bodyFileOffset > 0)
+    else if (self.fileOffset > 0)
         return [self readTree: outError];
     else if (options & kCBForestDBCreate) {
         _tree = RevTreeNew(1);
@@ -207,8 +206,11 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 #ifdef REVTREE_USES_FILE_OFFSETS
     else if (node->oldBodyOffset > 0) {
         // Look up old document from the saved oldBodyOffset:
-        fdb_doc doc = {.seqnum = node->sequence};
-        if (!Check([self.db rawGetBody: &doc byOffset: node->oldBodyOffset], outError))
+        fdb_doc doc = {
+            .seqnum = node->sequence,
+            .offset = node->oldBodyOffset
+        };
+        if (!Check([self.db rawGet: &doc options: 0], outError))
             return nil; // This will happen if the old doc body was lost by compaction.
         RevTree* oldTree = RevTreeDecode((slice){doc.body, doc.bodylen}, 0, 0, 0);
         if (oldTree) {
@@ -261,6 +263,15 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         return nil;
     const RevNode* parent = RevTreeGetNode(_tree, node->parentIndex);
     return ExpandRevID(parent->revID);
+}
+
+- (CBForestSequence) sequenceOfRevision: (NSString*)revID {
+    if (!_tree) {
+        NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
+        return self.sequence;
+    }
+    const RevNode* node = [self nodeWithID: revID];
+    return node ? node->sequence : kCBForestNoSequence;
 }
 
 - (BOOL) hasConflicts {
