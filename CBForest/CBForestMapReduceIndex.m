@@ -106,6 +106,8 @@
         .includeDeleted = YES, // we need to scan deleted docs to remove any old emitted rows
     };
 
+    CBTextTokenizer* tokenizer = _textTokenizer;
+
 #ifdef MAP_PARALLELISM
     dispatch_semaphore_t mapCounter = dispatch_semaphore_create(MAX(MAP_PARALLELISM, CPUCount()/2));
     dispatch_group_t mapGroup = dispatch_group_create();
@@ -132,11 +134,13 @@
 #endif
                         __block NSMutableArray *keys = nil, *values = nil;
                         CBForestIndexEmitBlock emit = ^(id key, id value) {
+                            if (!key)
+                                return;
                             if (!value)
                                 value = kCBForestIndexNoValue;
-                            if (_textTokenizer && [key isKindOfClass: [NSString class]]) {
+                            if (tokenizer && [key isKindOfClass: [NSString class]]) {
                                 // Full-text indexing:
-                                NSArray* words = [_textTokenizer tokenize: (NSString*)key].allObjects;
+                                NSArray* words = [tokenizer tokenize: (NSString*)key].allObjects;
                                 if (keys) {
                                     [keys addObjectsFromArray: words];
                                 } else {
