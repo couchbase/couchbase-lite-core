@@ -11,7 +11,7 @@
 
 /** Breaks Unicode text into words and "stems" them (removes tense-specific parts) for indexing.
     This class is thread-safe. */
-@interface CBTextTokenizer : NSObject
+@interface CBTextTokenizer : NSObject <NSCopying>
 
 /** Initializes based on the current locale's language. */
 - (instancetype) init;
@@ -25,6 +25,9 @@
 
 /** A set of words that should be ignored and not returned by the tokenizer. */
 @property (copy) NSSet* stopWords;
+
+/** A string containing extra characters that should be considered parts of words. */
+@property (copy) NSString* tokenCharacters;
 
 /** Tokenizes a string, calling the onToken block once for each non-stopword.
     The first parameter of the block is the token, which will have been stemmed if the language is

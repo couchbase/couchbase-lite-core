@@ -22,6 +22,7 @@ typedef void (^CBForestIndexMapBlock)(CBForestDocument* doc,
 @property CBForestDB* sourceDatabase;
 @property (copy) CBForestIndexMapBlock map;
 @property (nonatomic, copy) NSString* mapVersion;
+@property (nonatomic) int indexType;
 
 @property (readonly) CBForestSequence lastSequenceIndexed;
 

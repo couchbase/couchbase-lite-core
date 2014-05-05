@@ -66,4 +66,11 @@
                           (@[@"typograph", @"quot", @"option"]));
 }
 
+- (void) testTokenCharacters {
+    tokenizer = [[CBTextTokenizer alloc] initWithLanguage: @"en" removeDiacritics: YES];
+    tokenizer.tokenCharacters = @"*";
+    XCTAssertEqualObjects(([self tokenize: @"foo bar* baz"]),
+                          (@[@"foo", @"bar*", @"baz"]));
+}
+
 @end

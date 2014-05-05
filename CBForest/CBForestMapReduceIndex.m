@@ -22,7 +22,7 @@
     NSString* _lastMapVersion;
 }
 
-@synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion,
+@synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion, indexType=_indexType,
             textTokenizer=_textTokenizer, lastSequenceIndexed=_lastSequenceIndexed;
 
 
@@ -43,6 +43,7 @@
             NSDictionary* state = DataToJSON(stateData, NULL);
             _lastSequenceIndexed = [state[@"lastSequence"] unsignedLongLongValue];
             _lastMapVersion = state[@"mapVersion"];
+            _indexType = [state[@"type"] intValue];
         }
     }
     return self;
@@ -52,6 +53,7 @@
 - (BOOL) saveState: (NSError**)outError {
     NSMutableDictionary* state = [NSMutableDictionary dictionary];
     state[@"lastSequence"] = @(_lastSequenceIndexed);
+    state[@"type"] = @(_indexType);
     if (_mapVersion)
         state[@"mapVersion"] = _lastMapVersion;
     NSData* stateData = JSONToData(state, NULL);
@@ -61,11 +63,25 @@
 }
 
 
+- (BOOL) erase:(NSError *__autoreleasing *)outError {
+    _lastSequenceIndexed = 0;
+    return [super erase: outError];
+}
+
+
+- (void) setIndexType:(int)indexType {
+    if (indexType != _indexType) {
+        _indexType = indexType;
+        [self erase: NULL];
+        [self saveState: NULL];
+    }
+}
+
+
 - (void) setMapVersion:(NSString *)mapVersion {
     _mapVersion = mapVersion.copy;
     if (_lastMapVersion && ![_lastMapVersion isEqualToString: _mapVersion]) {
         [self erase: NULL];
-        _lastSequenceIndexed = 0;
         _lastMapVersion = nil;
     }
 }
@@ -87,7 +103,7 @@
     CBForestSequence startSequence = _lastSequenceIndexed + 1;
 
     CBForestEnumerationOptions options = {
-        .includeDeleted = YES,
+        .includeDeleted = YES, // we need to scan deleted docs to remove any old emitted rows
     };
 
 #ifdef MAP_PARALLELISM
@@ -179,6 +195,7 @@
                                          error: (NSError**)outError
 {
     CBTextTokenizer* tok = [[CBTextTokenizer alloc] init];
+    tok.tokenCharacters = @"*";
     NSSet* keys = [tok tokenize: words];
     return [[CBForestQueryMultiKeyEnumerator alloc] initWithIndex: self
                                                              keys: keys.allObjects

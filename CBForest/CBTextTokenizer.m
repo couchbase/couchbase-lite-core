@@ -26,7 +26,7 @@ SQLITE_API void sqlite3_free(void* ptr)                 {free(ptr);}
     NSMutableArray* _tokenizers;
 }
 
-@synthesize stopWords=_stopWords;
+@synthesize stopWords=_stopWords, tokenCharacters=_tokenCharacters;
 
 
 static const sqlite3_tokenizer_module* sModule;
@@ -80,6 +80,16 @@ static NSDictionary* sLanguageToStopWords;
 }
 
 
+- (instancetype) copyWithZone: (NSZone*)zone {
+    CBTextTokenizer* tok = [[[self class] alloc] initWithLanguage: nil
+                                                 removeDiacritics: _removeDiacritics];
+    tok->_stemmer = _stemmer;
+    tok.stopWords = _stopWords;
+    tok.tokenCharacters = _tokenCharacters;
+    return tok;
+}
+
+
 - (void) dealloc {
     for (NSValue* v in _tokenizers)
         [self freeTokenizer: v.pointerValue];
@@ -93,6 +103,8 @@ static NSDictionary* sLanguageToStopWords;
         argv[argc++] = "remove_diacritics=0";
     if (_stemmer)
         argv[argc++] = [[NSString stringWithFormat: @"stemmer=%@", _stemmer] UTF8String];
+    if (_tokenCharacters)
+        argv[argc++] = [[NSString stringWithFormat: @"tokenchars=%@", _tokenCharacters] UTF8String];
     sqlite3_tokenizer* tokenizer;
     int err = sModule->xCreate(argc, argv, &tokenizer);
     return err ? NULL : tokenizer;
@@ -157,7 +169,7 @@ static NSDictionary* sLanguageToStopWords;
         sModule->xClose(cursor);
     });
     [self returnTokenizer: tokenizer];
-    return (err == 0);
+    return (err == SQLITE_OK);
 }
 
 

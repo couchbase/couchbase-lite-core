@@ -16,6 +16,10 @@
 id kCBForestIndexNoValue;
 
 
+static BOOL parseKey(CBForestDocument* doc,
+                     id* key, NSString** docID, CBForestSequence* sequence);
+
+
 @implementation CBForestIndex
 
 
@@ -118,19 +122,29 @@ id kCBForestIndexNoValue;
 }
 
 
-@end
-
-
-
-static void parseKey(CBForestDocument* doc,
-                     id* key, NSString** docID, CBForestSequence* sequence)
-{
-    slice indexKey = doc.rawID;
-    CBCollatableReadNext(&indexKey, NO, key); // array marker
-    CBCollatableReadNext(&indexKey, YES, key);
-    CBCollatableReadNext(&indexKey, NO, docID);
-    CBCollatableReadNextNumber(&indexKey, (int64_t*)sequence);
+- (NSString*) dump {
+    NSMutableString* dump = [NSMutableString stringWithCapacity: 1000];
+    NSEnumerator* e = [self enumerateDocsFromID: nil toID: nil options: 0 error: NULL];
+    for (CBForestDocument* doc in e) {
+        id key;
+        NSString *docID;
+        CBForestSequence sequence;
+        if (!parseKey(doc, &key, &docID, &sequence))
+            continue;
+        NSData* json = JSONToData(key, NULL);
+        NSString* keyStr = [[NSString alloc] initWithData: json encoding: NSUTF8StringEncoding];
+        json = [doc readBody: NULL];
+        NSString* valueStr = @"";
+        if (json)
+            valueStr = [[NSString alloc] initWithData: json encoding: NSUTF8StringEncoding];
+        [dump appendFormat: @"\t%@ -> %@ (doc \"%@\", seq %llu)\n",
+                             keyStr, valueStr, docID, sequence];
+    }
+    return dump;
 }
+
+
+@end
 
 
 
@@ -303,10 +317,15 @@ static NSString* nextObjectDocID(NSEnumerator* e) {
         _curDocIDs = [NSMutableArray arrayWithCapacity: keys.count];
         _enumerators = [NSMutableArray arrayWithCapacity: keys.count];
         // Build the parallel arrays of enumerators and their current docIDs:
-        for (id key in keys) {
+        for (NSString* key in keys) {
             // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
-            NSEnumerator* e = [index enumerateDocsFromKey: CBCreateCollatable(@[key])
-                                                    toKey: CBCreateCollatable(@[key, @{}])
+            NSString *key1 = key, *key2 = key;
+            if ([key hasSuffix: @"*"]) {
+                key1 = [key substringToIndex: key.length-1];
+                key2 = [key1 stringByAppendingString: @"\uFFFE"];//FIX
+            }
+            NSEnumerator* e = [index enumerateDocsFromKey: CBCreateCollatable(@[key1])
+                                                    toKey: CBCreateCollatable(@[key2, @{}])
                                                   options: NULL
                                                     error: outError];
             if (!e)
@@ -366,3 +385,18 @@ static NSString* nextObjectDocID(NSEnumerator* e) {
 }
 
 @end
+
+
+
+
+static BOOL parseKey(CBForestDocument* doc,
+                     id* key, NSString** docID, CBForestSequence* sequence)
+{
+    slice indexKey = doc.rawID;
+    if (CBCollatableReadNext(&indexKey, NO, key) != kArrayType)
+        return NO;
+    CBCollatableReadNext(&indexKey, YES, key);
+    CBCollatableReadNext(&indexKey, NO, docID);
+    CBCollatableReadNextNumber(&indexKey, (int64_t*)sequence);
+    return YES;
+}

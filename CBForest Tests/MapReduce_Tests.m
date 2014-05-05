@@ -224,6 +224,9 @@
     NSError* error;
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
 
+    NSLog(@"View dump:\n%@", index.dump);
+
+    // Query with a regular enumerator, looking at the keys/tokens:
     NSMutableArray* docs = [NSMutableArray array];
     CBForestQueryEnumerator* e;
     e = [[CBForestQueryEnumerator alloc] initWithIndex: index
@@ -241,6 +244,7 @@
     }
     XCTAssertEqualObjects(docs, (@[@"line-1", @"line-2", @"line-3", @"line-4", @"line-7"]));
 
+    // Query with the special multi-word enumerator:
     CBForestQueryMultiKeyEnumerator* ie;
     ie = [[CBForestQueryMultiKeyEnumerator alloc] initWithIndex: index
                                                            keys: @[@"fear", @"face"]
@@ -249,12 +253,20 @@
     XCTAssert(ie, @"Couldn't create query enumerator: %@", error);
     XCTAssertEqualObjects(ie.allObjects, @[@"line-4"]);
 
+    // Query with -enumerateDocsContainingWords:
     NSEnumerator* ee = [index enumerateDocsContainingWords: @"the fears bring" all: YES error: &error];
     XCTAssert(ee, @"Couldn't create word enumerator: %@", error);
     docs = [NSMutableArray array];
     for (CBForestDocument* doc in ee)
         [docs addObject: doc];
     XCTAssertEqualObjects(docs, (@[@"line-3"]));
+
+    ee = [index enumerateDocsContainingWords: @"pas*" all: YES error: &error];
+    XCTAssert(ee, @"Couldn't create word enumerator: %@", error);
+    docs = [NSMutableArray array];
+    for (CBForestDocument* doc in ee)
+        [docs addObject: doc];
+    XCTAssertEqualObjects(docs, (@[@"line-5", @"line-6"]));
 }
 
 @end
