@@ -21,7 +21,9 @@ SQLITE_API void sqlite3_free(void* ptr)                 {free(ptr);}
 
 @implementation CBTextTokenizer
 {
-    sqlite3_tokenizer* _tokenizer;
+    NSString* _stemmer;
+    BOOL _removeDiacritics;
+    NSMutableArray* _tokenizers;
 }
 
 @synthesize stopWords=_stopWords;
@@ -68,40 +70,74 @@ static NSDictionary* sLanguageToStopWords;
 {
     self = [super init];
     if (self) {
-        NSString* stemmer = nil;
+        _removeDiacritics = removeDiacritics;
         if (language) {
-            stemmer = sLanguageToStemmer[language];
+            _stemmer = sLanguageToStemmer[language];
             _stopWords = sLanguageToStopWords[language];
         }
-        const char* argv[10] = {};
-        int argc = 0;
-        if (!removeDiacritics)
-            argv[argc++] = "remove_diacritics=0";
-        if (stemmer)
-            argv[argc++] = [[NSString stringWithFormat: @"stemmer=%@", stemmer] UTF8String];
-        int err = sModule->xCreate(argc, argv, &_tokenizer);
-        if (err)
-            return nil;
     }
     return self;
 }
 
 
-- (void)dealloc
-{
-    if (_tokenizer)
-        sModule->xDestroy(_tokenizer);
+- (void) dealloc {
+    for (NSValue* v in _tokenizers)
+        [self freeTokenizer: v.pointerValue];
+}
+
+
+- (sqlite3_tokenizer*) createTokenizer {
+    const char* argv[10];
+    int argc = 0;
+    if (!_removeDiacritics)
+        argv[argc++] = "remove_diacritics=0";
+    if (_stemmer)
+        argv[argc++] = [[NSString stringWithFormat: @"stemmer=%@", _stemmer] UTF8String];
+    sqlite3_tokenizer* tokenizer;
+    int err = sModule->xCreate(argc, argv, &tokenizer);
+    return err ? NULL : tokenizer;
+}
+
+- (void) freeTokenizer: (sqlite3_tokenizer*)tokenizer {
+    if (tokenizer)
+        sModule->xDestroy(tokenizer);
+}
+
+
+- (sqlite3_tokenizer*) getTokenizer {
+    @synchronized(self) {
+        if (_tokenizers.count > 0) {
+            sqlite3_tokenizer* tokenizer = [_tokenizers[0] pointerValue];
+            [_tokenizers removeObjectAtIndex: 0];
+            return tokenizer;
+        } else {
+            return [self createTokenizer];
+        }
+    }
+}
+
+- (void) returnTokenizer: (sqlite3_tokenizer*)tokenizer {
+    @synchronized(self) {
+        [_tokenizers addObject: [NSValue valueWithPointer: tokenizer]];
+    }
+}
+
+- (void) clearCache {
+    @synchronized(self) {
+        [_tokenizers removeAllObjects];
+    }
 }
 
 
 - (BOOL) tokenize: (NSString*)string onToken: (void (^)(NSString*,NSRange))onToken {
+    sqlite3_tokenizer* tokenizer = [self getTokenizer];
     __block int err = SQLITE_OK;
     WithMutableUTF8(string, ^(uint8_t *bytes, size_t byteCount) {
         sqlite3_tokenizer_cursor* cursor;
-        err = sModule->xOpen(_tokenizer, (const char*)bytes, (int)byteCount, &cursor);
+        err = sModule->xOpen(tokenizer, (const char*)bytes, (int)byteCount, &cursor);
         if (err)
             return;
-        cursor->pTokenizer = _tokenizer; // module expects sqlite3 to have initialized this
+        cursor->pTokenizer = tokenizer; // module expects sqlite3 to have initialized this
 
         do {
             const char *tokenBytes;
@@ -120,12 +156,13 @@ static NSDictionary* sLanguageToStopWords;
 
         sModule->xClose(cursor);
     });
+    [self returnTokenizer: tokenizer];
     return (err == 0);
 }
 
 
-- (NSArray*) tokenize: (NSString*)string {
-    NSMutableArray* tokens = [NSMutableArray array];
+- (NSSet*) tokenize: (NSString*)string {
+    NSMutableSet* tokens = [NSMutableSet set];
     [self tokenize: string onToken: ^(NSString* token, NSRange r) {
         [tokens addObject: token];
     }];

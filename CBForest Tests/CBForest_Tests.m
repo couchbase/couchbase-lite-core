@@ -192,7 +192,7 @@ static NSData* toData(NSString* str) {
     XCTAssertEqualObjects(value, toData(@"value1"));
     XCTAssert([snapshot getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);
     XCTAssertNil(value);
-//TEMP: ignore MB-11025    XCTAssertEqual(snapshot.info.lastSequence, sequenceBefore);
+    XCTAssertEqual(snapshot.info.lastSequence, sequenceBefore);
     [snapshot close];
 
     XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
@@ -208,7 +208,7 @@ static NSData* toData(NSString* str) {
     XCTAssertEqualObjects(value, toData(@"value1"));
     XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"KII") error: NULL]);
     XCTAssertNil(value);
-//TEMP: ignore MB-11025    XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
+    XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
 }
 
 /*

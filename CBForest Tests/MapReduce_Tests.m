@@ -9,6 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "CBForestMapReduceIndex.h"
 #import "CBForestPrivate.h"
+#import <libkern/OSAtomic.h>
 
 
 #define kDBPath @"/tmp/temp.fdb"
@@ -68,9 +69,9 @@
     }
 
     // Initialize the index:
-    __block int nMapCalls = 0;
+    __block int32_t nMapCalls = 0;
     index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
-        nMapCalls++;
+        OSAtomicIncrement32(&nMapCalls);
         NSError* error;
         XCTAssert(rawBody, @"Couldn't read doc body: %@", error);
         NSDictionary* body = DataToJSON(rawBody, NULL);
@@ -81,7 +82,7 @@
 
     NSLog(@"--- Updating index");
     NSError* error;
-    nMapCalls = 0;
+    OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 3);
 
@@ -104,7 +105,7 @@
     [self writeJSONBody: @{@"name": @"Oregon",
                            @"cities": @[@"Portland", @"Walla Walla", @"Salem"]}
            ofDocumentID: @"OR"];
-    nMapCalls = 0;
+    OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 1);
 
@@ -123,7 +124,7 @@
     XCTAssertEqual(nRows, 9);
 
     [self writeJSONBody: @{@"_deleted": @YES} ofDocumentID: @"CA"];
-    nMapCalls = 0;
+    OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 1);
 
@@ -213,7 +214,7 @@
         [self writeJSONBody: @{@"text": line}
                ofDocumentID: [NSString stringWithFormat: @"line-%d", lineNo++]];
 
-    index.indexWords = YES;
+    index.textTokenizer = [[CBTextTokenizer alloc] init];
     index.map = ^(CBForestDocument* doc, NSData* rawBody, CBForestIndexEmitBlock emit) {
         NSDictionary* body = DataToJSON(rawBody, NULL);
         emit(body[@"text"], nil);
@@ -240,13 +241,20 @@
     }
     XCTAssertEqualObjects(docs, (@[@"line-1", @"line-2", @"line-3", @"line-4", @"line-7"]));
 
-    CBForestQueryIntersectionEnumerator* ie;
-    ie = [[CBForestQueryIntersectionEnumerator alloc] initWithIndex: index
-                                                               keys: @[@"fear", @"face"]
-                                                       intersection: YES
-                                                              error: &error];
+    CBForestQueryMultiKeyEnumerator* ie;
+    ie = [[CBForestQueryMultiKeyEnumerator alloc] initWithIndex: index
+                                                           keys: @[@"fear", @"face"]
+                                                   intersection: YES
+                                                          error: &error];
     XCTAssert(ie, @"Couldn't create query enumerator: %@", error);
     XCTAssertEqualObjects(ie.allObjects, @[@"line-4"]);
+
+    NSEnumerator* ee = [index enumerateDocsContainingWords: @"the fears bring" all: YES error: &error];
+    XCTAssert(ee, @"Couldn't create word enumerator: %@", error);
+    docs = [NSMutableArray array];
+    for (CBForestDocument* doc in ee)
+        [docs addObject: doc];
+    XCTAssertEqualObjects(docs, (@[@"line-3"]));
 }
 
 @end

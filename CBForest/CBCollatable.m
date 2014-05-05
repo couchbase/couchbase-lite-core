@@ -328,7 +328,7 @@ static uint8_t* getCharPriorityMap(void) {
         static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
         uint8_t priority = 1;
         for (int i=0; i<strlen(kInverseMap); i++)
-            kCharPriority[kInverseMap[i]] = priority++;
+            kCharPriority[(uint8_t)kInverseMap[i]] = priority++;
         for (int i=128; i<256; i++)
             kCharPriority[i] = (uint8_t)i;
     });

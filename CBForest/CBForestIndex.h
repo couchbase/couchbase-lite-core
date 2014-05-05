@@ -65,7 +65,9 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 @end
 
 
-@interface CBForestQueryIntersectionEnumerator : NSEnumerator
+/** An index enumerator that finds documents containing all or some of the given keys.
+    The object returned by -nextObject is the document ID. */
+@interface CBForestQueryMultiKeyEnumerator : NSEnumerator
 
 - (instancetype) initWithIndex: (CBForestIndex*)index
                           keys: (NSArray*)keys

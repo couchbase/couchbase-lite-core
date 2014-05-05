@@ -7,10 +7,10 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "slice.h"
 
 
-/** Breaks Unicode text into words and "stems" them (removes tense-specific parts) for indexing. */
+/** Breaks Unicode text into words and "stems" them (removes tense-specific parts) for indexing.
+    This class is thread-safe. */
 @interface CBTextTokenizer : NSObject
 
 /** Initializes based on the current locale's language. */
@@ -26,11 +26,18 @@
 /** A set of words that should be ignored and not returned by the tokenizer. */
 @property (copy) NSSet* stopWords;
 
-/** Tokenizes a string, calling the onToken block once for each word. */
+/** Tokenizes a string, calling the onToken block once for each non-stopword.
+    The first parameter of the block is the token, which will have been stemmed if the language is
+    non-nil and there is a stemmer for that language.
+    The second parameter is the byte range in the UTF-8-converted string at which the original
+    word appears. */
 - (BOOL) tokenize: (NSString*)string
-          onToken: (void (^)(NSString* word, NSRange byteRange))onToken;
+          onToken: (void (^)(NSString* token, NSRange byteRange))onToken;
 
-/** Tokenizes a string, returning an array of token strings. */
-- (NSArray*) tokenize: (NSString*)string;
+/** Tokenizes a string, returning a set of unique token strings. */
+- (NSSet*) tokenize: (NSString*)string;
+
+/** Frees any cached data, like low-level tokenizer refs. */
+- (void) clearCache;
 
 @end

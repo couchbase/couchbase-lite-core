@@ -23,7 +23,7 @@
 }
 
 @synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion,
-            indexWords=_indexWords, lastSequenceIndexed=_lastSequenceIndexed;
+            textTokenizer=_textTokenizer, lastSequenceIndexed=_lastSequenceIndexed;
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -118,10 +118,9 @@
                         CBForestIndexEmitBlock emit = ^(id key, id value) {
                             if (!value)
                                 value = kCBForestIndexNoValue;
-                            if (_indexWords && [key isKindOfClass: [NSString class]]) {
-                                //FIX: Should reuse tokenizer, but in a thread-safe way
-                                CBTextTokenizer* tok = [[CBTextTokenizer alloc] init];
-                                NSArray* words = [tok tokenize: (NSString*)key];
+                            if (_textTokenizer && [key isKindOfClass: [NSString class]]) {
+                                // Full-text indexing:
+                                NSArray* words = [_textTokenizer tokenize: (NSString*)key].allObjects;
                                 if (keys) {
                                     [keys addObjectsFromArray: words];
                                 } else {
@@ -170,8 +169,23 @@
                 gotError = YES;
         return YES;
     }];
+    [_textTokenizer clearCache];
     return !gotError;
 }
+
+
+- (NSEnumerator*) enumerateDocsContainingWords: (NSString*)words
+                                           all: (BOOL)all
+                                         error: (NSError**)outError
+{
+    CBTextTokenizer* tok = [[CBTextTokenizer alloc] init];
+    NSSet* keys = [tok tokenize: words];
+    return [[CBForestQueryMultiKeyEnumerator alloc] initWithIndex: self
+                                                             keys: keys.allObjects
+                                                     intersection: all
+                                                            error: outError];
+}
+
 
 
 @end

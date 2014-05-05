@@ -285,7 +285,7 @@ static NSString* nextObjectDocID(NSEnumerator* e) {
 
 
 
-@implementation CBForestQueryIntersectionEnumerator
+@implementation CBForestQueryMultiKeyEnumerator
 {
     BOOL _intersection;
     NSMutableArray* _enumerators;
@@ -302,6 +302,7 @@ static NSString* nextObjectDocID(NSEnumerator* e) {
         _intersection = intersection;
         _curDocIDs = [NSMutableArray arrayWithCapacity: keys.count];
         _enumerators = [NSMutableArray arrayWithCapacity: keys.count];
+        // Build the parallel arrays of enumerators and their current docIDs:
         for (id key in keys) {
             // Remember, the underlying keys are of the form [emittedKey, docID, serial#]
             NSEnumerator* e = [index enumerateDocsFromKey: CBCreateCollatable(@[key])
