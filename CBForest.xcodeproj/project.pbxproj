@@ -1766,7 +1766,7 @@
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				INFOPLIST_FILE = "CBForest/CBForest-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -1788,7 +1788,7 @@
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				INFOPLIST_FILE = "CBForest/CBForest-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
