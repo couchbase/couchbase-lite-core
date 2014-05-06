@@ -47,15 +47,12 @@
         @"OR": @[@"Oregon", @"Portland", @"Eugene"]};
     for (NSString* docID in docs) {
         NSArray* body = docs[docID];
-        NSString* name = body[0];
-        NSArray* keys = [body subarrayWithRange: NSMakeRange(1, body.count-1)];
-        NSMutableArray* values = [NSMutableArray array];
-        for (NSUInteger i = 0; i < keys.count; i++)
-            [values addObject: name];
-        NSError* error;
-        XCTAssert([index setKeys: keys values: values forDocument: docID atSequence: 1
-                           error: &error],
-                  @"Indexing failed: %@", error);
+        [index updateForDocument: docID atSequence: 1
+                         addKeys:^(CBForestIndexEmitBlock emit)
+        {
+            for (NSUInteger i = 1; i < body.count; i++)
+                emit(body[i], body[0]);
+        }];
     }
 
     NSLog(@"--- First query");
@@ -74,10 +71,13 @@
     }
     XCTAssertEqual(nRows, 8);
 
-    XCTAssert(([index setKeys: @[@"Portland", @"Walla Walla", @"Salem"]
-                       values: @[@"Oregon", @"Oregon", @"Oregon"]
-                  forDocument: @"OR" atSequence: 2 error: &error]),
-              @"Indexing failed: %@", error);
+    [index updateForDocument: @"OR" atSequence: 2
+                     addKeys:^(CBForestIndexEmitBlock emit)
+     {
+         NSArray* body = @[@"Oregon", @"Portland", @"Walla Walla", @"Salem"];
+         for (NSUInteger i = 1; i < body.count; i++)
+             emit(body[i], body[0]);
+     }];
 
     NSLog(@"--- After updating OR");
     nRows = 0;
@@ -94,8 +94,10 @@
     }
     XCTAssertEqual(nRows, 9);
 
-    XCTAssert(([index setKeys: nil values: nil forDocument: @"CA" atSequence: 3 error: &error]),
-              @"Indexing failed: %@", error);
+    [index updateForDocument: @"CA" atSequence: 3
+                     addKeys:^(CBForestIndexEmitBlock emit)
+     {
+     }];
 
     NSLog(@"--- After removing CA:");
     nRows = 0;

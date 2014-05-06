@@ -132,43 +132,27 @@
                 dispatch_group_async(mapGroup, mapQueue, ^{
                     @autoreleasepool {
 #endif
-                        __block NSMutableArray *keys = nil, *values = nil;
-                        CBForestIndexEmitBlock emit = ^(id key, id value) {
-                            if (!key)
-                                return;
-                            if (!value)
-                                value = kCBForestIndexNoValue;
-                            if (tokenizer && [key isKindOfClass: [NSString class]]) {
+                        [self updateForDocument: doc.docID atSequence: doc.sequence
+                                        addKeys:^(CBForestIndexEmitBlock emit)
+                        {
+                            if (tokenizer) {
                                 // Full-text indexing:
-                                NSArray* words = [tokenizer tokenize: (NSString*)key].allObjects;
-                                if (keys) {
-                                    [keys addObjectsFromArray: words];
-                                } else {
-                                    keys = [words mutableCopy];
-                                    values = [[NSMutableArray alloc] init];
-                                }
-                                for (NSInteger i = words.count; i >=0; i--)
-                                    [values addObject: value];
-                            } else {
-                                if (!keys) {
-                                    keys = [[NSMutableArray alloc] initWithObjects: &key count: 1];
-                                    values = [[NSMutableArray alloc] initWithObjects: &value count: 1];
-                                } else {
-                                    [keys addObject: key];
-                                    [values addObject: value];
-                                }
+                                CBForestIndexEmitBlock realEmit = emit;
+                                emit = ^(id key, id value) {
+                                    if ([key isKindOfClass: [NSString class]]) {
+                                        for (NSString* word in [tokenizer tokenize: key])
+                                            realEmit(word, value);
+                                    } else {
+                                        realEmit(key, value);
+                                    }
+                                };
                             }
-                        };
-                        @try {
-                            _map(doc, body, emit);
-                        } @catch (NSException* x) {
-                            NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
-                        }
-                        [self setKeys: keys
-                               values: values
-                          forDocument: doc.docID
-                           atSequence: doc.sequence
-                                error: outError];
+                            @try {
+                                _map(doc, body, emit);
+                            } @catch (NSException* x) {
+                                NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
+                            }
+                        }];
 #ifdef MAP_PARALLELISM
                     }
                     dispatch_semaphore_signal(mapCounter);

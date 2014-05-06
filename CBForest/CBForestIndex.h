@@ -14,6 +14,9 @@
 extern id kCBForestIndexNoValue;
 
 
+typedef void (^CBForestIndexEmitBlock)(id key, id value);
+
+
 /** Callback block for a CBForestIndex query. */
 typedef void (^CBForestQueryCallbackBlock)(id key,
                                            NSData* valueJSON,
@@ -25,13 +28,9 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 /** Key/value index for a database, stored as a separate database file. */
 @interface CBForestIndex : CBForestDB
 
-/** Stores the given key/value pairs associated with the given document.
-    Any previously stored pairs for the document will be removed. */
-- (BOOL) setKeys: (NSArray*)keys
-          values: (NSArray*)values
-     forDocument: (NSString*)docID
-      atSequence: (CBForestSequence)docSequence
-           error: (NSError**)outError;
+- (void) updateForDocument: (NSString*)docID
+                atSequence: (CBForestSequence)docSequence
+                   addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock;
 
 @end
 
