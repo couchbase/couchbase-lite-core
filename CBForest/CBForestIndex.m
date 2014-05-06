@@ -46,23 +46,6 @@ static BOOL parseKey(CBForestDocument* doc,
 }
 
 
-- (void) _recordNewRows: (NSArray*)sequences forDoc: (NSData*)collatableDocID {
-    // Encode the new sequences into a packed series of varints:
-    NSMutableData* seqData = nil;
-    if (sequences.count) {
-        seqData = [NSMutableData dataWithLength: sequences.count*kMaxVarintLen64];
-        slice seqBuf = DataToSlice(seqData);
-        for (NSNumber* seq in sequences)
-            WriteUVarInt(&seqBuf, seq.unsignedLongLongValue);
-        seqData.length = seqBuf.buf - seqData.mutableBytes;
-    }
-    [self setValue: seqData
-              meta: nil
-            forKey: collatableDocID
-             error: NULL];
-}
-
-
 - (void) updateForDocument: (NSString*)docID
                 atSequence: (CBForestSequence)docSequence
                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock
@@ -70,7 +53,7 @@ static BOOL parseKey(CBForestDocument* doc,
     NSData* collatableDocID = CBCreateCollatable(docID);
     BOOL hadRows = [self _removeOldRowsForDoc: collatableDocID];
 
-    __block NSMutableArray* seqs = nil;
+    __block NSMutableData* seqs = nil;
     NSMutableData* keyData = [NSMutableData dataWithCapacity: 1024];
 
     CBForestIndexEmitBlock emit = ^(id key, id value) {
@@ -100,11 +83,11 @@ static BOOL parseKey(CBForestDocument* doc,
                                            forKey: keyData
                                             error: NULL];
             if (seq != kCBForestNoSequence) {
-                NSNumber* seqObj = @(seq);
-                if (seqs)
-                    [seqs addObject: seqObj];
-                else
-                    seqs = [[NSMutableArray alloc] initWithObjects: &seqObj count: 1];
+                if (!seqs)
+                    seqs = [[NSMutableData alloc] initWithCapacity: 200];
+                uint8_t buf[kMaxVarintLen64];
+                size_t size = PutUVarInt(buf, seq);
+                [seqs appendBytes: buf length: size];
             }
             //NSLog(@"INDEX: Seq %llu = %@ --> %@", seq, keyData, body);
         }
@@ -113,8 +96,11 @@ static BOOL parseKey(CBForestDocument* doc,
     addKeysBlock(emit);
 
     // Update the list of sequences used for this document:
-    if (hadRows || seqs.count > 0)
-        [self _recordNewRows: seqs forDoc: collatableDocID];
+    if (hadRows || seqs)
+        [self setValue: seqs
+                  meta: nil
+                forKey: collatableDocID
+                 error: NULL];
 }
 
 

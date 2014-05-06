@@ -75,6 +75,7 @@ static NSDictionary* sLanguageToStopWords;
             _stemmer = sLanguageToStemmer[language];
             _stopWords = sLanguageToStopWords[language];
         }
+        _tokenizers = [[NSMutableArray alloc] init];
     }
     return self;
 }

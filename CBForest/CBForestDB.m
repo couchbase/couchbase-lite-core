@@ -608,8 +608,8 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
         do {
             // Get a fdb_doc from ForestDB:
             __block fdb_doc *docinfo;
-            fdb_status status = ONQUEUE(metaOnly ? fdb_iterator_next_metaonly(iterator, &docinfo)
-                                                 : fdb_iterator_next(iterator, &docinfo));
+            fdb_status status = metaOnly ? fdb_iterator_next_metaonly(iterator, &docinfo)
+                                         : fdb_iterator_next(iterator, &docinfo);
             if (status != FDB_RESULT_SUCCESS)
                 break;
 
@@ -637,7 +637,7 @@ static fdb_iterator_opt_t iteratorOptions(const CBForestEnumerationOptions* opti
         } while (!result);
 
         if (!result || (options.limit > 0 && --options.limit == 0)) {
-            ONQUEUE(fdb_iterator_close(iterator));
+            fdb_iterator_close(iterator);
             done = YES;
         }
         return result;
