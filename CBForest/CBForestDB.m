@@ -312,19 +312,17 @@ static NSDictionary* mkConfig(id value) {
 
 
 - (BOOL) isInTransaction {
-    __block BOOL result;
-    dispatch_sync(_queue, ^{
-        result = (_transactionLevel > 0);
-    });
-    return result;
+    @synchronized(self) {
+        return (_transactionLevel > 0);
+    }
 }
 
 
 - (void) beginTransaction {
-    dispatch_sync(_queue, ^{
+    @synchronized(self) {
         if (OSAtomicIncrement32(&_transactionLevel) == 1)
             [_writeLock lockWithOwner: self];
-    });
+    }
 }
 
 
