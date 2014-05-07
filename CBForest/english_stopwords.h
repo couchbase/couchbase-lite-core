@@ -10,6 +10,8 @@
 // on 2 May 2014. According to http://jmlr.org/papers/volume5/lewis04a/lewis04a.pdf, this is the
 // list from the SMART Retrieval System, dated 1971.
 
+// More lists for multiple languages are at https://code.google.com/p/stop-words/
+
 static const char* kEnglishStopWords =
 "a \
 a's \
