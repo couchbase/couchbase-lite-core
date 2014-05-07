@@ -30,12 +30,18 @@ BOOL Check(fdb_status code, NSError** outError) {
             @"Database is read-only",
             @"Compaction failed",
             @"Iterator failed",
+            @"Seek failed",
+            @"Fsync failed",
+            @"Invalid data checksum",
+            @"Database corrupted",
+            @"Data compression failed",
+            @"No database instance",
+            @"Rollback in progress",
         };
         NSString* errorName;
         if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))
             errorName = [NSString stringWithFormat: @"ForestDB error: %@", kErrorNames[-code]];
-        else if ((int)code
-                 == kCBForestErrorDataCorrupt)
+        else if ((int)code == kCBForestErrorRevisionDataCorrupt)
             errorName = @"Revision data is corrupted";
         else
             errorName = [NSString stringWithFormat: @"ForestDB error %d", code];

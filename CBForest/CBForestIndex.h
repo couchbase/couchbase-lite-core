@@ -28,7 +28,15 @@ typedef void (^CBForestQueryCallbackBlock)(id key,
 /** Key/value index for a database, stored as a separate database file. */
 @interface CBForestIndex : CBForestDB
 
-- (void) updateForDocument: (NSString*)docID
+/** Updates the index entries for a particular source document ID.
+    @param docID  The ID of the source these entries come from. It doesn't correspond to a document
+                    in this index database; it's just treated as an opaque cookie. In a map-reduce
+                    index it is the document ID in the source database.
+    @param docSequence  The sequence number of the source document. Again, uninterpreted.
+    @param addKeysBlock  The method will call this block, passing it an 'emit' block that it should
+                    call to add entries to the index.
+    @return  YES if the index changed, NO if it didn't. */
+- (BOOL) updateForDocument: (NSString*)docID
                 atSequence: (CBForestSequence)docSequence
                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock;
 

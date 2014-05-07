@@ -24,6 +24,7 @@ typedef void (^CBForestIndexMapBlock)(CBForestDocument* doc,
 @property (nonatomic) int indexType;
 
 @property (readonly) CBForestSequence lastSequenceIndexed;
+@property (readonly) CBForestSequence lastSequenceChangedAt;
 
 - (BOOL) updateIndex: (NSError**)outError;
 

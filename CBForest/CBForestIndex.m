@@ -46,7 +46,7 @@ static BOOL parseKey(CBForestDocument* doc,
 }
 
 
-- (void) updateForDocument: (NSString*)docID
+- (BOOL) updateForDocument: (NSString*)docID
                 atSequence: (CBForestSequence)docSequence
                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock
 {
@@ -95,12 +95,16 @@ static BOOL parseKey(CBForestDocument* doc,
 
     addKeysBlock(emit);
 
+    // If this call didn't alter the index, return NO:
+    if (!hadRows && !seqs)
+        return NO;
+
     // Update the list of sequences used for this document:
-    if (hadRows || seqs)
-        [self setValue: seqs
-                  meta: nil
-                forKey: collatableDocID
-                 error: NULL];
+    [self setValue: seqs
+              meta: nil
+            forKey: collatableDocID
+             error: NULL];
+    return YES;
 }
 
 

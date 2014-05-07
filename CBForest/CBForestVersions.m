@@ -66,7 +66,7 @@
     if (!tree) {
         if (outError)
             *outError = [NSError errorWithDomain: CBForestErrorDomain
-                                            code: kCBForestErrorDataCorrupt
+                                            code: kCBForestErrorRevisionDataCorrupt
                                         userInfo: nil];
         return NO;
     }
@@ -223,7 +223,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         free(doc.body);
         if (!result && outError)
             *outError = [NSError errorWithDomain: CBForestErrorDomain
-                                            code: kCBForestErrorDataCorrupt
+                                            code: kCBForestErrorRevisionDataCorrupt
                                         userInfo: nil];
     }
 #endif

@@ -11,12 +11,31 @@
 
 
 /** NSError domain string for errors specific to CBForest; the error codes correspond to the
-    fdb_status enum (see <forestdb_types.h>) except for the ones added below. */
+    fdb_status enum (see <fdb_errors.h>) except for the ones added below. */
 extern NSString* const CBForestErrorDomain;
 
 enum {
+    kCBForestErrorInvalidArgs = -1,
+    kCBForestErrorOpenFailed = -2,
+    kCBForestErrorFileNotFound = -3,
+    kCBForestErrorWriteFailed = -4,
+    kCBForestErrorReadFailed = -5,
+    kCBForestErrorCloseFailed = -6,
+    kCBForestErrorCommitFailed = -7,
+    kCBForestErrorAllocFailed = -8,
     kCBForestErrorNotFound = -9,
-    kCBForestErrorDataCorrupt = -1000
+    kCBForestErrorReadOnly = -10,
+    kCBForestErrorCompactionFailed = -11,
+    kCBForestErrorIteratorFailed = -12,
+    kCBForestErrorSeekFailed = -13,
+    kCBForestErrorFsyncFailed = -14,
+    kCBForestErrorChecksum = -15,
+    kCBForestErrorFileCorrupt = -16,
+    kCBForestErrorCompressionFailed = -17,
+    kCBForestErrorNoDBInstance = -18,
+    kCBForestErrorFailByRollback = -19,
+    // Errors specific to CBForest, not defined by ForestDB:
+    kCBForestErrorRevisionDataCorrupt = -1000
 };
 
 

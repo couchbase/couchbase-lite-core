@@ -85,6 +85,8 @@
     OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 3);
+    XCTAssertEqual(index.lastSequenceIndexed, 3);
+    XCTAssertEqual(index.lastSequenceChangedAt, 3);
 
     NSLog(@"--- First query");
     __block int nRows = 0;
@@ -108,6 +110,8 @@
     OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 1);
+    XCTAssertEqual(index.lastSequenceIndexed, 4);
+    XCTAssertEqual(index.lastSequenceChangedAt, 4);
 
     NSLog(@"--- After updating OR");
     nRows = 0;
@@ -127,6 +131,8 @@
     OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
     XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
     XCTAssertEqual(nMapCalls, 1);
+    XCTAssertEqual(index.lastSequenceIndexed, 5);
+    XCTAssertEqual(index.lastSequenceChangedAt, 5);
 
     NSLog(@"--- After removing CA:");
     nRows = 0;
@@ -141,6 +147,14 @@
         NSLog(@"key = %@, value=%@, docID = %@, seq = %llu", e.key, e.value, e.docID, e.sequence);
     }
     XCTAssertEqual(nRows, 6);
+
+    NSLog(@"--- Adding non-state doc");
+    [self writeJSONBody: @{@"foo": @1337} ofDocumentID: @"XX"];
+    OSAtomicAnd32(0, (uint32_t*)&nMapCalls);
+    XCTAssert([index updateIndex: &error], @"Updating index failed: %@", error);
+    XCTAssertEqual(nMapCalls, 1);
+    XCTAssertEqual(index.lastSequenceIndexed, 6);
+    XCTAssertEqual(index.lastSequenceChangedAt, 5); // Index didn't change!
 }
 
 

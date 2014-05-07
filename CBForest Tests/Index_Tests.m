@@ -47,13 +47,18 @@
         @"OR": @[@"Oregon", @"Portland", @"Eugene"]};
     for (NSString* docID in docs) {
         NSArray* body = docs[docID];
-        [index updateForDocument: docID atSequence: 1
+        BOOL changed = [index updateForDocument: docID atSequence: 1
                          addKeys:^(CBForestIndexEmitBlock emit)
         {
             for (NSUInteger i = 1; i < body.count; i++)
                 emit(body[i], body[0]);
         }];
+        XCTAssert(changed);
     }
+
+    XCTAssertFalse([index updateForDocument: @"XX"
+                                 atSequence: 1
+                                    addKeys:^(CBForestIndexEmitBlock emit) {}]);
 
     NSLog(@"--- First query");
     __block int nRows = 0;

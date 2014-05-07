@@ -23,7 +23,8 @@
 }
 
 @synthesize sourceDatabase=_sourceDatabase, map=_map, mapVersion=_mapVersion, indexType=_indexType,
-            textTokenizer=_textTokenizer, lastSequenceIndexed=_lastSequenceIndexed;
+            textTokenizer=_textTokenizer,
+            lastSequenceIndexed=_lastSequenceIndexed, lastSequenceChangedAt=_lastSequenceChangedAt;
 
 
 - (id) initWithFile: (NSString*)filePath
@@ -42,6 +43,7 @@
         if (stateData) {
             NSDictionary* state = DataToJSON(stateData, NULL);
             _lastSequenceIndexed = [state[@"lastSequence"] unsignedLongLongValue];
+            _lastSequenceChangedAt = [state[@"changedSequence"] unsignedLongLongValue];
             _lastMapVersion = state[@"mapVersion"];
             _indexType = [state[@"type"] intValue];
         }
@@ -53,6 +55,7 @@
 - (BOOL) saveState: (NSError**)outError {
     NSMutableDictionary* state = [NSMutableDictionary dictionary];
     state[@"lastSequence"] = @(_lastSequenceIndexed);
+    state[@"changedSequence"] = @(_lastSequenceChangedAt);
     state[@"type"] = @(_indexType);
     if (_mapVersion)
         state[@"mapVersion"] = _lastMapVersion;
@@ -65,6 +68,7 @@
 
 - (BOOL) erase:(NSError *__autoreleasing *)outError {
     _lastSequenceIndexed = 0;
+    _lastSequenceChangedAt = 0;
     return [super erase: outError];
 }
 
@@ -121,19 +125,21 @@
                                                                error: outError];
         if (!e)
             return NO;
+        __block uint32_t indexChanged = 0;
         while(true) {
             @autoreleasepool {
                 CBForestDocument* doc = e.nextObject;
                 if (!doc)
                     break;
+                CBForestSequence sequence = doc.sequence;
                 NSData* body = [doc readBody: NULL];
 #ifdef MAP_PARALLELISM
                 dispatch_semaphore_wait(mapCounter, DISPATCH_TIME_FOREVER);
                 dispatch_group_async(mapGroup, mapQueue, ^{
                     @autoreleasepool {
 #endif
-                        [self updateForDocument: doc.docID atSequence: doc.sequence
-                                        addKeys:^(CBForestIndexEmitBlock emit)
+                        BOOL changed = [self updateForDocument: doc.docID atSequence: sequence
+                                                       addKeys: ^(CBForestIndexEmitBlock emit)
                         {
                             if (tokenizer) {
                                 // Full-text indexing:
@@ -153,12 +159,14 @@
                                 NSLog(@"WARNING: CBForestMapReduceIndex caught exception from map fn: %@", x);
                             }
                         }];
+                        if (changed)
+                            OSAtomicOr32(1, &indexChanged);
 #ifdef MAP_PARALLELISM
                     }
                     dispatch_semaphore_signal(mapCounter);
                 });
 #endif
-                _lastSequenceIndexed = doc.sequence;
+                _lastSequenceIndexed = sequence;
             }
         }
 
@@ -168,9 +176,12 @@
     #endif
 
         _lastMapVersion = _mapVersion;
-        if (_lastSequenceIndexed >= startSequence)
-            if (![self saveState: (gotError ?NULL :outError)])
+        if (_lastSequenceIndexed >= startSequence) {
+            if (indexChanged)
+                _lastSequenceChangedAt = _lastSequenceIndexed;
+            if (![self saveState: (gotError ? NULL : outError)])
                 gotError = YES;
+        }
         return YES;
     }];
     [_textTokenizer clearCache];

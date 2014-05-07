@@ -211,6 +211,21 @@ static NSData* toData(NSString* str) {
     XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
 }
 
+- (void) test06_BenchmarkSnapshot {
+    XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
+    CBForestSequence sequence = _db.info.lastSequence;
+
+    const int kIterations = 10000;
+    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
+    for (int i = 0; i < kIterations; i++) {
+        @autoreleasepool {
+            CBForestDB* snapshot = [_db openSnapshotAtSequence: sequence error: NULL];
+            [snapshot close];
+        }
+    }
+    NSLog(@"Creating a snapshot took %g µsec", (CFAbsoluteTimeGetCurrent()-start)*1.0e6/kIterations);
+}
+
 /*
 - (void) test05_Queue {
     CBForestQueue* queue = [[CBForestQueue alloc] initWithCapacity: 4];
