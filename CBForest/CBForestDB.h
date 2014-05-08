@@ -35,7 +35,8 @@ enum {
     kCBForestErrorNoDBInstance = -18,
     kCBForestErrorFailByRollback = -19,
     // Errors specific to CBForest, not defined by ForestDB:
-    kCBForestErrorRevisionDataCorrupt = -1000
+    kCBForestErrorRevisionDataCorrupt = -1000,
+    kCBForestErrorTransactionAborted = -1001
 };
 
 
@@ -112,20 +113,14 @@ typedef struct {
 /** Some stats about the database. */
 @property (readonly) CBForestDBInfo info;
 
+@property (readonly) BOOL isReadOnly;
+
 /** Closes the database. It's not strictly necessary to call this -- the database will be closed when this object is deallocated -- but it's a good way to ensure it gets closed in a timely manner.
     It's illegal to call any other of the methods defined here after closing the database; they will all raise exceptions. */
 - (void) close;
 
 /** Closes the database and deletes its file. */
 - (BOOL) deleteDatabase: (NSError**)outError;
-
-/** Runs the block, then calls -commit:. If transactions are nested (i.e. -inTransaction: is called
-    while in the block) only the outermost transaction calls -commit:.
-    The block can return NO to signal failure, but this doesn't prevent the commit (since ForestDB
-    doesn't currently have any way to roll-back changes); it just causes the -inTransaction: call
-    to return NO as well, as a convenience to the caller.
-    @return  YES if the block returned YES and the commit succeeded; else NO. */
-- (BOOL) inTransaction: (BOOL(^)())block;
 
 /** Updates the database file header and makes sure all writes have been flushed to the disk.
     Until this happens, no changes made will persist: they aren't visible to any other client
@@ -148,6 +143,22 @@ typedef struct {
 /** Erase the contents of the file. This actually closes, deletes and re-opens the database. */
 - (BOOL) erase: (NSError**)outError;
 
+
+// TRANSACTIONS:
+
+- (void) beginTransaction;
+- (void) failTransaction;
+- (BOOL) endTransaction: (NSError**)outError;
+
+/** Runs the block, then calls -commit:. If transactions are nested (i.e. -inTransaction: is called
+    while in the block) only the outermost transaction calls -commit:.
+    The block can return NO to signal failure, but this doesn't prevent the commit (since ForestDB
+    doesn't currently have any way to roll-back changes); it just causes the -inTransaction: call
+    to return NO as well, as a convenience to the caller.
+    @return  YES if the block returned YES and the commit succeeded; else NO. */
+- (BOOL) inTransaction: (BOOL(^)())block;
+
+
 // KEYS/VALUES:
 
 /** Stores a value blob for a key blob, replacing any previous value.
@@ -156,6 +167,13 @@ typedef struct {
                          meta: (NSData*)meta
                        forKey: (NSData*)key
                         error: (NSError**)outError;
+
+/** Asynchronous store. Can only be used inside a transaction.
+    The completion block is optional; it will be called on the database's internal dispatch queue. */
+- (void) asyncSetValue: (NSData*)value
+                  meta: (NSData*)meta
+                forKey: (NSData*)key
+            onComplete: (void(^)(CBForestSequence,NSError*))onComplete;
 
 /** Loads the value blob with the given key blob, plus its metadata.
     If there is no value for the key, no error is returned, but the value and meta will be nil. */
@@ -169,6 +187,8 @@ typedef struct {
 /** Deletes the document/value with the given sequence. */
 - (BOOL) deleteSequence: (CBForestSequence)sequence
                   error: (NSError**)outError;
+
+- (void) asyncDeleteSequence: (CBForestSequence)sequence;
 
 // DOCUMENTS:
 

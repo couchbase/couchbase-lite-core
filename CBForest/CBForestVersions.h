@@ -99,6 +99,8 @@ typedef enum {
 /** Saves changes made by -addRevision:. No-op if there haven't been any changes. */
 - (BOOL) save: (NSError**)outError;
 
+- (void) asyncSave: (void(^)(CBForestSequence, NSError*))onComplete;
+
 /** Returns a dump of info about all the revisions, for debugging. */
 - (NSString*) dump;
 

@@ -45,6 +45,8 @@ const CBForestEnumerationOptions kCBForestEnumerationOptionsDefault = {
     CBForestDBConfig _config;
     BOOL _customConfig;
     int32_t _transactionLevel;
+    CBForestSequence _transactionStartSequence;
+    NSError* _transactionError;
     dispatch_queue_t _queue;
     CBForestToken* _writeLock;
 }
@@ -224,6 +226,10 @@ static NSDictionary* mkConfig(id value) {
     };
 }
 
+- (BOOL) isReadOnly {
+    return (_openFlags & kCBForestDBReadOnly) != 0;
+}
+
 - (BOOL) commit: (NSError**)outError {
     if (_openFlags & FDB_OPEN_FLAG_RDONLY)
         return YES; // no-op if read-only
@@ -313,27 +319,64 @@ static NSDictionary* mkConfig(id value) {
 
 - (BOOL) isInTransaction {
     @synchronized(self) {
-        return (_transactionLevel > 0);
+        return _transactionLevel > 0;
     }
 }
 
 
 - (void) beginTransaction {
     @synchronized(self) {
-        if (OSAtomicIncrement32(&_transactionLevel) == 1)
+        if (++_transactionLevel == 1) {
             [_writeLock lockWithOwner: self];
+            _transactionStartSequence = self.info.lastSequence;
+            _transactionError = nil;
+        }
     }
 }
 
 
-- (BOOL) endTransaction: (NSError**)outError {
-    BOOL result = YES;
-    if (OSAtomicDecrement32(&_transactionLevel) == 0) {
-        // Ending the outermost transaction:
-        if (_db)
-            result = [self commit: outError];
+- (void) noteTransactionError: (NSError*)error {
+    if (error) {
+        @synchronized(self) {
+            if (_transactionLevel > 0 && !_transactionError)
+                _transactionError = error;
+        }
     }
-    return result;
+}
+
+
+- (void) failTransaction {
+    [self noteTransactionError: [NSError errorWithDomain: CBForestErrorDomain
+                                                    code: kCBForestErrorTransactionAborted
+                                                userInfo: nil]];
+}
+
+
+- (BOOL) endTransaction: (NSError**)outError {
+    @synchronized(self) {
+        NSError* error;
+        if (_transactionLevel == 1) {
+            // Ending the outermost transaction:
+            // Use an empty dispatch_sync to ensure any async operations complete:
+            dispatch_sync(_queue, ^{ });
+            dispatch_sync(_queue, ^{ });
+            // Get the transaction error status:
+            error = _transactionError;
+            _transactionError = nil;
+            if (_db) {
+                // Commit or roll back:
+                if (error || ![self commit: &error])
+                    [self rollbackToSequence: _transactionStartSequence error: NULL];
+            }
+            _transactionStartSequence = 0;
+        } else {
+            error = _transactionError;
+        }
+        if (outError)
+            *outError = error;
+        --_transactionLevel;
+        return (error == nil);
+    }
 }
 
 
@@ -347,7 +390,9 @@ static NSDictionary* mkConfig(id value) {
         NSLog(@"WARNING: Exception in CBForestDB transaction: %@", x);
         ok = NO;
     } @finally {
-        ok = [self endTransaction: NULL] && ok;
+        if (!ok)
+            [self failTransaction];
+        ok = [self endTransaction: NULL];
     }
     return ok;
 }
@@ -379,6 +424,34 @@ static NSDictionary* mkConfig(id value) {
 }
 
 
+- (void) asyncSetValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
+            onComplete: (void(^)(CBForestSequence,NSError*))onComplete
+{
+    NSAssert(_transactionLevel > 0, @"Must be called in transaction"); //FIX: thread-safety
+    dispatch_async(_queue, ^{
+        fdb_doc doc = {
+            .key = (void*)key.bytes,
+            .keylen = key.length,
+            .body = (void*)value.bytes,
+            .bodylen = value.length,
+            .meta = (void*)meta.bytes,
+            .metalen = meta.length,
+            .deleted = (value == nil)
+        };
+        NSError* error;
+        if (CheckWithKey(fdb_set(_db, &doc), key, &error)) {
+            if (onComplete)
+                onComplete(doc.seqnum, nil);
+        } else {
+            if (!_transactionError)
+                _transactionError = error;
+            if (onComplete)
+                onComplete(0, error);
+        }
+    });
+}
+
+
 - (BOOL) getValue: (NSData**)value meta: (NSData**)meta forKey: (NSData*)key
             error: (NSError**)outError
 {
@@ -395,7 +468,7 @@ static NSDictionary* mkConfig(id value) {
             status = fdb_get_metaonly(self.handle, &doc);
         }
     });
-    if (status != FDB_RESULT_KEY_NOT_FOUND && !Check(status, outError))
+    if (status != FDB_RESULT_KEY_NOT_FOUND && !CheckWithKey(status, key, outError))
         return NO;
     if (meta)
         *meta = SliceToData(doc.meta, doc.metalen);
@@ -449,6 +522,27 @@ static NSDictionary* mkConfig(id value) {
 }
 
 
+- (void) asyncDeleteSequence: (CBForestSequence)sequence {
+    NSAssert(self.isInTransaction, @"Must be called in transaction");
+    dispatch_async(_queue, ^{
+        fdb_doc doc = {.seqnum = sequence};
+        fdb_status status;
+        status = fdb_get_metaonly_byseq(self.handle, &doc);
+        if (status == FDB_RESULT_SUCCESS) {
+            doc.body = doc.meta = NULL;
+            doc.bodylen = doc.metalen = 0;
+            doc.deleted = true;
+            status = fdb_set(self.handle, &doc);
+        }
+        NSError* error;
+        if (!Check(status, &error)) {
+            if (!_transactionError)
+                _transactionError = error;
+        }
+    });
+}
+
+
 #pragma mark - DOCUMENTS:
 
 
@@ -465,7 +559,7 @@ static NSDictionary* mkConfig(id value) {
     if (![doc reload: options error: outError])
         return nil;
     if (!(options & kCBForestDBCreateDoc) && !doc.exists) {
-        Check(FDB_RESULT_KEY_NOT_FOUND, outError);
+        CheckWithKey(FDB_RESULT_KEY_NOT_FOUND, docID, outError);
         return nil;
     }
     return doc;

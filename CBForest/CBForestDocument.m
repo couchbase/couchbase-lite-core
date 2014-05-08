@@ -105,7 +105,7 @@
     fdb_status status = [_db rawGet: &_info options: options];
     if (status == FDB_RESULT_KEY_NOT_FOUND) {
         _info.seqnum = kCBForestNoSequence;
-    } else if (!Check(status, outError)) {
+    } else if (!CheckWithKey(status, _docID, outError)) {
         return NO;
     }
     _metadata = nil; // forget old cached metadata
@@ -125,7 +125,7 @@
                 return nil;
             _metadata = nil;
         } else {
-            if (!Check([_db rawGet: &_info options: 0], outError))
+            if (!CheckWithKey([_db rawGet: &_info options: 0], _docID, outError))
                 return nil;
         }
     }
@@ -159,6 +159,16 @@
         _info.offset = newDoc.offset;
         return YES;
     }];
+}
+
+
+- (void) asyncWriteBody: (NSData*)body metadata: (NSData*)metadata
+             onComplete: (void(^)(CBForestSequence,NSError*))onComplete
+{
+    [_db asyncSetValue: body
+                  meta: metadata
+                forKey: SliceToData(_info.key, _info.keylen)
+            onComplete: onComplete];
 }
 
 

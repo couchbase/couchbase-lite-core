@@ -226,6 +226,52 @@ static NSData* toData(NSString* str) {
     NSLog(@"Creating a snapshot took %g µsec", (CFAbsoluteTimeGetCurrent()-start)*1.0e6/kIterations);
 }
 
+- (void) test07_AbortTransaction {
+    // Initial document:
+    XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
+    CBForestSequence sequenceBefore = _db.info.lastSequence;
+
+    // Make changes in a transaction:
+    [_db beginTransaction];
+    XCTAssert([_db setValue: toData(@"OOPSIE") meta: nil forKey: toData(@"key1") error: NULL]);
+    XCTAssert([_db setValue: toData(@"VALOO") meta: nil forKey: toData(@"KII") error: NULL]);
+
+    // Abort the transaction:
+    [_db failTransaction];
+    NSError* error;
+    XCTAssertFalse([_db endTransaction: &error]);
+    XCTAssertEqual(error.code, kCBForestErrorTransactionAborted);
+    XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
+
+    // Make sure the changes were rolled back:
+    NSData* value;
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"value1"));
+}
+
+- (void) test07_AsyncWriteError {
+    // Initial document:
+    XCTAssert([_db setValue: toData(@"value1") meta: nil forKey: toData(@"key1") error: NULL]);
+    CBForestSequence sequenceBefore = _db.info.lastSequence;
+
+    // Make changes in a transaction:
+    [_db beginTransaction];
+    XCTAssert([_db setValue: toData(@"OOPSIE") meta: nil forKey: toData(@"key1") error: NULL]);
+    [_db asyncSetValue: toData(@"VALOO") meta: nil forKey: nil
+            onComplete: nil]; // illegal
+
+    // End the transaction:
+    NSError* error;
+    XCTAssertFalse([_db endTransaction: &error]);
+    XCTAssertEqual(error.code, kCBForestErrorInvalidArgs);
+    XCTAssertEqual(_db.info.lastSequence, sequenceBefore);
+
+    // Make sure the changes were rolled back:
+    NSData* value;
+    XCTAssert([_db getValue: &value meta: NULL forKey: toData(@"key1") error: NULL]);
+    XCTAssertEqualObjects(value, toData(@"value1"));
+}
+
 /*
 - (void) test05_Queue {
     CBForestQueue* queue = [[CBForestQueue alloc] initWithCapacity: 4];

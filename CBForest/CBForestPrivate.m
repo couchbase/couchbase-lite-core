@@ -11,6 +11,10 @@
 
 
 BOOL Check(fdb_status code, NSError** outError) {
+    return CheckWithKey(code, nil, outError);
+}
+
+BOOL CheckWithKey(fdb_status code, id key, NSError** outError) {
     if (code == FDB_RESULT_SUCCESS) {
         if (outError)
             *outError = nil;
@@ -46,7 +50,10 @@ BOOL Check(fdb_status code, NSError** outError) {
         else
             errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
         if (outError) {
-            NSDictionary* info = @{NSLocalizedDescriptionKey: errorName};
+            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithObject: errorName
+                                                                forKey: NSLocalizedDescriptionKey];
+            if (key)
+                info[@"Key"] = key;
             *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
         } else {
             NSLog(@"Warning: CBForest error %d (%@)", code, errorName);
@@ -204,7 +211,7 @@ NSString* ExpandRevID(slice compressedRevID) {
 
 
 NSUInteger CPUCount(void) {
-    __block NSUInteger sCount;
+    static NSUInteger sCount;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sCount = [[NSProcessInfo processInfo] processorCount];

@@ -12,6 +12,7 @@
 
 
 BOOL Check(fdb_status err, NSError** outError);
+BOOL CheckWithKey(fdb_status err, id key, NSError** outError);
 
 slice DataToSlice(NSData* data);
 slice StringToSlice(NSString* docID);
@@ -75,6 +76,13 @@ typedef BOOL (^CBForest_Iterator)(fdb_doc *doc, uint64_t bodyOffset);
 @property (readonly) uint64_t fileOffset;
 + (BOOL) docInfo: (const fdb_doc*)docInfo
   matchesOptions: (const CBForestEnumerationOptions*)options;
+@end
+
+
+@interface CBForestIndex ()
+- (BOOL) _updateForDocument: (NSString*)docID
+                 atSequence: (CBForestSequence)docSequence
+                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock;
 @end
 
 

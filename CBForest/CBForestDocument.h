@@ -44,6 +44,13 @@
           metadata: (NSData*)metadata
              error: (NSError**)outError;
 
+/** Asynchronously writes the document to the database. Can only be called inside a transaction.
+    When the write finishes the completion block will be called (on the database's internal queue)
+    but for thread-safety reasons the document object will _not_ update its properties. You'll
+    need to schedule a call to -reload on your own queue. */
+- (void) asyncWriteBody: (NSData*)body metadata: (NSData*)metadata
+             onComplete: (void(^)(CBForestSequence,NSError*))onComplete;
+
 /** Deletes the document from the database. */
 - (BOOL) deleteDocument: (NSError**)outError;
 

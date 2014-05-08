@@ -50,17 +50,30 @@ static BOOL parseKey(CBForestDocument* doc,
                 atSequence: (CBForestSequence)docSequence
                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock
 {
+    __block BOOL updated;
+    [self inTransaction: ^BOOL{
+        updated = [self _updateForDocument: docID atSequence: docSequence addKeys: addKeysBlock];
+        return YES;
+    }];
+    return updated;
+}
+
+- (BOOL) _updateForDocument: (NSString*)docID
+                 atSequence: (CBForestSequence)docSequence
+                    addKeys: (void(^)(CBForestIndexEmitBlock))addKeysBlock
+{
     NSData* collatableDocID = CBCreateCollatable(docID);
     BOOL hadRows = [self _removeOldRowsForDoc: collatableDocID];
 
     __block NSMutableData* seqs = nil;
-    NSMutableData* keyData = [NSMutableData dataWithCapacity: 1024];
+    __block int32_t rowsAdded = 0;
+    __block int32_t rowsPending = 0;
 
     CBForestIndexEmitBlock emit = ^(id key, id value) {
         @autoreleasepool {
             if (!key)
                 return;
-            keyData.length = 0;
+            NSMutableData* keyData = [NSMutableData dataWithCapacity: 1024];
             CBCollatableBeginArray(keyData);
             CBAddCollatable(key, keyData);
             CBAddCollatable(docID, keyData);
@@ -78,33 +91,35 @@ static BOOL parseKey(CBForestDocument* doc,
                 bodyData = [NSData data];
             }
 
-            CBForestSequence seq = [self setValue: bodyData
-                                             meta: nil
-                                           forKey: keyData
-                                            error: NULL];
-            if (seq != kCBForestNoSequence) {
-                if (!seqs)
-                    seqs = [[NSMutableData alloc] initWithCapacity: 200];
-                uint8_t buf[kMaxVarintLen64];
-                size_t size = PutUVarInt(buf, seq);
-                [seqs appendBytes: buf length: size];
-            }
-            //NSLog(@"INDEX: Seq %llu = %@ --> %@", seq, keyData, body);
+            ++rowsAdded;
+            OSAtomicIncrement32(&rowsPending);
+            [self asyncSetValue: bodyData
+                           meta: nil
+                         forKey: keyData
+                     onComplete:^(CBForestSequence seq, NSError *error)
+            {
+                if (seq != kCBForestNoSequence) {
+                    if (!seqs)
+                        seqs = [[NSMutableData alloc] initWithCapacity: 200];
+                    uint8_t buf[kMaxVarintLen64];
+                    size_t size = PutUVarInt(buf, seq);
+                    [seqs appendBytes: buf length: size];
+                }
+                if (OSAtomicDecrement32(&rowsPending) == 0) {
+                    // Last set is done! Update the list of sequences used for this document:
+                    [self asyncSetValue: seqs
+                                   meta: nil
+                                 forKey: collatableDocID
+                             onComplete: nil];
+                }
+            }];
         }
     };
 
     addKeysBlock(emit);
 
     // If this call didn't alter the index, return NO:
-    if (!hadRows && !seqs)
-        return NO;
-
-    // Update the list of sequences used for this document:
-    [self setValue: seqs
-              meta: nil
-            forKey: collatableDocID
-             error: NULL];
-    return YES;
+    return hadRows || rowsAdded;
 }
 
 

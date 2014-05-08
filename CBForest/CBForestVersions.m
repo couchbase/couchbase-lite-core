@@ -138,32 +138,49 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
         _tree = RevTreeNew(1);
         return YES;
     } else
-        return Check(FDB_RESULT_KEY_NOT_FOUND, outError);
+        return CheckWithKey(FDB_RESULT_KEY_NOT_FOUND, self.docID, outError);
 }
 
 
-- (BOOL) save: (NSError**)outError {
-    if (!_changed)
-        return YES;
-
+- (NSData*) encodeBody {
     RevTreePrune(_tree, _maxDepth);
     slice encoded = RevTreeEncode(_tree);
+    return SliceToAdoptingData(encoded.buf, encoded.size);
+}
 
-    // Encode flags & revID into metadata:
+- (NSData*) encodeMetadata {
     NSMutableData* metadata = [NSMutableData dataWithLength: 1 + _revID.length];
     void* bytes = metadata.mutableBytes;
     *(uint8_t*)bytes = _flags;
     slice dstRev = {bytes+1, metadata.length-1};
     RevIDCompact(StringToSlice(_revID), &dstRev);
     metadata.length = 1 + dstRev.size;
+    return metadata;
+}
 
-    BOOL ok = [self writeBody: SliceToData(encoded.buf, encoded.size)
-                     metadata: metadata
+
+- (BOOL) save: (NSError**)outError {
+    if (!_changed)
+        return YES;
+    BOOL ok = [self writeBody: self.encodeBody
+                     metadata: self.encodeMetadata
                         error: outError];
-    free((void*)encoded.buf);
     if (ok)
         _changed = NO;
     return ok;
+}
+
+
+- (void) asyncSave: (void(^)(CBForestSequence, NSError*))onComplete {
+    if (!_changed) {
+        if (onComplete)
+            onComplete(self.sequence, nil);
+        return;
+    }
+    [self asyncWriteBody: self.encodeBody
+                metadata: self.encodeMetadata
+              onComplete: onComplete];
+    _changed = NO;
 }
 
 
@@ -210,7 +227,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
             .seqnum = node->sequence,
             .offset = node->oldBodyOffset
         };
-        if (!Check([self.db rawGet: &doc options: 0], outError))
+        if (!CheckWithKey([self.db rawGet: &doc options: 0], self.docID, outError))
             return nil; // This will happen if the old doc body was lost by compaction.
         RevTree* oldTree = RevTreeDecode((slice){doc.body, doc.bodylen}, 0, 0, 0);
         if (oldTree) {

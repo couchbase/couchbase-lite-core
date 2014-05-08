@@ -14,7 +14,7 @@
 #import <forestdb.h>
 
 
-#define MAP_PARALLELISM 4 /* If defined, min number of GCD tasks to use for map functions */
+#define MAP_PARALLELISM 8 /* If defined, min number of GCD tasks to use for map functions */
 
 
 @implementation CBForestMapReduceIndex
@@ -138,8 +138,8 @@
                 dispatch_group_async(mapGroup, mapQueue, ^{
                     @autoreleasepool {
 #endif
-                        BOOL changed = [self updateForDocument: doc.docID atSequence: sequence
-                                                       addKeys: ^(CBForestIndexEmitBlock emit)
+                        BOOL changed = [self _updateForDocument: doc.docID atSequence: sequence
+                                                        addKeys: ^(CBForestIndexEmitBlock emit)
                         {
                             if (tokenizer) {
                                 // Full-text indexing:
