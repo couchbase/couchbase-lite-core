@@ -146,8 +146,12 @@
                                 CBForestIndexEmitBlock realEmit = emit;
                                 emit = ^(id key, id value) {
                                     if ([key isKindOfClass: [NSString class]]) {
-                                        for (NSString* word in [tokenizer tokenize: key])
+                                        [tokenizer tokenize: key
+                                                     unique: YES
+                                                onTokenData: ^(NSData *word, NSRange byteRange)
+                                        {
                                             realEmit(word, value);
+                                        }];
                                     } else {
                                         realEmit(key, value);
                                     }

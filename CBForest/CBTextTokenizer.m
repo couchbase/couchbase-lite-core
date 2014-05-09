@@ -49,8 +49,7 @@ static NSDictionary* sLanguageToStopWords;
     do {
         space = strchr(cString, ' ');
         size_t length = space ? (space-cString) : strlen(cString);
-        NSString* word = [[NSString alloc] initWithBytes: cString length: length
-                                                encoding: NSUTF8StringEncoding];
+        NSData* word = [[NSData alloc] initWithBytes: cString length: length];
         [stopWords addObject: word];
         cString = space+1;
     } while (space);
@@ -142,9 +141,14 @@ static NSDictionary* sLanguageToStopWords;
 }
 
 
-- (BOOL) tokenize: (NSString*)string onToken: (void (^)(NSString*,NSRange))onToken {
+- (BOOL) tokenize: (NSString*)string
+           unique: (BOOL)unique
+      onTokenData: (void (^)(NSData*,NSRange))onToken
+{
     sqlite3_tokenizer* tokenizer = [self getTokenizer];
     __block int err = SQLITE_OK;
+    NSMutableSet* alreadySeen = unique ? [[NSMutableSet alloc] init] : nil;
+
     WithMutableUTF8(string, ^(uint8_t *bytes, size_t byteCount) {
         sqlite3_tokenizer_cursor* cursor;
         err = sModule->xOpen(tokenizer, (const char*)bytes, (int)byteCount, &cursor);
@@ -158,10 +162,13 @@ static NSDictionary* sLanguageToStopWords;
             int startOffset, endOffset, pos;
             err = sModule->xNext(cursor, &tokenBytes, &tokenLength, &startOffset, &endOffset, &pos);
             if (err == SQLITE_OK) {
-                NSString* token = [[NSString alloc] initWithBytes: tokenBytes length: tokenLength
-                                                         encoding: NSUTF8StringEncoding];
-                if (![_stopWords containsObject: token])
+                NSData* token = [[NSData alloc] initWithBytesNoCopy: (void*)tokenBytes
+                                                             length: tokenLength
+                                                       freeWhenDone: NO];
+                if (![_stopWords containsObject: token] && ![alreadySeen containsObject: token]) {
                     onToken(token, NSMakeRange(startOffset, endOffset-startOffset));
+                    [alreadySeen addObject: [token copy]];
+                }
             }
         } while (err == SQLITE_OK);
         if (err == SQLITE_DONE)
@@ -174,9 +181,20 @@ static NSDictionary* sLanguageToStopWords;
 }
 
 
+- (BOOL) tokenize: (NSString*)string
+           unique: (BOOL)unique
+          onToken: (void (^)(NSString*,NSRange))onToken
+{
+    return [self tokenize: string unique: unique onTokenData:^(NSData *data, NSRange range) {
+        NSString* str = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
+        onToken(str, range);
+    }];
+}
+
+
 - (NSSet*) tokenize: (NSString*)string {
     NSMutableSet* tokens = [NSMutableSet set];
-    [self tokenize: string onToken: ^(NSString* token, NSRange r) {
+    [self tokenize: string unique: YES onToken: ^(NSString* token, NSRange r) {
         [tokens addObject: token];
     }];
     return tokens;

@@ -23,7 +23,7 @@
 - (instancetype) initWithLanguage: (NSString*)language
                  removeDiacritics: (BOOL)removeDiacritics;
 
-/** A set of words that should be ignored and not returned by the tokenizer. */
+/** A set of words (as NSData objects) that should be ignored and not returned by the tokenizer. */
 @property (copy) NSSet* stopWords;
 
 /** A string containing extra characters that should be considered parts of words. */
@@ -35,7 +35,12 @@
     The second parameter is the byte range in the UTF-8-converted string at which the original
     word appears. */
 - (BOOL) tokenize: (NSString*)string
+           unique: (BOOL)unique
           onToken: (void (^)(NSString* token, NSRange byteRange))onToken;
+
+- (BOOL) tokenize: (NSString*)string
+           unique: (BOOL)unique
+      onTokenData: (void (^)(NSData* tokenData, NSRange byteRange))onToken;
 
 /** Tokenizes a string, returning a set of unique token strings. */
 - (NSSet*) tokenize: (NSString*)string;

@@ -76,7 +76,7 @@ static BOOL parseKey(CBForestDocument* doc,
             NSMutableData* keyData = [NSMutableData dataWithCapacity: 1024];
             CBCollatableBeginArray(keyData);
             CBAddCollatable(key, keyData);
-            CBAddCollatable(docID, keyData);
+            [keyData appendData: collatableDocID];
             CBAddCollatable(@(docSequence), keyData);
             CBCollatableEndArray(keyData);
 
@@ -394,10 +394,8 @@ static BOOL parseKey(CBForestDocument* doc,
                      id* key, NSString** docID, CBForestSequence* sequence)
 {
     slice indexKey = doc.rawID;
-    if (CBCollatableReadNext(&indexKey, NO, key) != kArrayType)
-        return NO;
-    CBCollatableReadNext(&indexKey, YES, key);
-    CBCollatableReadNext(&indexKey, NO, docID);
-    CBCollatableReadNextNumber(&indexKey, (int64_t*)sequence);
-    return YES;
+    return CBCollatableReadNext(&indexKey, NO, key) == kArrayType
+        && CBCollatableReadNext(&indexKey, YES, key) != kErrorType
+        && CBCollatableReadNext(&indexKey, NO, docID) == kStringType
+        && CBCollatableReadNextNumber(&indexKey, (int64_t*)sequence);
 }

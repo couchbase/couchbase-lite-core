@@ -57,6 +57,10 @@ typedef enum {
 
 - (CBForestSequence) sequenceOfRevision: (NSString*)revID;
 
+- (BOOL) getRevision: (NSString*)revID
+               flags: (CBForestRevisionFlags*)outFlags
+            sequence: (CBForestSequence*)outSequence;
+
 /** Returns the data of the revision with the given ID, or nil if it's not found. */
 - (NSData*) dataOfRevision: (NSString*)revID;
 

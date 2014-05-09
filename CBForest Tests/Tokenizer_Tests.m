@@ -28,9 +28,9 @@
     [super tearDown];
 }
 
-- (NSArray*) tokenize: (NSString*)string {
+- (NSArray*) tokenize: (NSString*)string unique: (BOOL)unique {
     NSMutableArray* tokens = [NSMutableArray array];
-    [tokenizer tokenize: string onToken: ^(NSString* token, NSRange r) {
+    [tokenizer tokenize: string unique: unique onToken: ^(NSString* token, NSRange r) {
         XCTAssertNotNil(token);
         XCTAssert(r.length > 0 && r.length < 20);
         XCTAssert(r.location < string.length);
@@ -42,6 +42,11 @@
     return tokens;
 }
 
+- (NSArray*) tokenize: (NSString*)string {
+    return [self tokenize: string unique: NO];
+}
+
+
 - (void)testDefaultTokenizer {
     tokenizer = [[CBTextTokenizer alloc] initWithLanguage: nil removeDiacritics: NO];
 
@@ -51,6 +56,8 @@
                           (@[@"having", @"larger", @"books", @"ça", @"vä"]));
     XCTAssertEqualObjects(([self tokenize: @"“Typographic ‘quotes’ aren’t optional”"]),
                           (@[@"typographic", @"quotes", @"aren", @"t", @"optional"]));
+    XCTAssertEqualObjects(([self tokenize: @"seven eight seven nine" unique: YES]),
+                          (@[@"seven", @"eight", @"nine"]));
 }
 
 - (void)testEnglishTokenizer {

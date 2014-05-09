@@ -110,6 +110,24 @@ static void encodeString(NSString* str, NSMutableData* output) {
     // http://www.unicode.org/Public/UCA/latest/allkeys.txt
 }
 
+static void encodeStringData(NSData* str, NSMutableData* output) {
+    size_t length = str.length;
+    const uint8_t* utf8 = str.bytes;
+    uint8_t* buffer = (length < 512) ? alloca(length+2) : malloc(length+2);
+    
+    buffer[0] = '\5';
+    const uint8_t* priority = getCharPriorityMap();
+    for (int i=0; i<length; i++)
+        buffer[i+1] = priority[utf8[i]];
+    buffer[length+1] = '\0';
+
+    [output appendBytes: buffer length: length+2];
+
+    if (length >= 512)
+        free(buffer);
+}
+
+
 static void encodeArray(NSArray* array, NSMutableData* output) {
     CBCollatableBeginArray(output);
     for (id object in array) {
@@ -139,6 +157,10 @@ void CBAddCollatable(id object, NSMutableData* output) {
         encodeDictionary(object, output);
     } else if ([object isKindOfClass: [NSArray class]]) {
         encodeArray(object, output);
+    } else if ([object isKindOfClass: [NSData class]]) {
+        // Interpret an NSData as a UTF-8 string. This saves time if the caller already has a
+        // string in this form.
+        encodeStringData(object, output);
     } else {
         NSCAssert(NO, @"CBAddCollatable can't encode instances of %@", [object class]);
     }

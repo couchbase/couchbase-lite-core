@@ -260,6 +260,24 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return [self nodeWithID: revID] != NULL;
 }
 
+- (BOOL) getRevision: (NSString*)revID
+               flags: (CBForestRevisionFlags*)outFlags
+            sequence: (CBForestSequence*)outSequence
+{
+    if (!_tree) {
+        NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
+        *outFlags = self.flags;
+        *outSequence = self.sequence;
+        return YES;
+    }
+    const RevNode* node = [self nodeWithID: revID];
+    if (!node)
+        return NO;
+    *outFlags = node->flags;
+    *outSequence = node->sequence;
+    return YES;
+}
+
 - (CBForestRevisionFlags) flagsOfRevision: (NSString*)revID {
     if (!_tree) {
         NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
@@ -341,7 +359,6 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 - (slice) rememberData: (NSData*)data {
     if (!data)
         return (slice){NULL, 0};
-    data = [data copy]; // in case it's mutable
     if (!_insertedData)
         _insertedData = [NSMutableArray array];
     [_insertedData addObject: data];

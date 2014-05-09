@@ -186,13 +186,15 @@ slice CompactRevIDToSlice(NSString* revID) {
 NSData* CompactRevID(NSString* revID) {
     if (!revID)
         return nil;
-    //OPT: This is not very efficient.
-    slice src = StringToSlice(revID);
-    NSMutableData* data = [[NSMutableData alloc] initWithLength: src.size];
-    slice dst = DataToSlice(data);
-    if (!RevIDCompact(src, &dst))
-        return nil; // error
-    data.length = dst.size;
+    __block NSMutableData* data;
+    WithMutableUTF8(revID, ^(uint8_t *chars, size_t length) {
+        data = [[NSMutableData alloc] initWithLength: length];
+        __block slice dst = DataToSlice(data);
+        if (RevIDCompact((slice){chars,length}, &dst))
+            data.length = dst.size;
+        else
+            data = nil;
+    });
     return data;
 }
 
