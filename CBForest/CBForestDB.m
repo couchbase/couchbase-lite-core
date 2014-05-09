@@ -145,10 +145,8 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
     }
 }
 
-static NSDictionary* mkConfig(id value) {
-    return @{@"default": value,
-             @"validator": @{@"range": @{@"min": @0, @"max": @(1.0e30)}}};
-}
+//FIX: This was left out of forestdb.h (MB-11078)
+extern void set_default_fdb_config(fdb_config *fconfig);
 
 - (BOOL) open: (NSString*)filePath
       options: (CBForestFileOptions)options
@@ -156,31 +154,24 @@ static NSDictionary* mkConfig(id value) {
 {
     NSAssert(!_db, @"Already open");
 
-    NSString* configPath = nil;
-    if (_customConfig) {
-        NSDictionary* config = @{@"buffer_cache_size": mkConfig(@(_config.bufferCacheSize)),
-                                 @"wal_threshold":     mkConfig(@(_config.walThreshold)),
-                                 @"enable_sequence_tree": mkConfig(_config.enableSequenceTree? @YES : @NO),
-                                 @"compress_document_body": mkConfig(_config.compressDocBodies ? @YES : @NO)};
-        configPath = [filePath stringByAppendingString: @".config"];
-        NSDictionary* rootConfig = @{@"configs": config};
-        NSData* json = [NSJSONSerialization dataWithJSONObject: rootConfig options: 0 error: NULL];
-        [json writeToFile: configPath atomically: YES];
-    }
-
     __block fdb_status status;
     dispatch_sync(_queue, ^{
-        // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag. --4/2014
+        fdb_config config;
+        set_default_fdb_config(&config);
+        if (_customConfig) {
+            config.flags                    = (fdb_open_flags)options,
+            config.buffercache_size         = _config.bufferCacheSize;
+            config.wal_threshold            = _config.walThreshold;
+            config.seqtree_opt              = _config.enableSequenceTree;
+            config.compress_document_body   = _config.compressDocBodies;
+        }
+        // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag (MB-11079)
         if ((options & FDB_OPEN_FLAG_CREATE)
                 || [[NSFileManager defaultManager] fileExistsAtPath: filePath])
-            status = fdb_open(&_db, filePath.fileSystemRepresentation, options,
-                              configPath.fileSystemRepresentation);
+            status = fdb_open(&_db, filePath.fileSystemRepresentation, &config);
         else
             status = FDB_RESULT_NO_SUCH_FILE;
     });
-
-    if (configPath)
-        [[NSFileManager defaultManager] removeItemAtPath: configPath error: NULL];
 
     return Check(status, outError);
 }
