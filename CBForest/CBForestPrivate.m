@@ -10,100 +10,50 @@
 #import "rev_tree.h"
 
 
-BOOL Check(fdb_status code, NSError** outError) {
-    return CheckWithKey(code, nil, outError);
-}
-
-BOOL CheckWithKey(fdb_status code, id key, NSError** outError) {
-    if (code == FDB_RESULT_SUCCESS) {
-        if (outError)
-            *outError = nil;
-        return YES;
+BOOL CheckFailed(fdb_status code, id key, NSError** outError) {
+    static NSString* const kErrorNames[] = {
+        nil,
+        @"Invalid arguments",
+        @"Open failed",
+        @"File not found",
+        @"Write failed",
+        @"Read failed",
+        @"Close failed",
+        @"Commit failed",
+        @"Memory allocation failed",
+        @"Key not found",
+        @"Database is read-only",
+        @"Compaction failed",
+        @"Iterator failed",
+        @"Seek failed",
+        @"Fsync failed",
+        @"Invalid data checksum",
+        @"Database corrupted",
+        @"Data compression failed",
+        @"No database instance",
+        @"Rollback in progress",
+    };
+    NSString* errorName;
+    if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))
+        errorName = [NSString stringWithFormat: @"ForestDB error: %@", kErrorNames[-code]];
+    else if ((int)code == kCBForestErrorRevisionDataCorrupt)
+        errorName = @"Revision data is corrupted";
+    else
+        errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
+    if (outError) {
+        NSMutableDictionary* info = [NSMutableDictionary dictionaryWithObject: errorName
+                                                            forKey: NSLocalizedDescriptionKey];
+        if (key)
+            info[@"Key"] = key;
+        *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
     } else {
-        static NSString* const kErrorNames[] = {
-            nil,
-            @"Invalid arguments",
-            @"Open failed",
-            @"File not found",
-            @"Write failed",
-            @"Read failed",
-            @"Close failed",
-            @"Commit failed",
-            @"Memory allocation failed",
-            @"Key not found",
-            @"Database is read-only",
-            @"Compaction failed",
-            @"Iterator failed",
-            @"Seek failed",
-            @"Fsync failed",
-            @"Invalid data checksum",
-            @"Database corrupted",
-            @"Data compression failed",
-            @"No database instance",
-            @"Rollback in progress",
-        };
-        NSString* errorName;
-        if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))
-            errorName = [NSString stringWithFormat: @"ForestDB error: %@", kErrorNames[-code]];
-        else if ((int)code == kCBForestErrorRevisionDataCorrupt)
-            errorName = @"Revision data is corrupted";
-        else
-            errorName = [NSString stringWithFormat: @"ForestDB error %d", code];
-        if (outError) {
-            NSMutableDictionary* info = [NSMutableDictionary dictionaryWithObject: errorName
-                                                                forKey: NSLocalizedDescriptionKey];
-            if (key)
-                info[@"Key"] = key;
-            *outError = [NSError errorWithDomain: CBForestErrorDomain code: code userInfo: info];
-        } else {
-            NSLog(@"Warning: CBForest error %d (%@)", code, errorName);
-        }
-        return NO;
+        NSLog(@"Warning: CBForest error %d (%@)", code, errorName);
     }
+    return NO;
 }
 
 
-slice DataToSlice(NSData* data) {
-    return (slice){data.bytes, data.length};
-}
-
-
-slice StringToSlice(NSString* string) {
-    return DataToSlice([string dataUsingEncoding: NSUTF8StringEncoding]);
-}
-
-
-NSData* SliceToData(const void* buf, size_t size) {
-    if (!buf)
-        return nil;
-    return [NSData dataWithBytes: buf length: size];
-}
-
-
-NSData* SliceToTempData(const void* buf, size_t size) {
-    if (!buf)
-        return nil;
-    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: NO];
-}
-
-
-NSData* SliceToAdoptingData(const void* buf, size_t size) {
-    if (!buf)
-        return nil;
-    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: YES];
-}
-
-
-NSString* SliceToString(const void* buf, size_t size) {
-    if (!buf)
-        return nil;
-    return [[NSString alloc] initWithBytes: buf
-                                    length: size
-                                  encoding: NSUTF8StringEncoding];
-}
-
-
-NSData* JSONToData(id obj, NSError** outError) {
+NSData* JSONToData(UU id obj, NSError** outError) {
     if ([obj isKindOfClass: [NSDictionary class]] || [obj isKindOfClass: [NSArray class]]) {
         return [NSJSONSerialization dataWithJSONObject: obj options: 0 error: outError];
     } else {
@@ -145,7 +95,7 @@ void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data) {
 
 // Calls the given block, passing it a UTF-8 encoded version of the given string.
 // The UTF-8 data can be safely modified by the block but isn't valid after the block exits.
-BOOL WithMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
+BOOL WithMutableUTF8(UU NSString* str, void (^block)(uint8_t*, size_t)) {
     NSUInteger byteCount;
     if (str.length < 256) {
         // First try to copy the UTF-8 into a smallish stack-based buffer:
@@ -178,12 +128,7 @@ BOOL WithMutableUTF8(NSString* str, void (^block)(uint8_t*, size_t)) {
 #pragma mark - REVISION IDS:
 
 
-slice CompactRevIDToSlice(NSString* revID) {
-    return DataToSlice(CompactRevID(revID));
-}
-
-
-NSData* CompactRevID(NSString* revID) {
+NSData* CompactRevID(UU NSString* revID) {
     if (!revID)
         return nil;
     __block NSMutableData* data;
@@ -238,7 +183,7 @@ NSUInteger CPUCount(void) {
     return self;
 }
 
-- (void) lockWithOwner: (id)owner {
+- (void) lockWithOwner: (UU id)owner {
     NSParameterAssert(owner != nil);
     [_condition lock];
     while (_owner != nil && _owner != owner)
@@ -247,7 +192,7 @@ NSUInteger CPUCount(void) {
     [_condition unlock];
 }
 
-- (void) unlockWithOwner: (id)oldOwner {
+- (void) unlockWithOwner: (UU id)oldOwner {
     NSParameterAssert(oldOwner != nil);
     [_condition lock];
     NSAssert(oldOwner == _owner, @"clearing wrong owner! (%p, expected %p)", oldOwner, _owner);

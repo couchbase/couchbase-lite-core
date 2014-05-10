@@ -11,15 +11,65 @@
 #import "slice.h"
 
 
-BOOL Check(fdb_status err, NSError** outError);
-BOOL CheckWithKey(fdb_status err, id key, NSError** outError);
+// Declaring a function/method argument as __unsafe_unretained in the implementation stops ARC
+// from retaining it at the start and releasing it at the end. ARC is being technically correct
+// and conservative, but this really adds to the overhead of small performance-critical methods.
+#define UU __unsafe_unretained
 
-slice DataToSlice(NSData* data);
-slice StringToSlice(NSString* docID);
-NSData* SliceToData(const void* buf, size_t size);
-NSData* SliceToTempData(const void* buf, size_t size);
-NSData* SliceToAdoptingData(const void* buf, size_t size);
-NSString* SliceToString(const void* buf, size_t size);
+
+BOOL CheckFailed(fdb_status code, id key, NSError** outError);
+
+static inline BOOL CheckWithKey(fdb_status code, id key, NSError** outError) {
+    if (code == FDB_RESULT_SUCCESS) {
+        if (outError)
+            *outError = nil;
+        return YES;
+    } else {
+        return CheckFailed(code, key, outError);
+    }
+}
+
+static inline BOOL Check(fdb_status code, NSError** outError) {
+    return CheckWithKey(code, nil, outError);
+}
+
+
+static inline slice DataToSlice(NSData* data) {
+    return (slice){data.bytes, data.length};
+}
+
+static inline slice StringToSlice(NSString* string) {
+    return DataToSlice([string dataUsingEncoding: NSUTF8StringEncoding]);
+}
+
+static inline NSData* SliceToData(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [NSData dataWithBytes: buf length: size];
+}
+
+
+static inline NSData* SliceToTempData(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: NO];
+}
+
+
+static inline NSData* SliceToAdoptingData(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [NSData dataWithBytesNoCopy: (void*)buf length: size freeWhenDone: YES];
+}
+
+
+static inline NSString* SliceToString(const void* buf, size_t size) {
+    if (!buf)
+        return nil;
+    return [[NSString alloc] initWithBytes: buf
+                                    length: size
+                                  encoding: NSUTF8StringEncoding];
+}
 
 NSData* JSONToData(id obj, NSError** outError) ;
 
@@ -35,8 +85,11 @@ void UpdateBuffer(void** outBuf, size_t *outLen, const void* srcBuf, size_t srcL
 void UpdateBufferFromData(void** outBuf, size_t *outLen, NSData* data);
 
 NSData* CompactRevID(NSString* revID);
-slice CompactRevIDToSlice(NSString* revID);
 NSString* ExpandRevID(slice compressedRevID);
+
+static inline slice CompactRevIDToSlice(NSString* revID) {
+    return DataToSlice(CompactRevID(revID));
+}
 
 
 // Calls the given block, passing it a UTF-8 encoded version of the given string.

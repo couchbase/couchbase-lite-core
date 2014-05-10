@@ -63,39 +63,39 @@ NSData* CBCreateCollatable(id object) {
 }
 
 
-static void encodeNumber(NSNumber* number, NSMutableData* output) {
-    const char* encoding = number.objCType;
-    if (encoding[0] == 'c') {
-        // Boolean:
-        [output appendBytes: ([number boolValue] ? "\3" : "\2") length: 1];
-    } else {
-        // Integer: Start by encoding the tag, and getting the number:
-        [output appendBytes: "\4" length: 1];
-        int64_t n = number.longLongValue;
+void CBCollatableAddInteger(int64_t n, UU NSMutableData* output) {
+    // Figure out how many bytes of the big-endian representation we need to encode:
+    union {
+        int64_t asInt;
+        uint8_t bytes[8];
+    } val;
+    val.asInt = NSSwapHostLongLongToBig(n);
+    uint8_t ignore = n < 0 ? 0xFF : 0x00;
+    int i;
+    for (i=0; i<8; i++)
+        if (val.bytes[i] != ignore)
+            break;
+    if (n<0)
+        i--;
+    uint8_t nBytes = (uint8_t)(8-i);
 
-        // Then figure out how many bytes of the big-endian representation we need to encode:
-        union {
-            int64_t asInt;
-            uint8_t bytes[8];
-        } val;
-        val.asInt = NSSwapHostLongLongToBig(n);
-        uint8_t ignore = n < 0 ? 0xFF : 0x00;
-        int i;
-        for (i=0; i<8; i++)
-            if (val.bytes[i] != ignore)
-                break;
-        if (n<0)
-            i--;
-        uint8_t nBytes = (uint8_t)(8-i);
-
-        // Encode the length/flag byte and then the number itself:
-        uint8_t lenByte =  n>=0 ? (0x80 | nBytes) : (127 - nBytes);
-        [output appendBytes: &lenByte length: 1];
-        [output appendBytes: &val.bytes[i] length: nBytes];
-    }
+    // Encode the length/flag byte and then the number itself:
+    uint8_t lenByte =  n>=0 ? (0x80 | nBytes) : (127 - nBytes);
+    [output appendBytes: "\4" length: 1];
+    [output appendBytes: &lenByte length: 1];
+    [output appendBytes: &val.bytes[i] length: nBytes];
 }
 
-static void encodeString(NSString* str, NSMutableData* output) {
+
+static void encodeNumber(UU NSNumber* number, UU NSMutableData* output) {
+    const char* encoding = number.objCType;
+    if (encoding[0] == 'c')
+        [output appendBytes: (number.boolValue ? "\3" : "\2") length: 1];
+    else
+        CBCollatableAddInteger(number.longLongValue, output);
+}
+
+static void encodeString(UU NSString* str, UU NSMutableData* output) {
     [output appendBytes: "\5" length: 1];
     WithMutableUTF8(str, ^(uint8_t *utf8, size_t length) {
         const uint8_t* priority = getCharPriorityMap();
@@ -110,7 +110,7 @@ static void encodeString(NSString* str, NSMutableData* output) {
     // http://www.unicode.org/Public/UCA/latest/allkeys.txt
 }
 
-static void encodeStringData(NSData* str, NSMutableData* output) {
+static void encodeStringData(UU NSData* str, UU NSMutableData* output) {
     size_t length = str.length;
     const uint8_t* utf8 = str.bytes;
     uint8_t* buffer = (length < 512) ? alloca(length+2) : malloc(length+2);
@@ -128,7 +128,7 @@ static void encodeStringData(NSData* str, NSMutableData* output) {
 }
 
 
-static void encodeArray(NSArray* array, NSMutableData* output) {
+static void encodeArray(UU NSArray* array, UU NSMutableData* output) {
     CBCollatableBeginArray(output);
     for (id object in array) {
         CBAddCollatable(object, output);
@@ -136,7 +136,7 @@ static void encodeArray(NSArray* array, NSMutableData* output) {
     CBCollatableEndArray(output);
 }
 
-static void encodeDictionary(NSDictionary* dict, NSMutableData* output) {
+static void encodeDictionary(UU NSDictionary* dict, UU NSMutableData* output) {
     [output appendBytes: "\7" length: 1];
     NSArray* keys = [[dict allKeys] sortedArrayUsingFunction: &compareCanonStrings context: NULL];
     for (NSString* key in keys) {
@@ -146,7 +146,7 @@ static void encodeDictionary(NSDictionary* dict, NSMutableData* output) {
     [output appendBytes: "\0" length: 1];
 }
 
-void CBAddCollatable(id object, NSMutableData* output) {
+void CBAddCollatable(UU id object, UU NSMutableData* output) {
     if ([object isKindOfClass: [NSString class]]) {
         encodeString(object, output);
     } else if ([object isKindOfClass: [NSNumber class]]) {
@@ -166,8 +166,8 @@ void CBAddCollatable(id object, NSMutableData* output) {
     }
 }
 
-void CBCollatableBeginArray(NSMutableData* output)   {[output appendBytes: "\6" length: 1];}
-void CBCollatableEndArray(NSMutableData* output)     {[output appendBytes: "\0" length: 1];}
+void CBCollatableBeginArray(UU NSMutableData* output)   {[output appendBytes: "\6" length: 1];}
+void CBCollatableEndArray(UU NSMutableData* output)     {[output appendBytes: "\0" length: 1];}
 
 
 #pragma mark - DECODING:

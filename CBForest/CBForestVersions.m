@@ -190,7 +190,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
 
 
 // internal method that looks up a RevNode. If revID is nil, returns the current node.
-- (const RevNode*) nodeWithID: (NSString*)revID {
+- (const RevNode*) nodeWithID: (UU NSString*)revID {
     if (revID)
         return RevTreeFindNode(_tree, CompactRevIDToSlice(revID));
     else {
@@ -210,7 +210,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return [self dataOfRevision: revID error: NULL];
 }
 
-- (NSData*) dataOfRevision: (NSString*)revID error: (NSError**)outError {
+- (NSData*) dataOfRevision: (UU NSString*)revID error: (NSError**)outError {
     if (outError)
         *outError = nil;
     const RevNode* node = [self nodeWithID: revID];
@@ -247,7 +247,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return result;
 }
 
-- (BOOL) isRevisionDeleted: (NSString*)revID {
+- (BOOL) isRevisionDeleted: (UU NSString*)revID {
     if (!_tree) {
         NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
         return (self.flags & kCBForestRevisionDeleted) != 0;
@@ -278,7 +278,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return YES;
 }
 
-- (CBForestRevisionFlags) flagsOfRevision: (NSString*)revID {
+- (CBForestRevisionFlags) flagsOfRevision: (UU NSString*)revID {
     if (!_tree) {
         NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
         return self.flags;
@@ -292,7 +292,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return flags;
 }
 
-- (NSString*) parentIDOfRevision: (NSString*)revID {
+- (NSString*) parentIDOfRevision: (UU NSString*)revID {
     const RevNode* node = [self nodeWithID: revID];
     if (!node || node->parentIndex == kRevNodeParentIndexNone)
         return nil;
@@ -300,7 +300,7 @@ static CBForestVersionsFlags flagsFromMeta(const fdb_doc* docinfo) {
     return ExpandRevID(parent->revID);
 }
 
-- (CBForestSequence) sequenceOfRevision: (NSString*)revID {
+- (CBForestSequence) sequenceOfRevision: (UU NSString*)revID {
     if (!_tree) {
         NSAssert(revID == nil || [revID isEqualToString: self.revID], @"Body is not loaded");
         return self.sequence;

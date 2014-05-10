@@ -14,6 +14,8 @@
     sort (like memcmp) and will still end up collated in the correct order for view indexes. */
 NSData* CBCreateCollatable(id jsonObject);
 
+void CBCollatableAddInteger(int64_t n, NSMutableData* output);
+
 void CBCollatableBeginArray(NSMutableData* output);
 void CBCollatableEndArray(NSMutableData* output);
 

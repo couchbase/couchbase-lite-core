@@ -49,7 +49,7 @@ typedef enum {
 
 typedef struct {
     uint64_t bufferCacheSize;
-    uint64_t walThreshold;
+    uint64_t walThreshold;      // if nonzero, enables WAL flushing before commits
     BOOL enableSequenceTree;
     BOOL compressDocBodies;
 } CBForestDBConfig;

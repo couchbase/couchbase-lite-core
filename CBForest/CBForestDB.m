@@ -161,9 +161,12 @@ extern void set_default_fdb_config(fdb_config *fconfig);
         if (_customConfig) {
             config.flags                    = (fdb_open_flags)options,
             config.buffercache_size         = _config.bufferCacheSize;
-            config.wal_threshold            = _config.walThreshold;
             config.seqtree_opt              = _config.enableSequenceTree;
             config.compress_document_body   = _config.compressDocBodies;
+            if (_config.walThreshold > 0) {
+                config.wal_threshold            = _config.walThreshold;
+                config.wal_flush_before_commit  = true;
+            }
         }
         // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag (MB-11079)
         if ((options & FDB_OPEN_FLAG_CREATE)
@@ -392,7 +395,7 @@ extern void set_default_fdb_config(fdb_config *fconfig);
 #pragma mark - KEYS/VALUES:
 
 
-- (CBForestSequence) setValue: (NSData*)value meta: (NSData*)meta forKey: (NSData*)key
+- (CBForestSequence) setValue: (UU NSData*)value meta: (UU NSData*)meta forKey: (UU NSData*)key
                         error: (NSError**)outError
 {
     fdb_doc doc = {

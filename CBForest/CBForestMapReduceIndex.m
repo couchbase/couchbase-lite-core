@@ -12,9 +12,10 @@
 #import "CBCollatable.h"
 #import "CBTextTokenizer.h"
 #import <forestdb.h>
+#import <libkern/OSAtomic.h>
 
 
-#define MAP_PARALLELISM 8 /* If defined, min number of GCD tasks to use for map functions */
+#define MAP_PARALLELISM 2 /* If defined, min number of GCD tasks to use for map functions */
 
 
 @implementation CBForestMapReduceIndex

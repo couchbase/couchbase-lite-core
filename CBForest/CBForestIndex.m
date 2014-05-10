@@ -11,6 +11,7 @@
 #import "CBCollatable.h"
 #import "varint.h"
 #import <forestdb.h>
+#import <libkern/OSAtomic.h>
 
 
 id kCBForestIndexNoValue;
@@ -77,7 +78,7 @@ static BOOL parseKey(CBForestDocument* doc,
             CBCollatableBeginArray(keyData);
             CBAddCollatable(key, keyData);
             [keyData appendData: collatableDocID];
-            CBAddCollatable(@(docSequence), keyData);
+            CBCollatableAddInteger((int64_t)docSequence, keyData);
             CBCollatableEndArray(keyData);
 
             NSData* bodyData;
