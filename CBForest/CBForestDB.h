@@ -34,6 +34,9 @@ enum {
     kCBForestErrorCompressionFailed = -17,
     kCBForestErrorNoDBInstance = -18,
     kCBForestErrorFailByRollback = -19,
+    kCBForestErrorInvalidConfig = -20,
+    kCBForestErrorNoManualCompaction = -21,
+
     // Errors specific to CBForest, not defined by ForestDB:
     kCBForestErrorRevisionDataCorrupt = -1000,
     kCBForestErrorTransactionAborted = -1001
@@ -48,10 +51,11 @@ typedef enum {
 
 
 typedef struct {
-    uint64_t bufferCacheSize;
-    uint64_t walThreshold;      // if nonzero, enables WAL flushing before commits
-    BOOL enableSequenceTree;
-    BOOL compressDocBodies;
+    uint64_t bufferCacheSize;           // Size of in-memory data cache
+    uint64_t walThreshold;              // if nonzero, enables WAL flushing before commits
+    BOOL enableSequenceTree;            // Should database track sequences?
+    BOOL compressDocBodies;             // Should docs be compressed on-disk with Snappy?
+    uint8_t autoCompactThreshold;       // Percentage of wasted space that triggers auto-compact
 } CBForestDBConfig;
 
 
@@ -87,6 +91,7 @@ typedef void (^CBForestValueIterator)(NSData* key, NSData* value, NSData* meta, 
 /** Callback block to pass to enumeration methods. */
 typedef void (^CBForestDocIterator)(CBForestDocument* doc, BOOL *stop);
 
+/** Database statistics returned by the .info property. */
 typedef struct {
     uint64_t         documentCount;
     uint64_t         dataSize;
@@ -98,6 +103,8 @@ typedef struct {
 /** An open CBForest database. */
 @interface CBForestDB : NSObject
 
++ (void) setAutoCompactInterval: (NSTimeInterval)interval;
+
 /** Opens a database at the given filesystem path.
     @param filePath The name of the file containing the database
     @param options Additional flags for how the database should be opened
@@ -106,6 +113,8 @@ typedef struct {
             options: (CBForestFileOptions)options
              config: (const CBForestDBConfig*)config
               error: (NSError**)outError;
+
++ (CBForestDBConfig)defaultConfig;
 
 /** The filesystem path the database was opened on. */
 @property (readonly) NSString* filename;

@@ -32,6 +32,8 @@ BOOL CheckFailed(fdb_status code, id key, NSError** outError) {
         @"Data compression failed",
         @"No database instance",
         @"Rollback in progress",
+        @"Invalid database config",
+        @"Manual compaction unavailable",
     };
     NSString* errorName;
     if (code < 0 && -code < (sizeof(kErrorNames)/sizeof(id)))

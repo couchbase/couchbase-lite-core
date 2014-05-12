@@ -65,6 +65,14 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
 #endif
 
 
+static NSTimeInterval sAutoCompactInterval = 0.0;
+
++ (void) setAutoCompactInterval: (NSTimeInterval)interval {
+    sAutoCompactInterval = interval;
+}
+
+
+// designated initializer. Internal.
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
              config: (const CBForestDBConfig*)config
@@ -88,6 +96,7 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
     return self;
 }
 
+// public initializer.
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
              config: (const CBForestDBConfig*)config
@@ -97,13 +106,11 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
     if (self) {
         if (![self open: filePath options: options error: outError])
             return nil;
-#ifdef LOGGING
-        fdb_set_log_callback(_db, &forestdbLog, (__bridge void*)(self));
-#endif
     }
     return self;
 }
 
+// initializer for opening as a snapshot.
 - (id) initWithFile: (NSString*)filePath
             options: (CBForestFileOptions)options
              config: (const CBForestDBConfig*)config
@@ -145,8 +152,16 @@ static void forestdbLog(int err_code, const char *err_msg, void *ctx_data) {
     }
 }
 
-//FIX: This was left out of forestdb.h (MB-11078)
-extern void set_default_fdb_config(fdb_config *fconfig);
++ (CBForestDBConfig)defaultConfig {
+    fdb_config fdbConfig = fdb_get_default_config();
+    return (CBForestDBConfig){
+        .bufferCacheSize = fdbConfig.buffercache_size,
+        .walThreshold = fdbConfig.wal_flush_before_commit ? fdbConfig.wal_threshold : 0,
+        .enableSequenceTree = fdbConfig.seqtree_opt,
+        .compressDocBodies = fdbConfig.compress_document_body,
+        .autoCompactThreshold = fdbConfig.compaction_threshold,
+    };
+}
 
 - (BOOL) open: (NSString*)filePath
       options: (CBForestFileOptions)options
@@ -156,25 +171,32 @@ extern void set_default_fdb_config(fdb_config *fconfig);
 
     __block fdb_status status;
     dispatch_sync(_queue, ^{
-        fdb_config config;
-        set_default_fdb_config(&config);
+        fdb_config config = fdb_get_default_config();
         if (_customConfig) {
             config.flags                    = (fdb_open_flags)options,
             config.buffercache_size         = _config.bufferCacheSize;
             config.seqtree_opt              = _config.enableSequenceTree;
             config.compress_document_body   = _config.compressDocBodies;
+            config.compactor_sleep_duration = (int64_t)sAutoCompactInterval;
+            config.compaction_threshold     = _config.autoCompactThreshold;
             if (_config.walThreshold > 0) {
                 config.wal_threshold            = _config.walThreshold;
                 config.wal_flush_before_commit  = true;
             }
         }
-        // ForestDB doesn't yet pay any attention to the FDB_OPEN_FLAG_CREATE flag (MB-11079)
-        if ((options & FDB_OPEN_FLAG_CREATE)
-                || [[NSFileManager defaultManager] fileExistsAtPath: filePath])
-            status = fdb_open(&_db, filePath.fileSystemRepresentation, &config);
-        else
-            status = FDB_RESULT_NO_SUCH_FILE;
-    });
+        if (sAutoCompactInterval > 0.0) {
+            config.compactor_sleep_duration = (int64_t)sAutoCompactInterval;
+        } else {
+            config.compactor_sleep_duration = INT64_MAX;
+            config.compaction_threshold = 0;
+        }
+
+        status = fdb_open(&_db, filePath.fileSystemRepresentation, &config);
+#ifdef LOGGING
+        if (_db)
+            fdb_set_log_callback(_db, &forestdbLog, (__bridge void*)(self));
+#endif
+});
 
     return Check(status, outError);
 }
@@ -407,7 +429,9 @@ extern void set_default_fdb_config(fdb_config *fconfig);
         .metalen = meta.length,
         .deleted = (value == nil)
     };
-    return [self rawSet: &doc error: outError] ? doc.seqnum : kCBForestNoSequence;
+    if (![self rawSet: &doc error: outError])
+        return kCBForestNoSequence;
+    return doc.seqnum ?: 1;     // if db doesn't have a sequence tree, seqnum will be zero
 }
 
 
