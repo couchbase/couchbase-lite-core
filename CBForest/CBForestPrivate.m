@@ -55,6 +55,14 @@ BOOL CheckFailed(fdb_status code, id key, NSError** outError) {
 }
 
 
+BOOL CBIsFileNotFoundError( NSError* error ) {
+    NSString* domain = error.domain;
+    NSInteger code = error.code;
+    return ([domain isEqualToString: NSPOSIXErrorDomain] && code == ENOENT)
+        || ([domain isEqualToString: NSCocoaErrorDomain] && code == NSFileNoSuchFileError);
+}
+
+
 NSData* JSONToData(UU id obj, NSError** outError) {
     if ([obj isKindOfClass: [NSDictionary class]] || [obj isKindOfClass: [NSArray class]]) {
         return [NSJSONSerialization dataWithJSONObject: obj options: 0 error: outError];

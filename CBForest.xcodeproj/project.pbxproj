@@ -31,6 +31,8 @@
 		2709F29F191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
 		2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
 		2709F2A1191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
+		270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
+		270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1C18F8E9750021A9A3 /* Cocoa.framework */; };
 		27139B3518F8E9750021A9A3 /* CBForest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1B18F8E9750021A9A3 /* CBForest.framework */; };
@@ -170,6 +172,26 @@
 		27B7E0F018F8FACB00044EBA /* CBCollatable_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */; };
 		27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */; };
 		27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
+		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		27E48714192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		27E4871C19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		27E4871E19226508007D8940 /* Database_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871D19226508007D8940 /* Database_Test.mm */; };
+		27E4871F19226508007D8940 /* Database_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871D19226508007D8940 /* Database_Test.mm */; };
+		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		27E487241922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		27E487271923B80E007D8940 /* slice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E487261923B80E007D8940 /* slice.mm */; };
+		27E487281923B80E007D8940 /* slice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E487261923B80E007D8940 /* slice.mm */; };
+		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		27E4872F1924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		27E487301924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		27E487331924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		27E487341924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
+		27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
+		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
@@ -420,12 +442,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2704A1E219049E2300138320 /* slice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slice.h; sourceTree = "<group>"; };
+		2704A1E219049E2300138320 /* slice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = slice.h; path = ../CBForest/slice.h; sourceTree = "<group>"; };
 		2704A1E41905FAA700138320 /* slice.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = slice.c; sourceTree = "<group>"; };
 		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
 		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
 		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
+		270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument_Tests.mm; sourceTree = "<group>"; };
 		27139B1B18F8E9750021A9A3 /* CBForest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CBForest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -539,6 +562,23 @@
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBEnumerator.h; sourceTree = "<group>"; };
 		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
+		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
+		27E48712192171EA007D8940 /* Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Database.h; sourceTree = "<group>"; };
+		27E4871A19218E5D007D8940 /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slice.cc; sourceTree = "<group>"; };
+		27E4871D19226508007D8940 /* Database_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Database_Test.mm; sourceTree = "<group>"; };
+		27E4872019226699007D8940 /* testutil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = testutil.h; sourceTree = "<group>"; };
+		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
+		27E487221922A64F007D8940 /* RevTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RevTree.h; sourceTree = "<group>"; };
+		27E487261923B80E007D8940 /* slice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = slice.mm; sourceTree = "<group>"; };
+		27E487291923F24D007D8940 /* VersionedDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocument.cc; sourceTree = "<group>"; };
+		27E4872A1923F24D007D8940 /* VersionedDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VersionedDocument.h; sourceTree = "<group>"; };
+		27E4872D1924178B007D8940 /* Collatable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Collatable.cc; sourceTree = "<group>"; };
+		27E4872E1924178B007D8940 /* Collatable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Collatable.h; sourceTree = "<group>"; };
+		27E487311924242C007D8940 /* Index.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Index.cc; sourceTree = "<group>"; };
+		27E487321924242C007D8940 /* Index.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Index.h; sourceTree = "<group>"; };
+		27E4873519254D45007D8940 /* Collatable_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable_Test.mm; sourceTree = "<group>"; };
+		27E4873819255EA8007D8940 /* MapReduceIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceIndex.cc; sourceTree = "<group>"; };
+		27E4873919255EA8007D8940 /* MapReduceIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MapReduceIndex.h; sourceTree = "<group>"; };
 		27EF7F8D1911A85800A327B9 /* snapshot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = snapshot.cc; sourceTree = "<group>"; };
 		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
@@ -748,6 +788,7 @@
 			isa = PBXGroup;
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
+				27E4871019217187007D8940 /* C++ */,
 				2750724018E3E52800A80C5A /* CBForest */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
@@ -815,7 +856,7 @@
 				27FDFC0018EA58BF00AC4647 /* varint.c */,
 				27FDFC0218EA58DA00AC4647 /* varint.h */,
 				2704A1E41905FAA700138320 /* slice.c */,
-				2704A1E219049E2300138320 /* slice.h */,
+				27E487261923B80E007D8940 /* slice.mm */,
 				27EF80BE19142E6600A327B9 /* CBTextTokenizer.h */,
 				27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
@@ -926,6 +967,10 @@
 				273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */,
 				27EF80C4191438AD00A327B9 /* Tokenizer_Tests.m */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
+				27E4873519254D45007D8940 /* Collatable_Test.mm */,
+				27E4871D19226508007D8940 /* Database_Test.mm */,
+				270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */,
+				27E4872019226699007D8940 /* testutil.h */,
 			);
 			path = "CBForest Tests";
 			sourceTree = "<group>";
@@ -960,6 +1005,28 @@
 				275072EF18E4ACE100A80C5A /* time_utils.h */,
 			);
 			path = utils;
+			sourceTree = "<group>";
+		};
+		27E4871019217187007D8940 /* C++ */ = {
+			isa = PBXGroup;
+			children = (
+				27E48711192171EA007D8940 /* Database.cc */,
+				27E48712192171EA007D8940 /* Database.h */,
+				27E487211922A64F007D8940 /* RevTree.cc */,
+				27E487221922A64F007D8940 /* RevTree.h */,
+				27E487291923F24D007D8940 /* VersionedDocument.cc */,
+				27E4872A1923F24D007D8940 /* VersionedDocument.h */,
+				27E487311924242C007D8940 /* Index.cc */,
+				27E487321924242C007D8940 /* Index.h */,
+				27E4873819255EA8007D8940 /* MapReduceIndex.cc */,
+				27E4873919255EA8007D8940 /* MapReduceIndex.h */,
+				27E4872D1924178B007D8940 /* Collatable.cc */,
+				27E4872E1924178B007D8940 /* Collatable.h */,
+				27E4871A19218E5D007D8940 /* slice.cc */,
+				2704A1E219049E2300138320 /* slice.h */,
+			);
+			name = "C++";
+			path = Cpp;
 			sourceTree = "<group>";
 		};
 		27EF7FAB1914296D00A327B9 /* include */ = {
@@ -1486,11 +1553,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				27139BC518F8F6510021A9A3 /* CBForest_Tests.m in Sources */,
+				27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */,
+				270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				27139BC618F8F6510021A9A3 /* RevTree_Tests.m in Sources */,
 				27139BC718F8F6510021A9A3 /* Versions_Tests.m in Sources */,
 				27139BC818F8F6510021A9A3 /* Index_Tests.m in Sources */,
 				27EF80C5191438AD00A327B9 /* Tokenizer_Tests.m in Sources */,
 				27139BC918F8F6510021A9A3 /* MapReduce_Tests.m in Sources */,
+				27E4871E19226508007D8940 /* Database_Test.mm in Sources */,
 				27139BCA18F8F6510021A9A3 /* CBCollatable_Tests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1538,16 +1608,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27E487281923B80E007D8940 /* slice.mm in Sources */,
+				27E48714192171EA007D8940 /* Database.cc in Sources */,
+				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27139BBA18F8EEBE0021A9A3 /* CBForestDB.m in Sources */,
+				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27139BBB18F8EEBE0021A9A3 /* CBForestDocument.m in Sources */,
 				27139BBC18F8EEBE0021A9A3 /* CBForestVersions.m in Sources */,
 				27139BBD18F8EEBE0021A9A3 /* CBForestPrivate.m in Sources */,
 				27139BBE18F8EEBE0021A9A3 /* CBForestIndex.m in Sources */,
+				27E487301924178B007D8940 /* Collatable.cc in Sources */,
 				2704A1E61905FAA700138320 /* slice.c in Sources */,
 				27139BBF18F8EEBE0021A9A3 /* CBForestMapReduceIndex.m in Sources */,
 				27139BC018F8EEBE0021A9A3 /* CBCollatable.m in Sources */,
 				27139BC118F8EEBE0021A9A3 /* rev_tree.c in Sources */,
 				27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
+				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
+				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
+				27E487341924242C007D8940 /* Index.cc in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.c in Sources */,
 				27EF80C3191430B500A327B9 /* CBTextTokenizer.m in Sources */,
 				27139BC318F8EEBE0021A9A3 /* forestdb_x.cc in Sources */,
@@ -1559,11 +1637,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				27B7E0EB18F8FACB00044EBA /* CBForest_Tests.m in Sources */,
+				27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */,
+				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				27B7E0EC18F8FACB00044EBA /* RevTree_Tests.m in Sources */,
 				27B7E0ED18F8FACB00044EBA /* Versions_Tests.m in Sources */,
 				27B7E0EE18F8FACB00044EBA /* Index_Tests.m in Sources */,
 				27EF80C6191438AD00A327B9 /* Tokenizer_Tests.m in Sources */,
 				27B7E0EF18F8FACB00044EBA /* MapReduce_Tests.m in Sources */,
+				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,
 				27B7E0F018F8FACB00044EBA /* CBCollatable_Tests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1654,16 +1735,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27E487271923B80E007D8940 /* slice.mm in Sources */,
+				27E48713192171EA007D8940 /* Database.cc in Sources */,
+				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27EF80FD1917EEC600A327B9 /* CBForestDB.m in Sources */,
+				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF80FE1917EEC600A327B9 /* CBForestDocument.m in Sources */,
 				27EF80FF1917EEC600A327B9 /* CBForestVersions.m in Sources */,
 				27EF81001917EEC600A327B9 /* CBForestPrivate.m in Sources */,
 				27EF81011917EEC600A327B9 /* CBForestIndex.m in Sources */,
+				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81021917EEC600A327B9 /* slice.c in Sources */,
 				27EF81031917EEC600A327B9 /* CBForestMapReduceIndex.m in Sources */,
 				27EF81051917EEC600A327B9 /* rev_tree.c in Sources */,
 				27EF81071917EEC600A327B9 /* CBEnumerator.m in Sources */,
 				27EF81081917EEC600A327B9 /* varint.c in Sources */,
+				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
+				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
+				27E487331924242C007D8940 /* Index.cc in Sources */,
 				27EF81091917EEC600A327B9 /* CBTextTokenizer.m in Sources */,
 				27EF810A1917EEC600A327B9 /* forestdb_x.cc in Sources */,
 				27EF81041917EEC600A327B9 /* CBCollatable.m in Sources */,

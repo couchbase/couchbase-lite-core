@@ -273,7 +273,14 @@ static NSTimeInterval sAutoCompactInterval = 0.0;
     return [self inTransaction: ^BOOL {
         NSString* path = self.filename;
         [self close];
-        return [[NSFileManager defaultManager] removeItemAtPath: path error: outError];
+        NSError* rmError;
+        if (![[NSFileManager defaultManager] removeItemAtPath: path error: &rmError]
+                && !CBIsFileNotFoundError(rmError)) {
+            if (outError)
+                *outError = rmError;
+            return NO;
+        }
+        return YES;
     }];
 }
 

@@ -33,6 +33,8 @@ static inline BOOL Check(fdb_status code, NSError** outError) {
     return CheckWithKey(code, nil, outError);
 }
 
+BOOL CBIsFileNotFoundError( NSError* error );
+
 
 static inline slice DataToSlice(NSData* data) {
     return (slice){data.bytes, data.length};

@@ -13,6 +13,10 @@
 #include <stdbool.h>
 #include "slice.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Based on varint implementation from the Go language (src/pkg/encoding/binary/varint.go)
 
 // This file implements "varint" encoding of 64-bit integers.
@@ -61,5 +65,9 @@ bool ReadUVarInt(slice *buf, uint64_t *n);
 /** Encodes a varint into buf, and advances buf to the remaining space after it.
     Returns false if there isn't enough room. */
 bool WriteUVarInt(slice *buf, uint64_t n);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

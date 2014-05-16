@@ -1,0 +1,83 @@
+//
+//  Collatable.h
+//  CBForest
+//
+//  Created by Jens Alfke on 5/14/14.
+//  Copyright (c) 2014 Couchbase. All rights reserved.
+//
+
+#ifndef __CBForest__Collatable__
+#define __CBForest__Collatable__
+#include <stdint.h>
+#include <string>
+#include <iostream>
+#include "slice.h"
+
+namespace forestdb {
+
+    class Collatable {
+    public:
+        Collatable& addNull()         {addTag(1); return *this;}
+
+        Collatable& operator<< (bool);
+        Collatable& operator<< (int i)  {return *this << (int64_t)i;}
+        Collatable& operator<< (int64_t);
+        Collatable& operator<< (uint64_t i)   {return *this << (int64_t)i;}
+
+        Collatable& operator<< (std::string);
+        Collatable& operator<< (slice);
+
+        Collatable& beginArray()      {addTag(6); return *this;}
+        Collatable& endArray()        {addTag(0); return *this;}
+
+        Collatable& beginMap()        {addTag(7); return *this;}
+        Collatable& endMap()          {addTag(0); return *this;}
+
+        Collatable& operator<< (Collatable& c) {add((slice)c); return *this;}
+
+        operator slice() const              {return slice(_str);}
+
+    private:
+        void addTag(uint8_t c)              {add(slice(&c,1));}
+        void add(slice s)                   {_str += std::string((char*)s.buf, s.size);}
+
+        std::string _str;
+    };
+
+
+    class CollatableReader {
+    public:
+        typedef enum {
+            kEndSequence = 0,   // Returned to indicate the end of an array/dict
+            kNull,
+            kFalse,
+            kTrue,
+            kNumber,
+            kString,
+            kArray,
+            kDictionary,
+            kError = 255        // Something went wrong...
+        } Tag;
+
+        CollatableReader(slice s) :_data(s) { }
+
+        Tag nextTag() const;
+
+        int64_t readInt();
+        alloc_slice readString();
+
+        /** Reads (skips) an entire object of any type, returning its data in Collatable form. */
+        slice read();
+
+        void beginArray();
+        void endArray();
+
+    private:
+        void expectTag(uint8_t tag);
+        
+        slice _data;
+    };
+
+}
+
+#endif /* defined(__CBForest__Collatable__) */
