@@ -54,7 +54,7 @@ namespace forestdb {
 
         alloc_slice encode();
 
-        const RevNode* currentNode() const;
+        const RevNode* currentNode();
         const RevNode* get(unsigned index) const;
         const RevNode* get(slice revID) const;
         const RevNode* operator[](unsigned index) const {return get(index);}
@@ -72,10 +72,11 @@ namespace forestdb {
         unsigned prune(unsigned maxDepth);
         unsigned purge(const std::vector<slice>revIDs);
 
+        void sort();
+
     private:
         const RevNode* _insert(slice revID, slice data, const RevNode *parentNode, bool deleted);
         void compact();
-        void sort();
 
         uint64_t    _bodyOffset;     // File offset of body this tree was read from
         bool        _sorted;         // Are the nodes currently sorted?

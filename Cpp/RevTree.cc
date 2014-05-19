@@ -67,7 +67,7 @@ namespace forestdb {
     const RevNode* RevTree::parentNode(const RevNode* node) const {
         if (node->parentIndex == RevNode::kNoParent)
             return NULL;
-        return &node[node->parentIndex];
+        return &_nodes[node->parentIndex];
     }
     
     
@@ -112,6 +112,7 @@ namespace forestdb {
                 node->oldBodyOffset = _bodyOffset;
             }
             size += sizeForRawNode(&*node);
+            fprintf(stderr, "Node %p size %lu\n", &*node, size);
         }
 
         alloc_slice result(size);
@@ -139,11 +140,10 @@ namespace forestdb {
                 /*dstData +=*/ PutUVarInt(dstData, src->oldBodyOffset ?: _bodyOffset);
             }
 
-            ++src;
             dst = (RawRevNode*)offsetby(dst, nodeSize);
         }
         dst->size = htonl(0);   // write trailing 0 size marker
-        assert((char*)(&dst->size + 1) == (char*)result.buf + size);
+        assert((&dst->size + 1) == result.end());
         return result;
     }
 
@@ -193,7 +193,10 @@ namespace forestdb {
 
 #pragma mark - ACCESSORS:
 
-    const RevNode* RevTree::currentNode() const {return &_nodes[0];}
+    const RevNode* RevTree::currentNode() {
+        sort();
+        return &_nodes[0];
+    }
 
     const RevNode* RevTree::get(unsigned index) const {return &_nodes[index];}
 
@@ -238,7 +241,7 @@ namespace forestdb {
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.push_back(alloc_slice(revID));
         revID = _insertedData.back();
-        _insertedData.push_back(data);
+        _insertedData.push_back(alloc_slice(data));
         data = _insertedData.back();
 
         RevNode newNode;

@@ -91,20 +91,23 @@ namespace forestdb {
     };
 
     /** An allocated range of memory. Constructors allocate, destructor frees. */
-    struct alloc_slice : public slice {
-        alloc_slice()                                   :slice() {}
-        explicit alloc_slice(size_t s)                  :slice(::malloc(s), s) {}
-        explicit alloc_slice(slice s)                   :slice(s.copy()) {}
-        alloc_slice(const void* b, size_t s)            {alloc(b,s);}
-        alloc_slice(const void* start, const void* end) {alloc(start, (uint8_t*)end-(uint8_t*)start);}
-        alloc_slice(std::string str)                    {alloc(&str[0], str.length());}
+    struct alloc_slice : std::shared_ptr<void>, public slice {
+        alloc_slice()
+            :std::shared_ptr<void>(NULL), slice() {}
+        explicit alloc_slice(size_t s)
+            :std::shared_ptr<void>(malloc(s),::free), slice(get(),s) {}
+        explicit alloc_slice(slice s)
+            :std::shared_ptr<void>((void*)s.copy().buf,::free), slice(get(),s.size) {}
+        alloc_slice(const void* b, size_t s)
+            :std::shared_ptr<void>(alloc(b,s),::free), slice(get(),s) {}
+        alloc_slice(const void* start, const void* end)
+            :std::shared_ptr<void>(alloc(start,(uint8_t*)end-(uint8_t*)start),::free),
+             slice(get(),(uint8_t*)end-(uint8_t*)start) {}
+        alloc_slice(std::string str)
+            :std::shared_ptr<void>(alloc(&str[0], str.length()),::free), slice(get(), str.length()) {}
 
-        alloc_slice(alloc_slice& s)                     :slice(s) {s.buf = NULL; s.size = 0;}
-
-        ~alloc_slice();
-        
     private:
-        void alloc(const void* src, size_t size);
+        static void* alloc(const void* src, size_t size);
     };
 }
 

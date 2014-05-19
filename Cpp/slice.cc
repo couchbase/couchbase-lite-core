@@ -62,14 +62,10 @@ namespace forestdb {
 
     const slice slice::null;
 
-    void alloc_slice::alloc(const void* src, size_t s) {
-        buf = ::operator new(size);
-        size = s;
+    void* alloc_slice::alloc(const void* src, size_t s) {
+        void* buf = ::malloc(s);
         ::memcpy((void*)buf, src, s);
-    }
-
-    alloc_slice::~alloc_slice() {
-        ::operator delete((void*)buf);
+        return buf;
     }
 
 }

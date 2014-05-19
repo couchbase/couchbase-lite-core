@@ -29,7 +29,7 @@ using namespace forestdb;
     [super tearDown];
 }
 
-- (void)testExample
+- (void)testRevTreeInsert
 {
     RevTree tree;
     const RevNode* rev;
@@ -41,7 +41,36 @@ using namespace forestdb;
     Assert(rev->revID.equal(rev1ID));
     Assert(rev->data.equal(rev1Data));
     AssertEq(rev->parentIndex, RevNode::kNoParent);
-    AssertEq(rev->flags, 0);
+    Assert(!rev->isDeleted());
+
+    forestdb::slice rev2ID("2-bbbb");
+    forestdb::slice rev2Data("second revision");
+    auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false);
+    Assert(rev2);
+    Assert(rev2->revID.equal(rev2ID));
+    Assert(rev2->data.equal(rev2Data));
+    Assert(!rev->isDeleted());
+
+    tree.sort();
+    rev = tree.get(rev1ID);
+    rev2 = tree.get(rev2ID);
+    Assert(rev);
+    Assert(rev2);
+    AssertEq(tree.parentNode(rev2), rev);
+    Assert(tree.parentNode(rev) == NULL);
+
+    AssertEq(tree.currentNode(), rev2);
+    Assert(!tree.hasConflict());
+
+    tree.sort();
+    AssertEq(tree[0], rev2);
+    AssertEq(tree[1], rev);
+    AssertEq(tree.indexOf(rev), 1);
+    AssertEq(tree.indexOf(rev2), 0);
+
+    alloc_slice ext = tree.encode();
+
+    RevTree tree2 = RevTree(ext, 12, 1234);
 }
 
 @end
