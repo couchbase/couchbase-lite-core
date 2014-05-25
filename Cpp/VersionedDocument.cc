@@ -14,7 +14,8 @@ namespace forestdb {
     :_db(db), _doc(new Document(docID)), _freeDoc(true)
     {
         _db->read(*_doc);
-        decode(_doc->body(), _doc->sequence(), _doc->offset());
+        if (_doc->body())
+            decode(_doc->body(), _doc->sequence(), _doc->offset());
     }
 
     VersionedDocument::VersionedDocument(Database* db, Document* doc)

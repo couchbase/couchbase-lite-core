@@ -54,7 +54,7 @@ namespace forestdb {
 
         alloc_slice encode();
 
-        const RevNode* currentNode();
+        size_t size() const                             {return _nodes.size();}
         const RevNode* get(unsigned index) const;
         const RevNode* get(slice revID) const;
         const RevNode* operator[](unsigned index) const {return get(index);}
@@ -63,6 +63,8 @@ namespace forestdb {
 
         const RevNode* parentNode(const RevNode* node) const;
 
+        const RevNode* currentNode();
+        std::vector<const RevNode*> currentNodes();
         bool hasConflict() const;
 
         const RevNode* insert(slice revID, slice body, bool deleted, slice parentRevID, bool allowConflict);

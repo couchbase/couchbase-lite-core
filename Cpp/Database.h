@@ -73,7 +73,8 @@ namespace forestdb {
         DocEnumerator enumerate(sequence start,
                                 sequence end = UINT64_MAX,
                                 const enumerationOptions* = NULL);
-        DocEnumerator enumerate(std::vector<std::string>, const enumerationOptions* = NULL);
+        DocEnumerator enumerate(std::vector<std::string> docIDs,
+                                const enumerationOptions* = NULL);
 
     protected:
         DatabaseGetters();
@@ -182,22 +183,40 @@ namespace forestdb {
     class DocEnumerator {
     public:
         DocEnumerator(); // empty enumerator
-        bool next();
+        virtual bool next();
         const Document& doc() const         {return *(Document*)_docP;}
-        ~DocEnumerator();
+        virtual ~DocEnumerator();
+
+        DocEnumerator(DocEnumerator&& e)
+        :_iterator(e._iterator), _docP(NULL)
+        {
+            e._iterator = NULL;
+        }
+
+        DocEnumerator& operator=(DocEnumerator&& e) {
+            _iterator = e._iterator;
+            e._iterator = NULL;
+            return *this;
+        }
 
         // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
         const DocEnumerator& operator++()   {next(); return *this;}
         operator const Document*() const    {return (const Document*)_docP;}
         const Document* operator->() const  {return (Document*)_docP;}
 
-    private:
+    protected:
         fdb_iterator *_iterator;
+        std::vector<std::string> _docIDs;
+        std::vector<std::string>::const_iterator _curDocID;
         Database::contentOptions _options;
         fdb_doc *_docP;
 
         friend class DatabaseGetters;
         DocEnumerator(fdb_iterator*, const Database::enumerationOptions*);
+        DocEnumerator(fdb_iterator*, std::vector<std::string> docIDs,
+                      const Database::enumerationOptions*);
+        void setDocIDs(std::vector<std::string> docIDs);
+        void close();
     };
 
 }

@@ -127,6 +127,7 @@ namespace forestdb {
 
 #pragma mark - ENUMERATION:
 
+
     static fdb_iterator_opt_t iteratorOptions(const DatabaseGetters::enumerationOptions* options) {
         fdb_iterator_opt_t fdbOptions = 0;
         if (options && (options->contentOptions & DatabaseGetters::kMetaOnly))
@@ -137,7 +138,8 @@ namespace forestdb {
     }
     
     
-    DocEnumerator DatabaseGetters::enumerate(slice startKey, slice endKey, const enumerationOptions* options) {
+    DocEnumerator DatabaseGetters::enumerate(slice startKey, slice endKey,
+                                             const enumerationOptions* options) {
         fdb_iterator *iterator;
         check(fdb_iterator_init(_handle, &iterator,
                                 startKey.buf, startKey.size,
@@ -146,7 +148,8 @@ namespace forestdb {
         return DocEnumerator(iterator, options);
     }
 
-    DocEnumerator DatabaseGetters::enumerate(sequence start, sequence end, const enumerationOptions* options) {
+    DocEnumerator DatabaseGetters::enumerate(sequence start, sequence end,
+                                             const enumerationOptions* options) {
         fdb_iterator *iterator;
         check(fdb_iterator_sequence_init(_handle, &iterator,
                                          start, end,
@@ -154,33 +157,104 @@ namespace forestdb {
         return DocEnumerator(iterator, options);
     }
 
+    DocEnumerator DatabaseGetters::enumerate(std::vector<std::string> docIDs,
+                                             const enumerationOptions* options)
+    {
+        if (docIDs.size() == 0)
+            return DocEnumerator();
+        std::sort(docIDs.begin(), docIDs.end());
+        slice startKey = docIDs[0];
+        fdb_iterator *iterator;
+        check(fdb_iterator_init(_handle, &iterator,
+                                startKey.buf, startKey.size,
+                                NULL, 0,
+                                iteratorOptions(options)));
+        return DocEnumerator(iterator, docIDs, options);
+    }
+
+
     DocEnumerator::DocEnumerator()
     :_iterator(NULL), _docP(NULL)
     { }
 
-    DocEnumerator::DocEnumerator(fdb_iterator* iterator, const DatabaseGetters::enumerationOptions* options)
+    DocEnumerator::DocEnumerator(fdb_iterator* iterator,
+                                 const DatabaseGetters::enumerationOptions* options)
     :_iterator(iterator),
      _options(options ?options->contentOptions : DatabaseGetters::kDefaultContent),
      _docP(NULL)
-    { }
+    {
+        next();
+    }
+
+    DocEnumerator::DocEnumerator(fdb_iterator* iterator,
+                                 std::vector<std::string> docIDs,
+                                 const Database::enumerationOptions* options)
+    :_iterator(iterator),
+     _docIDs(docIDs),
+     _curDocID(_docIDs.begin()),
+     _options(options ?options->contentOptions : DatabaseGetters::kDefaultContent),
+     _docP(NULL)
+    {
+        next();
+    }
 
     DocEnumerator::~DocEnumerator() {
-        fdb_doc_free(_docP);
-        fdb_iterator_close(_iterator);
+        close();
     }
+
+    void DocEnumerator::close() {
+        fprintf(stderr, "enum: close\n");
+        fdb_doc_free(_docP);
+        _docP = NULL;
+        if (_iterator) {
+            fdb_iterator_close(_iterator);
+            _iterator = NULL;
+        }
+    }
+
 
     bool DocEnumerator::next() {
         if (!_iterator)
             return false;
         fdb_doc_free(_docP);
         _docP = NULL;
-        fdb_status status = fdb_iterator_next(_iterator, &_docP);
-        if (status == FDB_RESULT_ITERATOR_FAIL)
-            return false;
+
+        fdb_status status;
+        if (_docIDs.size() == 0) {
+            // Regular iteration:
+            status = fdb_iterator_next(_iterator, &_docP);
+            fprintf(stderr, "enum: fdb_iterator_next --> %d\n", status);
+            if (status == FDB_RESULT_ITERATOR_FAIL) {
+                close();
+                return false;
+            }
+        } else {
+            // Iterating over a vector of docIDs:
+           if (_curDocID == _docIDs.end()) {
+                fprintf(stderr, "enum: at end of vector\n");
+                close();
+                return false;
+            }
+            slice docID = *_curDocID;
+            ++_curDocID;
+            status = fdb_iterator_seek(_iterator, docID.buf, docID.size);
+            fprintf(stderr, "enum: seek to '%*s' --> %d\n", (int)docID.size, docID.buf, status);
+            if (status == FDB_RESULT_SUCCESS) {
+                status = fdb_iterator_next(_iterator, &_docP);
+                fprintf(stderr, "enum: fdb_iterator_next --> %d\n", status);
+                if (status != FDB_RESULT_SUCCESS || slice(_docP->key, _docP->keylen) != docID) {
+                    // If the current doc doesn't match the docID, then the docID doesn't exist:
+                    fdb_doc_free(_docP);
+                    fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
+                    if (status == FDB_RESULT_ITERATOR_FAIL)
+                        status = FDB_RESULT_SUCCESS;
+                }
+            }
+        }
+
         check(status);
         return true;
     }
-
 
 
 #pragma mark - DOCUMENTS:

@@ -231,6 +231,15 @@ namespace forestdb {
         }
     }
 
+    std::vector<const RevNode*> RevTree::currentNodes() {
+        std::vector<const RevNode*> cur;
+        for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
+            if (node->isLeaf())
+                cur.push_back(&*node);
+        }
+        return cur;
+    }
+
 #pragma mark - INSERTION:
 
     const RevNode* RevTree::_insert(slice revID,

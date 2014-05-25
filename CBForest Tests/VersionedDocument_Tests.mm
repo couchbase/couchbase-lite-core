@@ -16,21 +16,36 @@ using namespace forestdb;
 @end
 
 @implementation VersionedDocument_Tests
+{
+    Database* db;
+}
+
+#define kDBPath "/tmp/forest.db"
 
 - (void)setUp
 {
+    ::unlink(kDBPath);
     [super setUp];
-    // Put setup code here. This method is called before the invocation of each test method in the class.
+    db = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
 }
 
 - (void)tearDown
 {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    delete db;
     [super tearDown];
 }
 
-- (void)testRevTreeInsert
-{
+
+- (void) test01_Empty {
+    VersionedDocument v(db, @"foo");
+    AssertEqual((NSString*)v.docID(), @"foo");
+    Assert(v.revID() == NULL);
+    AssertEq(v.flags(), 0);
+    XCTAssert(v.get(@"1-aaaa") == NULL);
+}
+
+
+- (void) test02_RevTreeInsert {
     RevTree tree;
     const RevNode* rev;
     forestdb::slice rev1ID("1-aaaa");
@@ -71,6 +86,21 @@ using namespace forestdb;
     alloc_slice ext = tree.encode();
 
     RevTree tree2 = RevTree(ext, 12, 1234);
+}
+
+- (void) test03_AddRevision {
+    NSString *revID = @"1-fadebead", *body = @"{\"hello\":true}";
+    VersionedDocument v(db, @"foo");
+    v.insert(revID, body, false, NULL, false);
+
+    const RevNode* node = v.get(revID);
+    Assert(node);
+    Assert(!node->isDeleted());
+    Assert(node->isLeaf());
+    Assert(node->isActive());
+    AssertEq(v.size(), 1);
+    AssertEq(v.currentNodes().size(), 1);
+    AssertEq(v.currentNodes()[0], v.currentNode());
 }
 
 @end

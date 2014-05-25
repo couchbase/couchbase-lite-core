@@ -118,6 +118,25 @@ using namespace forestdb;
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
     }
+    AssertEq(i, 101);
+
+    NSLog(@"Enumerate over vector of docs:");
+    i = 0;
+    std::vector<std::string> docIDs;
+    docIDs.push_back("doc-005");
+    docIDs.push_back("doc-023");
+    docIDs.push_back("doc-028");
+    docIDs.push_back("doc-029");
+    docIDs.push_back("doc-098");
+    docIDs.push_back("doc-100");
+    docIDs.push_back("doc-105");
+    for (auto e = db->enumerate(docIDs); e; ++e, ++i) {
+        NSLog(@"key = %@", (NSString*)e->key());
+        Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
+               docIDs[i].c_str(),
+               (NSString*)e->key());
+    }
+    AssertEq(i, 7);
 }
 
 - (void) test05_AbortTransaction {
