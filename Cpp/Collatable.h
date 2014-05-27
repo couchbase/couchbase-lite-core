@@ -17,14 +17,16 @@ namespace forestdb {
 
     class Collatable {
     public:
-        Collatable& addNull()         {addTag(1); return *this;}
+        Collatable& addNull()                       {addTag(1); return *this;}
 
         Collatable& operator<< (bool);
-        Collatable& operator<< (int i)  {return *this << (int64_t)i;}
+        Collatable& operator<< (int i)              {return *this << (int64_t)i;}
         Collatable& operator<< (int64_t);
-        Collatable& operator<< (uint64_t i)   {return *this << (int64_t)i;}
+        Collatable& operator<< (uint64_t i)         {return *this << (int64_t)i;}
 
+        Collatable& operator<< (const Collatable&);
         Collatable& operator<< (std::string);
+        Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         Collatable& operator<< (slice);
 
         Collatable& beginArray()      {addTag(6); return *this;}
@@ -32,8 +34,6 @@ namespace forestdb {
 
         Collatable& beginMap()        {addTag(7); return *this;}
         Collatable& endMap()          {addTag(0); return *this;}
-
-        Collatable& operator<< (Collatable& c) {add((slice)c); return *this;}
 
         operator slice() const              {return slice(_str);}
 

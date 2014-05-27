@@ -53,6 +53,7 @@ namespace forestdb {
         for (auto c=_str.begin()+first; c != _str.end(); ++c) {
             *c = priority[(uint8_t)*c];
         }
+        _str.push_back(0);
         return *this;
     }
 
@@ -64,8 +65,15 @@ namespace forestdb {
         for (auto c=_str.begin()+first; c != _str.end(); ++c) {
             *c = priority[(uint8_t)*c];
         }
+        _str.push_back(0);
         return *this;
     }
+
+    Collatable& Collatable::operator<< (const Collatable& coll) {
+        _str += coll._str;
+        return *this;
+    }
+
 
 
 #pragma mark - READER:
@@ -80,7 +88,7 @@ namespace forestdb {
         slice tagSlice = _data.read(1);
         if (tagSlice.size == 0)
             throw "unexpected end of collatable data";
-        else if (tagSlice[1] != tag)
+        else if (tagSlice[0] != tag)
             throw "unexpected tag";
     }
 

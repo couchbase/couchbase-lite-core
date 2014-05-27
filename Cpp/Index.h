@@ -17,6 +17,7 @@ namespace forestdb {
     class Collatable;
 
 
+    /** Index query enumerator. */
     class IndexEnumerator {
     public:
         slice key() const                       {return _key;}
@@ -31,12 +32,14 @@ namespace forestdb {
     private:
         friend class Index;
         IndexEnumerator(Index*, slice startKey, slice startKeyDocID,
-                        slice endKey,   slice endKeyDocID,
+                        slice endKey, slice endKeyDocID,
+                        bool ascending,
                         const Database::enumerationOptions*);
+        void read();
 
         Index* _index;
+        alloc_slice _endKey;
         DocEnumerator _dbEnum;
-        alloc_slice _stopBeforeKey;
         slice _key;
         slice _value;
         alloc_slice _docID;
@@ -57,7 +60,9 @@ namespace forestdb {
                                   slice endKey,   slice endKeyDocID,
                                   const Database::enumerationOptions* options) {
             return IndexEnumerator(this, startKey, startKeyDocID,
-                                   endKey, endKeyDocID, options);
+                                   endKey, endKeyDocID,
+                                   startKey.compare(endKey) <= 0,
+                                   options);
         }
 
     private:

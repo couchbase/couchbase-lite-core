@@ -17,7 +17,7 @@ namespace forestdb {
     { }
 
     bool Index::removeOldRowsForDoc(Transaction& transaction, slice docID) {
-        Document doc = get(docID, Database::kMetaOnly);
+        Document doc = get(docID);
         ::slice sequences = doc.body();
         if (sequences.size == 0)
             return false;
@@ -80,20 +80,20 @@ namespace forestdb {
 
     IndexEnumerator::IndexEnumerator(Index* index, slice startKey, slice startKeyDocID,
                                      slice endKey,   slice endKeyDocID,
+                                     bool ascending,
                                      const Database::enumerationOptions* options)
-    :_index(index)
+    :_index(index),
+     _endKey(makeRealKey(endKey, endKeyDocID, ascending)),
+     _dbEnum(_index->Database::enumerate((slice)makeRealKey(startKey, startKeyDocID, !ascending),
+                                         _endKey,
+                                         options))
     {
-        bool ascending = startKey.compare(endKey) <= 0;
-        Collatable realStartKey = makeRealKey(startKey, startKeyDocID, !ascending);
-        Collatable realEndKey   = makeRealKey(endKey,   endKeyDocID,    ascending);
-        _dbEnum = _index->Database::enumerate((slice)realStartKey, (slice)realEndKey, options);
-        if (options && !options->inclusiveEnd)
-            _stopBeforeKey = alloc_slice(realEndKey);
+        read();
     }
 
-    bool IndexEnumerator::next() {
-        if (!_dbEnum.next())
-            return false;
+    void IndexEnumerator::read() {
+        if (!_dbEnum)
+            return;
         const Document& doc = _dbEnum.doc();
 
         // Decode the key from collatable form:
@@ -104,6 +104,12 @@ namespace forestdb {
         _sequence = reader.readInt();
         
         _value = doc.body();
+    }
+
+    bool IndexEnumerator::next() {
+        if (!_dbEnum.next())
+            return false;
+        read();
         return true;
     }
 

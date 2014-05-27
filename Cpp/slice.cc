@@ -43,7 +43,7 @@ namespace forestdb {
 
 
     slice slice::copy() const {
-        if (size == 0 || buf == NULL)
+        if (buf == NULL)
             return *this;
         void* copied = ::malloc(size);
         ::memcpy(copied, buf, size);

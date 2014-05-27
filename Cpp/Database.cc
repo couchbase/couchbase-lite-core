@@ -199,11 +199,12 @@ namespace forestdb {
     }
 
     DocEnumerator::~DocEnumerator() {
+        fprintf(stderr, "enum: ~DocEnumerator\n");
         close();
     }
 
     void DocEnumerator::close() {
-        fprintf(stderr, "enum: close\n");
+        fprintf(stderr, "enum: close (free %p, close %p)\n", _docP, _iterator);
         fdb_doc_free(_docP);
         _docP = NULL;
         if (_iterator) {
@@ -216,6 +217,7 @@ namespace forestdb {
     bool DocEnumerator::next() {
         if (!_iterator)
             return false;
+        fprintf(stderr, "enum: free %p\n", _docP);
         fdb_doc_free(_docP);
         _docP = NULL;
 

@@ -89,4 +89,30 @@ static uint64_t randn(uint64_t limit) {
     AssertEq(compareCollated((std::string)"Hello world", (std::string)"Hello wörld!"), -1);
 }
 
+- (void) testIndexKey {
+    std::string key = "OR";
+    Collatable collKey;
+    collKey << key;
+
+    std::string docID = "foo";
+    Collatable collatableDocID;
+    collatableDocID << docID;
+
+    Collatable indexKey;
+    indexKey.beginArray();
+    indexKey << collKey << collatableDocID << (int64_t)1234;
+    indexKey.endArray();
+
+    alloc_slice encoded((forestdb::slice)indexKey);
+
+    CollatableReader reader(encoded);
+    reader.beginArray();
+    forestdb::slice readKey = reader.read();
+    Assert(readKey.equal((forestdb::slice)collKey));
+    alloc_slice readDocID = reader.readString();
+    Assert(readDocID.equal((forestdb::slice)docID));
+    int64_t readSequence = reader.readInt();
+    AssertEq(readSequence, 1234);
+}
+
 @end

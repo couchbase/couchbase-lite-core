@@ -183,21 +183,23 @@ namespace forestdb {
     class DocEnumerator {
     public:
         DocEnumerator(); // empty enumerator
-        virtual bool next();
+        bool next();
         const Document& doc() const         {return *(Document*)_docP;}
-        virtual ~DocEnumerator();
+        ~DocEnumerator();
 
-        DocEnumerator(DocEnumerator&& e)
-        :_iterator(e._iterator), _docP(NULL)
-        {
-            e._iterator = NULL;
-        }
-
-        DocEnumerator& operator=(DocEnumerator&& e) {
-            _iterator = e._iterator;
-            e._iterator = NULL;
-            return *this;
-        }
+//        DocEnumerator(DocEnumerator&& e)
+//        :_iterator(e._iterator), _docP(NULL)
+//        {
+//            fprintf(stderr, "enum: copy ctor\n");
+//            e._iterator = NULL;
+//        }
+//
+//        DocEnumerator& operator=(DocEnumerator&& e) {
+//            fprintf(stderr, "enum: operator=\n");
+//            _iterator = e._iterator;
+//            e._iterator = NULL;
+//            return *this;
+//        }
 
         // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
         const DocEnumerator& operator++()   {next(); return *this;}
