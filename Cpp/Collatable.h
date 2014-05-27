@@ -18,8 +18,8 @@ namespace forestdb {
     class Collatable {
     public:
         Collatable& addNull()                       {addTag(1); return *this;}
+        Collatable& addBool (bool); // overriding <<(bool) is dangerous due to implicit conversion
 
-        Collatable& operator<< (bool);
         Collatable& operator<< (int i)              {return *this << (int64_t)i;}
         Collatable& operator<< (int64_t);
         Collatable& operator<< (uint64_t i)         {return *this << (int64_t)i;}
@@ -29,17 +29,17 @@ namespace forestdb {
         Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         Collatable& operator<< (slice);
 
-        Collatable& beginArray()      {addTag(6); return *this;}
-        Collatable& endArray()        {addTag(0); return *this;}
+        Collatable& beginArray()                    {addTag(6); return *this;}
+        Collatable& endArray()                      {addTag(0); return *this;}
 
-        Collatable& beginMap()        {addTag(7); return *this;}
-        Collatable& endMap()          {addTag(0); return *this;}
+        Collatable& beginMap()                      {addTag(7); return *this;}
+        Collatable& endMap()                        {addTag(0); return *this;}
 
-        operator slice() const              {return slice(_str);}
+        operator slice() const                      {return slice(_str);}
 
     private:
-        void addTag(uint8_t c)              {add(slice(&c,1));}
-        void add(slice s)                   {_str += std::string((char*)s.buf, s.size);}
+        void addTag(uint8_t c)                      {add(slice(&c,1));}
+        void add(slice s)                           {_str += std::string((char*)s.buf, s.size);}
 
         std::string _str;
     };

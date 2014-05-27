@@ -25,8 +25,10 @@ namespace forestdb {
 
     class MapReduceIndex : public Index {
     public:
-        MapReduceIndex(std::string path, Database::openFlags, const Database::config&,
-                       Database* sourceDatabase);
+        MapReduceIndex(std::string path,
+                       forestdb::Database::openFlags,
+                       const forestdb::Database::config&,
+                       forestdb::Database* sourceDatabase);
 
         void readState();
         
@@ -41,7 +43,7 @@ namespace forestdb {
         void invalidate();
         void saveState(Transaction& t);
         
-        Database* _sourceDatabase;
+        forestdb::Database* _sourceDatabase;
         MapFn* _map;
         std::string _mapVersion, _lastMapVersion;
         int _indexType;

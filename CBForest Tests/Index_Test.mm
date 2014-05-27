@@ -40,7 +40,7 @@ using namespace forestdb;
 
 
 - (void) updateDoc: (NSString*)docID body: (NSArray*)body
-       transaction: (Transaction&)trans
+       transaction: (IndexTransaction&)trans
 {
     std::vector<Collatable> keys, values;
     for (NSUInteger i = 1; i < body.count; i++) {
@@ -63,7 +63,7 @@ using namespace forestdb;
         @"OR": @[@"Oregon", @"Portland", @"Eugene"]};
     {
         NSLog(@"--- Populate index");
-        Transaction trans(index);
+        IndexTransaction trans(index);
         for (NSString* docID in docs)
             [self updateDoc: docID body: docs[docID] transaction: trans];
     }
@@ -82,7 +82,7 @@ using namespace forestdb;
     XCTAssertEqual(nRows, 8);
 
     {
-        Transaction trans(index);
+        IndexTransaction trans(index);
         NSLog(@"--- Updating OR");
         [self updateDoc: @"OR" body: @[@"Oregon", @"Portland", @"Walla Walla", @"Salem"]
             transaction: trans];
@@ -101,7 +101,7 @@ using namespace forestdb;
 
     {
         NSLog(@"--- Removing CA");
-        Transaction trans(index);
+        IndexTransaction trans(index);
         [self updateDoc: @"CA" body: @[] transaction: trans];
     }
     nRows = 0;

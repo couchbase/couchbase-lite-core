@@ -24,9 +24,10 @@ namespace forestdb {
         values.push_back(value);
     }
 
-    MapReduceIndex::MapReduceIndex(std::string path, Database::openFlags flags,
-                                   const Database::config& config,
-                                   Database* sourceDatabase)
+    MapReduceIndex::MapReduceIndex(std::string path,
+                                   forestdb::Database::openFlags flags,
+                                   const forestdb::Database::config& config,
+                                   forestdb::Database* sourceDatabase)
     :Index(path, flags, config),
      _sourceDatabase(sourceDatabase), _map(NULL), _indexType(0),
      _lastSequenceIndexed(0), _lastSequenceChangedAt(0)
@@ -68,6 +69,7 @@ namespace forestdb {
     void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
             Transaction t(this);
+            _map = map;
             _indexType = indexType;
             _mapVersion = mapVersion;
             t.erase();
@@ -76,7 +78,7 @@ namespace forestdb {
     }
 
     void MapReduceIndex::updateIndex() {
-        Transaction trans(this);
+        IndexTransaction trans(this);
 
         if (_lastMapVersion.size() && _lastMapVersion != _mapVersion) {
             trans.erase();
@@ -91,7 +93,8 @@ namespace forestdb {
         };
         for (auto e = _sourceDatabase->enumerate(startSequence, UINT64_MAX, &options); e; ++e) {
             emitter emit;
-            (*_map)(e.doc(), emit); // Call map function!
+            if (!e.doc().deleted())
+                (*_map)(e.doc(), emit); // Call map function!
             if (update(trans, e->key(), e->sequence(), emit.keys, emit.values))
                 indexChanged = true;
             _lastSequenceIndexed = e->sequence();

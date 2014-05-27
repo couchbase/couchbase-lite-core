@@ -15,7 +15,7 @@ namespace forestdb {
     static uint8_t* getInverseCharPriorityMap();
 
 
-    Collatable& Collatable::operator<< (bool b) {
+    Collatable& Collatable::addBool (bool b) {
         addTag(b ? 3 : 2);
         return *this;
     }

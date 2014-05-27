@@ -14,6 +14,7 @@
 namespace forestdb {
     
     class Index;
+    class IndexTransaction;
     class Collatable;
 
 
@@ -48,25 +49,34 @@ namespace forestdb {
 
 
     /** A database used as an index. */
-    class Index : public Database {
+    class Index : protected Database {
     public:
-        Index(std::string path, Database::openFlags, const Database::config&);
+        Index(std::string path, Database::openFlags, const config&);
 
-        bool update(Transaction& transaction,
+        typedef Database::config config;
+        static config defaultConfig()           {return Database::defaultConfig();}
+
+        bool update(IndexTransaction& transaction,
                     slice docID, sequence docSequence,
                     std::vector<Collatable> keys, std::vector<Collatable> values);
 
         IndexEnumerator enumerate(slice startKey, slice startKeyDocID,
                                   slice endKey,   slice endKeyDocID,
-                                  const Database::enumerationOptions* options) {
-            return IndexEnumerator(this, startKey, startKeyDocID,
-                                   endKey, endKeyDocID,
-                                   startKey.compare(endKey) <= 0,
-                                   options);
-        }
+                                  const Database::enumerationOptions* options);
 
     private:
         bool removeOldRowsForDoc(Transaction& transaction, slice docID);
+
+        friend class IndexTransaction;
+        friend class IndexEnumerator;
+    };
+
+    class IndexTransaction : protected Transaction {
+    public:
+        IndexTransaction(Index* index)            :Transaction(index) {}
+
+        friend class Index;
+        friend class MapReduceIndex;
     };
 
 }

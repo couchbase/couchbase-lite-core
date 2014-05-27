@@ -72,7 +72,6 @@ static uint64_t randn(uint64_t limit) {
     AssertEq(compareCollated((std::string)"", 7), 1);
     AssertEq(compareCollated((std::string)"", (std::string)""), 0);
     AssertEq(compareCollated((std::string)"", true), 1);
-    AssertEq(compareCollated((std::string)"", [NSNull null]), 1);
     AssertEq(compareCollated((std::string)"", (std::string)" "), -1);
     AssertEq(compareCollated((std::string)"~", (std::string)"a"), -1);
     AssertEq(compareCollated((std::string)"A", (std::string)"a"), 1);

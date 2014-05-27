@@ -27,7 +27,7 @@ namespace forestdb {
         return true;
     }
 
-    bool Index::update(Transaction& transaction,
+    bool Index::update(IndexTransaction& transaction,
                        slice docID, sequence docSequence,
                        std::vector<Collatable> keys, std::vector<Collatable> values)
     {
@@ -60,6 +60,17 @@ namespace forestdb {
 
 
 #pragma mark - ENUMERATOR:
+
+
+    IndexEnumerator Index::enumerate(slice startKey, slice startKeyDocID,
+                                     slice endKey,   slice endKeyDocID,
+                                     const Database::enumerationOptions* options)
+    {
+        return IndexEnumerator(this, startKey, startKeyDocID,
+                               endKey, endKeyDocID,
+                               startKey.compare(endKey) <= 0,
+                               options);
+    }
 
 
     static Collatable makeRealKey(slice key, slice docID, bool addEllipsis) {
