@@ -9,7 +9,7 @@
 #ifndef __CBForest__MapReduceIndex__
 #define __CBForest__MapReduceIndex__
 
-#include "Index.h"
+#include "Index.hh"
 
 namespace forestdb {
 

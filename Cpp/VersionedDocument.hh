@@ -8,13 +8,14 @@
 
 #ifndef __CBForest__VersionedDocument__
 #define __CBForest__VersionedDocument__
-#include "RevTree.h"
+#include "RevTree.hh"
 
 namespace forestdb {
 
     class VersionedDocument : public RevTree {
     public:
 
+        /** Flags that apply to the document as a whole */
         typedef uint8_t Flags;
         enum {
             kDeleted    = 0x01,
@@ -22,24 +23,27 @@ namespace forestdb {
         };
 
         VersionedDocument(Database* db, slice docID);
-        VersionedDocument(Database* db, Document* doc);
-        ~VersionedDocument();
+        VersionedDocument(Database* db, Document&& doc);
 
-        slice docID() const         {return _doc->key();}
+        slice docID() const         {return _doc.key();}
         slice revID() const;
         Flags flags() const;
 
-        Document* document();
+        bool exists() const         {return _doc.exists();}
+        sequence sequence() const   {return _doc.sequence();}
 
-        alloc_slice readBodyOfNode(const RevNode*);
+        Document& document();
 
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 
+    protected:
+        virtual bool isBodyOfNodeAvailable(const RevNode* node) const;
+        virtual alloc_slice readBodyOfNode(const RevNode*) const;
+
     private:
         Database* _db;
-        Document* _doc;
-        bool _freeDoc;
+        Document _doc;
     };
 }
 

@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "RevTree.h"
+#include "RevTree.hh"
 #include "varint.h"
 #include <forestdb.h>
 #include <assert.h>
@@ -19,9 +19,6 @@
 
 
 #define offsetby(PTR,OFFSET) (void*)((uint8_t*)(PTR)+(OFFSET))
-
-#define htonll CFSwapInt64HostToBig
-#define ntohll CFSwapInt64BigToHost
 
 
 namespace forestdb {
@@ -64,13 +61,7 @@ namespace forestdb {
         return (const RawRevNode*)offsetby(node, ntohl(node->size));
     }
 
-    const RevNode* RevTree::parentNode(const RevNode* node) const {
-        if (node->parentIndex == RevNode::kNoParent)
-            return NULL;
-        return &_nodes[node->parentIndex];
-    }
-    
-    
+
     RevTree::RevTree()
     :_bodyOffset(0), _sorted(true), _changed(false)
     {}
@@ -79,6 +70,9 @@ namespace forestdb {
     :_bodyOffset(0), _sorted(true), _changed(false)
     {
         decode(raw_tree, seq, docOffset);
+    }
+
+    RevTree::~RevTree() {
     }
 
     void RevTree::decode(forestdb::slice raw_tree, sequence seq, uint64_t docOffset) {
@@ -92,6 +86,7 @@ namespace forestdb {
             nodeFromRawNode(rawNode, &*node);
             if (node->sequence == 0)
                 node->sequence = seq;
+            node->owner = this;
             node++;
         }
         if ((uint8_t*)rawNode != (uint8_t*)raw_tree.end() - sizeof(uint32_t)) {
@@ -105,10 +100,10 @@ namespace forestdb {
         // Allocate output buffer:
         size_t size = sizeof(uint32_t);  // start with space for trailing 0 size
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
-            if (node->data.size > 0 && !(node->isLeaf() || node->isNew())) {
+            if (node->body.size > 0 && !(node->isLeaf() || node->isNew())) {
                 // Prune body of an already-saved node that's no longer a leaf:
-                node->data.buf = NULL;
-                node->data.size = 0;
+                node->body.buf = NULL;
+                node->body.size = 0;
                 node->oldBodyOffset = _bodyOffset;
             }
             size += sizeForRawNode(&*node);
@@ -127,7 +122,7 @@ namespace forestdb {
             dst->parentIndex = htons(src->parentIndex);
 
             dst->flags = src->flags & kRevNodePublicPersistentFlags;
-            if (src->data.size > 0)
+            if (src->body.size > 0)
                 dst->flags |= kRevNodeHasData;
             else if (src->oldBodyOffset > 0)
                 dst->flags |= kRevNodeHasBodyOffset;
@@ -135,7 +130,7 @@ namespace forestdb {
             void *dstData = offsetby(&dst->revID[0], src->revID.size);
             dstData = offsetby(dstData, PutUVarInt(dstData, src->sequence));
             if (dst->flags & kRevNodeHasData) {
-                memcpy(dstData, src->data.buf, src->data.size);
+                memcpy(dstData, src->body.buf, src->body.size);
             } else if (dst->flags & kRevNodeHasBodyOffset) {
                 /*dstData +=*/ PutUVarInt(dstData, src->oldBodyOffset ?: _bodyOffset);
             }
@@ -149,8 +144,8 @@ namespace forestdb {
 
     static size_t sizeForRawNode(const RevNode *node) {
         size_t size = offsetof(RawRevNode, revID) + node->revID.size + SizeOfVarInt(node->sequence);
-        if (node->data.size > 0)
-            size += node->data.size;
+        if (node->body.size > 0)
+            size += node->body.size;
         else if (node->oldBodyOffset > 0)
             size += SizeOfVarInt(node->oldBodyOffset);
         return size;
@@ -178,11 +173,11 @@ namespace forestdb {
                                          &dst->sequence));
         dst->oldBodyOffset = 0;
         if (src->flags & kRevNodeHasData) {
-            dst->data.buf = (char*)data;
-            dst->data.size = (char*)end - (char*)data;
+            dst->body.buf = (char*)data;
+            dst->body.size = (char*)end - (char*)data;
         } else {
-            dst->data.buf = NULL;
-            dst->data.size = 0;
+            dst->body.buf = NULL;
+            dst->body.size = 0;
             if (src->flags & kRevNodeHasBodyOffset) {
                 slice buf = {(void*)data, (size_t)((uint8_t*)end-(uint8_t*)data)};
                 size_t nBytes = GetUVarInt(buf, &dst->oldBodyOffset);
@@ -200,18 +195,12 @@ namespace forestdb {
 
     const RevNode* RevTree::get(unsigned index) const {return &_nodes[index];}
 
-    const RevNode* RevTree::get(slice revID) const {
+    const RevNode* RevTree::get(revid revID) const {
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
             if (node->revID.equal(revID))
                 return &*node;
         }
         return NULL;
-    }
-
-    unsigned RevTree::indexOf(const RevNode* node) const {
-        ptrdiff_t index = node - &_nodes[0];
-        assert(index >= 0 && index < _nodes.size());
-        return (unsigned)index;
     }
 
     bool RevTree::hasConflict() const {
@@ -231,7 +220,7 @@ namespace forestdb {
         }
     }
 
-    std::vector<const RevNode*> RevTree::currentNodes() {
+    std::vector<const RevNode*> RevTree::currentNodes() const {
         std::vector<const RevNode*> cur;
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
             if (node->isLeaf())
@@ -240,22 +229,53 @@ namespace forestdb {
         return cur;
     }
 
+    unsigned RevNode::index() const {
+        ptrdiff_t index = this - &owner->_nodes[0];
+        assert(index >= 0 && index < owner->_nodes.size());
+        return (unsigned)index;
+    }
+
+    const RevNode* RevNode::parent() const {
+        if (parentIndex == RevNode::kNoParent)
+            return NULL;
+        return owner->get(parentIndex);
+    }
+
+    std::vector<const RevNode*> RevNode::history() const {
+        std::vector<const RevNode*> h;
+        for (const RevNode* node = this; node; node = node->parent())
+            h.push_back(node);
+        return h;
+    }
+
+    bool RevTree::isBodyOfNodeAvailable(const RevNode* node) const {
+        return node->body.buf != NULL; // VersionedDocument overrides this
+    }
+
+    alloc_slice RevTree::readBodyOfNode(const RevNode* node) const {
+        if (node->body.buf != NULL)
+            return alloc_slice(node->body);
+        return alloc_slice(); // VersionedDocument overrides this
+    }
+
+
 #pragma mark - INSERTION:
 
-    const RevNode* RevTree::_insert(slice revID,
-                                    slice data,
+    const RevNode* RevTree::_insert(revid revID,
+                                    slice body,
                                     const RevNode *parentNode,
                                     bool deleted)
     {
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.push_back(alloc_slice(revID));
         revID = _insertedData.back();
-        _insertedData.push_back(alloc_slice(data));
-        data = _insertedData.back();
+        _insertedData.push_back(alloc_slice(body));
+        body = _insertedData.back();
 
         RevNode newNode;
+        newNode.owner = this;
         newNode.revID = revID;
-        newNode.data = data;
+        newNode.body = body;
         newNode.sequence = 0; // Sequence is unknown till doc is saved
         newNode.oldBodyOffset = 0; // Body position is unknown till doc is saved
         newNode.flags = RevNode::kLeaf | RevNode::kNew;
@@ -264,7 +284,7 @@ namespace forestdb {
 
         newNode.parentIndex = RevNode::kNoParent;
         if (parentNode) {
-            ptrdiff_t parentIndex = indexOf(parentNode);
+            ptrdiff_t parentIndex = parentNode->index();
             newNode.parentIndex = (uint16_t)parentIndex;
             ((RevNode*)parentNode)->flags &= ~RevNode::kLeaf;
         }
@@ -277,8 +297,8 @@ namespace forestdb {
         return &_nodes.back();
     }
 
-    const RevNode* RevTree::insert(slice revID, slice body, bool deleted,
-                         slice parentRevID, bool allowConflict)
+    const RevNode* RevTree::insert(revid revID, slice body, bool deleted,
+                                   revid parentRevID, bool allowConflict)
     {
         if (get(revID))
             return NULL;
@@ -291,12 +311,12 @@ namespace forestdb {
         return insert(revID, body, deleted, parent, allowConflict);
     }
 
-    const RevNode* RevTree::insert(slice revID, slice data, bool deleted,
+    const RevNode* RevTree::insert(revid revID, slice data, bool deleted,
                                    const RevNode* parent, bool allowConflict)
     {
         // Make sure the given revID is valid:
-        uint32_t newGen;
-        if (!RevIDParseCompacted(revID, &newGen, NULL))
+        uint32_t newGen = revID.generation();
+        if (newGen == 0)
             return NULL;
 #if DEBUG
         assert(!get(revID));
@@ -307,7 +327,8 @@ namespace forestdb {
         if (parent) {
             if (!allowConflict && !(parent->flags & RevNode::kLeaf))
                 return NULL;
-            if (!RevIDParseCompacted(parent->revID, &parentGen, NULL))
+            parentGen = parent->revID.generation();
+            if (parentGen == 0)
                 return NULL;
         } else {
             if (!allowConflict && _nodes.size() > 0)
@@ -323,7 +344,7 @@ namespace forestdb {
         return _insert(revID, data, parent, deleted);
     }
 
-    int RevTree::insertHistory(const std::vector<slice> history, slice data, bool deleted) {
+    int RevTree::insertHistory(const std::vector<revid> history, slice data, bool deleted) {
         assert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
@@ -331,8 +352,8 @@ namespace forestdb {
         const RevNode* commonAncestor = NULL;
         size_t historyCount = history.size();
         for (i = 0; i < historyCount; i++) {
-            unsigned gen;
-            if (!RevIDParseCompacted(history[i], &gen, NULL))
+            unsigned gen = history[i].generation();
+            if (gen == 0)
                 return -1;
             if (lastGen > 0 && gen != lastGen - 1)
                 return -1;
@@ -351,7 +372,7 @@ namespace forestdb {
                                                 (i==0 ? data : slice()),
                                                 get(parentIndex),
                                                 (i==0 && deleted));
-                parentIndex = indexOf(parent);
+                parentIndex = parent->index();
             }
         }
         return commonAncestorIndex;
@@ -368,7 +389,7 @@ namespace forestdb {
             if (node->isLeaf()) {
                 // Starting from a leaf node, trace its ancestry to find its depth:
                 unsigned depth = 0;
-                for (RevNode* anc = node; anc; anc = (RevNode*)parentNode(anc)) {
+                for (RevNode* anc = node; anc; anc = (RevNode*)anc->parent()) {
                     if (++depth > maxDepth) {
                         // Mark nodes that are too far away:
                         anc->revID.size = 0;
@@ -384,7 +405,7 @@ namespace forestdb {
         return numPruned;
     }
 
-    unsigned RevTree::purge(std::vector<slice>revIDs) {
+    unsigned RevTree::purge(std::vector<revid>revIDs) {
         int numPurged = 0;
         bool madeProgress, foundNonLeaf;
         do {
@@ -440,11 +461,11 @@ namespace forestdb {
     /*  A proper revision ID consists of a generation number, a hyphen, and an arbitrary suffix.
         Compare the generation numbers numerically, and then the suffixes lexicographically.
         If either string isn't a proper rev ID, fall back to lexicographic comparison. */
-    static int compareRevIDs(slice rev1, slice rev2)
+    static int compareRevIDs(revid rev1, revid rev2)
     {
         uint32_t gen1, gen2;
         slice digest1, digest2;
-        if (!RevIDParse(rev1, &gen1, &digest1) || !RevIDParse(rev2, &gen2, &digest2)) {
+        if (!revid::Parse(rev1, &gen1, &digest1) || !revid::Parse(rev2, &gen2, &digest2)) {
             // Improper rev IDs; just compare as plain text:
             return rev1.compare(rev2);
         }
@@ -503,55 +524,5 @@ namespace forestdb {
                 }
         _sorted = true;
     }
-
-
-
-#pragma mark - REVISION IDS:
-
-
-    // Parses bytes from str to end as an ASCII number. Returns 0 if non-digit found.
-    static uint32_t parseDigits(const char *str, const char *end) {
-        uint32_t result = 0;
-        for (; str < end; ++str) {
-            if (!isdigit(*str))
-                return 0;
-            result = 10*result + (*str - '0');
-        }
-        return result;
-    }
-
-
-    bool RevIDParse(slice rev, unsigned *generation, slice *digest) {
-        const char *dash = (const char*)::memchr(rev.buf, '-', rev.size);
-        if (dash == NULL || dash == rev.buf) {
-            return false;
-        }
-        ssize_t dashPos = dash - (const char*)rev.buf;
-        if (dashPos > 8 || dashPos >= rev.size - 1) {
-            return false;
-        }
-        *generation = parseDigits((const char*)rev.buf, dash);
-        if (*generation == 0) {
-            return false;
-        }
-        if (digest) {
-            digest->buf = (char*)dash + 1;
-            digest->size = (uint8_t*)rev.buf + rev.size - (uint8_t*)digest->buf;
-        }
-        return true;
-    }
-
-
-    bool RevIDParseCompacted(slice rev, unsigned *generation, slice *digest) {
-        unsigned gen = ((uint8_t*)rev.buf)[0];
-        if (isdigit(gen))
-            return RevIDParse(rev, generation, digest);
-        if (gen > '9')
-            gen -= 10;
-        *generation = gen;
-        if (digest)
-            *digest = (slice){rev.offset(1), rev.size - 1};
-        return true;
-    }
-
+        
 }

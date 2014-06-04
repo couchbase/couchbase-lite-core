@@ -8,8 +8,8 @@
 
 #import <XCTest/XCTest.h>
 #import "testutil.h"
-#import "Index.h"
-#import "Collatable.h"
+#import "Index.hh"
+#import "Collatable.hh"
 
 using namespace forestdb;
 

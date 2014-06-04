@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "Collatable.h"
+#include "Collatable.hh"
 #include <CoreFoundation/CFByteOrder.h>
 
 namespace forestdb {

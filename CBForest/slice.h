@@ -33,6 +33,7 @@ int slicecmp(slice a, slice b);
 #ifdef __cplusplus
 
 #include <string>
+#include <memory>
 
 namespace forestdb {
 

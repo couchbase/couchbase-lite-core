@@ -6,8 +6,8 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "Index.h"
-#include "Collatable.h"
+#include "Index.hh"
+#include "Collatable.hh"
 #include "varint.h"
 
 namespace forestdb {

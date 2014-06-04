@@ -9,7 +9,7 @@
 #ifndef __CBForest__Index__
 #define __CBForest__Index__
 
-#include "Database.h"
+#include "Database.hh"
 
 namespace forestdb {
     

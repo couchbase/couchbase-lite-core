@@ -8,7 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import "testutil.h"
-#import "Database.h"
+#import "Database.hh"
 
 using namespace forestdb;
 

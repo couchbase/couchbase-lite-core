@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "Collatable.h"
+#import "Collatable.hh"
 #import "testutil.h"
 #import <Security/Security.h>
 

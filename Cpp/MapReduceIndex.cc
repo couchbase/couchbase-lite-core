@@ -6,8 +6,8 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "MapReduceIndex.h"
-#include "Collatable.h"
+#include "MapReduceIndex.hh"
+#include "Collatable.hh"
 
 
 namespace forestdb {

@@ -10,11 +10,14 @@
 #define __CBForest__RevTree__
 
 #include "slice.h"
-#include "Database.h"
+#include "RevID.hh"
+#include "Database.hh"
 #include <vector>
 
 
 namespace forestdb {
+
+    class RevTree;
 
     /** In-memory representation of a single revision's metadata. */
     struct RevNode {
@@ -28,8 +31,9 @@ namespace forestdb {
 
         static const uint16_t kNoParent = UINT16_MAX;
 
-        slice       revID;          /**< Revision ID */
-        slice       data;           /**< Revision body (JSON), or empty if not stored in this tree */
+        const RevTree* owner;
+        revid       revID;          /**< Revision ID */
+        slice       body;           /**< Revision body (JSON), or empty if not stored in this tree */
         uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
         fdb_seqnum_t sequence;      /**< DB sequence number that this revision has/had */
         uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
@@ -40,8 +44,15 @@ namespace forestdb {
         bool isNew() const     {return (flags & kNew) != 0;}
         bool isActive() const  {return isLeaf() && !isDeleted();}
 
+        unsigned index() const;
+        const RevNode* parent() const;
+        std::vector<const RevNode*> history() const;
+
+        inline bool isBodyAvailable() const;
+        inline alloc_slice readBody() const;
+
         int compare(const RevNode&) const;
-        bool operator< (const RevNode& rev) const {return compare(rev) < 0;}
+        bool operator< (const RevNode& rev) const   {return compare(rev) < 0;}
     };
 
 
@@ -49,6 +60,7 @@ namespace forestdb {
     public:
         RevTree();
         RevTree(slice raw_tree, sequence seq, uint64_t docOffset);
+        virtual ~RevTree();
 
         void decode(slice raw_tree, sequence seq, uint64_t docOffset);
 
@@ -56,28 +68,32 @@ namespace forestdb {
 
         size_t size() const                             {return _nodes.size();}
         const RevNode* get(unsigned index) const;
-        const RevNode* get(slice revID) const;
+        const RevNode* get(revid) const;
         const RevNode* operator[](unsigned index) const {return get(index);}
-        const RevNode* operator[](slice revID) const    {return get(revID);}
-        unsigned indexOf(const RevNode* node) const;
+        const RevNode* operator[](revid revID) const    {return get(revID);}
 
-        const RevNode* parentNode(const RevNode* node) const;
-
+        const std::vector<RevNode>& allNodes() const    {return _nodes;}
         const RevNode* currentNode();
-        std::vector<const RevNode*> currentNodes();
+        std::vector<const RevNode*> currentNodes() const;
         bool hasConflict() const;
 
-        const RevNode* insert(slice revID, slice body, bool deleted, slice parentRevID, bool allowConflict);
-        const RevNode* insert(slice revID, slice body, bool deleted, const RevNode* parent, bool allowConflict);
-        int insertHistory(const std::vector<slice> history, slice data, bool deleted);
+
+        const RevNode* insert(revid, slice body, bool deleted, revid parentRevID, bool allowConflict);
+        const RevNode* insert(revid, slice body, bool deleted, const RevNode* parent, bool allowConflict);
+        int insertHistory(const std::vector<revid> history, slice body, bool deleted);
 
         unsigned prune(unsigned maxDepth);
-        unsigned purge(const std::vector<slice>revIDs);
+        unsigned purge(const std::vector<revid>revIDs);
 
         void sort();
 
+    protected:
+        virtual bool isBodyOfNodeAvailable(const RevNode*) const;
+        virtual alloc_slice readBodyOfNode(const RevNode*) const;
+
     private:
-        const RevNode* _insert(slice revID, slice data, const RevNode *parentNode, bool deleted);
+        friend struct RevNode;
+        const RevNode* _insert(revid, slice body, const RevNode *parentNode, bool deleted);
         void compact();
 
         uint64_t    _bodyOffset;     // File offset of body this tree was read from
@@ -88,9 +104,13 @@ namespace forestdb {
         bool _changed;
     };
 
-    bool RevIDParse(slice rev, unsigned *generation, slice *digest);
-    bool RevIDParseCompacted(slice rev, unsigned *generation, slice *digest);
 
+    inline bool RevNode::isBodyAvailable() const {
+        return owner->isBodyOfNodeAvailable(this);
+    }
+    inline alloc_slice RevNode::readBody() const {
+        return owner->readBodyOfNode(this);
+    }
 
 }
 

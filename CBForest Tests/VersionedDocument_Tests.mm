@@ -7,7 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "VersionedDocument.h"
+#import "VersionedDocument.hh"
 #import "testutil.h"
 
 using namespace forestdb;
@@ -54,7 +54,7 @@ using namespace forestdb;
                       forestdb::slice::null, false);
     Assert(rev);
     Assert(rev->revID.equal(rev1ID));
-    Assert(rev->data.equal(rev1Data));
+    Assert(rev->body.equal(rev1Data));
     AssertEq(rev->parentIndex, RevNode::kNoParent);
     Assert(!rev->isDeleted());
 
@@ -63,7 +63,7 @@ using namespace forestdb;
     auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false);
     Assert(rev2);
     Assert(rev2->revID.equal(rev2ID));
-    Assert(rev2->data.equal(rev2Data));
+    Assert(rev2->body.equal(rev2Data));
     Assert(!rev->isDeleted());
 
     tree.sort();
@@ -71,8 +71,8 @@ using namespace forestdb;
     rev2 = tree.get(rev2ID);
     Assert(rev);
     Assert(rev2);
-    AssertEq(tree.parentNode(rev2), rev);
-    Assert(tree.parentNode(rev) == NULL);
+    AssertEq(rev2->parent(), rev);
+    Assert(rev->parent() == NULL);
 
     AssertEq(tree.currentNode(), rev2);
     Assert(!tree.hasConflict());
@@ -80,8 +80,8 @@ using namespace forestdb;
     tree.sort();
     AssertEq(tree[0], rev2);
     AssertEq(tree[1], rev);
-    AssertEq(tree.indexOf(rev), 1);
-    AssertEq(tree.indexOf(rev2), 0);
+    AssertEq(rev->index(), 1);
+    AssertEq(rev2->index(), 0);
 
     alloc_slice ext = tree.encode();
 

@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "Database.h"
+#include "Database.hh"
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
@@ -84,6 +84,7 @@ namespace forestdb {
         return (_openFlags & FDB_OPEN_FLAG_RDONLY) != 0;
     }
 
+    
 #pragma mark - GET:
 
     static bool checkGet(fdb_status status) {

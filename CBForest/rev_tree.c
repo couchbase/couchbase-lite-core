@@ -20,9 +20,10 @@
 
 #define offsetby(PTR,OFFSET) (void*)((uint8_t*)(PTR)+(OFFSET))
 
+#ifndef htonll
 #define htonll CFSwapInt64HostToBig
 #define ntohll CFSwapInt64BigToHost
-
+#endif
 
 // Innards of RevTree struct (in-memory representation)
 struct RevTree {

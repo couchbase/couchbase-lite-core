@@ -168,6 +168,7 @@ namespace forestdb {
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
+        bool exists() const         {return _doc.offset > 0;}
 
         typedef DocEnumerator enumerator;
 
