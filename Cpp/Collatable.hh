@@ -35,6 +35,10 @@ namespace forestdb {
         Collatable& beginMap()                      {addTag(7); return *this;}
         Collatable& endMap()                        {addTag(0); return *this;}
 
+#ifdef __OBJC__
+        Collatable& operator<< (id);
+#endif
+
         operator slice() const                      {return slice(_str);}
 
     private:

@@ -22,6 +22,12 @@ using namespace forestdb;
 
 #define kDBPath "/tmp/forest.db"
 
+
+static revidBuffer stringToRev(NSString* str) {
+    revidBuffer buf(str);
+    return buf;
+}
+
 - (void)setUp
 {
     ::unlink(kDBPath);
@@ -41,24 +47,24 @@ using namespace forestdb;
     AssertEqual((NSString*)v.docID(), @"foo");
     Assert(v.revID() == NULL);
     AssertEq(v.flags(), 0);
-    XCTAssert(v.get(@"1-aaaa") == NULL);
+    XCTAssert(v.get(stringToRev(@"1-aaaa")) == NULL);
 }
 
 
 - (void) test02_RevTreeInsert {
     RevTree tree;
     const RevNode* rev;
-    forestdb::slice rev1ID("1-aaaa");
+    revidBuffer rev1ID(forestdb::slice("1-aaaa"));
     forestdb::slice rev1Data("body of revision");
     rev = tree.insert(rev1ID, rev1Data, false,
-                      forestdb::slice::null, false);
+                      revid(), false);
     Assert(rev);
     Assert(rev->revID.equal(rev1ID));
     Assert(rev->body.equal(rev1Data));
     AssertEq(rev->parentIndex, RevNode::kNoParent);
     Assert(!rev->isDeleted());
 
-    forestdb::slice rev2ID("2-bbbb");
+    revidBuffer rev2ID(forestdb::slice("2-bbbb"));
     forestdb::slice rev2Data("second revision");
     auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false);
     Assert(rev2);
@@ -90,10 +96,11 @@ using namespace forestdb;
 
 - (void) test03_AddRevision {
     NSString *revID = @"1-fadebead", *body = @"{\"hello\":true}";
+    revidBuffer revIDBuf(revID);
     VersionedDocument v(db, @"foo");
-    v.insert(revID, body, false, NULL, false);
+    v.insert(revIDBuf, body, false, NULL, false);
 
-    const RevNode* node = v.get(revID);
+    const RevNode* node = v.get(stringToRev(revID));
     Assert(node);
     Assert(!node->isDeleted());
     Assert(node->isLeaf());

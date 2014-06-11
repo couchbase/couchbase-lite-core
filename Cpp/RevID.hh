@@ -13,13 +13,13 @@
 
 namespace forestdb {
 
-    /** A compressed revision ID. This class is immutable. */
+    /** A compressed revision ID. 
+        Since this is based on slice, it doesn't own the memory it points to. */
     class revid : public slice {
     public:
         revid()                                     :slice() {}
         revid(const void* b, size_t s)              :slice(b,s) {}
-
-        revid& operator= (const slice& s)           {buf=s.buf; size=s.size; return *this;}
+        explicit revid(slice s)                     :slice(s) {}
 
         bool isCompressed() const                   {return !isdigit((*this)[0]);}
 
@@ -28,16 +28,25 @@ namespace forestdb {
         bool expandInto(slice &dst) const;
 
         unsigned generation() const;
+        slice digest() const;
+        bool operator< (const revid&) const;
+
+    private:
+        void _expandInto(slice &dst) const;
     };
 
     /** A self-contained revid that includes its own data buffer. */
     class revidBuffer : public revid {
     public:
-        /** Parses a regular (uncompressed) revID and compresses it. */
+        revidBuffer()                               :revid(&_buffer, 0) {}
+        explicit revidBuffer(slice s)               :revid(&_buffer, 0) {parse(s);}
+        revidBuffer(const revidBuffer&);
+
+        /** Parses a regular (uncompressed) revID and compresses it.
+            Returns false if the revID isn't in the proper format.*/
         bool parse(slice);
         
     private:
-        revidBuffer()                               :revid(&_buffer, 0) {}
         uint8_t _buffer[42];
     };
 }

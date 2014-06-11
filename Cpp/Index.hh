@@ -60,8 +60,11 @@ namespace forestdb {
                     slice docID, sequence docSequence,
                     std::vector<Collatable> keys, std::vector<Collatable> values);
 
-        IndexEnumerator enumerate(slice startKey, slice startKeyDocID,
-                                  slice endKey,   slice endKeyDocID,
+        IndexEnumerator enumerate(Collatable startKey, slice startKeyDocID,
+                                  Collatable endKey,   slice endKeyDocID,
+                                  const Database::enumerationOptions* options);
+
+        IndexEnumerator enumerate(std::vector<std::string> keys,
                                   const Database::enumerationOptions* options);
 
     private:
@@ -73,7 +76,9 @@ namespace forestdb {
 
     class IndexTransaction : protected Transaction {
     public:
-        IndexTransaction(Index* index)            :Transaction(index) {}
+        IndexTransaction(Index* index)              :Transaction(index) {}
+
+        void erase()                                {Transaction::erase();}
 
         friend class Index;
         friend class MapReduceIndex;

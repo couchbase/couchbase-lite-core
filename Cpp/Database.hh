@@ -27,6 +27,7 @@ namespace forestdb {
     // Most API calls can throw this
     struct error {
         fdb_status status;
+        error (fdb_status s)        :status(s) {}
     };
 
 

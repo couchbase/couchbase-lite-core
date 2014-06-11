@@ -18,18 +18,24 @@ namespace forestdb {
             decode(_doc.body(), _doc.sequence(), _doc.offset());
     }
 
+    VersionedDocument::VersionedDocument(Database* db, const Document& doc)
+    :_db(db), _doc(doc)
+    {
+        decode(_doc.body(), _doc.sequence(), _doc.offset());
+    }
+
     VersionedDocument::VersionedDocument(Database* db, Document&& doc)
     :_db(db), _doc(doc)
     {
         decode(_doc.body(), _doc.sequence(), _doc.offset());
     }
 
-    slice VersionedDocument::revID() const {
+    revid VersionedDocument::revID() const {
         slice result = _doc.meta();
         if (result.size <= 1)
-            return slice::null;
+            return revid();
         result.moveStart(1);
-        return result;
+        return revid(result);
     }
 
     VersionedDocument::Flags VersionedDocument::flags() const {

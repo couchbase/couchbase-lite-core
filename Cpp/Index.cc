@@ -62,8 +62,8 @@ namespace forestdb {
 #pragma mark - ENUMERATOR:
 
 
-    IndexEnumerator Index::enumerate(slice startKey, slice startKeyDocID,
-                                     slice endKey,   slice endKeyDocID,
+    IndexEnumerator Index::enumerate(Collatable startKey, slice startKeyDocID,
+                                     Collatable endKey,   slice endKeyDocID,
                                      const Database::enumerationOptions* options)
     {
         return IndexEnumerator(this, startKey, startKeyDocID,
@@ -73,7 +73,7 @@ namespace forestdb {
     }
 
 
-    static Collatable makeRealKey(slice key, slice docID, bool addEllipsis) {
+    static Collatable makeRealKey(Collatable key, slice docID, bool addEllipsis) {
         Collatable realKey;
         realKey.beginArray();
         if (key) {
@@ -89,8 +89,9 @@ namespace forestdb {
         return realKey;
     }
 
-    IndexEnumerator::IndexEnumerator(Index* index, slice startKey, slice startKeyDocID,
-                                     slice endKey,   slice endKeyDocID,
+    IndexEnumerator::IndexEnumerator(Index* index,
+                                     Collatable startKey, slice startKeyDocID,
+                                     Collatable endKey,   slice endKeyDocID,
                                      bool ascending,
                                      const Database::enumerationOptions* options)
     :_index(index),

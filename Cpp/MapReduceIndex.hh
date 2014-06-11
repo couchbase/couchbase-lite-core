@@ -31,6 +31,7 @@ namespace forestdb {
                        forestdb::Database* sourceDatabase);
 
         void readState();
+        int indexType() const;
         
         void setup(int indexType, MapFn *map, std::string mapVersion);
 

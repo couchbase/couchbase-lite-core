@@ -23,11 +23,13 @@ namespace forestdb {
         };
 
         VersionedDocument(Database* db, slice docID);
+        VersionedDocument(Database* db, const Document& doc);
         VersionedDocument(Database* db, Document&& doc);
 
         slice docID() const         {return _doc.key();}
-        slice revID() const;
+        revid revID() const;
         Flags flags() const;
+        bool isDeleted() const      {return (flags() & kDeleted) != 0;}
 
         bool exists() const         {return _doc.exists();}
         sequence sequence() const   {return _doc.sequence();}

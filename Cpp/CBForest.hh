@@ -13,6 +13,7 @@
 #error C++ only!
 #endif
 
+#include <CBForest/Collatable.hh>
 #include <CBForest/Database.hh>
 #include <CBForest/Index.hh>
 #include <CBForest/MapReduceIndex.hh>

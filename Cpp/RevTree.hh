@@ -32,7 +32,7 @@ namespace forestdb {
         static const uint16_t kNoParent = UINT16_MAX;
 
         const RevTree* owner;
-        revid       revID;          /**< Revision ID */
+        revid       revID;          /**< Revision ID (compressed) */
         slice       body;           /**< Revision body (JSON), or empty if not stored in this tree */
         uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
         fdb_seqnum_t sequence;      /**< DB sequence number that this revision has/had */
@@ -51,8 +51,7 @@ namespace forestdb {
         inline bool isBodyAvailable() const;
         inline alloc_slice readBody() const;
 
-        int compare(const RevNode&) const;
-        bool operator< (const RevNode& rev) const   {return compare(rev) < 0;}
+        bool operator< (const RevNode& rev) const;
     };
 
 
@@ -78,12 +77,18 @@ namespace forestdb {
         bool hasConflict() const;
 
 
-        const RevNode* insert(revid, slice body, bool deleted, revid parentRevID, bool allowConflict);
-        const RevNode* insert(revid, slice body, bool deleted, const RevNode* parent, bool allowConflict);
+        const RevNode* insert(revid, slice body, bool deleted,
+                              revid parentRevID,
+                              bool allowConflict,
+                              int &httpStatus);
+        const RevNode* insert(revid, slice body, bool deleted,
+                              const RevNode* parent,
+                              bool allowConflict,
+                              int &httpStatus);
         int insertHistory(const std::vector<revid> history, slice body, bool deleted);
 
         unsigned prune(unsigned maxDepth);
-        unsigned purge(const std::vector<revid>revIDs);
+        std::vector<revid> purge(const std::vector<revid>revIDs);
 
         void sort();
 

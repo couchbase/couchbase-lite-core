@@ -261,14 +261,15 @@ namespace forestdb {
 
 #pragma mark - INSERTION:
 
-    const RevNode* RevTree::_insert(revid revID,
+    // Lowest-level insert method. Does no sanity checking, always inserts.
+    const RevNode* RevTree::_insert(revid unownedRevID,
                                     slice body,
                                     const RevNode *parentNode,
                                     bool deleted)
     {
         // Allocate copies of the revID and data so they'll stay around:
-        _insertedData.push_back(alloc_slice(revID));
-        revID = _insertedData.back();
+        _insertedData.push_back(alloc_slice(unownedRevID));
+        revid revID = revid(_insertedData.back());
         _insertedData.push_back(alloc_slice(body));
         body = _insertedData.back();
 
@@ -297,51 +298,62 @@ namespace forestdb {
         return &_nodes.back();
     }
 
-    const RevNode* RevTree::insert(revid revID, slice body, bool deleted,
-                                   revid parentRevID, bool allowConflict)
-    {
-        if (get(revID))
-            return NULL;
-        const RevNode* parent = NULL;
-        if (parentRevID.buf) {
-            parent = get(parentRevID);
-            if (!parent)
-                return NULL;
-        }
-        return insert(revID, body, deleted, parent, allowConflict);
-    }
-
     const RevNode* RevTree::insert(revid revID, slice data, bool deleted,
-                                   const RevNode* parent, bool allowConflict)
+                                   const RevNode* parent, bool allowConflict,
+                                   int &httpStatus)
     {
         // Make sure the given revID is valid:
         uint32_t newGen = revID.generation();
-        if (newGen == 0)
+        if (newGen == 0) {
+            httpStatus = 400;
             return NULL;
-#if DEBUG
-        assert(!get(revID));
-#endif
+        }
+
+        if (get(revID)) {
+            httpStatus = 200;
+            return NULL; // already exists
+        }
 
         // Find the parent node, if a parent ID is given:
         uint32_t parentGen;
         if (parent) {
-            if (!allowConflict && !(parent->flags & RevNode::kLeaf))
+            if (!allowConflict && !(parent->flags & RevNode::kLeaf)) {
+                httpStatus = 409;
                 return NULL;
+            }
             parentGen = parent->revID.generation();
-            if (parentGen == 0)
-                return NULL;
         } else {
-            if (!allowConflict && _nodes.size() > 0)
+            if (!allowConflict && _nodes.size() > 0) {
+                httpStatus = 409;
                 return NULL;
+            }
             parentGen = 0;
         }
 
         // Enforce that generation number went up by 1 from the parent:
-        if (newGen != parentGen + 1)
+        if (newGen != parentGen + 1) {
+            httpStatus = 400;
             return NULL;
+        }
         
         // Finally, insert:
+        httpStatus = 200;
         return _insert(revID, data, parent, deleted);
+    }
+
+    const RevNode* RevTree::insert(revid revID, slice body, bool deleted,
+                                   revid parentRevID, bool allowConflict,
+                                   int &httpStatus)
+    {
+        const RevNode* parent = NULL;
+        if (parentRevID.buf) {
+            parent = get(parentRevID);
+            if (!parent) {
+                httpStatus = 404;
+                return NULL; // parent doesn't exist
+            }
+        }
+        return insert(revID, body, deleted, parent, allowConflict, httpStatus);
     }
 
     int RevTree::insertHistory(const std::vector<revid> history, slice data, bool deleted) {
@@ -405,8 +417,8 @@ namespace forestdb {
         return numPruned;
     }
 
-    unsigned RevTree::purge(std::vector<revid>revIDs) {
-        int numPurged = 0;
+    std::vector<revid> RevTree::purge(std::vector<revid>revIDs) {
+        std::vector<revid> purged;
         bool madeProgress, foundNonLeaf;
         do {
             madeProgress = foundNonLeaf = false;
@@ -414,7 +426,7 @@ namespace forestdb {
                 RevNode* node = (RevNode*)get(*revID);
                 if (node) {
                     if (node->isLeaf()) {
-                        numPurged++;
+                        purged.push_back(*revID);
                         madeProgress = true;
                         node->revID.size = 0; // mark for purge
                         revID->size = 0;
@@ -427,9 +439,9 @@ namespace forestdb {
                 }
             }
         } while (madeProgress && foundNonLeaf);
-        if (numPurged > 0)
+        if (purged.size() > 0)
             compact();
-        return numPurged;
+        return purged;
     }
 
     void RevTree::compact() {
@@ -458,28 +470,8 @@ namespace forestdb {
         _changed = true;
     }
 
-    /*  A proper revision ID consists of a generation number, a hyphen, and an arbitrary suffix.
-        Compare the generation numbers numerically, and then the suffixes lexicographically.
-        If either string isn't a proper rev ID, fall back to lexicographic comparison. */
-    static int compareRevIDs(revid rev1, revid rev2)
-    {
-        uint32_t gen1, gen2;
-        slice digest1, digest2;
-        if (!revid::Parse(rev1, &gen1, &digest1) || !revid::Parse(rev2, &gen2, &digest2)) {
-            // Improper rev IDs; just compare as plain text:
-            return rev1.compare(rev2);
-        }
-        // Compare generation numbers; if they match, compare suffixes:
-        if (gen1 > gen2)
-            return 1;
-        else if (gen1 < gen2)
-            return -1;
-        else
-            return digest1.compare(digest2);
-    }
-
     // Sort comparison function for an arry of RevNodes.
-    int RevNode::compare(const RevNode& rev2) const
+    bool RevNode::operator<(const RevNode& rev2) const
     {
         // Leaf nodes go first.
         int delta = rev2.isLeaf() - this->isLeaf();
@@ -490,7 +482,7 @@ namespace forestdb {
         if (delta)
             return delta;
         // Otherwise compare rev IDs, with higher rev ID going first:
-        return compareRevIDs(rev2.revID, this->revID);
+        return rev2.revID < this->revID;
     }
 
     void RevTree::sort() {

@@ -172,6 +172,7 @@
 		27B7E0F018F8FACB00044EBA /* CBCollatable_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3EE18F6150B007D8C23 /* CBCollatable_Tests.m */; };
 		27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */; };
 		27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BAA290190F11CA00C3AD1A /* CBEnumerator.m */; };
+		27BF6A9B1941350A007DAE06 /* RevID.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DD1512193CD005009A367D /* RevID.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F119328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
@@ -1195,6 +1196,7 @@
 				27DD150B19355123009A367D /* fdb_types.h in Headers */,
 				27139B5718F8EB820021A9A3 /* CBForestMapReduceIndex.h in Headers */,
 				27DD14F9193547FC009A367D /* MapReduceIndex.hh in Headers */,
+				27BF6A9B1941350A007DAE06 /* RevID.hh in Headers */,
 				27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */,
 				27139B5418F8EB820021A9A3 /* CBForestDocument.h in Headers */,
 				27EF80CB1917144600A327B9 /* CBTextTokenizer.h in Headers */,
