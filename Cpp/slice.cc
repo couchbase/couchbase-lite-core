@@ -68,4 +68,16 @@ namespace forestdb {
         return buf;
     }
 
+    std::string slice::hexString() const {
+        static const char kDigits[17] = "0123456789abcdef";
+        std::string result;
+        for (size_t i = 0; i < size; i++) {
+            uint8_t byte = (*this)[(unsigned)i];
+            result += kDigits[byte >> 4];
+            result += kDigits[byte & 0xF];
+        }
+        return result;
+    }
+
+
 }

@@ -80,6 +80,8 @@ namespace forestdb {
         operator ::slice()                      {return ::slice{buf, size};}
         slice(::slice s)                        :buf(s.buf), size(s.size) {}
 
+        std::string hexString() const;
+
         static const slice null;
 
 #ifdef __OBJC__

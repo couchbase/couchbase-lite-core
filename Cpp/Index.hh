@@ -32,9 +32,9 @@ namespace forestdb {
 
     private:
         friend class Index;
-        IndexEnumerator(Index*, slice startKey, slice startKeyDocID,
-                        slice endKey, slice endKeyDocID,
-                        bool ascending,
+        IndexEnumerator(Index*,
+                        Collatable startKey, slice startKeyDocID,
+                        Collatable endKey, slice endKeyDocID,
                         const Database::enumerationOptions*);
         void read();
 

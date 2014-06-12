@@ -337,7 +337,7 @@ namespace forestdb {
         }
         
         // Finally, insert:
-        httpStatus = 200;
+        httpStatus = 201;
         return _insert(revID, data, parent, deleted);
     }
 

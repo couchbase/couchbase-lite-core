@@ -70,8 +70,8 @@ using namespace forestdb;
 
     NSLog(@"--- First query");
     __block int nRows = 0;
-    for (auto e = index->enumerate(forestdb::slice::null, forestdb::slice::null,
-                                   forestdb::slice::null, forestdb::slice::null,  NULL); e; ++e) {
+    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null, NULL); e; ++e) {
 
         nRows++;
         CollatableReader keyReader(e.key());
@@ -88,8 +88,8 @@ using namespace forestdb;
             transaction: trans];
     }
     nRows = 0;
-    for (auto e = index->enumerate(forestdb::slice::null, forestdb::slice::null,
-                                   forestdb::slice::null, forestdb::slice::null,  NULL); e; ++e) {
+    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
 
         nRows++;
         CollatableReader keyReader(e.key());
@@ -105,8 +105,8 @@ using namespace forestdb;
         [self updateDoc: @"CA" body: @[] transaction: trans];
     }
     nRows = 0;
-    for (auto e = index->enumerate(forestdb::slice::null, forestdb::slice::null,
-                                   forestdb::slice::null, forestdb::slice::null,  NULL); e; ++e) {
+    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
 
         nRows++;
         CollatableReader keyReader(e.key());

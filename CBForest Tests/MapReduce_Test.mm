@@ -78,8 +78,8 @@ int TestMapFn::numMapCalls;
 - (void) queryExpectingKeys: (NSArray*)expectedKeys {
     index->updateIndex();
     int nRows = 0;
-    for (auto e = index->enumerate(forestdb::slice::null, forestdb::slice::null,
-                                   forestdb::slice::null, forestdb::slice::null,  NULL); e; ++e) {
+    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
 
         CollatableReader keyReader(e.key());
         alloc_slice keyStr = keyReader.readString();

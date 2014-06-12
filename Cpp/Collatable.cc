@@ -180,7 +180,15 @@ namespace forestdb {
     void CollatableReader::endArray() {
         expectTag(0);
     }
+    
+    void CollatableReader::beginMap() {
+        expectTag(7);
+    }
 
+    void CollatableReader::endMap() {
+        expectTag(0);
+    }
+    
 
 #pragma mark - UTILITIES:
 

@@ -210,6 +210,12 @@
 		27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
 		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
+		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
+		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
+		27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
+		27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
+		27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
@@ -602,6 +608,9 @@
 		27E4873519254D45007D8940 /* Collatable_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable_Test.mm; sourceTree = "<group>"; };
 		27E4873819255EA8007D8940 /* MapReduceIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceIndex.cc; sourceTree = "<group>"; };
 		27E4873919255EA8007D8940 /* MapReduceIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceIndex.hh; sourceTree = "<group>"; };
+		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
+		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
+		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable.mm; sourceTree = "<group>"; };
 		27EF7F8D1911A85800A327B9 /* snapshot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = snapshot.cc; sourceTree = "<group>"; };
 		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
@@ -952,6 +961,7 @@
 				275072A118E4857900A80C5A /* iterator.cc */,
 				275072A218E4857900A80C5A /* list.cc */,
 				27EF7F8D1911A85800A327B9 /* snapshot.cc */,
+				27EF007E1949297F001BF7F3 /* transaction.cc */,
 				275072A318E4857900A80C5A /* wal.cc */,
 				2750726318E3E72900A80C5A /* arch.h */,
 				2750726518E3E72900A80C5A /* avltree.h */,
@@ -965,6 +975,7 @@
 				2709F299191EA10E00C5A8A3 /* compactor.h */,
 				273AD3BE18EF263B007D8C23 /* configuration.h */,
 				2750727418E3E72900A80C5A /* docio.h */,
+				27EF00811949299A001BF7F3 /* fdb_internal.h */,
 				2750727718E3E72900A80C5A /* filemgr.h */,
 				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
 				273AD3CD18F45E05007D8C23 /* forestdb_endian.h */,
@@ -1049,6 +1060,7 @@
 				27E4873919255EA8007D8940 /* MapReduceIndex.hh */,
 				27E4872D1924178B007D8940 /* Collatable.cc */,
 				27E4872E1924178B007D8940 /* Collatable.hh */,
+				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				27E4871A19218E5D007D8940 /* slice.cc */,
 				2704A1E219049E2300138320 /* slice.h */,
 				27DD150719354C70009A367D /* CBForest.hh */,
@@ -1617,6 +1629,7 @@
 				27139B5E18F8EDA20021A9A3 /* iniparser.cc in Sources */,
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
 				27139B6018F8EDA20021A9A3 /* memleak.cc in Sources */,
+				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
 				27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */,
 				27139B6218F8EDA20021A9A3 /* hbtrie.cc in Sources */,
 				2709F29F191EA10E00C5A8A3 /* compactor.cc in Sources */,
@@ -1624,6 +1637,7 @@
 				27139B6418F8EDA20021A9A3 /* crc32.cc in Sources */,
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
+				27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
 				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
@@ -1655,6 +1669,7 @@
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27139BBA18F8EEBE0021A9A3 /* CBForestDB.m in Sources */,
 				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
+				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27139BBB18F8EEBE0021A9A3 /* CBForestDocument.m in Sources */,
 				27139BBC18F8EEBE0021A9A3 /* CBForestVersions.m in Sources */,
 				27139BBD18F8EEBE0021A9A3 /* CBForestPrivate.m in Sources */,
@@ -1704,6 +1719,7 @@
 				275072FA18E4ACE100A80C5A /* iniparser.cc in Sources */,
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
 				275072FD18E4ACE100A80C5A /* memleak.cc in Sources */,
+				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
 				275072D018E4AA5000A80C5A /* filemgr.cc in Sources */,
 				275072D418E4AA5000A80C5A /* hbtrie.cc in Sources */,
 				2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */,
@@ -1711,6 +1727,7 @@
 				275072F218E4ACE100A80C5A /* crc32.cc in Sources */,
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
+				27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
@@ -1785,6 +1802,7 @@
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27EF80FD1917EEC600A327B9 /* CBForestDB.m in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
+				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27EF80FE1917EEC600A327B9 /* CBForestDocument.m in Sources */,
 				27EF80FF1917EEC600A327B9 /* CBForestVersions.m in Sources */,
 				27EF81001917EEC600A327B9 /* CBForestPrivate.m in Sources */,

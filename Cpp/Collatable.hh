@@ -40,6 +40,7 @@ namespace forestdb {
 #endif
 
         operator slice() const                      {return slice(_str);}
+        bool empty() const                          {return _str.size() == 0;}
 
     private:
         void addTag(uint8_t c)                      {add(slice(&c,1));}
@@ -70,11 +71,17 @@ namespace forestdb {
         int64_t readInt();
         alloc_slice readString();
 
+#ifdef __OBJC__
+        id readNSObject();
+#endif
+
         /** Reads (skips) an entire object of any type, returning its data in Collatable form. */
         slice read();
 
         void beginArray();
         void endArray();
+        void beginMap();
+        void endMap();
 
     private:
         void expectTag(uint8_t tag);

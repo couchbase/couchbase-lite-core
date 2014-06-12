@@ -66,17 +66,19 @@ namespace forestdb {
                                      Collatable endKey,   slice endKeyDocID,
                                      const Database::enumerationOptions* options)
     {
-        return IndexEnumerator(this, startKey, startKeyDocID,
+        return IndexEnumerator(this,
+                               startKey, startKeyDocID,
                                endKey, endKeyDocID,
-                               startKey.compare(endKey) <= 0,
                                options);
     }
 
 
     static Collatable makeRealKey(Collatable key, slice docID, bool addEllipsis) {
+        if (key.empty() && addEllipsis)
+            return Collatable();
         Collatable realKey;
         realKey.beginArray();
-        if (key) {
+        if (!key.empty()) {
             realKey << key;
             if (docID)
                 realKey << docID;
@@ -92,11 +94,11 @@ namespace forestdb {
     IndexEnumerator::IndexEnumerator(Index* index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
-                                     bool ascending,
                                      const Database::enumerationOptions* options)
     :_index(index),
-     _endKey(makeRealKey(endKey, endKeyDocID, ascending)),
-     _dbEnum(_index->Database::enumerate((slice)makeRealKey(startKey, startKeyDocID, !ascending),
+     _endKey(makeRealKey(endKey, endKeyDocID, (!options || !options->descending))),
+     _dbEnum(_index->Database::enumerate((slice)makeRealKey(startKey, startKeyDocID,
+                                                            (options && options->descending)),
                                          _endKey,
                                          options))
     {

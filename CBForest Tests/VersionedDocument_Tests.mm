@@ -56,9 +56,11 @@ static revidBuffer stringToRev(NSString* str) {
     const RevNode* rev;
     revidBuffer rev1ID(forestdb::slice("1-aaaa"));
     forestdb::slice rev1Data("body of revision");
+    int httpStatus;
     rev = tree.insert(rev1ID, rev1Data, false,
-                      revid(), false);
+                      revid(), false, httpStatus);
     Assert(rev);
+    AssertEq(httpStatus, 201);
     Assert(rev->revID.equal(rev1ID));
     Assert(rev->body.equal(rev1Data));
     AssertEq(rev->parentIndex, RevNode::kNoParent);
@@ -66,8 +68,9 @@ static revidBuffer stringToRev(NSString* str) {
 
     revidBuffer rev2ID(forestdb::slice("2-bbbb"));
     forestdb::slice rev2Data("second revision");
-    auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false);
+    auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false, httpStatus);
     Assert(rev2);
+    AssertEq(httpStatus, 201);
     Assert(rev2->revID.equal(rev2ID));
     Assert(rev2->body.equal(rev2Data));
     Assert(!rev->isDeleted());
@@ -98,7 +101,9 @@ static revidBuffer stringToRev(NSString* str) {
     NSString *revID = @"1-fadebead", *body = @"{\"hello\":true}";
     revidBuffer revIDBuf(revID);
     VersionedDocument v(db, @"foo");
-    v.insert(revIDBuf, body, false, NULL, false);
+    int httpStatus;
+    v.insert(revIDBuf, body, false, NULL, false, httpStatus);
+    AssertEq(httpStatus, 201);
 
     const RevNode* node = v.get(stringToRev(revID));
     Assert(node);

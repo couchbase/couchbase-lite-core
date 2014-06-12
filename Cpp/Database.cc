@@ -141,7 +141,15 @@ namespace forestdb {
     
     DocEnumerator DatabaseGetters::enumerate(slice startKey, slice endKey,
                                              const enumerationOptions* options) {
+        fprintf(stderr, "DocEnumerator on %p: key range [%s] -- [%s]\n",
+                _handle,
+                startKey.hexString().c_str(),
+                endKey.hexString().c_str());
         fdb_iterator *iterator;
+        if (startKey.size == 0)
+            startKey.buf = NULL;
+        if (endKey.size == 0)
+            endKey.buf = NULL;
         check(fdb_iterator_init(_handle, &iterator,
                                 startKey.buf, startKey.size,
                                 endKey.buf, endKey.size,
@@ -218,7 +226,6 @@ namespace forestdb {
     bool DocEnumerator::next() {
         if (!_iterator)
             return false;
-        fprintf(stderr, "enum: free %p\n", _docP);
         fdb_doc_free(_docP);
         _docP = NULL;
 
@@ -399,6 +406,12 @@ namespace forestdb {
         doc.setMeta(meta);
         doc.setBody(body);
         write(doc);
+        fprintf(stderr, "DB %p: added %s --> %s (meta %s) (seq %llu)\n",
+                _handle,
+                key.hexString().c_str(),
+                body.hexString().c_str(),
+                meta.hexString().c_str(),
+                doc.sequence());
         return doc.sequence();
     }
 
@@ -406,6 +419,11 @@ namespace forestdb {
         Document doc(key);
         doc.setBody(body);
         write(doc);
+        fprintf(stderr, "DB %p: added %s --> %s (seq %llu)\n",
+                _handle,
+                key.hexString().c_str(),
+                body.hexString().c_str(),
+                doc.sequence());
         return doc.sequence();
     }
 
