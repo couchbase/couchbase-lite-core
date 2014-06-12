@@ -320,8 +320,8 @@ namespace forestdb {
         fdb_handle* snapshot = NULL;
         check(fdb_snapshot_open(_handle, &snapshot, startSequence));
         _handle = snapshot;
-        _file->_transaction = t;
 #endif
+        fdb_begin_transaction(realHandle, FDB_ISOLATION_READ_COMMITTED);
         _file->_transaction = t;
         return realHandle;
     }
@@ -351,15 +351,15 @@ namespace forestdb {
 
     Transaction::~Transaction() {
         fdb_status status = FDB_RESULT_SUCCESS;
-        if (_state > 0) {
-            status = fdb_commit(_handle, FDB_COMMIT_NORMAL);
+        if (_state >= 0) {
+            status = fdb_end_transaction(_handle, FDB_COMMIT_NORMAL);
             if (status != FDB_RESULT_SUCCESS)
                 _state = -1;
+        } else {
+            fdb_abort_transaction(_handle);
         }
-        if (_state < 0)
-            fdb_rollback(&_handle, _startSequence);
-        _db.endTransaction(_handle);
-        check(status);
+        _db.endTransaction(_handle); // return handle back to Database object
+        forestdb::check(status); // throw exception if end_transaction failed
     }
 
     void Transaction::check(fdb_status status) {
@@ -387,6 +387,7 @@ namespace forestdb {
         std::string path = _db.filename();
         deleteDatabase();
         check(::fdb_open(&_handle, path.c_str(), &_db._config));
+        check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
     }
 
     void Transaction::rollbackTo(sequence seq) {

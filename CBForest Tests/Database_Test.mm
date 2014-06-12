@@ -92,8 +92,7 @@ using namespace forestdb;
         Assert(doc.body().equal(doc_alias.body()));
 
         // Doc shouldn't exist outside transaction yet:
-        //PROBLEM: Actually it does. ForestDB handles on a file share all state...
-//        AssertEq(aliased_db.get(@"doc").sequence(), 0);
+        AssertEq(aliased_db.get(@"doc").sequence(), 0);
     }
 
     AssertEq(db->get(@"doc").sequence(), 3);
@@ -146,6 +145,8 @@ using namespace forestdb;
         Transaction t(db);
         t.set(@"x", @"X");
         t.set(@"a", @"Z");
+        AssertEqual((NSString*)t.get(@"a").body(), @"Z");
+        AssertEqual((NSString*)db->get(@"a").body(), @"Z");
         t.abort();
     }
     AssertEqual((NSString*)db->get(@"a").body(), @"A");
