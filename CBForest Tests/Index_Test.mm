@@ -16,6 +16,44 @@ using namespace forestdb;
 #define kDBPath "/tmp/temp.fdbindex"
 
 
+class Scoped {
+public:
+    int n;
+    Scoped(int initialN)
+    :n(initialN)
+    {
+        fprintf(stderr, " Scoped %p (%d)\n", this, n);
+    }
+    Scoped(const Scoped& s)
+    :n(s.n)
+    {
+        fprintf(stderr, " Scoped %p (%d) copy ctor\n", this, n);
+    }
+    Scoped(Scoped&& s)
+    :n(s.n)
+    {
+        s.n = -999;
+        fprintf(stderr, " Scoped %p (%d) move ctor\n", this, n);
+    }
+    ~Scoped() {
+        fprintf(stderr, "~Scoped %p\n", this);
+    }
+};
+
+typedef bool (^boolBlock)();
+
+static boolBlock scopedEnumerate() {
+    __block Scoped s(5);
+    fprintf(stderr, "In scopedEnumerate, &s = %p; s.n=%d\n", &s, s.n);
+    boolBlock block = ^bool{
+        fprintf(stderr, "Called enumerate block; n=%d\n", s.n);
+        return s.n-- > 0;
+    };
+    fprintf(stderr, "At end of scopedEnumerate, &s = %p; s.n=%d\n", &s, s.n);
+    return block;
+}
+
+
 @interface Index_Test : XCTestCase
 @end
 
@@ -72,10 +110,8 @@ using namespace forestdb;
     __block int nRows = 0;
     for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null, NULL); e; ++e) {
-
         nRows++;
-        CollatableReader keyReader(e.key());
-        alloc_slice keyStr = keyReader.readString();
+        alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
@@ -90,10 +126,8 @@ using namespace forestdb;
     nRows = 0;
     for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,  NULL); e; ++e) {
-
         nRows++;
-        CollatableReader keyReader(e.key());
-        alloc_slice keyStr = keyReader.readString();
+        alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
@@ -107,14 +141,36 @@ using namespace forestdb;
     nRows = 0;
     for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,  NULL); e; ++e) {
-
         nRows++;
-        CollatableReader keyReader(e.key());
-        alloc_slice keyStr = keyReader.readString();
+        alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     XCTAssertEqual(nRows, 6);
+
+    // Enumerate a vector of keys:
+    NSLog(@"--- Enumerating a vector of keys");
+    std::vector<Collatable> keys;
+    keys.push_back(Collatable("Cambria"));
+    keys.push_back(Collatable("San Jose"));
+    keys.push_back(Collatable("Portland"));
+    keys.push_back(Collatable("Skookumchuk"));
+    nRows = 0;
+    for (auto e = index->enumerate(keys, NULL); e; ++e) {
+        nRows++;
+        alloc_slice keyStr = e.key().readString();
+        NSLog(@"key = %.*s, docID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+    }
+    XCTAssertEqual(nRows, 2);
+}
+
+- (void) testBlockScopedObjects {
+    boolBlock block = scopedEnumerate();
+    while (block()) {
+        fprintf(stderr, "In while loop...\n");
+    }
+    fprintf(stderr, "Done!\n");
 }
 
 @end

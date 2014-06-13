@@ -129,6 +129,17 @@ namespace forestdb {
 #pragma mark - ENUMERATION:
 
 
+    const DatabaseGetters::enumerationOptions DatabaseGetters::enumerationOptions::kDefault = {
+        .skip = 0,
+        .limit = UINT_MAX,
+        .descending = false,
+        .inclusiveEnd = true,
+        .includeDeleted = false,
+        .onlyConflicts = false,
+        .contentOptions = kDefaultContent,
+    };
+
+
     static fdb_iterator_opt_t iteratorOptions(const DatabaseGetters::enumerationOptions* options) {
         fdb_iterator_opt_t fdbOptions = 0;
         if (options && (options->contentOptions & DatabaseGetters::kMetaOnly))
@@ -207,10 +218,33 @@ namespace forestdb {
         next();
     }
 
+    DocEnumerator::DocEnumerator(DocEnumerator&& e)
+    :_iterator(e._iterator),
+     _docIDs(e._docIDs),
+     _curDocID(_docIDs.begin()),
+     _options(e._options),
+     _docP(NULL)
+    {
+        fprintf(stderr, "enum: move ctor\n");
+        e._iterator = NULL; // so e's destructor won't close the fdb_iterator
+    }
+
     DocEnumerator::~DocEnumerator() {
         fprintf(stderr, "enum: ~DocEnumerator\n");
         close();
     }
+
+    DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
+        fprintf(stderr, "enum: operator=\n");
+        _iterator = e._iterator;
+        e._iterator = NULL; // so e's destructor won't close the fdb_iterator
+        _docIDs = e._docIDs;
+        _curDocID = _docIDs.begin();
+        _options = e._options;
+        _docP = NULL;
+        return *this;
+    }
+
 
     void DocEnumerator::close() {
         fprintf(stderr, "enum: close (free %p, close %p)\n", _docP, _iterator);
@@ -238,6 +272,7 @@ namespace forestdb {
                 close();
                 return false;
             }
+            check(status);
         } else {
             // Iterating over a vector of docIDs:
            if (_curDocID == _docIDs.end()) {
@@ -247,21 +282,26 @@ namespace forestdb {
             }
             slice docID = *_curDocID;
             ++_curDocID;
-            status = fdb_iterator_seek(_iterator, docID.buf, docID.size);
-            fprintf(stderr, "enum: seek to '%*s' --> %d\n", (int)docID.size, docID.buf, status);
-            if (status == FDB_RESULT_SUCCESS) {
-                status = fdb_iterator_next(_iterator, &_docP);
-                fprintf(stderr, "enum: fdb_iterator_next --> %d\n", status);
-                if (status != FDB_RESULT_SUCCESS || slice(_docP->key, _docP->keylen) != docID) {
-                    // If the current doc doesn't match the docID, then the docID doesn't exist:
-                    fdb_doc_free(_docP);
-                    fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
-                    if (status == FDB_RESULT_ITERATOR_FAIL)
-                        status = FDB_RESULT_SUCCESS;
-                }
+            if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
+                // If the current doc doesn't match the docID, then the docID doesn't exist:
+                fdb_doc_free(_docP);
+                fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
             }
         }
+        return true;
+    }
 
+    bool DocEnumerator::seek(slice key) {
+        if (!_iterator)
+            return false;
+        fdb_doc_free(_docP);
+        _docP = NULL;
+
+        fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size);
+        if (status == FDB_RESULT_SUCCESS)
+            status = fdb_iterator_next(_iterator, &_docP);
+        if (status == FDB_RESULT_ITERATOR_FAIL)
+            return false;
         check(status);
         return true;
     }
@@ -392,6 +432,10 @@ namespace forestdb {
 
     void Transaction::rollbackTo(sequence seq) {
         check(fdb_rollback(&_handle, seq));
+    }
+
+    void Transaction::compact() {
+        // UNIMPLEMENTED -- would be nice if FDB had a compact-in-place API call (MB-11426)
     }
 
     void Transaction::commit() {

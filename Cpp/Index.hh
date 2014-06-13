@@ -10,6 +10,7 @@
 #define __CBForest__Index__
 
 #include "Database.hh"
+#include "Collatable.hh"
 
 namespace forestdb {
     
@@ -21,8 +22,17 @@ namespace forestdb {
     /** Index query enumerator. */
     class IndexEnumerator {
     public:
-        slice key() const                       {return _key;}
-        slice value() const                     {return _value;}
+        IndexEnumerator(Index&,
+                        Collatable startKey, slice startKeyDocID,
+                        Collatable endKey, slice endKeyDocID,
+                        const Database::enumerationOptions*);
+
+        IndexEnumerator(Index&,
+                        std::vector<Collatable> keys,
+                        const Database::enumerationOptions*);
+
+        CollatableReader key() const            {return CollatableReader(_key);}
+        CollatableReader value() const          {return CollatableReader(_value);}
         slice docID() const                     {return _docID;}
         sequence sequence() const               {return _sequence;}
 
@@ -32,14 +42,13 @@ namespace forestdb {
 
     private:
         friend class Index;
-        IndexEnumerator(Index*,
-                        Collatable startKey, slice startKeyDocID,
-                        Collatable endKey, slice endKeyDocID,
-                        const Database::enumerationOptions*);
-        void read();
+        bool read();
+        bool nextKey();
 
-        Index* _index;
+        Index& _index;
         alloc_slice _endKey;
+        std::vector<Collatable> _keys;
+        int _currentKeyIndex;
         DocEnumerator _dbEnum;
         slice _key;
         slice _value;
@@ -62,10 +71,19 @@ namespace forestdb {
 
         IndexEnumerator enumerate(Collatable startKey, slice startKeyDocID,
                                   Collatable endKey,   slice endKeyDocID,
-                                  const Database::enumerationOptions* options);
+                                  const Database::enumerationOptions* options)
+        {
+            return IndexEnumerator(*this,
+                                   startKey, startKeyDocID,
+                                   endKey, endKeyDocID,
+                                   options);
+        }
 
-        IndexEnumerator enumerate(std::vector<std::string> keys,
-                                  const Database::enumerationOptions* options);
+        IndexEnumerator enumerate(std::vector<Collatable> keys,
+                                  const Database::enumerationOptions* options)
+        {
+            return IndexEnumerator(*this, keys, options);
+        }
 
     private:
         bool removeOldRowsForDoc(Transaction& transaction, slice docID);

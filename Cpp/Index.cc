@@ -62,17 +62,7 @@ namespace forestdb {
 #pragma mark - ENUMERATOR:
 
 
-    IndexEnumerator Index::enumerate(Collatable startKey, slice startKeyDocID,
-                                     Collatable endKey,   slice endKeyDocID,
-                                     const Database::enumerationOptions* options)
-    {
-        return IndexEnumerator(this,
-                               startKey, startKeyDocID,
-                               endKey, endKeyDocID,
-                               options);
-    }
-
-
+    // Converts an index key into the actual key used in the index db (key + docID)
     static Collatable makeRealKey(Collatable key, slice docID, bool addEllipsis) {
         if (key.empty() && addEllipsis)
             return Collatable();
@@ -91,40 +81,73 @@ namespace forestdb {
         return realKey;
     }
 
-    IndexEnumerator::IndexEnumerator(Index* index,
+    IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
                                      const Database::enumerationOptions* options)
     :_index(index),
      _endKey(makeRealKey(endKey, endKeyDocID, (!options || !options->descending))),
-     _dbEnum(_index->Database::enumerate((slice)makeRealKey(startKey, startKeyDocID,
-                                                            (options && options->descending)),
+     _currentKeyIndex(-1),
+     _dbEnum(_index.Database::enumerate((slice)makeRealKey(startKey, startKeyDocID,
+                                                           (options && options->descending)),
                                          _endKey,
                                          options))
     {
         read();
     }
 
-    void IndexEnumerator::read() {
-        if (!_dbEnum)
-            return;
-        const Document& doc = _dbEnum.doc();
+    IndexEnumerator::IndexEnumerator(Index& index,
+                                     std::vector<Collatable> keys,
+                                     const Database::enumerationOptions* options)
+    :_index(index),
+     _keys(keys),
+     _currentKeyIndex(-1),
+     _dbEnum(_index.Database::enumerate(slice::null, slice::null, options))
+    {
+        std::sort(_keys.begin(), _keys.end());
+        nextKey();
+        read();
+    }
 
-        // Decode the key from collatable form:
-        CollatableReader reader(doc.key());
-        reader.beginArray();
-        _key = reader.read();
-        _docID = reader.readString();
-        _sequence = reader.readInt();
-        
-        _value = doc.body();
+    bool IndexEnumerator::read() {
+        while(true) {
+            if (!_dbEnum)
+                return false; // at end
+            const Document& doc = _dbEnum.doc();
+
+            // Decode the key from collatable form:
+            CollatableReader reader(doc.key());
+            reader.beginArray();
+            _key = reader.read();
+            _docID = reader.readString();
+            _sequence = reader.readInt();
+            _value = Collatable(doc.body());
+            fprintf(stderr, "IndexEnumerator: key=%s\n",
+                    forestdb::CollatableReader(_key).dump().c_str());
+
+            if (_currentKeyIndex < 0 || _key.equal(_keys[_currentKeyIndex]))
+                return true; // normal enumeration
+            // While enumerating through _keys, advance to the next key:
+            if (!nextKey())
+                return false;
+        }
+    }
+
+    bool IndexEnumerator::nextKey() {
+        if (_keys.size() == 0)
+            return false;
+        if (++_currentKeyIndex >= _keys.size()) {
+            _dbEnum.close();
+            return false;
+        }
+        fprintf(stderr, "IndexEnumerator: Advance to key '%s'\n", _keys[_currentKeyIndex].dump().c_str());
+        return _dbEnum.seek(makeRealKey(_keys[_currentKeyIndex], slice::null, false));
     }
 
     bool IndexEnumerator::next() {
         if (!_dbEnum.next())
             return false;
-        read();
-        return true;
+        return read();
     }
 
 }

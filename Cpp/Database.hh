@@ -185,23 +185,15 @@ namespace forestdb {
     class DocEnumerator {
     public:
         DocEnumerator(); // empty enumerator
-        bool next();
-        const Document& doc() const         {return *(Document*)_docP;}
+        DocEnumerator(DocEnumerator&& e); // move constructor
         ~DocEnumerator();
 
-//        DocEnumerator(DocEnumerator&& e)
-//        :_iterator(e._iterator), _docP(NULL)
-//        {
-//            fprintf(stderr, "enum: copy ctor\n");
-//            e._iterator = NULL;
-//        }
-//
-//        DocEnumerator& operator=(DocEnumerator&& e) {
-//            fprintf(stderr, "enum: operator=\n");
-//            _iterator = e._iterator;
-//            e._iterator = NULL;
-//            return *this;
-//        }
+        bool next();
+        bool seek(slice key);
+        const Document& doc() const         {return *(Document*)_docP;}
+        void close();
+
+        DocEnumerator& operator=(DocEnumerator&& e);
 
         // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
         const DocEnumerator& operator++()   {next(); return *this;}
@@ -220,7 +212,8 @@ namespace forestdb {
         DocEnumerator(fdb_iterator*, std::vector<std::string> docIDs,
                       const Database::enumerationOptions*);
         void setDocIDs(std::vector<std::string> docIDs);
-        void close();
+    private:
+        DocEnumerator(const DocEnumerator& e); // no copying allowed
     };
 
 }

@@ -99,18 +99,20 @@ using namespace forestdb;
     AssertEq(aliased_db.get(@"doc").sequence(), 3);
 }
 
-- (void) test04_EnumerateDocs {
-    {
-        Transaction t(db);
-        for (int i = 1; i <= 100; i++) {
-            NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
-            sequence seq = t.set(docID, forestdb::slice::null, docID);
-            AssertEq(seq, i);
-            AssertEqual((NSString*)t.get(docID).body(),
-                                  docID,
-                                  @"(i=%d)", i);
-        }
+- (void) createNumberedDocs {
+    Transaction t(db);
+    for (int i = 1; i <= 100; i++) {
+        NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
+        sequence seq = t.set(docID, forestdb::slice::null, docID);
+        AssertEq(seq, i);
+        AssertEqual((NSString*)t.get(docID).body(),
+                    docID,
+                    @"(i=%d)", i);
     }
+}
+
+- (void) test04_EnumerateDocs {
+    [self createNumberedDocs];
     int i = 1;
     for (auto e = db->enumerate(); e; ++e, ++i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];

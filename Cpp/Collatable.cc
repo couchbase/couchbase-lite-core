@@ -8,12 +8,16 @@
 
 #include "Collatable.hh"
 #include <CoreFoundation/CFByteOrder.h>
+#include <sstream>
 
 namespace forestdb {
 
     static uint8_t* getCharPriorityMap();
     static uint8_t* getInverseCharPriorityMap();
 
+
+    Collatable::Collatable()
+    { }
 
     Collatable& Collatable::addBool (bool b) {
         addTag(b ? 3 : 2);
@@ -72,6 +76,10 @@ namespace forestdb {
     Collatable& Collatable::operator<< (const Collatable& coll) {
         _str += coll._str;
         return *this;
+    }
+
+    std::string Collatable::dump() {
+        return CollatableReader(*this).dump();
     }
 
 
@@ -188,7 +196,55 @@ namespace forestdb {
     void CollatableReader::endMap() {
         expectTag(0);
     }
-    
+
+    void CollatableReader::dumpTo(std::ostream &out) {
+        switch(nextTag()) {
+            case kNull:
+                out << "null";
+                break;
+            case kFalse:
+                out << "false";
+                break;
+            case kTrue:
+                out << "true";
+                break;
+            case kNumber:
+                out << readInt();
+                break;
+            case kString:
+                out << '"' << (std::string)readString() << '"';
+                break;
+            case kArray:
+                out << '[';
+                beginArray();
+                while (nextTag() != kEndSequence)
+                    dumpTo(out);
+                endArray();
+                out << ']';
+                break;
+            case kDictionary:
+                out << '{';
+                beginMap();
+                while (nextTag() != kEndSequence) {
+                    dumpTo(out);
+                    out << ':';
+                    dumpTo(out);
+                }
+                out << '}';
+                endMap();
+                break;
+            default:
+                out << "???";
+                break;
+        }
+    }
+
+    std::string CollatableReader::dump() {
+        std::stringstream out;
+        dumpTo(out);
+        return out.str();
+    }
+
 
 #pragma mark - UTILITIES:
 

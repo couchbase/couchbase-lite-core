@@ -17,6 +17,10 @@ namespace forestdb {
 
     class Collatable {
     public:
+        Collatable();
+
+        template<typename T> explicit Collatable(const T &t)    {*this << t;}
+
         Collatable& addNull()                       {addTag(1); return *this;}
         Collatable& addBool (bool); // overriding <<(bool) is dangerous due to implicit conversion
 
@@ -36,11 +40,18 @@ namespace forestdb {
         Collatable& endMap()                        {addTag(0); return *this;}
 
 #ifdef __OBJC__
+        Collatable(id obj) {
+            if (obj)
+                *this << obj;
+        }
         Collatable& operator<< (id);
 #endif
 
         operator slice() const                      {return slice(_str);}
         bool empty() const                          {return _str.size() == 0;}
+        bool operator< (const Collatable& c) const  {return _str < c._str;}
+
+        std::string dump();
 
     private:
         void addTag(uint8_t c)                      {add(slice(&c,1));}
@@ -82,6 +93,9 @@ namespace forestdb {
         void endArray();
         void beginMap();
         void endMap();
+
+        void dumpTo(std::ostream &out);
+        std::string dump();
 
     private:
         void expectTag(uint8_t tag);
