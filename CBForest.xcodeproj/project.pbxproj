@@ -164,6 +164,8 @@
 		2750730318E4ACE100A80C5A /* time_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072EF18E4ACE100A80C5A /* time_utils.h */; };
 		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
+		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
+		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		27B7E0EB18F8FACB00044EBA /* CBForest_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 275072B318E4A68E00A80C5A /* CBForest_Tests.m */; };
 		27B7E0EC18F8FACB00044EBA /* RevTree_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730A18E5EB7200A80C5A /* RevTree_Tests.m */; };
 		27B7E0ED18F8FACB00044EBA /* Versions_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730E18E621C000A80C5A /* Versions_Tests.m */; };
@@ -583,6 +585,7 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
+		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RevID.mm; sourceTree = "<group>"; };
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBEnumerator.h; sourceTree = "<group>"; };
 		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
@@ -1050,6 +1053,7 @@
 				27E48712192171EA007D8940 /* Database.hh */,
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
+				277D19C6194CCE7A008E91EB /* RevID.mm */,
 				27E487211922A64F007D8940 /* RevTree.cc */,
 				27E487221922A64F007D8940 /* RevTree.hh */,
 				27E487291923F24D007D8940 /* VersionedDocument.cc */,
@@ -1682,6 +1686,7 @@
 				27BAA293190F11CA00C3AD1A /* CBEnumerator.m in Sources */,
 				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
 				27DD1514193CD005009A367D /* RevID.cc in Sources */,
+				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
 				27E487341924242C007D8940 /* Index.cc in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.c in Sources */,
@@ -1815,6 +1820,7 @@
 				27EF81081917EEC600A327B9 /* varint.c in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
+				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 				27EF81091917EEC600A327B9 /* CBTextTokenizer.m in Sources */,

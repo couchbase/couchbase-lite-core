@@ -63,11 +63,11 @@ namespace forestdb {
 
 
     RevTree::RevTree()
-    :_bodyOffset(0), _sorted(true), _changed(false)
+    :_bodyOffset(0), _sorted(true), _changed(false), _unknown(false)
     {}
 
     RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
-    :_bodyOffset(0), _sorted(true), _changed(false)
+    :_bodyOffset(0), _sorted(true), _changed(false), _unknown(false)
     {
         decode(raw_tree, seq, docOffset);
     }
@@ -189,22 +189,28 @@ namespace forestdb {
 #pragma mark - ACCESSORS:
 
     const RevNode* RevTree::currentNode() {
+        assert(!_unknown);
         sort();
         return &_nodes[0];
     }
 
-    const RevNode* RevTree::get(unsigned index) const {return &_nodes[index];}
+    const RevNode* RevTree::get(unsigned index) const {
+        assert(!_unknown);
+        return &_nodes[index];
+    }
 
     const RevNode* RevTree::get(revid revID) const {
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
             if (node->revID.equal(revID))
                 return &*node;
         }
+        assert(!_unknown);
         return NULL;
     }
 
     bool RevTree::hasConflict() const {
         if (_nodes.size() < 2) {
+            assert(!_unknown);
             return false;
         } else if (_sorted) {
             return _nodes[1].isActive();
@@ -221,6 +227,7 @@ namespace forestdb {
     }
 
     std::vector<const RevNode*> RevTree::currentNodes() const {
+        assert(!_unknown);
         std::vector<const RevNode*> cur;
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
             if (node->isLeaf())
@@ -267,6 +274,7 @@ namespace forestdb {
                                     const RevNode *parentNode,
                                     bool deleted)
     {
+        assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.push_back(alloc_slice(unownedRevID));
         revid revID = revid(_insertedData.back());

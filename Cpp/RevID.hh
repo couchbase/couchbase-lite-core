@@ -31,6 +31,10 @@ namespace forestdb {
         slice digest() const;
         bool operator< (const revid&) const;
 
+#ifdef __OBJC__
+        explicit operator NSString*() const; // overrides slice method
+#endif
+
     private:
         void _expandInto(slice &dst) const;
     };
@@ -46,6 +50,10 @@ namespace forestdb {
             Returns false if the revID isn't in the proper format.*/
         bool parse(slice);
         
+#ifdef __OBJC__
+        explicit revidBuffer(NSString* str);
+#endif
+
     private:
         uint8_t _buffer[42];
     };

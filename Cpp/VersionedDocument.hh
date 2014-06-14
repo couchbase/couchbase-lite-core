@@ -26,6 +26,9 @@ namespace forestdb {
         VersionedDocument(Database* db, const Document& doc);
         VersionedDocument(Database* db, Document&& doc);
 
+        /** Returns false if the document was loaded metadata-only. Node accessors will fail. */
+        bool nodesAvailable() const {return !_unknown;}
+
         slice docID() const         {return _doc.key();}
         revid revID() const;
         Flags flags() const;
@@ -44,6 +47,9 @@ namespace forestdb {
         virtual alloc_slice readBodyOfNode(const RevNode*) const;
 
     private:
+        void decode();
+        VersionedDocument(const VersionedDocument&); // forbidden
+
         Database* _db;
         Document _doc;
     };

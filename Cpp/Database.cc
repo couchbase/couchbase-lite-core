@@ -194,7 +194,8 @@ namespace forestdb {
 
 
     DocEnumerator::DocEnumerator()
-    :_iterator(NULL), _docP(NULL)
+    :_iterator(NULL),
+     _docP(NULL)
     { }
 
     DocEnumerator::DocEnumerator(fdb_iterator* iterator,
@@ -282,7 +283,7 @@ namespace forestdb {
             }
             slice docID = *_curDocID;
             ++_curDocID;
-            if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
+            if (!seek(docID) || !slice(_docP->key, _docP->keylen).equal(docID)) {
                 // If the current doc doesn't match the docID, then the docID doesn't exist:
                 fdb_doc_free(_docP);
                 fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
@@ -310,11 +311,27 @@ namespace forestdb {
 #pragma mark - DOCUMENTS:
 
     Document::Document() {
-        memset(this, 0, sizeof(*this));
+        memset(&_doc, 0, sizeof(_doc));
+    }
+
+    Document::Document(const Document& doc) {
+        memset(&_doc, 0, sizeof(_doc));
+        setKey(doc.key());
+        setMeta(doc.meta());
+        setBody(doc.body());
+        _doc.size_ondisk = doc.sizeOnDisk();
+        _doc.seqnum = doc.sequence();
+        _doc.offset = doc.offset();
+        _doc.deleted = doc.deleted();
+    }
+
+    Document::Document(Document&& doc) {
+        memcpy(&_doc, &doc._doc, sizeof(_doc));
+        doc._doc.key = doc._doc.body = doc._doc.meta = NULL; // to prevent double-free
     }
 
     Document::Document(slice key) {
-        memset(this, 0, sizeof(*this));
+        memset(&_doc, 0, sizeof(_doc));
         setKey(key);
     }
 
@@ -391,12 +408,14 @@ namespace forestdb {
 
     Transaction::~Transaction() {
         fdb_status status = FDB_RESULT_SUCCESS;
-        if (_state >= 0) {
-            status = fdb_end_transaction(_handle, FDB_COMMIT_NORMAL);
-            if (status != FDB_RESULT_SUCCESS)
-                _state = -1;
-        } else {
-            fdb_abort_transaction(_handle);
+        if (_handle) {
+            if (_state >= 0) {
+                status = fdb_end_transaction(_handle, FDB_COMMIT_NORMAL);
+                if (status != FDB_RESULT_SUCCESS)
+                    _state = -1;
+            } else {
+                fdb_abort_transaction(_handle);
+            }
         }
         _db.endTransaction(_handle); // return handle back to Database object
         forestdb::check(status); // throw exception if end_transaction failed

@@ -14,20 +14,26 @@ namespace forestdb {
     :_db(db), _doc(docID)
     {
         _db->read(_doc);
-        if (_doc.body())
-            decode(_doc.body(), _doc.sequence(), _doc.offset());
+        decode();
     }
 
     VersionedDocument::VersionedDocument(Database* db, const Document& doc)
     :_db(db), _doc(doc)
     {
-        decode(_doc.body(), _doc.sequence(), _doc.offset());
+        decode();
     }
 
     VersionedDocument::VersionedDocument(Database* db, Document&& doc)
-    :_db(db), _doc(doc)
+    :_db(db), _doc(std::move(doc))
     {
-        decode(_doc.body(), _doc.sequence(), _doc.offset());
+        decode();
+    }
+
+    void VersionedDocument::decode() {
+        if (_doc.body())
+            RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
+        else
+            _unknown = _doc.body().size > 0;        // i.e. doc was read as meta-only
     }
 
     revid VersionedDocument::revID() const {

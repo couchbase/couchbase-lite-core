@@ -100,6 +100,7 @@ namespace forestdb {
         friend struct RevNode;
         const RevNode* _insert(revid, slice body, const RevNode *parentNode, bool deleted);
         void compact();
+        RevTree(const RevTree&); // forbidden
 
         uint64_t    _bodyOffset;     // File offset of body this tree was read from
         bool        _sorted;         // Are the nodes currently sorted?
@@ -107,6 +108,7 @@ namespace forestdb {
         std::vector<alloc_slice> _insertedData;
     protected:
         bool _changed;
+        bool _unknown;
     };
 
 

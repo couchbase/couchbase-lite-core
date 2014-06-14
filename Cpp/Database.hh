@@ -82,6 +82,9 @@ namespace forestdb {
         virtual ~DatabaseGetters() {}
 
         fdb_handle* _handle;
+
+    private:
+        DatabaseGetters(const DatabaseGetters&); // forbidden
     };
 
 
@@ -141,6 +144,8 @@ namespace forestdb {
     private:
         void check(fdb_status status);
 
+        Transaction(const Transaction&); // forbidden
+
         Database& _db;
         sequence _startSequence;
         int _state;
@@ -153,6 +158,8 @@ namespace forestdb {
     public:
         Document();
         Document(slice key);
+        Document(const Document&); // this copies the key/meta/value
+        Document(Document&&);
         ~Document();
 
         slice key() const   {return slice(_doc.key, _doc.keylen);}
@@ -177,6 +184,8 @@ namespace forestdb {
         friend class DatabaseGetters;
         friend class Transaction;
         operator fdb_doc*() {return &_doc;}
+
+        Document& operator= (const Document&);
 
         fdb_doc _doc;
     };
@@ -213,7 +222,7 @@ namespace forestdb {
                       const Database::enumerationOptions*);
         void setDocIDs(std::vector<std::string> docIDs);
     private:
-        DocEnumerator(const DocEnumerator& e); // no copying allowed
+        DocEnumerator(const DocEnumerator&); // no copying allowed
     };
 
 }
