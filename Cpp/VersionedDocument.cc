@@ -7,6 +7,7 @@
 //
 
 #include "VersionedDocument.hh"
+#include <assert.h>
 
 namespace forestdb {
 
@@ -51,12 +52,27 @@ namespace forestdb {
         return meta[0];
     }
 
+    void VersionedDocument::updateMeta() {
+        const RevNode* curNode = currentNode();
+        slice revID = curNode->revID;
+        Flags flags = 0;
+        if (curNode->isDeleted())
+            flags |= kDeleted;
+        if (hasConflict())
+            flags |= kConflicted;
+
+        alloc_slice newMeta(1+revID.size);
+        (uint8_t&)newMeta[1] = flags;
+        memcpy((void*)&newMeta[1], revID.buf, revID.size);
+        _doc.setMeta(newMeta);
+    }
+
     bool VersionedDocument::isBodyOfNodeAvailable(const RevNode* node) const {
         if (node->body.buf)
             return true;
         if (node->oldBodyOffset == 0)
             return false;
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset));
+        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset, node->sequence));
         if (oldVersDoc.sequence() != node->sequence)
             return false;
         node = oldVersDoc.get(node->revID);
@@ -68,7 +84,7 @@ namespace forestdb {
             return alloc_slice(node->body);
         if (node->oldBodyOffset == 0)
             return alloc_slice();
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset));
+        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset, node->sequence));
         if (oldVersDoc.sequence() != node->sequence)
             return alloc_slice();
         node = oldVersDoc.get(node->revID);
@@ -77,28 +93,14 @@ namespace forestdb {
         return alloc_slice(node->body);
     }
 
-    Document& VersionedDocument::document() {
-        if (_changed) {
-            const RevNode* curNode = currentNode();
-            slice revID = curNode->revID;
-            Flags flags = 0;
-            if (curNode->isDeleted())
-                flags |= kDeleted;
-            if (hasConflict())
-                flags |= kConflicted;
-
-            alloc_slice newMeta(1+revID.size);
-            (uint8_t&)newMeta[1] = flags;
-            memcpy((void*)&newMeta[1], revID.buf, revID.size);
-            _doc.setMeta(newMeta);
-            _doc.setBody(encode());
-            _changed = false;
-        }
-        return _doc;
-    }
-
     void VersionedDocument::save(Transaction& transaction) {
-        transaction.write(document());
+        if (!_changed)
+            return;
+        updateMeta();
+        // Don't call _doc.setBody() because it'll invalidate all the pointers from RevNodes into
+        // the existing body buffer.
+        transaction.set(_doc.key(), _doc.meta(), encode());
+        _changed = false;
     }
 
 }

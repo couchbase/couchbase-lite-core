@@ -1,5 +1,5 @@
 //
-//  Database.h
+//  Database.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/12/14.
@@ -8,6 +8,7 @@
 
 #ifndef __CBForest__Database__
 #define __CBForest__Database__
+#include "Error.hh"
 #include "forestdb.h"
 #include "slice.h"
 #include <vector>
@@ -23,12 +24,6 @@ namespace forestdb {
     class Transaction;
 
     typedef fdb_seqnum_t sequence;
-
-    // Most API calls can throw this
-    struct error {
-        fdb_status status;
-        error (fdb_status s)        :status(s) {}
-    };
 
 
     /** Base class of Database and Transaction: defines read-only API. */
@@ -52,7 +47,7 @@ namespace forestdb {
         Document get(sequence, contentOptions = kDefaultContent) const;
         bool read(Document&, contentOptions = kDefaultContent) const; // key must already be set
 
-        Document getByOffset(uint64_t offset);
+        Document getByOffset(uint64_t offset, sequence);
 
         // Enumeration:
 
@@ -176,7 +171,7 @@ namespace forestdb {
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
-        bool exists() const         {return _doc.offset > 0;}
+        bool exists() const         {return _doc.size_ondisk > 0;}
 
         typedef DocEnumerator enumerator;
 

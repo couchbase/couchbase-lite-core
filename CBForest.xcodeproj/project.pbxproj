@@ -166,6 +166,7 @@
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
+		277D19CA194E2A33008E91EB /* Error.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277D19C9194E295B008E91EB /* Error.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B7E0EB18F8FACB00044EBA /* CBForest_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 275072B318E4A68E00A80C5A /* CBForest_Tests.m */; };
 		27B7E0EC18F8FACB00044EBA /* RevTree_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730A18E5EB7200A80C5A /* RevTree_Tests.m */; };
 		27B7E0ED18F8FACB00044EBA /* Versions_Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2750730E18E621C000A80C5A /* Versions_Tests.m */; };
@@ -586,6 +587,7 @@
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RevID.mm; sourceTree = "<group>"; };
+		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27BAA28F190F11CA00C3AD1A /* CBEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBEnumerator.h; sourceTree = "<group>"; };
 		27BAA290190F11CA00C3AD1A /* CBEnumerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBEnumerator.m; sourceTree = "<group>"; };
@@ -1067,6 +1069,7 @@
 				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				27E4871A19218E5D007D8940 /* slice.cc */,
 				2704A1E219049E2300138320 /* slice.h */,
+				277D19C9194E295B008E91EB /* Error.hh */,
 				27DD150719354C70009A367D /* CBForest.hh */,
 			);
 			name = "C++";
@@ -1228,6 +1231,7 @@
 				27139B5218F8EB820021A9A3 /* CBForest.h in Headers */,
 				27DD14F6193547FC009A367D /* RevTree.hh in Headers */,
 				27139B5618F8EB820021A9A3 /* CBForestIndex.h in Headers */,
+				277D19CA194E2A33008E91EB /* Error.hh in Headers */,
 				27DD14F8193547FC009A367D /* Index.hh in Headers */,
 				27DD14FA193547FC009A367D /* Collatable.hh in Headers */,
 				27EF80021914296D00A327B9 /* libstemmer.h in Headers */,

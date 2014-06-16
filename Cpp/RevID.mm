@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #include "RevID.hh"
+#include "Error.hh"
 
 namespace forestdb {
 

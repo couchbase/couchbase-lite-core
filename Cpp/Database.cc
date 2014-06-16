@@ -118,9 +118,10 @@ namespace forestdb {
             return checkGet(fdb_get(_handle, doc));
     }
 
-    Document DatabaseGetters::getByOffset(uint64_t offset) {
+    Document DatabaseGetters::getByOffset(uint64_t offset, sequence seq) {
         Document doc;
         doc._doc.offset = offset;
+        doc._doc.seqnum = seq;
         checkGet(fdb_get_byoffset(_handle, doc));
         return doc;
     }

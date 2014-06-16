@@ -37,8 +37,6 @@ namespace forestdb {
         bool exists() const         {return _doc.exists();}
         sequence sequence() const   {return _doc.sequence();}
 
-        Document& document();
-
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 
@@ -48,6 +46,7 @@ namespace forestdb {
 
     private:
         void decode();
+        void updateMeta();
         VersionedDocument(const VersionedDocument&); // forbidden
 
         Database* _db;

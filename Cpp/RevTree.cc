@@ -67,7 +67,7 @@ namespace forestdb {
     {}
 
     RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
-    :_bodyOffset(0), _sorted(true), _changed(false), _unknown(false)
+    :_bodyOffset(docOffset), _sorted(true), _changed(false), _unknown(false)
     {
         decode(raw_tree, seq, docOffset);
     }
@@ -79,7 +79,8 @@ namespace forestdb {
         const RawRevNode *rawNode = (const RawRevNode*)raw_tree.buf;
         unsigned count = countRawNodes(rawNode);
         if (count > UINT16_MAX)
-            throw error{FDB_RESULT_FILE_CORRUPTION};
+            throw error(error::CorruptRevisionData);
+        _bodyOffset = docOffset;
         _nodes.resize(count);
         auto node = _nodes.begin();
         for (; validRawNode(rawNode); rawNode = nextRawNode(rawNode)) {
@@ -90,7 +91,7 @@ namespace forestdb {
             node++;
         }
         if ((uint8_t*)rawNode != (uint8_t*)raw_tree.end() - sizeof(uint32_t)) {
-            throw error{FDB_RESULT_FILE_CORRUPTION};
+            throw error(error::CorruptRevisionData);
         }
     }
 
@@ -104,6 +105,7 @@ namespace forestdb {
                 // Prune body of an already-saved node that's no longer a leaf:
                 node->body.buf = NULL;
                 node->body.size = 0;
+                assert(_bodyOffset > 0);
                 node->oldBodyOffset = _bodyOffset;
             }
             size += sizeForRawNode(&*node);
@@ -196,6 +198,7 @@ namespace forestdb {
 
     const RevNode* RevTree::get(unsigned index) const {
         assert(!_unknown);
+        assert(index < _nodes.size());
         return &_nodes[index];
     }
 
@@ -345,7 +348,7 @@ namespace forestdb {
         }
         
         // Finally, insert:
-        httpStatus = 201;
+        httpStatus = deleted ? 200 : 201;
         return _insert(revID, data, parent, deleted);
     }
 
@@ -369,31 +372,26 @@ namespace forestdb {
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
         unsigned lastGen = 0;
-        const RevNode* commonAncestor = NULL;
+        const RevNode* parent = NULL;
         size_t historyCount = history.size();
         for (i = 0; i < historyCount; i++) {
             unsigned gen = history[i].generation();
-            if (gen == 0)
-                return -1;
             if (lastGen > 0 && gen != lastGen - 1)
-                return -1;
+                return -1; // generation numbers not in sequence
             lastGen = gen;
 
-            commonAncestor = get(history[i]);
-            if (commonAncestor)
+            parent = get(history[i]);
+            if (parent)
                 break;
         }
         int commonAncestorIndex = i;
-        if (commonAncestorIndex > 0) {
-            // Insert all the new revisions in chronological order:
-            unsigned parentIndex = i;
-            while (--i >= 0) {
-                const RevNode* parent = _insert(history[i],
-                                                (i==0 ? data : slice()),
-                                                get(parentIndex),
-                                                (i==0 && deleted));
-                parentIndex = parent->index();
-            }
+
+        // Insert all the new revisions in chronological order:
+        while (--i >= 0) {
+            parent = _insert(history[i],
+                             (i==0 ? data : slice()),
+                             parent,
+                             (i==0 && deleted));
         }
         return commonAncestorIndex;
     }
@@ -484,11 +482,11 @@ namespace forestdb {
         // Leaf nodes go first.
         int delta = rev2.isLeaf() - this->isLeaf();
         if (delta)
-            return delta;
+            return delta < 0;
         // Else non-deleted nodes go first.
         delta = this->isDeleted() - rev2.isDeleted();
         if (delta)
-            return delta;
+            return delta < 0;
         // Otherwise compare rev IDs, with higher rev ID going first:
         return rev2.revID < this->revID;
     }

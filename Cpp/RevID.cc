@@ -7,6 +7,7 @@
 //
 
 #include "RevID.hh"
+#include "Error.hh"
 #include "varint.h"
 #include <assert.h>
 #include <math.h>
@@ -73,7 +74,8 @@ namespace forestdb {
 
     unsigned revid::generation() const {
         uint64_t gen;
-        GetUVarInt(*(::slice*)this, &gen);
+        if (GetUVarInt(*(::slice*)this, &gen) == 0)
+            throw error(error::CorruptRevisionData); // buffer too short!
         return (unsigned) gen;
     }
 
@@ -99,18 +101,18 @@ namespace forestdb {
     }
 
 
-    bool revidBuffer::parse(slice raw) {
+    void revidBuffer::parse(slice raw) {
         size = 0;
 
         const char *dash = (const char*)::memchr(raw.buf, '-', raw.size);
         if (dash == NULL || dash == raw.buf)
-            return false;
+            throw error(error::BadRevisionID); // '-' is missing or at start of string
         ssize_t dashPos = dash - (const char*)raw.buf;
         if (dashPos > 8 || dashPos >= raw.size - 1)
-            return false;
+            throw error(error::BadRevisionID); // generation too large
         unsigned gen = parseDigits((const char*)raw.buf, dash);
         if (gen == 0)
-            return false;
+            throw error(error::BadRevisionID); // unparseable generation
 
         uint8_t* start = (uint8_t*) buf, *dst = start;
         size_t genSize = PutUVarInt(dst, gen);
@@ -119,16 +121,15 @@ namespace forestdb {
         hexDigest.moveStart(dashPos + 1);
 
         if (genSize + hexDigest.size/2 > sizeof(_buffer))
-            return false;
+            throw error(error::BadRevisionID); // rev ID is too long to fit in my buffer
         dst += genSize;
         for (unsigned i=0; i<hexDigest.size; i+=2) {
             if (!isxdigit(hexDigest[i]) || !isxdigit(hexDigest[i+1])) {
-                return false;
+                throw error(error::BadRevisionID); // digest is not hex
             }
             *dst++ = (uint8_t)(16*digittoint(hexDigest[i]) + digittoint(hexDigest[i+1]));
         }
         size = dst - start;
-        return true;
     }
 
 }

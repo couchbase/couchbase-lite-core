@@ -47,8 +47,8 @@ namespace forestdb {
         revidBuffer(const revidBuffer&);
 
         /** Parses a regular (uncompressed) revID and compresses it.
-            Returns false if the revID isn't in the proper format.*/
-        bool parse(slice);
+            Throws BadRevisionID if the revID isn't in the proper format.*/
+        void parse(slice);
         
 #ifdef __OBJC__
         explicit revidBuffer(NSString* str);
