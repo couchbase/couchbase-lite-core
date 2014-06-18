@@ -213,6 +213,9 @@
 		27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
 		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		27E609A51951E58F00202B72 /* DocEnumerator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E609A41951E53F00202B72 /* DocEnumerator.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
@@ -613,6 +616,8 @@
 		27E4873519254D45007D8940 /* Collatable_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable_Test.mm; sourceTree = "<group>"; };
 		27E4873819255EA8007D8940 /* MapReduceIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceIndex.cc; sourceTree = "<group>"; };
 		27E4873919255EA8007D8940 /* MapReduceIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceIndex.hh; sourceTree = "<group>"; };
+		27E609A11951E4C000202B72 /* DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocEnumerator.cc; sourceTree = "<group>"; };
+		27E609A41951E53F00202B72 /* DocEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DocEnumerator.hh; sourceTree = "<group>"; };
 		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
 		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable.mm; sourceTree = "<group>"; };
@@ -1052,6 +1057,8 @@
 			children = (
 				27E48711192171EA007D8940 /* Database.cc */,
 				27E48712192171EA007D8940 /* Database.hh */,
+				27E609A11951E4C000202B72 /* DocEnumerator.cc */,
+				27E609A41951E53F00202B72 /* DocEnumerator.hh */,
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
 				277D19C6194CCE7A008E91EB /* RevID.mm */,
@@ -1219,6 +1226,7 @@
 				27BAA291190F11CA00C3AD1A /* CBEnumerator.h in Headers */,
 				27139B5418F8EB820021A9A3 /* CBForestDocument.h in Headers */,
 				27EF80CB1917144600A327B9 /* CBTextTokenizer.h in Headers */,
+				27E609A51951E58F00202B72 /* DocEnumerator.hh in Headers */,
 				27DD150819354C70009A367D /* CBForest.hh in Headers */,
 				27EF80011914296D00A327B9 /* fts3Int.h in Headers */,
 				27DD150A19355123009A367D /* fdb_errors.h in Headers */,
@@ -1675,6 +1683,7 @@
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
+				27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27139BBA18F8EEBE0021A9A3 /* CBForestDB.m in Sources */,
 				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
@@ -1809,6 +1818,7 @@
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
+				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27EF80FD1917EEC600A327B9 /* CBForestDB.m in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,

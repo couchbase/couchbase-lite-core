@@ -9,7 +9,7 @@
 #ifndef __CBForest__Index__
 #define __CBForest__Index__
 
-#include "Database.hh"
+#include "DocEnumerator.hh"
 #include "Collatable.hh"
 
 namespace forestdb {
@@ -25,11 +25,11 @@ namespace forestdb {
         IndexEnumerator(Index&,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
-                        const Database::enumerationOptions&);
+                        const DocEnumerator::enumerationOptions&);
 
         IndexEnumerator(Index&,
                         std::vector<Collatable> keys,
-                        const Database::enumerationOptions&);
+                        const DocEnumerator::enumerationOptions&);
 
 //        IndexEnumerator(IndexEnumerator&&);
 
@@ -48,7 +48,7 @@ namespace forestdb {
         bool nextKey();
 
         Index& _index;
-        Database::enumerationOptions _options;
+        DocEnumerator::enumerationOptions _options;
         alloc_slice _endKey;
         bool _inclusiveEnd;
         std::vector<Collatable> _keys;
@@ -76,7 +76,7 @@ namespace forestdb {
 
         IndexEnumerator enumerate(Collatable startKey, slice startKeyDocID,
                                   Collatable endKey,   slice endKeyDocID,
-                                  const Database::enumerationOptions& options)
+                                  const DocEnumerator::enumerationOptions& options)
         {
             return IndexEnumerator(*this,
                                    startKey, startKeyDocID,
@@ -85,7 +85,7 @@ namespace forestdb {
         }
 
         IndexEnumerator enumerate(std::vector<Collatable> keys,
-                                  const Database::enumerationOptions& options)
+                                  const DocEnumerator::enumerationOptions& options)
         {
             return IndexEnumerator(*this, keys, options);
         }

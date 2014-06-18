@@ -84,14 +84,14 @@ namespace forestdb {
     IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
-                                     const Database::enumerationOptions& options)
+                                     const DocEnumerator::enumerationOptions& options)
     :_index(index),
      _options(options),
      _inclusiveEnd(options.inclusiveEnd),
      _currentKeyIndex(-1),
-     _dbEnum(_index.Database::enumerate((slice)makeRealKey(startKey, startKeyDocID, false),
-                                        (slice)makeRealKey(endKey, endKeyDocID, true),
-                                         options))
+     _dbEnum(&_index, (slice)makeRealKey(startKey, startKeyDocID, false),
+             (slice)makeRealKey(endKey, endKeyDocID, true),
+             options)
     {
         fprintf(stderr, "IndexEnumerator(%p)\n", this);
         if (!_inclusiveEnd)
@@ -101,13 +101,13 @@ namespace forestdb {
 
     IndexEnumerator::IndexEnumerator(Index& index,
                                      std::vector<Collatable> keys,
-                                     const Database::enumerationOptions& options)
+                                     const DocEnumerator::enumerationOptions& options)
     :_index(index),
      _options(options),
      _inclusiveEnd(true),
      _keys(keys),
      _currentKeyIndex(-1),
-     _dbEnum(_index.Database::enumerate(slice::null, slice::null, options))
+     _dbEnum(&_index, slice::null, slice::null, options)
     {
         fprintf(stderr, "IndexEnumerator(%p)\n", this);
 //        std::sort(_keys.begin(), _keys.end());
@@ -189,7 +189,7 @@ namespace forestdb {
         }
 
         if (_currentKeyIndex > 0 && !(_keys[_currentKeyIndex-1] < _keys[_currentKeyIndex])) {
-            _dbEnum = _index.Database::enumerate(slice::null, slice::null, _options);
+            _dbEnum = DocEnumerator(&_index, slice::null, slice::null, _options);
         }
 
         fprintf(stderr, "IndexEnumerator: Advance to key '%s'\n", _keys[_currentKeyIndex].dump().c_str());

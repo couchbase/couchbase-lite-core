@@ -62,7 +62,7 @@ namespace forestdb {
             flags |= kConflicted;
 
         alloc_slice newMeta(1+revID.size);
-        (uint8_t&)newMeta[1] = flags;
+        (uint8_t&)newMeta[0] = flags;
         memcpy((void*)&newMeta[1], revID.buf, revID.size);
         _doc.setMeta(newMeta);
     }

@@ -88,10 +88,10 @@ namespace forestdb {
         sequence startSequence = _lastSequenceIndexed + 1;
         bool indexChanged = false;
 
-        Database::enumerationOptions options = {
+        DocEnumerator::enumerationOptions options = {
             .includeDeleted = true
         };
-        for (auto e = _sourceDatabase->enumerate(startSequence, UINT64_MAX, options); e; ++e) {
+        for (DocEnumerator e(_sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
             emitter emit;
             if (!e.doc().deleted())
                 (*_map)(e.doc(), emit); // Call map function!

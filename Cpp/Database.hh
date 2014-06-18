@@ -49,29 +49,6 @@ namespace forestdb {
 
         Document getByOffset(uint64_t offset, sequence);
 
-        // Enumeration:
-
-        struct enumerationOptions {
-            unsigned        skip;
-            unsigned        limit;
-//          bool            descending;     //TODO: Unimplemented in forestdb (MB-10961)
-            bool            inclusiveEnd;
-            bool            includeDeleted;
-            bool            onlyConflicts;
-            contentOptions  contentOptions;
-
-            static const enumerationOptions kDefault;
-        };
-
-        DocEnumerator enumerate(slice startKey = slice::null,
-                                slice endKey = slice::null,
-                                const enumerationOptions& = enumerationOptions::kDefault);
-        DocEnumerator enumerate(sequence start,
-                                sequence end = UINT64_MAX,
-                                const enumerationOptions& = enumerationOptions::kDefault);
-        DocEnumerator enumerate(std::vector<std::string> docIDs,
-                                const enumerationOptions& = enumerationOptions::kDefault);
-
     protected:
         DatabaseGetters();
         virtual ~DatabaseGetters() {}
@@ -80,6 +57,7 @@ namespace forestdb {
 
     private:
         DatabaseGetters(const DatabaseGetters&); // forbidden
+        friend class DocEnumerator;
     };
 
 
@@ -185,45 +163,6 @@ namespace forestdb {
         fdb_doc _doc;
     };
     
-
-    class DocEnumerator {
-    public:
-        DocEnumerator(); // empty enumerator
-        DocEnumerator(DocEnumerator&& e); // move constructor
-        ~DocEnumerator();
-
-        bool next();
-        bool seek(slice key);
-        const Document& doc() const         {return *(Document*)_docP;}
-        void close();
-
-        DocEnumerator& operator=(DocEnumerator&& e);
-
-        // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
-        const DocEnumerator& operator++()   {next(); return *this;}
-        operator const Document*() const    {return (const Document*)_docP;}
-        const Document* operator->() const  {return (Document*)_docP;}
-
-    protected:
-        fdb_iterator *_iterator;
-        alloc_slice _endKey;
-        Database::enumerationOptions _options;
-        std::vector<std::string> _docIDs;
-        int _curDocIndex;
-        fdb_doc *_docP;
-
-        friend class DatabaseGetters;
-        DocEnumerator(fdb_iterator*,
-                      slice endKey,
-                      const Database::enumerationOptions&);
-        DocEnumerator(fdb_iterator*,
-                      std::vector<std::string> docIDs,
-                      const Database::enumerationOptions&);
-        void setDocIDs(std::vector<std::string> docIDs);
-    private:
-        DocEnumerator(const DocEnumerator&); // no copying allowed
-    };
-
 }
 
 #endif /* defined(__CBForest__Database__) */
