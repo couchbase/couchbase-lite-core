@@ -25,11 +25,13 @@ namespace forestdb {
         IndexEnumerator(Index&,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
-                        const Database::enumerationOptions*);
+                        const Database::enumerationOptions&);
 
         IndexEnumerator(Index&,
                         std::vector<Collatable> keys,
-                        const Database::enumerationOptions*);
+                        const Database::enumerationOptions&);
+
+//        IndexEnumerator(IndexEnumerator&&);
 
         CollatableReader key() const            {return CollatableReader(_key);}
         CollatableReader value() const          {return CollatableReader(_value);}
@@ -46,9 +48,12 @@ namespace forestdb {
         bool nextKey();
 
         Index& _index;
+        Database::enumerationOptions _options;
         alloc_slice _endKey;
+        bool _inclusiveEnd;
         std::vector<Collatable> _keys;
         int _currentKeyIndex;
+
         DocEnumerator _dbEnum;
         slice _key;
         slice _value;
@@ -71,7 +76,7 @@ namespace forestdb {
 
         IndexEnumerator enumerate(Collatable startKey, slice startKeyDocID,
                                   Collatable endKey,   slice endKeyDocID,
-                                  const Database::enumerationOptions* options)
+                                  const Database::enumerationOptions& options)
         {
             return IndexEnumerator(*this,
                                    startKey, startKeyDocID,
@@ -80,7 +85,7 @@ namespace forestdb {
         }
 
         IndexEnumerator enumerate(std::vector<Collatable> keys,
-                                  const Database::enumerationOptions* options)
+                                  const Database::enumerationOptions& options)
         {
             return IndexEnumerator(*this, keys, options);
         }

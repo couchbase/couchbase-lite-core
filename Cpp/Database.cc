@@ -133,7 +133,7 @@ namespace forestdb {
     const DatabaseGetters::enumerationOptions DatabaseGetters::enumerationOptions::kDefault = {
         .skip = 0,
         .limit = UINT_MAX,
-        .descending = false,
+//        .descending = false,
         .inclusiveEnd = true,
         .includeDeleted = false,
         .onlyConflicts = false,
@@ -141,18 +141,18 @@ namespace forestdb {
     };
 
 
-    static fdb_iterator_opt_t iteratorOptions(const DatabaseGetters::enumerationOptions* options) {
+    static fdb_iterator_opt_t iteratorOptions(const DatabaseGetters::enumerationOptions& options) {
         fdb_iterator_opt_t fdbOptions = 0;
-        if (options && (options->contentOptions & DatabaseGetters::kMetaOnly))
+        if (options.contentOptions & DatabaseGetters::kMetaOnly)
             fdbOptions |= FDB_ITR_METAONLY;
-        if (!(options && options->includeDeleted))
+        if (!options.includeDeleted)
             fdbOptions |= FDB_ITR_NO_DELETES;
         return fdbOptions;
     }
     
     
     DocEnumerator DatabaseGetters::enumerate(slice startKey, slice endKey,
-                                             const enumerationOptions* options) {
+                                             const enumerationOptions& options) {
         fprintf(stderr, "DocEnumerator on %p: key range [%s] -- [%s]\n",
                 _handle,
                 startKey.hexString().c_str(),
@@ -170,7 +170,7 @@ namespace forestdb {
     }
 
     DocEnumerator DatabaseGetters::enumerate(sequence start, sequence end,
-                                             const enumerationOptions* options) {
+                                             const enumerationOptions& options) {
         fdb_iterator *iterator;
         check(fdb_iterator_sequence_init(_handle, &iterator,
                                          start, end,
@@ -179,7 +179,7 @@ namespace forestdb {
     }
 
     DocEnumerator DatabaseGetters::enumerate(std::vector<std::string> docIDs,
-                                             const enumerationOptions* options)
+                                             const enumerationOptions& options)
     {
         if (docIDs.size() == 0)
             return DocEnumerator();
@@ -197,26 +197,30 @@ namespace forestdb {
     DocEnumerator::DocEnumerator()
     :_iterator(NULL),
      _docP(NULL)
-    { }
+    {
+        fprintf(stderr, "enum: DocEnumerator(%p)\n", this);
+    }
 
     DocEnumerator::DocEnumerator(fdb_iterator* iterator,
-                                 const DatabaseGetters::enumerationOptions* options)
+                                 const DatabaseGetters::enumerationOptions& options)
     :_iterator(iterator),
-     _options(options ?options->contentOptions : DatabaseGetters::kDefaultContent),
+     _options(options.contentOptions),
      _docP(NULL)
     {
+        fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
         next();
     }
 
     DocEnumerator::DocEnumerator(fdb_iterator* iterator,
                                  std::vector<std::string> docIDs,
-                                 const Database::enumerationOptions* options)
+                                 const Database::enumerationOptions& options)
     :_iterator(iterator),
      _docIDs(docIDs),
      _curDocID(_docIDs.begin()),
-     _options(options ?options->contentOptions : DatabaseGetters::kDefaultContent),
+     _options(options.contentOptions),
      _docP(NULL)
     {
+        fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
         next();
     }
 
@@ -225,14 +229,15 @@ namespace forestdb {
      _docIDs(e._docIDs),
      _curDocID(_docIDs.begin()),
      _options(e._options),
-     _docP(NULL)
+     _docP(e._docP)
     {
-        fprintf(stderr, "enum: move ctor\n");
+        fprintf(stderr, "enum: move ctor (%p <- %p)\n", this, &e);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
+        e._docP = NULL;
     }
 
     DocEnumerator::~DocEnumerator() {
-        fprintf(stderr, "enum: ~DocEnumerator\n");
+        fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
         close();
     }
 
@@ -300,8 +305,11 @@ namespace forestdb {
         _docP = NULL;
 
         fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size);
-        if (status == FDB_RESULT_SUCCESS)
+        fprintf(stderr, "enum: fdb_iterator_seek --> %d\n", status);
+        if (status == FDB_RESULT_SUCCESS) {
             status = fdb_iterator_next(_iterator, &_docP);
+            fprintf(stderr, "enum: fdb_iterator_next --> %d\n", status);
+        }
         if (status == FDB_RESULT_ITERATOR_FAIL)
             return false;
         check(status);

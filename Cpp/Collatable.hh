@@ -28,6 +28,10 @@ namespace forestdb {
         Collatable& operator<< (int64_t);
         Collatable& operator<< (uint64_t i)         {return *this << (int64_t)i;}
 
+        // WARNING: Doubles written do NOT yet collate correctly, so they can't be used as keys
+        // in Indexes. This feature has only been added so doubles can be stored as Index values.
+        Collatable& operator<< (double);
+
         Collatable& operator<< (const Collatable&);
         Collatable& operator<< (std::string);
         Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
@@ -71,7 +75,8 @@ namespace forestdb {
             kNumber,
             kString,
             kArray,
-            kDictionary,
+            kMap,
+            kDouble, // HACK
             kError = 255        // Something went wrong...
         } Tag;
 
@@ -80,6 +85,7 @@ namespace forestdb {
         Tag nextTag() const;
 
         int64_t readInt();
+        double readDouble();
         alloc_slice readString();
 
 #ifdef __OBJC__
@@ -98,7 +104,7 @@ namespace forestdb {
         std::string dump();
 
     private:
-        void expectTag(uint8_t tag);
+        void expectTag(Tag tag);
         
         slice _data;
     };

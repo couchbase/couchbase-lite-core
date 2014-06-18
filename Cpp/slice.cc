@@ -68,6 +68,15 @@ namespace forestdb {
         return buf;
     }
 
+    alloc_slice& alloc_slice::operator=(slice s) {
+        s = s.copy();
+        buf = s.buf;
+        size = s.size;
+        reset((char*)buf);
+        return *this;
+    }
+
+
     std::string slice::hexString() const {
         static const char kDigits[17] = "0123456789abcdef";
         std::string result;

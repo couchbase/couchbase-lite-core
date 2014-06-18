@@ -93,6 +93,12 @@ namespace forestdb {
         return digest() < other.digest();
     }
 
+    revid::operator std::string() const {
+        alloc_slice exp = expanded();
+        return std::string((char*)exp.buf, exp.size);
+    }
+
+
 
     revidBuffer::revidBuffer(const revidBuffer& other) {
         memcpy(_buffer, other._buffer, sizeof(_buffer));

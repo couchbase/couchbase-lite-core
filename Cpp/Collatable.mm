@@ -20,10 +20,10 @@ namespace forestdb {
                 case 'c':
                     addBool([obj boolValue]);
                     break;
-//                case 'f':
-//                case 'd':
-//                    *this << [obj doubleValue];
-//                    break;
+                case 'f':
+                case 'd':
+                    *this << [obj doubleValue];
+                    break;
                 case 'Q':
                     *this << [obj unsignedLongLongValue];
                     break;
@@ -63,6 +63,8 @@ namespace forestdb {
                 return @YES;
             case kNumber:
                 return @(readInt());
+            case kDouble:
+                return @(readDouble());
             case kString:
                 return (NSString*)readString();
             case kArray: {
@@ -73,7 +75,7 @@ namespace forestdb {
                 endArray();
                 return result;
             }
-            case kDictionary: {
+            case kMap: {
                 beginMap();
                 NSMutableDictionary* result = [NSMutableDictionary dictionary];
                 while (nextTag() != 0) {

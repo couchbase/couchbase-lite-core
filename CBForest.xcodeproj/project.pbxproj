@@ -603,7 +603,7 @@
 		27E4872019226699007D8940 /* testutil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = testutil.h; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
-		27E487261923B80E007D8940 /* slice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = slice.mm; sourceTree = "<group>"; };
+		27E487261923B80E007D8940 /* slice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = slice.mm; path = ../CBForest/slice.mm; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* VersionedDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocument.cc; sourceTree = "<group>"; };
 		27E4872A1923F24D007D8940 /* VersionedDocument.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionedDocument.hh; sourceTree = "<group>"; };
 		27E4872D1924178B007D8940 /* Collatable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Collatable.cc; sourceTree = "<group>"; };
@@ -893,7 +893,6 @@
 				27FDFC0018EA58BF00AC4647 /* varint.c */,
 				27FDFC0218EA58DA00AC4647 /* varint.h */,
 				2704A1E41905FAA700138320 /* slice.c */,
-				27E487261923B80E007D8940 /* slice.mm */,
 				27EF80BE19142E6600A327B9 /* CBTextTokenizer.h */,
 				27EF80BF19142E6600A327B9 /* CBTextTokenizer.m */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
@@ -1069,6 +1068,7 @@
 				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				27E4871A19218E5D007D8940 /* slice.cc */,
 				2704A1E219049E2300138320 /* slice.h */,
+				27E487261923B80E007D8940 /* slice.mm */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27DD150719354C70009A367D /* CBForest.hh */,
 			);

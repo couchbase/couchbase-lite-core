@@ -48,6 +48,22 @@ namespace forestdb {
         return *this;
     }
 
+    Collatable& Collatable::operator<< (double n) {
+        // FIX: TODO: HACK: This is only a placeholder, not proper floating-point support!
+        // Doubles written this way do NOT collate correctly, so they can't be used as keys
+        // in Indexes. This feature has only been added so doubles can be stored as Index values.
+
+        // If n is a 64-bit integer, write it as such:
+        if (n >= INT64_MIN && n <= INT64_MAX) {
+            int64_t i = (int64_t)n;
+            if (i == n)
+                return operator<<(i);
+        }
+        addTag(CollatableReader::kDouble);
+        CFSwappedFloat64 swapped = CFConvertFloat64HostToSwapped(n);
+        add(slice(&swapped, sizeof(swapped)));
+        return *this;
+    }
 
     Collatable& Collatable::operator<< (std::string str) {
         const uint8_t* priority = getCharPriorityMap();
@@ -92,7 +108,7 @@ namespace forestdb {
     }
 
 
-    void CollatableReader::expectTag(uint8_t tag) {
+    void CollatableReader::expectTag(Tag tag) {
         slice tagSlice = _data.read(1);
         if (tagSlice.size == 0)
             throw "unexpected end of collatable data";
@@ -101,7 +117,7 @@ namespace forestdb {
     }
 
     int64_t CollatableReader::readInt() {
-        expectTag(4);
+        expectTag(kNumber);
         unsigned nBytes;
         uint8_t lenByte;
         union {
@@ -126,8 +142,17 @@ namespace forestdb {
         return CFSwapInt64BigToHost(numBuf.asBigEndian);
     }
 
+    double CollatableReader::readDouble() {
+        if (_data[0] == kNumber)
+            return readInt();
+        expectTag(kDouble);
+        CFSwappedFloat64 swapped;
+        _data.readInto(slice(&swapped, sizeof(swapped)));
+        return CFConvertDoubleSwappedToHost(swapped);
+    }
+
     alloc_slice CollatableReader::readString() {
-        expectTag(5);
+        expectTag(kString);
         const void* end = _data.findByte(0);
         if (!end)
             throw "malformed string";
@@ -156,6 +181,9 @@ namespace forestdb {
                 _data.moveStart(nBytes);
                 break;
             }
+            case kDouble:
+                _data.moveStart(sizeof(double));
+                break;
             case 5: { // String:
                 const void* end = _data.findByte(0);
                 if (!end)
@@ -182,19 +210,19 @@ namespace forestdb {
     }
 
     void CollatableReader::beginArray() {
-        expectTag(6);
+        expectTag(kArray);
     }
 
     void CollatableReader::endArray() {
-        expectTag(0);
+        expectTag(kEndSequence);
     }
     
     void CollatableReader::beginMap() {
-        expectTag(7);
+        expectTag(kMap);
     }
 
     void CollatableReader::endMap() {
-        expectTag(0);
+        expectTag(kEndSequence);
     }
 
     void CollatableReader::dumpTo(std::ostream &out) {
@@ -211,6 +239,9 @@ namespace forestdb {
             case kNumber:
                 out << readInt();
                 break;
+            case kDouble:
+                out << readDouble();
+                break;
             case kString:
                 out << '"' << (std::string)readString() << '"';
                 break;
@@ -222,7 +253,7 @@ namespace forestdb {
                 endArray();
                 out << ']';
                 break;
-            case kDictionary:
+            case kMap:
                 out << '{';
                 beginMap();
                 while (nextTag() != kEndSequence) {

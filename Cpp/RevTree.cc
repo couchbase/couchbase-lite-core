@@ -521,6 +521,11 @@ namespace forestdb {
                 _nodes[i].parentIndex = parent;
                 }
         _sorted = true;
+
+        fprintf(stderr, "Sorted revs:\n");
+        for (auto node=_nodes.begin(); node != _nodes.end(); ++node) {
+            fprintf(stderr, "    %s\n", ((std::string)node->revID).c_str());
+        }
     }
         
 }

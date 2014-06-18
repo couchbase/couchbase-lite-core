@@ -62,7 +62,8 @@ namespace forestdb {
         const void* findByte(uint8_t byte) const      {return ::memchr(buf, byte, size);}
 
         int compare(slice) const;
-        bool equal(slice s) const {return compare(s)==0;}
+        bool operator<(slice s) const               {return compare(s) < 0;}
+        bool equal(slice s) const                   {return compare(s)==0;}
 
         slice copy() const;
 
@@ -73,7 +74,6 @@ namespace forestdb {
         class _none;
         slice& operator=(_none*)                {buf = NULL; size = 0; return *this;}
         slice(_none*)                           :buf(NULL), size(0) {}
-        operator const _none*() const           {return (const _none*)buf;}
 
         explicit operator std::string() const;
 
@@ -94,20 +94,22 @@ namespace forestdb {
     };
 
     /** An allocated range of memory. Constructors allocate, destructor frees. */
-    struct alloc_slice : std::shared_ptr<void>, public slice {
+    struct alloc_slice : std::shared_ptr<char>, public slice {
         alloc_slice()
-            :std::shared_ptr<void>(NULL), slice() {}
+            :std::shared_ptr<char>(NULL), slice() {}
         explicit alloc_slice(size_t s)
-            :std::shared_ptr<void>(malloc(s),::free), slice(get(),s) {}
+            :std::shared_ptr<char>((char*)malloc(s),::free), slice(get(),s) {}
         explicit alloc_slice(slice s)
-            :std::shared_ptr<void>((void*)s.copy().buf,::free), slice(get(),s.size) {}
+            :std::shared_ptr<char>((char*)s.copy().buf,::free), slice(get(),s.size) {}
         alloc_slice(const void* b, size_t s)
-            :std::shared_ptr<void>(alloc(b,s),::free), slice(get(),s) {}
+            :std::shared_ptr<char>((char*)alloc(b,s),::free), slice(get(),s) {}
         alloc_slice(const void* start, const void* end)
-            :std::shared_ptr<void>(alloc(start,(uint8_t*)end-(uint8_t*)start),::free),
+            :std::shared_ptr<char>((char*)alloc(start,(uint8_t*)end-(uint8_t*)start),::free),
              slice(get(),(uint8_t*)end-(uint8_t*)start) {}
         alloc_slice(std::string str)
-            :std::shared_ptr<void>(alloc(&str[0], str.length()),::free), slice(get(), str.length()) {}
+            :std::shared_ptr<char>((char*)alloc(&str[0], str.length()),::free), slice(get(), str.length()) {}
+
+        alloc_slice& operator=(slice);
 
     private:
         static void* alloc(const void* src, size_t size);

@@ -31,6 +31,7 @@ namespace forestdb {
         slice digest() const;
         bool operator< (const revid&) const;
 
+        explicit operator std::string() const;
 #ifdef __OBJC__
         explicit operator NSString*() const; // overrides slice method
 #endif

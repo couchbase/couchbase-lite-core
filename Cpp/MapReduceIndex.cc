@@ -91,7 +91,7 @@ namespace forestdb {
         Database::enumerationOptions options = {
             .includeDeleted = true
         };
-        for (auto e = _sourceDatabase->enumerate(startSequence, UINT64_MAX, &options); e; ++e) {
+        for (auto e = _sourceDatabase->enumerate(startSequence, UINT64_MAX, options); e; ++e) {
             emitter emit;
             if (!e.doc().deleted())
                 (*_map)(e.doc(), emit); // Call map function!

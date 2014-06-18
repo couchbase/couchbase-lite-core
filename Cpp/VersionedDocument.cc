@@ -31,7 +31,7 @@ namespace forestdb {
     }
 
     void VersionedDocument::decode() {
-        if (_doc.body())
+        if (_doc.body().buf)
             RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
         else
             _unknown = _doc.body().size > 0;        // i.e. doc was read as meta-only

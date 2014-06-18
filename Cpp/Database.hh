@@ -54,7 +54,7 @@ namespace forestdb {
         struct enumerationOptions {
             unsigned        skip;
             unsigned        limit;
-            bool            descending;
+//          bool            descending;     //TODO: Unimplemented in forestdb (MB-10961)
             bool            inclusiveEnd;
             bool            includeDeleted;
             bool            onlyConflicts;
@@ -65,12 +65,12 @@ namespace forestdb {
 
         DocEnumerator enumerate(slice startKey = slice::null,
                                 slice endKey = slice::null,
-                                const enumerationOptions* = NULL);
+                                const enumerationOptions& = enumerationOptions::kDefault);
         DocEnumerator enumerate(sequence start,
                                 sequence end = UINT64_MAX,
-                                const enumerationOptions* = NULL);
+                                const enumerationOptions& = enumerationOptions::kDefault);
         DocEnumerator enumerate(std::vector<std::string> docIDs,
-                                const enumerationOptions* = NULL);
+                                const enumerationOptions& = enumerationOptions::kDefault);
 
     protected:
         DatabaseGetters();
@@ -212,9 +212,9 @@ namespace forestdb {
         fdb_doc *_docP;
 
         friend class DatabaseGetters;
-        DocEnumerator(fdb_iterator*, const Database::enumerationOptions*);
+        DocEnumerator(fdb_iterator*, const Database::enumerationOptions&);
         DocEnumerator(fdb_iterator*, std::vector<std::string> docIDs,
-                      const Database::enumerationOptions*);
+                      const Database::enumerationOptions&);
         void setDocIDs(std::vector<std::string> docIDs);
     private:
         DocEnumerator(const DocEnumerator&); // no copying allowed

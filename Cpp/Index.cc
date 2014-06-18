@@ -70,7 +70,7 @@ namespace forestdb {
         realKey.beginArray();
         if (!key.empty()) {
             realKey << key;
-            if (docID)
+            if (docID.buf)
                 realKey << docID;
         }
         if (addEllipsis) {
@@ -84,52 +84,99 @@ namespace forestdb {
     IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
-                                     const Database::enumerationOptions* options)
+                                     const Database::enumerationOptions& options)
     :_index(index),
-     _endKey(makeRealKey(endKey, endKeyDocID, (!options || !options->descending))),
+     _options(options),
+     _inclusiveEnd(options.inclusiveEnd),
      _currentKeyIndex(-1),
-     _dbEnum(_index.Database::enumerate((slice)makeRealKey(startKey, startKeyDocID,
-                                                           (options && options->descending)),
-                                         _endKey,
+     _dbEnum(_index.Database::enumerate((slice)makeRealKey(startKey, startKeyDocID, false),
+                                        (slice)makeRealKey(endKey, endKeyDocID, true),
                                          options))
     {
+        fprintf(stderr, "IndexEnumerator(%p)\n", this);
+        if (!_inclusiveEnd)
+            _endKey = (slice)endKey;
         read();
     }
 
     IndexEnumerator::IndexEnumerator(Index& index,
                                      std::vector<Collatable> keys,
-                                     const Database::enumerationOptions* options)
+                                     const Database::enumerationOptions& options)
     :_index(index),
+     _options(options),
+     _inclusiveEnd(true),
      _keys(keys),
      _currentKeyIndex(-1),
      _dbEnum(_index.Database::enumerate(slice::null, slice::null, options))
     {
-        std::sort(_keys.begin(), _keys.end());
+        fprintf(stderr, "IndexEnumerator(%p)\n", this);
+//        std::sort(_keys.begin(), _keys.end());
         nextKey();
         read();
     }
 
+//    IndexEnumerator::IndexEnumerator(IndexEnumerator&& i)
+//    :_index(i._index),
+//     _endKey(i._endKey),
+//     _inclusiveEnd(i._inclusiveEnd),
+//     _keys(i._keys),
+//     _currentKeyIndex(i._currentKeyIndex),
+//     _skip(i._skip),
+//     _limit(i._limit),
+//     _dbEnum(std::move(i._dbEnum))
+//    {
+//
+//    }
+
     bool IndexEnumerator::read() {
         while(true) {
-            if (!_dbEnum)
-                return false; // at end
+            if (!_dbEnum) {
+                if (_currentKeyIndex < 0)
+                    return false; // at end
+                else if (nextKey())
+                    continue;
+                else
+                    return false;
+            }
+            
             const Document& doc = _dbEnum.doc();
 
             // Decode the key from collatable form:
             CollatableReader reader(doc.key());
             reader.beginArray();
             _key = reader.read();
+
+            if (!_inclusiveEnd && _key.equal(_endKey)) {
+                _dbEnum.close();
+                return false;
+            }
+
+            if (_currentKeyIndex >= 0 && !_key.equal(_keys[_currentKeyIndex])) {
+                // While enumerating through _keys, advance to the next key:
+                if (nextKey())
+                    continue;
+                else
+                    return false;
+            }
+
+            // OK, this is a candidate. First honor the skip and limit:
+            if (_options.skip > 0) {
+                --_options.skip;
+                _dbEnum.next();
+                continue;
+            }
+            if (_options.limit-- == 0) {
+                _dbEnum.close();
+                return false;
+            }
+
+            // Return it as the next row:
             _docID = reader.readString();
             _sequence = reader.readInt();
-            _value = Collatable(doc.body());
+            _value = doc.body();
             fprintf(stderr, "IndexEnumerator: key=%s\n",
                     forestdb::CollatableReader(_key).dump().c_str());
-
-            if (_currentKeyIndex < 0 || _key.equal(_keys[_currentKeyIndex]))
-                return true; // normal enumeration
-            // While enumerating through _keys, advance to the next key:
-            if (!nextKey())
-                return false;
+            return true;
         }
     }
 
@@ -140,13 +187,17 @@ namespace forestdb {
             _dbEnum.close();
             return false;
         }
+
+        if (_currentKeyIndex > 0 && !(_keys[_currentKeyIndex-1] < _keys[_currentKeyIndex])) {
+            _dbEnum = _index.Database::enumerate(slice::null, slice::null, _options);
+        }
+
         fprintf(stderr, "IndexEnumerator: Advance to key '%s'\n", _keys[_currentKeyIndex].dump().c_str());
         return _dbEnum.seek(makeRealKey(_keys[_currentKeyIndex], slice::null, false));
     }
 
     bool IndexEnumerator::next() {
-        if (!_dbEnum.next())
-            return false;
+        _dbEnum.next();
         return read();
     }
 
