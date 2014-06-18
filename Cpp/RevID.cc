@@ -42,7 +42,8 @@ namespace forestdb {
     size_t revid::expandedSize() const {
         slice buf = *this;
         uint64_t gen;
-        ::ReadUVarInt((::slice*)&buf, &gen);
+        if (!::ReadUVarInt((::slice*)&buf, &gen))
+            throw error(error::CorruptRevisionData); // buffer too short!
         size_t genDigits = 1 + size_t(::floor(::log10(gen)));
         return genDigits + 1 + 2*buf.size;
     }
@@ -82,7 +83,8 @@ namespace forestdb {
     slice revid::digest() const {
         uint64_t gen;
         slice digest = *this;
-        ReadUVarInt((::slice*)&digest, &gen);
+        if (!ReadUVarInt((::slice*)&digest, &gen))
+            throw error(error::CorruptRevisionData); // buffer too short!
         return digest;
     }
 

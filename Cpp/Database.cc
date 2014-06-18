@@ -166,7 +166,7 @@ namespace forestdb {
                                 startKey.buf, startKey.size,
                                 endKey.buf, endKey.size,
                                 iteratorOptions(options)));
-        return DocEnumerator(iterator, options);
+        return DocEnumerator(iterator, endKey, options);
     }
 
     DocEnumerator DatabaseGetters::enumerate(sequence start, sequence end,
@@ -175,7 +175,7 @@ namespace forestdb {
         check(fdb_iterator_sequence_init(_handle, &iterator,
                                          start, end,
                                          iteratorOptions(options)));
-        return DocEnumerator(iterator, options);
+        return DocEnumerator(iterator, slice::null, options);
     }
 
     DocEnumerator DatabaseGetters::enumerate(std::vector<std::string> docIDs,
@@ -183,7 +183,6 @@ namespace forestdb {
     {
         if (docIDs.size() == 0)
             return DocEnumerator();
-        std::sort(docIDs.begin(), docIDs.end());
         slice startKey = docIDs[0];
         fdb_iterator *iterator;
         check(fdb_iterator_init(_handle, &iterator,
@@ -202,9 +201,11 @@ namespace forestdb {
     }
 
     DocEnumerator::DocEnumerator(fdb_iterator* iterator,
+                                 slice endKey,
                                  const DatabaseGetters::enumerationOptions& options)
     :_iterator(iterator),
-     _options(options.contentOptions),
+     _endKey(endKey),
+     _options(options),
      _docP(NULL)
     {
         fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
@@ -215,9 +216,9 @@ namespace forestdb {
                                  std::vector<std::string> docIDs,
                                  const Database::enumerationOptions& options)
     :_iterator(iterator),
+     _options(options),
      _docIDs(docIDs),
-     _curDocID(_docIDs.begin()),
-     _options(options.contentOptions),
+     _curDocIndex(-1),
      _docP(NULL)
     {
         fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
@@ -226,9 +227,10 @@ namespace forestdb {
 
     DocEnumerator::DocEnumerator(DocEnumerator&& e)
     :_iterator(e._iterator),
-     _docIDs(e._docIDs),
-     _curDocID(_docIDs.begin()),
+     _endKey(e._endKey),
      _options(e._options),
+     _docIDs(e._docIDs),
+     _curDocIndex(e._curDocIndex),
      _docP(e._docP)
     {
         fprintf(stderr, "enum: move ctor (%p <- %p)\n", this, &e);
@@ -245,10 +247,12 @@ namespace forestdb {
         fprintf(stderr, "enum: operator=\n");
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
+        _endKey = e._endKey;
         _docIDs = e._docIDs;
-        _curDocID = _docIDs.begin();
+        _curDocIndex = e._curDocIndex;
         _options = e._options;
-        _docP = NULL;
+        _docP = e._docP;
+        e._docP = NULL;
         return *this;
     }
 
@@ -280,15 +284,18 @@ namespace forestdb {
                 return false;
             }
             check(status);
+            if (!_options.inclusiveEnd && doc().key().equal(_endKey)) {
+                close();
+                return false;
+            }
         } else {
             // Iterating over a vector of docIDs:
-           if (_curDocID == _docIDs.end()) {
+           if (++_curDocIndex >= _docIDs.size()) {
                 fprintf(stderr, "enum: at end of vector\n");
                 close();
                 return false;
             }
-            slice docID = *_curDocID;
-            ++_curDocID;
+            slice docID = _docIDs[_curDocIndex];
             if (!seek(docID) || !slice(_docP->key, _docP->keylen).equal(docID)) {
                 // If the current doc doesn't match the docID, then the docID doesn't exist:
                 fdb_doc_free(_docP);

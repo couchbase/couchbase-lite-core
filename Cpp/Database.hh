@@ -171,7 +171,7 @@ namespace forestdb {
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
-        bool exists() const         {return _doc.size_ondisk > 0;}
+        bool exists() const         {return _doc.size_ondisk > 0 || _doc.offset > 0;}
 
         typedef DocEnumerator enumerator;
 
@@ -206,14 +206,18 @@ namespace forestdb {
 
     protected:
         fdb_iterator *_iterator;
+        alloc_slice _endKey;
+        Database::enumerationOptions _options;
         std::vector<std::string> _docIDs;
-        std::vector<std::string>::const_iterator _curDocID;
-        Database::contentOptions _options;
+        int _curDocIndex;
         fdb_doc *_docP;
 
         friend class DatabaseGetters;
-        DocEnumerator(fdb_iterator*, const Database::enumerationOptions&);
-        DocEnumerator(fdb_iterator*, std::vector<std::string> docIDs,
+        DocEnumerator(fdb_iterator*,
+                      slice endKey,
+                      const Database::enumerationOptions&);
+        DocEnumerator(fdb_iterator*,
+                      std::vector<std::string> docIDs,
                       const Database::enumerationOptions&);
         void setDocIDs(std::vector<std::string> docIDs);
     private:
