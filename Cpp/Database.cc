@@ -188,11 +188,11 @@ namespace forestdb {
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
 
-        startSequence = getInfo().last_seqnum;
         fdb_handle* realHandle = _handle;
 #if TRANSACTION_IS_PRIVATE
         // Create a snapshot of the real handle to use as my temporary handle,
         // and return the real handle for the transaction object to use:
+        startSequence = getInfo().last_seqnum;
         fdb_handle* snapshot = NULL;
         check(fdb_snapshot_open(_handle, &snapshot, startSequence));
         _handle = snapshot;
@@ -257,6 +257,9 @@ namespace forestdb {
         if (::unlink(path.c_str()) < 0 && errno != ENOENT) {
             _state = -1;
             check(::fdb_open(&_handle, path.c_str(), &_db._config));
+#if !TRANSACTION_IS_PRIVATE
+            _db._handle = _handle;
+#endif
             throw(errno);
         }
     }
@@ -265,15 +268,46 @@ namespace forestdb {
         std::string path = _db.filename();
         deleteDatabase();
         check(::fdb_open(&_handle, path.c_str(), &_db._config));
+#if !TRANSACTION_IS_PRIVATE
+        _db._handle = _handle;
+#endif
         check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
     }
 
     void Transaction::rollbackTo(sequence seq) {
         check(fdb_rollback(&_handle, seq));
+#if !TRANSACTION_IS_PRIVATE
+        _db._handle = _handle;
+#endif
     }
 
     void Transaction::compact() {
+#if 1
+        std::string path = _db.filename();
+        std::string tempPath = path + ".compact";
+
+        check(fdb_end_transaction(_handle, FDB_COMMIT_NORMAL));
+
+        fdb_status status = fdb_compact(_handle, tempPath.c_str());
+        if (status != FDB_RESULT_SUCCESS) {
+            ::unlink(tempPath.c_str());
+            check(status);
+        }
+        check(::fdb_close(_handle));
+        if (::rename(tempPath.c_str(), path.c_str()) < 0) {
+            ::unlink(tempPath.c_str());
+            check(FDB_RESULT_FILE_RENAME_FAIL);
+        }
+        check(::fdb_open(&_handle, path.c_str(), &_db._config));
+#if !TRANSACTION_IS_PRIVATE
+        _db._handle = _handle;
+#endif
+        check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
+
+#else
+        fprintf(stderr, "WARNING: Transaction::compact is unimplemented\n");
         // UNIMPLEMENTED -- would be nice if FDB had a compact-in-place API call (MB-11426)
+#endif
     }
 
     void Transaction::commit() {
