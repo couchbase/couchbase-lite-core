@@ -1,5 +1,5 @@
 //
-//  VersionedDocument.h
+//  VersionedDocument.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/14/14.
@@ -12,6 +12,7 @@
 
 namespace forestdb {
 
+    /** Manages storage of a serialized RevTree in a Document. */
     class VersionedDocument : public RevTree {
     public:
 

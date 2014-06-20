@@ -8,7 +8,7 @@
 
 #include "RevID.hh"
 #include "Error.hh"
-#include "varint.h"
+#include "varint.hh"
 #include <assert.h>
 #include <math.h>
 
@@ -42,7 +42,7 @@ namespace forestdb {
     size_t revid::expandedSize() const {
         slice buf = *this;
         uint64_t gen;
-        if (!::ReadUVarInt((::slice*)&buf, &gen))
+        if (!ReadUVarInt(&buf, &gen))
             throw error(error::CorruptRevisionData); // buffer too short!
         size_t genDigits = 1 + size_t(::floor(::log10(gen)));
         return genDigits + 1 + 2*buf.size;
@@ -75,7 +75,7 @@ namespace forestdb {
 
     unsigned revid::generation() const {
         uint64_t gen;
-        if (GetUVarInt(*(::slice*)this, &gen) == 0)
+        if (GetUVarInt(*this, &gen) == 0)
             throw error(error::CorruptRevisionData); // buffer too short!
         return (unsigned) gen;
     }
@@ -83,7 +83,7 @@ namespace forestdb {
     slice revid::digest() const {
         uint64_t gen;
         slice digest = *this;
-        if (!ReadUVarInt((::slice*)&digest, &gen))
+        if (!ReadUVarInt(&digest, &gen))
             throw error(error::CorruptRevisionData); // buffer too short!
         return digest;
     }

@@ -1,5 +1,5 @@
 //
-//  slice.h
+//  slice.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 4/20/14.
@@ -11,29 +11,12 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string>
+#include <memory>
 
 
 #define offsetby(PTR,OFFSET) (void*)((uint8_t*)(PTR)+(OFFSET))
 
-
-/** A bounded region of memory. */
-typedef struct {
-    const void* buf;
-    size_t      size;
-} slice;
-
-
-/** Copies the slice into a newly malloced buffer, and returns a new slice pointing to it. */
-slice slicecopy(slice buf);
-
-/** Basic binary comparison of two slices, returning -1, 0 or 1. */
-int slicecmp(slice a, slice b);
-
-
-#ifdef __cplusplus
-
-#include <string>
-#include <memory>
 
 namespace forestdb {
 
@@ -49,43 +32,35 @@ namespace forestdb {
 
         explicit slice(const char* str)           :buf(str), size(strlen(str)) {}
 
+        static const slice null;
+
         const void* offset(size_t o) const          {return (uint8_t*)buf + o;}
         size_t offsetOf(const void* ptr) const      {return (uint8_t*)ptr - (uint8_t*)buf;}
         const void* end() const                     {return offset(size);}
 
-        const uint8_t& operator[](unsigned i) const {return ((const uint8_t*)buf)[i];}
-        slice operator()(unsigned i, unsigned n) const {return slice(offset(i), n);}
+        const uint8_t& operator[](unsigned i) const     {return ((const uint8_t*)buf)[i];}
+        slice operator()(unsigned i, unsigned n) const  {return slice(offset(i), n);}
 
         slice read(size_t nBytes);
         bool readInto(slice dst);
 
-        const void* findByte(uint8_t byte) const      {return ::memchr(buf, byte, size);}
+        const void* findByte(uint8_t byte) const    {return ::memchr(buf, byte, size);}
 
         int compare(slice) const;
+        bool operator==(const slice &s) const       {return compare(s)==0;}
+        bool operator!=(const slice &s) const       {return compare(s)!=0;}
         bool operator<(slice s) const               {return compare(s) < 0;}
-        bool equal(slice s) const                   {return compare(s)==0;}
+
+        void moveStart(ptrdiff_t delta)             {buf = offsetby(buf, delta); size -= delta;}
 
         slice copy() const;
-
         void free();
 
-        void moveStart(ptrdiff_t delta)         {buf = offsetby(buf, delta); size -= delta;}
-
-        class _none;
-        slice& operator=(_none*)                {buf = NULL; size = 0; return *this;}
-        slice(_none*)                           :buf(NULL), size(0) {}
-
         explicit operator std::string() const;
-
-        operator ::slice()                      {return ::slice{buf, size};}
-        slice(::slice s)                        :buf(s.buf), size(s.size) {}
-
         std::string hexString() const;
 
-        static const slice null;
-
 #ifdef __OBJC__
-        slice(NSData* data)                     :buf(data.bytes), size(data.length) {}
+        slice(NSData* data)                         :buf(data.bytes), size(data.length) {}
         slice(NSString* str);
 
         explicit operator NSData*() const;
@@ -115,8 +90,5 @@ namespace forestdb {
         static void* alloc(const void* src, size_t size);
     };
 }
-
-
-#endif // !__cplusplus
 
 #endif

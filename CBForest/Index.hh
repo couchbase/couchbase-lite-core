@@ -1,5 +1,5 @@
 //
-//  Index.h
+//  Index.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/14/14.
@@ -25,13 +25,11 @@ namespace forestdb {
         IndexEnumerator(Index&,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
-                        const DocEnumerator::enumerationOptions&);
+                        const DocEnumerator::Options&);
 
         IndexEnumerator(Index&,
                         std::vector<Collatable> keys,
-                        const DocEnumerator::enumerationOptions&);
-
-//        IndexEnumerator(IndexEnumerator&&);
+                        const DocEnumerator::Options&);
 
         CollatableReader key() const            {return CollatableReader(_key);}
         CollatableReader value() const          {return CollatableReader(_value);}
@@ -48,7 +46,7 @@ namespace forestdb {
         bool nextKey();
 
         Index& _index;
-        DocEnumerator::enumerationOptions _options;
+        DocEnumerator::Options _options;
         alloc_slice _endKey;
         bool _inclusiveEnd;
         std::vector<Collatable> _keys;
@@ -70,38 +68,26 @@ namespace forestdb {
         typedef Database::config config;
         static config defaultConfig()           {return Database::defaultConfig();}
 
-        bool update(IndexTransaction& transaction,
-                    slice docID, sequence docSequence,
-                    std::vector<Collatable> keys, std::vector<Collatable> values);
-
-        IndexEnumerator enumerate(Collatable startKey, slice startKeyDocID,
-                                  Collatable endKey,   slice endKeyDocID,
-                                  const DocEnumerator::enumerationOptions& options)
-        {
-            return IndexEnumerator(*this,
-                                   startKey, startKeyDocID,
-                                   endKey, endKeyDocID,
-                                   options);
-        }
-
-        IndexEnumerator enumerate(std::vector<Collatable> keys,
-                                  const DocEnumerator::enumerationOptions& options)
-        {
-            return IndexEnumerator(*this, keys, options);
-        }
-
     private:
-        bool removeOldRowsForDoc(Transaction& transaction, slice docID);
-
         friend class IndexTransaction;
         friend class IndexEnumerator;
     };
 
+
+    /** A transaction to update an index. */
     class IndexTransaction : protected Transaction {
     public:
         IndexTransaction(Index* index)              :Transaction(index) {}
 
+        bool update(slice docID,
+                    sequence docSequence,
+                    std::vector<Collatable> keys,
+                    std::vector<Collatable> values);
+
         void erase()                                {Transaction::erase();}
+
+    private:
+        bool removeOldRowsForDoc(slice docID);
 
         friend class Index;
         friend class MapReduceIndex;

@@ -1,5 +1,5 @@
 //
-//  MapReduceIndex.h
+//  MapReduceIndex.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/15/14.
@@ -23,12 +23,13 @@ namespace forestdb {
         virtual void operator() (const Document&, EmitFn& emit) =0;
     };
 
+    /** An Index that uses a MapFn to index the documents of another Database. */
     class MapReduceIndex : public Index {
     public:
         MapReduceIndex(std::string path,
-                       forestdb::Database::openFlags,
-                       const forestdb::Database::config&,
-                       forestdb::Database* sourceDatabase);
+                       Database::openFlags,
+                       const Database::config&,
+                       Database* sourceDatabase);
 
         void readState();
         int indexType() const                   {return _indexType;}
@@ -42,7 +43,7 @@ namespace forestdb {
 
     private:
         void invalidate();
-        void saveState(Transaction& t);
+        void saveState(IndexTransaction& t);
         
         forestdb::Database* _sourceDatabase;
         MapFn* _map;

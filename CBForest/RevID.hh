@@ -1,5 +1,5 @@
 //
-//  RevID.h
+//  RevID.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 6/2/14.
@@ -9,7 +9,7 @@
 #ifndef __CBForest__RevID__
 #define __CBForest__RevID__
 
-#include "slice.h"
+#include "slice.hh"
 
 namespace forestdb {
 

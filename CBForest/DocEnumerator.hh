@@ -12,7 +12,7 @@ namespace forestdb {
 
     class DocEnumerator {
     public:
-        struct enumerationOptions {
+        struct Options {
             unsigned        skip;
             unsigned        limit;
 //          bool            descending;     //TODO: Unimplemented in forestdb (MB-10961)
@@ -21,32 +21,30 @@ namespace forestdb {
             bool            onlyConflicts;
             Database::contentOptions  contentOptions;
 
-            static const enumerationOptions kDefault;
+            static const Options kDefault;
         };
 
         DocEnumerator(); // empty enumerator
         DocEnumerator(DatabaseGetters* db,
                       slice startKey = slice::null,
                       slice endKey = slice::null,
-                      const enumerationOptions& options = enumerationOptions::kDefault);
+                      const Options& options = Options::kDefault);
         DocEnumerator(DatabaseGetters* db,
                       sequence start,
                       sequence end = UINT64_MAX,
-                      const enumerationOptions& options = enumerationOptions::kDefault);
+                      const Options& options = Options::kDefault);
         DocEnumerator(DatabaseGetters* db,
                       std::vector<std::string> docIDs,
-                      const enumerationOptions& options = enumerationOptions::kDefault);
-
-
+                      const Options& options = Options::kDefault);
         DocEnumerator(DocEnumerator&& e); // move constructor
         ~DocEnumerator();
+
+        DocEnumerator& operator=(DocEnumerator&& e); // move assignment
 
         bool next();
         bool seek(slice key);
         const Document& doc() const         {return *(Document*)_docP;}
         void close();
-
-        DocEnumerator& operator=(DocEnumerator&& e);
 
         // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
         const DocEnumerator& operator++()   {next(); return *this;}
@@ -57,7 +55,7 @@ namespace forestdb {
         DatabaseGetters* _db;
         fdb_iterator *_iterator;
         alloc_slice _endKey;
-        enumerationOptions _options;
+        Options _options;
         std::vector<std::string> _docIDs;
         int _curDocIndex;
         fdb_doc *_docP;

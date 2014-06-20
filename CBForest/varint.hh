@@ -1,43 +1,26 @@
 //
-//  varint.h
+//  varint.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 3/31/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#ifndef CBForest_varint_h
-#define CBForest_varint_h
+#ifndef CBForest_varint_hh
+#define CBForest_varint_hh
 
 #include <stddef.h>
-#include <stdbool.h>
-#include "slice.h"
+#include "slice.hh"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace forestdb {
 
 // Based on varint implementation from the Go language (src/pkg/encoding/binary/varint.go)
-
 // This file implements "varint" encoding of 64-bit integers.
 // The encoding is:
 // - unsigned integers are serialized 7 bits at a time, starting with the
 //   least significant bits
 // - the most significant bit (msb) in each output byte indicates if there
 //   is a continuation byte (msb = 1)
-// - signed integers are mapped to unsigned integers using "zig-zag"
-//   encoding: Positive values x are written as 2*x + 0, negative values
-//   are written as 2*(^x) + 1; that is, negative numbers are complemented
-//   and whether to complement is encoded in bit 0.
-//
-// Design note:
-// At most 10 bytes are needed for 64-bit values. The encoding could
-// be more dense: a full 64-bit value needs an extra byte just to hold bit 63.
-// Instead, the msb of the previous byte could be used to hold bit 63 since we
-// know there can't be more than 64 bits. This is a trivial improvement and
-// would reduce the maximum encoding length to 9 bytes. However, it breaks the
-// invariant that the msb is always the "continuation bit" and thus makes the
-// format incompatible with a varint encoding for larger numbers (say 128-bit).
 
 
 /** MaxVarintLenN is the maximum length of a varint-encoded N-bit integer. */
@@ -66,8 +49,6 @@ bool ReadUVarInt(slice *buf, uint64_t *n);
     Returns false if there isn't enough room. */
 bool WriteUVarInt(slice *buf, uint64_t n);
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif

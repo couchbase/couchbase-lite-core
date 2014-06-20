@@ -7,7 +7,7 @@
 //
 
 #include "RevTree.hh"
-#include "varint.h"
+#include "varint.hh"
 #include <forestdb.h>
 #include <assert.h>
 #include <ctype.h>
@@ -109,7 +109,6 @@ namespace forestdb {
                 node->oldBodyOffset = _bodyOffset;
             }
             size += sizeForRawNode(&*node);
-            fprintf(stderr, "Node %p size %lu\n", &*node, size);
         }
 
         alloc_slice result(size);
@@ -171,8 +170,7 @@ namespace forestdb {
         dst->parentIndex = ntohs(src->parentIndex);
         const void *data = offsetby(&src->revID, src->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
-        data = offsetby(data, GetUVarInt((::slice){(void*)data, (size_t)len},
-                                         &dst->sequence));
+        data = offsetby(data, GetUVarInt(slice(data, len), &dst->sequence));
         dst->oldBodyOffset = 0;
         if (src->flags & kRevNodeHasData) {
             dst->body.buf = (char*)data;
@@ -204,7 +202,7 @@ namespace forestdb {
 
     const RevNode* RevTree::get(revid revID) const {
         for (auto node = _nodes.begin(); node != _nodes.end(); ++node) {
-            if (node->revID.equal(revID))
+            if (node->revID == revID)
                 return &*node;
         }
         assert(!_unknown);
@@ -521,11 +519,6 @@ namespace forestdb {
                 _nodes[i].parentIndex = parent;
                 }
         _sorted = true;
-
-        fprintf(stderr, "Sorted revs:\n");
-        for (auto node=_nodes.begin(); node != _nodes.end(); ++node) {
-            fprintf(stderr, "    %s\n", ((std::string)node->revID).c_str());
-        }
     }
         
 }

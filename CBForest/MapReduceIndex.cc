@@ -50,7 +50,7 @@ namespace forestdb {
         }
     }
 
-    void MapReduceIndex::saveState(Transaction& t) {
+    void MapReduceIndex::saveState(IndexTransaction& t) {
         Collatable stateKey;
         stateKey.addNull();
 
@@ -88,14 +88,14 @@ namespace forestdb {
         sequence startSequence = _lastSequenceIndexed + 1;
         bool indexChanged = false;
 
-        DocEnumerator::enumerationOptions options = {
+        DocEnumerator::Options options = {
             .includeDeleted = true
         };
         for (DocEnumerator e(_sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
             emitter emit;
             if (!e.doc().deleted())
                 (*_map)(e.doc(), emit); // Call map function!
-            if (update(trans, e->key(), e->sequence(), emit.keys, emit.values))
+            if (trans.update(e->key(), e->sequence(), emit.keys, emit.values))
                 indexChanged = true;
             _lastSequenceIndexed = e->sequence();
         }

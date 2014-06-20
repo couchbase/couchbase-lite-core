@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "slice.h"
+#include "slice.hh"
 #import <Foundation/Foundation.h>
 
 namespace forestdb {

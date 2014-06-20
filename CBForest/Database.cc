@@ -15,6 +15,14 @@
 #include <unordered_map>
 
 
+// Logging:
+#if 0
+#define Log(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS)
+#else
+#define Log(FMT, ARGS...) {}
+#endif
+
+
 namespace forestdb {
 
 #pragma mark - FILE:
@@ -161,8 +169,8 @@ namespace forestdb {
     }
 
     void Document::clearMetaAndBody() {
-        setMeta(NULL);
-        setBody(NULL);
+        setMeta(slice::null);
+        setBody(slice::null);
         _doc.seqnum = 0;
         _doc.offset = 0;
         _doc.deleted = false;
@@ -305,7 +313,7 @@ namespace forestdb {
         check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
 
 #else
-        fprintf(stderr, "WARNING: Transaction::compact is unimplemented\n");
+        Log("WARNING: Transaction::compact is unimplemented\n");
         // UNIMPLEMENTED -- would be nice if FDB had a compact-in-place API call (MB-11426)
 #endif
     }
@@ -323,7 +331,7 @@ namespace forestdb {
         doc.setMeta(meta);
         doc.setBody(body);
         write(doc);
-        fprintf(stderr, "DB %p: added %s --> %s (meta %s) (seq %llu)\n",
+        Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
                 _handle,
                 key.hexString().c_str(),
                 body.hexString().c_str(),
@@ -336,7 +344,7 @@ namespace forestdb {
         Document doc(key);
         doc.setBody(body);
         write(doc);
-        fprintf(stderr, "DB %p: added %s --> %s (seq %llu)\n",
+        Log("DB %p: added %s --> %s (seq %llu)\n",
                 _handle,
                 key.hexString().c_str(),
                 body.hexString().c_str(),

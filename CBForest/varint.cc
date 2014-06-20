@@ -1,15 +1,17 @@
 //
-//  varint.c
+//  varint.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 3/31/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "varint.h"
+#include "varint.hh"
 #include <stdio.h>
-#include "slice.h"
+#include "slice.hh"
 
+
+namespace forestdb {
 
 size_t SizeOfVarInt(uint64_t n) {
     size_t size = 1;
@@ -22,7 +24,7 @@ size_t SizeOfVarInt(uint64_t n) {
 
 
 size_t PutUVarInt(void *buf, uint64_t n) {
-    uint8_t* dst = buf;
+    uint8_t* dst = (uint8_t*)buf;
     while (n >= 0x80) {
         *dst++ = (n & 0xFF) | 0x80;
         n >>= 7;
@@ -57,8 +59,7 @@ bool ReadUVarInt(slice *buf, uint64_t *n) {
     size_t bytesRead = GetUVarInt(*buf, n);
     if (bytesRead == 0)
         return false;
-    buf->buf += bytesRead;
-    buf->size -= bytesRead;
+    buf->moveStart(bytesRead);
     return true;
 }
 
@@ -67,7 +68,8 @@ bool WriteUVarInt(slice *buf, uint64_t n) {
     if (buf->size < kMaxVarintLen64 && buf->size < SizeOfVarInt(n))
         return false;
     size_t bytesWritten = PutUVarInt((void*)buf->buf, n);
-    buf->buf += bytesWritten;
-    buf->size -= bytesWritten;
+    buf->moveStart(bytesWritten);
     return true;
+}
+
 }

@@ -9,6 +9,13 @@
 #include "DocEnumerator.hh"
 #include "forestdb.h"
 
+// Logging:
+#if 0
+#define Log(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS)
+#else
+#define Log(FMT, ARGS...) {}
+#endif
+
 namespace forestdb {
 
 #pragma mark - ENUMERATION:
@@ -20,10 +27,10 @@ namespace forestdb {
     }
 
 
-    const DocEnumerator::enumerationOptions DocEnumerator::enumerationOptions::kDefault = {
+    const DocEnumerator::Options DocEnumerator::Options::kDefault = {
         .skip = 0,
         .limit = UINT_MAX,
-//        .descending = false,
+//      .descending = false,
         .inclusiveEnd = true,
         .includeDeleted = false,
         .onlyConflicts = false,
@@ -31,7 +38,7 @@ namespace forestdb {
     };
 
 
-    static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::enumerationOptions& options) {
+    static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::Options& options) {
         fdb_iterator_opt_t fdbOptions = 0;
         if (options.contentOptions & DatabaseGetters::kMetaOnly)
             fdbOptions |= FDB_ITR_METAONLY;
@@ -43,14 +50,14 @@ namespace forestdb {
     
     DocEnumerator::DocEnumerator(DatabaseGetters* db,
                                  slice startKey, slice endKey,
-                                 const enumerationOptions& options)
+                                 const Options& options)
     :_db(db),
      _iterator(NULL),
      _endKey(endKey),
      _options(options),
      _docP(NULL)
     {
-        fprintf(stderr, "enum: DocEnumerator(%p, [%s] -- [%s]) --> %p\n",
+        Log("enum: DocEnumerator(%p, [%s] -- [%s]) --> %p\n",
                 db,
                 startKey.hexString().c_str(),
                 endKey.hexString().c_str(), this);
@@ -64,14 +71,14 @@ namespace forestdb {
 
     DocEnumerator::DocEnumerator(DatabaseGetters* db,
                                  sequence start, sequence end,
-                                 const enumerationOptions& options)
+                                 const Options& options)
     :_db(db),
      _iterator(NULL),
      _endKey(),
      _options(options),
      _docP(NULL)
     {
-        fprintf(stderr, "enum: DocEnumerator(%p, #%llu -- #%llu) --> %p\n",
+        Log("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p\n",
                 db, start, end, this);
         check(fdb_iterator_sequence_init(db->_handle, &_iterator,
                                          start, end,
@@ -81,7 +88,7 @@ namespace forestdb {
 
     DocEnumerator::DocEnumerator(DatabaseGetters* db,
                                  std::vector<std::string> docIDs,
-                                 const enumerationOptions& options)
+                                 const Options& options)
     :_db(db),
      _iterator(NULL),
      _endKey(),
@@ -90,7 +97,7 @@ namespace forestdb {
      _curDocIndex(-1),
      _docP(NULL)
     {
-        fprintf(stderr, "enum: DocEnumerator(%p, %zu keys) --> %p\n",
+        Log("enum: DocEnumerator(%p, %zu keys) --> %p\n",
                 db, docIDs.size(), this);
         if (docIDs.size() == 0)
             return;
@@ -103,7 +110,7 @@ namespace forestdb {
     :_iterator(NULL),
      _docP(NULL)
     {
-        fprintf(stderr, "enum: DocEnumerator() --> %p\n", this);
+        Log("enum: DocEnumerator() --> %p\n", this);
     }
 
     DocEnumerator::DocEnumerator(DocEnumerator&& e)
@@ -115,18 +122,18 @@ namespace forestdb {
      _curDocIndex(e._curDocIndex),
      _docP(e._docP)
     {
-        fprintf(stderr, "enum: move ctor (from %p) --> %p\n", &e, this);
+        Log("enum: move ctor (from %p) --> %p\n", &e, this);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
         e._docP = NULL;
     }
 
     DocEnumerator::~DocEnumerator() {
-        fprintf(stderr, "enum: ~DocEnumerator(%p)\n", this);
+        Log("enum: ~DocEnumerator(%p)\n", this);
         close();
     }
 
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
-        fprintf(stderr, "enum: operator= %p <-- %p\n", &e, this);
+        Log("enum: operator= %p <-- %p\n", &e, this);
         _db = e._db;
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
@@ -151,7 +158,7 @@ namespace forestdb {
 
 
     void DocEnumerator::close() {
-        fprintf(stderr, "enum: close %p (free %p, close %p)\n", this, _docP, _iterator);
+        Log("enum: close %p (free %p, close %p)\n", this, _docP, _iterator);
         freeDoc();
         if (_iterator) {
             fdb_iterator_close(_iterator);
@@ -169,25 +176,25 @@ namespace forestdb {
             // Regular iteration:
             freeDoc();
             status = fdb_iterator_next(_iterator, &_docP);
-            fprintf(stderr, "enum: fdb_iterator_next --> %d\n", status);
+            Log("enum: fdb_iterator_next --> %d\n", status);
             if (status == FDB_RESULT_ITERATOR_FAIL) {
                 close();
                 return false;
             }
             check(status);
-            if (!_options.inclusiveEnd && doc().key().equal(_endKey)) {
+            if (!_options.inclusiveEnd && doc().key() == _endKey) {
                 close();
                 return false;
             }
         } else {
             // Iterating over a vector of docIDs:
            if (++_curDocIndex >= _docIDs.size()) {
-                fprintf(stderr, "enum: at end of vector\n");
+                Log("enum: at end of vector\n");
                 close();
                 return false;
             }
             slice docID = _docIDs[_curDocIndex];
-            if (!seek(docID) || !slice(_docP->key, _docP->keylen).equal(docID)) {
+            if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
                 // If the current doc doesn't match the docID, then the docID doesn't exist:
                 fdb_doc_free(_docP);
                 fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
@@ -197,7 +204,7 @@ namespace forestdb {
     }
 
     bool DocEnumerator::seek(slice key) {
-        fprintf(stderr, "enum: seek([%s])\n", key.hexString().c_str());
+        Log("enum: seek([%s])\n", key.hexString().c_str());
         if (!_iterator)
             return false;
 

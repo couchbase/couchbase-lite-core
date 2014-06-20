@@ -10,7 +10,7 @@
 #define __CBForest__Database__
 #include "Error.hh"
 #include "forestdb.h"
-#include "slice.h"
+#include "slice.hh"
 #include <vector>
 
 #ifdef check

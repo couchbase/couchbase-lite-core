@@ -1,5 +1,5 @@
 //
-//  RevTree.h
+//  RevTree.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/13/14.
@@ -9,7 +9,7 @@
 #ifndef __CBForest__RevTree__
 #define __CBForest__RevTree__
 
-#include "slice.h"
+#include "slice.hh"
 #include "RevID.hh"
 #include "Database.hh"
 #include <vector>
@@ -55,6 +55,7 @@ namespace forestdb {
     };
 
 
+    /** A serializable tree of RevNodes. */
     class RevTree {
     public:
         RevTree();

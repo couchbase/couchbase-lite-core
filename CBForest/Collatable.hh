@@ -1,5 +1,5 @@
 //
-//  Collatable.h
+//  Collatable.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/14/14.
@@ -11,10 +11,13 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
-#include "slice.h"
+#include "slice.hh"
 
 namespace forestdb {
 
+    /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics
+        using a dumb binary compare (like memcmp).
+        Collatable owns its data, in the form of a C++ string object. */
     class Collatable {
     public:
         Collatable();
@@ -29,7 +32,7 @@ namespace forestdb {
         Collatable& operator<< (uint64_t i)         {return *this << (int64_t)i;}
 
         // WARNING: Doubles written do NOT yet collate correctly, so they can't be used as keys
-        // in Indexes. This feature has only been added so doubles can be stored as Index values.
+        // in Indexes. This method has only been added so doubles can be stored as Index values.
         Collatable& operator<< (double);
 
         Collatable& operator<< (const Collatable&);
@@ -44,10 +47,7 @@ namespace forestdb {
         Collatable& endMap()                        {addTag(0); return *this;}
 
 #ifdef __OBJC__
-        Collatable(id obj) {
-            if (obj)
-                *this << obj;
-        }
+        Collatable(id obj)                          { if (obj) *this << obj;}
         Collatable& operator<< (id);
 #endif
 
@@ -65,6 +65,7 @@ namespace forestdb {
     };
 
 
+    /** A decoder of Collatable-format data. Does not own its data (reads from a slice.) */
     class CollatableReader {
     public:
         typedef enum {
