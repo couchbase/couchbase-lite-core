@@ -53,7 +53,7 @@ static revidBuffer stringToRev(NSString* str) {
 
 - (void) test02_RevTreeInsert {
     RevTree tree;
-    const RevNode* rev;
+    const Revision* rev;
     revidBuffer rev1ID(forestdb::slice("1-aaaa"));
     forestdb::slice rev1Data("body of revision");
     int httpStatus;
@@ -63,7 +63,7 @@ static revidBuffer stringToRev(NSString* str) {
     AssertEq(httpStatus, 201);
     Assert(rev->revID.equal(rev1ID));
     Assert(rev->body.equal(rev1Data));
-    AssertEq(rev->parentIndex, RevNode::kNoParent);
+    AssertEq(rev->parentIndex, Revision::kNoParent);
     Assert(!rev->isDeleted());
 
     revidBuffer rev2ID(forestdb::slice("2-bbbb"));
@@ -105,7 +105,7 @@ static revidBuffer stringToRev(NSString* str) {
     v.insert(revIDBuf, body, false, NULL, false, httpStatus);
     AssertEq(httpStatus, 201);
 
-    const RevNode* node = v.get(stringToRev(revID));
+    const Revision* node = v.get(stringToRev(revID));
     Assert(node);
     Assert(!node->isDeleted());
     Assert(node->isLeaf());

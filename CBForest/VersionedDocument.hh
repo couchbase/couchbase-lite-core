@@ -24,16 +24,17 @@ namespace forestdb {
         };
 
         VersionedDocument(Database* db, slice docID);
-        VersionedDocument(Database* db, const Document& doc);
-        VersionedDocument(Database* db, Document&& doc);
+        VersionedDocument(Database* db, const Document&);
+        VersionedDocument(Database* db, Document&&);
 
-        /** Returns false if the document was loaded metadata-only. Node accessors will fail. */
-        bool nodesAvailable() const {return !_unknown;}
+        /** Returns false if the document was loaded metadata-only. Revision accessors will fail. */
+        bool revsAvailable() const {return !_unknown;}
 
         slice docID() const         {return _doc.key();}
         revid revID() const;
         Flags flags() const;
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}
+        bool isConflicted() const   {return (flags() & kConflicted) != 0;}
 
         bool exists() const         {return _doc.exists();}
         sequence sequence() const   {return _doc.sequence();}
@@ -41,9 +42,12 @@ namespace forestdb {
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 
+        /** Gets the flags from a document without having to instantiate a VersionedDocument */
+        static Flags flagsOfDocument(const Document&);
+
     protected:
-        virtual bool isBodyOfNodeAvailable(const RevNode* node) const;
-        virtual alloc_slice readBodyOfNode(const RevNode*) const;
+        virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
+        virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
 
     private:
         void decode();

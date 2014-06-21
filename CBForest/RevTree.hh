@@ -18,26 +18,18 @@
 namespace forestdb {
 
     class RevTree;
+    class RawRevision;
 
     /** In-memory representation of a single revision's metadata. */
-    struct RevNode {
+    class Revision {
+    public:
+        const RevTree*  owner;
+        revid           revID;      /**< Revision ID (compressed) */
+        fdb_seqnum_t    sequence;   /**< DB sequence number that this revision has/had */
+        slice           body;       /**< Revision body (JSON), or empty if not stored in this tree */
 
-        enum {
-            kDeleted = 0x01,    /**< Is this revision a deletion/tombstone? */
-            kLeaf    = 0x02,    /**< Is this revision a leaf (no children?) */
-            kNew     = 0x04     /**< Has this node been inserted since decoding? */
-        };
-        typedef uint8_t Flags;
-
-        static const uint16_t kNoParent = UINT16_MAX;
-
-        const RevTree* owner;
-        revid       revID;          /**< Revision ID (compressed) */
-        slice       body;           /**< Revision body (JSON), or empty if not stored in this tree */
-        uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
-        fdb_seqnum_t sequence;      /**< DB sequence number that this revision has/had */
-        uint16_t    parentIndex;    /**< Index in tree's node[] array of parent revision, if any */
-        Flags       flags;          /**< Leaf/deleted flags */
+        inline bool isBodyAvailable() const;
+        inline alloc_slice readBody() const;
 
         bool isLeaf() const    {return (flags & kLeaf) != 0;}
         bool isDeleted() const {return (flags & kDeleted) != 0;}
@@ -45,17 +37,35 @@ namespace forestdb {
         bool isActive() const  {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
-        const RevNode* parent() const;
-        std::vector<const RevNode*> history() const;
+        const Revision* parent() const;
+        std::vector<const Revision*> history() const;
 
-        inline bool isBodyAvailable() const;
-        inline alloc_slice readBody() const;
+        bool operator< (const Revision& rev) const;
 
-        bool operator< (const RevNode& rev) const;
+    private:
+        enum Flags : uint8_t {
+            kDeleted = 0x01,    /**< Is this revision a deletion/tombstone? */
+            kLeaf    = 0x02,    /**< Is this revision a leaf (no children?) */
+            kNew     = 0x04     /**< Has this rev been inserted since decoding? */
+        };
+
+        static const uint16_t kNoParent = UINT16_MAX;
+        
+        uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
+        uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
+        Flags       flags;          /**< Leaf/deleted flags */
+
+        void read(const RawRevision *src);
+        RawRevision* write(RawRevision* dst, uint64_t bodyOffset) const;
+        size_t sizeToWrite() const;
+        void addFlag(Flags f)      {flags = (Flags)(flags | f);}
+        void clearFlag(Flags f)    {flags = (Flags)(flags & ~f);}
+        friend class RevTree;
+        friend class RawRevision;
     };
 
 
-    /** A serializable tree of RevNodes. */
+    /** A serializable tree of Revisions. */
     class RevTree {
     public:
         RevTree();
@@ -66,24 +76,23 @@ namespace forestdb {
 
         alloc_slice encode();
 
-        size_t size() const                             {return _nodes.size();}
-        const RevNode* get(unsigned index) const;
-        const RevNode* get(revid) const;
-        const RevNode* operator[](unsigned index) const {return get(index);}
-        const RevNode* operator[](revid revID) const    {return get(revID);}
+        size_t size() const                             {return _revs.size();}
+        const Revision* get(unsigned index) const;
+        const Revision* get(revid) const;
+        const Revision* operator[](unsigned index) const {return get(index);}
+        const Revision* operator[](revid revID) const    {return get(revID);}
 
-        const std::vector<RevNode>& allNodes() const    {return _nodes;}
-        const RevNode* currentNode();
-        std::vector<const RevNode*> currentNodes() const;
+        const std::vector<Revision>& allRevisions() const    {return _revs;}
+        const Revision* currentRevision();
+        std::vector<const Revision*> currentRevisions() const;
         bool hasConflict() const;
 
-
-        const RevNode* insert(revid, slice body, bool deleted,
+        const Revision* insert(revid, slice body, bool deleted,
                               revid parentRevID,
                               bool allowConflict,
                               int &httpStatus);
-        const RevNode* insert(revid, slice body, bool deleted,
-                              const RevNode* parent,
+        const Revision* insert(revid, slice body, bool deleted,
+                              const Revision* parent,
                               bool allowConflict,
                               int &httpStatus);
         int insertHistory(const std::vector<revid> history, slice body, bool deleted);
@@ -94,18 +103,18 @@ namespace forestdb {
         void sort();
 
     protected:
-        virtual bool isBodyOfNodeAvailable(const RevNode*) const;
-        virtual alloc_slice readBodyOfNode(const RevNode*) const;
+        virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
+        virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
 
     private:
-        friend struct RevNode;
-        const RevNode* _insert(revid, slice body, const RevNode *parentNode, bool deleted);
+        friend class Revision;
+        const Revision* _insert(revid, slice body, const Revision *parentRev, bool deleted);
         void compact();
         RevTree(const RevTree&); // forbidden
 
         uint64_t    _bodyOffset;     // File offset of body this tree was read from
-        bool        _sorted;         // Are the nodes currently sorted?
-        std::vector<RevNode> _nodes;
+        bool        _sorted;         // Are the revs currently sorted?
+        std::vector<Revision> _revs;
         std::vector<alloc_slice> _insertedData;
     protected:
         bool _changed;
@@ -113,11 +122,11 @@ namespace forestdb {
     };
 
 
-    inline bool RevNode::isBodyAvailable() const {
-        return owner->isBodyOfNodeAvailable(this);
+    inline bool Revision::isBodyAvailable() const {
+        return owner->isBodyOfRevisionAvailable(this, oldBodyOffset);
     }
-    inline alloc_slice RevNode::readBody() const {
-        return owner->readBodyOfNode(this);
+    inline alloc_slice Revision::readBody() const {
+        return owner->readBodyOfRevision(this, oldBodyOffset);
     }
 
 }

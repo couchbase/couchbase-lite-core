@@ -96,7 +96,8 @@ namespace forestdb {
      _options(options),
      _inclusiveEnd(options.inclusiveEnd),
      _currentKeyIndex(-1),
-     _dbEnum(&_index, (slice)makeRealKey(startKey, startKeyDocID, false),
+     _dbEnum(&_index,
+             (slice)makeRealKey(startKey, startKeyDocID, false),
              (slice)makeRealKey(endKey, endKeyDocID, true),
              options)
     {

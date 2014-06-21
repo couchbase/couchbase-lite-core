@@ -46,17 +46,21 @@ namespace forestdb {
     }
 
     VersionedDocument::Flags VersionedDocument::flags() const {
-        slice meta = _doc.meta();
+        return flagsOfDocument(_doc);
+    }
+
+    VersionedDocument::Flags VersionedDocument::flagsOfDocument(const Document& doc) {
+        slice meta = doc.meta();
         if (meta.size < 1)
             return 0;
         return meta[0];
     }
 
     void VersionedDocument::updateMeta() {
-        const RevNode* curNode = currentNode();
-        slice revID = curNode->revID;
+        const Revision* curRevision = currentRevision();
+        slice revID = curRevision->revID;
         Flags flags = 0;
-        if (curNode->isDeleted())
+        if (curRevision->isDeleted())
             flags |= kDeleted;
         if (hasConflict())
             flags |= kConflicted;
@@ -67,37 +71,37 @@ namespace forestdb {
         _doc.setMeta(newMeta);
     }
 
-    bool VersionedDocument::isBodyOfNodeAvailable(const RevNode* node) const {
-        if (node->body.buf)
+    bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {
+        if (rev->body.buf)
             return true;
-        if (node->oldBodyOffset == 0)
+        if (atOffset == 0)
             return false;
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset, node->sequence));
-        if (oldVersDoc.sequence() != node->sequence)
+        VersionedDocument oldVersDoc(_db, _db->getByOffset(atOffset, rev->sequence));
+        if (oldVersDoc.sequence() != rev->sequence)
             return false;
-        node = oldVersDoc.get(node->revID);
-        return (node && node->body.buf);
+        rev = oldVersDoc.get(rev->revID);
+        return (rev && rev->body.buf);
     }
 
-    alloc_slice VersionedDocument::readBodyOfNode(const RevNode* node) const {
-        if (node->body.buf)
-            return alloc_slice(node->body);
-        if (node->oldBodyOffset == 0)
+    alloc_slice VersionedDocument::readBodyOfRevision(const Revision* rev, uint64_t atOffset) const {
+        if (rev->body.buf)
+            return alloc_slice(rev->body);
+        if (atOffset == 0)
             return alloc_slice();
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(node->oldBodyOffset, node->sequence));
-        if (oldVersDoc.sequence() != node->sequence)
+        VersionedDocument oldVersDoc(_db, _db->getByOffset(atOffset, rev->sequence));
+        if (oldVersDoc.sequence() != rev->sequence)
             return alloc_slice();
-        node = oldVersDoc.get(node->revID);
-        if (!node)
+        rev = oldVersDoc.get(rev->revID);
+        if (!rev)
             return alloc_slice();
-        return alloc_slice(node->body);
+        return alloc_slice(rev->body);
     }
 
     void VersionedDocument::save(Transaction& transaction) {
         if (!_changed)
             return;
         updateMeta();
-        // Don't call _doc.setBody() because it'll invalidate all the pointers from RevNodes into
+        // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
         // the existing body buffer.
         transaction.set(_doc.key(), _doc.meta(), encode());
         _changed = false;
