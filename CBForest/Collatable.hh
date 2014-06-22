@@ -83,7 +83,7 @@ namespace forestdb {
 
         CollatableReader(slice s) :_data(s) { }
 
-        Tag nextTag() const;
+        Tag peekTag() const;
 
         int64_t readInt();
         double readDouble();
@@ -91,6 +91,7 @@ namespace forestdb {
 
 #ifdef __OBJC__
         id readNSObject();
+        NSString* readNSString();
 #endif
 
         /** Reads (skips) an entire object of any type, returning its data in Collatable form. */
@@ -104,8 +105,11 @@ namespace forestdb {
         void dumpTo(std::ostream &out);
         std::string dump();
 
+        static uint8_t* getInverseCharPriorityMap();
+
     private:
         void expectTag(Tag tag);
+        void skipTag()                      {_data.moveStart(1);}
         
         slice _data;
     };

@@ -327,29 +327,48 @@ namespace forestdb {
     }
 
     sequence Transaction::set(slice key, slice meta, slice body) {
-        Document doc(key);
-        doc.setMeta(meta);
-        doc.setBody(body);
-        write(doc);
+        if ((size_t)key.buf & 1) {
+            void* keybuf = alloca(key.size);
+            memcpy(keybuf, key.buf, key.size);
+            key.buf = keybuf;
+        }
+        fdb_doc doc = {
+            .key = (void*)key.buf,
+            .keylen = key.size,
+            .meta = (void*)meta.buf,
+            .metalen = meta.size,
+            .body  = (void*)body.buf,
+            .bodylen = body.size,
+        };
+        check(fdb_set(_handle, &doc));
         Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
                 _handle,
                 key.hexString().c_str(),
                 body.hexString().c_str(),
                 meta.hexString().c_str(),
-                doc.sequence());
-        return doc.sequence();
+                doc.seqnum);
+        return doc.seqnum;
     }
 
     sequence Transaction::set(slice key, slice body) {
-        Document doc(key);
-        doc.setBody(body);
-        write(doc);
+        if ((size_t)key.buf & 1) {
+            void* keybuf = alloca(key.size);
+            memcpy(keybuf, key.buf, key.size);
+            key.buf = keybuf;
+        }
+        fdb_doc doc = {
+            .key = (void*)key.buf,
+            .keylen = key.size,
+            .body  = (void*)body.buf,
+            .bodylen = body.size,
+        };
+        check(fdb_set(_handle, &doc));
         Log("DB %p: added %s --> %s (seq %llu)\n",
                 _handle,
                 key.hexString().c_str(),
                 body.hexString().c_str(),
-                doc.sequence());
-        return doc.sequence();
+                doc.seqnum);
+        return doc.seqnum;
     }
 
     void Transaction::del(forestdb::Document &doc) {
@@ -357,8 +376,11 @@ namespace forestdb {
     }
 
     void Transaction::del(forestdb::slice key) {
-        Document doc(key);
-        del(doc);
+        fdb_doc doc = {
+            .key = (void*)key.buf,
+            .keylen = key.size,
+        };
+        check(fdb_del(_handle, &doc));
     }
 
     void Transaction::del(sequence seq) {

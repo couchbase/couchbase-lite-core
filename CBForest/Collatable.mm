@@ -53,24 +53,52 @@ namespace forestdb {
     }
 
 
+    static NSString* decodeNSString(slice buf, slice &data) {
+        const uint8_t* toChar = CollatableReader::getInverseCharPriorityMap();
+        for (int i=0; i<buf.size; i++)
+            (uint8_t&)buf[i] = toChar[data[i]];
+        data.moveStart(buf.size+1);
+        return (NSString*)buf;
+    }
+
+
+    NSString* CollatableReader::readNSString() {
+        expectTag(kString);
+        const void* end = _data.findByte(0);
+        if (!end)
+            throw "malformed string";
+        size_t nBytes = _data.offsetOf(end);
+
+        if (nBytes > 1024) {
+            alloc_slice buf(nBytes);
+            return decodeNSString(buf, _data);
+        } else {
+            uint8_t buf[nBytes];
+            return decodeNSString(slice(buf, nBytes), _data);
+        }
+    }
+    
     id CollatableReader::readNSObject() {
-        switch (nextTag()) {
+        switch (peekTag()) {
             case kNull:
+                skipTag();
                 return [NSNull null];
             case kFalse:
+                skipTag();
                 return @NO;
             case kTrue:
+                skipTag();
                 return @YES;
             case kNumber:
                 return @(readInt());
             case kDouble:
                 return @(readDouble());
             case kString:
-                return (NSString*)readString();
+                return readNSString();
             case kArray: {
                 beginArray();
                 NSMutableArray* result = [NSMutableArray array];
-                while (nextTag() != 0)
+                while (peekTag() != 0)
                     [result addObject: readNSObject()];
                 endArray();
                 return result;
@@ -78,7 +106,7 @@ namespace forestdb {
             case kMap: {
                 beginMap();
                 NSMutableDictionary* result = [NSMutableDictionary dictionary];
-                while (nextTag() != 0) {
+                while (peekTag() != 0) {
                     NSString* key = (NSString*)readString();
                     result[key] = readNSObject();
                 }

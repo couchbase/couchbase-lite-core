@@ -13,7 +13,6 @@
 namespace forestdb {
 
     static uint8_t* getCharPriorityMap();
-    static uint8_t* getInverseCharPriorityMap();
 
 
     Collatable::Collatable()
@@ -103,7 +102,7 @@ namespace forestdb {
 #pragma mark - READER:
 
 
-    CollatableReader::Tag CollatableReader::nextTag() const {
+    CollatableReader::Tag CollatableReader::peekTag() const {
         return _data.size ? (Tag)_data[0] : kEndSequence;
     }
 
@@ -226,14 +225,17 @@ namespace forestdb {
     }
 
     void CollatableReader::dumpTo(std::ostream &out) {
-        switch(nextTag()) {
+        switch(peekTag()) {
             case kNull:
+                skipTag();
                 out << "null";
                 break;
             case kFalse:
+                skipTag();
                 out << "false";
                 break;
             case kTrue:
+                skipTag();
                 out << "true";
                 break;
             case kNumber:
@@ -248,7 +250,7 @@ namespace forestdb {
             case kArray:
                 out << '[';
                 beginArray();
-                while (nextTag() != kEndSequence)
+                while (peekTag() != kEndSequence)
                     dumpTo(out);
                 endArray();
                 out << ']';
@@ -256,7 +258,7 @@ namespace forestdb {
             case kMap:
                 out << '{';
                 beginMap();
-                while (nextTag() != kEndSequence) {
+                while (peekTag() != kEndSequence) {
                     dumpTo(out);
                     out << ':';
                     dumpTo(out);
@@ -298,7 +300,7 @@ namespace forestdb {
         return kCharPriority;
     }
 
-    static uint8_t* getInverseCharPriorityMap() {
+    uint8_t* CollatableReader::getInverseCharPriorityMap() {
         static uint8_t kMap[256];
         static bool initialized;
         if (!initialized) {
@@ -306,6 +308,7 @@ namespace forestdb {
             uint8_t* priorityMap = getCharPriorityMap();
             for (int i=0; i<256; i++)
                 kMap[priorityMap[i]] = (uint8_t)i;
+            initialized = true;
         }
         return kMap;
     }

@@ -41,7 +41,7 @@ namespace forestdb {
 
         Document state = get(stateKey);
         CollatableReader reader(state.body());
-        if (reader.nextTag() == CollatableReader::kArray) {
+        if (reader.peekTag() == CollatableReader::kArray) {
             reader.beginArray();
             _lastSequenceIndexed = reader.readInt();
             _lastSequenceChangedAt = reader.readInt();
