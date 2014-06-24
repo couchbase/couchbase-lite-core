@@ -65,10 +65,9 @@ namespace forestdb {
         if (hasConflict())
             flags |= kConflicted;
 
-        alloc_slice newMeta(1+revID.size);
-        (uint8_t&)newMeta[0] = flags;
-        memcpy((void*)&newMeta[1], revID.buf, revID.size);
-        _doc.setMeta(newMeta);
+        slice meta = _doc.resizeMeta(1+revID.size);
+        (uint8_t&)meta[0] = flags;
+        memcpy((void*)&meta[1], revID.buf, revID.size);
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {

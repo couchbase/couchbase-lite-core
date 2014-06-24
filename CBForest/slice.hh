@@ -61,10 +61,13 @@ namespace forestdb {
 
 #ifdef __OBJC__
         slice(NSData* data)                         :buf(data.bytes), size(data.length) {}
-        slice(NSString* str);
 
-        explicit operator NSData*() const;
         explicit operator NSString*() const;
+
+        NSData* copiedNSData() const;
+
+        /** Creates an NSData using initWithBytesNoCopy, i.e. it doesn't own the bytes */
+        NSData* uncopiedNSData() const;
 #endif
     };
 
@@ -89,6 +92,16 @@ namespace forestdb {
     private:
         static void* alloc(const void* src, size_t size);
     };
+
+#ifdef __OBJC__
+    struct nsstring_slice : public slice {
+        nsstring_slice(NSString*);
+        ~nsstring_slice();
+    private:
+        char _local[127];
+        bool _needsFree;
+    };
+#endif
 }
 
 #endif

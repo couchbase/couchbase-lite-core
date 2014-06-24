@@ -143,6 +143,8 @@ namespace forestdb {
         void setMeta(slice meta);
         void setBody(slice body);
 
+        slice resizeMeta(size_t);
+
         void clearMetaAndBody();
 
         sequence sequence() const   {return _doc.seqnum;}

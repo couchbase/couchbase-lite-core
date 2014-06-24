@@ -186,6 +186,17 @@ namespace forestdb {
     void Document::setMeta(slice meta) {_assign(_doc.meta, _doc.metalen, meta);}
     void Document::setBody(slice body) {_assign(_doc.body, _doc.bodylen, body);}
 
+    slice Document::resizeMeta(size_t newSize) {
+        if (newSize != _doc.metalen) {
+            void* newMeta = realloc(_doc.meta, newSize);
+            if (!newMeta)
+                throw std::bad_alloc();
+            _doc.meta = newMeta;
+            _doc.metalen = newSize;
+        }
+        return meta();
+    }
+
 
 
 #pragma mark - TRANSACTION:
