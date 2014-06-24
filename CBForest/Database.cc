@@ -327,7 +327,8 @@ namespace forestdb {
     }
 
     sequence Transaction::set(slice key, slice meta, slice body) {
-        if ((size_t)key.buf & 1) {
+        if ((size_t)key.buf & 0x03) {
+            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
             void* keybuf = alloca(key.size);
             memcpy(keybuf, key.buf, key.size);
             key.buf = keybuf;
@@ -351,7 +352,8 @@ namespace forestdb {
     }
 
     sequence Transaction::set(slice key, slice body) {
-        if ((size_t)key.buf & 1) {
+        if ((size_t)key.buf & 0x03) {
+            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
             void* keybuf = alloca(key.size);
             memcpy(keybuf, key.buf, key.size);
             key.buf = keybuf;
@@ -376,6 +378,12 @@ namespace forestdb {
     }
 
     void Transaction::del(forestdb::slice key) {
+        if ((size_t)key.buf & 0x03) {
+            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
+            void* keybuf = alloca(key.size);
+            memcpy(keybuf, key.buf, key.size);
+            key.buf = keybuf;
+        }
         fdb_doc doc = {
             .key = (void*)key.buf,
             .keylen = key.size,
