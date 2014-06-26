@@ -27,6 +27,10 @@ namespace forestdb {
         VersionedDocument(Database* db, const Document&);
         VersionedDocument(Database* db, Document&&);
 
+#ifdef __OBJC__
+        VersionedDocument(Database* db, NSString* docID);
+#endif
+
         /** Returns false if the document was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 

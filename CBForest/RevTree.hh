@@ -82,6 +82,10 @@ namespace forestdb {
         const Revision* operator[](unsigned index) const {return get(index);}
         const Revision* operator[](revid revID) const    {return get(revID);}
 
+#ifdef __OBJC__
+        const Revision* get(NSString* revID) const;
+#endif
+
         const std::vector<Revision>& allRevisions() const    {return _revs;}
         const Revision* currentRevision();
         std::vector<const Revision*> currentRevisions() const;

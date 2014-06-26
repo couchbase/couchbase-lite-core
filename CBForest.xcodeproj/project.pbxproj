@@ -129,6 +129,8 @@
 		2750730318E4ACE100A80C5A /* time_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072EF18E4ACE100A80C5A /* time_utils.h */; };
 		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
+		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
+		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
@@ -516,6 +518,7 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
+		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../CBForest/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
@@ -944,6 +947,7 @@
 				27E487221922A64F007D8940 /* RevTree.hh */,
 				27E487291923F24D007D8940 /* VersionedDocument.cc */,
 				27E4872A1923F24D007D8940 /* VersionedDocument.hh */,
+				275F1444195CC588009DADB2 /* VersionedDocument.mm */,
 				27E487311924242C007D8940 /* Index.cc */,
 				27E487321924242C007D8940 /* Index.hh */,
 				27E4873819255EA8007D8940 /* MapReduceIndex.cc */,
@@ -1553,6 +1557,7 @@
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
 				27E487341924242C007D8940 /* Index.cc in Sources */,
+				275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1664,6 +1669,7 @@
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
+				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
