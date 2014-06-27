@@ -21,6 +21,7 @@ namespace forestdb {
         enum {
             kDeleted    = 0x01,
             kConflicted = 0x02,
+            kHasAttachments = 0x04
         };
 
         VersionedDocument(Database* db, slice docID);
@@ -31,6 +32,9 @@ namespace forestdb {
         VersionedDocument(Database* db, NSString* docID);
 #endif
 
+        /** Reads and parses the body of the document. Useful if doc was read as meta-only. */
+        void read();
+
         /** Returns false if the document was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 
@@ -39,6 +43,7 @@ namespace forestdb {
         Flags flags() const;
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}
         bool isConflicted() const   {return (flags() & kConflicted) != 0;}
+        bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
 
         bool exists() const         {return _doc.exists();}
         sequence sequence() const   {return _doc.sequence();}

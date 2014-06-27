@@ -14,8 +14,7 @@ namespace forestdb {
     VersionedDocument::VersionedDocument(Database* db, slice docID)
     :_db(db), _doc(docID)
     {
-        _db->read(_doc);
-        decode();
+        read();
     }
 
     VersionedDocument::VersionedDocument(Database* db, const Document& doc)
@@ -30,11 +29,17 @@ namespace forestdb {
         decode();
     }
 
+    void VersionedDocument::read() {
+        _db->read(_doc);
+        decode();
+    }
+
     void VersionedDocument::decode() {
+        _unknown = false;
         if (_doc.body().buf)
             RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
-        else
-            _unknown = _doc.body().size > 0;        // i.e. doc was read as meta-only
+        else if (_doc.body().size > 0)
+            _unknown = true;        // i.e. doc was read as meta-only
     }
 
     revid VersionedDocument::revID() const {
@@ -64,6 +69,13 @@ namespace forestdb {
             flags |= kDeleted;
         if (hasConflict())
             flags |= kConflicted;
+
+        for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
+            if (rev->hasAttachments()) {
+                flags |= kHasAttachments;
+                break;
+            }
+        }
 
         slice meta = _doc.resizeMeta(1+revID.size);
         (uint8_t&)meta[0] = flags;

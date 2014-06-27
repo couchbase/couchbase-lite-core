@@ -29,9 +29,9 @@ namespace forestdb {
     public:
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
-            kPublicPersistentFlags = (Revision::kLeaf | Revision::kDeleted),
+            kPublicPersistentFlags = (Revision::kLeaf | Revision::kDeleted | Revision::kHasAttachments),
+            kHasBodyOffset = 0x40,  /**< Does this raw rev have a file position (oldBodyOffset)? */
             kHasData       = 0x80,  /**< Does this raw rev contain JSON data? */
-            kHasBodyOffset = 0x40   /**< Does this raw rev have a file position (oldBodyOffset)? */
         };
         
         uint32_t        size;           // Total size of this tree rev
@@ -268,9 +268,10 @@ namespace forestdb {
 
     // Lowest-level insert method. Does no sanity checking, always inserts.
     const Revision* RevTree::_insert(revid unownedRevID,
-                                    slice body,
-                                    const Revision *parentRev,
-                                    bool deleted)
+                                     slice body,
+                                     const Revision *parentRev,
+                                     bool deleted,
+                                     bool hasAttachments)
     {
         assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
@@ -288,6 +289,8 @@ namespace forestdb {
         newRev.flags = (Revision::Flags)(Revision::kLeaf | Revision::kNew);
         if (deleted)
             newRev.addFlag(Revision::kDeleted);
+        if (hasAttachments)
+            newRev.addFlag(Revision::kHasAttachments);
 
         newRev.parentIndex = Revision::kNoParent;
         if (parentRev) {
@@ -304,7 +307,7 @@ namespace forestdb {
         return &_revs.back();
     }
 
-    const Revision* RevTree::insert(revid revID, slice data, bool deleted,
+    const Revision* RevTree::insert(revid revID, slice data, bool deleted, bool hasAttachments,
                                    const Revision* parent, bool allowConflict,
                                    int &httpStatus)
     {
@@ -344,10 +347,10 @@ namespace forestdb {
         
         // Finally, insert:
         httpStatus = deleted ? 200 : 201;
-        return _insert(revID, data, parent, deleted);
+        return _insert(revID, data, parent, deleted, hasAttachments);
     }
 
-    const Revision* RevTree::insert(revid revID, slice body, bool deleted,
+    const Revision* RevTree::insert(revid revID, slice body, bool deleted, bool hasAttachments,
                                    revid parentRevID, bool allowConflict,
                                    int &httpStatus)
     {
@@ -359,10 +362,11 @@ namespace forestdb {
                 return NULL; // parent doesn't exist
             }
         }
-        return insert(revID, body, deleted, parent, allowConflict, httpStatus);
+        return insert(revID, body, deleted, hasAttachments, parent, allowConflict, httpStatus);
     }
 
-    int RevTree::insertHistory(const std::vector<revid> history, slice data, bool deleted) {
+    int RevTree::insertHistory(const std::vector<revid> history, slice data,
+                               bool deleted, bool hasAttachments) {
         assert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
@@ -381,12 +385,11 @@ namespace forestdb {
         }
         int commonAncestorIndex = i;
 
-        // Insert all the new revisions in chronological order:
-        while (--i >= 0) {
-            parent = _insert(history[i],
-                             (i==0 ? data : slice()),
-                             parent,
-                             (i==0 && deleted));
+        if (i > 0) {
+            // Insert all the new revisions in chronological order:
+            while (--i > 0)
+                parent = _insert(history[i], slice(), parent, false, false);
+            _insert(history[0], data, parent, deleted, hasAttachments);
         }
         return commonAncestorIndex;
     }

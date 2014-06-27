@@ -31,10 +31,11 @@ namespace forestdb {
         inline bool isBodyAvailable() const;
         inline alloc_slice readBody() const;
 
-        bool isLeaf() const    {return (flags & kLeaf) != 0;}
-        bool isDeleted() const {return (flags & kDeleted) != 0;}
-        bool isNew() const     {return (flags & kNew) != 0;}
-        bool isActive() const  {return isLeaf() && !isDeleted();}
+        bool isLeaf() const         {return (flags & kLeaf) != 0;}
+        bool isDeleted() const      {return (flags & kDeleted) != 0;}
+        bool hasAttachments() const {return (flags & kHasAttachments) != 0;}
+        bool isNew() const          {return (flags & kNew) != 0;}
+        bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
         const Revision* parent() const;
@@ -44,9 +45,10 @@ namespace forestdb {
 
     private:
         enum Flags : uint8_t {
-            kDeleted = 0x01,    /**< Is this revision a deletion/tombstone? */
-            kLeaf    = 0x02,    /**< Is this revision a leaf (no children?) */
-            kNew     = 0x04     /**< Has this rev been inserted since decoding? */
+            kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
+            kLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
+            kNew            = 0x04, /**< Has this rev been inserted since decoding? */
+            kHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
         };
 
         static const uint16_t kNoParent = UINT16_MAX;
@@ -91,15 +93,18 @@ namespace forestdb {
         std::vector<const Revision*> currentRevisions() const;
         bool hasConflict() const;
 
-        const Revision* insert(revid, slice body, bool deleted,
-                              revid parentRevID,
-                              bool allowConflict,
-                              int &httpStatus);
-        const Revision* insert(revid, slice body, bool deleted,
-                              const Revision* parent,
-                              bool allowConflict,
-                              int &httpStatus);
-        int insertHistory(const std::vector<revid> history, slice body, bool deleted);
+        const Revision* insert(revid, slice body,
+                               bool deleted, bool hasAttachments,
+                               revid parentRevID,
+                               bool allowConflict,
+                               int &httpStatus);
+        const Revision* insert(revid, slice body,
+                               bool deleted, bool hasAttachments,
+                               const Revision* parent,
+                               bool allowConflict,
+                               int &httpStatus);
+        int insertHistory(const std::vector<revid> history, slice body,
+                          bool deleted, bool hasAttachments);
 
         unsigned prune(unsigned maxDepth);
         std::vector<revid> purge(const std::vector<revid>revIDs);
@@ -112,7 +117,8 @@ namespace forestdb {
 
     private:
         friend class Revision;
-        const Revision* _insert(revid, slice body, const Revision *parentRev, bool deleted);
+        const Revision* _insert(revid, slice body, const Revision *parentRev,
+                                bool deleted, bool hasAttachments);
         void compact();
         RevTree(const RevTree&); // forbidden
 
