@@ -107,7 +107,9 @@ namespace forestdb {
                           bool deleted, bool hasAttachments);
 
         unsigned prune(unsigned maxDepth);
-        std::vector<revid> purge(const std::vector<revid>revIDs);
+
+        /** Removes a leaf revision and any of its ancestors that aren't shared with other leaves. */
+        int purge(revid);
 
         void sort();
 
@@ -119,6 +121,7 @@ namespace forestdb {
         friend class Revision;
         const Revision* _insert(revid, slice body, const Revision *parentRev,
                                 bool deleted, bool hasAttachments);
+        bool confirmLeaf(Revision* testRev);
         void compact();
         RevTree(const RevTree&); // forbidden
 

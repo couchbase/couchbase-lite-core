@@ -263,6 +263,15 @@ namespace forestdb {
         return alloc_slice(); // VersionedDocument overrides this
     }
 
+    bool RevTree::confirmLeaf(Revision* testRev) {
+        int index = testRev->index();
+        for (auto rev = _revs.begin(); rev != _revs.end(); ++rev)
+            if (rev->parentIndex == index)
+                return false;
+        testRev->addFlag(Revision::kLeaf);
+        return true;
+    }
+    
 
 #pragma mark - INSERTION:
 
@@ -421,32 +430,20 @@ namespace forestdb {
         return numPruned;
     }
 
-    std::vector<revid> RevTree::purge(std::vector<revid>revIDs) {
-        std::vector<revid> purged;
-        bool madeProgress, foundNonLeaf;
+    int RevTree::purge(revid leafID) {
+        int nPurged = 0;
+        Revision* rev = (Revision*)get(leafID);
+        if (!rev || !rev->isLeaf())
+            return 0;
         do {
-            madeProgress = foundNonLeaf = false;
-            for (auto revID = revIDs.begin(); revID != revIDs.end(); ++revID) {
-                Revision* rev = (Revision*)get(*revID);
-                if (rev) {
-                    if (rev->isLeaf()) {
-                        purged.push_back(*revID);
-                        madeProgress = true;
-                        rev->revID.size = 0; // mark for purge
-                        revID->size = 0;
-                        revID->buf = NULL; // mark as used
-                        //FIX: This test is wrong -- parent may not become a leaf!
-                        if (rev->parentIndex != Revision::kNoParent)
-                            _revs[rev->parentIndex].addFlag(Revision::kLeaf);
-                    } else {
-                        foundNonLeaf = true;
-                    }
-                }
-            }
-        } while (madeProgress && foundNonLeaf);
-        if (purged.size() > 0)
-            compact();
-        return purged;
+            nPurged++;
+            rev->revID.size = 0;                    // mark for purge
+            const Revision* parent = (Revision*)rev->parent();
+            rev->parentIndex = Revision::kNoParent; // unlink from parent
+            rev = (Revision*)parent;
+        } while (rev && confirmLeaf(rev));
+        compact();
+        return nPurged;
     }
 
     void RevTree::compact() {
