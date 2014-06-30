@@ -88,9 +88,8 @@ namespace forestdb {
         sequence startSequence = _lastSequenceIndexed + 1;
         bool indexChanged = false;
 
-        DocEnumerator::Options options = {
-            .includeDeleted = true
-        };
+        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
+        options.includeDeleted = true;
         for (DocEnumerator e(_sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
             emitter emit;
             if (!e.doc().deleted())

@@ -168,39 +168,51 @@ namespace forestdb {
 
 
     bool DocEnumerator::next() {
-        if (!_iterator)
-            return false;
+        while(true) {
+            if (!_iterator)
+                return false;
 
-        fdb_status status;
-        if (_docIDs.size() == 0) {
-            // Regular iteration:
-            freeDoc();
-            status = fdb_iterator_next(_iterator, &_docP);
-            Log("enum: fdb_iterator_next --> %d\n", status);
-            if (status == FDB_RESULT_ITERATOR_FAIL) {
+            fdb_status status;
+            if (_docIDs.size() == 0) {
+                // Regular iteration:
+                freeDoc();
+                status = fdb_iterator_next(_iterator, &_docP);
+                Log("enum: fdb_iterator_next --> %d\n", status);
+                if (status == FDB_RESULT_ITERATOR_FAIL) {
+                    close();
+                    return false;
+                }
+                check(status);
+                if (!_options.inclusiveEnd && doc().key() == _endKey) {
+                    close();
+                    return false;
+                }
+            } else {
+                // Iterating over a vector of docIDs:
+               if (++_curDocIndex >= _docIDs.size()) {
+                    Log("enum: at end of vector\n");
+                    close();
+                    return false;
+                }
+                slice docID = _docIDs[_curDocIndex];
+                if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
+                    // If the current doc doesn't match the docID, then the docID doesn't exist:
+                    fdb_doc_free(_docP);
+                    fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
+                }
+            }
+
+            // OK, this is a candidate. First honor the skip and limit:
+            if (_options.skip > 0) {
+                --_options.skip;
+                continue;
+            }
+            if (_options.limit-- == 0) {
                 close();
                 return false;
             }
-            check(status);
-            if (!_options.inclusiveEnd && doc().key() == _endKey) {
-                close();
-                return false;
-            }
-        } else {
-            // Iterating over a vector of docIDs:
-           if (++_curDocIndex >= _docIDs.size()) {
-                Log("enum: at end of vector\n");
-                close();
-                return false;
-            }
-            slice docID = _docIDs[_curDocIndex];
-            if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
-                // If the current doc doesn't match the docID, then the docID doesn't exist:
-                fdb_doc_free(_docP);
-                fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
-            }
+            return true;
         }
-        return true;
     }
 
     bool DocEnumerator::seek(slice key) {

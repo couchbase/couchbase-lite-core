@@ -88,6 +88,12 @@ namespace forestdb {
         return realKey;
     }
 
+    static DocEnumerator::Options docOptions(DocEnumerator::Options options) {
+        options.limit = DocEnumerator::Options::kDefault.limit;
+        options.skip = DocEnumerator::Options::kDefault.skip;
+        return options;
+    }
+
     IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
@@ -99,7 +105,7 @@ namespace forestdb {
      _dbEnum(&_index,
              (slice)makeRealKey(startKey, startKeyDocID, false),
              (slice)makeRealKey(endKey, endKeyDocID, true),
-             options)
+             docOptions(options))
     {
         Log("IndexEnumerator(%p)\n", this);
         if (!_inclusiveEnd)
@@ -115,7 +121,7 @@ namespace forestdb {
      _inclusiveEnd(true),
      _keys(keys),
      _currentKeyIndex(-1),
-     _dbEnum(&_index, slice::null, slice::null, options)
+     _dbEnum(&_index, slice::null, slice::null, docOptions(options))
     {
         Log("IndexEnumerator(%p)\n", this);
         nextKey();
