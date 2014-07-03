@@ -208,14 +208,6 @@ namespace forestdb {
             _file->_transactionCond.wait(lock);
 
         fdb_handle* realHandle = _handle;
-#if TRANSACTION_IS_PRIVATE
-        // Create a snapshot of the real handle to use as my temporary handle,
-        // and return the real handle for the transaction object to use:
-        startSequence = getInfo().last_seqnum;
-        fdb_handle* snapshot = NULL;
-        check(fdb_snapshot_open(_handle, &snapshot, startSequence));
-        _handle = snapshot;
-#endif
         fdb_begin_transaction(realHandle, FDB_ISOLATION_READ_COMMITTED);
         _file->_transaction = t;
         return realHandle;
@@ -223,16 +215,7 @@ namespace forestdb {
 
     void Database::endTransaction(fdb_handle* handle) {
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
-
-#if TRANSACTION_IS_PRIVATE
-        // Close the snapshot and restore my real handle:
-        if (handle != _handle) {
-            fdb_close(_handle);
-            _handle = handle;
-        }
-#else
         _handle = handle;
-#endif
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
     }
@@ -276,9 +259,7 @@ namespace forestdb {
         if (::unlink(path.c_str()) < 0 && errno != ENOENT) {
             _state = -1;
             check(::fdb_open(&_handle, path.c_str(), &_db._config));
-#if !TRANSACTION_IS_PRIVATE
             _db._handle = _handle;
-#endif
             throw(errno);
         }
     }
@@ -287,21 +268,16 @@ namespace forestdb {
         std::string path = _db.filename();
         deleteDatabase();
         check(::fdb_open(&_handle, path.c_str(), &_db._config));
-#if !TRANSACTION_IS_PRIVATE
         _db._handle = _handle;
-#endif
         check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
     }
 
     void Transaction::rollbackTo(sequence seq) {
         check(fdb_rollback(&_handle, seq));
-#if !TRANSACTION_IS_PRIVATE
         _db._handle = _handle;
-#endif
     }
 
     void Transaction::compact() {
-#if 1
         std::string path = _db.filename();
         std::string tempPath = path + ".compact";
 
@@ -318,15 +294,8 @@ namespace forestdb {
             check(FDB_RESULT_FILE_RENAME_FAIL);
         }
         check(::fdb_open(&_handle, path.c_str(), &_db._config));
-#if !TRANSACTION_IS_PRIVATE
         _db._handle = _handle;
-#endif
         check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
-
-#else
-        Log("WARNING: Transaction::compact is unimplemented\n");
-        // UNIMPLEMENTED -- would be nice if FDB had a compact-in-place API call (MB-11426)
-#endif
     }
 
     void Transaction::commit() {

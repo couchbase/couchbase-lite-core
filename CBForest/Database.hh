@@ -73,6 +73,10 @@ namespace forestdb {
 
         bool isReadOnly() const;
 
+        void setLogCallback(fdb_log_callback callback, void* ctx_data) {
+            fdb_set_log_callback(_handle, callback, ctx_data);
+        }
+
     private:
         class File;
         friend class Transaction;
