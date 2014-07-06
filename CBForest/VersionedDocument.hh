@@ -54,9 +54,15 @@ namespace forestdb {
         /** Gets the flags from a document without having to instantiate a VersionedDocument */
         static Flags flagsOfDocument(const Document&);
 
+#if DEBUG
+        std::string dump()          {return RevTree::dump();}
+#endif
     protected:
         virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
         virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
+#if DEBUG
+        virtual void dump(std::ostream&);
+#endif
 
     private:
         void decode();

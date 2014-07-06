@@ -8,6 +8,7 @@
 
 #include "VersionedDocument.hh"
 #include <assert.h>
+#include <ostream>
 
 namespace forestdb {
 
@@ -114,8 +115,23 @@ namespace forestdb {
         updateMeta();
         // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
         // the existing body buffer.
-        transaction.set(_doc.key(), _doc.meta(), encode());
+        _doc.updateSequence( transaction.set(_doc.key(), _doc.meta(), encode()) );
         _changed = false;
     }
+
+#if DEBUG
+    void VersionedDocument::dump(std::ostream& out) {
+        out << "\"" << (std::string)docID() << "\" / " << (std::string)revID();
+        out << " (seq " << sequence() << ") ";
+        if (isDeleted())
+            out << " del";
+        if (isConflicted())
+            out << " conflicted";
+        if (hasAttachments())
+            out << " attachments";
+        out << "\n";
+        RevTree::dump(out);
+    }
+#endif
 
 }

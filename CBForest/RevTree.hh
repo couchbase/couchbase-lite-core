@@ -62,6 +62,9 @@ namespace forestdb {
         size_t sizeToWrite() const;
         void addFlag(Flags f)      {flags = (Flags)(flags | f);}
         void clearFlag(Flags f)    {flags = (Flags)(flags & ~f);}
+#if DEBUG
+        void dump(std::ostream&);
+#endif
         friend class RevTree;
         friend class RawRevision;
     };
@@ -113,9 +116,16 @@ namespace forestdb {
 
         void sort();
 
+#if DEBUG
+        std::string dump();
+#endif
+
     protected:
         virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
         virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
+#if DEBUG
+        virtual void dump(std::ostream&);
+#endif
 
     private:
         friend class Revision;

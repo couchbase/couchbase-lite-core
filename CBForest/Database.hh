@@ -157,6 +157,8 @@ namespace forestdb {
         bool deleted() const        {return _doc.deleted;}
         bool exists() const         {return _doc.size_ondisk > 0 || _doc.offset > 0;}
 
+        void updateSequence(forestdb::sequence s)                 {_doc.seqnum = s;}
+
         typedef DocEnumerator enumerator;
 
     private:

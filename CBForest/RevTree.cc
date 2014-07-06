@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ostream>
+#include <sstream>
 #include <CoreFoundation/CFByteOrder.h>
 
 
@@ -182,6 +184,20 @@ namespace forestdb {
             }
         }
     }
+
+#if DEBUG
+    void Revision::dump(std::ostream& out) {
+        out << "(" << sequence << ") " << (std::string)revID.expanded() << "  ";
+        if (isLeaf())
+            out << " leaf";
+        if (isDeleted())
+            out << " del";
+        if (hasAttachments())
+            out << " attachments";
+        if (isNew())
+            out << " (new)";
+    }
+#endif
 
 #pragma mark - ACCESSORS:
 
@@ -518,5 +534,22 @@ namespace forestdb {
                 }
         _sorted = true;
     }
-        
+
+#if DEBUG
+    std::string RevTree::dump() {
+        std::stringstream out;
+        dump(out);
+        return out.str();
+    }
+
+    void RevTree::dump(std::ostream& out) {
+        int i = 0;
+        for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
+            out << "\t" << (++i) << ": ";
+            rev->dump(out);
+            out << "\n";
+        }
+    }
+#endif
+
 }
