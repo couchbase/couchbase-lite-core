@@ -13,8 +13,8 @@
 
 using namespace forestdb;
 
-extern "C" {
-    NSData* JSONToData(id obj, NSError** outError) ;
+static NSData* JSONToData(id obj, NSError** outError) {
+    return [NSJSONSerialization dataWithJSONObject: obj options: 0 error: outError];
 }
 
 static inline id DataToJSON(NSData* data, NSError** outError) {
@@ -39,7 +39,7 @@ public:
     static int numMapCalls;
     virtual void operator() (const Document& doc, EmitFn& emit) {
         ++numMapCalls;
-        NSDictionary* body = DataToJSON((NSData*)doc.body(), NULL);
+        NSDictionary* body = DataToJSON(doc.body().copiedNSData(), NULL);
         for (NSString* city in body[@"cities"])
             emit(StringToCollatable(city), StringToCollatable(body[@"name"]));
     }
@@ -78,9 +78,9 @@ int TestMapFn::numMapCalls;
 - (void) queryExpectingKeys: (NSArray*)expectedKeys {
     index->updateIndex();
     int nRows = 0;
-    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
-                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
-
+    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+                           Collatable(), forestdb::slice::null,
+                           DocEnumerator::Options::kDefault); e; ++e) {
         CollatableReader keyReader(e.key());
         alloc_slice keyStr = keyReader.readString();
         NSString* key = (NSString*)keyStr;
@@ -104,7 +104,7 @@ int TestMapFn::numMapCalls;
                         @"cities": @[@"Portland", @"Eugene"]}};
         Transaction trans(db);
         for (NSString* docID in data) {
-            trans.set(docID, forestdb::slice::null, JSONToData(data[docID],NULL));
+            trans.set(nsstring_slice(docID), forestdb::slice::null, JSONToData(data[docID],NULL));
         }
     }
 
@@ -121,7 +121,7 @@ int TestMapFn::numMapCalls;
         Transaction trans(db);
         NSDictionary* body = @{@"name": @"Oregon",
                                @"cities": @[@"Portland", @"Walla Walla", @"Salem"]};
-        trans.set(@"OR", forestdb::slice::null, JSONToData(body,NULL));
+        trans.set(nsstring_slice(@"OR"), forestdb::slice::null, JSONToData(body,NULL));
     }
     [self queryExpectingKeys: @[@"Cambria", @"Port Townsend", @"Portland", @"Salem",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk",
@@ -131,7 +131,7 @@ int TestMapFn::numMapCalls;
     NSLog(@"--- Deleting CA");
     {
         Transaction trans(db);
-        trans.del(@"CA");
+        trans.del(nsstring_slice(@"CA"));
     }
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];

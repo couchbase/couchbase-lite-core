@@ -89,7 +89,7 @@ static boolBlock scopedEnumerate() {
         value << [body[0] UTF8String];
         values.push_back(value);
     }
-    bool changed = index->update(trans, docID, 1, keys, values);
+    bool changed = trans.update(nsstring_slice(docID), 1, keys, values);
     XCTAssert(changed);
 }
 
@@ -108,8 +108,9 @@ static boolBlock scopedEnumerate() {
 
     NSLog(@"--- First query");
     __block int nRows = 0;
-    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
-                                   Collatable(), forestdb::slice::null, NULL); e; ++e) {
+    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null,
+                                   DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -124,8 +125,9 @@ static boolBlock scopedEnumerate() {
             transaction: trans];
     }
     nRows = 0;
-    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
-                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
+    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+                                   Collatable(), forestdb::slice::null,
+                                   DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -139,8 +141,9 @@ static boolBlock scopedEnumerate() {
         [self updateDoc: @"CA" body: @[] transaction: trans];
     }
     nRows = 0;
-    for (auto e = index->enumerate(Collatable(), forestdb::slice::null,
-                                   Collatable(), forestdb::slice::null,  NULL); e; ++e) {
+    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+                           Collatable(), forestdb::slice::null,
+                           DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -156,7 +159,7 @@ static boolBlock scopedEnumerate() {
     keys.push_back(Collatable("Portland"));
     keys.push_back(Collatable("Skookumchuk"));
     nRows = 0;
-    for (auto e = index->enumerate(keys, NULL); e; ++e) {
+    for (IndexEnumerator e(*index, keys, DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",

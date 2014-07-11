@@ -57,22 +57,22 @@ static revidBuffer stringToRev(NSString* str) {
     revidBuffer rev1ID(forestdb::slice("1-aaaa"));
     forestdb::slice rev1Data("body of revision");
     int httpStatus;
-    rev = tree.insert(rev1ID, rev1Data, false,
+    rev = tree.insert(rev1ID, rev1Data, false, false,
                       revid(), false, httpStatus);
     Assert(rev);
     AssertEq(httpStatus, 201);
-    Assert(rev->revID.equal(rev1ID));
-    Assert(rev->body.equal(rev1Data));
-    AssertEq(rev->parentIndex, Revision::kNoParent);
+    Assert(rev->revID == rev1ID);
+    Assert(rev->body == rev1Data);
+    AssertEq(rev->parent(), (Revision*)NULL);
     Assert(!rev->isDeleted());
 
     revidBuffer rev2ID(forestdb::slice("2-bbbb"));
     forestdb::slice rev2Data("second revision");
-    auto rev2 = tree.insert(rev2ID, rev2Data, false, rev1ID, false, httpStatus);
+    auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
     Assert(rev2);
     AssertEq(httpStatus, 201);
-    Assert(rev2->revID.equal(rev2ID));
-    Assert(rev2->body.equal(rev2Data));
+    Assert(rev2->revID == rev2ID);
+    Assert(rev2->body == rev2Data);
     Assert(!rev->isDeleted());
 
     tree.sort();
@@ -83,7 +83,7 @@ static revidBuffer stringToRev(NSString* str) {
     AssertEq(rev2->parent(), rev);
     Assert(rev->parent() == NULL);
 
-    AssertEq(tree.currentNode(), rev2);
+    AssertEq(tree.currentRevision(), rev2);
     Assert(!tree.hasConflict());
 
     tree.sort();
@@ -94,7 +94,7 @@ static revidBuffer stringToRev(NSString* str) {
 
     alloc_slice ext = tree.encode();
 
-    RevTree tree2 = RevTree(ext, 12, 1234);
+    RevTree tree2(ext, 12, 1234);
 }
 
 - (void) test03_AddRevision {
@@ -102,7 +102,7 @@ static revidBuffer stringToRev(NSString* str) {
     revidBuffer revIDBuf(revID);
     VersionedDocument v(db, @"foo");
     int httpStatus;
-    v.insert(revIDBuf, body, false, NULL, false, httpStatus);
+    v.insert(revIDBuf, nsstring_slice(body), false, false, NULL, false, httpStatus);
     AssertEq(httpStatus, 201);
 
     const Revision* node = v.get(stringToRev(revID));
@@ -111,8 +111,8 @@ static revidBuffer stringToRev(NSString* str) {
     Assert(node->isLeaf());
     Assert(node->isActive());
     AssertEq(v.size(), 1);
-    AssertEq(v.currentNodes().size(), 1);
-    AssertEq(v.currentNodes()[0], v.currentNode());
+    AssertEq(v.currentRevisions().size(), 1);
+    AssertEq(v.currentRevisions()[0], v.currentRevision());
 }
 
 @end

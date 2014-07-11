@@ -107,9 +107,9 @@ static uint64_t randn(uint64_t limit) {
     CollatableReader reader(encoded);
     reader.beginArray();
     forestdb::slice readKey = reader.read();
-    Assert(readKey.equal((forestdb::slice)collKey));
+    Assert(readKey == (forestdb::slice)collKey);
     alloc_slice readDocID = reader.readString();
-    Assert(readDocID.equal((forestdb::slice)docID));
+    Assert(readDocID == (forestdb::slice)docID);
     int64_t readSequence = reader.readInt();
     AssertEq(readSequence, 1234);
 }

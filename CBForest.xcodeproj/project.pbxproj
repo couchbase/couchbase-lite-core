@@ -342,6 +342,13 @@
 			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
 			remoteInfo = "forestdb iOS";
 		};
+		273ACB55196F63C4007A58A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27139B1A18F8E9750021A9A3;
+			remoteInfo = CBForest;
+		};
 		27B7E0F518F8FB5200044EBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -1242,6 +1249,7 @@
 			);
 			dependencies = (
 				27139B3418F8E9750021A9A3 /* PBXTargetDependency */,
+				273ACB56196F63C4007A58A1 /* PBXTargetDependency */,
 			);
 			name = "CBForest Tests";
 			productName = CBForestTests;
@@ -1683,6 +1691,11 @@
 			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
 			targetProxy = 27139BB818F8EE820021A9A3 /* PBXContainerItemProxy */;
 		};
+		273ACB56196F63C4007A58A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27139B1A18F8E9750021A9A3 /* CBForest */;
+			targetProxy = 273ACB55196F63C4007A58A1 /* PBXContainerItemProxy */;
+		};
 		27B7E0F618F8FB5200044EBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27139B1A18F8E9750021A9A3 /* CBForest */;
@@ -1776,7 +1789,6 @@
 		27139B4218F8E9750021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1790,7 +1802,6 @@
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1798,7 +1809,6 @@
 		27139B4318F8E9750021A9A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/CBForest.framework/Versions/A/CBForest";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
@@ -1808,7 +1818,6 @@
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
