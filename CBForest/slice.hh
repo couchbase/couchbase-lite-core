@@ -30,7 +30,7 @@ namespace forestdb {
         slice(const void* start, const void* end) :buf(start), size((uint8_t*)end-(uint8_t*)start){}
         slice(const std::string& str)             :buf(&str[0]), size(str.length()) {}
 
-        explicit slice(const char* str)           :buf(str), size(strlen(str)) {}
+        explicit slice(const char* str)           :buf(str), size(str ? strlen(str) : 0) {}
 
         static const slice null;
 
