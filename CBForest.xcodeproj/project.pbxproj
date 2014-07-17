@@ -122,6 +122,16 @@
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19CA194E2A33008E91EB /* Error.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277D19C9194E295B008E91EB /* Error.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		278EBF9F1976325A006362F8 /* adler32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9719763203006362F8 /* adler32.cc */; };
+		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
+		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
+		278EBFA21976325A006362F8 /* adler32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9719763203006362F8 /* adler32.cc */; };
+		278EBFA31976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
+		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
+		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
+		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
+		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
+		27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27BF6A9B1941350A007DAE06 /* RevID.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DD1512193CD005009A367D /* RevID.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F119328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
@@ -502,6 +512,16 @@
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../CBForest/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
+		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
+		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
+		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
+		278EBF94197631B1006362F8 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = vendor/forestdb/utils/debug.h; sourceTree = SOURCE_ROOT; };
+		278EBF9719763203006362F8 /* adler32.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adler32.cc; path = vendor/forestdb/utils/adler32.cc; sourceTree = SOURCE_ROOT; };
+		278EBF9819763203006362F8 /* adler32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = adler32.h; path = vendor/forestdb/utils/adler32.h; sourceTree = SOURCE_ROOT; };
+		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
+		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
+		27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_fast_str_kv.cc; sourceTree = "<group>"; };
+		27B62989197ED63D00F7148E /* btree_fast_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_fast_str_kv.h; sourceTree = "<group>"; };
 		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27DD14EF19328576009A367D /* Index_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Index_Test.mm; sourceTree = "<group>"; };
 		27DD14F21934F44F009A367D /* MapReduce_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MapReduce_Test.mm; sourceTree = "<group>"; };
@@ -820,10 +840,12 @@
 				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
 				2750729318E4857900A80C5A /* avltree.cc */,
 				2750729418E4857900A80C5A /* blockcache.cc */,
+				27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */,
 				2750729518E4857900A80C5A /* btree_kv.cc */,
 				2750729618E4857900A80C5A /* btree.cc */,
 				2750729718E4857900A80C5A /* btreeblock.cc */,
 				2750731318E6499800A80C5A /* btree_prefix_kv.cc */,
+				278EBF8F1976317D006362F8 /* btree_str_kv.cc */,
 				2709F298191EA10E00C5A8A3 /* compactor.cc */,
 				273AD3BD18EF263B007D8C23 /* configuration.cc */,
 				2750729818E4857900A80C5A /* docio.cc */,
@@ -844,7 +866,9 @@
 				2750726518E3E72900A80C5A /* avltree.h */,
 				2750726718E3E72900A80C5A /* blockcache.h */,
 				2750726A18E3E72900A80C5A /* btree.h */,
+				27B62989197ED63D00F7148E /* btree_fast_str_kv.h */,
 				2750726D18E3E72900A80C5A /* btree_kv.h */,
+				278EBF901976317D006362F8 /* btree_str_kv.h */,
 				2750727018E3E72900A80C5A /* btreeblock.h */,
 				2750731218E6499800A80C5A /* btree_prefix_kv.h */,
 				2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */,
@@ -894,9 +918,15 @@
 		275072DB18E4ACE100A80C5A /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				278EBF9719763203006362F8 /* adler32.cc */,
+				278EBF9819763203006362F8 /* adler32.h */,
 				275072DD18E4ACE100A80C5A /* bitwise_utils.h */,
 				275072DE18E4ACE100A80C5A /* crc32.cc */,
 				275072DF18E4ACE100A80C5A /* crc32.h */,
+				278EBF93197631B1006362F8 /* debug.cc */,
+				278EBF94197631B1006362F8 /* debug.h */,
+				278EBF9B19763238006362F8 /* memleak.cc */,
+				278EBF9C19763238006362F8 /* memleak.h */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -1465,11 +1495,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				278EBFA31976325A006362F8 /* debug.cc in Sources */,
 				276E74EE1956853C0030ED3D /* crc32.cc in Sources */,
 				27139B5C18F8EDA20021A9A3 /* docio.cc in Sources */,
 				2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */,
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
+				278EBFA21976325A006362F8 /* adler32.cc in Sources */,
 				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
 				27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */,
 				27139B6218F8EDA20021A9A3 /* hbtrie.cc in Sources */,
@@ -1478,6 +1510,7 @@
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
 				27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */,
+				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
 				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
@@ -1489,6 +1522,8 @@
 				27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
+				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
+				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
 				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
 				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
 				27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */,
@@ -1534,11 +1569,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				278EBFA01976325A006362F8 /* debug.cc in Sources */,
 				276E74ED1956853B0030ED3D /* crc32.cc in Sources */,
 				275072CC18E4AA5000A80C5A /* docio.cc in Sources */,
 				2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				273AD3DF18F5E8D8007D8C23 /* snappy-sinksource.cc in Sources */,
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
+				278EBF9F1976325A006362F8 /* adler32.cc in Sources */,
 				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
 				275072D018E4AA5000A80C5A /* filemgr.cc in Sources */,
 				275072D418E4AA5000A80C5A /* hbtrie.cc in Sources */,
@@ -1547,6 +1584,7 @@
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
 				27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */,
+				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
@@ -1558,6 +1596,8 @@
 				275072CF18E4AA5000A80C5A /* filemgr_ops.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
+				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
+				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
 				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
 				275072C718E4AA5000A80C5A /* avltree.cc in Sources */,

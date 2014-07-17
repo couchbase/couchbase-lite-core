@@ -114,9 +114,9 @@ namespace forestdb {
         sequence set(slice key, slice value);
         void write(Document&);
 
-        void del(slice key);
-        void del(sequence);
-        void del(Document&);
+        bool del(slice key);
+        bool del(sequence);
+        bool del(Document&);
 
     private:
         void check(fdb_status status);

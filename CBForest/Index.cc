@@ -31,7 +31,8 @@ namespace forestdb {
             return false;
         uint64_t seq;
         while (ReadUVarInt(&sequences, &seq))
-            del((sequence)seq);
+            if (!del((sequence)seq))
+                fprintf(stderr, "*** Index::removeOldRowsForDoc -- couldn't find seq %llu\n", seq);
         return true;
     }
 

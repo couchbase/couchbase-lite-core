@@ -59,8 +59,10 @@ namespace forestdb {
 #pragma mark - DATABASE:
 
     static void check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS)
+        if (status != FDB_RESULT_SUCCESS) {
+            fprintf(stderr, "FORESTDB ERROR %d\n", status);
             throw error{status};
+        }
     }
 
     DatabaseGetters::DatabaseGetters()
@@ -353,11 +355,11 @@ namespace forestdb {
         return doc.seqnum;
     }
 
-    void Transaction::del(forestdb::Document &doc) {
-        check(fdb_del(_handle, doc));
+    bool Transaction::del(forestdb::Document &doc) {
+        return checkGet(fdb_del(_handle, doc));
     }
 
-    void Transaction::del(forestdb::slice key) {
+    bool Transaction::del(forestdb::slice key) {
         if ((size_t)key.buf & 0x03) {
             // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
             void* keybuf = alloca(key.size);
@@ -368,12 +370,14 @@ namespace forestdb {
             .key = (void*)key.buf,
             .keylen = key.size,
         };
-        check(fdb_del(_handle, &doc));
+        return checkGet(fdb_del(_handle, &doc));
     }
 
-    void Transaction::del(sequence seq) {
-        Document doc = _db.get(seq);
-        del(doc);
+    bool Transaction::del(sequence seq) {
+        Document doc;
+        doc._doc.seqnum = seq;
+        return checkGet(fdb_get_metaonly_byseq(_handle, doc))
+            && del(doc);
     }
 
 
