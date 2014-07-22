@@ -36,8 +36,11 @@ namespace forestdb {
         
         void setup(int indexType, MapFn *map, std::string mapVersion);
 
-        sequence lastSequenceIndexed() const    {return _lastSequenceIndexed;}
-        sequence lastSequenceChangedAt() const  {return _lastSequenceChangedAt;}
+        /** The last source database sequence number to be indexed. */
+        sequence lastSequenceIndexed() const;
+
+        /** The last source database sequence number at which the index actually changed. (<= lastSequenceIndexed.) */
+        sequence lastSequenceChangedAt() const;
 
         void updateIndex();
 
@@ -50,6 +53,7 @@ namespace forestdb {
         std::string _mapVersion, _lastMapVersion;
         int _indexType;
         sequence _lastSequenceIndexed, _lastSequenceChangedAt;
+        sequence _stateReadAt; // index sequence # at which state was last valid
     };
 }
 

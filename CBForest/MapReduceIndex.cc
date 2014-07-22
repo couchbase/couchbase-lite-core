@@ -30,23 +30,27 @@ namespace forestdb {
                                    forestdb::Database* sourceDatabase)
     :Index(path, flags, config),
      _sourceDatabase(sourceDatabase), _map(NULL), _indexType(0),
-     _lastSequenceIndexed(0), _lastSequenceChangedAt(0)
+     _lastSequenceIndexed(0), _lastSequenceChangedAt(0), _stateReadAt(0)
     {
         readState();
     }
 
     void MapReduceIndex::readState() {
-        Collatable stateKey;
-        stateKey.addNull();
+        sequence curIndexSeq = getInfo().last_seqnum;
+        if (_stateReadAt != curIndexSeq) {
+            Collatable stateKey;
+            stateKey.addNull();
 
-        Document state = get(stateKey);
-        CollatableReader reader(state.body());
-        if (reader.peekTag() == CollatableReader::kArray) {
-            reader.beginArray();
-            _lastSequenceIndexed = reader.readInt();
-            _lastSequenceChangedAt = reader.readInt();
-            _lastMapVersion = std::string(reader.readString());
-            _indexType = (int)reader.readInt();
+            Document state = get(stateKey);
+            CollatableReader reader(state.body());
+            if (reader.peekTag() == CollatableReader::kArray) {
+                reader.beginArray();
+                _lastSequenceIndexed = reader.readInt();
+                _lastSequenceChangedAt = reader.readInt();
+                _lastMapVersion = std::string(reader.readString());
+                _indexType = (int)reader.readInt();
+            }
+            _stateReadAt = curIndexSeq;
         }
     }
 
@@ -57,14 +61,26 @@ namespace forestdb {
         Collatable state;
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType;
 
-        t.set(stateKey, state);
+        _stateReadAt = t.set(stateKey, state);
     }
 
     void MapReduceIndex::invalidate() {
         _lastSequenceIndexed = 0;
         _lastSequenceChangedAt = 0;
         _lastMapVersion = "";
+        _stateReadAt = 0;
     }
+
+    sequence MapReduceIndex::lastSequenceIndexed() const {
+        const_cast<MapReduceIndex*>(this)->readState();
+        return _lastSequenceIndexed;
+    }
+
+    sequence MapReduceIndex::lastSequenceChangedAt() const {
+        const_cast<MapReduceIndex*>(this)->readState();
+        return _lastSequenceChangedAt;
+    }
+
 
     void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
