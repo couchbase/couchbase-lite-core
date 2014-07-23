@@ -93,6 +93,19 @@ namespace forestdb {
         }
     }
 
+    bool MapReduceIndex::updateDocInIndex(IndexTransaction& trans, const Document& doc) {
+        emitter emit;
+        if (!doc.deleted())
+            (*_map)(doc, emit); // Call map function!
+        _lastSequenceIndexed = doc.sequence();
+        if (trans.update(doc.key(), doc.sequence(), emit.keys, emit.values)) {
+            _lastSequenceChangedAt = _lastSequenceIndexed;
+            return true;
+        }
+        return false;
+    }
+
+    
     void MapReduceIndex::updateIndex() {
         IndexTransaction trans(this);
 
@@ -102,24 +115,61 @@ namespace forestdb {
         }
 
         sequence startSequence = _lastSequenceIndexed + 1;
-        bool indexChanged = false;
 
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
         for (DocEnumerator e(_sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
-            emitter emit;
-            if (!e.doc().deleted())
-                (*_map)(e.doc(), emit); // Call map function!
-            if (trans.update(e->key(), e->sequence(), emit.keys, emit.values))
-                indexChanged = true;
-            _lastSequenceIndexed = e->sequence();
+            updateDocInIndex(trans, e.doc());
         }
 
         _lastMapVersion = _mapVersion;
-        if (_lastSequenceIndexed >= startSequence) {
-            if (indexChanged)
-                _lastSequenceChangedAt = _lastSequenceIndexed;
+        if (_lastSequenceIndexed >= startSequence)
             saveState(trans);
+    }
+
+
+    void MapReduceIndex::updateMultipleIndexes(std::vector<MapReduceIndex*> indexes) {
+        const size_t n = indexes.size();
+        std::vector<sequence> lastSequences;
+        std::vector<IndexTransaction*> transactions;
+        Database* sourceDatabase = indexes[0]->_sourceDatabase;
+        sequence latestDbSequence = sourceDatabase->getInfo().last_seqnum;
+
+        // First find the minimum sequence that not all indexes have indexed yet.
+        // Also start a transaction for each index:
+        sequence startSequence = latestDbSequence+1;
+        for (auto idx = indexes.begin(); idx != indexes.end(); ++idx) {
+            sequence lastSequence = (*idx)->lastSequenceIndexed();
+            lastSequences.push_back(lastSequence);
+            startSequence = std::min(startSequence, lastSequence+1);
+
+            IndexTransaction* t = NULL;
+            if (lastSequence < latestDbSequence)
+                t = new IndexTransaction(*idx);
+            transactions.push_back(t);
+        }
+
+        if (startSequence >= latestDbSequence)
+            return; // no updating needed
+
+        // Enumerate all the documents:
+        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
+        options.includeDeleted = true;
+        for (DocEnumerator e(sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
+            
+            for (size_t i = 0; i < n; ++i) {
+                if (e->sequence() > lastSequences[i])
+                    indexes[i]->updateDocInIndex(*transactions[i], e.doc());
+            }
+        }
+
+        // Save each index's state, and delete the transactions:
+        for (size_t i = 0; i < n; ++i) {
+            if (transactions[i]) {
+                indexes[i]->_lastMapVersion = indexes[i]->_mapVersion;
+                indexes[i]->saveState(*transactions[i]);
+                delete transactions[i];
+            }
         }
     }
 

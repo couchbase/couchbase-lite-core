@@ -10,6 +10,8 @@
 #define __CBForest__MapReduceIndex__
 
 #include "Index.hh"
+#include <vector>
+
 
 namespace forestdb {
 
@@ -44,10 +46,14 @@ namespace forestdb {
 
         void updateIndex();
 
+        static void updateMultipleIndexes(std::vector<MapReduceIndex*>);
+
+
     private:
         void invalidate();
         void saveState(IndexTransaction& t);
-        
+        bool updateDocInIndex(IndexTransaction& trans, const Document& doc);
+
         forestdb::Database* _sourceDatabase;
         MapFn* _map;
         std::string _mapVersion, _lastMapVersion;

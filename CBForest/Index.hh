@@ -79,6 +79,8 @@ namespace forestdb {
     public:
         IndexTransaction(Index* index)              :Transaction(index) {}
 
+        /** Updates the index entry for a document with the given keys and values.
+            Returns true if the index may have changed as a result. */
         bool update(slice docID,
                     sequence docSequence,
                     std::vector<Collatable> keys,
