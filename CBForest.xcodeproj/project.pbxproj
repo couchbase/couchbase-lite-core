@@ -13,7 +13,6 @@
 			buildPhases = (
 			);
 			dependencies = (
-				27B7E0F618F8FB5200044EBA /* PBXTargetDependency */,
 				27B7E0F818F8FB5700044EBA /* PBXTargetDependency */,
 			);
 			name = All;
@@ -34,8 +33,6 @@
 		270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1C18F8E9750021A9A3 /* Cocoa.framework */; };
-		27139B3518F8E9750021A9A3 /* CBForest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1B18F8E9750021A9A3 /* CBForest.framework */; };
-		27139B5018F8EB630021A9A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		27139B5C18F8EDA20021A9A3 /* docio.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729818E4857900A80C5A /* docio.cc */; };
 		27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D418F5E8D8007D8C23 /* snappy-sinksource.cc */; };
 		27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729718E4857900A80C5A /* btreeblock.cc */; };
@@ -119,9 +116,10 @@
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
+		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
-		277D19CA194E2A33008E91EB /* Error.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277D19C9194E295B008E91EB /* Error.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		278EBF9F1976325A006362F8 /* adler32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9719763203006362F8 /* adler32.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
@@ -132,22 +130,10 @@
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
-		27BF6A9B1941350A007DAE06 /* RevID.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DD1512193CD005009A367D /* RevID.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F119328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
 		27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
-		27DD14F5193547FC009A367D /* Database.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E48712192171EA007D8940 /* Database.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14F6193547FC009A367D /* RevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E487221922A64F007D8940 /* RevTree.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14F7193547FC009A367D /* VersionedDocument.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E4872A1923F24D007D8940 /* VersionedDocument.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14F8193547FC009A367D /* Index.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E487321924242C007D8940 /* Index.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14F9193547FC009A367D /* MapReduceIndex.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E4873919255EA8007D8940 /* MapReduceIndex.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14FA193547FC009A367D /* Collatable.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E4872E1924178B007D8940 /* Collatable.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD14FB193547FC009A367D /* slice.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2704A1E219049E2300138320 /* slice.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD150819354C70009A367D /* CBForest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DD150719354C70009A367D /* CBForest.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD150919355123009A367D /* forestdb.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731118E6493F00A80C5A /* forestdb.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD150A19355123009A367D /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		27DD150B19355123009A367D /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DD1514193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
@@ -172,8 +158,6 @@
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
-		27E609A51951E58F00202B72 /* DocEnumerator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E609A41951E53F00202B72 /* DocEnumerator.hh */; settings = {ATTRIBUTES = (Public, ); }; };
-		27E9405D19549DE100A9732E /* forestdb_x.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2740498318E7A32A0036333A /* forestdb_x.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
@@ -184,11 +168,6 @@
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
 		27EF7F921911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
-		27EF7FFB1914296D00A327B9 /* fts3_tokenizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */; };
-		27EF80001914296D00A327B9 /* fts3_unicodesn.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */; };
-		27EF80011914296D00A327B9 /* fts3Int.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FA91914296D00A327B9 /* fts3Int.h */; };
-		27EF80021914296D00A327B9 /* libstemmer.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FAA1914296D00A327B9 /* libstemmer.h */; };
-		27EF80061914296D00A327B9 /* modules_utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FAE1914296D00A327B9 /* modules_utf8.h */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -259,7 +238,6 @@
 		27EF81081917EEC600A327B9 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		27EF810C1917EEC600A327B9 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
-		27FA99E51917F26200912F96 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		27FA99F619180B5F00912F96 /* stem_UTF_8_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */; };
 		27FA99F719180B5F00912F96 /* stem_ISO_8859_1_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */; };
 		27FA99F819180B5F00912F96 /* stem_UTF_8_swedish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF11914296D00A327B9 /* stem_UTF_8_swedish.c */; };
@@ -331,13 +309,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		27139B3318F8E9750021A9A3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27139B1A18F8E9750021A9A3;
-			remoteInfo = CBForest;
-		};
 		27139BA718F8EE3A0021A9A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -352,19 +323,12 @@
 			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
 			remoteInfo = "forestdb iOS";
 		};
-		273ACB55196F63C4007A58A1 /* PBXContainerItemProxy */ = {
+		27766E1E1982DED300CAA464 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 27139B1A18F8E9750021A9A3;
-			remoteInfo = CBForest;
-		};
-		27B7E0F518F8FB5200044EBA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27139B1A18F8E9750021A9A3;
-			remoteInfo = CBForest;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "CBForest static";
 		};
 		27B7E0F718F8FB5700044EBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -379,13 +343,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27FA99F419180B5F00912F96;
 			remoteInfo = "Tokenizer-iOS";
-		};
-		27EF81131917EF3000A327B9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
-			remoteInfo = "CBForest static";
 		};
 		27EF81151917EF4000A327B9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -431,7 +388,6 @@
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
 		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
 		270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument_Tests.mm; sourceTree = "<group>"; };
-		27139B1B18F8E9750021A9A3 /* CBForest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CBForest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -510,6 +466,7 @@
 		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
 		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
+		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../CBForest/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
 		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
@@ -632,7 +589,6 @@
 		27EF7FF71914296D00A327B9 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF80C7191445CF00A327B9 /* english_stopwords.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = english_stopwords.h; path = ../CBForest/english_stopwords.h; sourceTree = "<group>"; };
-		27EF80F81917ED1900A327B9 /* CBForest copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "CBForest copy-Info.plist"; path = "/Couchbase/CouchbaseLite/vendor/CBForest/CBForest copy-Info.plist"; sourceTree = "<absolute>"; };
 		27EF81121917EEC600A327B9 /* libCBForest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCBForest.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libTokenizer-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = ../CBForest/varint.cc; sourceTree = "<group>"; };
@@ -640,22 +596,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		27139B1718F8E9750021A9A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27FA99E51917F26200912F96 /* libCBForest.a in Frameworks */,
-				27139B5018F8EB630021A9A3 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		27139B2D18F8E9750021A9A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27766E161982DA8E00CAA464 /* Security.framework in Frameworks */,
 				27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */,
+				27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */,
 				27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */,
-				27139B3518F8E9750021A9A3 /* CBForest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -760,7 +708,6 @@
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
-				27EF80F81917ED1900A327B9 /* CBForest copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -768,7 +715,6 @@
 			isa = PBXGroup;
 			children = (
 				275072C318E4AA4400A80C5A /* libforestdb.a */,
-				27139B1B18F8E9750021A9A3 /* CBForest.framework */,
 				27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */,
 				27139B9018F8EDA20021A9A3 /* libforestdb.a */,
 				27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */,
@@ -783,6 +729,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27766E151982DA8E00CAA464 /* Security.framework */,
 				2750724C18E3E5BB00A80C5A /* libforestdb.dylib */,
 				2750723E18E3E52800A80C5A /* Foundation.framework */,
 				275072AB18E4A68E00A80C5A /* XCTest.framework */,
@@ -965,8 +912,7 @@
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
-			name = CBForest;
-			path = Cpp;
+			path = CBForest;
 			sourceTree = "<group>";
 		};
 		27EF7FAB1914296D00A327B9 /* include */ = {
@@ -1098,32 +1044,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		27139B1818F8E9750021A9A3 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27DD14FB193547FC009A367D /* slice.hh in Headers */,
-				27EF80061914296D00A327B9 /* modules_utf8.h in Headers */,
-				27DD150919355123009A367D /* forestdb.h in Headers */,
-				27DD150B19355123009A367D /* fdb_types.h in Headers */,
-				27DD14F9193547FC009A367D /* MapReduceIndex.hh in Headers */,
-				27BF6A9B1941350A007DAE06 /* RevID.hh in Headers */,
-				27E609A51951E58F00202B72 /* DocEnumerator.hh in Headers */,
-				27DD150819354C70009A367D /* CBForest.hh in Headers */,
-				27EF80011914296D00A327B9 /* fts3Int.h in Headers */,
-				27DD150A19355123009A367D /* fdb_errors.h in Headers */,
-				27DD14F5193547FC009A367D /* Database.hh in Headers */,
-				27EF7FFB1914296D00A327B9 /* fts3_tokenizer.h in Headers */,
-				27DD14F7193547FC009A367D /* VersionedDocument.hh in Headers */,
-				27DD14F6193547FC009A367D /* RevTree.hh in Headers */,
-				277D19CA194E2A33008E91EB /* Error.hh in Headers */,
-				27DD14F8193547FC009A367D /* Index.hh in Headers */,
-				27DD14FA193547FC009A367D /* Collatable.hh in Headers */,
-				27EF80021914296D00A327B9 /* libstemmer.h in Headers */,
-				27EF80001914296D00A327B9 /* fts3_unicodesn.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		27139B7A18F8EDA20021A9A3 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -1249,24 +1169,6 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		27139B1A18F8E9750021A9A3 /* CBForest */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27139B3E18F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest" */;
-			buildPhases = (
-				27139B1618F8E9750021A9A3 /* Sources */,
-				27139B1718F8E9750021A9A3 /* Frameworks */,
-				27139B1818F8E9750021A9A3 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				27EF81141917EF3000A327B9 /* PBXTargetDependency */,
-			);
-			name = CBForest;
-			productName = CBForest;
-			productReference = 27139B1B18F8E9750021A9A3 /* CBForest.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 		27139B2F18F8E9750021A9A3 /* CBForest Tests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */;
@@ -1278,8 +1180,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				27139B3418F8E9750021A9A3 /* PBXTargetDependency */,
-				273ACB56196F63C4007A58A1 /* PBXTargetDependency */,
+				27766E1F1982DED300CAA464 /* PBXTargetDependency */,
 			);
 			name = "CBForest Tests";
 			productName = CBForestTests;
@@ -1420,7 +1321,7 @@
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
-						TestTargetID = 27139B1A18F8E9750021A9A3;
+						TestTargetID = 27EF80F91917EEC600A327B9;
 					};
 					27139BA118F8EE3A0021A9A3 = {
 						TestTargetID = 27139B9418F8EE3A0021A9A3;
@@ -1439,7 +1340,6 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				27139B1A18F8E9750021A9A3 /* CBForest */,
 				27EF80F91917EEC600A327B9 /* CBForest static */,
 				27139B9418F8EE3A0021A9A3 /* CBForest-iOS */,
 				27139B2F18F8E9750021A9A3 /* CBForest Tests */,
@@ -1471,14 +1371,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		27139B1618F8E9750021A9A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27E9405D19549DE100A9732E /* forestdb_x.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		27139B2C18F8E9750021A9A3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1716,11 +1608,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		27139B3418F8E9750021A9A3 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27139B1A18F8E9750021A9A3 /* CBForest */;
-			targetProxy = 27139B3318F8E9750021A9A3 /* PBXContainerItemProxy */;
-		};
 		27139BA818F8EE3A0021A9A3 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27139B9418F8EE3A0021A9A3 /* CBForest-iOS */;
@@ -1731,15 +1618,10 @@
 			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
 			targetProxy = 27139BB818F8EE820021A9A3 /* PBXContainerItemProxy */;
 		};
-		273ACB56196F63C4007A58A1 /* PBXTargetDependency */ = {
+		27766E1F1982DED300CAA464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27139B1A18F8E9750021A9A3 /* CBForest */;
-			targetProxy = 273ACB55196F63C4007A58A1 /* PBXContainerItemProxy */;
-		};
-		27B7E0F618F8FB5200044EBA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27139B1A18F8E9750021A9A3 /* CBForest */;
-			targetProxy = 27B7E0F518F8FB5200044EBA /* PBXContainerItemProxy */;
+			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
+			targetProxy = 27766E1E1982DED300CAA464 /* PBXContainerItemProxy */;
 		};
 		27B7E0F818F8FB5700044EBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1750,11 +1632,6 @@
 			isa = PBXTargetDependency;
 			target = 27FA99F419180B5F00912F96 /* Tokenizer-iOS */;
 			targetProxy = 27E940671954BCF500A9732E /* PBXContainerItemProxy */;
-		};
-		27EF81141917EF3000A327B9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
-			targetProxy = 27EF81131917EF3000A327B9 /* PBXContainerItemProxy */;
 		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1780,52 +1657,6 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		27139B3F18F8E9750021A9A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				FRAMEWORK_VERSION = A;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				INFOPLIST_FILE = "CBForest/CBForest-Info.plist";
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = framework;
-			};
-			name = Debug;
-		};
-		27139B4018F8E9750021A9A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				FRAMEWORK_VERSION = A;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				INFOPLIST_FILE = "CBForest/CBForest-Info.plist";
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = framework;
-			};
-			name = Release;
-		};
 		27139B4218F8E9750021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2323,15 +2154,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		27139B3E18F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27139B3F18F8E9750021A9A3 /* Debug */,
-				27139B4018F8E9750021A9A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
