@@ -24,6 +24,7 @@ namespace forestdb {
         values.push_back(value);
     }
 
+
     MapReduceIndex::MapReduceIndex(std::string path,
                                    forestdb::Database::openFlags flags,
                                    const forestdb::Database::config& config,
@@ -83,6 +84,7 @@ namespace forestdb {
 
 
     void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
+        readState();
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
             Transaction t(this);
             _map = map;
@@ -93,10 +95,13 @@ namespace forestdb {
         }
     }
 
-    bool MapReduceIndex::updateDocInIndex(IndexTransaction& trans, const Document& doc) {
+    bool MapReduceIndex::updateDocInIndex(IndexTransaction& trans, const Mappable& mappable) {
+        const Document& doc = mappable.document();
+        if (doc.sequence() <= _lastSequenceIndexed)
+            return false;
         emitter emit;
         if (!doc.deleted())
-            (*_map)(doc, emit); // Call map function!
+            (*_map)(mappable, emit); // Call map function!
         _lastSequenceIndexed = doc.sequence();
         if (trans.update(doc.key(), doc.sequence(), emit.keys, emit.values)) {
             _lastSequenceChangedAt = _lastSequenceIndexed;
@@ -106,70 +111,64 @@ namespace forestdb {
     }
 
     
-    void MapReduceIndex::updateIndex() {
-        IndexTransaction trans(this);
-
-        if (_lastMapVersion.size() && _lastMapVersion != _mapVersion) {
-            trans.erase();
-            invalidate();
-        }
-
-        sequence startSequence = _lastSequenceIndexed + 1;
-
-        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
-        options.includeDeleted = true;
-        for (DocEnumerator e(_sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
-            updateDocInIndex(trans, e.doc());
-        }
-
-        _lastMapVersion = _mapVersion;
-        if (_lastSequenceIndexed >= startSequence)
-            saveState(trans);
-    }
+#pragma mark - MAP-REDUCE INDEXER
 
 
-    void MapReduceIndex::updateMultipleIndexes(std::vector<MapReduceIndex*> indexes) {
-        const size_t n = indexes.size();
-        std::vector<sequence> lastSequences;
-        std::vector<IndexTransaction*> transactions;
-        Database* sourceDatabase = indexes[0]->_sourceDatabase;
+    MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes)
+    :_indexes(indexes)
+    { }
+
+    bool MapReduceIndexer::run() {
+        Database* sourceDatabase = _indexes[0]->sourceDatabase();
         sequence latestDbSequence = sourceDatabase->getInfo().last_seqnum;
 
         // First find the minimum sequence that not all indexes have indexed yet.
         // Also start a transaction for each index:
         sequence startSequence = latestDbSequence+1;
-        for (auto idx = indexes.begin(); idx != indexes.end(); ++idx) {
+        for (auto idx = _indexes.begin(); idx != _indexes.end(); ++idx) {
             sequence lastSequence = (*idx)->lastSequenceIndexed();
-            lastSequences.push_back(lastSequence);
-            startSequence = std::min(startSequence, lastSequence+1);
-
             IndexTransaction* t = NULL;
-            if (lastSequence < latestDbSequence)
+            if (lastSequence < latestDbSequence) {
+                startSequence = std::min(startSequence, lastSequence+1);
                 t = new IndexTransaction(*idx);
-            transactions.push_back(t);
+            }
+            _transactions.push_back(t);
         }
 
-        if (startSequence >= latestDbSequence)
-            return; // no updating needed
+        if (startSequence > latestDbSequence)
+            return false; // no updating needed
 
         // Enumerate all the documents:
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
         for (DocEnumerator e(sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
-            
-            for (size_t i = 0; i < n; ++i) {
-                if (e->sequence() > lastSequences[i])
-                    indexes[i]->updateDocInIndex(*transactions[i], e.doc());
+            addDocument(*e);
+        }
+        return true;
+    }
+
+    MapReduceIndexer::~MapReduceIndexer() {
+        // Save each index's state, and delete the transactions:
+        const size_t n = _indexes.size();
+        for (size_t i = 0; i < n; ++i) {
+            if (_transactions[i]) {
+                _indexes[i]->_lastMapVersion = _indexes[i]->_mapVersion;
+                _indexes[i]->saveState(*_transactions[i]);
+                delete _transactions[i];
             }
         }
+    }
 
-        // Save each index's state, and delete the transactions:
+    void MapReduceIndexer::addDocument(const Document& doc) {
+        Mappable mappable(doc);
+        addMappable(mappable);
+    }
+
+    void MapReduceIndexer::addMappable(const Mappable& mappable) {
+        const size_t n = _indexes.size();
         for (size_t i = 0; i < n; ++i) {
-            if (transactions[i]) {
-                indexes[i]->_lastMapVersion = indexes[i]->_mapVersion;
-                indexes[i]->saveState(*transactions[i]);
-                delete transactions[i];
-            }
+            if (_transactions[i])
+                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
         }
     }
 

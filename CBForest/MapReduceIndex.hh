@@ -15,6 +15,20 @@
 
 namespace forestdb {
 
+    /** A document as passed to a map function. This is subclassable; subclasses can transform
+        the document (e.g. parsing JSON) and provide additional methods to access the transformed
+        version. (Look at MapReduce_Test.mm for an example.) */
+    class Mappable {
+    public:
+        explicit Mappable(const Document& doc)      :_doc(doc) { }
+        virtual ~Mappable()                         { }
+
+        const Document& document() const            {return _doc;}
+
+    private:
+        const Document& _doc;
+    };
+
     class EmitFn {
     public:
         virtual void operator() (Collatable key, Collatable value) =0;
@@ -22,7 +36,7 @@ namespace forestdb {
 
     class MapFn {
     public:
-        virtual void operator() (const Document&, EmitFn& emit) =0;
+        virtual void operator() (const Mappable&, EmitFn& emit) =0;
     };
 
     /** An Index that uses a MapFn to index the documents of another Database. */
@@ -33,6 +47,7 @@ namespace forestdb {
                        const Database::config&,
                        Database* sourceDatabase);
 
+        Database* sourceDatabase() const        {return _sourceDatabase;}
         void readState();
         int indexType() const                   {return _indexType;}
         
@@ -44,15 +59,10 @@ namespace forestdb {
         /** The last source database sequence number at which the index actually changed. (<= lastSequenceIndexed.) */
         sequence lastSequenceChangedAt() const;
 
-        void updateIndex();
-
-        static void updateMultipleIndexes(std::vector<MapReduceIndex*>);
-
-
     private:
         void invalidate();
         void saveState(IndexTransaction& t);
-        bool updateDocInIndex(IndexTransaction& trans, const Document& doc);
+        bool updateDocInIndex(IndexTransaction&, const Mappable&);
 
         forestdb::Database* _sourceDatabase;
         MapFn* _map;
@@ -60,6 +70,32 @@ namespace forestdb {
         int _indexType;
         sequence _lastSequenceIndexed, _lastSequenceChangedAt;
         sequence _stateReadAt; // index sequence # at which state was last valid
+
+        friend class MapReduceIndexer;
+    };
+
+
+    /** An activity that updates one or more map-reduce indexes. */
+    class MapReduceIndexer {
+    public:
+        MapReduceIndexer(std::vector<MapReduceIndex*> indexes);
+        ~MapReduceIndexer();
+
+        bool run();
+
+    protected:
+        /** Transforms the Document to a Mappable and invokes addMappable.
+            The default implementation just uses the Mappable base class, i.e. doesn't do any work.
+            Subclasses can override this to do arbitrary parsing or transformation of the doc.
+            The override probably shouldn't call the inherited method, just addMappable(). */
+        virtual void addDocument(const Document&);
+
+        /** Calls each index's map function on the Mappable, and updates the indexes. */
+        void addMappable(const Mappable&);
+
+    private:
+        std::vector<MapReduceIndex*> _indexes;
+        std::vector<IndexTransaction*> _transactions;
     };
 }
 

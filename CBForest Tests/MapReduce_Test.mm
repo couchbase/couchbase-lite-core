@@ -34,18 +34,52 @@ static Collatable StringToCollatable(NSString* str) {
 #define kIndexPath "/tmp/temp.fdbindex"
 
 
+class TestJSONMappable : public Mappable {
+public:
+    TestJSONMappable(const Document& doc)
+    :Mappable(doc)
+    {
+        if (doc.deleted())
+            body = nil;
+        else
+            body = DataToJSON(doc.body().copiedNSData(), NULL);
+    }
+    __strong NSDictionary* body;
+};
+
 class TestMapFn : public MapFn {
 public:
     static int numMapCalls;
-    virtual void operator() (const Document& doc, EmitFn& emit) {
+    virtual void operator() (const Mappable& mappable, EmitFn& emit) {
         ++numMapCalls;
-        NSDictionary* body = DataToJSON(doc.body().copiedNSData(), NULL);
-        for (NSString* city in body[@"cities"])
-            emit(StringToCollatable(city), StringToCollatable(body[@"name"]));
+        NSDictionary* body = ((TestJSONMappable&)mappable).body;
+        if (body) {
+            for (NSString* city in body[@"cities"])
+                emit(StringToCollatable(city), StringToCollatable(body[@"name"]));
+        }
     }
 };
 
 int TestMapFn::numMapCalls;
+
+class TestIndexer : public MapReduceIndexer {
+public:
+    static bool updateIndex(MapReduceIndex* index) {
+        std::vector<MapReduceIndex*> indexes;
+        indexes.push_back(index);
+        TestIndexer indexer(indexes);
+        return indexer.run();
+    }
+
+    TestIndexer(std::vector<MapReduceIndex*> indexes)
+    :MapReduceIndexer(indexes)
+    { }
+    
+    virtual void addDocument(const Document& doc) {
+        TestJSONMappable mappable(doc);
+        addMappable(mappable);
+    }
+};
 
 
 @interface MapReduce_Test : XCTestCase
@@ -76,7 +110,8 @@ int TestMapFn::numMapCalls;
 
 
 - (void) queryExpectingKeys: (NSArray*)expectedKeys {
-    index->updateIndex();
+    XCTAssertTrue(TestIndexer::updateIndex(index));
+
     int nRows = 0;
     for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,

@@ -79,6 +79,8 @@ namespace forestdb {
     public:
         IndexTransaction(Index* index)              :Transaction(index) {}
 
+        Index* index() const                        {return (Index*)database();}
+
         /** Updates the index entry for a document with the given keys and values.
             Returns true if the index may have changed as a result. */
         bool update(slice docID,

@@ -98,6 +98,8 @@ namespace forestdb {
         Transaction(Database*);
         ~Transaction();
 
+        Database* database() const          {return &_db;}
+
         /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
         void abort() {_state = -1;}
         
