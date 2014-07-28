@@ -86,6 +86,7 @@ namespace forestdb {
         const Revision* get(revid) const;
         const Revision* operator[](unsigned index) const {return get(index);}
         const Revision* operator[](revid revID) const    {return get(revID);}
+        const Revision* getBySequence(sequence) const;
 
 #ifdef __OBJC__
         const Revision* get(NSString* revID) const;

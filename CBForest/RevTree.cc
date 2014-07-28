@@ -222,6 +222,15 @@ namespace forestdb {
         return NULL;
     }
 
+    const Revision* RevTree::getBySequence(sequence seq) const {
+        for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
+            if (rev->sequence == seq)
+                return &*rev;
+        }
+        assert(!_unknown);
+        return NULL;
+    }
+
     bool RevTree::hasConflict() const {
         if (_revs.size() < 2) {
             assert(!_unknown);
