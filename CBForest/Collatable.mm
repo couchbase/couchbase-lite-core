@@ -79,6 +79,8 @@ namespace forestdb {
     }
     
     id CollatableReader::readNSObject() {
+        if (_data.size == 0)
+            return nil;
         switch (peekTag()) {
             case kNull:
                 skipTag();
@@ -113,8 +115,10 @@ namespace forestdb {
                 endMap();
                 return result;
             }
+            case kSpecial:
+                throw "can't convert Special tag to NSObject";
             default:
-                return nil;
+                throw "invalid tag in Collatable data";
         }
     }
 

@@ -51,6 +51,8 @@ namespace forestdb {
         Collatable& operator<< (id);
 #endif
 
+        Collatable& addSpecial()                    {addTag(9); return *this;}
+
         operator slice() const                      {return slice(_str);}
         bool empty() const                          {return _str.size() == 0;}
         bool operator< (const Collatable& c) const  {return _str < c._str;}
@@ -78,10 +80,13 @@ namespace forestdb {
             kArray,
             kMap,
             kDouble, // HACK
+            kSpecial,
             kError = 255        // Something went wrong...
         } Tag;
 
         CollatableReader(slice s) :_data(s) { }
+
+        slice data() const                  {return _data;}
 
         Tag peekTag() const;
 

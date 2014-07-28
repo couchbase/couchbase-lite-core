@@ -266,6 +266,9 @@ namespace forestdb {
                 out << '}';
                 endMap();
                 break;
+            case kSpecial:
+                out << "<special>";
+                break;
             default:
                 out << "???";
                 break;
