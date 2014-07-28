@@ -115,7 +115,8 @@ namespace forestdb {
 
 
     MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes)
-    :_indexes(indexes)
+    :_indexes(indexes),
+     _triggerIndex(NULL)
     { }
 
     bool MapReduceIndexer::run() {
@@ -131,6 +132,9 @@ namespace forestdb {
             if (lastSequence < latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
                 t = new IndexTransaction(*idx);
+            } else if (*idx == _triggerIndex) {
+                _transactions.resize(0);
+                return false; // The trigger index doesn't need to be updated, so abort
             }
             _transactions.push_back(t);
         }
@@ -149,7 +153,7 @@ namespace forestdb {
 
     MapReduceIndexer::~MapReduceIndexer() {
         // Save each index's state, and delete the transactions:
-        const size_t n = _indexes.size();
+        const size_t n = _transactions.size();
         for (size_t i = 0; i < n; ++i) {
             if (_transactions[i]) {
                 _indexes[i]->_lastMapVersion = _indexes[i]->_mapVersion;
@@ -165,11 +169,9 @@ namespace forestdb {
     }
 
     void MapReduceIndexer::addMappable(const Mappable& mappable) {
-        const size_t n = _indexes.size();
-        for (size_t i = 0; i < n; ++i) {
-            if (_transactions[i])
-                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
-        }
+        const size_t n = indexCount();
+        for (size_t i = 0; i < n; ++i)
+            updateDocInIndex(i, mappable);
     }
 
 }

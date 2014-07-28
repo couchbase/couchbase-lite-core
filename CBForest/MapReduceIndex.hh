@@ -81,6 +81,9 @@ namespace forestdb {
         MapReduceIndexer(std::vector<MapReduceIndex*> indexes);
         ~MapReduceIndexer();
 
+        /** If set, indexing will only occur if this index needs to be updated. */
+        void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}
+
         bool run();
 
     protected:
@@ -91,11 +94,18 @@ namespace forestdb {
         virtual void addDocument(const Document&);
 
         /** Calls each index's map function on the Mappable, and updates the indexes. */
-        void addMappable(const Mappable&);
+        virtual void addMappable(const Mappable&);
+
+        size_t indexCount() { return _indexes.size(); }
+        void updateDocInIndex(size_t i, const Mappable& mappable) {
+            if (_transactions[i])
+                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
+        }
 
     private:
         std::vector<MapReduceIndex*> _indexes;
         std::vector<IndexTransaction*> _transactions;
+        MapReduceIndex* _triggerIndex;
     };
 }
 
