@@ -56,6 +56,8 @@ namespace forestdb {
     }
 
     void MapReduceIndex::saveState(IndexTransaction& t) {
+        _lastMapVersion = _mapVersion;
+
         Collatable stateKey;
         stateKey.addNull();
 
@@ -116,7 +118,8 @@ namespace forestdb {
 
     MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes)
     :_indexes(indexes),
-     _triggerIndex(NULL)
+     _triggerIndex(NULL),
+     _finished(false)
     { }
 
     bool MapReduceIndexer::run() {
@@ -133,7 +136,6 @@ namespace forestdb {
                 startSequence = std::min(startSequence, lastSequence+1);
                 t = new IndexTransaction(*idx);
             } else if (*idx == _triggerIndex) {
-                _transactions.resize(0);
                 return false; // The trigger index doesn't need to be updated, so abort
             }
             _transactions.push_back(t);
@@ -148,6 +150,7 @@ namespace forestdb {
         for (DocEnumerator e(sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
             addDocument(*e);
         }
+        _finished = true;
         return true;
     }
 
@@ -156,8 +159,8 @@ namespace forestdb {
         const size_t n = _transactions.size();
         for (size_t i = 0; i < n; ++i) {
             if (_transactions[i]) {
-                _indexes[i]->_lastMapVersion = _indexes[i]->_mapVersion;
-                _indexes[i]->saveState(*_transactions[i]);
+                if (_finished)
+                    _indexes[i]->saveState(*_transactions[i]);
                 delete _transactions[i];
             }
         }

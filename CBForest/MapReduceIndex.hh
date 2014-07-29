@@ -72,6 +72,7 @@ namespace forestdb {
         sequence _stateReadAt; // index sequence # at which state was last valid
 
         friend class MapReduceIndexer;
+        friend class MapReduceDispatchIndexer;
     };
 
 
@@ -102,10 +103,11 @@ namespace forestdb {
                 _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
         }
 
-    private:
+    protected:
         std::vector<MapReduceIndex*> _indexes;
         std::vector<IndexTransaction*> _transactions;
         MapReduceIndex* _triggerIndex;
+        bool _finished;
     };
 }
 

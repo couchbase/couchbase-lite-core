@@ -11,6 +11,7 @@
 
 #include "MapReduceIndex.hh"
 #import <dispatch/dispatch.h>
+#import <sys/qos.h>
 
 
 namespace forestdb {
@@ -18,7 +19,9 @@ namespace forestdb {
     /** MapReduceIndexer that uses dispatch queues (GCD) to parallelize running map functions. */
     class MapReduceDispatchIndexer : public MapReduceIndexer {
     public:
-        MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes);
+        MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes,
+                                 qos_class_t priority = QOS_CLASS_UTILITY);
+        virtual ~MapReduceDispatchIndexer();
     protected:
         virtual void addMappable(const Mappable&);
 
