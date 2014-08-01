@@ -13,6 +13,7 @@
 			buildPhases = (
 			);
 			dependencies = (
+				27410EAA198BFD97007EE67C /* PBXTargetDependency */,
 				27B7E0F818F8FB5700044EBA /* PBXTargetDependency */,
 			);
 			name = All;
@@ -325,6 +326,13 @@
 			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
 			remoteInfo = "forestdb iOS";
 		};
+		27410EA9198BFD97007EE67C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "CBForest static";
+		};
 		27766E1E1982DED300CAA464 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -395,7 +403,6 @@
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		27139B2118F8E9750021A9A3 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		27139B5918F8ECB10021A9A3 /* CBForest.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = CBForest.exp; sourceTree = "<group>"; };
 		27139B9018F8EDA20021A9A3 /* libforestdb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libforestdb.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -416,8 +423,6 @@
 		273AD3DB18F5E8D8007D8C23 /* snappy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snappy.h; sourceTree = "<group>"; };
 		273AD3E718F5EB15007D8C23 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
-		2740498318E7A32A0036333A /* forestdb_x.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = forestdb_x.cc; path = ../CBForest/forestdb_x.cc; sourceTree = "<group>"; };
-		2740498518E7A3360036333A /* forestdb_x.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb_x.h; path = ../CBForest/forestdb_x.h; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -481,7 +486,6 @@
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_fast_str_kv.cc; sourceTree = "<group>"; };
 		27B62989197ED63D00F7148E /* btree_fast_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_fast_str_kv.h; sourceTree = "<group>"; };
-		27B7E11318F8FF0900044EBA /* CBForest-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CBForest-Info.plist"; sourceTree = "<group>"; };
 		27DD14EF19328576009A367D /* Index_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Index_Test.mm; sourceTree = "<group>"; };
 		27DD14F21934F44F009A367D /* MapReduce_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MapReduce_Test.mm; sourceTree = "<group>"; };
 		27DD150719354C70009A367D /* CBForest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CBForest.hh; path = ../CBForest/CBForest.hh; sourceTree = "<group>"; };
@@ -748,8 +752,6 @@
 			isa = PBXGroup;
 			children = (
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
-				27139B5918F8ECB10021A9A3 /* CBForest.exp */,
-				27B7E11318F8FF0900044EBA /* CBForest-Info.plist */,
 			);
 			name = "Supporting Files";
 			path = ../CBForest;
@@ -913,8 +915,6 @@
 				27E487261923B80E007D8940 /* slice.mm */,
 				27FDFC0018EA58BF00AC4647 /* varint.cc */,
 				27FDFC0218EA58DA00AC4647 /* varint.hh */,
-				2740498318E7A32A0036333A /* forestdb_x.cc */,
-				2740498518E7A3360036333A /* forestdb_x.h */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
@@ -1625,6 +1625,11 @@
 			isa = PBXTargetDependency;
 			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
 			targetProxy = 27139BB818F8EE820021A9A3 /* PBXContainerItemProxy */;
+		};
+		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
+			targetProxy = 27410EA9198BFD97007EE67C /* PBXContainerItemProxy */;
 		};
 		27766E1F1982DED300CAA464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

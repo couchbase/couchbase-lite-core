@@ -4,6 +4,13 @@
 //  The contents of this file are implicitly included at the beginning of every source file.
 //
 
+#ifdef __cplusplus
+    #include <stddef.h>
+    #include <stdlib.h>
+    #include <string>
+    #include <vector>
+#endif
+
 #ifdef __OBJC__
     #import <Foundation/Foundation.h>
 #endif
