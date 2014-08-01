@@ -17,8 +17,6 @@
 #include <string.h>
 #include <ostream>
 #include <sstream>
-#include <CoreFoundation/CFByteOrder.h>
-
 
 #define offsetby(PTR,OFFSET) (void*)((uint8_t*)(PTR)+(OFFSET))
 

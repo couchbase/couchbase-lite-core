@@ -68,6 +68,16 @@ static uint64_t randn(uint64_t limit) {
     }
 }
 
+- (void) testDoubles {
+    // Doubles don't collate correctly yet, but make sure they round-trip:
+    Collatable c;
+    c << M_PI;
+    alloc_slice encoded((forestdb::slice)c);
+    CollatableReader reader(encoded);
+    double result = reader.readDouble();
+    AssertEq(result, M_PI);
+}
+
 - (void) testStrings {
     AssertEq(compareCollated((std::string)"", 7), 1);
     AssertEq(compareCollated((std::string)"", (std::string)""), 0);

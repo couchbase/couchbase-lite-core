@@ -7,10 +7,27 @@
 //
 
 #include "Collatable.hh"
-#include <CoreFoundation/CFByteOrder.h>
+#include "forestdb_endian.h"
 #include <sstream>
 
 namespace forestdb {
+
+    union swappedDouble {
+        double asDouble;
+        uint64_t asRaw;
+    };
+
+    static inline swappedDouble _encdouble(double d) {
+        swappedDouble swapped;
+        swapped.asDouble = d;
+        swapped.asRaw = _enc64(swapped.asRaw);
+        return swapped;
+    }
+
+    static inline double _decdouble(swappedDouble swapped) {
+        swapped.asRaw = _dec64(swapped.asRaw);
+        return swapped.asDouble;
+    }
 
     static uint8_t* getCharPriorityMap();
 
@@ -29,7 +46,7 @@ namespace forestdb {
             int64_t asInt;
             uint8_t bytes[8];
         } val;
-        val.asInt = CFSwapInt64HostToBig(n);
+        val.asInt = _enc64(n);          // big-endian encoding
         uint8_t ignore = n < 0 ? 0xFF : 0x00;
         int i;
         for (i=0; i<8; i++)
@@ -59,7 +76,7 @@ namespace forestdb {
                 return operator<<(i);
         }
         addTag(CollatableReader::kDouble);
-        CFSwappedFloat64 swapped = CFConvertFloat64HostToSwapped(n);
+        swappedDouble swapped = _encdouble(n);
         add(slice(&swapped, sizeof(swapped)));
         return *this;
     }
@@ -138,16 +155,16 @@ namespace forestdb {
             throw "malformed number";
         if (!_data.readInto(slice(&numBuf.asBytes[8-nBytes], nBytes)))
             throw "malformed number";
-        return CFSwapInt64BigToHost(numBuf.asBigEndian);
+        return _dec64(numBuf.asBigEndian);
     }
 
     double CollatableReader::readDouble() {
         if (_data[0] == kNumber)
             return readInt();
         expectTag(kDouble);
-        CFSwappedFloat64 swapped;
+        swappedDouble swapped;
         _data.readInto(slice(&swapped, sizeof(swapped)));
-        return CFConvertDoubleSwappedToHost(swapped);
+        return _decdouble(swapped);
     }
 
     alloc_slice CollatableReader::readString() {
