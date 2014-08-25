@@ -31,25 +31,31 @@ namespace forestdb {
     :Database(path, flags, config)
     { }
 
-    bool IndexTransaction::removeOldRowsForDoc(slice docID) {
+    int64_t IndexTransaction::removeOldRowsForDoc(slice docID) {
+        int64_t rowsRemoved = 0;
         Document doc = get(docID);
         slice sequences = doc.body();
-        if (sequences.size == 0)
-            return false;
-        uint64_t seq;
-        while (ReadUVarInt(&sequences, &seq))
-            if (!del((sequence)seq))
-                fprintf(stderr, "*** Index::removeOldRowsForDoc -- couldn't find seq %llu\n", seq);
-        return true;
+        if (sequences.size > 0) {
+            uint64_t seq;
+            while (ReadUVarInt(&sequences, &seq)) {
+                if (!del((sequence)seq))
+                    fprintf(stderr, "*** Index::removeOldRowsForDoc -- couldn't find seq %llu\n",
+                            seq);
+                ++rowsRemoved;
+            }
+        }
+        return rowsRemoved;
     }
 
     bool IndexTransaction::update(slice docID, sequence docSequence,
-                       std::vector<Collatable> keys, std::vector<Collatable> values)
+                                  std::vector<Collatable> keys, std::vector<Collatable> values,
+                                  uint64_t &rowCount)
     {
         Collatable collatableDocID;
         collatableDocID << docID;
 
-        bool hadRows = removeOldRowsForDoc(collatableDocID);
+        int64_t rowsRemoved = removeOldRowsForDoc(collatableDocID);
+        int64_t rowsAdded = 0;
 
         std::string sequences;
         auto value = values.begin();
@@ -64,12 +70,14 @@ namespace forestdb {
             uint8_t buf[kMaxVarintLen64];
             size_t size = PutUVarInt(buf, seq);
             sequences += std::string((char*)buf, size);
+            ++rowsAdded;
         }
 
-        if (!hadRows && sequences.size()==0)
+        if (rowsRemoved==0 && rowsAdded==0)
             return false;
 
         set(collatableDocID, slice(sequences));
+        rowCount += rowsAdded - rowsRemoved;
         return true;
     }
 

@@ -66,8 +66,13 @@ namespace forestdb {
         /** The last source database sequence number at which the index actually changed. (<= lastSequenceIndexed.) */
         sequence lastSequenceChangedAt() const;
 
+        /** The number of rows in the index. */
+        uint64_t rowCount() const;
+
+    protected:
+        void deleted(); // called by Transaction::deleteDatabase()
+
     private:
-        void invalidate();
         void saveState(IndexTransaction& t);
         bool updateDocInIndex(IndexTransaction&, const Mappable&);
 
@@ -77,6 +82,7 @@ namespace forestdb {
         int _indexType;
         sequence _lastSequenceIndexed, _lastSequenceChangedAt;
         sequence _stateReadAt; // index sequence # at which state was last valid
+        uint64_t _rowCount;
 
         friend class MapReduceIndexer;
         friend class MapReduceDispatchIndexer;

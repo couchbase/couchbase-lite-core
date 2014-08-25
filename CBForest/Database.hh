@@ -84,6 +84,9 @@ namespace forestdb {
             fdb_set_log_callback(_handle, callback, ctx_data);
         }
 
+    protected:
+        virtual void deleted();
+
     private:
         class File;
         friend class Transaction;

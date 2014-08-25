@@ -124,6 +124,7 @@ public:
         AssertEqual(key, expectedKeys[nRows++]);
     }
     XCTAssertEqual(nRows, expectedKeys.count);
+    XCTAssertEqual(index->rowCount(), nRows);
 }
 
 

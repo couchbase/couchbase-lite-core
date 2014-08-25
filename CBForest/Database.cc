@@ -101,6 +101,10 @@ namespace forestdb {
         return (_openFlags & FDB_OPEN_FLAG_RDONLY) != 0;
     }
 
+    void Database::deleted() {
+        _handle = NULL;
+    }
+
     
 #pragma mark - GET:
 
@@ -271,6 +275,7 @@ namespace forestdb {
             _db._handle = _handle;
             throw(errno);
         }
+        _db.deleted();
     }
 
     void Transaction::erase() {

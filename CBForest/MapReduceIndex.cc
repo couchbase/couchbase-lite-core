@@ -38,7 +38,7 @@ namespace forestdb {
                                    forestdb::Database* sourceDatabase)
     :Index(path, flags, config),
      _sourceDatabase(sourceDatabase), _map(NULL), _indexType(0),
-     _lastSequenceIndexed(0), _lastSequenceChangedAt(0), _stateReadAt(0)
+     _lastSequenceIndexed(0), _lastSequenceChangedAt(0), _stateReadAt(0), _rowCount(0)
     {
         readState();
     }
@@ -57,6 +57,7 @@ namespace forestdb {
                 _lastSequenceChangedAt = reader.readInt();
                 _lastMapVersion = std::string(reader.readString());
                 _indexType = (int)reader.readInt();
+                _rowCount = (uint64_t)reader.readInt();
             }
             _stateReadAt = curIndexSeq;
         }
@@ -69,16 +70,18 @@ namespace forestdb {
         stateKey.addNull();
 
         Collatable state;
-        state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType;
+        state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
+              << _rowCount;
 
         _stateReadAt = t.set(stateKey, state);
     }
 
-    void MapReduceIndex::invalidate() {
+    void MapReduceIndex::deleted() {
         _lastSequenceIndexed = 0;
         _lastSequenceChangedAt = 0;
         _lastMapVersion = "";
         _stateReadAt = 0;
+        _rowCount = 0;
     }
 
     sequence MapReduceIndex::lastSequenceIndexed() const {
@@ -91,6 +94,11 @@ namespace forestdb {
         return _lastSequenceChangedAt;
     }
 
+    uint64_t MapReduceIndex::rowCount() const {
+        const_cast<MapReduceIndex*>(this)->readState();
+        return _rowCount;
+    }
+
 
     void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
         readState();
@@ -100,7 +108,6 @@ namespace forestdb {
             _indexType = indexType;
             _mapVersion = mapVersion;
             t.erase();
-            invalidate();
         }
     }
 
@@ -112,7 +119,7 @@ namespace forestdb {
         if (!doc.deleted())
             (*_map)(mappable, emit); // Call map function!
         _lastSequenceIndexed = doc.sequence();
-        if (trans.update(doc.key(), doc.sequence(), emit.keys, emit.values)) {
+        if (trans.update(doc.key(), doc.sequence(), emit.keys, emit.values, _rowCount)) {
             _lastSequenceChangedAt = _lastSequenceIndexed;
             return true;
         }

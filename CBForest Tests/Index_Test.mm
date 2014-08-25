@@ -61,6 +61,7 @@ static boolBlock scopedEnumerate() {
 @implementation Index_Test
 {
     Index* index;
+    uint64_t _rowCount;
 }
 
 
@@ -89,7 +90,7 @@ static boolBlock scopedEnumerate() {
         value << [body[0] UTF8String];
         values.push_back(value);
     }
-    bool changed = trans.update(nsstring_slice(docID), 1, keys, values);
+    bool changed = trans.update(nsstring_slice(docID), 1, keys, values, _rowCount);
     XCTAssert(changed);
 }
 
@@ -117,6 +118,7 @@ static boolBlock scopedEnumerate() {
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     XCTAssertEqual(nRows, 8);
+    AssertEq(_rowCount, nRows);
 
     {
         IndexTransaction trans(index);
@@ -134,6 +136,7 @@ static boolBlock scopedEnumerate() {
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     XCTAssertEqual(nRows, 9);
+    AssertEq(_rowCount, nRows);
 
     {
         NSLog(@"--- Removing CA");
@@ -150,6 +153,7 @@ static boolBlock scopedEnumerate() {
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     XCTAssertEqual(nRows, 6);
+    AssertEq(_rowCount, nRows);
 
     // Enumerate a vector of keys:
     NSLog(@"--- Enumerating a vector of keys");

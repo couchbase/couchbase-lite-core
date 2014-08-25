@@ -89,16 +89,18 @@ namespace forestdb {
         Index* index() const                        {return (Index*)database();}
 
         /** Updates the index entry for a document with the given keys and values.
+            Adjusts the value of rowCount by the number of rows added or removed.
             Returns true if the index may have changed as a result. */
         bool update(slice docID,
                     sequence docSequence,
                     std::vector<Collatable> keys,
-                    std::vector<Collatable> values);
+                    std::vector<Collatable> values,
+                    uint64_t &rowCount);
 
         void erase()                                {Transaction::erase();}
 
     private:
-        bool removeOldRowsForDoc(slice docID);
+        int64_t removeOldRowsForDoc(slice docID);
 
         friend class Index;
         friend class MapReduceIndex;
