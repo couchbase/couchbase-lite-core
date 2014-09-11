@@ -54,7 +54,9 @@ namespace forestdb {
 
         Index& _index;
         DocEnumerator::Options _options;
+        alloc_slice _startKey;
         alloc_slice _endKey;
+        bool _inclusiveStart;
         bool _inclusiveEnd;
         std::vector<Collatable> _keys;
         int _currentKeyIndex;

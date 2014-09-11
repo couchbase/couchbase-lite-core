@@ -18,7 +18,6 @@
 
 #include "MapReduceIndex.hh"
 #import <dispatch/dispatch.h>
-#import <sys/qos.h>
 
 
 namespace forestdb {
@@ -27,7 +26,7 @@ namespace forestdb {
     class MapReduceDispatchIndexer : public MapReduceIndexer {
     public:
         MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes,
-                                 qos_class_t priority = QOS_CLASS_UTILITY);
+                            dispatch_queue_priority_t priority = DISPATCH_QUEUE_PRIORITY_DEFAULT);
         virtual ~MapReduceDispatchIndexer();
     protected:
         virtual void addMappable(const Mappable&);

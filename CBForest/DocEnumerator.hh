@@ -26,6 +26,7 @@ namespace forestdb {
             unsigned        skip;
             unsigned        limit;
 //          bool            descending;     //TODO: Unimplemented in forestdb (MB-10961)
+            bool            inclusiveStart;
             bool            inclusiveEnd;
             bool            includeDeleted;
             bool            onlyConflicts;
@@ -64,6 +65,7 @@ namespace forestdb {
     protected:
         DatabaseGetters* _db;
         fdb_iterator *_iterator;
+        alloc_slice _startKey;
         alloc_slice _endKey;
         Options _options;
         std::vector<std::string> _docIDs;

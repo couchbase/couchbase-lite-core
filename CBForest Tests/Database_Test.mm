@@ -114,6 +114,7 @@ using namespace forestdb;
 
 - (void) test04_EnumerateDocs {
     [self createNumberedDocs];
+    NSLog(@"Enumerate over all docs:");
     int i = 1;
     for (DocEnumerator e(db); e; ++e, ++i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
@@ -121,6 +122,26 @@ using namespace forestdb;
         AssertEq(e->sequence(), i);
     }
     AssertEq(i, 101);
+
+    NSLog(@"Enumerate over range of docs:");
+    i = 24;
+    for (DocEnumerator e(db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029")); e; ++e, ++i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 30);
+
+    NSLog(@"Enumerate over range of docs without inclusive:");
+    auto opts = DocEnumerator::Options::kDefault;
+    opts.inclusiveStart = opts.inclusiveEnd = false;
+    i = 25;
+    for (DocEnumerator e(db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 29);
 
     NSLog(@"Enumerate over vector of docs:");
     i = 0;

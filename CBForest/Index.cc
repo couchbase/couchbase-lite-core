@@ -116,6 +116,7 @@ namespace forestdb {
                                      const DocEnumerator::Options& options)
     :_index(index),
      _options(options),
+     _inclusiveStart(options.inclusiveStart),
      _inclusiveEnd(options.inclusiveEnd),
      _currentKeyIndex(-1),
      _dbEnum(&_index,
@@ -124,6 +125,8 @@ namespace forestdb {
              docOptions(options))
     {
         Log("IndexEnumerator(%p)\n", this);
+        if (!_inclusiveStart)
+            _startKey = (slice)startKey;
         if (!_inclusiveEnd)
             _endKey = (slice)endKey;
         read();
@@ -134,6 +137,7 @@ namespace forestdb {
                                      const DocEnumerator::Options& options)
     :_index(index),
      _options(options),
+     _inclusiveStart(true),
      _inclusiveEnd(true),
      _keys(keys),
      _currentKeyIndex(-1),
@@ -165,6 +169,9 @@ namespace forestdb {
             if (!_inclusiveEnd && _key == _endKey) {
                 _dbEnum.close();
                 return false;
+            } else if (!_inclusiveStart && _key == _startKey) {
+                _dbEnum.next();
+                continue;
             }
 
             if (_currentKeyIndex >= 0 && _key != _keys[_currentKeyIndex]) {

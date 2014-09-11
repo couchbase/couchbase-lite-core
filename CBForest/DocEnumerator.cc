@@ -38,6 +38,7 @@ namespace forestdb {
         .skip = 0,
         .limit = UINT_MAX,
 //      .descending = false,
+        .inclusiveStart = true,
         .inclusiveEnd = true,
         .includeDeleted = false,
         .onlyConflicts = false,
@@ -60,6 +61,7 @@ namespace forestdb {
                                  const Options& options)
     :_db(db),
      _iterator(NULL),
+     _startKey(startKey),
      _endKey(endKey),
      _options(options),
      _docP(NULL)
@@ -81,6 +83,7 @@ namespace forestdb {
                                  const Options& options)
     :_db(db),
      _iterator(NULL),
+     _startKey(),
      _endKey(),
      _options(options),
      _docP(NULL)
@@ -98,6 +101,7 @@ namespace forestdb {
                                  const Options& options)
     :_db(db),
      _iterator(NULL),
+     _startKey(),
      _endKey(),
      _options(options),
      _docIDs(docIDs),
@@ -123,6 +127,7 @@ namespace forestdb {
     DocEnumerator::DocEnumerator(DocEnumerator&& e)
     :_db(e._db),
      _iterator(e._iterator),
+     _startKey(e._startKey),
      _endKey(e._endKey),
      _options(e._options),
      _docIDs(e._docIDs),
@@ -144,6 +149,7 @@ namespace forestdb {
         _db = e._db;
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
+        _startKey = e._startKey;
         _endKey = e._endKey;
         _docIDs = e._docIDs;
         _curDocIndex = e._curDocIndex;
@@ -193,6 +199,9 @@ namespace forestdb {
                 if (!_options.inclusiveEnd && doc().key() == _endKey) {
                     close();
                     return false;
+                }
+                if (!_options.inclusiveStart && doc().key() == _startKey) {
+                    continue;
                 }
             } else {
                 // Iterating over a vector of docIDs:
