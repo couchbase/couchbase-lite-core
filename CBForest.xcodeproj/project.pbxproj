@@ -1721,6 +1721,7 @@
 				GCC_WARN_SHADOW = NO;
 				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_VALUE = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1729,6 +1730,13 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = forestdb;
 				SDKROOT = iphoneos;
+				WARNING_CFLAGS = (
+					"-Wformat-security",
+					"-Wmissing-declarations",
+					"-Woverriding-method-mismatch",
+					"-Wbool-conversion",
+					"-Wno-arc-retain-cycles",
+				);
 			};
 			name = Debug;
 		};
@@ -1743,6 +1751,7 @@
 				GCC_WARN_SHADOW = NO;
 				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_VALUE = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1750,6 +1759,13 @@
 				);
 				PRODUCT_NAME = forestdb;
 				SDKROOT = iphoneos;
+				WARNING_CFLAGS = (
+					"-Wformat-security",
+					"-Wmissing-declarations",
+					"-Woverriding-method-mismatch",
+					"-Wbool-conversion",
+					"-Wno-arc-retain-cycles",
+				);
 			};
 			name = Release;
 		};
@@ -1890,7 +1906,6 @@
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
-					"-Wshorten-64-to-32",
 					"-Wmissing-declarations",
 					"-Woverriding-method-mismatch",
 					"-Wbool-conversion",
@@ -1944,7 +1959,6 @@
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
-					"-Wshorten-64-to-32",
 					"-Wmissing-declarations",
 					"-Woverriding-method-mismatch",
 					"-Wbool-conversion",
@@ -1977,14 +1991,11 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WARNING_CFLAGS = (
-					"-Wall",
 					"-Wformat-security",
-					"-Wshorten-64-to-32",
 					"-Wmissing-declarations",
 					"-Woverriding-method-mismatch",
 					"-Wbool-conversion",
 					"-Wno-arc-retain-cycles",
-					"-Wno-conversion",
 				);
 			};
 			name = Debug;
@@ -2009,14 +2020,11 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WARNING_CFLAGS = (
-					"-Wall",
 					"-Wformat-security",
-					"-Wshorten-64-to-32",
 					"-Wmissing-declarations",
 					"-Woverriding-method-mismatch",
 					"-Wbool-conversion",
 					"-Wno-arc-retain-cycles",
-					"-Wno-conversion",
 				);
 			};
 			name = Release;
