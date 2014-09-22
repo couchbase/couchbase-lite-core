@@ -44,6 +44,7 @@ namespace forestdb {
 #endif
 
     private:
+        uint64_t getGenAndDigest(slice &digest) const;
         void _expandInto(slice &dst) const;
     };
 

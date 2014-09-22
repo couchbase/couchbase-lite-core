@@ -46,25 +46,33 @@ namespace forestdb {
 #pragma mark - API:
 
 
-    size_t revid::expandedSize() const {
-        slice buf = *this;
+    uint64_t revid::getGenAndDigest(slice &digest) const {
+        digest = *this;
         uint64_t gen;
-        if (!ReadUVarInt(&buf, &gen))
+        if (!ReadUVarInt(&digest, &gen))
             throw error(error::CorruptRevisionData); // buffer too short!
+        return gen;
+    }
+
+
+    size_t revid::expandedSize() const {
+        slice digest;
+        uint64_t gen = getGenAndDigest(digest);
         size_t genDigits = 1 + size_t(::floor(::log10(gen)));
-        return genDigits + 1 + 2*buf.size;
+        return genDigits + 1 + 2*digest.size;
     }
 
     void revid::_expandInto(slice &expanded_rev) const {
-        const uint8_t* src = (const uint8_t*)buf;
-        unsigned generation = src[0];
-        if (generation > '9')
-            generation -= 10;
-        char *buf = (char*)expanded_rev.buf, *dst = buf;
-        dst += sprintf(dst, "%u-", generation);
-        for (unsigned i=1; i<size; i++)
-            dst = byteToHex(dst, src[i]);
-        expanded_rev.size = dst - buf;
+        slice digest;
+        uint64_t gen = getGenAndDigest(digest);
+
+        char* dst = (char*)expanded_rev.buf;
+        dst += sprintf(dst, "%llu-", gen);
+
+        const uint8_t* bytes = (const uint8_t*)digest.buf;
+        for (size_t i = 0; i < digest.size; ++i)
+            dst = byteToHex(dst, bytes[i]);
+        expanded_rev.size = dst - (char*)expanded_rev.buf;
     }
 
     bool revid::expandInto(slice &expanded_rev) const {
