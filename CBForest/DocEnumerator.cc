@@ -145,7 +145,7 @@ namespace forestdb {
     }
 
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
-        Log("enum: operator= %p <-- %p\n", &e, this);
+        Log("enum: operator= %p <-- %p\n", this, &e);
         _db = e._db;
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
@@ -190,7 +190,7 @@ namespace forestdb {
                 // Regular iteration:
                 freeDoc();
                 status = fdb_iterator_next(_iterator, &_docP);
-                Log("enum: fdb_iterator_next --> %d\n", status);
+                Log("enum: fdb_iterator_next(%p) --> %d\n", _iterator, status);
                 if (status == FDB_RESULT_ITERATOR_FAIL) {
                     close();
                     return false;

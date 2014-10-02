@@ -177,4 +177,31 @@ using namespace forestdb;
     AssertEq(db->get(nsstring_slice(@"x")).sequence(), 0);
 }
 
+
+// Test for MB-12287
+- (void) test06_TransactionsThenIterate {
+    Database db2(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+
+    const NSUInteger kNTransactions = 42; // 41 is ok, 42+ fails
+    const NSUInteger kNDocs = 100;
+
+    for (NSUInteger t = 1; t <= kNTransactions; t++) {
+        Transaction trans(db);
+        for (NSUInteger d = 1; d <= kNDocs; d++) {
+            NSString* docID = [NSString stringWithFormat: @"%03lu.%03lu", t, d];
+            trans.set(nsstring_slice(docID), nsstring_slice(@"some document content goes here"));
+        }
+    }
+
+    int i = 0;
+    for (DocEnumerator iter(&db2); iter; ++iter) {
+        NSString* key = (NSString*)(*iter).key();
+        //NSLog(@"key = %@", key);
+        NSUInteger t = (i / kNDocs) + 1;
+        NSUInteger d = (i % kNDocs) + 1;
+        XCTAssertEqualObjects(key, ([NSString stringWithFormat: @"%03lu.%03lu", t, d]));
+        i++;
+    }
+}
+
 @end
