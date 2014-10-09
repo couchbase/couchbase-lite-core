@@ -98,9 +98,8 @@ namespace forestdb {
             case kTrue:
                 skipTag();
                 return @YES;
-            case kNumber:
-                return @(readInt());
-            case kDouble:
+            case kNegative:
+            case kPositive:
                 return @(readDouble());
             case kString:
                 return readNSString();

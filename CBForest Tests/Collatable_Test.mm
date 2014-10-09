@@ -29,16 +29,47 @@ static int compareCollated(T1 obj1, T2 obj2) {
     return sgn(forestdb::slice(c1).compare(forestdb::slice(c2)));
 }
 
+static NSData* collatableData(id obj) {
+    Collatable c(obj);
+    return ((slice)c).copiedNSData();
+}
+
 static uint64_t randn(uint64_t limit) {
     uint64_t n;
     SecRandomCopyBytes(kSecRandomDefault, 8, (uint8_t*)&n);
     return n % limit;
 }
 
-- (void) compareNumber: (int64_t)n1 with: (int64_t)n2 {
-    XCTAssertEqual(compareCollated(n1, n2), sgn((double)n1 - (double)n2),
-                   @"Failed collation of %lld with %lld",
-                   n1, n2);
+static double randf() {
+    union {double d; struct {uint32_t u1, u2;};} n;
+    do {
+        n.u1 = (uint32_t)random();
+        n.u2 = (uint32_t)random();
+    } while (isnan(n.d) || isinf(n.d));
+    return n.d;
+}
+
+- (void) checkRoundTrip: (id)input {
+    Collatable c;
+    c << input;
+    alloc_slice encoded((forestdb::slice)c);
+    CollatableReader reader(encoded);
+    id output = reader.readNSObject();
+    AssertEqual(output, input);
+    // Note: isEqual: has some limitations when comparing NSNumbers. If one number is a double it
+    // seems to convert the other number to double and then compare; this can produce false
+    // positives when the other number is a very large 64-bit integer that can't be precisely
+    // represented as a double (basically anything above 2^56 or so.)
+}
+
+- (void) compareNumber: (NSNumber*)n1 with: (NSNumber*)n2 {
+    bool correct = compareCollated(n1, n2) == [n1 compare: n2];
+    if (!correct)
+        NSLog(@"%@: %@ vs %@ -- %@ vs %@",
+              (correct ? @"yes" : @"NO "),
+              n1, n2,
+              collatableData(n1), collatableData(n2));
+    XCTAssert(correct);
 }
 
 
@@ -64,19 +95,55 @@ static uint64_t randn(uint64_t limit) {
         int64_t n1, n2;
         n1 = (int64_t)randn(UINT64_MAX) >> randn(63);
         n2 = (int64_t)randn(UINT64_MAX) >> randn(63);
-        [self compareNumber: n1 with: n2];
+        [self compareNumber: @(n1) with: @(n2)];
     }
 }
 
-- (void) testDoubles {
-    // Doubles don't collate correctly yet, but make sure they round-trip:
-    Collatable c;
-    c << M_PI;
-    alloc_slice encoded((forestdb::slice)c);
-    CollatableReader reader(encoded);
-    double result = reader.readDouble();
-    AssertEq(result, M_PI);
+- (void) testFloats {
+    double numbers[] = {0, 1, 2, 10, 32, 63, 64, 256, M_PI, 100, 6.02e23, 6.02e-23, 0.01,
+        DBL_MAX, DBL_MIN,
+        M_PI + 0.1, M_PI - 0.1,
+        -1, -64, -M_PI, -6.02e23};
+    const int nFloats = sizeof(numbers)/sizeof(numbers[0]);
+    for (int i=0; i<nFloats; i++) {
+        id n1 = @(numbers[i]);
+        NSLog(@"%16g --> %@", numbers[i], collatableData(n1));
+        [self checkRoundTrip: n1];
+        for (int j=0; j<nFloats; j++) {
+            [self compareNumber: n1 with: @(numbers[j])];
+        }
+    }
 }
+
+- (void) testRandomFloats {
+    srandomdev();
+    self.continueAfterFailure = NO;
+    for (int i=0; i< 1000000; i++) {
+        @autoreleasepool {
+            NSNumber *n1 = @(randf()), *n2 = @(randf());
+            //NSLog(@"Compare: %@ <--> %@", n1, n2);
+            [self checkRoundTrip: n1];
+            [self checkRoundTrip: n2];
+            [self compareNumber: n1 with: n2];
+        }
+    }
+}
+
+- (void) testRoundTripInts {
+    uint64_t n = 1;
+    for (int bits = 0; bits < 64; ++bits, n<<=1) {
+        Collatable c;
+        c << n - 1;
+        alloc_slice encoded((forestdb::slice)c);
+        CollatableReader reader(encoded);
+        uint64_t result = [reader.readNSObject() unsignedLongLongValue];
+        NSLog(@"2^%2d - 1: %llx --> %llx", bits, n-1, result);
+        // At 2^54-1 floating-point roundoff starts to occur. This is known, so skip the assert
+        if (bits < 54)
+            AssertEq(result, n-1);
+    }
+}
+
 
 - (void) testStrings {
     AssertEq(compareCollated((std::string)"", 7), 1);

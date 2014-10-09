@@ -22,24 +22,35 @@
 
 namespace forestdb {
 
+    class CollatableTypes {
+    public:
+        typedef enum {
+            kEndSequence = 0,   // Returned to indicate the end of an array/dict
+            kNull,
+            kFalse,
+            kTrue,
+            kNegative,
+            kPositive,
+            kString,
+            kArray,
+            kMap,
+            kSpecial,
+            kError = 255        // Something went wrong...
+        } Tag;
+    };
+
     /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics
         using a dumb binary compare (like memcmp).
         Collatable owns its data, in the form of a C++ string object. */
-    class Collatable {
+    class Collatable : public CollatableTypes {
     public:
         Collatable();
 
         template<typename T> explicit Collatable(const T &t)    {*this << t;}
 
-        Collatable& addNull()                       {addTag(1); return *this;}
+        Collatable& addNull()                       {addTag(kNull); return *this;}
         Collatable& addBool (bool); // overriding <<(bool) is dangerous due to implicit conversion
 
-        Collatable& operator<< (int i)              {return *this << (int64_t)i;}
-        Collatable& operator<< (int64_t);
-        Collatable& operator<< (uint64_t i)         {return *this << (int64_t)i;}
-
-        // WARNING: Doubles written do NOT yet collate correctly, so they can't be used as keys
-        // in Indexes. This method has only been added so doubles can be stored as Index values.
         Collatable& operator<< (double);
 
         Collatable& operator<< (const Collatable&);
@@ -47,18 +58,18 @@ namespace forestdb {
         Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         Collatable& operator<< (slice);
 
-        Collatable& beginArray()                    {addTag(6); return *this;}
-        Collatable& endArray()                      {addTag(0); return *this;}
+        Collatable& beginArray()                    {addTag(kArray); return *this;}
+        Collatable& endArray()                      {addTag(kEndSequence); return *this;}
 
-        Collatable& beginMap()                      {addTag(7); return *this;}
-        Collatable& endMap()                        {addTag(0); return *this;}
+        Collatable& beginMap()                      {addTag(kMap); return *this;}
+        Collatable& endMap()                        {addTag(kEndSequence); return *this;}
 
 #ifdef __OBJC__
         Collatable(id obj)                          { if (obj) *this << obj;}
         Collatable& operator<< (id);
 #endif
 
-        Collatable& addSpecial()                    {addTag(9); return *this;}
+        Collatable& addSpecial()                    {addTag(kSpecial); return *this;}
 
         operator slice() const                      {return slice(_str);}
         bool empty() const                          {return _str.size() == 0;}
@@ -67,7 +78,7 @@ namespace forestdb {
         std::string dump();
 
     private:
-        void addTag(uint8_t c)                      {add(slice(&c,1));}
+        void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
         void add(slice s)                           {_str += std::string((char*)s.buf, s.size);}
 
         std::string _str;
@@ -75,22 +86,8 @@ namespace forestdb {
 
 
     /** A decoder of Collatable-format data. Does not own its data (reads from a slice.) */
-    class CollatableReader {
+    class CollatableReader : public CollatableTypes {
     public:
-        typedef enum {
-            kEndSequence = 0,   // Returned to indicate the end of an array/dict
-            kNull,
-            kFalse,
-            kTrue,
-            kNumber,
-            kString,
-            kArray,
-            kMap,
-            kDouble, // HACK
-            kSpecial,
-            kError = 255        // Something went wrong...
-        } Tag;
-
         CollatableReader(slice s) :_data(s) { }
 
         slice data() const                  {return _data;}
