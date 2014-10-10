@@ -19,6 +19,9 @@
 
 namespace forestdb {
 
+    static int64_t kMinFormatVersion = 1;
+    static int64_t kCurFormatVersion = 1;
+
     class emitter : public EmitFn {
     public:
         virtual void operator() (Collatable key, Collatable value);
@@ -48,7 +51,6 @@ namespace forestdb {
         if (_stateReadAt != curIndexSeq) {
             Collatable stateKey;
             stateKey.addNull();
-
             Document state = get(stateKey);
             CollatableReader reader(state.body());
             if (reader.peekTag() == CollatableReader::kArray) {
@@ -58,6 +60,13 @@ namespace forestdb {
                 _lastMapVersion = std::string(reader.readString());
                 _indexType = (int)reader.readInt();
                 _rowCount = (uint64_t)reader.readInt();
+
+                if (reader.peekTag() == CollatableTypes::kEndSequence
+                        || reader.readInt() < kMinFormatVersion) {
+                    // Obsolete index version
+                    deleted();
+                    _indexType = 0;
+                }
             }
             _stateReadAt = curIndexSeq;
         }
@@ -71,7 +80,7 @@ namespace forestdb {
 
         Collatable state;
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
-              << _rowCount;
+              << _rowCount << kCurFormatVersion;
 
         _stateReadAt = t.set(stateKey, state);
     }
