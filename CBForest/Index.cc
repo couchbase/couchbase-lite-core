@@ -65,12 +65,17 @@ namespace forestdb {
             realKey << *key << collatableDocID << (int64_t)docSequence;
             realKey.endArray();
 
-            sequence seq = set(realKey, slice::null, *value);
+            if (realKey.size() <= Document::kMaxKeyLength
+                    && value->size() <= Document::kMaxBodyLength) {
+                sequence seq = set(realKey, slice::null, *value);
 
-            uint8_t buf[kMaxVarintLen64];
-            size_t size = PutUVarInt(buf, seq);
-            sequences += std::string((char*)buf, size);
-            ++rowsAdded;
+                uint8_t buf[kMaxVarintLen64];
+                size_t size = PutUVarInt(buf, seq);
+                sequences += std::string((char*)buf, size);
+                ++rowsAdded;
+            } else {
+                Log("Warning: Index key or value too long\n"); //FIX: Need more-official warning
+            }
         }
 
         if (rowsRemoved==0 && rowsAdded==0)

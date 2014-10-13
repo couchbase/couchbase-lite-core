@@ -72,6 +72,7 @@ namespace forestdb {
         Collatable& addSpecial()                    {addTag(kSpecial); return *this;}
 
         operator slice() const                      {return slice(_str);}
+        size_t size() const                         {return _str.size();}
         bool empty() const                          {return _str.size() == 0;}
         bool operator< (const Collatable& c) const  {return _str < c._str;}
 

@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "Database.hh"
+#include "option.h"           // forestdb internal header; for FDB_MAX_KEYLEN etc.
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
@@ -150,6 +151,10 @@ namespace forestdb {
 
 #pragma mark - DOCUMENTS:
 
+    const size_t Document::kMaxKeyLength  = FDB_MAX_KEYLEN;
+    const size_t Document::kMaxMetaLength = FDB_MAX_METALEN;
+    const size_t Document::kMaxBodyLength = FDB_MAX_BODYLEN;
+
     Document::Document() {
         memset(&_doc, 0, sizeof(_doc));
     }
@@ -179,6 +184,12 @@ namespace forestdb {
         key().free();
         meta().free();
         body().free();
+    }
+
+    bool Document::valid() const {
+        return _doc.key != NULL && _doc.keylen > 0 && _doc.keylen <= kMaxKeyLength
+            && _doc.metalen <= kMaxMetaLength && !(_doc.metalen != 0 && _doc.meta == NULL)
+            && _doc.bodylen <= kMaxBodyLength && !(_doc.bodylen != 0 && _doc.body == NULL);
     }
 
     void Document::clearMetaAndBody() {
@@ -336,34 +347,20 @@ namespace forestdb {
             .bodylen = body.size,
         };
         check(fdb_set(_handle, &doc));
-        Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
-                _handle,
-                key.hexString().c_str(),
-                body.hexString().c_str(),
-                meta.hexString().c_str(),
-                doc.seqnum);
-        return doc.seqnum;
-    }
-
-    sequence Transaction::set(slice key, slice body) {
-        if ((size_t)key.buf & 0x03) {
-            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
-            void* keybuf = alloca(key.size);
-            memcpy(keybuf, key.buf, key.size);
-            key.buf = keybuf;
+        if (meta.buf) {
+            Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
+                    _handle,
+                    key.hexString().c_str(),
+                    body.hexString().c_str(),
+                    meta.hexString().c_str(),
+                    doc.seqnum);
+        } else {
+            Log("DB %p: added %s --> %s (seq %llu)\n",
+                    _handle,
+                    key.hexString().c_str(),
+                    body.hexString().c_str(),
+                    doc.seqnum);
         }
-        fdb_doc doc = {
-            .key = (void*)key.buf,
-            .keylen = key.size,
-            .body  = (void*)body.buf,
-            .bodylen = body.size,
-        };
-        check(fdb_set(_handle, &doc));
-        Log("DB %p: added %s --> %s (seq %llu)\n",
-                _handle,
-                key.hexString().c_str(),
-                body.hexString().c_str(),
-                doc.seqnum);
         return doc.seqnum;
     }
 

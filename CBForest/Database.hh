@@ -123,7 +123,7 @@ namespace forestdb {
         void commit();
 
         sequence set(slice key, slice meta, slice value);
-        sequence set(slice key, slice value);
+        sequence set(slice key, slice value)                {return set(key, slice::null, value);}
         void write(Document&);
 
         bool del(slice key);
@@ -168,10 +168,13 @@ namespace forestdb {
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
         bool exists() const         {return _doc.size_ondisk > 0 || _doc.offset > 0;}
+        bool valid() const;
 
         void updateSequence(forestdb::sequence s)                 {_doc.seqnum = s;}
 
         typedef DocEnumerator enumerator;
+
+        static const size_t kMaxKeyLength, kMaxMetaLength, kMaxBodyLength;
 
     private:
         friend class DatabaseGetters;
