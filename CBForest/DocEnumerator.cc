@@ -14,14 +14,9 @@
 //  and limitations under the License.
 
 #include "DocEnumerator.hh"
+#include "LogInternal.hh"
 #include "forestdb.h"
 
-// Logging:
-#if 0
-#define Log(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS)
-#else
-#define Log(FMT, ARGS...) {}
-#endif
 
 namespace forestdb {
 
@@ -66,7 +61,7 @@ namespace forestdb {
      _options(options),
      _docP(NULL)
     {
-        Log("enum: DocEnumerator(%p, [%s] -- [%s]) --> %p\n",
+        Debug("enum: DocEnumerator(%p, [%s] -- [%s]) --> %p",
                 db,
                 startKey.hexString().c_str(),
                 endKey.hexString().c_str(), this);
@@ -88,7 +83,7 @@ namespace forestdb {
      _options(options),
      _docP(NULL)
     {
-        Log("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p\n",
+        Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
                 db, start, end, this);
         check(fdb_iterator_sequence_init(db->_handle, &_iterator,
                                          start, end,
@@ -108,7 +103,7 @@ namespace forestdb {
      _curDocIndex(-1),
      _docP(NULL)
     {
-        Log("enum: DocEnumerator(%p, %zu keys) --> %p\n",
+        Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
                 db, docIDs.size(), this);
         if (docIDs.size() == 0)
             return;
@@ -121,7 +116,7 @@ namespace forestdb {
     :_iterator(NULL),
      _docP(NULL)
     {
-        Log("enum: DocEnumerator() --> %p\n", this);
+        Debug("enum: DocEnumerator() --> %p", this);
     }
 
     DocEnumerator::DocEnumerator(DocEnumerator&& e)
@@ -134,18 +129,18 @@ namespace forestdb {
      _curDocIndex(e._curDocIndex),
      _docP(e._docP)
     {
-        Log("enum: move ctor (from %p) --> %p\n", &e, this);
+        Debug("enum: move ctor (from %p) --> %p", &e, this);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
         e._docP = NULL;
     }
 
     DocEnumerator::~DocEnumerator() {
-        Log("enum: ~DocEnumerator(%p)\n", this);
+        Debug("enum: ~DocEnumerator(%p)", this);
         close();
     }
 
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
-        Log("enum: operator= %p <-- %p\n", this, &e);
+        Debug("enum: operator= %p <-- %p", this, &e);
         _db = e._db;
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
@@ -171,7 +166,7 @@ namespace forestdb {
 
 
     void DocEnumerator::close() {
-        Log("enum: close %p (free %p, close %p)\n", this, _docP, _iterator);
+        Debug("enum: close %p (free %p, close %p)", this, _docP, _iterator);
         freeDoc();
         if (_iterator) {
             fdb_iterator_close(_iterator);
@@ -190,7 +185,7 @@ namespace forestdb {
                 // Regular iteration:
                 freeDoc();
                 status = fdb_iterator_next(_iterator, &_docP);
-                Log("enum: fdb_iterator_next(%p) --> %d\n", _iterator, status);
+                Debug("enum: fdb_iterator_next(%p) --> %d", _iterator, status);
                 if (status == FDB_RESULT_ITERATOR_FAIL) {
                     close();
                     return false;
@@ -206,7 +201,7 @@ namespace forestdb {
             } else {
                 // Iterating over a vector of docIDs:
                if (++_curDocIndex >= _docIDs.size()) {
-                    Log("enum: at end of vector\n");
+                    Debug("enum: at end of vector");
                     close();
                     return false;
                 }
@@ -232,7 +227,7 @@ namespace forestdb {
     }
 
     bool DocEnumerator::seek(slice key) {
-        Log("enum: seek([%s])\n", key.hexString().c_str());
+        Debug("enum: seek([%s])", key.hexString().c_str());
         if (!_iterator)
             return false;
 

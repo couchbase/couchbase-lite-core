@@ -33,6 +33,16 @@ namespace forestdb {
     typedef fdb_seqnum_t sequence;
 
 
+    enum logLevel {
+        kDebug,
+        kInfo,
+        kWarning,
+        kError
+    };
+    extern logLevel LogLevel;
+    extern void (*LogCallback)(logLevel, const char *message);
+
+
     /** Base class of Database and Transaction: defines read-only API. */
     class DatabaseGetters {
     public:

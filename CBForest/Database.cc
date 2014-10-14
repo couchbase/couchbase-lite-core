@@ -14,24 +14,32 @@
 //  and limitations under the License.
 
 #include "Database.hh"
+#include "LogInternal.hh"
 #include "option.h"           // forestdb internal header; for FDB_MAX_KEYLEN etc.
 #include <assert.h>
 #include <errno.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
 
 
-// Logging:
-#if 0
-#define Log(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS)
-#else
-#define Log(FMT, ARGS...) {}
-#endif
-
-
 namespace forestdb {
+
+    logLevel LogLevel = kWarning;
+    void (*LogCallback)(logLevel, const char *message) = NULL;
+
+    void _Log(logLevel level, const char *message, ...) {
+        if (LogLevel >= level && LogCallback != NULL) {
+            va_list args;
+            va_start(args, message);
+            char *formatted = NULL;
+            vasprintf(&formatted, message, args);
+            va_end(args);
+            LogCallback(level, formatted);
+        }
+    }
 
 #pragma mark - FILE:
 
@@ -68,7 +76,7 @@ namespace forestdb {
 
     static void check(fdb_status status) {
         if (status != FDB_RESULT_SUCCESS) {
-            fprintf(stderr, "FORESTDB ERROR %d\n", status);
+            WarnError("FORESTDB ERROR %d\n", status);
             throw error{status};
         }
     }

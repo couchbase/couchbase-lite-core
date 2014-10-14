@@ -16,13 +16,7 @@
 #include "Index.hh"
 #include "Collatable.hh"
 #include "varint.hh"
-
-// Logging:
-#if 0
-#define Log(FMT, ARGS...) fprintf(stderr, FMT, ##ARGS)
-#else
-#define Log(FMT, ARGS...) {}
-#endif
+#include "LogInternal.hh"
 
 
 namespace forestdb {
@@ -38,9 +32,9 @@ namespace forestdb {
         if (sequences.size > 0) {
             uint64_t seq;
             while (ReadUVarInt(&sequences, &seq)) {
-                if (!del((sequence)seq))
-                    fprintf(stderr, "*** Index::removeOldRowsForDoc -- couldn't find seq %llu\n",
-                            seq);
+                if (!del((sequence)seq)) {
+                    Warn("Index::removeOldRowsForDoc -- couldn't find seq %llu\n", seq);
+                }
                 ++rowsRemoved;
             }
         }
@@ -74,7 +68,7 @@ namespace forestdb {
                 sequences += std::string((char*)buf, size);
                 ++rowsAdded;
             } else {
-                Log("Warning: Index key or value too long\n"); //FIX: Need more-official warning
+                Warn("Index key or value too long\n"); //FIX: Need more-official warning
             }
         }
 
@@ -129,7 +123,7 @@ namespace forestdb {
              (slice)makeRealKey(endKey, endKeyDocID, true),
              docOptions(options))
     {
-        Log("IndexEnumerator(%p)\n", this);
+        Debug("IndexEnumerator(%p)\n", this);
         if (!_inclusiveStart)
             _startKey = (slice)startKey;
         if (!_inclusiveEnd)
@@ -148,7 +142,7 @@ namespace forestdb {
      _currentKeyIndex(-1),
      _dbEnum(&_index, slice::null, slice::null, docOptions(options))
     {
-        Log("IndexEnumerator(%p)\n", this);
+        Debug("IndexEnumerator(%p)\n", this);
         nextKey();
         read();
     }
@@ -202,7 +196,7 @@ namespace forestdb {
             _docID = reader.readString();
             _sequence = reader.readInt();
             _value = doc.body();
-            Log("IndexEnumerator: key=%s\n",
+            Debug("IndexEnumerator: key=%s\n",
                     forestdb::CollatableReader(_key).dump().c_str());
             return true;
         }
@@ -220,7 +214,7 @@ namespace forestdb {
             _dbEnum = DocEnumerator(&_index, slice::null, slice::null, _options);
         }
 
-        Log("IndexEnumerator: Advance to key '%s'\n", _keys[_currentKeyIndex].dump().c_str());
+        Debug("IndexEnumerator: Advance to key '%s'\n", _keys[_currentKeyIndex].dump().c_str());
         return _dbEnum.seek(makeRealKey(_keys[_currentKeyIndex], slice::null, false));
     }
 
