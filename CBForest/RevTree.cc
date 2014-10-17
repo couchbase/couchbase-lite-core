@@ -492,7 +492,8 @@ namespace forestdb {
         Revision* dst = rev;
         for (i=0; i<_revs.size(); i++,rev++) {
             if (rev->revID.size > 0) {
-                rev->parentIndex = map[rev->parentIndex];
+                if (rev->parentIndex != Revision::kNoParent)
+                    rev->parentIndex = map[rev->parentIndex];
                 if (dst != rev)
                     *dst = *rev;
                 dst++;
