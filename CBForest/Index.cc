@@ -196,7 +196,7 @@ namespace forestdb {
             _docID = reader.readString();
             _sequence = reader.readInt();
             _value = doc.body();
-            Debug("IndexEnumerator: key=%s\n",
+            Debug("IndexEnumerator: found key=%s\n",
                     forestdb::CollatableReader(_key).dump().c_str());
             return true;
         }
