@@ -231,16 +231,8 @@ namespace forestdb {
         if (!_iterator)
             return false;
 
-        bool forwards = _docP == NULL || doc().key() < key;
         freeDoc();
-
-        if (forwards) {
             check(fdb_iterator_seek(_iterator, key.buf, key.size));
-        } else {
-            // ForestDB can't seek backwards [MB-11470] so I have to restart the iterator:
-            restartFrom(key);
-        }
-
         fdb_status status = fdb_iterator_next(_iterator, &_docP);
         if (status == FDB_RESULT_ITERATOR_FAIL)
             return false;

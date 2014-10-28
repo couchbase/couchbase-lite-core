@@ -147,9 +147,9 @@ using namespace forestdb;
     i = 0;
     std::vector<std::string> docIDs;
     docIDs.push_back("doc-005");
-    docIDs.push_back("doc-023");
-    docIDs.push_back("doc-028");
     docIDs.push_back("doc-029");
+    docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
+    docIDs.push_back("doc-028");
     docIDs.push_back("doc-098");
     docIDs.push_back("doc-100");
     docIDs.push_back("doc-105");
