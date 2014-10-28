@@ -79,7 +79,7 @@ namespace forestdb {
     };
 
     /** An allocated range of memory. Constructors allocate, destructor frees. */
-    struct alloc_slice : std::shared_ptr<char>, public slice {
+    struct alloc_slice : private std::shared_ptr<char>, public slice {
         alloc_slice()
             :std::shared_ptr<char>(NULL), slice() {}
         explicit alloc_slice(size_t s)
