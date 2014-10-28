@@ -25,7 +25,7 @@ namespace forestdb {
         struct Options {
             unsigned        skip;
             unsigned        limit;
-//          bool            descending;     //TODO: Unimplemented in forestdb (MB-10961)
+            bool            descending;
             bool            inclusiveStart;
             bool            inclusiveEnd;
             bool            includeDeleted;
@@ -71,10 +71,11 @@ namespace forestdb {
         std::vector<std::string> _docIDs;
         int _curDocIndex;
         fdb_doc *_docP;
+        bool _firstDescending; //HACK MB-12465
 
         friend class DatabaseGetters;
         void setDocIDs(std::vector<std::string> docIDs);
-        void restartFrom(slice startKey, slice endKey = slice::null);
+        void restartFrom(slice firstKey);
 
         void freeDoc()                      {fdb_doc_free(_docP); _docP = NULL;}
 

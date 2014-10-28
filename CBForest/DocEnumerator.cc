@@ -16,6 +16,7 @@
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
 #include "forestdb.h"
+#include <string.h>
 
 
 namespace forestdb {
@@ -32,7 +33,7 @@ namespace forestdb {
     const DocEnumerator::Options DocEnumerator::Options::kDefault = {
         .skip = 0,
         .limit = UINT_MAX,
-//      .descending = false,
+        .descending = false,
         .inclusiveStart = true,
         .inclusiveEnd = true,
         .includeDeleted = false,
@@ -61,15 +62,31 @@ namespace forestdb {
      _options(options),
      _docP(NULL)
     {
-        Debug("enum: DocEnumerator(%p, [%s] -- [%s]) --> %p",
+        Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
                 db,
-                startKey.hexString().c_str(),
-                endKey.hexString().c_str(), this);
-        if (startKey.size == 0)
-            startKey.buf = NULL;
-        if (endKey.size == 0)
-            endKey.buf = NULL;
-        restartFrom(startKey, endKey);
+                _startKey.hexString().c_str(),
+                _endKey.hexString().c_str(),
+                (options.descending ? " desc" : ""),
+                this);
+        if (_startKey.size == 0)
+            _startKey.buf = NULL;
+        if (_endKey.size == 0)
+            _endKey.buf = NULL;
+
+        // HACK to work around limitations of fdb_iterator_seek until MB-12465 is fixed
+        char maxKeyBuf[FDB_MAX_KEYLEN];
+        slice firstKey;
+        if (_options.descending) {
+            if (_startKey.size > 0) {
+                firstKey = _startKey;
+            } else {
+                memset(maxKeyBuf, 0xFF, sizeof(maxKeyBuf));
+                firstKey = slice(maxKeyBuf, sizeof(maxKeyBuf));
+            }
+        }
+        restartFrom(firstKey);
+        if (_options.descending && _startKey.size == 0)
+            _firstDescending = false; //HACK MB-12465
         next();
     }
 
@@ -107,6 +124,10 @@ namespace forestdb {
                 db, docIDs.size(), this);
         if (docIDs.size() == 0)
             return;
+        if (_options.descending) {
+            std::reverse(_docIDs.begin(), _docIDs.end());
+            _options.descending = false;
+        }
         restartFrom(docIDs[0]);
         next();
     }
@@ -127,7 +148,8 @@ namespace forestdb {
      _options(e._options),
      _docIDs(e._docIDs),
      _curDocIndex(e._curDocIndex),
-     _docP(e._docP)
+     _docP(e._docP),
+     _firstDescending(e._firstDescending)
     {
         Debug("enum: move ctor (from %p) --> %p", &e, this);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
@@ -149,19 +171,28 @@ namespace forestdb {
         _docIDs = e._docIDs;
         _curDocIndex = e._curDocIndex;
         _options = e._options;
+        _firstDescending = e._firstDescending;
         _docP = e._docP;
         e._docP = NULL;
         return *this;
     }
 
 
-    void DocEnumerator::restartFrom(slice startKey, slice endKey) {
+    void DocEnumerator::restartFrom(slice firstKey) {
+        slice minKey = _startKey, maxKey = _endKey;
+        _firstDescending = _options.descending; //HACK MB-12465
+        if (_options.descending)
+            std::swap(minKey, maxKey);
         if (_iterator)
             fdb_iterator_close(_iterator);
         check(fdb_iterator_init(_db->_handle, &_iterator,
-                                startKey.buf, startKey.size,
-                                endKey.buf, endKey.size,
+                                minKey.buf, minKey.size,
+                                maxKey.buf, maxKey.size,
                                 iteratorOptions(_options)));
+        if (firstKey.buf) {
+            Debug("enum: seek(%s)", firstKey.hexString().c_str());
+            fdb_iterator_seek(_iterator, firstKey.buf, firstKey.size);
+        }
     }
 
 
@@ -184,8 +215,14 @@ namespace forestdb {
             if (_docIDs.size() == 0) {
                 // Regular iteration:
                 freeDoc();
-                status = fdb_iterator_next(_iterator, &_docP);
-                Debug("enum: fdb_iterator_next(%p) --> %d", _iterator, status);
+                if (_options.descending && !_firstDescending) {
+                    status = fdb_iterator_prev(_iterator, &_docP);
+                    Debug("enum: fdb_iterator_prev(%p) --> %d", _iterator, status);
+                } else {
+                    status = fdb_iterator_next(_iterator, &_docP);
+                    Debug("enum: fdb_iterator_next(%p) --> %d", _iterator, status);
+                }
+                _firstDescending = false; //HACK MB-12465
                 if (status == FDB_RESULT_ITERATOR_FAIL) {
                     close();
                     return false;
@@ -232,7 +269,7 @@ namespace forestdb {
             return false;
 
         freeDoc();
-            check(fdb_iterator_seek(_iterator, key.buf, key.size));
+        check(fdb_iterator_seek(_iterator, key.buf, key.size));
         fdb_status status = fdb_iterator_next(_iterator, &_docP);
         if (status == FDB_RESULT_ITERATOR_FAIL)
             return false;

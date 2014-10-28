@@ -155,6 +155,21 @@ static boolBlock scopedEnumerate() {
     XCTAssertEqual(nRows, 6);
     AssertEq(_rowCount, nRows);
 
+    NSLog(@"--- Reverse enumeration");
+    nRows = 0;
+    auto options = DocEnumerator::Options::kDefault;
+    options.descending = true;
+    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+                           Collatable(), forestdb::slice::null,
+                           options); e; ++e) {
+        nRows++;
+        alloc_slice keyStr = e.key().readString();
+        NSLog(@"key = %.*s, docID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+    }
+    XCTAssertEqual(nRows, 6);
+    AssertEq(_rowCount, nRows);
+
     // Enumerate a vector of keys:
     NSLog(@"--- Enumerating a vector of keys");
     std::vector<Collatable> keys;

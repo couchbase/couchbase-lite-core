@@ -168,6 +168,77 @@ using namespace forestdb;
     AssertEq(i, 7);
 }
 
+- (void) test04_EnumerateDocsDescending {
+    auto opts = DocEnumerator::Options::kDefault;
+    opts.descending = true;
+
+    [self createNumberedDocs];
+    NSLog(@"Enumerate over all docs, descending:");
+    int i = 100;
+    for (DocEnumerator e(db, slice::null, slice::null, opts); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 0);
+
+    NSLog(@"Enumerate over range of docs from max, descending:");
+    i = 100;
+    for (DocEnumerator e(db, slice::null, nsstring_slice(@"doc-090"), opts); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 89);
+
+    NSLog(@"Enumerate over range of docs to min, descending:");
+    i = 10;
+    for (DocEnumerator e(db, nsstring_slice(@"doc-010"), slice::null, opts); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 0);
+
+    NSLog(@"Enumerate over range of docs, descending:");
+    i = 29;
+    for (DocEnumerator e(db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 23);
+
+    NSLog(@"Enumerate over range of docs without inclusive, descending:");
+    auto optsExcl = opts;
+    optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
+    i = 28;
+    for (DocEnumerator e(db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), optsExcl); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 24);
+
+    NSLog(@"Enumerate over vector of docs, descending:");
+    std::vector<std::string> docIDs;
+    docIDs.push_back("doc-005");
+    docIDs.push_back("doc-029");
+    docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
+    docIDs.push_back("doc-028");
+    docIDs.push_back("doc-098");
+    docIDs.push_back("doc-100");
+    docIDs.push_back("doc-105");
+    i = (int)docIDs.size() - 1;
+    for (DocEnumerator e(db, docIDs, opts); e; ++e, --i) {
+        NSLog(@"key = %@", (NSString*)e->key());
+        Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
+               docIDs[i].c_str(),
+               (NSString*)e->key());
+    }
+    AssertEq(i, -1);
+}
+
 - (void) test05_AbortTransaction {
     // Initial document:
     Transaction(db).set(nsstring_slice(@"a"), nsstring_slice(@"A"));
