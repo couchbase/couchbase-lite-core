@@ -27,8 +27,12 @@
 
 namespace forestdb {
 
+    static void defaultLogCallback(logLevel level, const char *message) {
+        fprintf(stderr, "CBForest: %s\n", message);
+    }
+
     logLevel LogLevel = kWarning;
-    void (*LogCallback)(logLevel, const char *message) = NULL;
+    void (*LogCallback)(logLevel, const char *message) = &defaultLogCallback;
 
     void _Log(logLevel level, const char *message, ...) {
         if (LogLevel >= level && LogCallback != NULL) {

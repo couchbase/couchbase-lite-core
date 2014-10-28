@@ -24,6 +24,12 @@ using namespace forestdb;
     Database* db;
 }
 
++ (void) initialize {
+    if (self == [Database_Test class]) {
+        LogLevel = kWarning;
+    }
+}
+
 - (void)setUp
 {
     ::unlink(kDBPath);
