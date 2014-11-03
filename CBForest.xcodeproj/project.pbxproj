@@ -77,6 +77,8 @@
 		27139BA918F8EE3A0021A9A3 /* libCBForest-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */; };
 		27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		27139BC418F8EEC80021A9A3 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
+		272230441A0812FF00BFF25C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 272230431A0812FF00BFF25C /* Security.framework */; };
+		272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -412,6 +414,7 @@
 		27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA518F8EE3A0021A9A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		272230431A0812FF00BFF25C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.1.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -643,6 +646,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				272230441A0812FF00BFF25C /* Security.framework in Frameworks */,
 				27139BA318F8EE3A0021A9A3 /* XCTest.framework in Frameworks */,
 				27139BA618F8EE3A0021A9A3 /* UIKit.framework in Frameworks */,
 				27139BA418F8EE3A0021A9A3 /* Foundation.framework in Frameworks */,
@@ -744,6 +748,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				272230431A0812FF00BFF25C /* Security.framework */,
 				27766E151982DA8E00CAA464 /* Security.framework */,
 				2750724C18E3E5BB00A80C5A /* libforestdb.dylib */,
 				2750723E18E3E52800A80C5A /* Foundation.framework */,
@@ -1469,11 +1474,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */,
 				27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */,
-				27DD14F119328576009A367D /* Index_Test.mm in Sources */,
-				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,
+				27DD14F119328576009A367D /* Index_Test.mm in Sources */,
+				27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */,
+				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
+				272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

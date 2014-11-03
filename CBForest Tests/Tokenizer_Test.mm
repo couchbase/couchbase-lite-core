@@ -6,7 +6,6 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
 #import <XCTest/XCTest.h>
 #import "Tokenizer.hh"
 
