@@ -7,10 +7,10 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "cgeohash.h"
+#import "Geohash.hh"
 
 
-#define AssertEqualCStrings(STR1, STR2) XCTAssertTrue(strcmp((STR1),(STR2)) == 0)
+#define AssertEqualCStrings(STR1, STR2) XCTAssertTrue(strcmp((STR1),(STR2)) == 0, @"Expected \"%s\", got \"%s\"", (STR2), (STR1))
 
 
 @interface GeoHash_Test : XCTestCase
@@ -21,11 +21,8 @@
 
 static void verify_hash(id self, double lat, double lon, int len, const char* expected)
 {
-    char *hash;
-    hash = GEOHASH_encode(lat, lon, len);
-    AssertEqualCStrings(hash, expected);
-    free(hash);
-    /*CU_ASSERT_PTR_NULL();*/
+    geohash::hash result(geohash::coord(lat, lon), len);
+    AssertEqualCStrings(result.string, expected);
 }
 
 - (void) testEncode
@@ -43,13 +40,11 @@ static void verify_area(
                  double lat_min, double lon_min,
                  double lat_max, double lon_max)
 {
-    GEOHASH_area *area;
-    area = GEOHASH_decode(hash);
-    XCTAssertEqualWithAccuracy(area->latitude.max,   lat_max, 0.001);
-    XCTAssertEqualWithAccuracy(area->latitude.min,   lat_min, 0.001);
-    XCTAssertEqualWithAccuracy(area->longitude.max, lon_max, 0.001);
-    XCTAssertEqualWithAccuracy(area->longitude.min, lon_min, 0.001);
-    GEOHASH_free_area(area);
+    geohash::area area = geohash::hash(hash).decode();
+    XCTAssertEqualWithAccuracy(area.latitude.max,   lat_max, 0.001);
+    XCTAssertEqualWithAccuracy(area.latitude.min,   lat_min, 0.001);
+    XCTAssertEqualWithAccuracy(area.longitude.max,  lon_max, 0.001);
+    XCTAssertEqualWithAccuracy(area.longitude.min,  lon_min, 0.001);
 }
 
 - (void) testDecode
@@ -60,20 +55,56 @@ static void verify_area(
     verify_area(self, "DQCW4", 39.0234375, -76.552734375, 39.0673828125, -76.5087890625);
 }
 
-static void verify_adjacent(id self, const char *origin, GEOHASH_direction dir, const char *expected)
+- (void) testVerification
 {
-    char *hash;
-    hash = GEOHASH_get_adjacent(origin, dir);
+    XCTAssertTrue(geohash::hash("dqcw5").isValid());
+    XCTAssertTrue(geohash::hash("dqcw7").isValid());
+    XCTAssertFalse(geohash::hash("abcwd").isValid());
+    XCTAssertFalse(geohash::hash("dqcw5@").isValid());
+}
+
+static void verifyCommonChars(id self, const char* hash1, const char* hash2, size_t common) {
+    XCTAssertEqual(geohash::hash(hash1).commonChars(geohash::hash(hash2)), common);
+    XCTAssertEqual(geohash::hash(hash2).commonChars(geohash::hash(hash1)), common);
+}
+
+- (void) testCommonChars {
+    verifyCommonChars(self, "",     "", 0);
+    verifyCommonChars(self, "abcd", "", 0);
+    verifyCommonChars(self, "abcd", "a", 1);
+    verifyCommonChars(self, "abcd", "ab", 2);
+    verifyCommonChars(self, "abcd", "abc", 3);
+    verifyCommonChars(self, "abcd", "abcd", 4);
+    verifyCommonChars(self, "abcd", "abcde", 4);
+    verifyCommonChars(self, "abcd", "abzx", 2);
+    verifyCommonChars(self, "abcd", "zz", 0);
+}
+
+- (void) testDistanceTo {
+    // See http://www.distance.to/New-York/San-Francisco
+    static const double kMilesPerKm = 0.62137;
+    const geohash::coord sf (37.774929,-122.419418);
+    const geohash::coord nyc(40.714268, -74.005974);
+    XCTAssertEqualWithAccuracy(sf.distanceTo(nyc), 2566 / kMilesPerKm, 1.0);
+    XCTAssertEqualWithAccuracy(sf.distanceTo(sf), 0, 0.01);
+}
+
+
+#if 0 // not using adjacent/neighbors API
+static void verify_adjacent(id self, const char *origin, geohash::direction dir, const char *expected)
+{
+    char result[22];
+    char *hash = geohash::get_adjacent(origin, dir, result);
+    XCTAssertEqual(hash, &result[0]);
     AssertEqualCStrings(hash, expected);
-    free(hash);
 }
 
 - (void) testAdjacent
 {
-    verify_adjacent(self, "dqcjq", GEOHASH_NORTH, "dqcjw");
-    verify_adjacent(self, "dqcjq", GEOHASH_SOUTH, "dqcjn");
-    verify_adjacent(self, "dqcjq", GEOHASH_WEST,  "dqcjm");
-    verify_adjacent(self, "dqcjq", GEOHASH_EAST,  "dqcjr");
+    verify_adjacent(self, "dqcjq", geohash::NORTH, "dqcjw");
+    verify_adjacent(self, "dqcjq", geohash::SOUTH, "dqcjn");
+    verify_adjacent(self, "dqcjq", geohash::WEST,  "dqcjm");
+    verify_adjacent(self, "dqcjq", geohash::EAST,  "dqcjr");
 }
 
 static void verify_neighbors(
@@ -89,8 +120,8 @@ static void verify_neighbors(
                       const char *hash8
                       )
 {
-    GEOHASH_neighbors *neighbors;
-    neighbors = GEOHASH_get_neighbors(origin);
+    geohash::neighbors *neighbors;
+    neighbors = geohash::get_neighbors(origin);
 
     AssertEqualCStrings(neighbors->north,      hash1);
     AssertEqualCStrings(neighbors->south,      hash2);
@@ -101,7 +132,7 @@ static void verify_neighbors(
     AssertEqualCStrings(neighbors->south_west, hash7);
     AssertEqualCStrings(neighbors->south_east, hash8);
 
-    GEOHASH_free_neighbors(neighbors);
+    geohash::free_neighbors(neighbors);
 }
 
 - (void) testNeighbors
@@ -111,14 +142,7 @@ static void verify_neighbors(
     verify_neighbors(self, "gcpuvpk", "gcpuvps", "gcpuvph", "gcpuvp7", "gcpuvpm", "gcpuvpe", "gcpuvpt", "gcpuvp5", "gcpuvpj");
     verify_neighbors(self, "c23nb62w", "c23nb62x", "c23nb62t", "c23nb62q", "c23nb62y", "c23nb62r", "c23nb62z", "c23nb62m", "c23nb62v");
 }
-
-- (void) testVerification
-{
-    XCTAssertEqual(GEOHASH_verify_hash("dqcw5"), 1);
-    XCTAssertEqual(GEOHASH_verify_hash("dqcw7"), 1);
-    XCTAssertEqual(GEOHASH_verify_hash("abcwd"), 0);
-    XCTAssertEqual(GEOHASH_verify_hash("dqcw5@"), 0);
-}
+#endif
 
 
 @end

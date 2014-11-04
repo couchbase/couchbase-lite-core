@@ -182,6 +182,12 @@ namespace forestdb {
                     return false;
             }
 
+            // Subclasses can ignore rows:
+            if (!this->approve(_key)) {
+                _dbEnum.next();
+                continue;
+            }
+
             // OK, this is a candidate. First honor the skip and limit:
             if (_options.skip > 0) {
                 --_options.skip;

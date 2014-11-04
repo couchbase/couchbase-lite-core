@@ -47,6 +47,9 @@ namespace forestdb {
         const IndexEnumerator& operator++()     {next(); return *this;}
         operator bool() const                   {return _dbEnum;}
 
+    protected:
+        virtual bool approve(slice key)         {return true;}
+
     private:
         friend class Index;
         bool read();

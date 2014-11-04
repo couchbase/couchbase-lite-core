@@ -79,10 +79,12 @@
 		27139BC418F8EEC80021A9A3 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
 		272230441A0812FF00BFF25C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 272230431A0812FF00BFF25C /* Security.framework */; };
 		272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
-		272230481A0815E700BFF25C /* cgeohash.c in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* cgeohash.c */; };
-		272230491A0815E700BFF25C /* cgeohash.c in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* cgeohash.c */; };
-		2722304B1A08178200BFF25C /* GeoHash_Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.m */; };
-		2722304C1A08178200BFF25C /* GeoHash_Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.m */; };
+		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		272230491A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
+		2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
+		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		272230501A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -419,9 +421,11 @@
 		27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA518F8EE3A0021A9A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		272230431A0812FF00BFF25C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.1.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
-		272230461A0815E700BFF25C /* cgeohash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cgeohash.c; sourceTree = "<group>"; };
-		272230471A0815E700BFF25C /* cgeohash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cgeohash.h; sourceTree = "<group>"; };
-		2722304A1A08178200BFF25C /* GeoHash_Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeoHash_Test.m; sourceTree = "<group>"; };
+		272230461A0815E700BFF25C /* Geohash.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Geohash.cc; sourceTree = "<group>"; };
+		272230471A0815E700BFF25C /* Geohash.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Geohash.hh; sourceTree = "<group>"; };
+		2722304A1A08178200BFF25C /* GeoHash_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GeoHash_Test.mm; sourceTree = "<group>"; };
+		2722304D1A0858A100BFF25C /* GeoIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GeoIndex.cc; sourceTree = "<group>"; };
+		2722304E1A0858A100BFF25C /* GeoIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeoIndex.hh; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -872,7 +876,7 @@
 				27DD14F21934F44F009A367D /* MapReduce_Test.mm */,
 				270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */,
 				27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */,
-				2722304A1A08178200BFF25C /* GeoHash_Test.m */,
+				2722304A1A08178200BFF25C /* GeoHash_Test.mm */,
 				27E4872019226699007D8940 /* testutil.h */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
 			);
@@ -927,6 +931,8 @@
 				27E4873919255EA8007D8940 /* MapReduceIndex.hh */,
 				27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */,
 				27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */,
+				2722304D1A0858A100BFF25C /* GeoIndex.cc */,
+				2722304E1A0858A100BFF25C /* GeoIndex.hh */,
 				2701993919F1972E00FDC239 /* Tokenizer.cpp */,
 				2701993A19F1972E00FDC239 /* Tokenizer.hh */,
 				27E4872D1924178B007D8940 /* Collatable.cc */,
@@ -940,8 +946,8 @@
 				27FDFC0218EA58DA00AC4647 /* varint.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
-				272230461A0815E700BFF25C /* cgeohash.c */,
-				272230471A0815E700BFF25C /* cgeohash.h */,
+				272230461A0815E700BFF25C /* Geohash.cc */,
+				272230471A0815E700BFF25C /* Geohash.hh */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -1413,7 +1419,7 @@
 				270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				27E4871E19226508007D8940 /* Database_Test.mm in Sources */,
 				27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */,
-				2722304B1A08178200BFF25C /* GeoHash_Test.m in Sources */,
+				2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1462,9 +1468,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
-				272230491A0815E700BFF25C /* cgeohash.c in Sources */,
+				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
@@ -1492,7 +1499,7 @@
 				27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */,
 				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */,
-				2722304C1A08178200BFF25C /* GeoHash_Test.m in Sources */,
+				2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1584,9 +1591,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
-				272230481A0815E700BFF25C /* cgeohash.c in Sources */,
+				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
