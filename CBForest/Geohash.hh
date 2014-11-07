@@ -7,6 +7,7 @@
 namespace geohash {
 
     struct hash;
+    struct hashRange;
 
     /** A 2D geographic coordinate: (latitude, longitude). */
     struct coord {
@@ -17,8 +18,13 @@ namespace geohash {
         coord(double lat, double lon)       :latitude(lat), longitude(lon) { }
 
         bool isValid() const;
-        double distanceTo(coord) const;
+        double distanceTo(coord) const;     /**< Distance in km between two coords */
+
+        /** Compute GeoHash of given length, containing this point */
         inline hash encode(unsigned nChars) const;
+
+        /** Compute GeoHash whose center is within a given distance of this point. */
+        hash encodeWithKmAccuracy(double kmAccuracy) const;
     };
 
     /** A range of a single coordinate. */
@@ -30,15 +36,19 @@ namespace geohash {
         range(double _min, double _max)     :min(_min), max(_max) { }
 
         bool isValid() const                {return max > min;}
-        void normalize();
+        void normalize();                   /**< Swaps min/max if they're in wrong order */
 
         bool contains(double n) const       {return min <= n && n < max;}
         inline bool intersects(range) const;
 
+        double size() const                 {return max - min;}
         double mid() const                  {return (min + max) / 2.0;}
+
+        // internal:
         bool shrink(double);
         void shrink(bool side);
-    };
+        unsigned maxCharsToEnclose(bool isVertical) const;
+};
 
     /** A 2D rectangular area, defined by ranges of latitude and longitude. */
     struct area {
@@ -53,11 +63,29 @@ namespace geohash {
         void normalize()                    {latitude.normalize(); longitude.normalize();}
 
         inline bool contains(coord) const;
-        inline bool intersects(area a) const;
+        inline bool intersects(area) const;
 
         coord min() const                   {return coord(latitude.min, longitude.min);}
         coord mid() const                   {return coord(latitude.mid(), longitude.mid());}
         coord max() const                   {return coord(latitude.max, longitude.max);}
+
+        /** Returns a sorted vector of hashRanges that completely cover this area. Will attempt to
+                be as accurate as possible (using longer hashes) without exceeding the maxCount.
+            @param maxCount  The maximum number of hashRanges to return. */
+        std::vector<hashRange> coveringHashes(unsigned maxCount) const;
+
+        /** Returns a sorted vector of hashRanges that completely cover this area.
+            @param nChars  The character count of each hash; longer hashes are more accurate but
+                it may take a lot more to cover the area. */
+        std::vector<hashRange> coveringHashesOfLength(unsigned nChars) const;
+    };
+
+
+    enum direction {
+        NORTH = 0,
+        EAST,
+        WEST,
+        SOUTH
     };
 
     /** A GeoHash string. */
@@ -69,15 +97,38 @@ namespace geohash {
         hash()                              {(string)[0] = '\0';}
         hash(forestdb::slice);
         hash(const char *str)               {strlcpy(string, str, sizeof(string));}
-        hash(coord, unsigned nChars);
+        hash(coord, unsigned nChars);       /**< Geohash of the given coord */
+
+        /** Returns the length of GeoHash string needed to get a specific accuracy
+            measured in degrees. */
+        static unsigned nCharsForDegreesAccuracy(double accuracy);
 
         operator const char*() const        {return string;}
         size_t length() const               {return strlen(string);}
-        size_t commonChars(const hash&);
 
         area decode() const;
         bool isValid() const;
+
+        hash adjacent(direction) const;
+
+        bool operator< (const hash &h) const      {return strcmp(string, h.string) < 0;}
     };
+
+    /** A range of consecutive GeoHash strings. */
+    struct hashRange : public hash {
+        unsigned count;
+
+        hashRange(const hash &h, unsigned c)    :hash(h), count(c) { }
+
+        /** The last GeoHash in the range. */
+        hash lastHash() const;
+
+        /** Tries to add a GeoHash to the end; if successful returns true. */
+        bool add(const hash &h);
+    };
+
+
+    // Inline method bodies:
 
     inline bool range::intersects(geohash::range r) const {
         return max > r.min && r.max > min;
@@ -94,30 +145,6 @@ namespace geohash {
     inline bool area::intersects(area a) const {
         return latitude.intersects(a.latitude) && longitude.intersects(a.longitude);
     }
-
-#if 0 // unused
-    struct neighbors {
-        char* north;
-        char* east;
-        char* west;
-        char* south;
-        char* north_east;
-        char* south_east;
-        char* north_west;
-        char* south_west;
-    };
-
-    enum direction {
-        NORTH = 0,
-        EAST,
-        WEST,
-        SOUTH
-    };
-
-    neighbors* get_neighbors(const char *hash);
-    void free_neighbors(neighbors *neighbors);
-    char* get_adjacent(const char* hash, direction dir, char *adjacent);
-#endif
 
 }
 

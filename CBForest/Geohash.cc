@@ -1,7 +1,7 @@
-// NOTE: Heavily adapted from Lyo Kato's original geohash.c:
-// https://github.com/lyokato/objc-geohash/blob/master/Classes/ARC/cgeohash.m as of 3-Nov-2014
+/* NOTE: Portions of this code derive from Lyo Kato's geohash.c:
+   https://github.com/lyokato/objc-geohash/blob/master/Classes/ARC/cgeohash.m as of 3-Nov-2014
+   That code comes with the following license:
 
-/*
 The MIT License
 
 Copyright (c) 2011 lyo.kato@gmail.com
@@ -48,20 +48,101 @@ static const char BASE32_DECODE_TABLE[44] = {
 };
 
 
-static inline double sqr(double d) { return d * d; }
-static inline double deg2rad(double deg) { return deg / 180.0 * M_PI; }
+static const double CELL_WIDTHS[22] = {
+    45.0,
+    11.25,
+    1.40625,
+    0.3515625,
+    0.0439453125,
+    0.010986328125,
+    0.001373291015625,
+    0.00034332275390625,
+    4.291534423828125e-05,
+    1.0728836059570312e-05,
+    1.341104507446289e-06,
+    3.3527612686157227e-07,
+    4.190951585769653e-08,
+    1.0477378964424133e-08,
+    1.3096723705530167e-09,
+    3.2741809263825417e-10,
+    4.092726157978177e-11,
+    1.0231815394945443e-11, 
+    1.2789769243681803e-12, 
+    3.197442310920451e-13, 
+    3.9968028886505635e-14, 
+    9.992007221626409e-15,
+};
+
+static const double CELL_HEIGHTS[22] = {
+    45.0,
+    5.625,
+    1.40625,
+    0.17578125,
+    0.0439453125,
+    0.0054931640625,
+    0.001373291015625,
+    0.000171661376953125,
+    4.291534423828125e-05,
+    5.364418029785156e-06,
+    1.341104507446289e-06,
+    1.6763806343078613e-07,
+    4.190951585769653e-08,
+    5.238689482212067e-09,
+    1.3096723705530167e-09,
+    1.6370904631912708e-10,
+    4.092726157978177e-11,
+    5.115907697472721e-12, 
+    1.2789769243681803e-12, 
+    1.5987211554602254e-13, 
+    3.9968028886505635e-14, 
+    4.9960036108132044e-15,
+};
+
+// Approximation (Earth isn't actually a sphere), in km
+static const double kEarthRadius = 6371.0;
+
+// Kilometers per degree of latitude, and per degree of longitude at the equator
+static const double kKmPerDegree = 2 * M_PI * kEarthRadius / 360.0;
+
+
+static inline double sqr(double d)          { return d * d; }
+static inline double deg2rad(double deg)    { return deg / 180.0 * M_PI; }
+
+bool coord::isValid() const {
+    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
 
 double coord::distanceTo(coord c) const {
     // See http://en.wikipedia.org/wiki/Great-circle_distance
-    static const double kEarthRadius = 6371.0;
 
     double lat1 = deg2rad(latitude), lat2 = deg2rad(c.latitude);
     double dLon = deg2rad(c.longitude - longitude);
 
-    double angle = atan2( sqrt( sqr(cos(lat2) * sin(dLon))
+    double angle = atan2( sqrt( sqr(cos(lat2)*sin(dLon))
                               + sqr(cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon)) ),
                           sin(lat1)*sin(lat2) + cos(lat1)*cos(lat2)*cos(dLon) );
     return kEarthRadius * angle;
+}
+
+hash coord::encodeWithKmAccuracy(double accuracyInKm) const {
+    // Rough approximation: start with nChars that gives small enough cell height
+    double minDegreeHeight = 2 * accuracyInKm / kKmPerDegree;
+    unsigned nChars;
+    for (nChars = 1; nChars <= hash::kMaxLength; nChars++) {
+        if (CELL_HEIGHTS[nChars-1] <= minDegreeHeight)
+            break;
+    }
+
+    // Now encode with more and more characters until the encoded area's center is close enough:
+    hash h;
+    for (; nChars <= hash::kMaxLength; nChars++) {
+        h = encode(nChars);
+        coord decoded = h.decode().mid();
+        double error = distanceTo(decoded);
+        if (error <= accuracyInKm)
+            break;
+    }
+    return h;
 }
 
 
@@ -85,15 +166,64 @@ bool range::shrink(double value) {
     return side;
 }
 
-bool coord::isValid() const {
-    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+
+// Returns the length of the longest geohash prefix that completely contains this range.
+unsigned range::maxCharsToEnclose(bool isVertical) const {
+    const double size = max - min;
+    const double *cellsize = (isVertical ? CELL_HEIGHTS : CELL_WIDTHS);
+    unsigned chars;
+    for (chars=0; chars < 22; ++chars)
+        if (size > cellsize[chars])
+            break;
+    return chars;
 }
+
 
 area::area(coord c1, coord c2)
 :latitude(c1.latitude, c2.latitude),
  longitude(c1.longitude, c2.longitude)
 { }
 
+std::vector<hashRange> area::coveringHashes(unsigned maxCount) const {
+    unsigned nChars = std::min(latitude.maxCharsToEnclose(false),
+                               longitude.maxCharsToEnclose(true));
+    std::vector<hashRange> result;
+    for (; nChars <= hash::kMaxLength; nChars++) {
+        std::vector<hashRange> covering = coveringHashesOfLength(nChars);
+        if (covering.size() <= maxCount)
+            result = covering;
+        else
+            break;
+    }
+    return result;
+}
+
+std::vector<hashRange> area::coveringHashesOfLength(unsigned nChars) const {
+    std::vector<hash> covering;
+    hash sw = coord(latitude.min, longitude.min).encode(nChars);
+    area swArea = sw.decode();
+    unsigned nRows = (unsigned)ceil((longitude.max - swArea.longitude.min) / swArea.longitude.size());
+    unsigned nCols = (unsigned)ceil((latitude.max  - swArea.latitude.min)  / swArea.latitude.size());
+
+    for (unsigned row = 0; row < nRows; ++row) {
+        if (row > 0)
+            sw = sw.adjacent(NORTH);
+        hash h = sw;
+        for (unsigned col = 0; col < nCols; ++col) {
+            if (col > 0)
+                h = h.adjacent(EAST);
+            covering.push_back(h);
+        }
+    }
+    std::sort(covering.begin(), covering.end());
+
+    std::vector<hashRange> result;
+    for (auto h = covering.begin(); h != covering.end(); ++h) {
+        if (result.size() == 0 || !result.back().add(*h))
+            result.push_back(hashRange(*h, 1));
+    }
+    return result;
+}
 
 
 hash::hash(forestdb::slice bytes) {
@@ -185,68 +315,71 @@ hash::hash(coord c, unsigned len)
     string[len] = '\0';
 }
 
-size_t hash::commonChars(const hash &h) {
-    size_t n = std::min(length(), h.length());
-    size_t i;
-    for (i=0; i<n; i++)
-        if (string[i] != h.string[i])
+/*static*/ unsigned hash::nCharsForDegreesAccuracy(double accuracy) {
+    unsigned nChars;
+    for (nChars = 1; nChars < hash::kMaxLength; nChars++) {
+        if (CELL_HEIGHTS[nChars-1] <= accuracy && CELL_WIDTHS[nChars-1] <= accuracy)
             break;
-    return i;
+    }
+    return nChars;
+}
+    
+
+static char addChar(char c, unsigned n) {
+    unsigned char uc = (unsigned char)toupper(c) - 0x030;
+    assert(uc < 44);
+    int index = BASE32_DECODE_TABLE[uc];
+    assert(index >= 0);
+    index += n;
+    return BASE32_ENCODE_TABLE[index];
 }
 
 
-#if 0 // unused
-    static const char NEIGHBORS_TABLE[8][33] = {
-        "p0r21436x8zb9dcf5h7kjnmqesgutwvy", /* NORTH EVEN */
-        "bc01fg45238967deuvhjyznpkmstqrwx", /* NORTH ODD  */
-        "bc01fg45238967deuvhjyznpkmstqrwx", /* EAST EVEN  */
-        "p0r21436x8zb9dcf5h7kjnmqesgutwvy", /* EAST ODD   */
-        "238967debc01fg45kmstqrwxuvhjyznp", /* WEST EVEN  */
-        "14365h7k9dcfesgujnmqp0r2twvyx8zb", /* WEST ODD   */
-        "14365h7k9dcfesgujnmqp0r2twvyx8zb", /* SOUTH EVEN */
-        "238967debc01fg45kmstqrwxuvhjyznp"  /* SOUTH ODD  */
-    };
-
-    static const char BORDERS_TABLE[8][9] = {
-        "prxz",     /* NORTH EVEN */
-        "bcfguvyz", /* NORTH ODD */
-        "bcfguvyz", /* EAST  EVEN */
-        "prxz",     /* EAST  ODD */
-        "0145hjnp", /* WEST  EVEN */
-        "028b",     /* WEST  ODD */
-        "028b",     /* SOUTH EVEN */
-        "0145hjnp"  /* SOUTH ODD */
-    };
-    
-    
-neighbors*
-get_neighbors(const char* hash)
-{
-    neighbors *n;
-
-    n = new neighbors;
-
-    n->north = get_adjacent(hash, NORTH, NULL);
-    n->east  = get_adjacent(hash, EAST, NULL);
-    n->west  = get_adjacent(hash, WEST, NULL);
-    n->south = get_adjacent(hash, SOUTH, NULL);
-
-    n->north_east = get_adjacent(n->north, EAST, NULL);
-    n->north_west = get_adjacent(n->north, WEST, NULL);
-    n->south_east = get_adjacent(n->south, EAST, NULL);
-    n->south_west = get_adjacent(n->south, WEST, NULL);
-
-    return n;
+bool hashRange::add(const hash &h) {
+    size_t len = strlen(string);
+    if (strlen(h) == len && h.string[len-1] == addChar(string[len-1], count)) {
+        ++count;
+        return true;
+    }
+    return false;
 }
 
-char*
+hash hashRange::lastHash() const {
+    hash h = *(const hash*)this;
+    size_t max = strlen(h.string)-1;
+    h.string[max] = addChar(h.string[max], count - 1);
+    return h;
+}
+
+
+static const char NEIGHBORS_TABLE[8][33] = {
+    "p0r21436x8zb9dcf5h7kjnmqesgutwvy", /* NORTH EVEN */
+    "bc01fg45238967deuvhjyznpkmstqrwx", /* NORTH ODD  */
+    "bc01fg45238967deuvhjyznpkmstqrwx", /* EAST EVEN  */
+    "p0r21436x8zb9dcf5h7kjnmqesgutwvy", /* EAST ODD   */
+    "238967debc01fg45kmstqrwxuvhjyznp", /* WEST EVEN  */
+    "14365h7k9dcfesgujnmqp0r2twvyx8zb", /* WEST ODD   */
+    "14365h7k9dcfesgujnmqp0r2twvyx8zb", /* SOUTH EVEN */
+    "238967debc01fg45kmstqrwxuvhjyznp"  /* SOUTH ODD  */
+};
+
+static const char BORDERS_TABLE[8][9] = {
+    "prxz",     /* NORTH EVEN */
+    "bcfguvyz", /* NORTH ODD */
+    "bcfguvyz", /* EAST  EVEN */
+    "prxz",     /* EAST  ODD */
+    "0145hjnp", /* WEST  EVEN */
+    "028b",     /* WEST  ODD */
+    "028b",     /* SOUTH EVEN */
+    "0145hjnp"  /* SOUTH ODD */
+};
+
+static char*
 get_adjacent(const char* hash, direction dir, char *base)
 {
     size_t len, idx;
     const char *border_table, *neighbor_table;
-    char *refined_base, *ptr, last;
-
-    assert(hash != NULL);
+    char *ptr, last;
 
     len  = (int)strlen(hash);
     last = (unsigned char)tolower(hash[len - 1]);
@@ -254,19 +387,13 @@ get_adjacent(const char* hash, direction dir, char *base)
 
     border_table = BORDERS_TABLE[idx];
 
-    if (base == NULL) {
-        base = new char[len + 1];
-    }
-
     if (base != hash)
         strncpy(base, hash, len - 1);
     base[len-1] = '\0';
 
     if (strchr(border_table, last) != NULL) {
-        refined_base = get_adjacent(base, dir, base);
-        if (refined_base == NULL) {
+        if (get_adjacent(base, dir, base) == NULL)
             return NULL;
-        }
     }
 
     neighbor_table = NEIGHBORS_TABLE[idx];
@@ -282,19 +409,11 @@ get_adjacent(const char* hash, direction dir, char *base)
     return base;
 }
 
-void 
-free_neighbors(neighbors *neighbors)
-{
-    free(neighbors->north);
-    free(neighbors->east);
-    free(neighbors->west);
-    free(neighbors->south);
-    free(neighbors->north_east);
-    free(neighbors->south_east);
-    free(neighbors->north_west);
-    free(neighbors->south_west);
-    free(neighbors);
+hash hash::adjacent(direction dir) const {
+    hash result;
+    get_adjacent(string, dir, result.string);
+    return result;
 }
-#endif
+
 
 }
