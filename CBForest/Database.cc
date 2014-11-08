@@ -35,7 +35,7 @@ namespace forestdb {
     void (*LogCallback)(logLevel, const char *message) = &defaultLogCallback;
 
     void _Log(logLevel level, const char *message, ...) {
-        if (LogLevel >= level && LogCallback != NULL) {
+        if (LogLevel <= level && LogCallback != NULL) {
             va_list args;
             va_start(args, message);
             char *formatted = NULL;

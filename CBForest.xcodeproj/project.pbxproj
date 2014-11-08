@@ -148,6 +148,8 @@
 		27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DD1514193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		27DF46BD1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
+		27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
 		27E3FF021986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E3FF031986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
@@ -512,6 +514,7 @@
 		27DD150719354C70009A367D /* CBForest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CBForest.hh; path = ../CBForest/CBForest.hh; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RevID.cc; path = ../CBForest/RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = RevID.hh; path = ../CBForest/RevID.hh; sourceTree = "<group>"; };
+		27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GeoIndex_Test.mm; sourceTree = "<group>"; };
 		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
 		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
@@ -877,6 +880,7 @@
 				270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */,
 				27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */,
 				2722304A1A08178200BFF25C /* GeoHash_Test.mm */,
+				27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */,
 				27E4872019226699007D8940 /* testutil.h */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
 			);
@@ -1417,6 +1421,7 @@
 				27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27DD14F019328576009A367D /* Index_Test.mm in Sources */,
 				270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
+				27DF46BD1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */,
 				27E4871E19226508007D8940 /* Database_Test.mm in Sources */,
 				27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */,
 				2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */,
@@ -1497,6 +1502,7 @@
 				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,
 				27DD14F119328576009A367D /* Index_Test.mm in Sources */,
 				27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */,
+				27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */,
 				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
 				272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */,
 				2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */,

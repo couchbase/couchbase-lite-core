@@ -15,7 +15,6 @@
 namespace forestdb {
 
     Collatable& operator<< (Collatable&, geohash::coord);
-    Collatable& operator<< (Collatable&, geohash::area);
 
 
     class GeoIndexEnumerator : public IndexEnumerator {
@@ -27,6 +26,11 @@ namespace forestdb {
                            const DocEnumerator::Options&);
 
         geohash::area keyArea() const           {return _keyArea;}
+        geohash::coord keyCoord() const         {return _keyArea.mid();}
+
+#if DEBUG
+        ~GeoIndexEnumerator();
+#endif
 
     protected:
         virtual bool approve(slice key); // override
@@ -34,6 +38,9 @@ namespace forestdb {
     private:
         const geohash::area _searchArea;
         geohash::area _keyArea;
+#if DEBUG
+        unsigned _count[2];
+#endif
     };
 
 }

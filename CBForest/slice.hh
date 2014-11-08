@@ -57,6 +57,7 @@ namespace forestdb {
         bool operator==(const slice &s) const       {return compare(s)==0;}
         bool operator!=(const slice &s) const       {return compare(s)!=0;}
         bool operator<(slice s) const               {return compare(s) < 0;}
+        bool operator>(slice s) const               {return compare(s) > 0;}
 
         void moveStart(ptrdiff_t delta)             {buf = offsetby(buf, delta); size -= delta;}
 

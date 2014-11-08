@@ -78,6 +78,8 @@ namespace geohash {
             @param nChars  The character count of each hash; longer hashes are more accurate but
                 it may take a lot more to cover the area. */
         std::vector<hashRange> coveringHashesOfLength(unsigned nChars) const;
+
+        std::string dump() const;
     };
 
 

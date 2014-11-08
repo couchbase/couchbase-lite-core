@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#include <sstream>
 
 
 namespace geohash {
@@ -202,8 +203,8 @@ std::vector<hashRange> area::coveringHashesOfLength(unsigned nChars) const {
     std::vector<hash> covering;
     hash sw = coord(latitude.min, longitude.min).encode(nChars);
     area swArea = sw.decode();
-    unsigned nRows = (unsigned)ceil((longitude.max - swArea.longitude.min) / swArea.longitude.size());
-    unsigned nCols = (unsigned)ceil((latitude.max  - swArea.latitude.min)  / swArea.latitude.size());
+    unsigned nRows = (unsigned)ceil((latitude.max  - swArea.latitude.min)  / swArea.latitude.size());
+    unsigned nCols = (unsigned)ceil((longitude.max - swArea.longitude.min) / swArea.longitude.size());
 
     for (unsigned row = 0; row < nRows; ++row) {
         if (row > 0)
@@ -414,6 +415,15 @@ hash hash::adjacent(direction dir) const {
     get_adjacent(string, dir, result.string);
     return result;
 }
+
+
+std::string area::dump() const {
+    std::stringstream out;
+    out << "(" << latitude.min << ", " << longitude.min << ")...("
+                << latitude.max << ", " << longitude.max << ")";
+    return out.str();
+}
+
 
 
 }

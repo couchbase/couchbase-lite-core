@@ -21,6 +21,10 @@
 
 namespace forestdb {
 
+    bool KeyRange::isKeyPastEnd(slice key) const {
+        return inclusiveEnd ? (key > end) : !(key < end);
+    }
+
     Index::Index(std::string path, Database::openFlags flags, const Database::config& config)
     :Database(path, flags, config)
     { }
@@ -133,19 +137,23 @@ namespace forestdb {
     }
 
     IndexEnumerator::IndexEnumerator(Index& index,
-                                     std::vector<Collatable> keys,
-                                     const DocEnumerator::Options& options)
+                                     std::vector<KeyRange> keyRanges,
+                                     const DocEnumerator::Options& options,
+                                     bool firstRead)
     :_index(index),
      _options(options),
      _inclusiveStart(true),
      _inclusiveEnd(true),
-     _keys(keys),
+     _keyRanges(keyRanges),
      _currentKeyIndex(-1),
      _dbEnum(&_index, slice::null, slice::null, docOptions(options))
     {
-        Debug("IndexEnumerator(%p)", this);
-        nextKey();
-        read();
+        Debug("IndexEnumerator(%p), key ranges:", this);
+        for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
+            Debug("    key range: %s -- %s (%d)", i->start.dump().c_str(), i->end.dump().c_str(), i->inclusiveEnd);
+        nextKeyRange();
+        if (firstRead)
+            read();
     }
 
     bool IndexEnumerator::read() {
@@ -153,7 +161,7 @@ namespace forestdb {
             if (!_dbEnum) {
                 if (_currentKeyIndex < 0)
                     return false; // at end
-                else if (nextKey())
+                else if (nextKeyRange())
                     continue;
                 else
                     return false;
@@ -174,9 +182,9 @@ namespace forestdb {
                 continue;
             }
 
-            if (_currentKeyIndex >= 0 && _key != _keys[_currentKeyIndex]) {
+            if (_currentKeyIndex >= 0 && _keyRanges[_currentKeyIndex].isKeyPastEnd(_key)) {
                 // While enumerating through _keys, advance to the next key:
-                if (nextKey())
+                if (nextKeyRange())
                     continue;
                 else
                     return false;
@@ -209,20 +217,21 @@ namespace forestdb {
         }
     }
 
-    bool IndexEnumerator::nextKey() {
-        if (_keys.size() == 0)
+    bool IndexEnumerator::nextKeyRange() {
+        if (_keyRanges.size() == 0)
             return false;
-        if (++_currentKeyIndex >= _keys.size()) {
+        if (++_currentKeyIndex >= _keyRanges.size()) {
             _dbEnum.close();
             return false;
         }
 
-        if (_currentKeyIndex > 0 && !(_keys[_currentKeyIndex-1] < _keys[_currentKeyIndex])) {
+        Collatable& startKey = _keyRanges[_currentKeyIndex].start;
+        if (_currentKeyIndex > 0 && !(_keyRanges[_currentKeyIndex-1].end < startKey)) {
             _dbEnum = DocEnumerator(&_index, slice::null, slice::null, _options);
         }
 
-        Debug("IndexEnumerator: Advance to key '%s'", _keys[_currentKeyIndex].dump().c_str());
-        return _dbEnum.seek(makeRealKey(_keys[_currentKeyIndex], slice::null, false, _options.descending));
+        Debug("IndexEnumerator: Advance to key '%s'", startKey.dump().c_str());
+        return _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));
     }
 
     bool IndexEnumerator::next() {

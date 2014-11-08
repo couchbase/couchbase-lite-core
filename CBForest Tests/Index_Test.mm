@@ -172,7 +172,7 @@ static boolBlock scopedEnumerate() {
 
     // Enumerate a vector of keys:
     NSLog(@"--- Enumerating a vector of keys");
-    std::vector<Collatable> keys;
+    std::vector<KeyRange> keys;
     keys.push_back(Collatable("Cambria"));
     keys.push_back(Collatable("San Jose"));
     keys.push_back(Collatable("Portland"));
@@ -185,6 +185,20 @@ static boolBlock scopedEnumerate() {
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     XCTAssertEqual(nRows, 2);
+
+    // Enumerate a vector of key ranges:
+    NSLog(@"--- Enumerating a vector of key ranges");
+    std::vector<KeyRange> ranges;
+    ranges.push_back(KeyRange(Collatable("Port"), Collatable("Port\uFFFE")));
+    ranges.push_back(KeyRange(Collatable("Vernon"), Collatable("Ypsilanti")));
+    nRows = 0;
+    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e; ++e) {
+        nRows++;
+        alloc_slice keyStr = e.key().readString();
+        NSLog(@"key = %.*s, docID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+    }
+    XCTAssertEqual(nRows, 3);
 }
 
 - (void) testBlockScopedObjects {

@@ -147,5 +147,23 @@ static void verify_neighbors(
     AssertEqualCStrings(hashes[4].string, "c254");  XCTAssertEqual(hashes[4].count, 2);
 }
 
+- (void) testCovering2 {
+    geohash::area box(geohash::coord(10, 10), geohash::coord(20, 20));
+    std::vector<geohash::hashRange> hashes = box.coveringHashes(10);
+    std::sort(hashes.begin(), hashes.end());
+    NSLog(@"Covering hashes:");
+    for (auto i = hashes.begin(); i != hashes.end(); ++i) {
+        if (i->count == 1)
+            NSLog(@"    %s", i->string);
+        else
+            NSLog(@"    %s ... %s (%u)", i->string, i->lastHash().string, i->count);
+        geohash::area a = i->decode();
+        NSLog(@"        (%g, %g)...(%g, %g)",
+              a.latitude.min,a.longitude.min, a.latitude.max,a.longitude.max);
+    }
+    XCTAssertEqual(hashes.size(), 2);
+    AssertEqualCStrings(hashes[0].string, "s1");  XCTAssertEqual(hashes[0].count, 1);
+    AssertEqualCStrings(hashes[1].string, "s3");  XCTAssertEqual(hashes[1].count, 5);
+}
 
 @end

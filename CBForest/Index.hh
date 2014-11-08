@@ -23,8 +23,19 @@ namespace forestdb {
     
     class Index;
     class IndexTransaction;
-    class Collatable;
 
+    struct KeyRange {
+        Collatable start;
+        Collatable end;
+        bool inclusiveEnd;
+
+        KeyRange(Collatable s, Collatable e, bool inclusive =true)
+                                                :start(s), end(e), inclusiveEnd(inclusive) { }
+        KeyRange(Collatable single)             :start(single), end(single), inclusiveEnd(true) { }
+        KeyRange(const KeyRange &r)             :start(r.start), end(r.end),
+                                                 inclusiveEnd(r.inclusiveEnd) { }
+        bool isKeyPastEnd(slice key) const;
+    };
 
     /** Index query enumerator. */
     class IndexEnumerator {
@@ -35,8 +46,9 @@ namespace forestdb {
                         const DocEnumerator::Options&);
 
         IndexEnumerator(Index&,
-                        std::vector<Collatable> keys,
-                        const DocEnumerator::Options&);
+                        std::vector<KeyRange> keyRanges,
+                        const DocEnumerator::Options&,
+                        bool firstRead =true);
 
         CollatableReader key() const            {return CollatableReader(_key);}
         CollatableReader value() const          {return CollatableReader(_value);}
@@ -49,11 +61,11 @@ namespace forestdb {
 
     protected:
         virtual bool approve(slice key)         {return true;}
+        bool read();
 
     private:
         friend class Index;
-        bool read();
-        bool nextKey();
+        bool nextKeyRange();
 
         Index& _index;
         DocEnumerator::Options _options;
@@ -61,7 +73,7 @@ namespace forestdb {
         alloc_slice _endKey;
         bool _inclusiveStart;
         bool _inclusiveEnd;
-        std::vector<Collatable> _keys;
+        std::vector<KeyRange> _keyRanges;
         int _currentKeyIndex;
 
         DocEnumerator _dbEnum;
