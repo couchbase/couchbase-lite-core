@@ -281,4 +281,28 @@ using namespace forestdb;
     }
 }
 
+- (void) test07_DeleteKey {
+    slice key("a");
+    Transaction(db).set(key, nsstring_slice(@"A"));
+    Transaction(db).del(key);
+    Document doc = db->get(key);
+    Assert(doc.deleted());
+    Assert(!doc.exists());
+}
+
+- (void) test07_DeleteDoc {
+    slice key("a");
+    Transaction(db).set(key, nsstring_slice(@"A"));
+
+    {
+        Transaction t(db);
+        Document doc = db->get(key);
+        t.del(doc);
+    }
+
+    Document doc = db->get(key);
+    Assert(doc.deleted());
+    Assert(!doc.exists());
+}
+
 @end
