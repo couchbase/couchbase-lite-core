@@ -139,12 +139,14 @@ static void verify_neighbors(
             NSLog(@"    %s", i->string);
         else
             NSLog(@"    %s ... %s (%u)", i->string, i->lastHash().string, i->count);
-    XCTAssertEqual(hashes.size(), 5);
+    XCTAssertEqual(hashes.size(), 7);
     AssertEqualCStrings(hashes[0].string, "c21b");  XCTAssertEqual(hashes[0].count, 2);
     AssertEqualCStrings(hashes[1].string, "c21f");  XCTAssertEqual(hashes[1].count, 2);
-    AssertEqualCStrings(hashes[2].string, "c240");  XCTAssertEqual(hashes[2].count, 16);
-    AssertEqualCStrings(hashes[3].string, "c250");  XCTAssertEqual(hashes[3].count, 2);
-    AssertEqualCStrings(hashes[4].string, "c254");  XCTAssertEqual(hashes[4].count, 2);
+    AssertEqualCStrings(hashes[2].string, "c21u");  XCTAssertEqual(hashes[2].count, 2);
+    AssertEqualCStrings(hashes[3].string, "c240");  XCTAssertEqual(hashes[3].count, 10);
+    AssertEqualCStrings(hashes[4].string, "c24d");  XCTAssertEqual(hashes[4].count, 2);
+    AssertEqualCStrings(hashes[5].string, "c24h");  XCTAssertEqual(hashes[5].count, 4);
+    AssertEqualCStrings(hashes[6].string, "c24s");  XCTAssertEqual(hashes[6].count, 2);
 }
 
 - (void) testCovering2 {
