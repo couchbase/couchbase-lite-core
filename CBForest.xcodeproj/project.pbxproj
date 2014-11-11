@@ -150,6 +150,8 @@
 		27DD1514193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DF46BD1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
 		27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
+		27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
+		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27E3FF021986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E3FF031986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
@@ -515,6 +517,7 @@
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RevID.cc; path = ../CBForest/RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = RevID.hh; path = ../CBForest/RevID.hh; sourceTree = "<group>"; };
 		27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GeoIndex_Test.mm; sourceTree = "<group>"; };
+		27DF46BF1A119860007BB4A4 /* kv_instance.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kv_instance.cc; sourceTree = "<group>"; };
 		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
 		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
@@ -837,6 +840,7 @@
 				2750729F18E4857900A80C5A /* hash.cc */,
 				275072A018E4857900A80C5A /* hbtrie.cc */,
 				275072A118E4857900A80C5A /* iterator.cc */,
+				27DF46BF1A119860007BB4A4 /* kv_instance.cc */,
 				275072A218E4857900A80C5A /* list.cc */,
 				27EF7F8D1911A85800A327B9 /* snapshot.cc */,
 				27EF007E1949297F001BF7F3 /* transaction.cc */,
@@ -1458,6 +1462,7 @@
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
 				27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
+				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
@@ -1539,6 +1544,7 @@
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				275072CF18E4AA5000A80C5A /* filemgr_ops.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
+				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,

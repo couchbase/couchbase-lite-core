@@ -86,23 +86,32 @@ namespace forestdb {
     }
 
     DatabaseGetters::DatabaseGetters()
-    :_handle(NULL)
+    :_fileHandle(NULL),
+     _handle(NULL)
     { }
 
     Database::Database(std::string path, openFlags flags, const config& cfg)
     :_file(File::forPath(path)), _openFlags(flags), _config(cfg)
     {
-        check(::fdb_open(&_handle, path.c_str(), (config*)&cfg));
+        check(::fdb_open(&_fileHandle, path.c_str(), (config*)&cfg));
+        check(::fdb_kvs_open(_fileHandle, &_handle, NULL, NULL));
     }
 
     Database::~Database() {
-        if (_handle)
-            fdb_close(_handle);
+        // fdb_close will automatically close _handle as well.
+        if (_fileHandle)
+            fdb_close(_fileHandle);
     }
 
     DatabaseGetters::info DatabaseGetters::getInfo() const {
         info i;
-        check(fdb_get_dbinfo(_handle, &i));
+        check(fdb_get_dbinfo(_fileHandle, &i));
+        return i;
+    }
+
+    DatabaseGetters::kvinfo DatabaseGetters::getKVInfo() const {
+        kvinfo i;
+        check(fdb_get_kvs_info(_handle, &i));
         return i;
     }
 
@@ -115,6 +124,7 @@ namespace forestdb {
     }
 
     void Database::deleted() {
+        _fileHandle = NULL;
         _handle = NULL;
     }
 
@@ -238,20 +248,20 @@ namespace forestdb {
 #pragma mark - TRANSACTION:
 
 
-    fdb_handle* Database::beginTransaction(Transaction* t, sequence &startSequence) {
+    fdb_file_handle* Database::beginTransaction(Transaction* t, sequence &startSequence) {
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
 
-        fdb_handle* realHandle = _handle;
+        fdb_file_handle* realHandle = _fileHandle;
         fdb_begin_transaction(realHandle, FDB_ISOLATION_READ_COMMITTED);
         _file->_transaction = t;
         return realHandle;
     }
 
-    void Database::endTransaction(fdb_handle* handle) {
+    void Database::endTransaction(fdb_file_handle* handle) {
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
-        _handle = handle;
+        _fileHandle = handle;
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
     }
@@ -260,21 +270,22 @@ namespace forestdb {
     Transaction::Transaction(Database* db)
     :_db(*db), _state(0)
     {
-        _handle = _db.beginTransaction(this, _startSequence);
+        _fileHandle = _db.beginTransaction(this, _startSequence);
+        _handle = _db._handle; //FIX: this is hacky
     }
 
     Transaction::~Transaction() {
         fdb_status status = FDB_RESULT_SUCCESS;
-        if (_handle) {
+        if (_fileHandle) {
             if (_state >= 0) {
-                status = fdb_end_transaction(_handle, FDB_COMMIT_NORMAL);
+                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
                 if (status != FDB_RESULT_SUCCESS)
                     _state = -1;
             } else {
-                fdb_abort_transaction(_handle);
+                fdb_abort_transaction(_fileHandle);
             }
         }
-        _db.endTransaction(_handle); // return handle back to Database object
+        _db.endTransaction(_fileHandle); // return handle back to Database object
         forestdb::check(status); // throw exception if end_transaction failed
     }
 
@@ -288,14 +299,21 @@ namespace forestdb {
         }
     }
 
+    void Transaction::reopen(std::string path) {
+        check(::fdb_open(&_fileHandle, path.c_str(), &_db._config));
+        _db._fileHandle = _fileHandle;
+        check(::fdb_kvs_open(_fileHandle, &_handle, NULL, NULL));
+        _db._handle = _handle;
+    }
+
     void Transaction::deleteDatabase() {
         std::string path = _db.filename();
-        check(::fdb_close(_handle));
+        check(::fdb_close(_fileHandle));
+        _fileHandle = NULL;
         _handle = NULL;
         if (::unlink(path.c_str()) < 0 && errno != ENOENT) {
             _state = -1;
-            check(::fdb_open(&_handle, path.c_str(), &_db._config));
-            _db._handle = _handle;
+            reopen(path);
             throw(errno);
         }
         _db.deleted();
@@ -304,9 +322,8 @@ namespace forestdb {
     void Transaction::erase() {
         std::string path = _db.filename();
         deleteDatabase();
-        check(::fdb_open(&_handle, path.c_str(), &_db._config));
-        _db._handle = _handle;
-        check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
+        reopen(path);
+        check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
     }
 
     void Transaction::rollbackTo(sequence seq) {
@@ -318,25 +335,24 @@ namespace forestdb {
         std::string path = _db.filename();
         std::string tempPath = path + ".compact";
 
-        check(fdb_end_transaction(_handle, FDB_COMMIT_NORMAL));
+        check(fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL));
 
-        fdb_status status = fdb_compact(_handle, tempPath.c_str());
+        fdb_status status = fdb_compact(_fileHandle, tempPath.c_str());
         if (status != FDB_RESULT_SUCCESS) {
             ::unlink(tempPath.c_str());
             check(status);
         }
-        check(::fdb_close(_handle));
+        check(::fdb_close(_fileHandle));
         if (::rename(tempPath.c_str(), path.c_str()) < 0) {
             ::unlink(tempPath.c_str());
             check(FDB_RESULT_FILE_RENAME_FAIL);
         }
-        check(::fdb_open(&_handle, path.c_str(), &_db._config));
-        _db._handle = _handle;
-        check(fdb_begin_transaction(_handle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
+        reopen(path);
+        check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
     }
 
     void Transaction::commit() {
-        check(fdb_commit(_handle, FDB_COMMIT_NORMAL));
+        check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
     }
 
     void Transaction::write(Document &doc) {

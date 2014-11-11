@@ -53,10 +53,12 @@ using namespace forestdb;
 
 - (void) test01_DbInfo {
     auto info = db->getInfo();
-    AssertEq(info.last_seqnum, 0);
     AssertEq(info.doc_count, 0);
-    Assert(info.space_used > 0);
+    AssertEq(info.space_used, 0);
     Assert(info.file_size > 0);
+
+    auto kvInfo = db->getKVInfo();
+    AssertEq(kvInfo.last_seqnum, 0);
 }
 
 - (void)test02_CreateDoc

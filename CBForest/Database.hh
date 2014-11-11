@@ -49,9 +49,11 @@ namespace forestdb {
         typedef fdb_open_flags openFlags;
         typedef fdb_config config;
         typedef fdb_info info;
+        typedef fdb_kvs_info kvinfo;
 
         std::string filename() const;
         info getInfo() const;
+        kvinfo getKVInfo() const;
 
         // Keys/values:
 
@@ -70,6 +72,7 @@ namespace forestdb {
         DatabaseGetters();
         virtual ~DatabaseGetters() {}
 
+        fdb_file_handle* _fileHandle;
         fdb_handle* _handle;
 
     private:
@@ -100,8 +103,8 @@ namespace forestdb {
     private:
         class File;
         friend class Transaction;
-        fdb_handle* beginTransaction(Transaction*,sequence&);
-        void endTransaction(fdb_handle* handle);
+        fdb_file_handle* beginTransaction(Transaction*,sequence&);
+        void endTransaction(fdb_file_handle* handle);
 
         File* _file;
         openFlags _openFlags;
@@ -142,6 +145,7 @@ namespace forestdb {
 
     private:
         void check(fdb_status status);
+        void reopen(std::string path);
 
         Transaction(const Transaction&); // forbidden
 
