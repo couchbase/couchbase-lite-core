@@ -1,5 +1,5 @@
 //
-//  Tokenizer.cpp
+//  Tokenizer.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 10/17/14.

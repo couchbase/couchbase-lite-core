@@ -22,8 +22,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		2701993B19F1972E00FDC239 /* Tokenizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cpp */; };
-		2701993C19F1972E00FDC239 /* Tokenizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cpp */; };
+		2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
 		2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
@@ -405,7 +405,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2701993919F1972E00FDC239 /* Tokenizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cpp; sourceTree = "<group>"; };
+		2701993919F1972E00FDC239 /* Tokenizer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cc; sourceTree = "<group>"; };
 		2701993A19F1972E00FDC239 /* Tokenizer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Tokenizer.hh; sourceTree = "<group>"; };
 		2704A1E219049E2300138320 /* slice.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = slice.hh; path = ../CBForest/slice.hh; sourceTree = "<group>"; };
 		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
@@ -937,7 +937,9 @@
 				27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */,
 				2722304D1A0858A100BFF25C /* GeoIndex.cc */,
 				2722304E1A0858A100BFF25C /* GeoIndex.hh */,
-				2701993919F1972E00FDC239 /* Tokenizer.cpp */,
+				272230461A0815E700BFF25C /* Geohash.cc */,
+				272230471A0815E700BFF25C /* Geohash.hh */,
+				2701993919F1972E00FDC239 /* Tokenizer.cc */,
 				2701993A19F1972E00FDC239 /* Tokenizer.hh */,
 				27E4872D1924178B007D8940 /* Collatable.cc */,
 				27E4872E1924178B007D8940 /* Collatable.hh */,
@@ -950,8 +952,6 @@
 				27FDFC0218EA58DA00AC4647 /* varint.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
-				272230461A0815E700BFF25C /* Geohash.cc */,
-				272230471A0815E700BFF25C /* Geohash.hh */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -1484,7 +1484,7 @@
 				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27E487301924178B007D8940 /* Collatable.cc in Sources */,
 				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
-				2701993C19F1972E00FDC239 /* Tokenizer.cpp in Sources */,
+				2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27DD1514193CD005009A367D /* RevID.cc in Sources */,
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
@@ -1608,7 +1608,7 @@
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
-				2701993B19F1972E00FDC239 /* Tokenizer.cpp in Sources */,
+				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
