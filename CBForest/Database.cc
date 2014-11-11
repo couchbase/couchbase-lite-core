@@ -105,14 +105,14 @@ namespace forestdb {
 
     DatabaseGetters::info DatabaseGetters::getInfo() const {
         info i;
-        check(fdb_get_dbinfo(_fileHandle, &i));
+        check(fdb_get_file_info(_fileHandle, &i));
         return i;
     }
 
-    DatabaseGetters::kvinfo DatabaseGetters::getKVInfo() const {
+    sequence DatabaseGetters::lastSequence() const {
         kvinfo i;
         check(fdb_get_kvs_info(_handle, &i));
-        return i;
+        return i.last_seqnum;
     }
 
     std::string DatabaseGetters::filename() const {

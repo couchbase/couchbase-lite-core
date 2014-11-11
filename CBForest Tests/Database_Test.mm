@@ -57,8 +57,7 @@ using namespace forestdb;
     AssertEq(info.space_used, 0);
     Assert(info.file_size > 0);
 
-    auto kvInfo = db->getKVInfo();
-    AssertEq(kvInfo.last_seqnum, 0);
+    AssertEq(db->lastSequence(), 0);
 }
 
 - (void)test02_CreateDoc
@@ -68,6 +67,7 @@ using namespace forestdb;
         Transaction t(db);
         t.set(key, nsstring_slice(@"value"));
     }
+    AssertEq(db->lastSequence(), 1);
     Document doc = db->get(key);
     Assert(doc.key() == key);
     Assert(doc.body() == nsstring_slice(@"value"));
@@ -87,6 +87,7 @@ using namespace forestdb;
         t.write(doc);
 
         AssertEq(doc.sequence(), 2);
+        AssertEq(db->lastSequence(), 2);
         auto doc_alias = t.get(doc.sequence());
         Assert(doc_alias.key() == doc.key());
         Assert(doc_alias.meta() == doc.meta());

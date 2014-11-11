@@ -48,12 +48,12 @@ namespace forestdb {
     public:
         typedef fdb_open_flags openFlags;
         typedef fdb_config config;
-        typedef fdb_info info;
+        typedef fdb_file_info info;
         typedef fdb_kvs_info kvinfo;
 
         std::string filename() const;
         info getInfo() const;
-        kvinfo getKVInfo() const;
+        sequence lastSequence() const;
 
         // Keys/values:
 
@@ -73,7 +73,7 @@ namespace forestdb {
         virtual ~DatabaseGetters() {}
 
         fdb_file_handle* _fileHandle;
-        fdb_handle* _handle;
+        fdb_kvs_handle* _handle;
 
     private:
         DatabaseGetters(const DatabaseGetters&); // forbidden

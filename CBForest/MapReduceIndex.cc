@@ -47,7 +47,7 @@ namespace forestdb {
     }
 
     void MapReduceIndex::readState() {
-        sequence curIndexSeq = getKVInfo().last_seqnum;
+        sequence curIndexSeq = lastSequence();
         if (_stateReadAt != curIndexSeq) {
             Collatable stateKey;
             stateKey.addNull();
@@ -147,7 +147,7 @@ namespace forestdb {
 
     bool MapReduceIndexer::run() {
         Database* sourceDatabase = _indexes[0]->sourceDatabase();
-        sequence latestDbSequence = sourceDatabase->getKVInfo().last_seqnum;
+        sequence latestDbSequence = sourceDatabase->lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
         // Also start a transaction for each index:
