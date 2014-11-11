@@ -16,7 +16,7 @@
 #ifndef CBForest_DocEnumerator_hh
 #define CBForest_DocEnumerator_hh
 
-#include "Database.hh"
+#include "Document.hh"
 
 namespace forestdb {
 

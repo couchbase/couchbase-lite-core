@@ -152,6 +152,8 @@
 		27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
 		27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
+		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27E3FF021986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E3FF031986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
@@ -518,6 +520,8 @@
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = RevID.hh; path = ../CBForest/RevID.hh; sourceTree = "<group>"; };
 		27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GeoIndex_Test.mm; sourceTree = "<group>"; };
 		27DF46BF1A119860007BB4A4 /* kv_instance.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kv_instance.cc; sourceTree = "<group>"; };
+		27DF46C21A12CF46007BB4A4 /* Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Document.cc; sourceTree = "<group>"; };
+		27DF46C31A12CF46007BB4A4 /* Document.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
 		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
@@ -923,16 +927,18 @@
 				27DD150719354C70009A367D /* CBForest.hh */,
 				27E48711192171EA007D8940 /* Database.cc */,
 				27E48712192171EA007D8940 /* Database.hh */,
+				27DF46C21A12CF46007BB4A4 /* Document.cc */,
+				27DF46C31A12CF46007BB4A4 /* Document.hh */,
 				27E609A11951E4C000202B72 /* DocEnumerator.cc */,
 				27E609A41951E53F00202B72 /* DocEnumerator.hh */,
+				27E487291923F24D007D8940 /* VersionedDocument.cc */,
+				27E4872A1923F24D007D8940 /* VersionedDocument.hh */,
+				275F1444195CC588009DADB2 /* VersionedDocument.mm */,
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
 				277D19C6194CCE7A008E91EB /* RevID.mm */,
 				27E487211922A64F007D8940 /* RevTree.cc */,
 				27E487221922A64F007D8940 /* RevTree.hh */,
-				27E487291923F24D007D8940 /* VersionedDocument.cc */,
-				27E4872A1923F24D007D8940 /* VersionedDocument.hh */,
-				275F1444195CC588009DADB2 /* VersionedDocument.mm */,
 				27E487311924242C007D8940 /* Index.cc */,
 				27E487321924242C007D8940 /* Index.hh */,
 				27E4873819255EA8007D8940 /* MapReduceIndex.cc */,
@@ -1481,6 +1487,7 @@
 				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
+				27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */,
@@ -1606,6 +1613,7 @@
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
+				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,

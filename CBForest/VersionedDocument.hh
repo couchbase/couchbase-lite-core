@@ -16,6 +16,7 @@
 #ifndef __CBForest__VersionedDocument__
 #define __CBForest__VersionedDocument__
 #include "RevTree.hh"
+#include "Document.hh"
 
 namespace forestdb {
 
