@@ -22,7 +22,6 @@
 namespace forestdb {
     
     class Index;
-    class IndexTransaction;
 
     struct KeyRange {
         Collatable start;
@@ -37,15 +36,49 @@ namespace forestdb {
         bool isKeyPastEnd(slice key) const;
     };
 
+    
+    /** A key-value store used as an index. */
+    class Index : protected KeyStore {
+    public:
+        Index(Database*, std::string name);
+
+    private:
+        friend class IndexWriter;
+        friend class IndexEnumerator;
+    };
+
+
+    /** A transaction to update an index. */
+    class IndexWriter : protected KeyStoreWriter {
+    public:
+        IndexWriter(Index* index, Transaction& t);
+
+        /** Updates the index entry for a document with the given keys and values.
+            Adjusts the value of rowCount by the number of rows added or removed.
+            Returns true if the index may have changed as a result. */
+        bool update(slice docID,
+                    sequence docSequence,
+                    std::vector<Collatable> keys,
+                    std::vector<Collatable> values,
+                    uint64_t &rowCount);
+
+    private:
+        int64_t removeOldRowsForDoc(slice docID);
+
+        friend class Index;
+        friend class MapReduceIndex;
+    };
+
+
     /** Index query enumerator. */
     class IndexEnumerator {
     public:
-        IndexEnumerator(Index&,
+        IndexEnumerator(Index*,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
                         const DocEnumerator::Options&);
 
-        IndexEnumerator(Index&,
+        IndexEnumerator(Index*,
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options&,
                         bool firstRead =true);
@@ -67,7 +100,7 @@ namespace forestdb {
         friend class Index;
         bool nextKeyRange();
 
-        Index& _index;
+        Index* _index;
         DocEnumerator::Options _options;
         alloc_slice _startKey;
         alloc_slice _endKey;
@@ -81,46 +114,6 @@ namespace forestdb {
         slice _value;
         alloc_slice _docID;
         ::forestdb::sequence _sequence;
-    };
-
-
-    /** A database used as an index. */
-    class Index : protected Database {
-    public:
-        Index(std::string path, Database::openFlags, const config&);
-
-        typedef Database::config config;
-        static config defaultConfig()           {return Database::defaultConfig();}
-
-    private:
-        friend class IndexTransaction;
-        friend class IndexEnumerator;
-    };
-
-
-    /** A transaction to update an index. */
-    class IndexTransaction : protected Transaction {
-    public:
-        IndexTransaction(Index* index)              :Transaction(index) {}
-
-        Index* index() const                        {return (Index*)database();}
-
-        /** Updates the index entry for a document with the given keys and values.
-            Adjusts the value of rowCount by the number of rows added or removed.
-            Returns true if the index may have changed as a result. */
-        bool update(slice docID,
-                    sequence docSequence,
-                    std::vector<Collatable> keys,
-                    std::vector<Collatable> values,
-                    uint64_t &rowCount);
-
-        void erase()                                {Transaction::erase();}
-
-    private:
-        int64_t removeOldRowsForDoc(slice docID);
-
-        friend class Index;
-        friend class MapReduceIndex;
     };
 
 }

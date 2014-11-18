@@ -41,7 +41,7 @@ namespace forestdb {
     }
 
 
-    GeoIndexEnumerator::GeoIndexEnumerator(Index &index,
+    GeoIndexEnumerator::GeoIndexEnumerator(Index *index,
                                            geohash::area searchArea)
     :IndexEnumerator(index,
                      keyRangesFor(searchArea),

@@ -20,8 +20,9 @@
 namespace forestdb {
 
     MapReduceDispatchIndexer::MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes,
+                                                       Transaction& transaction,
                                                        dispatch_queue_priority_t priority)
-    :MapReduceIndexer(indexes),
+    :MapReduceIndexer(indexes, transaction),
      _queue(dispatch_get_global_queue(priority, 0))
     { }
 

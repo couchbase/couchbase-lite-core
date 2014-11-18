@@ -19,26 +19,26 @@
 
 namespace forestdb {
 
-    VersionedDocument::VersionedDocument(Database* db, slice docID)
+    VersionedDocument::VersionedDocument(KeyStore db, slice docID)
     :_db(db), _doc(docID)
     {
         read();
     }
 
-    VersionedDocument::VersionedDocument(Database* db, const Document& doc)
+    VersionedDocument::VersionedDocument(KeyStore db, const Document& doc)
     :_db(db), _doc(doc)
     {
         decode();
     }
 
-    VersionedDocument::VersionedDocument(Database* db, Document&& doc)
+    VersionedDocument::VersionedDocument(KeyStore db, Document&& doc)
     :_db(db), _doc(std::move(doc))
     {
         decode();
     }
 
     void VersionedDocument::read() {
-        _db->read(_doc);
+        _db.read(_doc);
         decode();
     }
 
@@ -95,7 +95,7 @@ namespace forestdb {
             return true;
         if (atOffset == 0)
             return false;
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(atOffset, rev->sequence));
+        VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
         if (oldVersDoc.sequence() != rev->sequence)
             return false;
         rev = oldVersDoc.get(rev->revID);
@@ -107,7 +107,7 @@ namespace forestdb {
             return alloc_slice(rev->body);
         if (atOffset == 0)
             return alloc_slice();
-        VersionedDocument oldVersDoc(_db, _db->getByOffset(atOffset, rev->sequence));
+        VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
         if (oldVersDoc.sequence() != rev->sequence)
             return alloc_slice();
         rev = oldVersDoc.get(rev->revID);
@@ -122,7 +122,7 @@ namespace forestdb {
         updateMeta();
         // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
         // the existing body buffer.
-        _doc.updateSequence( transaction.set(_doc.key(), _doc.meta(), encode()) );
+        _doc.updateSequence( transaction(_db).set(_doc.key(), _doc.meta(), encode()) );
         _changed = false;
     }
 

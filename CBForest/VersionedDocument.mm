@@ -18,10 +18,10 @@
 
 namespace forestdb {
 
-    VersionedDocument::VersionedDocument(Database* db, NSString* docID)
+    VersionedDocument::VersionedDocument(KeyStore db, NSString* docID)
     :_db(db), _doc(nsstring_slice(docID))
     {
-        _db->read(_doc);
+        _db.read(_doc);
         decode();
     }
 

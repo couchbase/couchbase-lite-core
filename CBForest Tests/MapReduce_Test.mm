@@ -64,15 +64,16 @@ int TestMapFn::numMapCalls;
 
 class TestIndexer : public MapReduceIndexer {
 public:
-    static bool updateIndex(MapReduceIndex* index) {
+    static bool updateIndex(Database* database, MapReduceIndex* index) {
         std::vector<MapReduceIndex*> indexes;
         indexes.push_back(index);
-        TestIndexer indexer(indexes);
-        return indexer.run();
+        Transaction trans(database);
+        TestIndexer indexer(indexes, trans);
+        return indexer.run(trans);
     }
 
-    TestIndexer(std::vector<MapReduceIndex*> indexes)
-    :MapReduceIndexer(indexes)
+    TestIndexer(std::vector<MapReduceIndex*> indexes, Transaction& t)
+    :MapReduceIndexer(indexes, t)
     { }
     
     virtual void addDocument(const Document& doc) {
@@ -88,6 +89,7 @@ public:
 @implementation MapReduce_Test
 {
     Database* db;
+    KeyStore source;
     MapReduceIndex* index;
 }
 
@@ -95,9 +97,9 @@ public:
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
     db = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
-    Assert(db, @"Couldn't open db: %@", error);
+    source = (KeyStore)*db;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kIndexPath error: &error];
-    index = new MapReduceIndex(kIndexPath, FDB_OPEN_FLAG_CREATE, MapReduceIndex::defaultConfig(), db);
+    index = new MapReduceIndex(db, "index", source);
     Assert(index, @"Couldn't open index: %@", error);
 }
 
@@ -110,10 +112,11 @@ public:
 
 
 - (void) queryExpectingKeys: (NSArray*)expectedKeys {
-    XCTAssertTrue(TestIndexer::updateIndex(index));
+    TestMapFn::numMapCalls = 0;
+    XCTAssertTrue(TestIndexer::updateIndex(db, index));
 
     int nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
                            DocEnumerator::Options::kDefault); e; ++e) {
         CollatableReader keyReader(e.key());
@@ -144,10 +147,12 @@ public:
         }
     }
 
-    index->setup(0, new TestMapFn, "1");
+    {
+        Transaction trans(db);
+        index->setup(trans, 0, new TestMapFn, "1");
+    }
 
     NSLog(@"--- First query");
-    TestMapFn::numMapCalls = 0;
     [self queryExpectingKeys: @[@"Cambria", @"Eugene", @"Port Townsend", @"Portland",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk"]];
     AssertEq(TestMapFn::numMapCalls, 3);
@@ -162,7 +167,7 @@ public:
     [self queryExpectingKeys: @[@"Cambria", @"Port Townsend", @"Portland", @"Salem",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk",
                                 @"Walla Walla"]];
-    AssertEq(TestMapFn::numMapCalls, 4);
+    AssertEq(TestMapFn::numMapCalls, 1);
 
     NSLog(@"--- Deleting CA");
     {
@@ -171,7 +176,16 @@ public:
     }
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
-    AssertEq(TestMapFn::numMapCalls, 4);
+    AssertEq(TestMapFn::numMapCalls, 0);
+
+    NSLog(@"--- Updating version");
+    {
+        Transaction trans(db);
+        index->setup(trans, 0, new TestMapFn, "2");
+    }
+    [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
+                                @"Seattle", @"Skookumchuk", @"Walla Walla"]];
+    AssertEq(TestMapFn::numMapCalls, 2);
 }
 
 @end

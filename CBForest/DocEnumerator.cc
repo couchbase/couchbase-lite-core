@@ -38,13 +38,13 @@ namespace forestdb {
         .inclusiveEnd = true,
         .includeDeleted = false,
         .onlyConflicts = false,
-        .contentOptions = Database::kDefaultContent,
+        .contentOptions = KeyStore::kDefaultContent,
     };
 
 
     static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::Options& options) {
         fdb_iterator_opt_t fdbOptions = 0;
-        if (options.contentOptions & DatabaseGetters::kMetaOnly)
+        if (options.contentOptions & KeyStore::kMetaOnly)
             fdbOptions |= FDB_ITR_METAONLY;
         if (!options.includeDeleted)
             fdbOptions |= FDB_ITR_NO_DELETES;
@@ -52,10 +52,10 @@ namespace forestdb {
     }
     
     
-    DocEnumerator::DocEnumerator(DatabaseGetters* db,
+    DocEnumerator::DocEnumerator(KeyStore store,
                                  slice startKey, slice endKey,
                                  const Options& options)
-    :_db(db),
+    :_store(store),
      _iterator(NULL),
      _startKey(startKey),
      _endKey(endKey),
@@ -63,11 +63,11 @@ namespace forestdb {
      _docP(NULL)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
-                db,
-                _startKey.hexString().c_str(),
-                _endKey.hexString().c_str(),
-                (options.descending ? " desc" : ""),
-                this);
+              store.handle(),
+              _startKey.hexString().c_str(),
+              _endKey.hexString().c_str(),
+              (options.descending ? " desc" : ""),
+              this);
         if (_startKey.size == 0)
             _startKey.buf = NULL;
         if (_endKey.size == 0)
@@ -90,10 +90,10 @@ namespace forestdb {
         next();
     }
 
-    DocEnumerator::DocEnumerator(DatabaseGetters* db,
+    DocEnumerator::DocEnumerator(KeyStore store,
                                  sequence start, sequence end,
                                  const Options& options)
-    :_db(db),
+    :_store(store),
      _iterator(NULL),
      _startKey(),
      _endKey(),
@@ -101,17 +101,17 @@ namespace forestdb {
      _docP(NULL)
     {
         Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
-                db, start, end, this);
-        check(fdb_iterator_sequence_init(db->_handle, &_iterator,
+                store.handle(), start, end, this);
+        check(fdb_iterator_sequence_init(store._handle, &_iterator,
                                          start, end,
                                          iteratorOptions(options)));
         next();
     }
 
-    DocEnumerator::DocEnumerator(DatabaseGetters* db,
+    DocEnumerator::DocEnumerator(KeyStore handle,
                                  std::vector<std::string> docIDs,
                                  const Options& options)
-    :_db(db),
+    :_store(handle),
      _iterator(NULL),
      _startKey(),
      _endKey(),
@@ -121,7 +121,7 @@ namespace forestdb {
      _docP(NULL)
     {
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
-                db, docIDs.size(), this);
+                handle, docIDs.size(), this);
         if (docIDs.size() == 0)
             return;
         if (_options.descending) {
@@ -141,7 +141,7 @@ namespace forestdb {
     }
 
     DocEnumerator::DocEnumerator(DocEnumerator&& e)
-    :_db(e._db),
+    :_store(e._store),
      _iterator(e._iterator),
      _startKey(e._startKey),
      _endKey(e._endKey),
@@ -163,7 +163,7 @@ namespace forestdb {
 
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
         Debug("enum: operator= %p <-- %p", this, &e);
-        _db = e._db;
+        _store = e._store;
         _iterator = e._iterator;
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
         _startKey = e._startKey;
@@ -185,7 +185,7 @@ namespace forestdb {
             std::swap(minKey, maxKey);
         if (_iterator)
             fdb_iterator_close(_iterator);
-        check(fdb_iterator_init(_db->_handle, &_iterator,
+        check(fdb_iterator_init(_store.handle(), &_iterator,
                                 minKey.buf, minKey.size,
                                 maxKey.buf, maxKey.size,
                                 iteratorOptions(_options)));

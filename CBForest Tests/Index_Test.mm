@@ -60,6 +60,7 @@ static boolBlock scopedEnumerate() {
 
 @implementation Index_Test
 {
+    Database* database;
     Index* index;
     uint64_t _rowCount;
 }
@@ -68,18 +69,19 @@ static boolBlock scopedEnumerate() {
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
-    index = new Index(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
-    Assert(index, @"Couldn't open index: %@", error);
+    database = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    index = new Index(database, "index");
 }
 
 - (void) tearDown {
     delete index;
+    delete database;
     [super tearDown];
 }
 
 
 - (void) updateDoc: (NSString*)docID body: (NSArray*)body
-       transaction: (IndexTransaction&)trans
+            writer: (IndexWriter&)writer
 {
     std::vector<Collatable> keys, values;
     for (NSUInteger i = 1; i < body.count; i++) {
@@ -90,7 +92,7 @@ static boolBlock scopedEnumerate() {
         value << [body[0] UTF8String];
         values.push_back(value);
     }
-    bool changed = trans.update(nsstring_slice(docID), 1, keys, values, _rowCount);
+    bool changed = writer.update(nsstring_slice(docID), 1, keys, values, _rowCount);
     XCTAssert(changed);
 }
 
@@ -102,14 +104,15 @@ static boolBlock scopedEnumerate() {
         @"OR": @[@"Oregon", @"Portland", @"Eugene"]};
     {
         NSLog(@"--- Populate index");
-        IndexTransaction trans(index);
+        Transaction trans(database);
+        IndexWriter writer(index, trans);
         for (NSString* docID in docs)
-            [self updateDoc: docID body: docs[docID] transaction: trans];
+            [self updateDoc: docID body: docs[docID] writer: writer];
     }
 
     NSLog(@"--- First query");
     __block int nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,
                                    DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
@@ -121,13 +124,14 @@ static boolBlock scopedEnumerate() {
     AssertEq(_rowCount, nRows);
 
     {
-        IndexTransaction trans(index);
+        Transaction trans(database);
+        IndexWriter writer(index, trans);
         NSLog(@"--- Updating OR");
         [self updateDoc: @"OR" body: @[@"Oregon", @"Portland", @"Walla Walla", @"Salem"]
-            transaction: trans];
+                 writer: writer];
     }
     nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,
                                    DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
@@ -140,11 +144,12 @@ static boolBlock scopedEnumerate() {
 
     {
         NSLog(@"--- Removing CA");
-        IndexTransaction trans(index);
-        [self updateDoc: @"CA" body: @[] transaction: trans];
+        Transaction trans(database);
+        IndexWriter writer(index, trans);
+        [self updateDoc: @"CA" body: @[] writer: writer];
     }
     nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
                            DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
@@ -159,7 +164,7 @@ static boolBlock scopedEnumerate() {
     nRows = 0;
     auto options = DocEnumerator::Options::kDefault;
     options.descending = true;
-    for (IndexEnumerator e(*index, Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
                            options); e; ++e) {
         nRows++;
@@ -178,7 +183,7 @@ static boolBlock scopedEnumerate() {
     keys.push_back(Collatable("Portland"));
     keys.push_back(Collatable("Skookumchuk"));
     nRows = 0;
-    for (IndexEnumerator e(*index, keys, DocEnumerator::Options::kDefault); e; ++e) {
+    for (IndexEnumerator e(index, keys, DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -192,7 +197,7 @@ static boolBlock scopedEnumerate() {
     ranges.push_back(KeyRange(Collatable("Port"), Collatable("Port\uFFFE")));
     ranges.push_back(KeyRange(Collatable("Vernon"), Collatable("Ypsilanti")));
     nRows = 0;
-    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e; ++e) {
+    for (IndexEnumerator e(index, ranges, DocEnumerator::Options::kDefault); e; ++e) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",

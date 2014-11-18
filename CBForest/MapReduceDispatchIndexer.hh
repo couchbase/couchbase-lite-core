@@ -26,7 +26,8 @@ namespace forestdb {
     class MapReduceDispatchIndexer : public MapReduceIndexer {
     public:
         MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes,
-                            dispatch_queue_priority_t priority = DISPATCH_QUEUE_PRIORITY_DEFAULT);
+                                 Transaction&,
+                                 dispatch_queue_priority_t = DISPATCH_QUEUE_PRIORITY_DEFAULT);
         virtual ~MapReduceDispatchIndexer();
     protected:
         virtual void addMappable(const Mappable&);

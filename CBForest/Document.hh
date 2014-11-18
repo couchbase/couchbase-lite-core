@@ -20,6 +20,8 @@
 
 namespace forestdb {
 
+    class DocEnumerator;
+
     /** Stores a document's key, metadata and body as slices. Memory is owned by the object and
         will be freed when it destructs. Setters copy, getters don't. */
     class Document {
@@ -56,7 +58,8 @@ namespace forestdb {
         static const size_t kMaxKeyLength, kMaxMetaLength, kMaxBodyLength;
 
     private:
-        friend class DatabaseGetters;
+        friend class KeyStore;
+        friend class KeyStoreWriter;
         friend class Transaction;
         operator fdb_doc*() {return &_doc;}
 

@@ -85,16 +85,15 @@ namespace forestdb {
         }
     }
 
-    DatabaseGetters::DatabaseGetters()
-    :_fileHandle(NULL),
-     _handle(NULL)
-    { }
-
     Database::Database(std::string path, openFlags flags, const config& cfg)
-    :_file(File::forPath(path)), _openFlags(flags), _config(cfg)
+    :KeyStore(NULL),
+     _file(File::forPath(path)),
+     _openFlags(flags),
+     _config(cfg),
+     _fileHandle(NULL)
     {
         check(::fdb_open(&_fileHandle, path.c_str(), (config*)&cfg));
-        check(::fdb_kvs_open(_fileHandle, &_handle, NULL, NULL));
+        check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
     }
 
     Database::~Database() {
@@ -103,19 +102,13 @@ namespace forestdb {
             fdb_close(_fileHandle);
     }
 
-    DatabaseGetters::info DatabaseGetters::getInfo() const {
+    Database::info Database::getInfo() const {
         info i;
         check(fdb_get_file_info(_fileHandle, &i));
         return i;
     }
 
-    sequence DatabaseGetters::lastSequence() const {
-        kvinfo i;
-        check(fdb_get_kvs_info(_handle, &i));
-        return i.last_seqnum;
-    }
-
-    std::string DatabaseGetters::filename() const {
+    std::string Database::filename() const {
         return std::string(this->getInfo().filename);
     }
 
@@ -128,220 +121,92 @@ namespace forestdb {
         _handle = NULL;
     }
 
-    
-#pragma mark - GET:
 
-    static bool checkGet(fdb_status status) {
-        if (status == FDB_RESULT_KEY_NOT_FOUND)
-            return false;
-        check(status);
-        return true;
+#pragma mark - MUTATING OPERATIONS:
+
+
+    void Database::reopen(std::string path) {
+        check(::fdb_open(&_fileHandle, path.c_str(), &_config));
     }
 
-    Document DatabaseGetters::get(slice key, contentOptions options) const {
-        Document doc(key);
-        read(doc, options);
-        return doc;
+    void Database::deleteDatabase(bool andReopen) {
+        Transaction t(this, false);
+        std::string path = filename();
+        check(::fdb_close(_fileHandle));
+        deleted();
+        check(fdb_destroy(path.c_str(), &_config));
+        if (andReopen)
+            reopen(path);
     }
 
-    Document DatabaseGetters::get(sequence seq, contentOptions options) const {
-        Document doc;
-        doc._doc.seqnum = seq;
-        if (options & kMetaOnly)
-            check(fdb_get_metaonly_byseq(_handle, &doc._doc));
-        else
-            check(fdb_get_byseq(_handle, doc));
-        return doc;
+    void Database::compact() {
+        check(fdb_compact(_fileHandle, NULL));
     }
 
-    bool DatabaseGetters::read(Document& doc, contentOptions options) const {
-        doc.clearMetaAndBody();
-        if (options & kMetaOnly)
-            return checkGet(fdb_get_metaonly(_handle, doc));
-        else
-            return checkGet(fdb_get(_handle, doc));
-    }
-
-    Document DatabaseGetters::getByOffset(uint64_t offset, sequence seq) {
-        Document doc;
-        doc._doc.offset = offset;
-        doc._doc.seqnum = seq;
-        checkGet(fdb_get_byoffset(_handle, doc));
-        return doc;
+    void Database::commit() {
+        check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
     }
 
 
 #pragma mark - TRANSACTION:
 
-
-    fdb_file_handle* Database::beginTransaction(Transaction* t, sequence &startSequence) {
+    void Database::beginTransaction(Transaction* t) {
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
 
-        fdb_file_handle* realHandle = _fileHandle;
-        fdb_begin_transaction(realHandle, FDB_ISOLATION_READ_COMMITTED);
+        if (t->state() == Transaction::kCommit)
+            check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED));
         _file->_transaction = t;
-        return realHandle;
     }
 
-    void Database::endTransaction(fdb_file_handle* handle) {
+    void Database::endTransaction(Transaction* t) {
+        fdb_status status = FDB_RESULT_SUCCESS;
+        switch (t->state()) {
+            case Transaction::kCommit:
+                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
+                break;
+            case Transaction::kAbort:
+                (void)fdb_abort_transaction(_fileHandle);
+                break;
+            case Transaction::kNoOp:
+                break;
+        }
+
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
-        _fileHandle = handle;
+        assert(_file->_transaction == t);
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
+
+        check(status);
     }
 
 
     Transaction::Transaction(Database* db)
-    :_db(*db), _state(0)
+    :KeyStoreWriter(*db),
+     _db(*db),
+     _state(kCommit)
     {
-        _fileHandle = _db.beginTransaction(this, _startSequence);
-        _handle = _db._handle; //FIX: this is hacky
+        _db.beginTransaction(this);
+    }
+
+    Transaction::Transaction(Database* db, bool begin)
+    :KeyStoreWriter(*db),
+     _db(*db),
+     _state(begin ? kCommit : kNoOp)
+    {
+        _db.beginTransaction(this);
     }
 
     Transaction::~Transaction() {
-        fdb_status status = FDB_RESULT_SUCCESS;
-        if (_fileHandle) {
-            if (_state >= 0) {
-                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
-                if (status != FDB_RESULT_SUCCESS)
-                    _state = -1;
-            } else {
-                fdb_abort_transaction(_fileHandle);
-            }
-        }
-        _db.endTransaction(_fileHandle); // return handle back to Database object
-        forestdb::check(status); // throw exception if end_transaction failed
+        _db.endTransaction(this);
     }
 
     void Transaction::check(fdb_status status) {
-        if (status == FDB_RESULT_SUCCESS) {
-            if (_state == 0)
-                _state = 1;
-        } else {
-            _state = -1;
+        if (status != FDB_RESULT_SUCCESS) {
+            _state = kAbort;
             forestdb::check(status); // throw exception
         }
     }
-
-    void Transaction::reopen(std::string path) {
-        check(::fdb_open(&_fileHandle, path.c_str(), &_db._config));
-        _db._fileHandle = _fileHandle;
-        check(::fdb_kvs_open(_fileHandle, &_handle, NULL, NULL));
-        _db._handle = _handle;
-    }
-
-    void Transaction::deleteDatabase() {
-        std::string path = _db.filename();
-        check(::fdb_close(_fileHandle));
-        _fileHandle = NULL;
-        _handle = NULL;
-        if (::unlink(path.c_str()) < 0 && errno != ENOENT) {
-            _state = -1;
-            reopen(path);
-            throw(errno);
-        }
-        _db.deleted();
-    }
-
-    void Transaction::erase() {
-        std::string path = _db.filename();
-        deleteDatabase();
-        reopen(path);
-        check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
-    }
-
-    void Transaction::rollbackTo(sequence seq) {
-        check(fdb_rollback(&_handle, seq));
-        _db._handle = _handle;
-    }
-
-    void Transaction::compact() {
-        std::string path = _db.filename();
-        std::string tempPath = path + ".compact";
-
-        check(fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL));
-
-        fdb_status status = fdb_compact(_fileHandle, tempPath.c_str());
-        if (status != FDB_RESULT_SUCCESS) {
-            ::unlink(tempPath.c_str());
-            check(status);
-        }
-        check(::fdb_close(_fileHandle));
-        if (::rename(tempPath.c_str(), path.c_str()) < 0) {
-            ::unlink(tempPath.c_str());
-            check(FDB_RESULT_FILE_RENAME_FAIL);
-        }
-        reopen(path);
-        check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED)); // re-open it
-    }
-
-    void Transaction::commit() {
-        check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
-    }
-
-    void Transaction::write(Document &doc) {
-        check(fdb_set(_handle, doc));
-    }
-
-    sequence Transaction::set(slice key, slice meta, slice body) {
-        if ((size_t)key.buf & 0x03) {
-            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
-            void* keybuf = alloca(key.size);
-            memcpy(keybuf, key.buf, key.size);
-            key.buf = keybuf;
-        }
-        fdb_doc doc = {
-            .key = (void*)key.buf,
-            .keylen = key.size,
-            .meta = (void*)meta.buf,
-            .metalen = meta.size,
-            .body  = (void*)body.buf,
-            .bodylen = body.size,
-        };
-        check(fdb_set(_handle, &doc));
-        if (meta.buf) {
-            Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
-                    _handle,
-                    key.hexString().c_str(),
-                    body.hexString().c_str(),
-                    meta.hexString().c_str(),
-                    doc.seqnum);
-        } else {
-            Log("DB %p: added %s --> %s (seq %llu)\n",
-                    _handle,
-                    key.hexString().c_str(),
-                    body.hexString().c_str(),
-                    doc.seqnum);
-        }
-        return doc.seqnum;
-    }
-
-    bool Transaction::del(forestdb::Document &doc) {
-        return checkGet(fdb_del(_handle, doc));
-    }
-
-    bool Transaction::del(forestdb::slice key) {
-        if ((size_t)key.buf & 0x03) {
-            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
-            void* keybuf = alloca(key.size);
-            memcpy(keybuf, key.buf, key.size);
-            key.buf = keybuf;
-        }
-        fdb_doc doc = {
-            .key = (void*)key.buf,
-            .keylen = key.size,
-        };
-        return checkGet(fdb_del(_handle, &doc));
-    }
-
-    bool Transaction::del(sequence seq) {
-        Document doc;
-        doc._doc.seqnum = seq;
-        return checkGet(fdb_get_metaonly_byseq(_handle, doc))
-            && del(doc);
-    }
-
 
 }

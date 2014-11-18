@@ -21,19 +21,21 @@ using namespace geohash;
 
 @implementation GeoIndex_Test
 {
-    Index* index;
+    Database* database;
+    Index *index;
 }
 
 
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
-    index = new Index(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
-    Assert(index, @"Couldn't open index: %@", error);
+    database = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    index = new Index(database, "geo");
 }
 
 - (void) tearDown {
     delete index;
+    delete database;
     [super tearDown];
 }
 
@@ -43,7 +45,8 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 - (void) addCoords: (unsigned)n {
     srandom(42);
     uint64_t rowCount;
-    IndexTransaction t(index);
+    Transaction t(database);
+    IndexWriter writer(index, t);
     for (unsigned i = 0; i < n; ++i) {
         char docID[20];
         sprintf(docID, "%u", i);
@@ -51,7 +54,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
         std::vector<Collatable> keys, values;
         keys.push_back(Collatable(c));
         values.push_back(Collatable(i));
-        t.update(slice(docID), i+1, keys, values, rowCount);
+        writer.update(slice(docID), i+1, keys, values, rowCount);
         //NSLog(@"Added (%g, %g)", c.latitude, c.longitude);
     }
 }
@@ -61,7 +64,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
     auto queryArea = area(coord(10, 10), coord(20, 20));
 
     unsigned found = 0, inArea = 0;
-    for (IndexEnumerator e(*index,
+    for (IndexEnumerator e(index,
                            Collatable(""), slice::null,
                            Collatable("Z"), slice::null,
                            DocEnumerator::Options::kDefault); e; ++e) {
@@ -81,7 +84,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 //    LogLevel = kDebug;
     NSLog(@"Querying...");
     found = 0;
-    for (GeoIndexEnumerator e(*index, queryArea); e; ++e) {
+    for (GeoIndexEnumerator e(index, queryArea); e; ++e) {
         auto keyCoord = e.keyCoord();
         ++found;
         NSLog(@"Found (%g, %g)", keyCoord.latitude, keyCoord.longitude);

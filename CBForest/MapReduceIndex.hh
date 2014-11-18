@@ -46,19 +46,18 @@ namespace forestdb {
         virtual void operator() (const Mappable&, EmitFn& emit) =0;
     };
 
-    /** An Index that uses a MapFn to index the documents of another Database. */
+    /** An Index that uses a MapFn to index the documents of another KeyStore. */
     class MapReduceIndex : public Index {
     public:
-        MapReduceIndex(std::string path,
-                       Database::openFlags,
-                       const Database::config&,
-                       Database* sourceDatabase);
+        MapReduceIndex(Database*,
+                       std::string name,
+                       KeyStore sourceStore);
 
-        Database* sourceDatabase() const        {return _sourceDatabase;}
+        KeyStore sourceStore() const            {return _sourceDatabase;}
         void readState();
         int indexType() const                   {return _indexType;}
         
-        void setup(int indexType, MapFn *map, std::string mapVersion);
+        void setup(Transaction&, int indexType, MapFn *map, std::string mapVersion);
 
         /** The last source database sequence number to be indexed. */
         sequence lastSequenceIndexed() const;
@@ -69,14 +68,17 @@ namespace forestdb {
         /** The number of rows in the index. */
         uint64_t rowCount() const;
 
+        /** Removes all the data in the index. */
+        void erase(Transaction&);
+
     protected:
         void deleted(); // called by Transaction::deleteDatabase()
 
     private:
-        void saveState(IndexTransaction& t);
-        bool updateDocInIndex(IndexTransaction&, const Mappable&);
+        void saveState(Transaction& t);
+        bool updateDocInIndex(Transaction&, const Mappable&);
 
-        forestdb::Database* _sourceDatabase;
+        forestdb::KeyStore _sourceDatabase;
         MapFn* _map;
         std::string _mapVersion, _lastMapVersion;
         int _indexType;
@@ -92,7 +94,8 @@ namespace forestdb {
     /** An activity that updates one or more map-reduce indexes. */
     class MapReduceIndexer {
     public:
-        MapReduceIndexer(std::vector<MapReduceIndex*> indexes);
+        MapReduceIndexer(std::vector<MapReduceIndex*> indexes,
+                         Transaction&);
         ~MapReduceIndexer();
 
         /** If set, indexing will only occur if this index needs to be updated. */
@@ -111,14 +114,16 @@ namespace forestdb {
         virtual void addMappable(const Mappable&);
 
         size_t indexCount() { return _indexes.size(); }
+
         void updateDocInIndex(size_t i, const Mappable& mappable) {
-            if (_transactions[i])
-                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
+            if (mappable.document().sequence() > _lastSequences[i])
+                _indexes[i]->updateDocInIndex(_transaction, mappable);
         }
 
     protected:
+        Transaction& _transaction;
         std::vector<MapReduceIndex*> _indexes;
-        std::vector<IndexTransaction*> _transactions;
+        std::vector<sequence> _lastSequences;
         MapReduceIndex* _triggerIndex;
         bool _finished;
     };

@@ -26,8 +26,8 @@ namespace forestdb {
 
     class GeoIndexEnumerator : public IndexEnumerator {
     public:
-        GeoIndexEnumerator(Index&, geohash::area);
-        GeoIndexEnumerator(Index&,
+        GeoIndexEnumerator(Index*, geohash::area);
+        GeoIndexEnumerator(Index*,
                            geohash::area,
                            slice startKeyDocID, slice endKeyDocID,
                            const DocEnumerator::Options&);

@@ -25,11 +25,16 @@ namespace forestdb {
         return inclusiveEnd ? (key > end) : !(key < end);
     }
 
-    Index::Index(std::string path, Database::openFlags flags, const Database::config& config)
-    :Database(path, flags, config)
+    Index::Index(Database* db, std::string name)
+    :KeyStore(db, name)
     { }
 
-    int64_t IndexTransaction::removeOldRowsForDoc(slice docID) {
+    IndexWriter::IndexWriter(Index* index, Transaction& t)
+    :KeyStoreWriter(*index, t)
+    { }
+
+
+    int64_t IndexWriter::removeOldRowsForDoc(slice docID) {
         int64_t rowsRemoved = 0;
         Document doc = get(docID);
         slice sequences = doc.body();
@@ -45,7 +50,7 @@ namespace forestdb {
         return rowsRemoved;
     }
 
-    bool IndexTransaction::update(slice docID, sequence docSequence,
+    bool IndexWriter::update(slice docID, sequence docSequence,
                                   std::vector<Collatable> keys, std::vector<Collatable> values,
                                   uint64_t &rowCount)
     {
@@ -114,7 +119,7 @@ namespace forestdb {
         return options;
     }
 
-    IndexEnumerator::IndexEnumerator(Index& index,
+    IndexEnumerator::IndexEnumerator(Index* index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
                                      const DocEnumerator::Options& options)
@@ -123,7 +128,7 @@ namespace forestdb {
      _inclusiveStart(options.inclusiveStart),
      _inclusiveEnd(options.inclusiveEnd),
      _currentKeyIndex(-1),
-     _dbEnum(&_index,
+     _dbEnum(*_index,
              (slice)makeRealKey(startKey, startKeyDocID, false, options.descending),
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
              docOptions(options))
@@ -136,7 +141,7 @@ namespace forestdb {
         read();
     }
 
-    IndexEnumerator::IndexEnumerator(Index& index,
+    IndexEnumerator::IndexEnumerator(Index* index,
                                      std::vector<KeyRange> keyRanges,
                                      const DocEnumerator::Options& options,
                                      bool firstRead)
@@ -146,7 +151,7 @@ namespace forestdb {
      _inclusiveEnd(true),
      _keyRanges(keyRanges),
      _currentKeyIndex(-1),
-     _dbEnum(&_index, slice::null, slice::null, docOptions(options))
+     _dbEnum(*_index, slice::null, slice::null, docOptions(options))
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
         for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
@@ -227,7 +232,7 @@ namespace forestdb {
 
         Collatable& startKey = _keyRanges[_currentKeyIndex].start;
         if (_currentKeyIndex > 0 && !(_keyRanges[_currentKeyIndex-1].end < startKey)) {
-            _dbEnum = DocEnumerator(&_index, slice::null, slice::null, _options);
+            _dbEnum = DocEnumerator(*_index, slice::null, slice::null, _options);
         }
 
         Debug("IndexEnumerator: Advance to key '%s'", startKey.dump().c_str());

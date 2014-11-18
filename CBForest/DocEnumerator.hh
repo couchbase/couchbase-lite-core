@@ -30,21 +30,21 @@ namespace forestdb {
             bool            inclusiveEnd;
             bool            includeDeleted;
             bool            onlyConflicts;
-            Database::contentOptions  contentOptions;
+            KeyStore::contentOptions  contentOptions;
 
             static const Options kDefault;
         };
 
         DocEnumerator(); // empty enumerator
-        DocEnumerator(DatabaseGetters* db,
+        DocEnumerator(KeyStore,
                       slice startKey = slice::null,
                       slice endKey = slice::null,
                       const Options& options = Options::kDefault);
-        DocEnumerator(DatabaseGetters* db,
+        DocEnumerator(KeyStore,
                       sequence start,
                       sequence end = UINT64_MAX,
                       const Options& options = Options::kDefault);
-        DocEnumerator(DatabaseGetters* db,
+        DocEnumerator(KeyStore,
                       std::vector<std::string> docIDs,
                       const Options& options = Options::kDefault);
         DocEnumerator(DocEnumerator&& e); // move constructor
@@ -63,7 +63,7 @@ namespace forestdb {
         const Document* operator->() const  {return (Document*)_docP;}
 
     protected:
-        DatabaseGetters* _db;
+        KeyStore _store;
         fdb_iterator *_iterator;
         alloc_slice _startKey;
         alloc_slice _endKey;
@@ -73,7 +73,7 @@ namespace forestdb {
         fdb_doc *_docP;
         bool _firstDescending; //HACK MB-12465
 
-        friend class DatabaseGetters;
+        friend class KeyStore;
         void setDocIDs(std::vector<std::string> docIDs);
         void restartFrom(slice firstKey);
 

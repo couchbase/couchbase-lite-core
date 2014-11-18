@@ -125,7 +125,7 @@ using namespace forestdb;
     [self createNumberedDocs];
     NSLog(@"Enumerate over all docs:");
     int i = 1;
-    for (DocEnumerator e(db); e; ++e, ++i) {
+    for (DocEnumerator e(*db); e; ++e, ++i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -134,7 +134,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs:");
     i = 24;
-    for (DocEnumerator e(db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029")); e; ++e, ++i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029")); e; ++e, ++i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -145,7 +145,7 @@ using namespace forestdb;
     auto opts = DocEnumerator::Options::kDefault;
     opts.inclusiveStart = opts.inclusiveEnd = false;
     i = 25;
-    for (DocEnumerator e(db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -162,7 +162,7 @@ using namespace forestdb;
     docIDs.push_back("doc-098");
     docIDs.push_back("doc-100");
     docIDs.push_back("doc-105");
-    for (DocEnumerator e(db, docIDs); e; ++e, ++i) {
+    for (DocEnumerator e(*db, docIDs); e; ++e, ++i) {
         NSLog(@"key = %@", (NSString*)e->key());
         Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
                docIDs[i].c_str(),
@@ -178,7 +178,7 @@ using namespace forestdb;
     [self createNumberedDocs];
     NSLog(@"Enumerate over all docs, descending:");
     int i = 100;
-    for (DocEnumerator e(db, slice::null, slice::null, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, slice::null, slice::null, opts); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -187,7 +187,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs from max, descending:");
     i = 100;
-    for (DocEnumerator e(db, slice::null, nsstring_slice(@"doc-090"), opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, slice::null, nsstring_slice(@"doc-090"), opts); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -196,7 +196,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs to min, descending:");
     i = 10;
-    for (DocEnumerator e(db, nsstring_slice(@"doc-010"), slice::null, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-010"), slice::null, opts); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -205,7 +205,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs, descending:");
     i = 29;
-    for (DocEnumerator e(db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -216,7 +216,7 @@ using namespace forestdb;
     auto optsExcl = opts;
     optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
     i = 28;
-    for (DocEnumerator e(db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), optsExcl); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), optsExcl); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -233,7 +233,7 @@ using namespace forestdb;
     docIDs.push_back("doc-100");
     docIDs.push_back("doc-105");
     i = (int)docIDs.size() - 1;
-    for (DocEnumerator e(db, docIDs, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, docIDs, opts); e; ++e, --i) {
         NSLog(@"key = %@", (NSString*)e->key());
         Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
                docIDs[i].c_str(),
@@ -274,7 +274,7 @@ using namespace forestdb;
     }
 
     int i = 0;
-    for (DocEnumerator iter(&db2); iter; ++iter) {
+    for (DocEnumerator iter(db2); iter; ++iter) {
         NSString* key = (NSString*)(*iter).key();
         //NSLog(@"key = %@", key);
         NSUInteger t = (i / kNDocs) + 1;
@@ -305,6 +305,50 @@ using namespace forestdb;
 
     Document doc = db->get(key);
     Assert(doc.deleted());
+    Assert(!doc.exists());
+}
+
+- (void) test08_KeyStoreInfo {
+    KeyStore s(db, "store");
+    AssertEq(s.lastSequence(), 0);
+    Assert(s.name() == "store");
+
+    auto info = s.getInfo();
+    AssertEq(info.doc_count, 0);
+    AssertEq(info.space_used, 0);
+    AssertEq(info.last_seqnum, 0);
+    AssertEq(strcmp(info.name, "store"), 0);
+}
+
+- (void) test09_KeyStoreWrite {
+    KeyStore s(db, "store");
+    alloc_slice key("key");
+    {
+        Transaction t(db);
+        t(s).set(key, nsstring_slice(@"value"));
+    }
+    AssertEq(s.lastSequence(), 1);
+    Document doc = s.get(key);
+    Assert(doc.key() == key);
+    Assert(doc.body() == nsstring_slice(@"value"));
+
+    Document doc2 = db->get(key);
+    Assert(!doc2.exists());
+}
+
+- (void) test10_KeyStoreDelete {
+    KeyStore s(db, "store");
+    alloc_slice key("key");
+//    {
+//        Transaction t(db);
+//        t(s).set(key, nsstring_slice(@"value"));
+//    }
+    {
+        Transaction t(db);
+        s.erase(t);
+    }
+    AssertEq(s.lastSequence(), 0);
+    Document doc = s.get(key);
     Assert(!doc.exists());
 }
 

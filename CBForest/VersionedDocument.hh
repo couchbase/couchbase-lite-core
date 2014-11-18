@@ -32,12 +32,12 @@ namespace forestdb {
             kHasAttachments = 0x04
         };
 
-        VersionedDocument(Database* db, slice docID);
-        VersionedDocument(Database* db, const Document&);
-        VersionedDocument(Database* db, Document&&);
+        VersionedDocument(KeyStore, slice docID);
+        VersionedDocument(KeyStore, const Document&);
+        VersionedDocument(KeyStore, Document&&);
 
 #ifdef __OBJC__
-        VersionedDocument(Database* db, NSString* docID);
+        VersionedDocument(KeyStore, NSString* docID);
 #endif
 
         /** Reads and parses the body of the document. Useful if doc was read as meta-only. */
@@ -77,7 +77,7 @@ namespace forestdb {
         void updateMeta();
         VersionedDocument(const VersionedDocument&); // forbidden
 
-        Database* _db;
+        KeyStore _db;
         Document _doc;
     };
 }

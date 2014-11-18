@@ -15,9 +15,7 @@
 
 #ifndef __CBForest__Database__
 #define __CBForest__Database__
-#include "Error.hh"
-#include "forestdb.h"
-#include "slice.hh"
+#include "KeyStore.hh"
 #include <vector>
 
 #ifdef check
@@ -26,11 +24,7 @@
 
 namespace forestdb {
 
-    class Document;
-    class DocEnumerator;
     class Transaction;
-
-    typedef fdb_seqnum_t sequence;
 
 
     enum logLevel {
@@ -43,115 +37,93 @@ namespace forestdb {
     extern void (*LogCallback)(logLevel, const char *message);
 
 
-    /** Base class of Database and Transaction: defines read-only API. */
-    class DatabaseGetters {
+    /** ForestDB database; primarily a container of KeyStores.
+        A Database also acts as its default KeyStore. */
+    class Database : public KeyStore {
     public:
         typedef fdb_open_flags openFlags;
         typedef fdb_config config;
         typedef fdb_file_info info;
-        typedef fdb_kvs_info kvinfo;
 
-        std::string filename() const;
-        info getInfo() const;
-        sequence lastSequence() const;
-
-        // Keys/values:
-
-        enum contentOptions {
-            kDefaultContent = 0,
-            kMetaOnly = 0x01
-        };
-
-        Document get(slice key, contentOptions = kDefaultContent) const;
-        Document get(sequence, contentOptions = kDefaultContent) const;
-        bool read(Document&, contentOptions = kDefaultContent) const; // key must already be set
-
-        Document getByOffset(uint64_t offset, sequence);
-
-    protected:
-        DatabaseGetters();
-        virtual ~DatabaseGetters() {}
-
-        fdb_file_handle* _fileHandle;
-        fdb_kvs_handle* _handle;
-
-    private:
-        DatabaseGetters(const DatabaseGetters&); // forbidden
-        friend class DocEnumerator;
-    };
-
-
-    /** ForestDB database. Inherits read-only access from DatabaseGetters; to write to the
-        database, create a Transaction from it and use that. */
-    class Database : public DatabaseGetters {
-    public:
         static config defaultConfig()           {return fdb_get_default_config();}
 
         Database(std::string path, openFlags, const config&);
         Database(Database* original, sequence snapshotSequence);
         virtual ~Database();
 
+        std::string filename() const;
+        info getInfo() const;
+
         bool isReadOnly() const;
 
-        void setLogCallback(fdb_log_callback callback, void* ctx_data) {
-            fdb_set_log_callback(_handle, callback, ctx_data);
-        }
+        void deleteDatabase()                   {deleteDatabase(false);}
+        void erase()                            {deleteDatabase(true);}
+
+        void compact();
+
+        /** Records a commit before the transaction exits scope. Not normally needed. */
+        void commit();
+
+        /** The Database's default key-value store. (You can also just use the Database
+            instance directly as a KeyStore since it inherits from it.) */
+        KeyStore defaultKeyStore() const        {return *this;}
 
     protected:
         virtual void deleted();
 
     private:
         class File;
+        friend class KeyStore;
         friend class Transaction;
-        fdb_file_handle* beginTransaction(Transaction*,sequence&);
-        void endTransaction(fdb_file_handle* handle);
+        void beginTransaction(Transaction*);
+        void endTransaction(Transaction*);
+        void deleteDatabase(bool andReopen);
+        void reopen(std::string path);
+
+        Database(const Database&);              // forbidden
+        Database& operator=(const Database&);   // forbidden
 
         File* _file;
         openFlags _openFlags;
         config _config;
+        fdb_file_handle* _fileHandle;
     };
 
 
-    /** Grants exclusive write access to a Database and provides APIs to write documents.
-        The transaction is committed when the object exits scope.
+    /** Grants exclusive write access to a Database while in scope.
+        The transaction is committed when the object exits scope, unless abort() was called.
         Only one Transaction object can be created on a database file at a time.
         Not just per Database object; per database _file_. */
-    class Transaction : public DatabaseGetters {
+    class Transaction : public KeyStoreWriter {
     public:
+        enum state {
+            kNoOp,
+            kAbort,
+            kCommit
+        };
+
         Transaction(Database*);
         ~Transaction();
 
+        /** Converts a KeyStore to a KeyStoreWriter to allow write access. */
+        KeyStoreWriter operator() (KeyStore s)  {return KeyStoreWriter(s, *this);}
+        KeyStoreWriter operator() (KeyStore* s) {return KeyStoreWriter(*s, *this);}
+
         Database* database() const          {return &_db;}
+        state state() const                 {return _state;}
 
         /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
-        void abort() {_state = -1;}
-        
-        void deleteDatabase();
-        void erase();
+        void abort()                        {if (_state != kNoOp) _state = kAbort;}
 
-        void rollbackTo(sequence);
-        void compact();
-
-        /** Records a commit before the transaction exits scope. Not normally needed. */
-        void commit();
-
-        sequence set(slice key, slice meta, slice value);
-        sequence set(slice key, slice value)                {return set(key, slice::null, value);}
-        void write(Document&);
-
-        bool del(slice key);
-        bool del(sequence);
-        bool del(Document&);
+        void check(fdb_status status);
 
     private:
-        void check(fdb_status status);
-        void reopen(std::string path);
-
+        friend class Database;
+        Transaction(Database*, bool begin);
         Transaction(const Transaction&); // forbidden
 
         Database& _db;
-        sequence _startSequence;
-        int _state;
+        enum state _state;
     };
     
 }

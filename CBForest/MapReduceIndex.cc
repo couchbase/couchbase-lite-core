@@ -35,19 +35,16 @@ namespace forestdb {
     }
 
 
-    MapReduceIndex::MapReduceIndex(std::string path,
-                                   forestdb::Database::openFlags flags,
-                                   const forestdb::Database::config& config,
-                                   forestdb::Database* sourceDatabase)
-    :Index(path, flags, config),
-     _sourceDatabase(sourceDatabase), _map(NULL), _indexType(0),
+    MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
+    :Index(db, name),
+     _sourceDatabase(sourceStore), _map(NULL), _indexType(0),
      _lastSequenceIndexed(0), _lastSequenceChangedAt(0), _stateReadAt(0), _rowCount(0)
     {
         readState();
     }
 
     void MapReduceIndex::readState() {
-        sequence curIndexSeq = lastSequence();
+        sequence curIndexSeq = KeyStore::lastSequence();
         if (_stateReadAt != curIndexSeq) {
             Collatable stateKey;
             stateKey.addNull();
@@ -72,7 +69,7 @@ namespace forestdb {
         }
     }
 
-    void MapReduceIndex::saveState(IndexTransaction& t) {
+    void MapReduceIndex::saveState(Transaction& t) {
         _lastMapVersion = _mapVersion;
 
         Collatable stateKey;
@@ -82,7 +79,7 @@ namespace forestdb {
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
               << _rowCount << kCurFormatVersion;
 
-        _stateReadAt = t.set(stateKey, state);
+        _stateReadAt = t(this).set(stateKey, state);
     }
 
     void MapReduceIndex::deleted() {
@@ -109,18 +106,29 @@ namespace forestdb {
     }
 
 
-    void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
+    void MapReduceIndex::setup(Transaction &t, int indexType, MapFn *map, std::string mapVersion) {
         readState();
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
-            Transaction t(this);
             _map = map;
             _indexType = indexType;
             _mapVersion = mapVersion;
-            t.erase();
+            if (_lastSequenceIndexed > 0) {
+                KeyStore::erase(t);
+            }
+            _lastSequenceIndexed = _lastSequenceChangedAt = 0;
+            _rowCount = 0;
+            _stateReadAt = 0;
         }
     }
 
-    bool MapReduceIndex::updateDocInIndex(IndexTransaction& trans, const Mappable& mappable) {
+    void MapReduceIndex::erase(Transaction& t) {
+        KeyStore::erase(t);
+        _lastSequenceIndexed = _lastSequenceChangedAt = 0;
+        _rowCount = 0;
+        _stateReadAt = 0;
+    }
+
+    bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
         const Document& doc = mappable.document();
         if (doc.sequence() <= _lastSequenceIndexed)
             return false;
@@ -128,7 +136,7 @@ namespace forestdb {
         if (!doc.deleted())
             (*_map)(mappable, emit); // Call map function!
         _lastSequenceIndexed = doc.sequence();
-        if (trans.update(doc.key(), doc.sequence(), emit.keys, emit.values, _rowCount)) {
+        if (IndexWriter(this,t).update(doc.key(), doc.sequence(), emit.keys, emit.values, _rowCount)) {
             _lastSequenceChangedAt = _lastSequenceIndexed;
             return true;
         }
@@ -139,29 +147,29 @@ namespace forestdb {
 #pragma mark - MAP-REDUCE INDEXER
 
 
-    MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes)
-    :_indexes(indexes),
+    MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes,
+                                       Transaction& transaction)
+    :_transaction(transaction),
+     _indexes(indexes),
      _triggerIndex(NULL),
      _finished(false)
     { }
 
     bool MapReduceIndexer::run() {
-        Database* sourceDatabase = _indexes[0]->sourceDatabase();
-        sequence latestDbSequence = sourceDatabase->lastSequence();
+        KeyStore sourceStore = _indexes[0]->sourceStore();
+        sequence latestDbSequence = sourceStore.lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
         // Also start a transaction for each index:
         sequence startSequence = latestDbSequence+1;
         for (auto idx = _indexes.begin(); idx != _indexes.end(); ++idx) {
             sequence lastSequence = (*idx)->lastSequenceIndexed();
-            IndexTransaction* t = NULL;
             if (lastSequence < latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
-                t = new IndexTransaction(*idx);
             } else if (*idx == _triggerIndex) {
                 return false; // The trigger index doesn't need to be updated, so abort
             }
-            _transactions.push_back(t);
+            _lastSequences.push_back(lastSequence);
         }
 
         if (startSequence > latestDbSequence)
@@ -170,7 +178,7 @@ namespace forestdb {
         // Enumerate all the documents:
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
-        for (DocEnumerator e(sourceDatabase, startSequence, UINT64_MAX, options); e; ++e) {
+        for (DocEnumerator e(sourceStore, startSequence, UINT64_MAX, options); e; ++e) {
             addDocument(*e);
         }
         _finished = true;
@@ -178,14 +186,9 @@ namespace forestdb {
     }
 
     MapReduceIndexer::~MapReduceIndexer() {
-        // Save each index's state, and delete the transactions:
-        const size_t n = _transactions.size();
-        for (size_t i = 0; i < n; ++i) {
-            if (_transactions[i]) {
-                if (_finished)
-                    _indexes[i]->saveState(*_transactions[i]);
-                delete _transactions[i];
-            }
+        if (_finished) {
+            for (auto i = _indexes.begin(); i != _indexes.end(); ++i)
+                (*i)->saveState(_transaction);
         }
     }
 
