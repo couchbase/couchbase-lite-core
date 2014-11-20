@@ -76,13 +76,19 @@ namespace forestdb {
     :_transaction(NULL)
     { }
 
+
 #pragma mark - DATABASE:
+
 
     static void check(fdb_status status) {
         if (status != FDB_RESULT_SUCCESS) {
             WarnError("FORESTDB ERROR %d\n", status);
             throw error{status};
         }
+    }
+
+    static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
+        WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
     }
 
     Database::Database(std::string path, openFlags flags, const config& cfg)
@@ -94,6 +100,7 @@ namespace forestdb {
     {
         check(::fdb_open(&_fileHandle, path.c_str(), (config*)&cfg));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
+        fdb_set_log_callback(_handle, logCallback, _handle);
     }
 
     Database::~Database() {

@@ -16,6 +16,7 @@
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
 #include "forestdb.h"
+#include <assert.h>
 #include <string.h>
 
 
@@ -37,7 +38,6 @@ namespace forestdb {
         .inclusiveStart = true,
         .inclusiveEnd = true,
         .includeDeleted = false,
-        .onlyConflicts = false,
         .contentOptions = KeyStore::kDefaultContent,
     };
 
@@ -51,7 +51,8 @@ namespace forestdb {
         return fdbOptions;
     }
     
-    
+
+    // Key-range constructor
     DocEnumerator::DocEnumerator(KeyStore store,
                                  slice startKey, slice endKey,
                                  const Options& options)
@@ -60,7 +61,8 @@ namespace forestdb {
      _startKey(startKey),
      _endKey(endKey),
      _options(options),
-     _docP(NULL)
+     _docP(NULL),
+     _skipStep(false)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
               store.handle(),
@@ -73,23 +75,11 @@ namespace forestdb {
         if (_endKey.size == 0)
             _endKey.buf = NULL;
 
-        // HACK to work around limitations of fdb_iterator_seek until MB-12465 is fixed
-        char maxKeyBuf[FDB_MAX_KEYLEN];
-        slice firstKey;
-        if (_options.descending) {
-            if (_startKey.size > 0) {
-                firstKey = _startKey;
-            } else {
-                memset(maxKeyBuf, 0xFF, sizeof(maxKeyBuf));
-                firstKey = slice(maxKeyBuf, sizeof(maxKeyBuf));
-            }
-        }
-        restartFrom(firstKey);
-        if (_options.descending && _startKey.size == 0)
-            _firstDescending = false; //HACK MB-12465
+        start();
         next();
     }
 
+    // Sequence-range constructor
     DocEnumerator::DocEnumerator(KeyStore store,
                                  sequence start, sequence end,
                                  const Options& options)
@@ -98,7 +88,8 @@ namespace forestdb {
      _startKey(),
      _endKey(),
      _options(options),
-     _docP(NULL)
+     _docP(NULL),
+     _skipStep(false)
     {
         Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
                 store.handle(), start, end, this);
@@ -108,6 +99,7 @@ namespace forestdb {
         next();
     }
 
+    // Key-array constructor
     DocEnumerator::DocEnumerator(KeyStore handle,
                                  std::vector<std::string> docIDs,
                                  const Options& options)
@@ -117,19 +109,20 @@ namespace forestdb {
      _endKey(),
      _options(options),
      _docIDs(docIDs),
-     _curDocIndex(-1),
-     _docP(NULL)
+     _curDocIndex(0),
+     _docP(NULL),
+     _skipStep(false)
     {
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
                 handle, docIDs.size(), this);
-        if (docIDs.size() == 0)
-            return;
-        if (_options.descending) {
+        if (_options.skip > 0)
+            _docIDs.erase(_docIDs.begin(), _docIDs.begin() + _options.skip);
+        if (_options.limit < _docIDs.size())
+            _docIDs.resize(_options.limit);
+        if (_options.descending)
             std::reverse(_docIDs.begin(), _docIDs.end());
-            _options.descending = false;
-        }
-        restartFrom(docIDs[0]);
-        next();
+        // (this mode doesn't actually create an fdb_iterator)
+        nextFromArray();
     }
 
 
@@ -149,7 +142,7 @@ namespace forestdb {
      _docIDs(e._docIDs),
      _curDocIndex(e._curDocIndex),
      _docP(e._docP),
-     _firstDescending(e._firstDescending)
+     _skipStep(e._skipStep)
     {
         Debug("enum: move ctor (from %p) --> %p", &e, this);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
@@ -171,16 +164,16 @@ namespace forestdb {
         _docIDs = e._docIDs;
         _curDocIndex = e._curDocIndex;
         _options = e._options;
-        _firstDescending = e._firstDescending;
         _docP = e._docP;
         e._docP = NULL;
+        _skipStep = e._skipStep;
         return *this;
     }
 
 
-    void DocEnumerator::restartFrom(slice firstKey) {
+    // common subroutine of the key-range and key-array constructors
+    void DocEnumerator::start() {
         slice minKey = _startKey, maxKey = _endKey;
-        _firstDescending = _options.descending; //HACK MB-12465
         if (_options.descending)
             std::swap(minKey, maxKey);
         if (_iterator)
@@ -189,9 +182,12 @@ namespace forestdb {
                                 minKey.buf, minKey.size,
                                 maxKey.buf, maxKey.size,
                                 iteratorOptions(_options)));
-        if (firstKey.buf) {
-            Debug("enum: seek(%s)", firstKey.hexString().c_str());
-            fdb_iterator_seek(_iterator, firstKey.buf, firstKey.size);
+        if (_options.descending) {
+            if (_startKey.size)
+                fdb_iterator_seek(_iterator, _startKey.buf, _startKey.size);
+            else
+                fdb_iterator_seek_to_max(_iterator);
+            _skipStep = true;
         }
     }
 
@@ -207,47 +203,37 @@ namespace forestdb {
 
 
     bool DocEnumerator::next() {
+        // Enumerating an array of docs is handled specially:
+        if (_docIDs.size() > 0)
+            return nextFromArray();
+
         while(true) {
             if (!_iterator)
                 return false;
 
-            fdb_status status;
-            if (_docIDs.size() == 0) {
-                // Regular iteration:
-                freeDoc();
-                if (_options.descending && !_firstDescending) {
-                    status = fdb_iterator_prev(_iterator, &_docP);
-                    Debug("enum: fdb_iterator_prev(%p) --> %d", _iterator, status);
-                } else {
-                    status = fdb_iterator_next(_iterator, &_docP);
-                    Debug("enum: fdb_iterator_next(%p) --> %d", _iterator, status);
-                }
-                _firstDescending = false; //HACK MB-12465
+            freeDoc();
+            if (_skipStep) {
+                // The first time next() is called, don't need to advance the iterator
+                _skipStep = false;
+            } else {
+                fdb_status status = _options.descending ? fdb_iterator_prev(_iterator)
+                                                        : fdb_iterator_next(_iterator);
+                Debug("enum: fdb_iterator_next(%p) --> %d", _iterator, status);
                 if (status == FDB_RESULT_ITERATOR_FAIL) {
                     close();
                     return false;
                 }
                 check(status);
-                if (!_options.inclusiveEnd && doc().key() == _endKey) {
-                    close();
-                    return false;
-                }
-                if (!_options.inclusiveStart && doc().key() == _startKey) {
-                    continue;
-                }
-            } else {
-                // Iterating over a vector of docIDs:
-               if (++_curDocIndex >= _docIDs.size()) {
-                    Debug("enum: at end of vector");
-                    close();
-                    return false;
-                }
-                slice docID = _docIDs[_curDocIndex];
-                if (!seek(docID) || slice(_docP->key, _docP->keylen) != docID) {
-                    // If the current doc doesn't match the docID, then the docID doesn't exist:
-                    fdb_doc_free(_docP);
-                    fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
-                }
+            }
+
+            getDoc();
+
+            if (!_options.inclusiveEnd && doc().key() == _endKey) {
+                close();
+                return false;
+            }
+            if (!_options.inclusiveStart && doc().key() == _startKey) {
+                continue;
             }
 
             // OK, this is a candidate. First honor the skip and limit:
@@ -263,18 +249,50 @@ namespace forestdb {
         }
     }
 
+    // implementation of next() when enumerating a vector of keys
+    bool DocEnumerator::nextFromArray() {
+        if (_curDocIndex >= _docIDs.size()) {
+            Debug("enum: at end of vector");
+            close();
+            return false;
+        }
+        freeDoc();
+        slice docID = _docIDs[_curDocIndex++];
+        fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
+        fdb_status status;
+        if (_options.contentOptions & KeyStore::kMetaOnly)
+            status = fdb_get_metaonly(_store._handle, _docP);
+        else
+            status = fdb_get(_store._handle, _docP);
+        if (status != FDB_RESULT_KEY_NOT_FOUND)
+            check(status);
+        Debug("enum:     fdb_get --> [%s]", slice(_docP->key, _docP->keylen).hexString().c_str());
+        return true;
+    }
+
     bool DocEnumerator::seek(slice key) {
         Debug("enum: seek([%s])", key.hexString().c_str());
         if (!_iterator)
             return false;
 
         freeDoc();
-        check(fdb_iterator_seek(_iterator, key.buf, key.size));
-        fdb_status status = fdb_iterator_next(_iterator, &_docP);
+        fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size);
         if (status == FDB_RESULT_ITERATOR_FAIL)
             return false;
         check(status);
+        getDoc();
         return true;
+    }
+
+    void DocEnumerator::getDoc() {
+        assert(_docP == NULL);
+        fdb_status status;
+        if (_options.contentOptions & KeyStore::kMetaOnly)
+            status = fdb_iterator_get_metaonly(_iterator, &_docP);
+        else
+            status = fdb_iterator_get(_iterator, &_docP);
+        check(status);
+        Debug("enum:     fdb_iterator_get --> [%s]", slice(_docP->key, _docP->keylen).hexString().c_str());
     }
 
 }

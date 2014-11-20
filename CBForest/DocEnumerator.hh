@@ -29,7 +29,6 @@ namespace forestdb {
             bool            inclusiveStart;
             bool            inclusiveEnd;
             bool            includeDeleted;
-            bool            onlyConflicts;
             KeyStore::contentOptions  contentOptions;
 
             static const Options kDefault;
@@ -71,16 +70,18 @@ namespace forestdb {
         std::vector<std::string> _docIDs;
         int _curDocIndex;
         fdb_doc *_docP;
-        bool _firstDescending; //HACK MB-12465
+        bool _skipStep;
 
         friend class KeyStore;
         void setDocIDs(std::vector<std::string> docIDs);
-        void restartFrom(slice firstKey);
 
         void freeDoc()                      {fdb_doc_free(_docP); _docP = NULL;}
 
     private:
         DocEnumerator(const DocEnumerator&); // no copying allowed
+        void start();
+        bool nextFromArray();
+        void getDoc();
     };
 
 }

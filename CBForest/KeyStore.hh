@@ -48,10 +48,6 @@ namespace forestdb {
 
         Document getByOffset(uint64_t offset, sequence) const;
 
-        void setLogCallback(fdb_log_callback callback, void* ctx_data) const {
-            fdb_set_log_callback(_handle, callback, ctx_data);
-        }
-
         void deleteKeyStore(Transaction&)                   {deleteKeyStore(false);}
         void erase(Transaction&)                            {deleteKeyStore(true);}
 

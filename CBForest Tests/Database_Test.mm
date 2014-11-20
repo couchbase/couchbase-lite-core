@@ -123,52 +123,69 @@ using namespace forestdb;
 
 - (void) test04_EnumerateDocs {
     [self createNumberedDocs];
-    NSLog(@"Enumerate over all docs:");
-    int i = 1;
-    for (DocEnumerator e(*db); e; ++e, ++i) {
-        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
-        AssertEqual((NSString*)e->key(), expectedDocID);
-        AssertEq(e->sequence(), i);
-    }
-    AssertEq(i, 101);
 
-    NSLog(@"Enumerate over range of docs:");
-    i = 24;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029")); e; ++e, ++i) {
-        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
-        AssertEqual((NSString*)e->key(), expectedDocID);
-        AssertEq(e->sequence(), i);
-    }
-    AssertEq(i, 30);
+    for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
+        NSLog(@"Enumerate over all docs (metaOnly=%d)", metaOnly);
+        auto opts = DocEnumerator::Options::kDefault;
+        opts.contentOptions = metaOnly ? KeyStore::kMetaOnly : KeyStore::kDefaultContent;
 
-    NSLog(@"Enumerate over range of docs without inclusive:");
-    auto opts = DocEnumerator::Options::kDefault;
-    opts.inclusiveStart = opts.inclusiveEnd = false;
-    i = 25;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
-        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
-        AssertEqual((NSString*)e->key(), expectedDocID);
-        AssertEq(e->sequence(), i);
-    }
-    AssertEq(i, 29);
+        int i = 1;
+        for (DocEnumerator e(*db, slice::null, slice::null, opts); e; ++e, ++i) {
+            NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+            AssertEqual((NSString*)e->key(), expectedDocID);
+            AssertEq(e->sequence(), i);
+            Assert(e->body().size > 0); // even metaOnly should set the body length
+            Assert(e->offset() > 0);
+        }
+        AssertEq(i, 101);
 
-    NSLog(@"Enumerate over vector of docs:");
-    i = 0;
-    std::vector<std::string> docIDs;
-    docIDs.push_back("doc-005");
-    docIDs.push_back("doc-029");
-    docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
-    docIDs.push_back("doc-028");
-    docIDs.push_back("doc-098");
-    docIDs.push_back("doc-100");
-    docIDs.push_back("doc-105");
-    for (DocEnumerator e(*db, docIDs); e; ++e, ++i) {
-        NSLog(@"key = %@", (NSString*)e->key());
-        Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
-               docIDs[i].c_str(),
-               (NSString*)e->key());
+        NSLog(@"Enumerate over range of docs:");
+        i = 24;
+        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+            NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+            AssertEqual((NSString*)e->key(), expectedDocID);
+            AssertEq(e->sequence(), i);
+            Assert(e->body().size > 0); // even metaOnly should set the body length
+            Assert(e->offset() > 0);
+        }
+        AssertEq(i, 30);
+
+        NSLog(@"Enumerate over range of docs without inclusive:");
+        opts.inclusiveStart = opts.inclusiveEnd = false;
+        i = 25;
+        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+            NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+            AssertEqual((NSString*)e->key(), expectedDocID);
+            AssertEq(e->sequence(), i);
+            Assert(e->body().size > 0); // even metaOnly should set the body length
+            Assert(e->offset() > 0);
+        }
+        AssertEq(i, 29);
+        opts.inclusiveStart = opts.inclusiveEnd = true;
+
+        NSLog(@"Enumerate over vector of docs:");
+        i = 0;
+        std::vector<std::string> docIDs;
+        docIDs.push_back("doc-005");
+        docIDs.push_back("doc-029");
+        docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
+        docIDs.push_back("doc-028");
+        docIDs.push_back("doc-098");
+        docIDs.push_back("doc-100");
+        docIDs.push_back("doc-105"); // doesn't exist!
+        for (DocEnumerator e(*db, docIDs, opts); e; ++e, ++i) {
+            NSLog(@"key = %@", (NSString*)e->key());
+            Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
+                   docIDs[i].c_str(),
+                   (NSString*)e->key());
+            AssertEq(e->exists(), i < 6);
+            if (i < 6) {
+                Assert(e->body().size > 0); // even metaOnly should set the body length
+                Assert(e->offset() > 0);
+            }
+        }
+        AssertEq(i, 7);
     }
-    AssertEq(i, 7);
 }
 
 - (void) test04_EnumerateDocsDescending {
