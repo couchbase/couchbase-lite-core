@@ -128,6 +128,31 @@ namespace forestdb {
         _handle = NULL;
     }
 
+    fdb_kvs_handle* Database::openKVS(std::string name) const {
+        auto i = _kvHandles.find(name);
+        if (i != _kvHandles.end()) {
+            return i->second;
+        } else {
+            fdb_kvs_handle* handle;
+            check(fdb_kvs_open(_fileHandle, &handle, name.c_str(),  NULL));
+            const_cast<Database*>(this)->_kvHandles[name] = handle;
+            return handle;
+        }
+    }
+
+    void Database::closeKeyStore(std::string name) {
+        fdb_kvs_handle* handle = _kvHandles[name];
+        if (!handle)
+            return;
+        check(fdb_kvs_close(handle));
+        _kvHandles.erase(name);
+    }
+
+    void Database::deleteKeyStore(std::string name) {
+        closeKeyStore(name);
+        check(fdb_kvs_remove(_fileHandle, name.c_str()));
+    }
+
 
 #pragma mark - MUTATING OPERATIONS:
 

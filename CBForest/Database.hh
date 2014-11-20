@@ -17,6 +17,7 @@
 #define __CBForest__Database__
 #include "KeyStore.hh"
 #include <vector>
+#include <unordered_map>
 
 #ifdef check
 #undef check
@@ -68,6 +69,9 @@ namespace forestdb {
             instance directly as a KeyStore since it inherits from it.) */
         KeyStore defaultKeyStore() const        {return *this;}
 
+        void closeKeyStore(std::string name);
+        void deleteKeyStore(std::string name);
+
     protected:
         virtual void deleted();
 
@@ -75,6 +79,7 @@ namespace forestdb {
         class File;
         friend class KeyStore;
         friend class Transaction;
+        fdb_kvs_handle* openKVS(std::string name) const;
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
         void deleteDatabase(bool andReopen);
@@ -87,6 +92,7 @@ namespace forestdb {
         openFlags _openFlags;
         config _config;
         fdb_file_handle* _fileHandle;
+        std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
     };
 
 

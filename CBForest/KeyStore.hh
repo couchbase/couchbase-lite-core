@@ -48,8 +48,8 @@ namespace forestdb {
 
         Document getByOffset(uint64_t offset, sequence) const;
 
-        void deleteKeyStore(Transaction&)                   {deleteKeyStore(false);}
-        void erase(Transaction&)                            {deleteKeyStore(true);}
+        void deleteKeyStore(Transaction& t)                   {deleteKeyStore(t, false);}
+        void erase(Transaction& t)                            {deleteKeyStore(t, true);}
 
     protected:
         KeyStore(fdb_kvs_handle* handle)                    :_handle(handle) { }
@@ -58,7 +58,7 @@ namespace forestdb {
         fdb_kvs_handle* _handle;
 
     private:
-        void deleteKeyStore(bool recreate);
+        void deleteKeyStore(Transaction&, bool recreate);
         friend class Database;
         friend class DocEnumerator;
         friend class KeyStoreWriter;

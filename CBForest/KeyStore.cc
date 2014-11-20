@@ -21,10 +21,8 @@ namespace forestdb {
 
 
     KeyStore::KeyStore(const Database* db, std::string name)
-    :_handle(NULL)
-    {
-        check(::fdb_kvs_open(db->_fileHandle, &_handle, name.c_str(), NULL));
-    }
+    :_handle(db->openKVS(name))
+    { }
 
     KeyStore::kvinfo KeyStore::getInfo() const {
         kvinfo i;
@@ -81,16 +79,12 @@ namespace forestdb {
         return doc;
     }
 
-    void KeyStore::deleteKeyStore(bool recreate) {
-        kvinfo i = getInfo();
-        std::string name;
-        if (recreate)
-            name = i.name; // save a copy of the name
-        check(fdb_kvs_close(_handle));
+    void KeyStore::deleteKeyStore(Transaction& trans, bool recreate) {
+        std::string name = this->name();
+        trans.database()->deleteKeyStore(name);
         _handle = NULL;
-        check(fdb_kvs_remove(i.file, i.name));
         if (recreate)
-            check(::fdb_kvs_open(i.file, &_handle, name.c_str(), NULL));
+            _handle = trans.database()->openKVS(name);
     }
 
 
