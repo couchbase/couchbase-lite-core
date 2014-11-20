@@ -43,7 +43,7 @@ static revidBuffer stringToRev(NSString* str) {
 
 
 - (void) test01_Empty {
-    VersionedDocument v(db, @"foo");
+    VersionedDocument v(*db, @"foo");
     AssertEqual((NSString*)v.docID(), @"foo");
     Assert(v.revID() == NULL);
     AssertEq(v.flags(), 0);
@@ -100,7 +100,7 @@ static revidBuffer stringToRev(NSString* str) {
 - (void) test03_AddRevision {
     NSString *revID = @"1-fadebead", *body = @"{\"hello\":true}";
     revidBuffer revIDBuf(revID);
-    VersionedDocument v(db, @"foo");
+    VersionedDocument v(*db, @"foo");
     int httpStatus;
     v.insert(revIDBuf, nsstring_slice(body), false, false, NULL, false, httpStatus);
     AssertEq(httpStatus, 201);

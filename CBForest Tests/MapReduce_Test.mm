@@ -69,7 +69,7 @@ public:
         indexes.push_back(index);
         Transaction trans(database);
         TestIndexer indexer(indexes, trans);
-        return indexer.run(trans);
+        return indexer.run();
     }
 
     TestIndexer(std::vector<MapReduceIndex*> indexes, Transaction& t)
