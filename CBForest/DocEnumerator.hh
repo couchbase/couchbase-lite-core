@@ -81,7 +81,7 @@ namespace forestdb {
         DocEnumerator(const DocEnumerator&); // no copying allowed
         void start();
         bool nextFromArray();
-        void getDoc();
+        bool getDoc();
     };
 
 }

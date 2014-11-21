@@ -122,6 +122,12 @@ using namespace forestdb;
 }
 
 - (void) test04_EnumerateDocs {
+    NSLog(@"Enumerate empty db");
+    int i = 0;
+    for (DocEnumerator e(*db); e; ++e, ++i) {
+        XCTFail(@"Shouldn't have found any docs");
+    }
+
     [self createNumberedDocs];
 
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
@@ -129,7 +135,7 @@ using namespace forestdb;
         auto opts = DocEnumerator::Options::kDefault;
         opts.contentOptions = metaOnly ? KeyStore::kMetaOnly : KeyStore::kDefaultContent;
 
-        int i = 1;
+        i = 1;
         for (DocEnumerator e(*db, slice::null, slice::null, opts); e; ++e, ++i) {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
@@ -223,6 +229,15 @@ using namespace forestdb;
     NSLog(@"Enumerate over range of docs, descending:");
     i = 29;
     for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
+        NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+        AssertEqual((NSString*)e->key(), expectedDocID);
+        AssertEq(e->sequence(), i);
+    }
+    AssertEq(i, 23);
+
+    NSLog(@"Enumerate over range of docs, descending, max key doesn't exist:");
+    i = 29;
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029b"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);

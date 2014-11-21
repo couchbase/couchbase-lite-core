@@ -62,7 +62,7 @@ namespace forestdb {
      _endKey(endKey),
      _options(options),
      _docP(NULL),
-     _skipStep(false)
+     _skipStep(true)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
               store.handle(),
@@ -89,7 +89,7 @@ namespace forestdb {
      _endKey(),
      _options(options),
      _docP(NULL),
-     _skipStep(false)
+     _skipStep(true)
     {
         Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
                 store.handle(), start, end, this);
@@ -183,10 +183,7 @@ namespace forestdb {
                                 maxKey.buf, maxKey.size,
                                 iteratorOptions(_options)));
         if (_options.descending) {
-            if (_startKey.size)
-                fdb_iterator_seek(_iterator, _startKey.buf, _startKey.size);
-            else
-                fdb_iterator_seek_to_max(_iterator);
+            fdb_iterator_seek_to_max(_iterator);
             _skipStep = true;
         }
     }
@@ -226,7 +223,10 @@ namespace forestdb {
                 check(status);
             }
 
-            getDoc();
+            if (!getDoc()) {
+                close();
+                return false;
+            }
 
             if (!_options.inclusiveEnd && doc().key() == _endKey) {
                 close();
@@ -284,15 +284,18 @@ namespace forestdb {
         return true;
     }
 
-    void DocEnumerator::getDoc() {
+    bool DocEnumerator::getDoc() {
         assert(_docP == NULL);
         fdb_status status;
         if (_options.contentOptions & KeyStore::kMetaOnly)
             status = fdb_iterator_get_metaonly(_iterator, &_docP);
         else
             status = fdb_iterator_get(_iterator, &_docP);
+        if (status == FDB_RESULT_ITERATOR_FAIL)
+            return false;
         check(status);
         Debug("enum:     fdb_iterator_get --> [%s]", slice(_docP->key, _docP->keylen).hexString().c_str());
+        return true;
     }
 
 }
