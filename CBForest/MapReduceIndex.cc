@@ -178,7 +178,7 @@ namespace forestdb {
         // Enumerate all the documents:
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
-        for (DocEnumerator e(sourceStore, startSequence, UINT64_MAX, options); e; ++e) {
+        for (DocEnumerator e(sourceStore, startSequence, UINT64_MAX, options); e.next(); ) {
             addDocument(*e);
         }
         _finished = true;

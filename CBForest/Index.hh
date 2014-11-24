@@ -80,8 +80,7 @@ namespace forestdb {
 
         IndexEnumerator(Index*,
                         std::vector<KeyRange> keyRanges,
-                        const DocEnumerator::Options&,
-                        bool firstRead =true);
+                        const DocEnumerator::Options&);
 
         CollatableReader key() const            {return CollatableReader(_key);}
         CollatableReader value() const          {return CollatableReader(_value);}
@@ -89,8 +88,6 @@ namespace forestdb {
         sequence sequence() const               {return _sequence;}
 
         bool next();
-        const IndexEnumerator& operator++()     {next(); return *this;}
-        operator bool() const                   {return _dbEnum;}
 
     protected:
         virtual bool approve(slice key)         {return true;}

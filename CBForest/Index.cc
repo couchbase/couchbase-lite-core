@@ -138,13 +138,11 @@ namespace forestdb {
             _startKey = (slice)startKey;
         if (!_inclusiveEnd)
             _endKey = (slice)endKey;
-        read();
     }
 
     IndexEnumerator::IndexEnumerator(Index* index,
                                      std::vector<KeyRange> keyRanges,
-                                     const DocEnumerator::Options& options,
-                                     bool firstRead)
+                                     const DocEnumerator::Options& options)
     :_index(index),
      _options(options),
      _inclusiveStart(true),
@@ -157,8 +155,6 @@ namespace forestdb {
         for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
             Debug("    key range: %s -- %s (%d)", i->start.dump().c_str(), i->end.dump().c_str(), i->inclusiveEnd);
         nextKeyRange();
-        if (firstRead)
-            read();
     }
 
     bool IndexEnumerator::read() {

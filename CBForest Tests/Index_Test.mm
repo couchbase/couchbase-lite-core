@@ -114,7 +114,7 @@ static boolBlock scopedEnumerate() {
     __block int nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,
-                                   DocEnumerator::Options::kDefault); e; ++e) {
+                           DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -133,7 +133,7 @@ static boolBlock scopedEnumerate() {
     nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                                    Collatable(), forestdb::slice::null,
-                                   DocEnumerator::Options::kDefault); e; ++e) {
+                                   DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -151,7 +151,7 @@ static boolBlock scopedEnumerate() {
     nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
-                           DocEnumerator::Options::kDefault); e; ++e) {
+                           DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -166,7 +166,7 @@ static boolBlock scopedEnumerate() {
     options.descending = true;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
-                           options); e; ++e) {
+                           options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -183,7 +183,7 @@ static boolBlock scopedEnumerate() {
     keys.push_back(Collatable("Portland"));
     keys.push_back(Collatable("Skookumchuk"));
     nRows = 0;
-    for (IndexEnumerator e(index, keys, DocEnumerator::Options::kDefault); e; ++e) {
+    for (IndexEnumerator e(index, keys, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",
@@ -197,7 +197,7 @@ static boolBlock scopedEnumerate() {
     ranges.push_back(KeyRange(Collatable("Port"), Collatable("Port\uFFFE")));
     ranges.push_back(KeyRange(Collatable("Vernon"), Collatable("Ypsilanti")));
     nRows = 0;
-    for (IndexEnumerator e(index, ranges, DocEnumerator::Options::kDefault); e; ++e) {
+    for (IndexEnumerator e(index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         NSLog(@"key = %.*s, docID = %.*s",

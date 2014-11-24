@@ -118,7 +118,7 @@ public:
     int nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
-                           DocEnumerator::Options::kDefault); e; ++e) {
+                           DocEnumerator::Options::kDefault); e.next(); ) {
         CollatableReader keyReader(e.key());
         alloc_slice keyStr = keyReader.readString();
         NSString* key = (NSString*)keyStr;

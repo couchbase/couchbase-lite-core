@@ -45,14 +45,12 @@ namespace forestdb {
                                            geohash::area searchArea)
     :IndexEnumerator(index,
                      keyRangesFor(searchArea),
-                     DocEnumerator::Options::kDefault,
-                     false),
+                     DocEnumerator::Options::kDefault),
      _searchArea(searchArea)
     {
 #if DEBUG
         _count[false] = _count[true] = 0;
 #endif
-        read();
     }
 
 

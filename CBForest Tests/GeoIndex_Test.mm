@@ -67,7 +67,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
     for (IndexEnumerator e(index,
                            Collatable(""), slice::null,
                            Collatable("Z"), slice::null,
-                           DocEnumerator::Options::kDefault); e; ++e) {
+                           DocEnumerator::Options::kDefault); e.next(); ) {
         CollatableReader reader(e.key());
         geohash::hash hash(reader.readString());
         area a = hash.decode();
@@ -84,7 +84,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 //    LogLevel = kDebug;
     NSLog(@"Querying...");
     found = 0;
-    for (GeoIndexEnumerator e(index, queryArea); e; ++e) {
+    for (GeoIndexEnumerator e(index, queryArea); e.next(); ) {
         auto keyCoord = e.keyCoord();
         ++found;
         NSLog(@"Found (%g, %g)", keyCoord.latitude, keyCoord.longitude);

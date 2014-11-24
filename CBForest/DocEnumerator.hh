@@ -20,16 +20,25 @@
 
 namespace forestdb {
 
+    /** KeyStore enumerator/iterator that returns a range of Documents.
+        Usage:
+            for (auto e=db.enumerate(); e.next(); ) {...}
+        or
+            auto e=db.enumerate();
+            while (e.next()) { ... }
+        Inside the loop you can treat the enumerator as though it were a Document*, for example
+        "e->key()".
+     */
     class DocEnumerator {
     public:
         struct Options {
-            unsigned        skip;
-            unsigned        limit;
-            bool            descending;
-            bool            inclusiveStart;
-            bool            inclusiveEnd;
-            bool            includeDeleted;
-            KeyStore::contentOptions  contentOptions;
+            unsigned                 skip;
+            unsigned                 limit;
+            bool                     descending     :1;
+            bool                     inclusiveStart :1;
+            bool                     inclusiveEnd   :1;
+            bool                     includeDeleted :1;
+            KeyStore::contentOptions contentOptions :4;
 
             static const Options kDefault;
         };
@@ -46,26 +55,24 @@ namespace forestdb {
         DocEnumerator(KeyStore,
                       std::vector<std::string> docIDs,
                       const Options& options = Options::kDefault);
-        DocEnumerator(DocEnumerator&& e); // move constructor
         ~DocEnumerator();
 
+        DocEnumerator(DocEnumerator&& e);            // move constructor
         DocEnumerator& operator=(DocEnumerator&& e); // move assignment
 
         bool next();
         bool seek(slice key);
-        const Document& doc() const         {return *(Document*)_docP;}
         void close();
 
-        // C++-like iterator API: for (auto e=db.enumerate(); e; ++e) {...}
-        const DocEnumerator& operator++()   {next(); return *this;}
+        const Document& doc() const         {return *(const Document*)_docP;}
+
+        // Can treat an enumerator as a document pointer:
         operator const Document*() const    {return (const Document*)_docP;}
         const Document* operator->() const  {return (Document*)_docP;}
 
     protected:
         KeyStore _store;
         fdb_iterator *_iterator;
-        alloc_slice _startKey;
-        alloc_slice _endKey;
         Options _options;
         std::vector<std::string> _docIDs;
         int _curDocIndex;
@@ -79,7 +86,7 @@ namespace forestdb {
 
     private:
         DocEnumerator(const DocEnumerator&); // no copying allowed
-        void start();
+        void start(const slice &startKey, const slice &endKey, const Options &options);
         bool nextFromArray();
         bool getDoc();
     };

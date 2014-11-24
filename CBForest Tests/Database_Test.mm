@@ -124,7 +124,7 @@ using namespace forestdb;
 - (void) test04_EnumerateDocs {
     NSLog(@"Enumerate empty db");
     int i = 0;
-    for (DocEnumerator e(*db); e; ++e, ++i) {
+    for (DocEnumerator e(*db); e.next(); ++i) {
         XCTFail(@"Shouldn't have found any docs");
     }
 
@@ -136,7 +136,7 @@ using namespace forestdb;
         opts.contentOptions = metaOnly ? KeyStore::kMetaOnly : KeyStore::kDefaultContent;
 
         i = 1;
-        for (DocEnumerator e(*db, slice::null, slice::null, opts); e; ++e, ++i) {
+        for (DocEnumerator e(*db, slice::null, slice::null, opts); e.next(); ++i) {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
             AssertEq(e->sequence(), i);
@@ -147,7 +147,7 @@ using namespace forestdb;
 
         NSLog(@"Enumerate over range of docs:");
         i = 24;
-        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e.next(); ++i) {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
             AssertEq(e->sequence(), i);
@@ -159,7 +159,7 @@ using namespace forestdb;
         NSLog(@"Enumerate over range of docs without inclusive:");
         opts.inclusiveStart = opts.inclusiveEnd = false;
         i = 25;
-        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e; ++e, ++i) {
+        for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e.next(); ++i) {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
             AssertEq(e->sequence(), i);
@@ -179,7 +179,7 @@ using namespace forestdb;
         docIDs.push_back("doc-098");
         docIDs.push_back("doc-100");
         docIDs.push_back("doc-105"); // doesn't exist!
-        for (DocEnumerator e(*db, docIDs, opts); e; ++e, ++i) {
+        for (DocEnumerator e(*db, docIDs, opts); e.next(); ++i) {
             NSLog(@"key = %@", (NSString*)e->key());
             Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
                    docIDs[i].c_str(),
@@ -201,7 +201,7 @@ using namespace forestdb;
     [self createNumberedDocs];
     NSLog(@"Enumerate over all docs, descending:");
     int i = 100;
-    for (DocEnumerator e(*db, slice::null, slice::null, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, slice::null, slice::null, opts); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -210,7 +210,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs from max, descending:");
     i = 100;
-    for (DocEnumerator e(*db, slice::null, nsstring_slice(@"doc-090"), opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, slice::null, nsstring_slice(@"doc-090"), opts); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -219,7 +219,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs to min, descending:");
     i = 10;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-010"), slice::null, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-010"), slice::null, opts); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -228,7 +228,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs, descending:");
     i = 29;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), opts); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -237,7 +237,7 @@ using namespace forestdb;
 
     NSLog(@"Enumerate over range of docs, descending, max key doesn't exist:");
     i = 29;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-029b"), nsstring_slice(@"doc-024"), opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029b"), nsstring_slice(@"doc-024"), opts); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -248,7 +248,7 @@ using namespace forestdb;
     auto optsExcl = opts;
     optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
     i = 28;
-    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), optsExcl); e; ++e, --i) {
+    for (DocEnumerator e(*db, nsstring_slice(@"doc-029"), nsstring_slice(@"doc-024"), optsExcl); e.next(); --i) {
         NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
         AssertEqual((NSString*)e->key(), expectedDocID);
         AssertEq(e->sequence(), i);
@@ -265,7 +265,7 @@ using namespace forestdb;
     docIDs.push_back("doc-100");
     docIDs.push_back("doc-105");
     i = (int)docIDs.size() - 1;
-    for (DocEnumerator e(*db, docIDs, opts); e; ++e, --i) {
+    for (DocEnumerator e(*db, docIDs, opts); e.next(); --i) {
         NSLog(@"key = %@", (NSString*)e->key());
         Assert((std::string)e->key() == docIDs[i], @"Expected %s got %@",
                docIDs[i].c_str(),
@@ -306,7 +306,7 @@ using namespace forestdb;
     }
 
     int i = 0;
-    for (DocEnumerator iter(db2); iter; ++iter) {
+    for (DocEnumerator iter(db2); iter.next(); ) {
         NSString* key = (NSString*)(*iter).key();
         //NSLog(@"key = %@", key);
         NSUInteger t = (i / kNDocs) + 1;
