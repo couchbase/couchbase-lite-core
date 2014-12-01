@@ -162,10 +162,13 @@ namespace forestdb {
             if (!_dbEnum) {
                 if (_currentKeyIndex < 0)
                     return false; // at end
-                else if (nextKeyRange())
-                    continue;
-                else
-                    return false;
+                else {
+                    nextKeyRange();
+                    if (_dbEnum.next())
+                        continue;
+                    else
+                        return false;
+                }
             }
             
             const Document& doc = _dbEnum.doc();
@@ -185,7 +188,8 @@ namespace forestdb {
 
             if (_currentKeyIndex >= 0 && _keyRanges[_currentKeyIndex].isKeyPastEnd(_key)) {
                 // While enumerating through _keys, advance to the next key:
-                if (nextKeyRange())
+                nextKeyRange();
+                if (_dbEnum.next())
                     continue;
                 else
                     return false;
@@ -218,21 +222,19 @@ namespace forestdb {
         }
     }
 
-    bool IndexEnumerator::nextKeyRange() {
+    void IndexEnumerator::nextKeyRange() {
         if (_keyRanges.size() == 0)
-            return false;
+            return;
         if (++_currentKeyIndex >= _keyRanges.size()) {
             _dbEnum.close();
-            return false;
+            return;
         }
 
         Collatable& startKey = _keyRanges[_currentKeyIndex].start;
-        if (_currentKeyIndex > 0 && !(_keyRanges[_currentKeyIndex-1].end < startKey)) {
-            _dbEnum = DocEnumerator(*_index, slice::null, slice::null, _options);
-        }
-
         Debug("IndexEnumerator: Advance to key '%s'", startKey.dump().c_str());
-        return _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));
+        if (!_dbEnum)
+            _dbEnum = DocEnumerator(*_index, slice::null, slice::null, docOptions(_options));
+        _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));
     }
 
     bool IndexEnumerator::next() {

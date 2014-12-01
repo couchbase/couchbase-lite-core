@@ -60,8 +60,14 @@ namespace forestdb {
         DocEnumerator(DocEnumerator&& e);            // move constructor
         DocEnumerator& operator=(DocEnumerator&& e); // move assignment
 
+        /** Advances to the next key/document, returning false when it hits the end.
+            next() must be called after the constructor before accessing the first document! */
         bool next();
-        bool seek(slice key);
+
+        /** Repositions the enumerator at a specific key (or just after, if it's missing).
+            You must call next() before accessing the document! */
+        void seek(slice key);
+
         void close();
 
         const Document& doc() const         {return *(const Document*)_docP;}
@@ -86,7 +92,7 @@ namespace forestdb {
 
     private:
         DocEnumerator(const DocEnumerator&); // no copying allowed
-        void start(const slice &startKey, const slice &endKey, const Options &options);
+        void initialPosition();
         bool nextFromArray();
         bool getDoc();
     };

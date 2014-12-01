@@ -49,7 +49,6 @@
 		27139B6918F8EDA20021A9A3 /* list.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A218E4857900A80C5A /* list.cc */; };
 		27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
 		27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729D18E4857900A80C5A /* forestdb.cc */; };
-		27139B6C18F8EDA20021A9A3 /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
 		27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729618E4857900A80C5A /* btree.cc */; };
 		27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
 		27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729E18E4857900A80C5A /* hash_functions.cc */; };
@@ -68,7 +67,6 @@
 		27139B8618F8EDA20021A9A3 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
 		27139B8718F8EDA20021A9A3 /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
-		27139B8918F8EDA20021A9A3 /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
 		27139B8C18F8EDA20021A9A3 /* snappy-sinksource.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3D518F5E8D8007D8C23 /* snappy-sinksource.h */; };
 		27139B9618F8EE3A0021A9A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
 		27139BA318F8EE3A0021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
@@ -125,8 +123,6 @@
 		275072D718E4AA5000A80C5A /* wal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A318E4857900A80C5A /* wal.cc */; };
 		275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
-		2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */ = {isa = PBXBuildFile; fileRef = 2750731218E6499800A80C5A /* btree_prefix_kv.h */; };
-		2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750731318E6499800A80C5A /* btree_prefix_kv.cc */; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
@@ -502,8 +498,6 @@
 		275072DE18E4ACE100A80C5A /* crc32.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc32.cc; sourceTree = "<group>"; };
 		275072DF18E4ACE100A80C5A /* crc32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
-		2750731218E6499800A80C5A /* btree_prefix_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_prefix_kv.h; sourceTree = "<group>"; };
-		2750731318E6499800A80C5A /* btree_prefix_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_prefix_kv.cc; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
@@ -839,7 +833,6 @@
 				2750729518E4857900A80C5A /* btree_kv.cc */,
 				2750729618E4857900A80C5A /* btree.cc */,
 				2750729718E4857900A80C5A /* btreeblock.cc */,
-				2750731318E6499800A80C5A /* btree_prefix_kv.cc */,
 				278EBF8F1976317D006362F8 /* btree_str_kv.cc */,
 				2709F298191EA10E00C5A8A3 /* compactor.cc */,
 				273AD3BD18EF263B007D8C23 /* configuration.cc */,
@@ -867,7 +860,6 @@
 				2750726D18E3E72900A80C5A /* btree_kv.h */,
 				278EBF901976317D006362F8 /* btree_str_kv.h */,
 				2750727018E3E72900A80C5A /* btreeblock.h */,
-				2750731218E6499800A80C5A /* btree_prefix_kv.h */,
 				2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */,
 				2750727218E3E72900A80C5A /* common.h */,
 				2709F299191EA10E00C5A8A3 /* compactor.h */,
@@ -1128,7 +1120,6 @@
 				274415221900E8D800964583 /* fdb_types.h in Headers */,
 				27139B8718F8EDA20021A9A3 /* crc32.h in Headers */,
 				27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */,
-				27139B8918F8EDA20021A9A3 /* btree_prefix_kv.h in Headers */,
 				27139B8C18F8EDA20021A9A3 /* snappy-sinksource.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1151,7 +1142,6 @@
 				274415211900E8D800964583 /* fdb_types.h in Headers */,
 				275072F318E4ACE100A80C5A /* crc32.h in Headers */,
 				275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */,
-				2750731418E6499800A80C5A /* btree_prefix_kv.h in Headers */,
 				273AD3E018F5E8D8007D8C23 /* snappy-sinksource.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1478,7 +1468,6 @@
 				27139B6918F8EDA20021A9A3 /* list.cc in Sources */,
 				27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */,
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
-				27139B6C18F8EDA20021A9A3 /* btree_prefix_kv.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
 				27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
@@ -1563,7 +1552,6 @@
 				275072D618E4AA5000A80C5A /* list.cc in Sources */,
 				273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */,
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
-				2750731518E6499800A80C5A /* btree_prefix_kv.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				275072CF18E4AA5000A80C5A /* filemgr_ops.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,

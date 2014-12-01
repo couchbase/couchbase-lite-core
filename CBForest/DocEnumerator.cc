@@ -131,10 +131,7 @@ namespace forestdb {
         delete minKeyBuf;
         delete maxKeyBuf;
         check(status);
-        if (options.descending) {
-            fdb_iterator_seek_to_max(_iterator);
-            _skipStep = true;
-        }
+        initialPosition();
     }
 
     // Sequence-range constructor
@@ -160,10 +157,19 @@ namespace forestdb {
             ++minSeq;
         if (!inclusiveMax)
             --maxSeq;
-        if (minSeq <= maxSeq) {
-            check(fdb_iterator_sequence_init(store._handle, &_iterator,
-                                             minSeq, maxSeq,
-                                             iteratorOptions(options)));
+        if (minSeq > maxSeq)
+            return; // nothing to iterate
+        
+        check(fdb_iterator_sequence_init(store._handle, &_iterator,
+                                         minSeq, maxSeq,
+                                         iteratorOptions(options)));
+        initialPosition();
+    }
+
+    void DocEnumerator::initialPosition() {
+        if (_options.descending) {
+            Debug("enum: fdb_iterator_seek_to_max(%p)", _iterator);
+            fdb_iterator_seek_to_max(_iterator);  // ignore err; will fail if max key doesn't exist
         }
     }
 
@@ -176,8 +182,7 @@ namespace forestdb {
      _options(options),
      _docIDs(docIDs),
      _curDocIndex(0),
-     _docP(NULL),
-     _skipStep(false)
+     _docP(NULL)
     {
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
                 handle, docIDs.size(), this);
@@ -214,7 +219,7 @@ namespace forestdb {
     }
 
     DocEnumerator::~DocEnumerator() {
-        Debug("enum: ~DocEnumerator(%p)", this);
+        //Debug("enum: ~DocEnumerator(%p)", this);
         close();
     }
 
@@ -235,9 +240,9 @@ namespace forestdb {
 
 
     void DocEnumerator::close() {
-        Debug("enum: close %p (free %p, close %p)", this, _docP, _iterator);
         freeDoc();
         if (_iterator) {
+            Debug("enum: fdb_iterator_close(%p)", _iterator);
             fdb_iterator_close(_iterator);
             _iterator = NULL;
         }
@@ -257,12 +262,13 @@ namespace forestdb {
         }
         do {
             if (_skipStep) {
-                // The first time next() is called, don't need to advance the iterator
+                // The first time next() is called, don't advance the iterator
                 _skipStep = false;
             } else {
                 fdb_status status = _options.descending ? fdb_iterator_prev(_iterator)
                                                         : fdb_iterator_next(_iterator);
-                Debug("enum: fdb_iterator_next/prev(%p) --> %d", _iterator, status);
+                Debug("enum: fdb_iterator_%s(%p) --> %d",
+                      (_options.descending ?"prev" :"next"), _iterator, status);
                 if (status == FDB_RESULT_ITERATOR_FAIL) {
                     close();
                     return false;
@@ -294,17 +300,21 @@ namespace forestdb {
         return true;
     }
 
-    bool DocEnumerator::seek(slice key) {
+    void DocEnumerator::seek(slice key) {
         Debug("enum: seek([%s])", key.hexString().c_str());
         if (!_iterator)
-            return false;
+            return;
 
         freeDoc();
-        fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size);
-        if (status == FDB_RESULT_ITERATOR_FAIL)
-            return false;
-        check(status);
-        return getDoc();
+        fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size,
+                                              (_options.descending ? FDB_ITR_SEEK_LOWER
+                                                                   : FDB_ITR_SEEK_HIGHER));
+        if (status == FDB_RESULT_ITERATOR_FAIL) {
+            close();
+        } else {
+            check(status);
+            _skipStep = true; // so next() won't skip over the doc
+        }
     }
 
     bool DocEnumerator::getDoc() {

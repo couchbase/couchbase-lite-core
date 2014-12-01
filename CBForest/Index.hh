@@ -95,7 +95,7 @@ namespace forestdb {
 
     private:
         friend class Index;
-        bool nextKeyRange();
+        void nextKeyRange();
 
         Index* _index;
         DocEnumerator::Options _options;

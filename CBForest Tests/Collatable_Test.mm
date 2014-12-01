@@ -118,7 +118,7 @@ static double randf() {
 - (void) testRandomFloats {
     srandomdev();
     self.continueAfterFailure = NO;
-    for (int i=0; i< 1000000; i++) {
+    for (int i=0; i< 100000; i++) {
         @autoreleasepool {
             NSNumber *n1 = @(randf()), *n2 = @(randf());
             //NSLog(@"Compare: %@ <--> %@", n1, n2);
