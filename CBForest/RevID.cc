@@ -20,6 +20,26 @@
 #include <math.h>
 
 
+#ifdef __ANDROID__
+// digittoint is a BSD function, not available on Android
+static int digittoint(char ch) {
+    int d = ch - '0';
+    if ((unsigned) d < 10) {
+        return d;
+    }
+    d = ch - 'a';
+    if ((unsigned) d < 6) {
+        return d + 10;
+    }
+    d = ch - 'A';
+    if ((unsigned) d < 6) {
+        return d + 10;
+    }
+    return 0;
+}
+#endif //__ANDROID__
+
+
 namespace forestdb {
 
     // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.

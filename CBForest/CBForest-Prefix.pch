@@ -4,9 +4,12 @@
 //  The contents of this file are implicitly included at the beginning of every source file.
 //
 
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #ifdef __cplusplus
-    #include <stddef.h>
-    #include <stdlib.h>
+    #include <algorithm>
     #include <string>
     #include <vector>
 #endif
