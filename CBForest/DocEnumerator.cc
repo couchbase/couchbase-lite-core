@@ -48,37 +48,11 @@ namespace forestdb {
             fdbOptions |= FDB_ITR_METAONLY;
         if (!options.includeDeleted)
             fdbOptions |= FDB_ITR_NO_DELETES;
+        if (!options.inclusiveEnd)
+            fdbOptions |= (options.descending ? FDB_ITR_SKIP_MIN_KEY : FDB_ITR_SKIP_MAX_KEY);
+        if (!options.inclusiveStart)
+            fdbOptions |= (options.descending ? FDB_ITR_SKIP_MAX_KEY : FDB_ITR_SKIP_MIN_KEY);
         return fdbOptions;
-    }
-
-    static void nextKey(slice &key) {
-        uint8_t* buf = (uint8_t*)key.buf;
-        if (key.size < FDB_MAX_KEYLEN) {
-            // Normal case: append a 0
-            buf[key.size++] = 0;
-        } else {
-            // If key is full length, increment the last byte, and carry any overflow:
-            uint8_t* byteP = buf + key.size-1;
-            while (++*byteP == 0) {
-                if (--key.size == 0)
-                    break;
-                --byteP;
-            }
-        }
-    }
-
-    static void prevKey(slice &key) {
-        // Decrement the last byte, carrying any underflow:
-        uint8_t* buf = (uint8_t*)key.buf;
-        uint8_t* byteP = buf + key.size-1;
-        while (--*byteP == 0xFF) {
-            --byteP;
-            if (byteP < buf)
-                break;
-        }
-        // Fill remaining space with FF bytes:
-        memset(buf + key.size, 0xFF, FDB_MAX_KEYLEN - key.size);
-        key.size = FDB_MAX_KEYLEN;
     }
 
 
@@ -104,32 +78,13 @@ namespace forestdb {
             endKey.buf = NULL;
 
         slice minKey = startKey, maxKey = endKey;
-        bool inclusiveMin = options.inclusiveStart, inclusiveMax = options.inclusiveEnd;
-        if (options.descending) {
+        if (options.descending)
             std::swap(minKey, maxKey);
-            std::swap(inclusiveMin, inclusiveMax);
-        }
-
-        uint8_t *minKeyBuf = NULL, *maxKeyBuf = NULL;
-        if (!inclusiveMin) {
-            minKeyBuf = new uint8_t[FDB_MAX_KEYLEN];
-            memcpy(minKeyBuf, minKey.buf, minKey.size);
-            minKey.buf = minKeyBuf;
-            nextKey(minKey);
-        }
-        if (!inclusiveMax) {
-            maxKeyBuf = new uint8_t[FDB_MAX_KEYLEN];
-            memcpy(maxKeyBuf, maxKey.buf, maxKey.size);
-            maxKey.buf = maxKeyBuf;
-            prevKey(maxKey);
-        }
 
         fdb_status status = fdb_iterator_init(_store.handle(), &_iterator,
                                               minKey.buf, minKey.size,
                                               maxKey.buf, maxKey.size,
                                               iteratorOptions(options));
-        delete minKeyBuf;
-        delete maxKeyBuf;
         check(status);
         initialPosition();
     }
@@ -148,18 +103,9 @@ namespace forestdb {
                 store.handle(), start, end, this);
 
         sequence minSeq = start, maxSeq = end;
-        bool inclusiveMin = options.inclusiveStart, inclusiveMax = options.inclusiveEnd;
-        if (options.descending) {
+        if (options.descending)
             std::swap(minSeq, maxSeq);
-            std::swap(inclusiveMin, inclusiveMax);
-        }
-        if (!inclusiveMin)
-            ++minSeq;
-        if (!inclusiveMax)
-            --maxSeq;
-        if (minSeq > maxSeq)
-            return; // nothing to iterate
-        
+
         check(fdb_iterator_sequence_init(store._handle, &_iterator,
                                          minSeq, maxSeq,
                                          iteratorOptions(options)));
