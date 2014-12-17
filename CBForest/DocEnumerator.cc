@@ -44,8 +44,6 @@ namespace forestdb {
 
     static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::Options& options) {
         fdb_iterator_opt_t fdbOptions = 0;
-        if (options.contentOptions & KeyStore::kMetaOnly)
-            fdbOptions |= FDB_ITR_METAONLY;
         if (!options.includeDeleted)
             fdbOptions |= FDB_ITR_NO_DELETES;
         if (!options.inclusiveEnd)
