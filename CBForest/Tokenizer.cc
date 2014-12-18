@@ -58,6 +58,7 @@ namespace forestdb {
         }
         _stemmer = sLanguageToStemmer[language];
         _removeDiacritics = removeDiacritics;
+        _tokenChars = "'’";
     }
 
     Tokenizer::~Tokenizer() {
@@ -98,10 +99,21 @@ namespace forestdb {
 #pragma mark TOKENITERATOR:
 
 
+    static void trimQuotes(const char* &token, int &length);
+    static bool isCurly(slice);
+    static std::string uncurl(std::string token);
+
+
     TokenIterator::TokenIterator(Tokenizer &tokenizer, slice text, bool unique)
     :_stopwords(tokenizer.stopwords()),
      _unique(unique)
     {
+        if (isCurly(text)) {
+            // Need to copy the input text in order to convert curly close quotes to apostrophes:
+            _text = uncurl((std::string)text);
+            text = _text;
+        }
+
         int err = sModule->xOpen(tokenizer.getTokenizer(), (const char*)text.buf, (int)text.size,
                                  &_cursor);
         assert(!err);
@@ -123,6 +135,9 @@ namespace forestdb {
             _hasToken = (err == SQLITE_OK);
             if (!_hasToken)
                 return false;
+            trimQuotes(tokenBytes, tokenLength);
+            if (tokenLength == 0)
+                continue;
             _token = std::string(tokenBytes, tokenLength);
             if (_stopwords.count(_token) > 0)
                 continue; // it's a stop-word
@@ -135,6 +150,41 @@ namespace forestdb {
             _wordLength = endOffset - startOffset;
             return true;
         }
+    }
+
+
+    // Trim apostrophes (since we told the tokenizer they're alphabetical)
+    static void trimQuotes(const char* &token, int &length) {
+        while (length > 0) {
+            if (token[length-1] == '\'') {
+                --length;
+            } else if (token[0] == '\'') {
+                ++token;
+                --length;
+            } else if (length >= 3 && memcmp(token+length-3, "’", 3)==0) {
+                length -= 3;
+            } else if (length >= 3 && memcmp(token, "’", 3)==0) {
+                token += 3;
+                length -= 3;
+            } else {
+                break; // done
+            }
+        }
+    }
+
+    static bool isCurly(slice text) {
+        return memmem(text.buf, text.size, "’", 3) != NULL;
+    }
+
+    // Convert curly-close-quote to straight apostrophe
+    static std::string uncurl(std::string token) {
+        while(true) {
+            size_t pos = token.find("’");
+            if (pos == std::string::npos)
+                break;
+            token = token.replace(pos, 3, "'");
+        }
+        return token;
     }
 
 }

@@ -92,7 +92,8 @@ namespace forestdb {
         CollatableReader(slice s) :_data(s) { }
 
         slice data() const                  {return _data;}
-
+        bool atEnd() const                  {return _data.size == 0;}
+        
         Tag peekTag() const;
 
         int64_t readInt();

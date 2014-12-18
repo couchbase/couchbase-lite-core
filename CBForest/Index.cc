@@ -51,8 +51,8 @@ namespace forestdb {
     }
 
     bool IndexWriter::update(slice docID, sequence docSequence,
-                                  std::vector<Collatable> keys, std::vector<Collatable> values,
-                                  uint64_t &rowCount)
+                             std::vector<Collatable> keys, std::vector<Collatable> values,
+                             uint64_t &rowCount)
     {
         Collatable collatableDocID;
         collatableDocID << docID;
@@ -87,6 +87,19 @@ namespace forestdb {
         set(collatableDocID, slice(sequences));
         rowCount += rowsAdded - rowsRemoved;
         return true;
+    }
+
+
+    alloc_slice Index::getEntry(slice docID, sequence docSequence, Collatable key) {
+        Collatable collatableDocID;
+        collatableDocID << docID;
+        Collatable realKey;
+        realKey.beginArray();
+        realKey << key << collatableDocID << (int64_t)docSequence;
+        realKey.endArray();
+
+        Document doc = get(realKey);
+        return alloc_slice(doc.body());
     }
 
 

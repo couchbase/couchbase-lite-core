@@ -42,6 +42,8 @@ namespace forestdb {
     public:
         Index(Database*, std::string name);
 
+        alloc_slice getEntry(slice docID, sequence docSequence, Collatable key);
+
     private:
         friend class IndexWriter;
         friend class IndexEnumerator;

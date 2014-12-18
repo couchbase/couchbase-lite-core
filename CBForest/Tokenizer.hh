@@ -38,6 +38,7 @@ namespace forestdb {
 
         /** Defines extra characters that should be considered part of a token. */
         void setTokenChars(std::string s)   {_tokenChars = s;}
+        std::string tokenChars() const      {return _tokenChars;}
 
     private:
         sqlite3_tokenizer* createTokenizer();
@@ -79,7 +80,10 @@ namespace forestdb {
         TokenIterator& operator++()     {next(); return *this;}
 
     private:
+        friend class Tokenizer;
         TokenIterator(sqlite3_tokenizer_cursor*, const word_set&, bool unique);
+
+        std::string _text;
         sqlite3_tokenizer_cursor* _cursor;
         const word_set &_stopwords;
         const bool _unique;
@@ -87,7 +91,6 @@ namespace forestdb {
         bool _hasToken;
         std::string _token;
         size_t _wordOffset, _wordLength;
-        friend class Tokenizer;
     };
 
 }

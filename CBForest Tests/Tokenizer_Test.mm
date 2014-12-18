@@ -53,7 +53,7 @@ using namespace forestdb;
     XCTAssertEqualObjects(([self tokenize: @"Having,larger books. ¡Ça vä!"]),
                           (@[@"having", @"larger", @"books", @"ça", @"vä"]));
     XCTAssertEqualObjects(([self tokenize: @"“Typographic ‘quotes’ aren’t optional”"]),
-                          (@[@"typographic", @"quotes", @"aren", @"t", @"optional"]));
+                          (@[@"typographic", @"quotes", @"aren't", @"optional"]));
     XCTAssertEqualObjects(([self tokenize: @"seven eight seven nine" unique: YES]),
                           (@[@"seven", @"eight", @"nine"]));
 }
@@ -69,6 +69,10 @@ using namespace forestdb;
                           (@[@"typograph", @"quot", @"option"]));
     XCTAssertEqualObjects(([self tokenize: @"“Typographic ‘quotes’ can’t be optional”"]),
                           (@[@"typograph", @"quot", @"option"]));
+    XCTAssertEqualObjects(([self tokenize: @"seven can't nine"]),
+                          (@[@"seven", @"nine"]));
+    XCTAssertEqualObjects(([self tokenize: @"seven can’t nine"]),  // curly quote!
+                          (@[@"seven", @"nine"]));
 }
 
 
