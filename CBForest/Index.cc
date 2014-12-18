@@ -62,10 +62,13 @@ namespace forestdb {
 
         std::string sequences;
         auto value = values.begin();
-        for (auto key = keys.begin(); key != keys.end(); ++key,++value) {
+        unsigned emitIndex = 0;
+        for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
             Collatable realKey;
             realKey.beginArray();
             realKey << *key << collatableDocID << (int64_t)docSequence;
+            if (emitIndex > 0)
+                realKey << emitIndex; // This disambiguates duplicate keys emitted by the same doc
             realKey.endArray();
 
             if (realKey.size() <= Document::kMaxKeyLength
@@ -90,12 +93,15 @@ namespace forestdb {
     }
 
 
-    alloc_slice Index::getEntry(slice docID, sequence docSequence, Collatable key) {
+    alloc_slice Index::getEntry(slice docID, sequence docSequence,
+                                Collatable key, unsigned emitIndex) {
         Collatable collatableDocID;
         collatableDocID << docID;
         Collatable realKey;
         realKey.beginArray();
         realKey << key << collatableDocID << (int64_t)docSequence;
+        if (emitIndex > 0)
+            realKey << emitIndex;
         realKey.endArray();
 
         Document doc = get(realKey);
