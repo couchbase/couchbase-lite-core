@@ -241,6 +241,17 @@ namespace forestdb {
         }
     }
 
+    void IndexEnumerator::getTextToken(std::string &token,
+                                       size_t &wordStart, size_t &wordLength,
+                                       unsigned &fullTextID)
+    {
+        CollatableReader reader(value());
+        reader.beginArray();
+        fullTextID = (unsigned)reader.readInt();
+        wordStart = (size_t)reader.readDouble();
+        wordLength = (size_t)reader.readDouble();
+    }
+
     void IndexEnumerator::nextKeyRange() {
         if (_keyRanges.size() == 0)
             return;

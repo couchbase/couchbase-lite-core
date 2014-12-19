@@ -15,25 +15,13 @@
 
 #include "MapReduceIndex.hh"
 #include "Collatable.hh"
+#include "Tokenizer.hh"
 
 
 namespace forestdb {
 
     static int64_t kMinFormatVersion = 1;
     static int64_t kCurFormatVersion = 1;
-
-    class emitter : public EmitFn {
-    public:
-        virtual void operator() (Collatable key, Collatable value);
-        std::vector<Collatable> keys;
-        std::vector<Collatable> values;
-    };
-
-    void emitter::operator() (Collatable key, Collatable value) {
-        keys.push_back(key);
-        values.push_back(value);
-    }
-
 
     MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
     :Index(db, name),
@@ -128,6 +116,61 @@ namespace forestdb {
         _stateReadAt = 0;
     }
 
+
+#pragma mark - MAP-REDUCE INDEXER
+
+
+    // Implementation of EmitFn interface
+    class emitter : public EmitFn {
+    public:
+        emitter()
+        :_tokenizer(NULL),
+         _emitTextCount(0)
+        { }
+
+        virtual ~emitter() {
+            delete _tokenizer;
+        }
+
+        inline void emit(Collatable key, Collatable value) {
+            keys.push_back(key);
+            values.push_back(value);
+        }
+
+        virtual void operator() (Collatable key, Collatable value) {
+            emit(key, value);
+        }
+
+        void emitTextTokens(slice text) {
+            if (!_tokenizer)
+                _tokenizer = new Tokenizer("en", true);
+            bool emittedText = false;
+            for (TokenIterator i(*_tokenizer, slice(text), true); i; ++i) {
+                if (!emittedText) {
+                    // Emit the string that was indexed, under a special key.
+                    Collatable collKey(++_emitTextCount), collValue(text);
+                    emit(collKey, collValue);
+                    emittedText = true;
+                }
+
+                // Emit each token string as a key
+                Collatable collKey(i.token()), collValue;
+                collValue.beginArray();
+                collValue << _emitTextCount << i.wordOffset() << i.wordLength();
+                collValue.endArray();
+                emit(collKey, collValue);
+            }
+        }
+
+        std::vector<Collatable> keys;
+        std::vector<Collatable> values;
+
+    private:
+        Tokenizer* _tokenizer;
+        unsigned _emitTextCount;
+    };
+
+
     bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
         const Document& doc = mappable.document();
         if (doc.sequence() <= _lastSequenceIndexed)
@@ -144,9 +187,6 @@ namespace forestdb {
     }
 
     
-#pragma mark - MAP-REDUCE INDEXER
-
-
     MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes,
                                        Transaction& transaction)
     :_transaction(transaction),
