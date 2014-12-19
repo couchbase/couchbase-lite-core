@@ -64,8 +64,10 @@ namespace forestdb {
         stateKey.addNull();
 
         Collatable state;
+        state.beginArray();
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
               << _rowCount << kCurFormatVersion;
+        state.endArray();
 
         _stateReadAt = t(this).set(stateKey, state);
     }

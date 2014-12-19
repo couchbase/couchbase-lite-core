@@ -131,7 +131,7 @@ public:
 }
 
 
-- (void) testMapReduce {
+- (void) createDocsAndIndex {
     {
         // Populate the database:
         NSDictionary* data = @{
@@ -151,6 +151,11 @@ public:
         Transaction trans(db);
         index->setup(trans, 0, new TestMapFn, "1");
     }
+}
+
+
+- (void) testMapReduce {
+    [self createDocsAndIndex];
 
     NSLog(@"--- First query");
     [self queryExpectingKeys: @[@"Cambria", @"Eugene", @"Port Townsend", @"Portland",
@@ -186,6 +191,28 @@ public:
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
     AssertEq(TestMapFn::numMapCalls, 2);
+}
+
+- (void) testReopen {
+    [self createDocsAndIndex];
+    XCTAssertTrue(TestIndexer::updateIndex(db, index));
+    sequence lastIndexed = index->lastSequenceIndexed();
+    sequence lastChangedAt = index->lastSequenceChangedAt();
+    Assert(lastChangedAt > 0);
+    Assert(lastIndexed >= lastChangedAt);
+
+    delete index;
+    index = NULL;
+
+    index = new MapReduceIndex(db, "index", source);
+    Assert(index, @"Couldn't reopen index");
+
+    {
+        Transaction trans(db);
+        index->setup(trans, 0, new TestMapFn, "1");
+    }
+    AssertEq(index->lastSequenceIndexed(), lastIndexed);
+    AssertEq(index->lastSequenceChangedAt(), lastChangedAt);
 }
 
 @end
