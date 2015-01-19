@@ -124,6 +124,7 @@
 		275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
@@ -1652,6 +1653,7 @@
 				27FA99F719180B5F00912F96 /* stem_ISO_8859_1_hungarian.c in Sources */,
 				27FA99F819180B5F00912F96 /* stem_UTF_8_swedish.c in Sources */,
 				27FA99F919180B5F00912F96 /* stem_ISO_8859_1_dutch.c in Sources */,
+				27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */,
 				27FA99FA19180B5F00912F96 /* fts3_unicodesn.c in Sources */,
 				27FA99FB19180B5F00912F96 /* stem_UTF_8_english.c in Sources */,
 				27FA99FC19180B5F00912F96 /* stem_ISO_8859_1_german.c in Sources */,
