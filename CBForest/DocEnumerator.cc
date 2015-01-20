@@ -61,7 +61,6 @@ namespace forestdb {
     :_store(store),
      _iterator(NULL),
      _options(options),
-     _docP(NULL),
      _skipStep(true)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
@@ -94,7 +93,6 @@ namespace forestdb {
     :_store(store),
      _iterator(NULL),
      _options(options),
-     _docP(NULL),
      _skipStep(true)
     {
         Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
@@ -125,8 +123,7 @@ namespace forestdb {
      _iterator(NULL),
      _options(options),
      _docIDs(docIDs),
-     _curDocIndex(0),
-     _docP(NULL)
+     _curDocIndex(0)
     {
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
                 handle, docIDs.size(), this);
@@ -141,8 +138,7 @@ namespace forestdb {
 
     // Empty constructor
     DocEnumerator::DocEnumerator()
-    :_iterator(NULL),
-     _docP(NULL)
+    :_iterator(NULL)
     {
         Debug("enum: DocEnumerator() --> %p", this);
     }
@@ -154,12 +150,10 @@ namespace forestdb {
      _options(e._options),
      _docIDs(e._docIDs),
      _curDocIndex(e._curDocIndex),
-     _docP(e._docP),
      _skipStep(e._skipStep)
     {
         Debug("enum: move ctor (from %p) --> %p", &e, this);
         e._iterator = NULL; // so e's destructor won't close the fdb_iterator
-        e._docP = NULL;
     }
 
     DocEnumerator::~DocEnumerator() {
@@ -176,8 +170,6 @@ namespace forestdb {
         _docIDs = e._docIDs;
         _curDocIndex = e._curDocIndex;
         _options = e._options;
-        _docP = e._docP;
-        e._docP = NULL;
         _skipStep = e._skipStep;
         return *this;
     }
@@ -230,17 +222,16 @@ namespace forestdb {
             close();
             return false;
         }
-        freeDoc();
-        slice docID = _docIDs[_curDocIndex++];
-        fdb_doc_create(&_docP, docID.buf, docID.size, NULL, 0, NULL, 0);
+        _doc.clearMetaAndBody();
+        _doc.setKey(_docIDs[_curDocIndex++]);
         fdb_status status;
         if (_options.contentOptions & KeyStore::kMetaOnly)
-            status = fdb_get_metaonly(_store._handle, _docP);
+            status = fdb_get_metaonly(_store._handle, _doc);
         else
-            status = fdb_get(_store._handle, _docP);
+            status = fdb_get(_store._handle, _doc);
         if (status != FDB_RESULT_KEY_NOT_FOUND)
             check(status);
-        Debug("enum:     fdb_get --> [%s]", slice(_docP->key, _docP->keylen).hexString().c_str());
+        Debug("enum:     fdb_get --> [%s]", _doc.key().hexString().c_str());
         return true;
     }
 
@@ -264,17 +255,24 @@ namespace forestdb {
     bool DocEnumerator::getDoc() {
         freeDoc();
         fdb_status status;
+        fdb_doc* docP = (fdb_doc*)_doc;
         if (_options.contentOptions & KeyStore::kMetaOnly)
-            status = fdb_iterator_get_metaonly(_iterator, &_docP);
+            status = fdb_iterator_get_metaonly(_iterator, &docP);
         else
-            status = fdb_iterator_get(_iterator, &_docP);
+            status = fdb_iterator_get(_iterator, &docP);
+        assert(docP == (fdb_doc*)_doc);
         if (status == FDB_RESULT_ITERATOR_FAIL) {
             close();
             return false;
         }
         check(status);
-        Debug("enum:     fdb_iterator_get --> [%s]", slice(_docP->key, _docP->keylen).hexString().c_str());
+        Debug("enum:     fdb_iterator_get --> [%s]", _doc.key().hexString().c_str());
         return true;
+    }
+
+    void DocEnumerator::freeDoc() {
+        _doc.clearMetaAndBody();
+        _doc.setKey(slice::null);
     }
 
 }

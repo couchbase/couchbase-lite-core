@@ -61,9 +61,10 @@ namespace forestdb {
     void Document::clearMetaAndBody() {
         setMeta(slice::null);
         setBody(slice::null);
+        _doc.deleted = false;
         _doc.seqnum = 0;
         _doc.offset = 0;
-        _doc.deleted = false;
+        _doc.size_ondisk = 0;
     }
 
     static inline void _assign(void* &buf, size_t &size, slice s) {

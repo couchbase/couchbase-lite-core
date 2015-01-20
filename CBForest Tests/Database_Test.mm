@@ -122,10 +122,14 @@ using namespace forestdb;
 }
 
 - (void) test04_EnumerateDocs {
-    NSLog(@"Enumerate empty db");
-    int i = 0;
-    for (DocEnumerator e(*db); e.next(); ++i) {
-        XCTFail(@"Shouldn't have found any docs");
+    {
+        NSLog(@"Enumerate empty db");
+        int i = 0;
+        DocEnumerator e(*db);
+        for (; e.next(); ++i) {
+            XCTFail(@"Shouldn't have found any docs");
+        }
+        Assert(!e);
     }
 
     [self createNumberedDocs];
@@ -135,18 +139,22 @@ using namespace forestdb;
         auto opts = DocEnumerator::Options::kDefault;
         opts.contentOptions = metaOnly ? KeyStore::kMetaOnly : KeyStore::kDefaultContent;
 
-        i = 1;
-        for (DocEnumerator e(*db, slice::null, slice::null, opts); e.next(); ++i) {
-            NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
-            AssertEqual((NSString*)e->key(), expectedDocID);
-            AssertEq(e->sequence(), i);
-            Assert(e->body().size > 0); // even metaOnly should set the body length
-            Assert(e->offset() > 0);
+        {
+            int i = 1;
+            DocEnumerator e(*db, slice::null, slice::null, opts);
+            for (; e.next(); ++i) {
+                NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
+                AssertEqual((NSString*)e->key(), expectedDocID);
+                AssertEq(e->sequence(), i);
+                Assert(e->body().size > 0); // even metaOnly should set the body length
+                Assert(e->offset() > 0);
+            }
+            AssertEq(i, 101);
+            Assert(!e);
         }
-        AssertEq(i, 101);
 
         NSLog(@"Enumerate over range of docs:");
-        i = 24;
+        int i = 24;
         for (DocEnumerator e(*db, nsstring_slice(@"doc-024"), nsstring_slice(@"doc-029"), opts); e.next(); ++i) {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);

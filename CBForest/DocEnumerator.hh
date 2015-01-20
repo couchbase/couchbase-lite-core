@@ -70,11 +70,11 @@ namespace forestdb {
 
         void close();
 
-        const Document& doc() const         {return *(const Document*)_docP;}
+        const Document& doc() const         {return _doc;}
 
         // Can treat an enumerator as a document pointer:
-        operator const Document*() const    {return (const Document*)_docP;}
-        const Document* operator->() const  {return (Document*)_docP;}
+        operator const Document*() const    {return _doc.key().buf ? &_doc : NULL;}
+        const Document* operator->() const  {return _doc.key().buf ? &_doc : NULL;}
 
     protected:
         KeyStore _store;
@@ -82,13 +82,13 @@ namespace forestdb {
         Options _options;
         std::vector<std::string> _docIDs;
         int _curDocIndex;
-        fdb_doc *_docP;
+        Document _doc;
         bool _skipStep;
 
         friend class KeyStore;
         void setDocIDs(std::vector<std::string> docIDs);
 
-        void freeDoc()                      {fdb_doc_free(_docP); _docP = NULL;}
+        void freeDoc();
 
     private:
         DocEnumerator(const DocEnumerator&); // no copying allowed

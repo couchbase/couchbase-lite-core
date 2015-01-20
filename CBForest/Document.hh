@@ -56,12 +56,13 @@ namespace forestdb {
         typedef DocEnumerator enumerator;
 
         static const size_t kMaxKeyLength, kMaxMetaLength, kMaxBodyLength;
+        
+        operator fdb_doc*() {return &_doc;}
 
     private:
         friend class KeyStore;
         friend class KeyStoreWriter;
         friend class Transaction;
-        operator fdb_doc*() {return &_doc;}
 
         Document& operator= (const Document&);
 
