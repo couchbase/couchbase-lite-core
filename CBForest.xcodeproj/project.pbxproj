@@ -158,6 +158,8 @@
 		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		27E45D021A6F01AD001A3A03 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
+		27E45D031A6F01AD001A3A03 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E48714192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
@@ -531,6 +533,8 @@
 		27DF46C31A12CF46007BB4A4 /* Document.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
 		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
+		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
+		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
 		27E48712192171EA007D8940 /* Database.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Database.hh; path = ../CBForest/Database.hh; sourceTree = "<group>"; };
 		27E4871A19218E5D007D8940 /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slice.cc; path = ../CBForest/slice.cc; sourceTree = "<group>"; };
@@ -925,6 +929,8 @@
 				278EBF9C19763238006362F8 /* memleak.h */,
 				271E03531A21A372007B843E /* partiallock.cc */,
 				271E03541A21A372007B843E /* partiallock.h */,
+				27E45D001A6F01AD001A3A03 /* time_utils.cc */,
+				27E45D011A6F01AD001A3A03 /* time_utils.h */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -1495,6 +1501,7 @@
 			files = (
 				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
+				27E45D031A6F01AD001A3A03 /* time_utils.cc in Sources */,
 				271E03561A21A372007B843E /* partiallock.cc in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
 				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
@@ -1623,6 +1630,7 @@
 			files = (
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
+				27E45D021A6F01AD001A3A03 /* time_utils.cc in Sources */,
 				271E03551A21A372007B843E /* partiallock.cc in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
