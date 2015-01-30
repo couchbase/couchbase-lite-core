@@ -91,29 +91,29 @@ namespace forestdb {
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {
-        if (rev->body.buf)
+        if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
             return true;
         if (atOffset == 0)
             return false;
         VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
         if (oldVersDoc.sequence() != rev->sequence)
             return false;
-        rev = oldVersDoc.get(rev->revID);
-        return (rev && rev->body.buf);
+        const Revision* oldRev = oldVersDoc.get(rev->revID);
+        return (oldRev && RevTree::isBodyOfRevisionAvailable(oldRev, atOffset));
     }
 
     alloc_slice VersionedDocument::readBodyOfRevision(const Revision* rev, uint64_t atOffset) const {
-        if (rev->body.buf)
-            return alloc_slice(rev->body);
+        if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
+            return RevTree::readBodyOfRevision(rev, atOffset);
         if (atOffset == 0)
             return alloc_slice();
         VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
         if (oldVersDoc.sequence() != rev->sequence)
             return alloc_slice();
-        rev = oldVersDoc.get(rev->revID);
-        if (!rev)
+        const Revision* oldRev = oldVersDoc.get(rev->revID);
+        if (!oldRev)
             return alloc_slice();
-        return alloc_slice(rev->body);
+        return alloc_slice(oldRev->inlineBody());
     }
 
     void VersionedDocument::save(Transaction& transaction) {

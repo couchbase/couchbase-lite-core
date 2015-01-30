@@ -62,7 +62,7 @@ static revidBuffer stringToRev(NSString* str) {
     Assert(rev);
     AssertEq(httpStatus, 201);
     Assert(rev->revID == rev1ID);
-    Assert(rev->body == rev1Data);
+    Assert(rev->inlineBody() == rev1Data);
     AssertEq(rev->parent(), (Revision*)NULL);
     Assert(!rev->isDeleted());
 
@@ -72,7 +72,7 @@ static revidBuffer stringToRev(NSString* str) {
     Assert(rev2);
     AssertEq(httpStatus, 201);
     Assert(rev2->revID == rev2ID);
-    Assert(rev2->body == rev2Data);
+    Assert(rev2->inlineBody() == rev2Data);
     Assert(!rev2->isDeleted());
 
     tree.sort();

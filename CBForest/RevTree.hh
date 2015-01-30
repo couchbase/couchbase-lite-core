@@ -33,10 +33,10 @@ namespace forestdb {
         const RevTree*  owner;
         revid           revID;      /**< Revision ID (compressed) */
         fdb_seqnum_t    sequence;   /**< DB sequence number that this revision has/had */
-        slice           body;       /**< Revision body (JSON), or empty if not stored in this tree */
 
-        inline bool isBodyAvailable() const;
-        inline alloc_slice readBody() const;
+        inline slice inlineBody() const;     /**< Body if stored in Revision, or null if not */
+        inline bool isBodyAvailable() const; /**< Is body inline or loadable from an earlier doc? */
+        inline alloc_slice readBody() const; /**< Reads body from earlier doc if necessary */
 
         bool isLeaf() const         {return (flags & kLeaf) != 0;}
         bool isDeleted() const      {return (flags & kDeleted) != 0;}
@@ -60,6 +60,7 @@ namespace forestdb {
 
         static const uint16_t kNoParent = UINT16_MAX;
         
+        slice       body;           /**< Revision body (JSON), or empty if not stored in this tree*/
         uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
         uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
         Flags       flags;          /**< Leaf/deleted flags */
@@ -158,6 +159,9 @@ namespace forestdb {
     }
     inline alloc_slice Revision::readBody() const {
         return owner->readBodyOfRevision(this, oldBodyOffset);
+    }
+    inline slice Revision::inlineBody() const {
+        return body;
     }
 
 }
