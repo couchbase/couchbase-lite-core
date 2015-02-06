@@ -16,6 +16,8 @@
 #include "MapReduceIndex.hh"
 #include "Collatable.hh"
 #include "Tokenizer.hh"
+#include "LogInternal.hh"
+#include <assert.h>
 
 
 namespace forestdb {
@@ -54,6 +56,8 @@ namespace forestdb {
                 }
             }
             _stateReadAt = curIndexSeq;
+            Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d)",
+                  this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount);
         }
     }
 
@@ -70,6 +74,8 @@ namespace forestdb {
         state.endArray();
 
         _stateReadAt = t(this).set(stateKey, state);
+        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d)",
+              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount);
     }
 
     void MapReduceIndex::deleted() {
@@ -97,12 +103,16 @@ namespace forestdb {
 
 
     void MapReduceIndex::setup(Transaction &t, int indexType, MapFn *map, std::string mapVersion) {
+        Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
+              this, indexType, map, mapVersion.c_str());
+        assert(map != NULL);
         readState();
+        _map = map;
+        _mapVersion = mapVersion;
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
-            _map = map;
             _indexType = indexType;
-            _mapVersion = mapVersion;
             if (_lastSequenceIndexed > 0) {
+                Debug("MapReduceIndex: Version or indexType changed; erasing");
                 KeyStore::erase(t);
             }
             _lastSequenceIndexed = _lastSequenceChangedAt = 0;
@@ -112,6 +122,7 @@ namespace forestdb {
     }
 
     void MapReduceIndex::erase(Transaction& t) {
+        Debug("MapReduceIndex: Erasing");
         KeyStore::erase(t);
         _lastSequenceIndexed = _lastSequenceChangedAt = 0;
         _rowCount = 0;
