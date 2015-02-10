@@ -116,6 +116,7 @@ static boolBlock scopedEnumerate() {
 
 
 - (void) testBasics {
+    LogLevel = kDebug;//TEMP
     NSDictionary* docs = @{
         @"CA": @[@"California", @"San Jose", @"San Francisco", @"Cambria"],
         @"WA": @[@"Washington", @"Seattle", @"Port Townsend", @"Skookumchuk"],

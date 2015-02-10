@@ -80,22 +80,40 @@ namespace forestdb {
                 continue;
             }
 
+            // Is this a key that was previously emitted last time we indexed this document?
+            if (keysChanged || oldKey == oldStoredKeys.end() || !(*oldKey == *key)) {
+                // no; note that the set of keys is different
+                keysChanged = true;
+            } else {
+                // yes; read the old row so we can compare the value too:
+                ++oldKey;
+                Document oldRow = get(realKey);
+                if (oldRow.exists()) {
+                    CollatableReader body(oldRow.body());
+                    body.beginArray();
+                    (void)body.readInt(); // old doc sequence
+                    slice oldValue = slice::null;
+                    if (body.peekTag() != Collatable::kEndSequence)
+                        oldValue = body.read();
+
+                    if (oldValue == (slice)*value) {
+                        Debug("Old k/v pair (%s, %s) unchanged",
+                              key->dump().c_str(), value->dump().c_str());
+                        continue;  // Value is unchanged, so this is a no-op; skip to next key!
+                    }
+                } else {
+                    Warn("Old emitted k/v pair unexpectedly missing");
+                }
+                ++rowsRemoved;  // more like "overwritten"
+            }
+
+            // Store the key & value:
             Collatable realValue;
             realValue.beginArray() << docSequence << *value;
             realValue.endArray();
-
-            // Store the key & value:
             set(realKey, slice::null, realValue);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
-
-            // Is this a key that was previously emitted last time we indexed this document?
-            if (!keysChanged && oldKey != oldStoredKeys.end() && *oldKey == *key) {
-                ++oldKey;                       // yes
-                ++rowsRemoved;
-            } else {
-                keysChanged = true;             // no; note that the set of keys is different
-            }
         }
 
         // If there are any old keys that weren't emitted this time, we need to delete those rows:
