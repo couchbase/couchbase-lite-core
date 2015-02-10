@@ -34,20 +34,21 @@ namespace forestdb {
     { }
 
 
-    int64_t IndexWriter::removeOldRowsForDoc(slice docID) {
-        int64_t rowsRemoved = 0;
+    void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys) {
         Document doc = get(docID);
-        slice sequences = doc.body();
-        if (sequences.size > 0) {
-            uint64_t seq;
-            while (ReadUVarInt(&sequences, &seq)) {
-                if (!del((sequence)seq)) {
-                    Warn("Index::removeOldRowsForDoc -- couldn't find seq %llu", seq);
-                }
-                ++rowsRemoved;
+        if (doc.body().size > 0) {
+            CollatableReader reader(doc.body());
+            while (!reader.atEnd()) {
+                keys.push_back( Collatable(reader.read(), true) );
             }
         }
-        return rowsRemoved;
+    }
+
+    void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys) {
+        Collatable writer;
+        for (auto i=keys.begin(); i != keys.end(); ++i)
+            writer << *i;
+        set(docID, writer);
     }
 
     bool IndexWriter::update(slice docID, sequence docSequence,
@@ -57,37 +58,68 @@ namespace forestdb {
         Collatable collatableDocID;
         collatableDocID << docID;
 
-        int64_t rowsRemoved = removeOldRowsForDoc(collatableDocID);
-        int64_t rowsAdded = 0;
+        std::vector<Collatable> oldStoredKeys, newStoredKeys;
+        getKeysForDoc(collatableDocID, oldStoredKeys);
 
-        std::string sequences;
+        bool keysChanged = false;
+        int64_t rowsRemoved = 0, rowsAdded = 0;
+
         auto value = values.begin();
         unsigned emitIndex = 0;
+        auto oldKey = oldStoredKeys.begin();
         for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
+            // Create a key for the index db by combining the emitted key and doc ID:
             Collatable realKey;
-            realKey.beginArray();
-            realKey << *key << collatableDocID << (int64_t)docSequence;
+            realKey.beginArray() << *key << collatableDocID;
             if (emitIndex > 0)
-                realKey << emitIndex; // This disambiguates duplicate keys emitted by the same doc
+                realKey << emitIndex;
             realKey.endArray();
-
-            if (realKey.size() <= Document::kMaxKeyLength
-                    && value->size() <= Document::kMaxBodyLength) {
-                sequence seq = set(realKey, slice::null, *value);
-
-                uint8_t buf[kMaxVarintLen64];
-                size_t size = PutUVarInt(buf, seq);
-                sequences += std::string((char*)buf, size);
-                ++rowsAdded;
-            } else {
+            if (realKey.size() > Document::kMaxKeyLength
+                    || value->size() > Document::kMaxBodyLength) {
                 Warn("Index key or value too long"); //FIX: Need more-official warning
+                continue;
+            }
+
+            Collatable realValue;
+            realValue.beginArray() << docSequence << *value;
+            realValue.endArray();
+
+            // Store the key & value:
+            set(realKey, slice::null, realValue);
+            newStoredKeys.push_back(*key);
+            ++rowsAdded;
+
+            // Is this a key that was previously emitted last time we indexed this document?
+            if (!keysChanged && oldKey != oldStoredKeys.end() && *oldKey == *key) {
+                ++oldKey;                       // yes
+                ++rowsRemoved;
+            } else {
+                keysChanged = true;             // no; note that the set of keys is different
             }
         }
+
+        // If there are any old keys that weren't emitted this time, we need to delete those rows:
+        for (; oldKey != oldStoredKeys.end(); ++oldKey) {
+            Collatable realKey;
+            realKey.beginArray() << *oldKey << collatableDocID;
+            auto oldEmitIndex = oldKey - oldStoredKeys.begin();
+            if (oldEmitIndex > 0)
+                realKey << oldEmitIndex;
+            realKey.endArray();
+            bool deleted = del(realKey);
+            if (!deleted) {
+                Warn("Failed to delete old emitted k/v pair");
+            }
+            ++rowsRemoved;
+            keysChanged = true;
+        }
+
+        if (keysChanged)
+            setKeysForDoc(collatableDocID, newStoredKeys);
 
         if (rowsRemoved==0 && rowsAdded==0)
             return false;
 
-        set(collatableDocID, slice(sequences));
         rowCount += rowsAdded - rowsRemoved;
         return true;
     }
@@ -99,13 +131,19 @@ namespace forestdb {
         collatableDocID << docID;
         Collatable realKey;
         realKey.beginArray();
-        realKey << key << collatableDocID << (int64_t)docSequence;
+        realKey << key << collatableDocID;
         if (emitIndex > 0)
             realKey << emitIndex;
         realKey.endArray();
 
         Document doc = get(realKey);
-        return alloc_slice(doc.body());
+
+        CollatableReader realValue(doc.body());
+        realValue.beginArray();
+        (void)realValue.readInt(); // doc sequence
+        if (realValue.peekTag() == Collatable::kEndSequence)
+            return alloc_slice();
+        return alloc_slice(realValue.read());
     }
 
 
@@ -193,9 +231,9 @@ namespace forestdb {
             const Document& doc = _dbEnum.doc();
 
             // Decode the key from collatable form:
-            CollatableReader reader(doc.key());
-            reader.beginArray();
-            _key = reader.read();
+            CollatableReader keyReader(doc.key());
+            keyReader.beginArray();
+            _key = keyReader.read();
 
             if (!_inclusiveEnd && _key == _endKey) {
                 _dbEnum.close();
@@ -232,9 +270,15 @@ namespace forestdb {
             }
 
             // Return it as the next row:
-            _docID = reader.readString();
-            _sequence = reader.readInt();
-            _value = doc.body();
+            _docID = keyReader.readString();
+
+            CollatableReader valueReader(doc.body());
+            valueReader.beginArray();
+            _sequence = valueReader.readInt();
+            if (valueReader.peekTag() == Collatable::kEndSequence)
+                _value = slice::null;
+            else
+                _value = valueReader.read();
             Debug("IndexEnumerator: found key=%s",
                     forestdb::CollatableReader(_key).dump().c_str());
             return true;

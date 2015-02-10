@@ -45,6 +45,7 @@ namespace forestdb {
     class Collatable : public CollatableTypes {
     public:
         Collatable();
+        Collatable(slice, bool);        // Imports data previously saved in collatable format
 
         template<typename T> explicit Collatable(const T &t)    {*this << t;}
 
@@ -75,6 +76,7 @@ namespace forestdb {
         size_t size() const                         {return _str.size();}
         bool empty() const                          {return _str.size() == 0;}
         bool operator< (const Collatable& c) const  {return _str < c._str;}
+        bool operator== (const Collatable& c) const {return _str == c._str;}
 
         std::string dump();
 

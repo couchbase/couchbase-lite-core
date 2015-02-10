@@ -46,6 +46,10 @@ namespace forestdb {
     Collatable::Collatable()
     { }
 
+    Collatable::Collatable(slice s, bool)
+    :_str((std::string)s)
+    { }
+
     Collatable& Collatable::addBool (bool b) {
         addTag(b ? kTrue : kFalse);
         return *this;

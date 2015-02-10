@@ -67,7 +67,8 @@ namespace forestdb {
                     uint64_t &rowCount);
 
     private:
-        int64_t removeOldRowsForDoc(slice docID);
+        void getKeysForDoc(slice docID, std::vector<Collatable> &keys);
+        void setKeysForDoc(slice docID, const std::vector<Collatable> &keys);
 
         friend class Index;
         friend class MapReduceIndex;
