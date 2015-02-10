@@ -17,6 +17,7 @@
 #include "Collatable.hh"
 #include "varint.hh"
 #include "LogInternal.hh"
+#include "hash_functions.h" // from forestdb source
 
 
 namespace forestdb {
@@ -34,21 +35,36 @@ namespace forestdb {
     { }
 
 
-    void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys) {
+    // djb2 hash function:
+    static const uint32_t kInitialHash = 5381;
+    static inline void addHash(uint32_t &hash, slice value) {
+        for (auto i = 0; i < value.size; ++i)
+            hash = ((hash << 5) + hash) + value[i];
+    }
+
+    void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
         Document doc = get(docID);
         if (doc.body().size > 0) {
             CollatableReader reader(doc.body());
+            hash = (uint32_t)reader.readInt();
             while (!reader.atEnd()) {
                 keys.push_back( Collatable(reader.read(), true) );
             }
+        } else {
+            hash = kInitialHash;
         }
     }
 
-    void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys) {
-        Collatable writer;
-        for (auto i=keys.begin(); i != keys.end(); ++i)
-            writer << *i;
-        set(docID, writer);
+    void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash) {
+        if (keys.size() > 0) {
+            Collatable writer;
+            writer << hash;
+            for (auto i=keys.begin(); i != keys.end(); ++i)
+                writer << *i;
+            set(docID, writer);
+        } else {
+            del(docID);
+        }
     }
 
     bool IndexWriter::update(slice docID, sequence docSequence,
@@ -58,8 +74,22 @@ namespace forestdb {
         Collatable collatableDocID;
         collatableDocID << docID;
 
+        // Get the previously emitted keys:
         std::vector<Collatable> oldStoredKeys, newStoredKeys;
-        getKeysForDoc(collatableDocID, oldStoredKeys);
+        uint32_t oldStoredHash;
+        getKeysForDoc(collatableDocID, oldStoredKeys, oldStoredHash);
+
+        // Compute a hash of the values and see whether it's the same as the previous values' hash:
+        uint32_t newStoredHash = kInitialHash;
+        for (auto value = values.begin(); value != values.end(); ++value) {
+            if (((slice)*value)[0] == Collatable::kSpecial) {
+                // kSpecial is placeholder for entire doc, and always considered to have changed.
+                oldStoredHash = newStoredHash - 1; // force comparison to fail
+                break;
+            }
+            addHash(newStoredHash, *value);
+        }
+        bool valuesMightBeUnchanged = (newStoredHash == oldStoredHash);
 
         bool keysChanged = false;
         int64_t rowsRemoved = 0, rowsAdded = 0;
@@ -85,24 +115,27 @@ namespace forestdb {
                 // no; note that the set of keys is different
                 keysChanged = true;
             } else {
-                // yes; read the old row so we can compare the value too:
+                // yes
                 ++oldKey;
-                Document oldRow = get(realKey);
-                if (oldRow.exists()) {
-                    CollatableReader body(oldRow.body());
-                    body.beginArray();
-                    (void)body.readInt(); // old doc sequence
-                    slice oldValue = slice::null;
-                    if (body.peekTag() != Collatable::kEndSequence)
-                        oldValue = body.read();
+                if (valuesMightBeUnchanged) {
+                    // read the old row so we can compare the value too:
+                    Document oldRow = get(realKey);
+                    if (oldRow.exists()) {
+                        CollatableReader body(oldRow.body());
+                        body.beginArray();
+                        (void)body.readInt(); // old doc sequence
+                        slice oldValue = slice::null;
+                        if (body.peekTag() != Collatable::kEndSequence)
+                            oldValue = body.read();
 
-                    if (oldValue == (slice)*value) {
-                        Debug("Old k/v pair (%s, %s) unchanged",
-                              key->dump().c_str(), value->dump().c_str());
-                        continue;  // Value is unchanged, so this is a no-op; skip to next key!
+                        if (oldValue == (slice)*value) {
+                            Log("Old k/v pair (%s, %s) unchanged",
+                                  key->dump().c_str(), value->dump().c_str());
+                            continue;  // Value is unchanged, so this is a no-op; skip to next key!
+                        }
+                    } else {
+                        Warn("Old emitted k/v pair unexpectedly missing");
                     }
-                } else {
-                    Warn("Old emitted k/v pair unexpectedly missing");
                 }
                 ++rowsRemoved;  // more like "overwritten"
             }
@@ -132,8 +165,9 @@ namespace forestdb {
             keysChanged = true;
         }
 
+        // Store the keys that were emitted for this doc, and the hash of the values:
         if (keysChanged)
-            setKeysForDoc(collatableDocID, newStoredKeys);
+            setKeysForDoc(collatableDocID, newStoredKeys, newStoredHash);
 
         if (rowsRemoved==0 && rowsAdded==0)
             return false;

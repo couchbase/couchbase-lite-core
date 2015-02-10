@@ -67,8 +67,8 @@ namespace forestdb {
                     uint64_t &rowCount);
 
     private:
-        void getKeysForDoc(slice docID, std::vector<Collatable> &keys);
-        void setKeysForDoc(slice docID, const std::vector<Collatable> &keys);
+        void getKeysForDoc(slice docID, std::vector<Collatable> &outKeys, uint32_t &outHash);
+        void setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash);
 
         friend class Index;
         friend class MapReduceIndex;
