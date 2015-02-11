@@ -87,6 +87,8 @@
 		2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		272230501A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		2726A0681A8BFD820042F944 /* atomic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2726A0671A8BFD820042F944 /* atomic.cc */; };
+		2726A0691A8BFD820042F944 /* atomic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2726A0671A8BFD820042F944 /* atomic.cc */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -439,6 +441,9 @@
 		2722304A1A08178200BFF25C /* GeoHash_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GeoHash_Test.mm; sourceTree = "<group>"; };
 		2722304D1A0858A100BFF25C /* GeoIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GeoIndex.cc; sourceTree = "<group>"; };
 		2722304E1A0858A100BFF25C /* GeoIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeoIndex.hh; sourceTree = "<group>"; };
+		2726A0651A8BF9CC0042F944 /* gcc_atomics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gcc_atomics.h; sourceTree = "<group>"; };
+		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
+		2726A0671A8BFD820042F944 /* atomic.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = atomic.cc; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -729,6 +734,15 @@
 			name = "Other Frameworks";
 			sourceTree = "<group>";
 		};
+		2726A0641A8BF9CC0042F944 /* atomic */ = {
+			isa = PBXGroup;
+			children = (
+				2726A0651A8BF9CC0042F944 /* gcc_atomics.h */,
+				2726A0661A8BF9CC0042F944 /* libatomic.h */,
+			);
+			path = atomic;
+			sourceTree = "<group>";
+		};
 		273AD3D018F5E8B0007D8C23 /* snappy */ = {
 			isa = PBXGroup;
 			children = (
@@ -835,6 +849,8 @@
 			isa = PBXGroup;
 			children = (
 				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
+				2726A0641A8BF9CC0042F944 /* atomic */,
+				2726A0671A8BFD820042F944 /* atomic.cc */,
 				2750729318E4857900A80C5A /* avltree.cc */,
 				2750729418E4857900A80C5A /* blockcache.cc */,
 				27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */,
@@ -1486,6 +1502,7 @@
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
+				2726A0691A8BFD820042F944 /* atomic.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
 				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
 				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
@@ -1571,6 +1588,7 @@
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
+				2726A0681A8BFD820042F944 /* atomic.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
 				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
@@ -1985,7 +2003,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-D_DOC_COMP";
+				OTHER_CFLAGS = (
+					"-D_DOC_COMP",
+					"-DHAVE_GCC_ATOMICS=1",
+				);
 				SDKROOT = macosx;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -2038,7 +2059,10 @@
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				OTHER_CFLAGS = "-D_DOC_COMP";
+				OTHER_CFLAGS = (
+					"-D_DOC_COMP",
+					"-DHAVE_GCC_ATOMICS=1",
+				);
 				SDKROOT = macosx;
 				WARNING_CFLAGS = (
 					"-Wall",
