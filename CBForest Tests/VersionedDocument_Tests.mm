@@ -32,7 +32,7 @@ static revidBuffer stringToRev(NSString* str) {
 {
     ::unlink(kDBPath);
     [super setUp];
-    db = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    db = new Database(kDBPath, Database::defaultConfig());
 }
 
 - (void)tearDown

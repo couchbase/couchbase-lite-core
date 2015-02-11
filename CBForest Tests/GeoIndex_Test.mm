@@ -29,7 +29,7 @@ using namespace geohash;
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
-    database = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    database = new Database(kDBPath, Database::defaultConfig());
     index = new Index(database, "geo");
 }
 

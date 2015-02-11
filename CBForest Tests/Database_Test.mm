@@ -34,7 +34,7 @@ using namespace forestdb;
 {
     ::unlink(kDBPath);
     [super setUp];
-    db = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    db = new Database(kDBPath, Database::defaultConfig());
 }
 
 - (void)tearDown
@@ -76,7 +76,7 @@ using namespace forestdb;
 - (void) test03_SaveDocs {
     Transaction(db).set(nsstring_slice(@"a"), nsstring_slice(@"A"));   //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
 
-    Database aliased_db(kDBPath, 0, Database::defaultConfig());
+    Database aliased_db(kDBPath, Database::defaultConfig());
     AssertEqual((NSString*)aliased_db.get(nsstring_slice(@"a")).body(), @"A");
 
     {
@@ -300,7 +300,7 @@ using namespace forestdb;
 
 // Test for MB-12287
 - (void) test06_TransactionsThenIterate {
-    Database db2(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    Database db2(kDBPath, Database::defaultConfig());
 
     const NSUInteger kNTransactions = 42; // 41 is ok, 42+ fails
     const NSUInteger kNDocs = 100;
@@ -390,6 +390,38 @@ using namespace forestdb;
     AssertEq(s.lastSequence(), 0);
     Document doc = s.get(key);
     Assert(!doc.exists());
+}
+
+- (void) test11_ReadOnly {
+    {
+        Transaction t(db);
+        t.set(slice("key"), nsstring_slice(@"value"));
+    }
+    delete db;
+    auto config = Database::defaultConfig();
+    config.flags = FDB_OPEN_FLAG_RDONLY;
+    db = new Database(kDBPath, config);
+
+    auto doc = db->get(slice("key"));
+    Assert(doc.exists());
+    int status = 0;
+    try {
+        Transaction t(db);
+        // This is expected to throw an exception:
+        t.set(slice("key"), nsstring_slice(@"somethingelse"));
+    } catch (error x) {
+        status = x.status;
+    }
+    AssertEq(status, FDB_RESULT_RONLY_VIOLATION);
+
+    // Now try to open a nonexistent file, without the CREATE flag:
+    status = 0;
+    try {
+        Database db2("/tmp/db_non_existent", config);
+    } catch (error x) {
+        status = x.status;
+    }
+    AssertEq(status, FDB_RESULT_NO_SUCH_FILE);
 }
 
 @end

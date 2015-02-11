@@ -96,7 +96,7 @@ public:
 - (void) setUp {
     NSError* error;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
-    db = new Database(kDBPath, FDB_OPEN_FLAG_CREATE, Database::defaultConfig());
+    db = new Database(kDBPath, Database::defaultConfig());
     source = (KeyStore)*db;
     [[NSFileManager defaultManager] removeItemAtPath: @"" kIndexPath error: &error];
     index = new MapReduceIndex(db, "index", source);
