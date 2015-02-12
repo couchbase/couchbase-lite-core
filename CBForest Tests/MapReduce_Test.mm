@@ -30,8 +30,8 @@ static Collatable StringToCollatable(NSString* str) {
 }
 
 
-#define kDBPath "/tmp/temp.fdb"
-#define kIndexPath "/tmp/temp.fdbindex"
+static NSString *kDBPathStr, *kIndexPathStr;
+static std::string kDBPath, kIndexPath;
 
 
 class TestJSONMappable : public Mappable {
@@ -93,12 +93,22 @@ public:
     MapReduceIndex* index;
 }
 
++ (void) initialize {
+    if (self == [MapReduce_Test class]) {
+        LogLevel = kWarning;
+        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"];
+        kDBPath = kDBPathStr.fileSystemRepresentation;
+        kIndexPathStr = [kDBPathStr stringByAppendingString: @"index"];
+        kIndexPath = kIndexPathStr.fileSystemRepresentation;
+    }
+}
+
 - (void) setUp {
     NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
+    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
     db = new Database(kDBPath, Database::defaultConfig());
     source = (KeyStore)*db;
-    [[NSFileManager defaultManager] removeItemAtPath: @"" kIndexPath error: &error];
+    [[NSFileManager defaultManager] removeItemAtPath: kIndexPathStr error: &error];
     index = new MapReduceIndex(db, "index", source);
     Assert(index, @"Couldn't open index: %@", error);
 }
@@ -115,7 +125,7 @@ public:
     TestMapFn::numMapCalls = 0;
     XCTAssertTrue(TestIndexer::updateIndex(db, index));
 
-    int nRows = 0;
+    unsigned nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {

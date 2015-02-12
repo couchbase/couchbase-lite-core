@@ -13,7 +13,8 @@
 
 using namespace forestdb;
 
-#define kDBPath "/tmp/temp.fdbindex"
+static std::string kDBPath;
+static NSString* kDBPathStr;
 
 
 class Scoped {
@@ -65,10 +66,17 @@ static boolBlock scopedEnumerate() {
     uint64_t _rowCount;
 }
 
++ (void) initialize {
+    if (self == [Index_Test class]) {
+        LogLevel = kWarning;
+        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"];
+        kDBPath = kDBPathStr.fileSystemRepresentation;
+    }
+}
 
 - (void) setUp {
     NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
+    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
     database = new Database(kDBPath, Database::defaultConfig());
     index = new Index(database, "index");
 }
@@ -98,7 +106,7 @@ static boolBlock scopedEnumerate() {
 
 
 - (int) doQuery {
-    int nRows = 0;
+    unsigned nRows = 0;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
                            Collatable(), forestdb::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {
@@ -150,7 +158,7 @@ static boolBlock scopedEnumerate() {
     XCTAssertEqual([self doQuery], 6);
 
     NSLog(@"--- Reverse enumeration");
-    int nRows = 0;
+    unsigned nRows = 0;
     auto options = DocEnumerator::Options::kDefault;
     options.descending = true;
     for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
@@ -161,7 +169,7 @@ static boolBlock scopedEnumerate() {
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    XCTAssertEqual(nRows, 6);
+    XCTAssertEqual(nRows, 6u);
     AssertEq(_rowCount, nRows);
 
     // Enumerate a vector of keys:
@@ -178,7 +186,7 @@ static boolBlock scopedEnumerate() {
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    XCTAssertEqual(nRows, 2);
+    XCTAssertEqual(nRows, 2u);
 
     // Enumerate a vector of key ranges:
     NSLog(@"--- Enumerating a vector of key ranges");
@@ -192,7 +200,7 @@ static boolBlock scopedEnumerate() {
         NSLog(@"key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    XCTAssertEqual(nRows, 3);
+    XCTAssertEqual(nRows, 3u);
 }
 
 - (void) testDuplicateKeys {

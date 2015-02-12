@@ -14,7 +14,9 @@ using namespace forestdb;
 using namespace geohash;
 
 
-#define kDBPath "/tmp/temp.fdbindex"
+static NSString* kDBPathStr;
+static std::string kDBPath;
+
 
 @interface GeoIndex_Test : XCTestCase
 @end
@@ -26,9 +28,17 @@ using namespace geohash;
 }
 
 
++ (void) initialize {
+    if (self == [GeoIndex_Test class]) {
+        LogLevel = kWarning;
+        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"];
+        kDBPath = kDBPathStr.fileSystemRepresentation;
+    }
+}
+
 - (void) setUp {
     NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: @"" kDBPath error: &error];
+    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
     database = new Database(kDBPath, Database::defaultConfig());
     index = new Index(database, "geo");
 }
@@ -78,7 +88,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
                   a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max);
         }
     }
-    AssertEq(found, 10000);
+    AssertEq(found, 10000u);
     NSLog(@"Found %u points in the query area", inArea);
 
 //    LogLevel = kDebug;

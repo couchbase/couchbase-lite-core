@@ -20,7 +20,8 @@ using namespace forestdb;
     Database* db;
 }
 
-#define kDBPath "/tmp/forest.db"
+
+static std::string kDBPath;
 
 
 static revidBuffer stringToRev(NSString* str) {
@@ -28,9 +29,16 @@ static revidBuffer stringToRev(NSString* str) {
     return buf;
 }
 
++ (void) initialize {
+    if (self == [VersionedDocument_Tests class]) {
+        LogLevel = kWarning;
+        kDBPath = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"].fileSystemRepresentation;
+    }
+}
+
 - (void)setUp
 {
-    ::unlink(kDBPath);
+    ::unlink(kDBPath.c_str());
     [super setUp];
     db = new Database(kDBPath, Database::defaultConfig());
 }
@@ -89,8 +97,8 @@ static revidBuffer stringToRev(NSString* str) {
     tree.sort();
     AssertEq(tree[0], rev2);
     AssertEq(tree[1], rev);
-    AssertEq(rev->index(), 1);
-    AssertEq(rev2->index(), 0);
+    AssertEq(rev->index(), 1u);
+    AssertEq(rev2->index(), 0u);
 
     alloc_slice ext = tree.encode();
 
@@ -110,8 +118,8 @@ static revidBuffer stringToRev(NSString* str) {
     Assert(!node->isDeleted());
     Assert(node->isLeaf());
     Assert(node->isActive());
-    AssertEq(v.size(), 1);
-    AssertEq(v.currentRevisions().size(), 1);
+    AssertEq(v.size(), 1u);
+    AssertEq(v.currentRevisions().size(), 1u);
     AssertEq(v.currentRevisions()[0], v.currentRevision());
 }
 
