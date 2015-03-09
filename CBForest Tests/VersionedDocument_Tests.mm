@@ -123,4 +123,27 @@ static revidBuffer stringToRev(NSString* str) {
     AssertEq(v.currentRevisions()[0], v.currentRevision());
 }
 
+- (void) test04_DocType {
+    revidBuffer rev1ID(forestdb::slice("1-aaaa"));
+    {
+        VersionedDocument v(*db, @"foo");
+
+        forestdb::slice rev1Data("body of revision");
+        int httpStatus;
+        v.insert(rev1ID, rev1Data, true /*deleted*/, false,
+                 revid(), false, httpStatus);
+
+        v.setDocType(slice("moose"));
+        AssertEq(v.docType(), slice("moose"));
+        Transaction t(db);
+        v.save(t);
+    }
+    {
+        VersionedDocument v(*db, @"foo");
+        AssertEq(v.flags(), VersionedDocument::kDeleted);
+        AssertEq(v.revID(), rev1ID);
+        AssertEq(v.docType(), slice("moose"));
+    }
+}
+
 @end

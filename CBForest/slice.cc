@@ -48,6 +48,13 @@ namespace forestdb {
         return true;
     }
 
+    bool slice::writeFrom(slice src) {
+        if (src.size > size)
+            return false;
+        ::memcpy((void*)buf, src.buf, src.size);
+        moveStart(src.size);
+        return true;
+    }
 
     slice slice::copy() const {
         if (buf == NULL)

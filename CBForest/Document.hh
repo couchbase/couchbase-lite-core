@@ -48,7 +48,8 @@ namespace forestdb {
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
-        bool exists() const         {return !_doc.deleted && (_doc.size_ondisk > 0 || _doc.offset > 0);}
+        bool exists() const         {return !_doc.deleted && _doc.keylen > 0
+                                                    && (_doc.size_ondisk > 0 || _doc.offset > 0);}
         bool valid() const;
 
         void updateSequence(forestdb::sequence s)                 {_doc.seqnum = s;}

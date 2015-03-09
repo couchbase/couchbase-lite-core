@@ -14,10 +14,20 @@
 //  and limitations under the License.
 
 #include "VersionedDocument.hh"
+#include "Error.hh"
+#include "varint.hh"
 #include <assert.h>
 #include <ostream>
 
 namespace forestdb {
+
+    /* VersionedDocument metadata has the following structure:
+        1 byte  flags
+        1 byte  revid length
+        bytes   revid
+        varint  type length
+        bytes   type
+    */
 
     VersionedDocument::VersionedDocument(KeyStore db, slice docID)
     :_db(db), _doc(docID)
@@ -48,36 +58,47 @@ namespace forestdb {
             RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
         else if (_doc.body().size > 0)
             _unknown = true;        // i.e. doc was read as meta-only
+
+        if (_doc.exists()) {
+            if (!readMeta(_doc, _flags, _revID, _docType))
+                throw error(error::CorruptRevisionData);
+        } else {
+            _flags = 0;
+        }
     }
 
-    revid VersionedDocument::revID() const {
-        slice result = _doc.meta();
-        if (result.size <= 1)
-            return revid();
-        result.moveStart(1);
-        return revid(result);
-    }
-
-    VersionedDocument::Flags VersionedDocument::flags() const {
-        return flagsOfDocument(_doc);
-    }
-
-    VersionedDocument::Flags VersionedDocument::flagsOfDocument(const Document& doc) {
+    bool VersionedDocument::readMeta(const Document& doc,
+                                     Flags& flags, revid& revID, slice& docType)
+    {
         slice meta = doc.meta();
-        if (meta.size < 1)
-            return 0;
-        return meta[0];
+        if (meta.size < 2)
+            return false;
+        flags = meta.read(1)[0];
+        uint8_t length = meta.read(1)[0];
+        revID = revid(meta.read(length));
+        if (!revID.buf)
+            throw error(error::CorruptRevisionData);
+        if (meta.size > 0) {
+            uint64_t docTypeLength;
+            if (!ReadUVarInt(&meta, &docTypeLength))
+                throw error(error::CorruptRevisionData);
+            docType = meta.read((size_t)docTypeLength);
+        } else {
+            docType = slice::null;
+        }
+        return true;
     }
 
     void VersionedDocument::updateMeta() {
         const Revision* curRevision = currentRevision();
         slice revID = curRevision->revID;
+
+        // Compute flags:
         Flags flags = 0;
         if (curRevision->isDeleted())
             flags |= kDeleted;
         if (hasConflict())
             flags |= kConflicted;
-
         for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
             if (rev->hasAttachments()) {
                 flags |= kHasAttachments;
@@ -85,9 +106,16 @@ namespace forestdb {
             }
         }
 
-        slice meta = _doc.resizeMeta(1+revID.size);
-        (uint8_t&)meta[0] = flags;
-        memcpy((void*)&meta[1], revID.buf, revID.size);
+        // Write to _doc.meta:
+        slice meta = _doc.resizeMeta(2 + revID.size + SizeOfVarInt(_docType.size) + _docType.size);
+        meta.writeFrom(slice(&flags,1));
+        uint8_t revIDSize = (uint8_t)revID.size;
+        meta.writeFrom(slice(&revIDSize, 1));
+        _revID = revid(meta.buf, revID.size);
+        meta.writeFrom(revID);
+        WriteUVarInt(&meta, _docType.size);
+        meta.writeFrom(_docType);
+        assert(meta.size == 0);
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {

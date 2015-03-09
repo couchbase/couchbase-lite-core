@@ -47,8 +47,8 @@ namespace forestdb {
         bool revsAvailable() const {return !_unknown;}
 
         slice docID() const         {return _doc.key();}
-        revid revID() const;
-        Flags flags() const;
+        revid revID() const         {return _revID;}
+        Flags flags() const         {return _flags;}
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}
         bool isConflicted() const   {return (flags() & kConflicted) != 0;}
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
@@ -56,11 +56,14 @@ namespace forestdb {
         bool exists() const         {return _doc.exists();}
         sequence sequence() const   {return _doc.sequence();}
 
+        slice docType() const       {return _docType;}
+        void setDocType(slice type) {_docType = type;}
+
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 
-        /** Gets the flags from a document without having to instantiate a VersionedDocument */
-        static Flags flagsOfDocument(const Document&);
+        /** Gets the metadata of a document without having to instantiate a VersionedDocument */
+        static bool readMeta(const Document&, Flags&, revid&, slice& docType);
 
 #if DEBUG
         std::string dump()          {return RevTree::dump();}
@@ -77,8 +80,11 @@ namespace forestdb {
         void updateMeta();
         VersionedDocument(const VersionedDocument&); // forbidden
 
-        KeyStore _db;
-        Document _doc;
+        KeyStore    _db;
+        Document    _doc;
+        Flags       _flags;
+        revid       _revID;
+        alloc_slice _docType;
     };
 }
 
