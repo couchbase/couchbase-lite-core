@@ -2062,6 +2062,7 @@
 				OTHER_CFLAGS = (
 					"-D_DOC_COMP",
 					"-DHAVE_GCC_ATOMICS=1",
+					"-DNDEBUG",
 				);
 				SDKROOT = macosx;
 				WARNING_CFLAGS = (

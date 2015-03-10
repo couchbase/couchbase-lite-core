@@ -18,6 +18,7 @@
 #include "varint.hh"
 #include "LogInternal.hh"
 #include "hash_functions.h" // from forestdb source
+#include <assert.h>
 
 
 namespace forestdb {
@@ -32,7 +33,9 @@ namespace forestdb {
 
     IndexWriter::IndexWriter(Index* index, Transaction& t)
     :KeyStoreWriter(*index, t)
-    { }
+    {
+        assert(t.database()->contains(*index));
+    }
 
 
     // djb2 hash function:

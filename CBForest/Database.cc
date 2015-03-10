@@ -153,6 +153,11 @@ namespace forestdb {
         check(fdb_kvs_remove(_fileHandle, name.c_str()));
     }
 
+    bool Database::contains(KeyStore& store) const {
+        auto i = _kvHandles.find(store.name());
+        return i != _kvHandles.end() && i->second == store.handle();
+    }
+
 
 #pragma mark - MUTATING OPERATIONS:
 

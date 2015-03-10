@@ -65,17 +65,11 @@ int TestMapFn::numMapCalls;
 class TestIndexer : public MapReduceIndexer {
 public:
     static bool updateIndex(Database* database, MapReduceIndex* index) {
-        std::vector<MapReduceIndex*> indexes;
-        indexes.push_back(index);
-        Transaction trans(database);
-        TestIndexer indexer(indexes, trans);
+        TestIndexer indexer;
+        indexer.addIndex(index, new Transaction(database));
         return indexer.run();
     }
 
-    TestIndexer(std::vector<MapReduceIndex*> indexes, Transaction& t)
-    :MapReduceIndexer(indexes, t)
-    { }
-    
     virtual void addDocument(const Document& doc) {
         TestJSONMappable mappable(doc);
         addMappable(mappable);

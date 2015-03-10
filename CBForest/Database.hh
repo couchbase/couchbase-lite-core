@@ -68,6 +68,8 @@ namespace forestdb {
             instance directly as a KeyStore since it inherits from it.) */
         KeyStore defaultKeyStore() const        {return *this;}
 
+        bool contains(KeyStore&) const;
+
         void closeKeyStore(std::string name);
         void deleteKeyStore(std::string name);
 

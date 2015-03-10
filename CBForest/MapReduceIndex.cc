@@ -62,6 +62,7 @@ namespace forestdb {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
+        assert(t.database()->contains(*this));
         _lastMapVersion = _mapVersion;
 
         Collatable stateKey;
@@ -105,6 +106,7 @@ namespace forestdb {
     void MapReduceIndex::setup(Transaction &t, int indexType, MapFn *map, std::string mapVersion) {
         Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
               this, indexType, map, mapVersion.c_str());
+        assert(t.database()->contains(*this));
         assert(map != NULL);
         readState();
         _map = map;
@@ -123,6 +125,7 @@ namespace forestdb {
 
     void MapReduceIndex::erase(Transaction& t) {
         Debug("MapReduceIndex: Erasing");
+        assert(t.database()->contains(*this));
         KeyStore::erase(t);
         _lastSequenceIndexed = _lastSequenceChangedAt = 0;
         _rowCount = 0;
@@ -185,6 +188,7 @@ namespace forestdb {
 
 
     bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
+        assert(t.database()->contains(*this));
         const Document& doc = mappable.document();
         if (doc.sequence() <= _lastSequenceIndexed)
             return false;
@@ -200,13 +204,19 @@ namespace forestdb {
     }
 
     
-    MapReduceIndexer::MapReduceIndexer(std::vector<MapReduceIndex*> indexes,
-                                       Transaction& transaction)
-    :_transaction(transaction),
-     _indexes(indexes),
-     _triggerIndex(NULL),
+    MapReduceIndexer::MapReduceIndexer()
+    :_triggerIndex(NULL),
      _finished(false)
     { }
+
+
+    void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
+        assert(index);
+        assert(t);
+        _indexes.push_back(index);
+        _transactions.push_back(t);
+    }
+
 
     bool MapReduceIndexer::run() {
         KeyStore sourceStore = _indexes[0]->sourceStore();
@@ -239,9 +249,13 @@ namespace forestdb {
     }
 
     MapReduceIndexer::~MapReduceIndexer() {
-        if (_finished) {
-            for (auto i = _indexes.begin(); i != _indexes.end(); ++i)
-                (*i)->saveState(_transaction);
+        unsigned i = 0;
+        for (auto t = _transactions.begin(); t != _transactions.end(); ++t, ++i) {
+            if (_finished)
+                _indexes[i]->saveState(**t);
+            else
+                (*t)->abort();
+            delete *t;
         }
     }
 

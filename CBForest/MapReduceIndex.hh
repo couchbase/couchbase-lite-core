@@ -106,9 +106,10 @@ namespace forestdb {
     /** An activity that updates one or more map-reduce indexes. */
     class MapReduceIndexer {
     public:
-        MapReduceIndexer(std::vector<MapReduceIndex*> indexes,
-                         Transaction&);
+        MapReduceIndexer();
         ~MapReduceIndexer();
+
+        void addIndex(MapReduceIndex*, Transaction*);
 
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}
@@ -129,12 +130,12 @@ namespace forestdb {
 
         void updateDocInIndex(size_t i, const Mappable& mappable) {
             if (mappable.document().sequence() > _lastSequences[i])
-                _indexes[i]->updateDocInIndex(_transaction, mappable);
+                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
         }
 
     protected:
-        Transaction& _transaction;
         std::vector<MapReduceIndex*> _indexes;
+        std::vector<Transaction*> _transactions;
         std::vector<sequence> _lastSequences;
         MapReduceIndex* _triggerIndex;
         bool _finished;
