@@ -61,9 +61,9 @@ namespace forestdb {
         if (!buf)
             throw std::bad_alloc();
         _needsFree = true;
-        BOOL ok = [str getBytes: (void*)buf maxLength: maxByteCount usedLength: &byteCount
-                       encoding: NSUTF8StringEncoding options: 0
-                          range: NSMakeRange(0, str.length) remainingRange: NULL];
+        __unused BOOL ok = [str getBytes: (void*)buf maxLength: maxByteCount usedLength: &byteCount
+                                encoding: NSUTF8StringEncoding options: 0
+                                   range: NSMakeRange(0, str.length) remainingRange: NULL];
         assert(ok);
         size = byteCount;
     }

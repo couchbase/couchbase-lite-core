@@ -114,8 +114,9 @@ namespace forestdb {
             text = _text;
         }
 
-        int err = sModule->xOpen(tokenizer.getTokenizer(), (const char*)text.buf, (int)text.size,
-                                 &_cursor);
+        __unused int err = sModule->xOpen(tokenizer.getTokenizer(),
+                                          (const char*)text.buf, (int)text.size,
+                                          &_cursor);
         assert(!err);
         _cursor->pTokenizer = tokenizer.getTokenizer(); // module expects sqlite3 to have initialized this
         next(); // advance to 1st token
