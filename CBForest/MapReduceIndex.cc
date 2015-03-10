@@ -132,6 +132,28 @@ namespace forestdb {
         _stateReadAt = 0;
     }
 
+    alloc_slice MapReduceIndex::readFullText(slice docID, sequence seq, unsigned fullTextID) {
+        // This data was written by emitter::emitTextTokens, below
+        alloc_slice entry = getEntry(docID, seq, Collatable(fullTextID), 0);
+        CollatableReader reader(entry);
+        reader.beginArray();
+        return reader.readString();
+    }
+
+    alloc_slice MapReduceIndex::readFullTextValue(slice docID,
+                                                       sequence seq,
+                                                       unsigned fullTextID)
+    {
+        // This data was written by emitter::emitTextTokens, below
+        alloc_slice entry = getEntry(docID, seq, Collatable(fullTextID), 0);
+        CollatableReader reader(entry);
+        reader.beginArray();
+        (void)reader.read(); // skip text
+        if (reader.peekTag() == Collatable::kEndSequence)
+            return alloc_slice();
+        return alloc_slice(reader.read());
+    }
+
 
 #pragma mark - MAP-REDUCE INDEXER
 
@@ -157,14 +179,20 @@ namespace forestdb {
             emit(key, value);
         }
 
-        void emitTextTokens(slice text) {
+        void emitTextTokens(slice text, Collatable value) {
             if (!_tokenizer)
                 _tokenizer = new Tokenizer("en", true);
             bool emittedText = false;
             for (TokenIterator i(*_tokenizer, slice(text), true); i; ++i) {
                 if (!emittedText) {
-                    // Emit the string that was indexed, under a special key.
-                    Collatable collKey(++_emitTextCount), collValue(text);
+                    // Emit the string that was indexed, and the value, under a special key.
+                    Collatable collKey(++_emitTextCount);
+                    Collatable collValue;
+                    collValue.beginArray();
+                    collValue << text;
+                    if (value.size() > 0)
+                        collValue << value;
+                    collValue.endArray();
                     emit(collKey, collValue);
                     emittedText = true;
                 }

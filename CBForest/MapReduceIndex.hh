@@ -42,7 +42,7 @@ namespace forestdb {
 
         /** Emits the text for full-text indexing. Each word in the text will be emitted separately
             as a string key. When querying, use IndexEnumerator::getTextToken to read the info. */
-        virtual void emitTextTokens(slice text) =0;
+        virtual void emitTextTokens(slice text, Collatable value) =0;
 
         inline void operator() (Collatable key, Collatable value) {emit(key, value);}
     };
@@ -79,9 +79,10 @@ namespace forestdb {
 
         /** Reads the full text passed to the call to emitTextTokens(), given some info about the
             document and the fullTextID available from IndexEnumerator::getTextToken(). */
-        alloc_slice readFullText(slice docID, sequence seq, unsigned fullTextID) {
-            return getEntry(docID, seq, Collatable(fullTextID), 0);
-        }
+        alloc_slice readFullText(slice docID, sequence seq, unsigned fullTextID);
+
+        /** Reads the value that was emitted along with a full-text key. */
+        alloc_slice readFullTextValue(slice docID, sequence seq, unsigned fullTextID);
 
     protected:
         void deleted(); // called by Transaction::deleteDatabase()
