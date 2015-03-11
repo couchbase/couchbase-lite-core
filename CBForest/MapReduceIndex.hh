@@ -117,6 +117,8 @@ namespace forestdb {
 
         bool run();
 
+        sequence latestDbSequence() const           {return _latestDbSequence;}
+
     protected:
         /** Transforms the Document to a Mappable and invokes addMappable.
             The default implementation just uses the Mappable base class, i.e. doesn't do any work.
@@ -139,6 +141,7 @@ namespace forestdb {
         std::vector<Transaction*> _transactions;
         std::vector<sequence> _lastSequences;
         MapReduceIndex* _triggerIndex;
+        sequence _latestDbSequence;
         bool _finished;
     };
 }

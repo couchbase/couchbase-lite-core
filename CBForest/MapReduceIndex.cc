@@ -234,6 +234,7 @@ namespace forestdb {
     
     MapReduceIndexer::MapReduceIndexer()
     :_triggerIndex(NULL),
+     _latestDbSequence(0),
      _finished(false)
     { }
 
@@ -248,14 +249,14 @@ namespace forestdb {
 
     bool MapReduceIndexer::run() {
         KeyStore sourceStore = _indexes[0]->sourceStore();
-        sequence latestDbSequence = sourceStore.lastSequence();
+        _latestDbSequence = sourceStore.lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
         // Also start a transaction for each index:
-        sequence startSequence = latestDbSequence+1;
+        sequence startSequence = _latestDbSequence+1;
         for (auto idx = _indexes.begin(); idx != _indexes.end(); ++idx) {
             sequence lastSequence = (*idx)->lastSequenceIndexed();
-            if (lastSequence < latestDbSequence) {
+            if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
             } else if (*idx == _triggerIndex) {
                 return false; // The trigger index doesn't need to be updated, so abort
@@ -263,7 +264,7 @@ namespace forestdb {
             _lastSequences.push_back(lastSequence);
         }
 
-        if (startSequence > latestDbSequence)
+        if (startSequence > _latestDbSequence)
             return false; // no updating needed
 
         // Enumerate all the documents:
