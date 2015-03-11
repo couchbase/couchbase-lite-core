@@ -2008,6 +2008,7 @@
 					"-DHAVE_GCC_ATOMICS=1",
 				);
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
@@ -2065,6 +2066,7 @@
 					"-DNDEBUG",
 				);
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
