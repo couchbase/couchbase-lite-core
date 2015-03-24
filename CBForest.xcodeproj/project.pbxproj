@@ -24,6 +24,12 @@
 /* Begin PBXBuildFile section */
 		2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
 		2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
+		2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
+		2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
+		2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
+		2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
+		2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
 		2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
@@ -75,10 +81,6 @@
 		27139BA918F8EE3A0021A9A3 /* libCBForest-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */; };
 		27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		27139BC418F8EEC80021A9A3 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
-		271E03511A21A331007B843E /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
-		271E03521A21A331007B843E /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
-		271E03551A21A372007B843E /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
-		271E03561A21A372007B843E /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
 		272230441A0812FF00BFF25C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 272230431A0812FF00BFF25C /* Security.framework */; };
 		272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
@@ -162,8 +164,6 @@
 		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
-		27E45D021A6F01AD001A3A03 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
-		27E45D031A6F01AD001A3A03 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E48714192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
@@ -1488,12 +1488,14 @@
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
 				278EBFA21976325A006362F8 /* adler32.cc in Sources */,
 				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
+				2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */,
 				27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */,
 				27139B6218F8EDA20021A9A3 /* hbtrie.cc in Sources */,
 				2709F29F191EA10E00C5A8A3 /* compactor.cc in Sources */,
 				27139B6318F8EDA20021A9A3 /* wal.cc in Sources */,
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
+				2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */,
 				27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
@@ -1501,6 +1503,7 @@
 				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
 				27139B6918F8EDA20021A9A3 /* list.cc in Sources */,
 				27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */,
+				2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */,
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
 				27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */,
@@ -1524,8 +1527,6 @@
 			files = (
 				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
-				27E45D031A6F01AD001A3A03 /* time_utils.cc in Sources */,
-				271E03561A21A372007B843E /* partiallock.cc in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
 				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275D39FD1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
@@ -1542,7 +1543,6 @@
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
 				27E487341924242C007D8940 /* Index.cc in Sources */,
-				271E03521A21A331007B843E /* fdb_errors.cc in Sources */,
 				275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */,
 			);
@@ -1575,12 +1575,14 @@
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
 				278EBF9F1976325A006362F8 /* adler32.cc in Sources */,
 				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
+				2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */,
 				275072D018E4AA5000A80C5A /* filemgr.cc in Sources */,
 				275072D418E4AA5000A80C5A /* hbtrie.cc in Sources */,
 				2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */,
 				275072D718E4AA5000A80C5A /* wal.cc in Sources */,
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
+				2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */,
 				27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
@@ -1588,6 +1590,7 @@
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
 				275072D618E4AA5000A80C5A /* list.cc in Sources */,
 				273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */,
+				2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */,
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				275072CF18E4AA5000A80C5A /* filemgr_ops.cc in Sources */,
@@ -1655,8 +1658,6 @@
 			files = (
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
-				27E45D021A6F01AD001A3A03 /* time_utils.cc in Sources */,
-				271E03551A21A372007B843E /* partiallock.cc in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275D39FC1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
@@ -1673,7 +1674,6 @@
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
-				271E03511A21A331007B843E /* fdb_errors.cc in Sources */,
 				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 			);
