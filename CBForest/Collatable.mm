@@ -19,9 +19,9 @@
 
 namespace forestdb {
 
-    Collatable& Collatable::operator<< (id obj) {
+    Collatable& Collatable::operator<< (__unsafe_unretained id obj) {
         if ([obj isKindOfClass: [NSString class]]) {
-            *this << [obj UTF8String];
+            *this << nsstring_slice(obj);
         } else if ([obj isKindOfClass: [NSNumber class]]) {
             switch ([obj objCType][0]) {
                 case 'c':
@@ -38,19 +38,19 @@ namespace forestdb {
                     *this << [obj longLongValue];
                     break;
             }
-        } else if ([obj isKindOfClass: [NSDictionary class]]) {
-            beginMap();
-            for (NSString* key in obj) {
-                *this << [key UTF8String];
-                *this << [obj objectForKey: key];
-            }
-            endMap();
         } else if ([obj isKindOfClass: [NSArray class]]) {
             beginArray();
-            for (NSString* item in obj) {
+            for (id item in obj) {
                 *this << item;
             }
             endArray();
+        } else if ([obj isKindOfClass: [NSDictionary class]]) {
+            beginMap();
+            for (NSString* key in obj) {
+                *this << nsstring_slice(key);
+                *this << [obj objectForKey: key];
+            }
+            endMap();
         } else if ([obj isKindOfClass: [NSNull class]]) {
             addNull();
         } else {

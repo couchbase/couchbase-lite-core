@@ -57,7 +57,7 @@ namespace forestdb {
         Collatable& operator<< (const Collatable&);
         Collatable& operator<< (std::string);
         Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
-        Collatable& operator<< (slice);
+        Collatable& operator<< (slice);             // interpreted as a string
 
         Collatable& beginArray()                    {addTag(kArray); return *this;}
         Collatable& endArray()                      {addTag(kEndSequence); return *this;}
@@ -82,7 +82,7 @@ namespace forestdb {
 
     private:
         void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
-        void add(slice s)                           {_str += std::string((char*)s.buf, s.size);}
+        void add(slice s)                           {_str.append((char*)s.buf, s.size);}
 
         std::string _str;
     };
@@ -91,7 +91,7 @@ namespace forestdb {
     /** A decoder of Collatable-format data. Does not own its data (reads from a slice.) */
     class CollatableReader : public CollatableTypes {
     public:
-        CollatableReader(slice s) :_data(s) { }
+        CollatableReader(slice s);
 
         slice data() const                  {return _data;}
         bool atEnd() const                  {return _data.size == 0;}
