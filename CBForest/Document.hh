@@ -44,7 +44,7 @@ namespace forestdb {
 
         void clearMetaAndBody();
 
-        sequence sequence() const   {return _doc.seqnum;}
+        forestdb::sequence sequence() const {return _doc.seqnum;}
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}

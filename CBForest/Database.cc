@@ -18,6 +18,7 @@
 #include "LogInternal.hh"
 #include <assert.h>
 #include <errno.h>
+#include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
 #include <unistd.h>
 #include <mutex>              // std::mutex, std::unique_lock

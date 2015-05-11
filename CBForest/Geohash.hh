@@ -17,6 +17,7 @@
 #ifndef __CBForest__Geohash__
 #define __CBForest__Geohash__
 #include "slice.hh"
+#include <string.h>
 #include <vector>
 
 

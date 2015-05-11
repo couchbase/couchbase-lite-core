@@ -17,7 +17,6 @@
 #include "Collatable.hh"
 #include "varint.hh"
 #include "LogInternal.hh"
-#include "hash_functions.h" // from forestdb source
 #include <assert.h>
 
 

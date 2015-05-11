@@ -16,7 +16,6 @@
 #include "slice.hh"
 #include <algorithm>
 #include <stdlib.h>
-#include <string.h>
 
 namespace forestdb {
 

@@ -16,6 +16,7 @@
 #include "RevTree.hh"
 #include "varint.hh"
 #include <forestdb.h>
+#include <algorithm>
 #include <arpa/inet.h>  // for htons, etc.
 #include <assert.h>
 #include <ctype.h>
