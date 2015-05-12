@@ -115,7 +115,7 @@ namespace geohash {
 
         hash()                              {(string)[0] = '\0';}
         hash(forestdb::slice);
-        hash(const char *str)               {strlcpy(string, str, sizeof(string));}
+        hash(const char *str);
         hash(coord, unsigned nChars);       /**< Geohash of the given coord */
 
         /** Returns the length of GeoHash string needed to get a specific accuracy

@@ -248,6 +248,12 @@ hash::hash(forestdb::slice bytes) {
     string[n] = '\0';
 }
 
+hash::hash(const char *str) {
+    size_t n = std::min(strlen(str), sizeof(string) - 1);
+    memcpy(string, str, sizeof(n));
+    string[n] = '\0';
+}
+
 
 bool hash::isValid() const {
     const char *p;
