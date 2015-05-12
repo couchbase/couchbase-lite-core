@@ -127,6 +127,8 @@
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		275D39FC1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
+		275D39FD1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
@@ -509,6 +511,8 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
+		275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_memory_size.cc; sourceTree = "<group>"; };
+		275D39FB1B01AC0F0013B9A9 /* get_memory_size.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = get_memory_size.h; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
@@ -941,6 +945,8 @@
 				275072DF18E4ACE100A80C5A /* crc32.h */,
 				278EBF93197631B1006362F8 /* debug.cc */,
 				278EBF94197631B1006362F8 /* debug.h */,
+				275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */,
+				275D39FB1B01AC0F0013B9A9 /* get_memory_size.h */,
 				278EBF9B19763238006362F8 /* memleak.cc */,
 				278EBF9C19763238006362F8 /* memleak.h */,
 				271E03531A21A372007B843E /* partiallock.cc */,
@@ -1522,6 +1528,7 @@
 				271E03561A21A372007B843E /* partiallock.cc in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
 				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
+				275D39FD1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
 				27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
@@ -1652,6 +1659,7 @@
 				271E03551A21A372007B843E /* partiallock.cc in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
+				275D39FC1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
