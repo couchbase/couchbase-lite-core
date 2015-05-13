@@ -106,14 +106,14 @@ namespace forestdb {
             memcpy(keybuf, key.buf, key.size);
             key.buf = keybuf;
         }
-        fdb_doc doc = {
-            .key = (void*)key.buf,
-            .keylen = key.size,
-            .meta = (void*)meta.buf,
-            .metalen = meta.size,
-            .body  = (void*)body.buf,
-            .bodylen = body.size,
-        };
+        fdb_doc doc = {};
+        doc.key = (void*)key.buf;
+        doc.keylen = key.size;
+        doc.meta = (void*)meta.buf;
+        doc.metalen = meta.size;
+        doc.body = (void*)body.buf;
+        doc.bodylen = body.size;
+
         check(fdb_set(_handle, &doc));
         if (meta.buf) {
             Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
@@ -143,10 +143,10 @@ namespace forestdb {
             memcpy(keybuf, key.buf, key.size);
             key.buf = keybuf;
         }
-        fdb_doc doc = {
-            .key = (void*)key.buf,
-            .keylen = key.size,
-        };
+        fdb_doc doc = {};
+        doc.key = (void*)key.buf;
+        doc.keylen = key.size;
+
         return checkGet(fdb_del(_handle, &doc));
     }
 

@@ -41,9 +41,9 @@ THE SOFTWARE.
 */
 
 #include "Geohash.hh"
+#include <algorithm>
 #include <assert.h>
 #include <ctype.h>
-#include <string.h>
 #include <math.h>
 #include <sstream>
 
@@ -248,6 +248,12 @@ hash::hash(forestdb::slice bytes) {
     string[n] = '\0';
 }
 
+hash::hash(const char *str) {
+    size_t n = std::min(strlen(str), sizeof(string) - 1);
+    memcpy(string, str, sizeof(n));
+    string[n] = '\0';
+}
+
 
 bool hash::isValid() const {
     const char *p;
@@ -394,8 +400,8 @@ static char*
 get_adjacent(const char* hash, direction dir, char *base)
 {
     size_t len, idx;
-    const char *border_table, *neighbor_table;
-    char *ptr, last;
+    const char *border_table, *neighbor_table, *ptr;
+    char last;
 
     len  = (int)strlen(hash);
     last = (unsigned char)tolower(hash[len - 1]);

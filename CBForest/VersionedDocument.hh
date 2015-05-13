@@ -54,7 +54,7 @@ namespace forestdb {
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
 
         bool exists() const         {return _doc.exists();}
-        sequence sequence() const   {return _doc.sequence();}
+        forestdb::sequence sequence() const {return _doc.sequence();}
 
         slice docType() const       {return _docType;}
         void setDocType(slice type) {_docType = type;}

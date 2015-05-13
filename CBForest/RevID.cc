@@ -20,8 +20,8 @@
 #include <math.h>
 
 
-#ifdef __ANDROID__
-// digittoint is a BSD function, not available on Android
+#if defined(__ANDROID__) || defined(__GLIBC__)
+// digittoint is a BSD function, not available on Android, Linux, etc.
 static int digittoint(char ch) {
     int d = ch - '0';
     if ((unsigned) d < 10) {
@@ -37,7 +37,7 @@ static int digittoint(char ch) {
     }
     return 0;
 }
-#endif //__ANDROID__
+#endif // defined(__ANDROID__) || defined(__GLIBC__)
 
 
 namespace forestdb {
