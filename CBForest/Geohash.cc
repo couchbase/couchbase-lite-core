@@ -250,7 +250,7 @@ hash::hash(forestdb::slice bytes) {
 
 hash::hash(const char *str) {
     size_t n = std::min(strlen(str), sizeof(string) - 1);
-    memcpy(string, str, sizeof(n));
+    memcpy(string, str, n);
     string[n] = '\0';
 }
 
