@@ -129,13 +129,13 @@
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
-		275D39FC1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
-		275D39FD1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
+		276FFD741B2E03910027B51A /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
+		276FFD751B2E03920027B51A /* get_memory_size.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
@@ -1506,6 +1506,7 @@
 				2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */,
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
+				276FFD751B2E03920027B51A /* get_memory_size.cc in Sources */,
 				27139B6E18F8EDA20021A9A3 /* filemgr_ops.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
@@ -1529,7 +1530,6 @@
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
 				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
-				275D39FD1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
 				27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
@@ -1593,6 +1593,7 @@
 				2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */,
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
+				276FFD741B2E03910027B51A /* get_memory_size.cc in Sources */,
 				275072CF18E4AA5000A80C5A /* filemgr_ops.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
@@ -1660,7 +1661,6 @@
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
-				275D39FC1B01AC0F0013B9A9 /* get_memory_size.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
