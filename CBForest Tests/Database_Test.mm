@@ -331,7 +331,7 @@ static std::string kDBPath;
     Transaction(db).set(key, nsstring_slice(@"A"));
     Transaction(db).del(key);
     Document doc = db->get(key);
-    Assert(doc.deleted());
+//    Assert(doc.deleted());
     Assert(!doc.exists());
 }
 
@@ -346,7 +346,7 @@ static std::string kDBPath;
     }
 
     Document doc = db->get(key);
-    Assert(doc.deleted());
+//    Assert(doc.deleted());
     Assert(!doc.exists());
 }
 

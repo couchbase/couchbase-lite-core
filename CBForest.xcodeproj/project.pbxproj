@@ -89,8 +89,6 @@
 		2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		272230501A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
-		2726A0681A8BFD820042F944 /* atomic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2726A0671A8BFD820042F944 /* atomic.cc */; };
-		2726A0691A8BFD820042F944 /* atomic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2726A0671A8BFD820042F944 /* atomic.cc */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -148,6 +146,10 @@
 		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
+		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
+		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
+		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
+		27B086C41B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
 		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -445,7 +447,6 @@
 		2722304E1A0858A100BFF25C /* GeoIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeoIndex.hh; sourceTree = "<group>"; };
 		2726A0651A8BF9CC0042F944 /* gcc_atomics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gcc_atomics.h; sourceTree = "<group>"; };
 		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
-		2726A0671A8BFD820042F944 /* atomic.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = atomic.cc; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -511,8 +512,6 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
-		275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_memory_size.cc; sourceTree = "<group>"; };
-		275D39FB1B01AC0F0013B9A9 /* get_memory_size.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = get_memory_size.h; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
@@ -527,6 +526,9 @@
 		278EBF9819763203006362F8 /* adler32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = adler32.h; path = vendor/forestdb/utils/adler32.h; sourceTree = SOURCE_ROOT; };
 		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
+		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
+		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
+		27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = system_resource_stats.h; sourceTree = "<group>"; };
 		27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_fast_str_kv.cc; sourceTree = "<group>"; };
 		27B62989197ED63D00F7148E /* btree_fast_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_fast_str_kv.h; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
@@ -854,7 +856,7 @@
 			children = (
 				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
 				2726A0641A8BF9CC0042F944 /* atomic */,
-				2726A0671A8BFD820042F944 /* atomic.cc */,
+				27B086BE1B3B2DD100D3D9D8 /* atomic.h */,
 				2750729318E4857900A80C5A /* avltree.cc */,
 				2750729418E4857900A80C5A /* blockcache.cc */,
 				27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */,
@@ -945,12 +947,12 @@
 				275072DF18E4ACE100A80C5A /* crc32.h */,
 				278EBF93197631B1006362F8 /* debug.cc */,
 				278EBF94197631B1006362F8 /* debug.h */,
-				275D39FA1B01AC0F0013B9A9 /* get_memory_size.cc */,
-				275D39FB1B01AC0F0013B9A9 /* get_memory_size.h */,
 				278EBF9B19763238006362F8 /* memleak.cc */,
 				278EBF9C19763238006362F8 /* memleak.h */,
 				271E03531A21A372007B843E /* partiallock.cc */,
 				271E03541A21A372007B843E /* partiallock.h */,
+				27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */,
+				27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */,
 				27E45D001A6F01AD001A3A03 /* time_utils.cc */,
 				27E45D011A6F01AD001A3A03 /* time_utils.h */,
 			);
@@ -1147,6 +1149,7 @@
 				27139B7F18F8EDA20021A9A3 /* snappy-stubs-internal.h in Headers */,
 				27139B8118F8EDA20021A9A3 /* snappy-c.h in Headers */,
 				27139B8218F8EDA20021A9A3 /* snappy-internal.h in Headers */,
+				27B086C41B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */,
 				2709F29D191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */,
 				27139B8418F8EDA20021A9A3 /* configuration.h in Headers */,
 				2709F2A1191EA10E00C5A8A3 /* compactor.h in Headers */,
@@ -1169,6 +1172,7 @@
 				273AD3E218F5E8D8007D8C23 /* snappy-stubs-internal.h in Headers */,
 				273AD3DD18F5E8D8007D8C23 /* snappy-c.h in Headers */,
 				273AD3DE18F5E8D8007D8C23 /* snappy-internal.h in Headers */,
+				27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */,
 				2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */,
 				273AD3C018EF263B007D8C23 /* configuration.h in Headers */,
 				2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */,
@@ -1512,8 +1516,8 @@
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
-				2726A0691A8BFD820042F944 /* atomic.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
+				27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
 				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
 				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
 				27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */,
@@ -1599,8 +1603,8 @@
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
-				2726A0681A8BFD820042F944 /* atomic.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
+				27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
 				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
 				275072C718E4AA5000A80C5A /* avltree.cc in Sources */,
