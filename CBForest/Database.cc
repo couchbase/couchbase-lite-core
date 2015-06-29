@@ -90,6 +90,10 @@ namespace forestdb {
     }
 
     static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
+        // don't warn about read errors: VersionedDocument can trigger them when it looks for a
+        // revision that's been compacted away.
+        if (err_code == FDB_RESULT_READ_FAIL)
+            return;
         WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
     }
 
