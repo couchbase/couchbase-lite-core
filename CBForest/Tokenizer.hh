@@ -24,17 +24,18 @@ namespace forestdb {
         language and can then generate TokenIterators from strings. */
     class Tokenizer {
     public:
+        static std::string defaultStemmer;
+        static bool defaultRemoveDiacritics;
+
         /** Initializes a Tokenizer.
-            @param language  A 2-letter language code (like "en") or an empty string for language-
+            @param stemmer  The name of a stemmer (e.g. "english") or an empty string for language-
                         neutral tokenization.
             @param removeDiacritics  True if diacritical marks (accents) should be stripped from
                         the input text. */
-        Tokenizer(std::string language, bool removeDiacritics =false);
-        ~Tokenizer();
+        Tokenizer(std::string stemmer = defaultStemmer,
+                  bool removeDiacritics = defaultRemoveDiacritics);
 
-        /** Sets the name of the stemmer to use. (By default an appropriate stemmer will be used
-            based on the language.) */
-        void setStemmer(std::string s)      {_stemmer = s;}
+        ~Tokenizer();
 
         /** Defines extra characters that should be considered part of a token. */
         void setTokenChars(std::string s)   {_tokenChars = s;}
@@ -45,10 +46,9 @@ namespace forestdb {
         sqlite3_tokenizer* getTokenizer();
         const word_set &stopwords() const;
 
-        std::string _language;
-        struct sqlite3_tokenizer* _tokenizer;
-        bool _removeDiacritics;
         std::string _stemmer;
+        bool _removeDiacritics;
+        struct sqlite3_tokenizer* _tokenizer;
         std::string _tokenChars;
         friend class TokenIterator;
     };

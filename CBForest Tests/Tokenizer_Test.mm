@@ -59,7 +59,7 @@ using namespace forestdb;
 }
 
 - (void)testEnglishTokenizer {
-    tokenizer = new Tokenizer("en", true);
+    tokenizer = new Tokenizer("english", true);
 
     XCTAssertEqualObjects(([self tokenize: @"Have a nice day, dude!"]),
                           (@[@"nice", @"day", @"dude"]));

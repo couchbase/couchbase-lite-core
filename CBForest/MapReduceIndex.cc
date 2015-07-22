@@ -181,9 +181,10 @@ namespace forestdb {
 
         void emitTextTokens(slice text, Collatable value) {
             if (!_tokenizer)
-                _tokenizer = new Tokenizer("en", true);
+                _tokenizer = new Tokenizer();
+            std::unordered_map<std::string, Collatable> tokens;
             bool emittedText = false;
-            for (TokenIterator i(*_tokenizer, slice(text), true); i; ++i) {
+            for (TokenIterator i(*_tokenizer, slice(text), false); i; ++i) {
                 if (!emittedText) {
                     // Emit the string that was indexed, and the value, under a special key.
                     Collatable collKey(++_emitTextCount);
@@ -197,10 +198,19 @@ namespace forestdb {
                     emittedText = true;
                 }
 
-                // Emit each token string as a key
-                Collatable collKey(i.token()), collValue;
-                collValue.beginArray();
-                collValue << _emitTextCount << i.wordOffset() << i.wordLength();
+                // Add the word position to the value array for this token:
+                Collatable& tokValue = tokens[i.token()];
+                if (tokValue.empty()) {
+                    tokValue.beginArray();
+                    tokValue << _emitTextCount;
+                }
+                tokValue << i.wordOffset() << i.wordLength();
+            }
+
+            // Emit each token string and value array as a key:
+            for (auto kv = tokens.begin(); kv != tokens.end(); ++kv) {
+                Collatable collKey(kv->first);
+                Collatable& collValue = kv->second;
                 collValue.endArray();
                 emit(collKey, collValue);
             }

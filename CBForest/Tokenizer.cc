@@ -30,8 +30,7 @@ extern "C" {
 namespace forestdb {
 
     static const struct sqlite3_tokenizer_module* sModule;
-    static std::unordered_map<std::string, std::string> sLanguageToStemmer;
-    static std::unordered_map<std::string, word_set> sLanguageToStopwords;
+    static std::unordered_map<std::string, word_set> sStemmerToStopwords;
 
     // Reads a space-delimited list of words from a C string (as found in english_stopwords.h)
     static word_set readWordList(const char* cString) {
@@ -47,18 +46,19 @@ namespace forestdb {
         return stopwords;
     }
 
-    Tokenizer::Tokenizer(std::string language, bool removeDiacritics)
-    :_language(language),
-     _tokenizer(NULL)
+    std::string Tokenizer::defaultStemmer;
+    bool Tokenizer::defaultRemoveDiacritics = false;
+
+    Tokenizer::Tokenizer(std::string stemmer, bool removeDiacritics)
+    :_stemmer(stemmer),
+     _removeDiacritics(removeDiacritics),
+     _tokenizer(NULL),
+     _tokenChars("'’")
     {
         if (!sModule) { //FIX: Make this thread-safe
             sqlite3Fts3UnicodeSnTokenizer(&sModule);
-            sLanguageToStemmer["en"] = "english";
-            sLanguageToStopwords["en"] = readWordList(kEnglishStopWords);
+            sStemmerToStopwords["english"] = readWordList(kEnglishStopWords);
         }
-        _stemmer = sLanguageToStemmer[language];
-        _removeDiacritics = removeDiacritics;
-        _tokenChars = "'’";
     }
 
     Tokenizer::~Tokenizer() {
@@ -92,7 +92,7 @@ namespace forestdb {
     }
 
     const word_set& Tokenizer::stopwords() const {
-        return sLanguageToStopwords[_language];
+        return sStemmerToStopwords[_stemmer];
     }
 
 
