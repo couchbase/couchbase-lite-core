@@ -17,6 +17,7 @@
 #define __CBForest__MapReduceIndex__
 
 #include "Index.hh"
+#include "Geohash.hh"
 #include <vector>
 
 
@@ -39,12 +40,15 @@ namespace forestdb {
     class EmitFn {
     public:
         virtual void emit(Collatable key, Collatable value) =0;
+        virtual void emit(const geohash::area& boundingBox, slice geoJSON, Collatable value) =0;
 
         /** Emits the text for full-text indexing. Each word in the text will be emitted separately
             as a string key. When querying, use IndexEnumerator::getTextToken to read the info. */
         virtual void emitTextTokens(slice text, Collatable value) =0;
 
         inline void operator() (Collatable key, Collatable value) {emit(key, value);}
+        inline void operator() (const geohash::area& bbox, slice geoJSON, Collatable value)
+                                                            {emit(bbox, geoJSON, value);}
     };
 
     class MapFn {
@@ -84,12 +88,18 @@ namespace forestdb {
         /** Reads the value that was emitted along with a full-text key. */
         alloc_slice readFullTextValue(slice docID, sequence seq, unsigned fullTextID);
 
+        void readGeoArea(slice docID, sequence seq, unsigned geoID,
+                         geohash::area &outArea,
+                         alloc_slice& outGeoJSON,
+                         alloc_slice& outValue);
+
     protected:
         void deleted(); // called by Transaction::deleteDatabase()
 
     private:
         void saveState(Transaction& t);
         bool updateDocInIndex(Transaction&, const Mappable&);
+        alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
 
         forestdb::KeyStore _sourceDatabase;
         MapFn* _map;

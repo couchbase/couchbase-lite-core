@@ -17,11 +17,14 @@
 #define __CBForest__GeoIndex__
 #include "MapReduceIndex.hh"
 #include "Geohash.hh"
+#include "KeyStore.hh"
+#include <set>
 
 
 namespace forestdb {
 
-    Collatable& operator<< (Collatable&, geohash::coord);
+    Collatable& operator<< (Collatable&, const geohash::area&);
+    geohash::area readGeoArea(CollatableReader&);
 
 
     class GeoIndexEnumerator : public IndexEnumerator {
@@ -32,22 +35,26 @@ namespace forestdb {
                            slice startKeyDocID, slice endKeyDocID,
                            const DocEnumerator::Options&);
 
-        geohash::area keyArea() const           {return _keyArea;}
-        geohash::coord keyCoord() const         {return _keyArea.mid();}
+        geohash::area keyBoundingBox() const    {return _keyBBox;}
+        slice keyGeoJSON() const                {return _geoKey;}
 
 #if DEBUG
-        ~GeoIndexEnumerator();
+        virtual ~GeoIndexEnumerator();
 #endif
 
     protected:
         virtual bool approve(slice key); // override
 
     private:
+        typedef std::pair<std::string, forestdb::sequence> ItemID;
+
         const geohash::area _searchArea;
-        geohash::area _keyArea;
-#if DEBUG
-        unsigned _count[2];
-#endif
+        geohash::area _keyBBox;
+        alloc_slice _geoKey;
+        alloc_slice _geoValue;
+        std::set<ItemID> _alreadySeen;
+
+        unsigned _hits, _misses, _dups;     // Only used for test/profiling purposes
     };
 
 }

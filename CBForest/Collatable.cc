@@ -15,6 +15,7 @@
 
 #include "Collatable.hh"
 #include "forestdb_endian.h"
+#include "geohash.hh"
 #include <sstream>
 
 namespace forestdb {
@@ -71,14 +72,18 @@ namespace forestdb {
         return *this;
     }
 
+    static inline void encodeChars(std::string &str, size_t first) {
+        for (auto c=str.begin()+first; c != str.end(); ++c) {
+            *c = kCharPriority[(uint8_t)*c];
+        }
+        str.push_back(0);
+    }
+
     Collatable& Collatable::operator<< (std::string str) {
         addTag(kString);
         size_t first = _str.length();
         _str += str;
-        for (auto c=_str.begin()+first; c != _str.end(); ++c) {
-            *c = kCharPriority[(uint8_t)*c];
-        }
-        _str.push_back(0);
+        encodeChars(_str, first);
         return *this;
     }
 
@@ -86,10 +91,15 @@ namespace forestdb {
         addTag(kString);
         size_t first = _str.length();
         add(s);
-        for (auto c=_str.begin()+first; c != _str.end(); ++c) {
-            *c = kCharPriority[(uint8_t)*c];
-        }
-        _str.push_back(0);
+        encodeChars(_str, first);
+        return *this;
+    }
+
+    Collatable& Collatable::operator<< (const geohash::hash &h) {
+        addTag(kGeohash);
+        size_t first = _str.length();
+        add(slice(h));
+        encodeChars(_str, first);
         return *this;
     }
 
@@ -147,7 +157,15 @@ namespace forestdb {
     }
 
     alloc_slice CollatableReader::readString() {
-        expectTag(kString);
+        return readString(kString);
+    }
+
+    geohash::hash CollatableReader::readGeohash() {
+        return geohash::hash(readString(kGeohash));
+    }
+
+    alloc_slice CollatableReader::readString(Tag tag) {
+        expectTag(tag);
         const void* end = _data.findByte(0);
         if (!end)
             throw "malformed string";
@@ -160,15 +178,20 @@ namespace forestdb {
         _data.moveStart(nBytes+1);
         return result;
     }
-
+    
     slice CollatableReader::read() {
         const void* start = _data.buf;
         switch(_data.read(1)[0]) {
+            case kNull:
+            case kFalse:
+            case kTrue:
+                break;
             case kNegative:
             case kPositive:
                 _data.moveStart(sizeof(double));
                 break;
-            case kString: {
+            case kString:
+            case kGeohash: {
                 const void* end = _data.findByte(0);
                 if (!end)
                     throw "malformed string";
@@ -189,6 +212,10 @@ namespace forestdb {
                 _data.moveStart(1);
                 break;
             }
+            case kSpecial:
+                break;
+            default:
+                throw "Unexpected tag in read()";
         }
         return slice(start, _data.buf);
     }
@@ -230,18 +257,30 @@ namespace forestdb {
             case kString:
                 out << '"' << (std::string)readString() << '"';
                 break;
-            case kArray:
+            case kArray: {
                 out << '[';
                 beginArray();
-                while (peekTag() != kEndSequence)
+                bool first = true;
+                while (peekTag() != kEndSequence) {
+                    if (first)
+                        first = false;
+                    else
+                        out << ",";
                     dumpTo(out);
+                }
                 endArray();
                 out << ']';
                 break;
-            case kMap:
+            }
+            case kMap: {
                 out << '{';
                 beginMap();
+                bool first = true;
                 while (peekTag() != kEndSequence) {
+                    if (first)
+                        first = false;
+                    else
+                        out << ",";
                     dumpTo(out);
                     out << ':';
                     dumpTo(out);
@@ -249,8 +288,12 @@ namespace forestdb {
                 out << '}';
                 endMap();
                 break;
+            }
             case kSpecial:
                 out << "<special>";
+                break;
+            case kGeohash:
+                out << "geohash(" << (std::string)readGeohash() << ')';
                 break;
             default:
                 out << "???";

@@ -19,6 +19,7 @@
 #include <string>
 #include <iostream>
 #include "slice.hh"
+#include "geohash.hh"
 
 namespace forestdb {
 
@@ -34,7 +35,8 @@ namespace forestdb {
             kString,
             kArray,
             kMap,
-            kSpecial,
+            kGeohash,           // Geohash string
+            kSpecial,           // Placeholder for doc (Only used in values, not keys)
             kError = 255        // Something went wrong...
         } Tag;
     };
@@ -58,6 +60,8 @@ namespace forestdb {
         Collatable& operator<< (std::string);
         Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         Collatable& operator<< (slice);             // interpreted as a string
+
+        Collatable& operator<< (const geohash::hash&);
 
         Collatable& beginArray()                    {addTag(kArray); return *this;}
         Collatable& endArray()                      {addTag(kEndSequence); return *this;}
@@ -101,6 +105,7 @@ namespace forestdb {
         int64_t readInt();
         double readDouble();
         alloc_slice readString();
+        geohash::hash readGeohash();
 
 #ifdef __OBJC__
         id readNSObject();
@@ -123,7 +128,8 @@ namespace forestdb {
     private:
         void expectTag(Tag tag);
         void skipTag()                      {_data.moveStart(1);}
-        
+        alloc_slice readString(Tag);
+
         slice _data;
     };
 

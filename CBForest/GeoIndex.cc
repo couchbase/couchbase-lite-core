@@ -16,26 +16,51 @@
 #include "GeoIndex.hh"
 #include "LogInternal.hh"
 #include <math.h>
+#include <set>
 
 
 namespace forestdb {
 
-    static const int kDefaultHashLength = 8;
     static const unsigned kMaxKeyRanges = 50;
 
-    Collatable& operator<< (Collatable &coll, geohash::coord c) {
-        coll << geohash::hash(c, kDefaultHashLength);
+    Collatable& operator<< (Collatable &coll, const geohash::area &a) {
+        coll << a.longitude.min << a.latitude.min << a.longitude.max << a.latitude.max;
         return coll;
     }
 
-    
+    geohash::area readGeoArea(CollatableReader& reader) {
+        geohash::area a;
+        a.longitude.min = reader.readDouble();
+        a.latitude.min = reader.readDouble();
+        a.longitude.max = reader.readDouble();
+        a.latitude.max = reader.readDouble();
+        return a;
+    }
+
+    /** Given a geo area, returns a list of key (geohash) ranges that cover that area. */
     static std::vector<KeyRange> keyRangesFor(geohash::area a) {
-        auto hashes = a.coveringHashes(kMaxKeyRanges);
+        auto hashes = a.coveringHashRanges(kMaxKeyRanges);
         std::vector<KeyRange> ranges;
         for (auto h = hashes.begin(); h != hashes.end(); ++h) {
-            auto lastHash = h->lastHash();
-            strcat(lastHash.string, "Z");
-            ranges.push_back(KeyRange(Collatable(h->string), Collatable(lastHash.string)));
+            geohash::hash lastHash = h->last();
+            Log("GeoIndexEnumerator: query add '%s' ... '%s'",
+                (const char*)h->first(), (const char*)lastHash);
+            strcat(lastHash.string, "Z"); // so the string range includes everything inside lastHash
+            ranges.push_back(KeyRange(Collatable(h->first()), Collatable(lastHash)));
+
+            // Also need to look for all _exact_ parent hashes. For example, if the hashRange
+            // is 9b1...9b7, we also want the exact keys "9b" and "9".
+            geohash::hash parent = h->first();
+            size_t len = strlen(parent.string);
+            while (len > 1) {
+                parent.string[--len] = '\0';
+                Collatable key(parent);
+                KeyRange range(key, key);
+                if (std::find(ranges.begin(), ranges.end(), range) == ranges.end()) {
+                    ranges.push_back(range);
+                    Log("GeoIndexEnumerator: query add '%s'", parent.string);
+                }
+            }
         }
         return ranges;
     }
@@ -46,30 +71,40 @@ namespace forestdb {
     :IndexEnumerator(index,
                      keyRangesFor(searchArea),
                      DocEnumerator::Options::kDefault),
-     _searchArea(searchArea)
-    {
-#if DEBUG
-        _count[false] = _count[true] = 0;
-#endif
-    }
+     _searchArea(searchArea),
+     _hits(0), _misses(0), _dups(0)
+    { }
 
 
     bool GeoIndexEnumerator::approve(slice key) {
-        // Check that the row's area actually intersects the search area:
-        CollatableReader reader(key);
-        geohash::hash hash(reader.readString());
-        _keyArea = hash.decode();
-        bool result = _searchArea.intersects(_keyArea);
-#if DEBUG
-        _count[result]++;
-#endif
-        return result;
+        // Have we seen this result before?
+        readValueAndSequence();
+        unsigned geoID = (unsigned)value().readInt();
+        ItemID item((std::string)docID(), geoID);
+        if (_alreadySeen.find(item) != _alreadySeen.end()) {
+            _dups++;
+            return false;
+        }
+        _alreadySeen.insert(item);
+
+        // Read the actual rect and see if it truly intersects the query:
+        ((MapReduceIndex*)index())->readGeoArea(item.first, sequence(), geoID,
+                                                _keyBBox, _geoKey, _geoValue);
+        if (!_keyBBox.intersects(_searchArea)) {
+            _misses++;
+            return false;
+        }
+
+        // OK, it's for reals.
+        setValue(_geoValue);
+        _hits++;
+        return true;
     }
 
 #if DEBUG
     GeoIndexEnumerator::~GeoIndexEnumerator() {
-        Warn("enum: %u hits, %u misses (%g%%)", _count[1], _count[0],
-              floor(_count[1]/(double)(_count[1]+_count[0])*100.0));
+        Log("GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %u keys)",
+            _hits, _misses, _dups, _hits+_misses+_dups, ((MapReduceIndex*)index())->rowCount());
     }
 #endif
 

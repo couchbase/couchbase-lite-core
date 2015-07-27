@@ -131,41 +131,41 @@ static void verify_neighbors(
 
 - (void) testCovering {
     geohash::area box(geohash::coord(45, -121), geohash::coord(46, -120));
-    std::vector<geohash::hashRange> hashes = box.coveringHashes(10);
+    std::vector<geohash::hashRange> hashes = box.coveringHashRanges(10);
     std::sort(hashes.begin(), hashes.end());
     NSLog(@"Covering hashes:");
     for (auto i = hashes.begin(); i != hashes.end(); ++i)
         if (i->count == 1)
-            NSLog(@"    %s", i->string);
+            NSLog(@"    %s", i->first().string);
         else
-            NSLog(@"    %s ... %s (%u)", i->string, i->lastHash().string, i->count);
+            NSLog(@"    %s ... %s (%u)", i->first().string, i->last().string, i->count);
     XCTAssertEqual(hashes.size(), 7u);
-    AssertEqualCStrings(hashes[0].string, "c21b");  XCTAssertEqual(hashes[0].count, 2u);
-    AssertEqualCStrings(hashes[1].string, "c21f");  XCTAssertEqual(hashes[1].count, 2u);
-    AssertEqualCStrings(hashes[2].string, "c21u");  XCTAssertEqual(hashes[2].count, 2u);
-    AssertEqualCStrings(hashes[3].string, "c240");  XCTAssertEqual(hashes[3].count, 10u);
-    AssertEqualCStrings(hashes[4].string, "c24d");  XCTAssertEqual(hashes[4].count, 2u);
-    AssertEqualCStrings(hashes[5].string, "c24h");  XCTAssertEqual(hashes[5].count, 4u);
-    AssertEqualCStrings(hashes[6].string, "c24s");  XCTAssertEqual(hashes[6].count, 2u);
+    AssertEqualCStrings(hashes[0].first().string, "c21b");  XCTAssertEqual(hashes[0].count, 2u);
+    AssertEqualCStrings(hashes[1].first().string, "c21f");  XCTAssertEqual(hashes[1].count, 2u);
+    AssertEqualCStrings(hashes[2].first().string, "c21u");  XCTAssertEqual(hashes[2].count, 2u);
+    AssertEqualCStrings(hashes[3].first().string, "c240");  XCTAssertEqual(hashes[3].count, 10u);
+    AssertEqualCStrings(hashes[4].first().string, "c24d");  XCTAssertEqual(hashes[4].count, 2u);
+    AssertEqualCStrings(hashes[5].first().string, "c24h");  XCTAssertEqual(hashes[5].count, 4u);
+    AssertEqualCStrings(hashes[6].first().string, "c24s");  XCTAssertEqual(hashes[6].count, 2u);
 }
 
 - (void) testCovering2 {
     geohash::area box(geohash::coord(10, 10), geohash::coord(20, 20));
-    std::vector<geohash::hashRange> hashes = box.coveringHashes(10);
+    std::vector<geohash::hashRange> hashes = box.coveringHashRanges(10);
     std::sort(hashes.begin(), hashes.end());
     NSLog(@"Covering hashes:");
     for (auto i = hashes.begin(); i != hashes.end(); ++i) {
         if (i->count == 1)
-            NSLog(@"    %s", i->string);
+            NSLog(@"    %s", i->first().string);
         else
-            NSLog(@"    %s ... %s (%u)", i->string, i->lastHash().string, i->count);
-        geohash::area a = i->decode();
+            NSLog(@"    %s ... %s (%u)", i->first().string, i->last().string, i->count);
+        geohash::area a = i->first().decode();
         NSLog(@"        (%g, %g)...(%g, %g)",
               a.latitude.min,a.longitude.min, a.latitude.max,a.longitude.max);
     }
     XCTAssertEqual(hashes.size(), 2u);
-    AssertEqualCStrings(hashes[0].string, "s1");  XCTAssertEqual(hashes[0].count, 1u);
-    AssertEqualCStrings(hashes[1].string, "s3");  XCTAssertEqual(hashes[1].count, 5u);
+    AssertEqualCStrings(hashes[0].first().string, "s1");  XCTAssertEqual(hashes[0].count, 1u);
+    AssertEqualCStrings(hashes[1].first().string, "s3");  XCTAssertEqual(hashes[1].count, 5u);
 }
 
 @end

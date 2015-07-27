@@ -34,6 +34,8 @@ namespace forestdb {
         KeyRange(const KeyRange &r)             :start(r.start), end(r.end),
                                                  inclusiveEnd(r.inclusiveEnd) { }
         bool isKeyPastEnd(slice key) const;
+
+        bool operator== (const KeyRange &r)     {return start==r.start && end==r.end;}
     };
 
     
@@ -87,6 +89,10 @@ namespace forestdb {
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options&);
 
+        virtual ~IndexEnumerator()              { }
+
+        const Index* index() const              {return _index;}
+
         CollatableReader key() const            {return CollatableReader(_key);}
         CollatableReader value() const          {return CollatableReader(_value);}
         slice docID() const                     {return _docID;}
@@ -104,6 +110,8 @@ namespace forestdb {
     protected:
         virtual bool approve(slice key)         {return true;}
         bool read();
+        void readValueAndSequence();
+        void setValue(slice value)              {_value = value;}
 
     private:
         friend class Index;

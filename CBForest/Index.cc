@@ -100,7 +100,7 @@ namespace forestdb {
         unsigned emitIndex = 0;
         auto oldKey = oldStoredKeys.begin();
         for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
-            // Create a key for the index db by combining the emitted key and doc ID:
+            // Create a key for the index db by combining the emitted key, doc ID, and emit#:
             Collatable realKey;
             realKey.beginArray() << *key << collatableDocID;
             if (emitIndex > 0)
@@ -146,6 +146,7 @@ namespace forestdb {
             Collatable realValue;
             realValue.beginArray() << docSequence << *value;
             realValue.endArray();
+            Log("**** update: realKey = %s", realKey.dump().c_str());
             set(realKey, slice::null, realValue);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
@@ -183,6 +184,8 @@ namespace forestdb {
                                 Collatable key, unsigned emitIndex) {
         Collatable collatableDocID;
         collatableDocID << docID;
+
+        // realKey matches the key generated in update(), above
         Collatable realKey;
         realKey.beginArray();
         realKey << key << collatableDocID;
@@ -190,7 +193,9 @@ namespace forestdb {
             realKey << emitIndex;
         realKey.endArray();
 
+        Log("**** getEntry: realKey = %s", realKey.dump().c_str());
         Document doc = get(realKey);
+        assert(doc.exists());
 
         CollatableReader realValue(doc.body());
         realValue.beginArray();
@@ -306,6 +311,9 @@ namespace forestdb {
                     return false;
             }
 
+            _docID = keyReader.readString();
+            _sequence = 0;
+
             // Subclasses can ignore rows:
             if (!this->approve(_key)) {
                 _dbEnum.next();
@@ -323,20 +331,24 @@ namespace forestdb {
                 return false;
             }
 
-            // Return it as the next row:
-            _docID = keyReader.readString();
+            if (_sequence == 0)
+                readValueAndSequence();
 
-            CollatableReader valueReader(doc.body());
-            valueReader.beginArray();
-            _sequence = valueReader.readInt();
-            if (valueReader.peekTag() == Collatable::kEndSequence)
-                _value = slice::null;
-            else
-                _value = valueReader.read();
+            // Return it as the next row:
             Debug("IndexEnumerator: found key=%s",
                     forestdb::CollatableReader(_key).dump().c_str());
             return true;
         }
+    }
+
+    void IndexEnumerator::readValueAndSequence() {
+        CollatableReader valueReader(_dbEnum.doc().body());
+        valueReader.beginArray();
+        _sequence = valueReader.readInt();
+        if (valueReader.peekTag() == Collatable::kEndSequence)
+            _value = slice::null;
+        else
+            _value = valueReader.read();
     }
 
     std::vector<size_t> IndexEnumerator::getTextTokenInfo(unsigned &fullTextID) {

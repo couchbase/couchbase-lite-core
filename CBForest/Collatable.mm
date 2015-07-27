@@ -70,7 +70,10 @@ namespace forestdb {
 
 
     NSString* CollatableReader::readNSString() {
-        expectTag(kString);
+        if (peekTag() == kGeohash)
+            expectTag(kGeohash);
+        else
+            expectTag(kString);
         const void* end = _data.findByte(0);
         if (!end)
             throw "malformed string";
@@ -84,7 +87,8 @@ namespace forestdb {
             return decodeNSString(slice(buf, nBytes), _data);
         }
     }
-    
+
+
     id CollatableReader::readNSObject() {
         if (_data.size == 0)
             return nil;
@@ -102,6 +106,7 @@ namespace forestdb {
             case kPositive:
                 return @(readDouble());
             case kString:
+            case kGeohash:
                 return readNSString();
             case kArray: {
                 beginArray();

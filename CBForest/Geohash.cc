@@ -124,6 +124,10 @@ static const double kKmPerDegree = 2 * M_PI * kEarthRadius / 360.0;
 static inline double sqr(double d)          { return d * d; }
 static inline double deg2rad(double deg)    { return deg / 180.0 * M_PI; }
 
+
+#pragma mark - COORD
+
+
 bool coord::isValid() const {
     return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
 }
@@ -162,6 +166,9 @@ hash coord::encodeWithKmAccuracy(double accuracyInKm) const {
 }
 
 
+#pragma mark - RANGE:
+
+
 void range::normalize() {
     if (max < min)
         std::swap(max, min);
@@ -183,16 +190,19 @@ bool range::shrink(double value) {
 }
 
 
-// Returns the length of the longest geohash prefix that completely contains this range.
+// Returns the length of the longest geohash prefix that could completely contain this range.
 unsigned range::maxCharsToEnclose(bool isVertical) const {
     const double size = max - min;
     const double *cellsize = (isVertical ? CELL_HEIGHTS : CELL_WIDTHS);
     unsigned chars;
-    for (chars=0; chars < 22; ++chars)
+    for (chars=0; chars < 16; ++chars)
         if (size > cellsize[chars])
             break;
     return chars;
 }
+
+
+#pragma mark - AREA:
 
 
 area::area(coord c1, coord c2)
@@ -200,46 +210,86 @@ area::area(coord c1, coord c2)
  longitude(c1.longitude, c2.longitude)
 { }
 
-std::vector<hashRange> area::coveringHashes(unsigned maxCount) const {
-    unsigned nChars = std::min(latitude.maxCharsToEnclose(false),
-                               longitude.maxCharsToEnclose(true));
-    std::vector<hashRange> result;
-    for (; nChars <= hash::kMaxLength; nChars++) {
-        std::vector<hashRange> covering = coveringHashesOfLength(nChars);
-        if (covering.size() <= maxCount)
-            result = covering;
-        else
-            break;
-    }
+unsigned area::maxCharsToEnclose() const {
+    return std::min(latitude.maxCharsToEnclose(false), longitude.maxCharsToEnclose(true));
+}
+
+std::vector<hash> area::coveringHashes() const {
+    static unsigned kMaxCount = 9;  // Heuristically chosen
+    unsigned nChars = maxCharsToEnclose();
+    std::vector<hash> result;
+    result = coveringHashesOfLength(nChars + 1, kMaxCount);
+    if (result.size() == 0 && nChars > 0)
+        result = coveringHashesOfLength(nChars, kMaxCount);
     return result;
 }
 
-std::vector<hashRange> area::coveringHashesOfLength(unsigned nChars) const {
+std::vector<hash> area::coveringHashesOfLength(unsigned nChars, unsigned maxCount) const {
     std::vector<hash> covering;
     hash sw = coord(latitude.min, longitude.min).encode(nChars);
     area swArea = sw.decode();
-    unsigned nRows = (unsigned)ceil((latitude.max  - swArea.latitude.min)  / swArea.latitude.size());
-    unsigned nCols = (unsigned)ceil((longitude.max - swArea.longitude.min) / swArea.longitude.size());
-
-    for (unsigned row = 0; row < nRows; ++row) {
-        if (row > 0)
-            sw = sw.adjacent(NORTH);
-        hash h = sw;
-        for (unsigned col = 0; col < nCols; ++col) {
-            if (col > 0)
-                h = h.adjacent(EAST);
-            covering.push_back(h);
+    unsigned nRows = (unsigned)ceil((latitude.max  - swArea.latitude.min) /swArea.latitude.size());
+    unsigned nCols = (unsigned)ceil((longitude.max - swArea.longitude.min)/swArea.longitude.size());
+    if (nRows * nCols <= maxCount) {
+        // Generate all the geohashes in a raster scan:
+        for (unsigned row = 0; row < nRows; ++row) {
+            if (row > 0) {
+                sw = sw.adjacent(NORTH);
+                if (sw.isEmpty())
+                    break;
+            }
+            hash h = sw;
+            for (unsigned col = 0; col < nCols; ++col) {
+                if (col > 0) {
+                    h = h.adjacent(EAST);
+                    if (h.isEmpty())
+                        break;
+                }
+                covering.push_back(h);
+            }
         }
     }
-    std::sort(covering.begin(), covering.end());
+    return covering;
+}
 
+std::vector<hashRange> area::coveringHashRanges(unsigned maxCount) const {
+    unsigned nChars = std::max(maxCharsToEnclose(), 1u);
     std::vector<hashRange> result;
-    for (auto h = covering.begin(); h != covering.end(); ++h) {
-        if (result.size() == 0 || !result.back().add(*h))
-            result.push_back(hashRange(*h, 1));
+    for (; nChars <= hash::kMaxLength; nChars++) {
+        std::vector<hashRange> covering = coveringHashRangesOfLength(nChars);
+        if (covering.size() > maxCount)
+            break;
+        result = covering;
     }
     return result;
 }
+
+std::vector<hashRange> area::coveringHashRangesOfLength(unsigned nChars) const {
+    std::vector<hash> covering = coveringHashesOfLength(nChars, UINT32_MAX);
+
+    // Sort hashes by string value:
+    std::sort(covering.begin(), covering.end());
+
+    // Coalesce the hashes into hashRanges:
+    std::vector<hashRange> result;
+    for (auto h = covering.begin(); h != covering.end(); ++h) {
+        if (result.size() > 0 && result.back().add(*h)) {
+            // Check if result.back() can itself be coalesced
+            if (result.back().compact()) {
+                while (result.size() > 1 && result[result.size()-2].add(result.back().first())) {
+                    result.pop_back();
+                    result.back().compact();
+                }
+            }
+        } else {
+            result.push_back(hashRange(*h, 1));
+        }
+    }
+    return result;
+}
+
+
+#pragma mark - HASH, HASHRANGE:
 
 
 hash::hash(forestdb::slice bytes) {
@@ -347,31 +397,54 @@ hash::hash(coord c, unsigned len)
 }
     
 
+// Adds n to a geohash character, returning the resulting character or \0 if out of range
 static char addChar(char c, unsigned n) {
     unsigned char uc = (unsigned char)toupper(c) - 0x030;
     assert(uc < 44);
     int index = BASE32_DECODE_TABLE[uc];
     assert(index >= 0);
     index += n;
+    if (index >= 32)
+        return 0;
     return BASE32_ENCODE_TABLE[index];
 }
 
 
 bool hashRange::add(const hash &h) {
     size_t len = strlen(string);
-    if (strlen(h) == len && h.string[len-1] == addChar(string[len-1], count)) {
+    if (memcmp(h.string, string, len-1) == 0
+            && h.string[len] == '\0'
+            && h.string[len-1] == addChar(string[len-1], count)) {
         ++count;
         return true;
     }
     return false;
 }
 
-hash hashRange::lastHash() const {
+bool hashRange::compact() {
+    if (count == 32) {
+        size_t len = strlen(string);
+        if (len > 0) {
+            string[len-1] = '\0';
+            count = 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+hash hashRange::operator[](unsigned i) const {
+    assert(i < count);
     hash h = *(const hash*)this;
-    size_t max = strlen(h.string)-1;
-    h.string[max] = addChar(h.string[max], count - 1);
+    if (i > 0) {
+        size_t max = strlen(h.string)-1;
+        h.string[max] = addChar(h.string[max], i);
+    }
     return h;
 }
+
+
+#pragma mark - UTILITIES:
 
 
 static const char NEIGHBORS_TABLE[8][33] = {
@@ -396,7 +469,7 @@ static const char BORDERS_TABLE[8][9] = {
     "0145hjnp"  /* SOUTH ODD */
 };
 
-static char*
+static bool
 get_adjacent(const char* hash, direction dir, char *base)
 {
     size_t len, idx;
@@ -404,6 +477,8 @@ get_adjacent(const char* hash, direction dir, char *base)
     char last;
 
     len  = (int)strlen(hash);
+    if (len == 0)
+        return false;
     last = (unsigned char)tolower(hash[len - 1]);
     idx  = dir * 2 + (len % 2);
 
@@ -414,21 +489,21 @@ get_adjacent(const char* hash, direction dir, char *base)
     base[len-1] = '\0';
 
     if (strchr(border_table, last) != NULL) {
-        if (get_adjacent(base, dir, base) == NULL)
-            return NULL;
+        if (!get_adjacent(base, dir, base))
+            return false;
     }
 
     neighbor_table = NEIGHBORS_TABLE[idx];
 
     ptr = strchr(neighbor_table, last);
     if (ptr == NULL) {
-        return NULL;
+        return false;
     }
     idx = (int)(ptr - neighbor_table);
     len = (int)strlen(base);
     base[len] = BASE32_ENCODE_TABLE[idx];
     base[len+1] = '\0';
-    return base;
+    return true;
 }
 
 hash hash::adjacent(direction dir) const {

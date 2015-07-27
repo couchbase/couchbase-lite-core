@@ -57,6 +57,7 @@ namespace geohash {
 
         bool contains(double n) const       {return min <= n && n < max;}
         inline bool intersects(range) const;
+        bool isEmpty() const                {return min == max;}
 
         double size() const                 {return max - min;}
         double mid() const                  {return (min + max) / 2.0;}
@@ -65,7 +66,7 @@ namespace geohash {
         bool shrink(double);
         void shrink(bool side);
         unsigned maxCharsToEnclose(bool isVertical) const;
-};
+    };
 
     /** A 2D rectangular area, defined by ranges of latitude and longitude. */
     struct area {
@@ -81,22 +82,30 @@ namespace geohash {
 
         inline bool contains(coord) const;
         inline bool intersects(area) const;
+        bool isPoint() const                {return latitude.isEmpty() && longitude.isEmpty();}
 
         coord min() const                   {return coord(latitude.min, longitude.min);}
         coord mid() const                   {return coord(latitude.mid(), longitude.mid());}
         coord max() const                   {return coord(latitude.max, longitude.max);}
 
+        /** Returns a vector of hashes that completely cover this area. */
+        std::vector<hash> coveringHashes() const;
+
+        std::vector<hash> coveringHashesOfLength(unsigned nChars, unsigned maxCount) const;
+
         /** Returns a sorted vector of hashRanges that completely cover this area. Will attempt to
-                be as accurate as possible (using longer hashes) without exceeding the maxCount.
-            @param maxCount  The maximum number of hashRanges to return. */
-        std::vector<hashRange> coveringHashes(unsigned maxCount) const;
+            be as accurate as possible (using longer hashes) without exceeding the maxCount.
+            @param maxCount  The maximum number of results to return. */
+        std::vector<hashRange> coveringHashRanges(unsigned maxCount) const;
 
         /** Returns a sorted vector of hashRanges that completely cover this area.
             @param nChars  The character count of each hash; longer hashes are more accurate but
                 it may take a lot more to cover the area. */
-        std::vector<hashRange> coveringHashesOfLength(unsigned nChars) const;
+        std::vector<hashRange> coveringHashRangesOfLength(unsigned nChars) const;
 
         std::string dump() const;
+
+        unsigned maxCharsToEnclose() const;
     };
 
 
@@ -124,26 +133,32 @@ namespace geohash {
 
         operator const char*() const        {return string;}
         size_t length() const               {return strlen(string);}
+        bool isEmpty() const                {return string[0] == '\0';}
 
         area decode() const;
         bool isValid() const;
 
         hash adjacent(direction) const;
 
-        bool operator< (const hash &h) const      {return strcmp(string, h.string) < 0;}
+        bool operator< (const hash &h) const     {return strcmp(string, h.string) < 0;}
     };
 
     /** A range of consecutive GeoHash strings. */
-    struct hashRange : public hash {
+    struct hashRange : private hash {
         unsigned count;
 
         hashRange(const hash &h, unsigned c)    :hash(h), count(c) { }
 
-        /** The last GeoHash in the range. */
-        hash lastHash() const;
+        operator const char*() const            {return string;}
+        bool operator< (const hashRange &h) const    {return strcmp(string, h.string) < 0;}
+
+        hash operator[] (unsigned i) const;
+        const hash& first() const               {return *(const hash*)this;}
+        hash last() const                       {return (*this)[count-1];}
 
         /** Tries to add a GeoHash to the end; if successful returns true. */
         bool add(const hash &h);
+        bool compact();
     };
 
 
