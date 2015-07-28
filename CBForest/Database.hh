@@ -42,10 +42,15 @@ namespace forestdb {
         A Database also acts as its default KeyStore. */
     class Database : public KeyStore {
     public:
-        typedef fdb_config config;
+
+        struct config : fdb_config {
+            bool encrypted;
+            uint8_t encryptionKey[32];
+        };
+
         typedef fdb_file_info info;
 
-        static config defaultConfig()           {return fdb_get_default_config();}
+        static config defaultConfig();
 
         Database(std::string path, const config&);
         Database(Database* original, sequence snapshotSequence);
@@ -53,6 +58,7 @@ namespace forestdb {
 
         std::string filename() const;
         info getInfo() const;
+        config getConfig()                      {return _config;}
 
         bool isReadOnly() const;
 

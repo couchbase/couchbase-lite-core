@@ -17,11 +17,9 @@ using namespace forestdb;
 
 @implementation VersionedDocument_Tests
 {
+    std::string dbPath;
     Database* db;
 }
-
-
-static std::string kDBPath;
 
 
 static revidBuffer stringToRev(NSString* str) {
@@ -32,15 +30,14 @@ static revidBuffer stringToRev(NSString* str) {
 + (void) initialize {
     if (self == [VersionedDocument_Tests class]) {
         LogLevel = kWarning;
-        kDBPath = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"].fileSystemRepresentation;
     }
 }
 
 - (void)setUp
 {
-    ::unlink(kDBPath.c_str());
     [super setUp];
-    db = new Database(kDBPath, Database::defaultConfig());
+    dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
+    db = new Database(dbPath, TestDBConfig());
 }
 
 - (void)tearDown

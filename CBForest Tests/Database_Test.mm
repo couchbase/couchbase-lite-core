@@ -10,11 +10,12 @@
 #import "testutil.h"
 #import "Database.hh"
 #import "DocEnumerator.hh"
+#import "EncryptedFileMgr.hh"
 
 using namespace forestdb;
 
 
-static std::string kDBPath;
+#define ENCRYPT_DATABASES 1
 
 
 @interface Database_Test : XCTestCase
@@ -22,25 +23,42 @@ static std::string kDBPath;
 
 @implementation Database_Test
 {
+    std::string dbPath;
     Database* db;
+}
+
+std::string PathForDatabaseNamed(NSString *name) {
+    const char *path = [NSTemporaryDirectory() stringByAppendingPathComponent: name].fileSystemRepresentation;
+    ::unlink(path);
+    return std::string(path);
+}
+
+Database::config TestDBConfig() {
+    auto config = Database::defaultConfig();
+#if ENCRYPT_DATABASES
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(config.encryptionKey),
+                       (uint8_t*)&config.encryptionKey);
+    config.encrypted = true;
+#endif
+    return config;
 }
 
 + (void) initialize {
     if (self == [Database_Test class]) {
         LogLevel = kWarning;
-        kDBPath = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"].fileSystemRepresentation;
     }
 }
 
 - (void)setUp
 {
-    ::unlink(kDBPath.c_str());
     [super setUp];
-    db = new Database(kDBPath, Database::defaultConfig());
+    dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
+    db = new Database(dbPath, TestDBConfig());
 }
 
 - (void)tearDown
 {
+    db->deleteDatabase();
     delete db;
     [super tearDown];
 }
@@ -78,7 +96,7 @@ static std::string kDBPath;
 - (void) test03_SaveDocs {
     Transaction(db).set(nsstring_slice(@"a"), nsstring_slice(@"A"));   //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
 
-    Database aliased_db(kDBPath, Database::defaultConfig());
+    Database aliased_db(dbPath, TestDBConfig());
     AssertEqual((NSString*)aliased_db.get(nsstring_slice(@"a")).body(), @"A");
 
     {
@@ -302,7 +320,7 @@ static std::string kDBPath;
 
 // Test for MB-12287
 - (void) test06_TransactionsThenIterate {
-    Database db2(kDBPath, Database::defaultConfig());
+    Database db2(dbPath, TestDBConfig());
 
     const NSUInteger kNTransactions = 42; // 41 is ok, 42+ fails
     const NSUInteger kNDocs = 100;
@@ -400,11 +418,11 @@ static std::string kDBPath;
         t.set(slice("key"), nsstring_slice(@"value"));
     }
     // Reopen db as read-only:
+    Database::config config = db->getConfig();
     delete db;
     db = nil;
-    auto config = Database::defaultConfig();
     config.flags = FDB_OPEN_FLAG_RDONLY;
-    db = new Database(kDBPath, config);
+    db = new Database(dbPath, config);
 
     auto doc = db->get(slice("key"));
     Assert(doc.exists());

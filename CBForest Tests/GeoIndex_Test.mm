@@ -14,10 +14,6 @@ using namespace forestdb;
 using namespace geohash;
 
 
-static NSString *kDBPathStr, *kIndexPathStr;
-static std::string kDBPath, kIndexPath;
-
-
 class TestGeoMappable : public Mappable {
 public:
     TestGeoMappable(const Document& doc)
@@ -67,6 +63,7 @@ public:
 
 @implementation GeoIndex_Test
 {
+    std::string dbPath;
     Database *db;
     KeyStore source;
     MapReduceIndex *index;
@@ -76,19 +73,14 @@ public:
 + (void) initialize {
     if (self == [GeoIndex_Test class]) {
         LogLevel = kWarning;
-        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"geo_temp.fdb"];
-        kDBPath = kDBPathStr.fileSystemRepresentation;
-        kIndexPathStr = [kDBPathStr stringByAppendingString: @"index"];
-        kIndexPath = kIndexPathStr.fileSystemRepresentation;
     }
 }
 
 - (void) setUp {
-    NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
-    db = new Database(kDBPath, Database::defaultConfig());
+    [super setUp];
+    dbPath = PathForDatabaseNamed(@"geo_temp.fdb");
+    db = new Database(dbPath, TestDBConfig());
     source = (KeyStore)*db;
-    [[NSFileManager defaultManager] removeItemAtPath: kIndexPathStr error: &error];
     index = new MapReduceIndex(db, "geo", source);
 }
 

@@ -30,10 +30,6 @@ static Collatable StringToCollatable(NSString* str) {
 }
 
 
-static NSString *kDBPathStr, *kIndexPathStr;
-static std::string kDBPath, kIndexPath;
-
-
 class TestJSONMappable : public Mappable {
 public:
     TestJSONMappable(const Document& doc)
@@ -82,6 +78,7 @@ public:
 
 @implementation MapReduce_Test
 {
+    std::string dbPath;
     Database* db;
     KeyStore source;
     MapReduceIndex* index;
@@ -90,21 +87,16 @@ public:
 + (void) initialize {
     if (self == [MapReduce_Test class]) {
         LogLevel = kWarning;
-        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"];
-        kDBPath = kDBPathStr.fileSystemRepresentation;
-        kIndexPathStr = [kDBPathStr stringByAppendingString: @"index"];
-        kIndexPath = kIndexPathStr.fileSystemRepresentation;
     }
 }
 
 - (void) setUp {
-    NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
-    db = new Database(kDBPath, Database::defaultConfig());
+    [super setUp];
+    dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
+    db = new Database(dbPath, TestDBConfig());
     source = (KeyStore)*db;
-    [[NSFileManager defaultManager] removeItemAtPath: kIndexPathStr error: &error];
     index = new MapReduceIndex(db, "index", source);
-    Assert(index, @"Couldn't open index: %@", error);
+    Assert(index, @"Couldn't open index");
 }
 
 - (void)tearDown

@@ -13,9 +13,6 @@
 
 using namespace forestdb;
 
-static std::string kDBPath;
-static NSString* kDBPathStr;
-
 
 class Scoped {
 public:
@@ -61,6 +58,7 @@ static boolBlock scopedEnumerate() {
 
 @implementation Index_Test
 {
+    std::string dbPath;
     Database* database;
     Index* index;
     uint64_t _rowCount;
@@ -69,15 +67,13 @@ static boolBlock scopedEnumerate() {
 + (void) initialize {
     if (self == [Index_Test class]) {
         LogLevel = kWarning;
-        kDBPathStr = [NSTemporaryDirectory() stringByAppendingPathComponent: @"forest_temp.fdb"];
-        kDBPath = kDBPathStr.fileSystemRepresentation;
     }
 }
 
 - (void) setUp {
-    NSError* error;
-    [[NSFileManager defaultManager] removeItemAtPath: kDBPathStr error: &error];
-    database = new Database(kDBPath, Database::defaultConfig());
+    [super setUp];
+    dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
+    database = new Database(dbPath, TestDBConfig());
     index = new Index(database, "index");
 }
 

@@ -16,6 +16,7 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "LogInternal.hh"
+#include "filemgr_ops_encrypted.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
@@ -97,15 +98,20 @@ namespace forestdb {
         WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
     }
 
+    Database::config Database::defaultConfig() {
+        config c;
+        *(fdb_config*)&c = fdb_get_default_config();
+        c.encrypted = false;
+        return c;
+    }
+
     Database::Database(std::string path, const config& cfg)
     :KeyStore(NULL),
      _file(File::forPath(path)),
      _config(cfg),
      _fileHandle(NULL)
     {
-        check(::fdb_open(&_fileHandle, path.c_str(), (config*)&cfg));
-        check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
-        fdb_set_log_callback(_handle, logCallback, _handle);
+        reopen(path);
     }
 
     Database::~Database() {
@@ -168,7 +174,11 @@ namespace forestdb {
 
 
     void Database::reopen(std::string path) {
+        if (_config.encrypted)
+            fdb_registerEncryptionKey(path.c_str(), *(EncryptionKey*)&_config.encryptionKey);
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
+        check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
+        fdb_set_log_callback(_handle, logCallback, _handle);
     }
 
     void Database::deleteDatabase(bool andReopen) {
@@ -176,6 +186,10 @@ namespace forestdb {
         std::string path = filename();
         check(::fdb_close(_fileHandle));
         deleted();
+
+        // fdb_destroy reopens the file, so register the encryption key again:
+        if (_config.encrypted)
+            fdb_registerEncryptionKey(path.c_str(), *(EncryptionKey*)&_config.encryptionKey);
         check(fdb_destroy(path.c_str(), &_config));
         if (andReopen)
             reopen(path);
