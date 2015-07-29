@@ -10,7 +10,7 @@
 #import "testutil.h"
 #import "Database.hh"
 #import "DocEnumerator.hh"
-#import "EncryptedFileMgr.hh"
+#import "filemgr_ops_encrypted.h"
 
 using namespace forestdb;
 
