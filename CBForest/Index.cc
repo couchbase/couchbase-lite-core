@@ -364,8 +364,6 @@ namespace forestdb {
     }
 
     void IndexEnumerator::nextKeyRange() {
-        if (_keyRanges.size() == 0)
-            return;
         if (++_currentKeyIndex >= _keyRanges.size()) {
             _dbEnum.close();
             return;
