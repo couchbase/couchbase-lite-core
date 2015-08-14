@@ -69,6 +69,8 @@ namespace forestdb {
 
         explicit operator std::string() const;
         std::string hexString() const;
+        
+        bool hasPrefix(const char* str) const;
 
 #ifdef __OBJC__
         slice(NSData* data)                         :buf(data.bytes), size(data.length) {}

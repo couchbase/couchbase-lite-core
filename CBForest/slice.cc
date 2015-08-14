@@ -100,6 +100,12 @@ namespace forestdb {
         }
         return result;
     }
-
+    
+    bool slice::hasPrefix(const char* str) const {
+        if (buf == NULL || str == NULL)
+            return false;
+        size_t prefixSize = strlen(str);
+        return prefixSize > 0 && size >= prefixSize && ::memcmp(buf, str, prefixSize) == 0;
+    }
 
 }
