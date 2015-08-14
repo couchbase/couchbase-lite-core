@@ -18,23 +18,26 @@ using namespace forestdb;
 @implementation Slice_Test
 
 - (void) testHasPrefix {
-    slice s = nsstring_slice(NULL);
+    slice s = slice();
     Assert(!s.hasPrefix(NULL));
-    Assert(!s.hasPrefix(""));
-    Assert(!s.hasPrefix("abc"));
+    Assert(!s.hasPrefix(slice()));
+    Assert(!s.hasPrefix(slice("")));
+    Assert(!s.hasPrefix(slice("abc")));
     
-    s = nsstring_slice(@"");
+    s = slice("");
     Assert(!s.hasPrefix(NULL));
-    Assert(!s.hasPrefix(""));
-    Assert(!s.hasPrefix("abc"));
+    Assert(!s.hasPrefix(slice()));
+    Assert(!s.hasPrefix(slice("")));
+    Assert(!s.hasPrefix(slice("abc")));
     
-    s = nsstring_slice(@"abc");
-    Assert(s.hasPrefix("ab"));
-    Assert(s.hasPrefix("abc"));
+    s = slice("abc");
+    Assert(s.hasPrefix(slice("ab")));
+    Assert(s.hasPrefix(slice("abc")));
     Assert(!s.hasPrefix(NULL));
-    Assert(!s.hasPrefix(""));
-    Assert(!s.hasPrefix("ac"));
-    Assert(!s.hasPrefix("abcd"));
+    Assert(!s.hasPrefix(slice()));
+    Assert(!s.hasPrefix(slice("")));
+    Assert(!s.hasPrefix(slice("ac")));
+    Assert(!s.hasPrefix(slice("abcd")));
 }
 
 @end

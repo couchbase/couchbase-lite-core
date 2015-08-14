@@ -68,6 +68,10 @@ namespace forestdb {
         buf = NULL;
         size = 0;
     }
+    
+    bool slice::hasPrefix(slice s) const {
+        return s.size > 0 && size >= s.size && ::memcmp(buf, s.buf, s.size) == 0;
+    }
 
     slice::operator std::string() const {
         return std::string((const char*)buf, size);
@@ -99,13 +103,6 @@ namespace forestdb {
             result += kDigits[byte & 0xF];
         }
         return result;
-    }
-    
-    bool slice::hasPrefix(const char* str) const {
-        if (buf == NULL || str == NULL)
-            return false;
-        size_t prefixSize = strlen(str);
-        return prefixSize > 0 && size >= prefixSize && ::memcmp(buf, str, prefixSize) == 0;
     }
 
 }
