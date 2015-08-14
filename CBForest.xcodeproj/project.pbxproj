@@ -336,6 +336,8 @@
 		27FA9A3A19180B5F00912F96 /* stem_ISO_8859_2_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */; };
 		27FA9A3B19180B5F00912F96 /* stem_UTF_8_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */; };
 		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
+		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
+		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -656,6 +658,7 @@
 		27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libTokenizer-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = ../CBForest/varint.cc; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = ../CBForest/varint.hh; sourceTree = "<group>"; };
+		9399E72C1B7E536700D4BE79 /* Slice_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slice_Test.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -924,6 +927,7 @@
 				27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */,
 				2722304A1A08178200BFF25C /* GeoHash_Test.mm */,
 				27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */,
+				9399E72C1B7E536700D4BE79 /* Slice_Test.mm */,
 				27E4872019226699007D8940 /* testutil.h */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
 			);
@@ -1486,6 +1490,7 @@
 				27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27DD14F019328576009A367D /* Index_Test.mm in Sources */,
 				270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
+				9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */,
 				27DF46BD1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */,
 				27E4871E19226508007D8940 /* Database_Test.mm in Sources */,
 				27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */,
@@ -1569,6 +1574,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */,
 				27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,
 				27DD14F119328576009A367D /* Index_Test.mm in Sources */,

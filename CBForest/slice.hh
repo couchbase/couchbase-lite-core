@@ -66,10 +66,12 @@ namespace forestdb {
 
         slice copy() const;
         void free();
-
+        
+        bool hasPrefix(slice) const;
+        
         explicit operator std::string() const;
         std::string hexString() const;
-
+        
 #ifdef __OBJC__
         slice(NSData* data)                         :buf(data.bytes), size(data.length) {}
 
