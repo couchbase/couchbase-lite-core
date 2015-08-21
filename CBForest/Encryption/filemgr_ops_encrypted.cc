@@ -339,9 +339,9 @@ static int _filemgr_encrypted_aio_init(struct async_io_handle *aio_handle)
     return FDB_RESULT_AIO_NOT_SUPPORTED;
 }
 
-static int _filemgr_encrypted_is_cow_support(int src_fd, int dst_fd)
+static int _filemgr_encrypted_get_fs_type(int src_fd)
 {
-    return FDB_RESULT_INVALID_ARGS;
+    return FILEMGR_FS_NO_COW; // don't have a cow, man
 }
 
 static struct filemgr_ops encrypted_ops = {
@@ -360,7 +360,7 @@ static struct filemgr_ops encrypted_ops = {
     NULL,
     NULL,
     NULL,
-    _filemgr_encrypted_is_cow_support,
+    _filemgr_encrypted_get_fs_type,
     NULL
 };
 
