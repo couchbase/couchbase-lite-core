@@ -98,6 +98,16 @@ namespace forestdb {
         WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
     }
 
+    void Database::encryptionConfig::setEncryptionKey(slice key) {
+        if (key.buf) {
+            assert(key.size == sizeof(encryptionKey));
+            ::memcpy(encryptionKey, key.buf, sizeof(encryptionKey));
+            encrypted = true;
+        } else {
+            encrypted = false;
+        }
+    }
+
     Database::config Database::defaultConfig() {
         config c;
         *(fdb_config*)&c = fdb_get_default_config();
@@ -175,7 +185,7 @@ namespace forestdb {
 
     void Database::reopen(std::string path) {
         if (_config.encrypted)
-            fdb_registerEncryptionKey(path.c_str(), *(EncryptionKey*)&_config.encryptionKey);
+            fdb_registerEncryptionKey(path.c_str(), (EncryptionKey*)&_config.encryptionKey);
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
         fdb_set_log_callback(_handle, logCallback, _handle);
@@ -189,7 +199,7 @@ namespace forestdb {
 
         // fdb_destroy reopens the file, so register the encryption key again:
         if (_config.encrypted)
-            fdb_registerEncryptionKey(path.c_str(), *(EncryptionKey*)&_config.encryptionKey);
+            fdb_registerEncryptionKey(path.c_str(), (EncryptionKey*)&_config.encryptionKey);
         check(fdb_destroy(path.c_str(), &_config));
         if (andReopen)
             reopen(path);
@@ -201,6 +211,29 @@ namespace forestdb {
 
     void Database::commit() {
         check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
+    }
+
+    void Database::copyToFile(std::string toPath, const encryptionConfig &encConfig) {
+        // Switch to manual compaction mode, so that the explicit fdb_compact will work:
+        std::string realPath = filename();
+        check(fdb_switch_compaction_mode(_fileHandle, FDB_COMPACTION_MANUAL, 0));
+        const char *toPathCStr = toPath.c_str();
+        // Register encryption key if any:
+        if (encConfig.encrypted)
+            fdb_registerEncryptionKey(toPathCStr, (EncryptionKey*)&encConfig.encryptionKey);
+
+        fdb_status status = fdb_compact(_fileHandle, toPathCStr);
+
+        // Unregister key and restore previous compaction mode:
+        if (encConfig.encrypted)
+            fdb_registerEncryptionKey(toPathCStr, NULL);
+        fdb_switch_compaction_mode(_fileHandle,
+                                   _config.compaction_mode, _config.compaction_threshold);
+        check(status);
+
+        // The new file is now open, not the old one, so close and reopen the old one:
+        fdb_close(_fileHandle);
+        reopen(realPath);
     }
 
 

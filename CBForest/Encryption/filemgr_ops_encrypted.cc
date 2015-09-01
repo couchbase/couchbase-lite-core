@@ -37,10 +37,13 @@ static const size_t kPageSize = 4096;       // Must match the page size used by 
 class EncryptedFileMgr {
 public:
 
-    static void registerKey(const char *pathname, EncryptionKey key)
+    static void registerKey(const char *pathname, const EncryptionKey *key)
     {
         spin_lock(&sLockRegisteredKeys);
-        sRegisteredKeys[pathname] = key;
+        if (key)
+            sRegisteredKeys[pathname] = *key;
+        else
+            sRegisteredKeys.erase(pathname);
         spin_unlock(&sLockRegisteredKeys);
     }
 
@@ -371,7 +374,7 @@ extern "C" {
         return &encrypted_ops;
     }
 
-    void fdb_registerEncryptionKey(const char *pathname, EncryptionKey key) {
+    void fdb_registerEncryptionKey(const char *pathname, const EncryptionKey *key) {
         EncryptedFileMgr::registerKey(pathname, key);
     }
 

@@ -43,9 +43,16 @@ namespace forestdb {
     class Database : public KeyStore {
     public:
 
-        struct config : fdb_config {
+        struct encryptionConfig {
             bool encrypted;
             uint8_t encryptionKey[32];
+
+            encryptionConfig() :encrypted(false) { }
+
+            void setEncryptionKey(slice);
+        };
+
+        struct config : fdb_config, encryptionConfig {
         };
 
         typedef fdb_file_info info;
@@ -66,6 +73,9 @@ namespace forestdb {
         void erase()                            {deleteDatabase(true);}
 
         void compact();
+
+        /** Copies the database to a new file, optionally encrypting it. */
+        void copyToFile(std::string toPath, const encryptionConfig&);
 
         /** Records a commit before the transaction exits scope. Not normally needed. */
         void commit();

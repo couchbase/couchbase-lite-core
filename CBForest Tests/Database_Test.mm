@@ -448,4 +448,29 @@ Database::config TestDBConfig() {
     AssertEq(status, FDB_RESULT_NO_SUCH_FILE);
 }
 
+- (void) test12_Copy {
+    [self createNumberedDocs];
+
+    std::string newPath = PathForDatabaseNamed(@"encryptedCopy");
+    Database::encryptionConfig enc;
+#if ENCRYPT_DATABASES
+    enc.encrypted = true;
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(enc.encryptionKey),
+                       (uint8_t*)&enc.encryptionKey);
+#else
+    enc.encrypted = false;
+#endif
+
+    std::string filename = db->filename();
+    db->copyToFile(newPath, enc);
+    AssertEq(db->filename(), filename);
+
+    Database::config config = Database::defaultConfig();
+    *(Database::encryptionConfig*)&config = enc;
+    Database newDB(newPath, config);
+
+    Document doc = newDB.get(slice("doc-001"));
+    Assert(doc.exists());
+}
+
 @end

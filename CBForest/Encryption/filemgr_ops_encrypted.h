@@ -22,7 +22,7 @@ extern "C" {
         uint8_t bytes[32];
     } EncryptionKey;
 
-    void fdb_registerEncryptionKey(const char *pathname, EncryptionKey key);
+    void fdb_registerEncryptionKey(const char *pathname, const EncryptionKey *key);
 
     EncryptionKey fdb_randomEncryptionKey(void);
 
