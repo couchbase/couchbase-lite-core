@@ -23,8 +23,8 @@
 
 namespace forestdb {
 
-    static int64_t kMinFormatVersion = 2;
-    static int64_t kCurFormatVersion = 2;
+    static int64_t kMinFormatVersion = 3;
+    static int64_t kCurFormatVersion = 3;
 
     MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
     :Index(db, name),

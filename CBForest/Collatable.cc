@@ -237,6 +237,10 @@ namespace forestdb {
     }
 
     void CollatableReader::dumpTo(std::ostream &out) {
+        if (_data.size == 0) {
+            out << "(nil)";
+            return;
+        }
         switch(peekTag()) {
             case kNull:
                 skipTag();
@@ -296,7 +300,7 @@ namespace forestdb {
                 out << "geohash(" << (std::string)readGeohash() << ')';
                 break;
             default:
-                out << "???";
+                out << "¿" << (int)peekTag() << "?";
                 break;
         }
     }
@@ -313,14 +317,18 @@ namespace forestdb {
 
     // Returns a 256-byte table that maps each ASCII character to its relative priority in Unicode
     // ordering. Bytes 0x80--0xFF (i.e. UTF-8 encoded sequences) map to themselves.
+    // The table cannot contain any 0 values, because 0 is reserved as an end-of-string marker.
     static void initCharPriorityMap() {
         static bool initialized;
         if (!initialized) {
-            // Control characters have zero priority:
             static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
             uint8_t priority = 1;
             for (int i=0; i<strlen(kInverseMap); i++)
                 kCharPriority[(uint8_t)kInverseMap[i]] = priority++;
+            for (int i=0; i<127; i++)
+                if (kCharPriority[i] == 0)
+                    kCharPriority[i] = priority++;  // fill in ctrl chars
+            kCharPriority[127] = kCharPriority[(int)' '];// and DEL (there's no room for a unique #)
             for (int i=128; i<256; i++)
                 kCharPriority[i] = (uint8_t)i;
             initialized = true;
@@ -330,9 +338,8 @@ namespace forestdb {
     uint8_t* CollatableReader::getInverseCharPriorityMap() {
         static bool initialized;
         if (!initialized) {
-            // Control characters have zero priority:
             initCharPriorityMap();
-            for (int i=0; i<256; i++)
+            for (int i=255; i>=0; i--)
                 kCharInversePriority[kCharPriority[i]] = (uint8_t)i;
             initialized = true;
         }

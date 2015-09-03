@@ -49,13 +49,16 @@ static double randf() {
     return n.d;
 }
 
-- (void) checkRoundTrip: (id)input {
+static id roundTrip(id input) {
     Collatable c;
     c << input;
     alloc_slice encoded((forestdb::slice)c);
     CollatableReader reader(encoded);
-    id output = reader.readNSObject();
-    AssertEqual(output, input);
+    return reader.readNSObject();
+}
+
+- (void) checkRoundTrip: (id)input {
+    AssertEqual(roundTrip(input), input);
     // Note: isEqual: has some limitations when comparing NSNumbers. If one number is a double it
     // seems to convert the other number to double and then compare; this can produce false
     // positives when the other number is a very large 64-bit integer that can't be precisely
@@ -163,6 +166,16 @@ static double randf() {
     // Non-ASCII characters aren't going to sort according to the Unicode Collation Algorithm,
     // but they should still sort after all ASCII characters.
     AssertEq(compareCollated((std::string)"Hello world", (std::string)"Hello wörld!"), -1);
+
+    // Make sure nulls and control characters don't break anything:
+    [self checkRoundTrip: @"foo\0"];
+    [self checkRoundTrip: @"foo\0\1\2bar"];
+    [self checkRoundTrip: @"\033\034\035"];
+    // DEL is weird. There isn't room in the Collatable encoding to give it a unique value, so it
+    // gets the same value as space, meaning it decodes to space. Make sure it at least doesn't
+    // cause an error:
+    Assert([roundTrip(@"hey\177there") hasPrefix: @"hey"]);
+    Assert([roundTrip(@"hey\177there") hasSuffix: @"there"]);
 }
 
 - (void) testIndexKey {
