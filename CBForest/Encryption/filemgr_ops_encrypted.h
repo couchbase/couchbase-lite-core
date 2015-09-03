@@ -9,6 +9,8 @@
 #ifndef __CBForest__filemgr_ops_encrypted__
 #define __CBForest__filemgr_ops_encrypted__
 
+#include "fdb_errors.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,6 +27,8 @@ extern "C" {
     void fdb_registerEncryptionKey(const char *pathname, const EncryptionKey *key);
 
     EncryptionKey fdb_randomEncryptionKey(void);
+
+    fdb_status fdb_copy_open_file(const char *fromPath, const char *toPath, const EncryptionKey* toKey);
 
 #ifdef __cplusplus
 }

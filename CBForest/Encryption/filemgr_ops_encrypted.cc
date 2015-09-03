@@ -34,6 +34,11 @@ namespace forestdb {
 static const size_t kPageSize = 4096;       // Must match the page size used by ForestDB!
 
 
+static int _filemgr_encrypted_open(const char *pathname, int flags, mode_t mode);
+static ssize_t _filemgr_encrypted_pwrite(int fd, void *buf, size_t count, cs_off_t offset);
+static int _filemgr_encrypted_close(int fd);
+
+
 class EncryptedFileMgr {
 public:
 
@@ -106,14 +111,18 @@ public:
                 return FDB_RESULT_ENCRYPTION_ERROR;
             buf = encryptedBuf;
         }
-        return defaultOps->pwrite(_realFD, buf, count, offset);
+        ssize_t result = defaultOps->pwrite(_realFD, buf, count, offset);
+        if (result < 0) {
+            LogFileMgr("%d:      error %d (errno = %d)", _fakeFD, result, errno);
+        }
+        return result;
     }
 
     ssize_t pread(void *buf, size_t count, cs_off_t offset)
     {
         LogFileMgr("%d:   PREAD %zd from %zd", _fakeFD, count, offset);
         ssize_t result = defaultOps->pread(_realFD, buf, count, offset);
-        if (_encrypted && result >= 0) {
+        if (_encrypted && result > 0) {
             if (offset % kPageSize != 0 || count != kPageSize) {
                 return FDB_RESULT_INVALID_IO_PARAMS;
             } else if (result != count) {
@@ -121,6 +130,9 @@ public:
             }
             if (!crypt(buf, buf, result, offset / kPageSize, false))
                 return FDB_RESULT_ENCRYPTION_ERROR;
+        }
+        if (result < 0) {
+            LogFileMgr("%d:      error %d (errno = %d)", _fakeFD, result, errno);
         }
         return result;
     }
@@ -144,6 +156,31 @@ public:
     }
 
     static const filemgr_ops* const defaultOps;
+
+    int copyToFile(std::string toPath, const EncryptionKey* toKey) {
+        fdb_registerEncryptionKey(toPath.c_str(), toKey);
+        int toFD = _filemgr_encrypted_open(toPath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+        if (toFD < 0)
+            return toFD;
+
+        int result = 0;
+        uint8_t buf[kPageSize];
+        for (off_t offset = 0; true; offset += kPageSize) {
+            ssize_t size = this->pread(buf, kPageSize, offset);
+            if (size <= 0) {
+                result = (int)size;
+                break;
+            }
+            size = _filemgr_encrypted_pwrite(toFD, buf, size, offset);
+            if (size < 0) {
+                result = (int)size;
+                break;
+            }
+        }
+
+        _filemgr_encrypted_close(toFD);
+        return result;
+    }
 
 private:
 
@@ -382,6 +419,13 @@ extern "C" {
         EncryptionKey key;
         ::SecRandomCopyBytes(kSecRandomDefault, sizeof(key), key.bytes);
         return key;
+    }
+
+    fdb_status fdb_copy_open_file(const char *fromPath, const char *toPath, const EncryptionKey* toKey) {
+        EncryptedFileMgr* mgr = EncryptedFileMgr::get(fromPath);
+        if (!mgr)
+            return FDB_RESULT_NO_SUCH_FILE;
+        return (fdb_status) mgr->copyToFile(toPath, toKey);
     }
 
 }

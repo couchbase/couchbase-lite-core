@@ -214,26 +214,10 @@ namespace forestdb {
     }
 
     void Database::copyToFile(std::string toPath, const encryptionConfig &encConfig) {
-        // Switch to manual compaction mode, so that the explicit fdb_compact will work:
-        std::string realPath = filename();
-        check(fdb_switch_compaction_mode(_fileHandle, FDB_COMPACTION_MANUAL, 0));
-        const char *toPathCStr = toPath.c_str();
-        // Register encryption key if any:
+        const EncryptionKey* key = NULL;
         if (encConfig.encrypted)
-            fdb_registerEncryptionKey(toPathCStr, (EncryptionKey*)&encConfig.encryptionKey);
-
-        fdb_status status = fdb_compact(_fileHandle, toPathCStr);
-
-        // Unregister key and restore previous compaction mode:
-        if (encConfig.encrypted)
-            fdb_registerEncryptionKey(toPathCStr, NULL);
-        fdb_switch_compaction_mode(_fileHandle,
-                                   _config.compaction_mode, _config.compaction_threshold);
-        check(status);
-
-        // The new file is now open, not the old one, so close and reopen the old one:
-        fdb_close(_fileHandle);
-        reopen(realPath);
+            key = (const EncryptionKey*)encConfig.encryptionKey;
+        check(fdb_copy_open_file(filename().c_str(), toPath.c_str(), key));
     }
 
 
