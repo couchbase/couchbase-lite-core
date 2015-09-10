@@ -26,6 +26,7 @@ namespace forestdb {
         enum CBForestError {
             BadRevisionID = -1000,
             CorruptRevisionData = -1001,
+            CorruptIndexData = -1002,
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */

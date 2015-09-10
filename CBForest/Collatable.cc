@@ -16,6 +16,7 @@
 #include "Collatable.hh"
 #include "forestdb_endian.h"
 #include "geohash.hh"
+#include "error.hh"
 #include <sstream>
 
 namespace forestdb {
@@ -132,9 +133,9 @@ namespace forestdb {
     void CollatableReader::expectTag(Tag tag) {
         slice tagSlice = _data.read(1);
         if (tagSlice.size == 0)
-            throw "unexpected end of collatable data";
+            throw error(error::CorruptIndexData); // unexpected end of collatable data
         else if (tagSlice[0] != tag)
-            throw "unexpected tag";
+            throw error(error::CorruptIndexData); // unexpected tag"
     }
 
     int64_t CollatableReader::readInt() {
@@ -148,7 +149,7 @@ namespace forestdb {
     double CollatableReader::readDouble() {
         slice tagSlice = _data.read(1);
         if (tagSlice[0] != kNegative && tagSlice[0] != kPositive)
-            throw "unexpected tag";
+            throw error(error::CorruptIndexData); // unexpected tag
         swappedDouble swapped;
         _data.readInto(slice(&swapped, sizeof(swapped)));
         if (tagSlice[0] == kNegative)
@@ -168,7 +169,7 @@ namespace forestdb {
         expectTag(tag);
         const void* end = _data.findByte(0);
         if (!end)
-            throw "malformed string";
+            throw error(error::CorruptIndexData); // malformed string
         size_t nBytes = _data.offsetOf(end);
 
         alloc_slice result(nBytes);
@@ -194,7 +195,7 @@ namespace forestdb {
             case kGeohash: {
                 const void* end = _data.findByte(0);
                 if (!end)
-                    throw "malformed string";
+                    throw error(error::CorruptIndexData); // malformed string
                 _data.moveStart(_data.offsetOf(end)+1);
                 break;
             }
@@ -215,7 +216,7 @@ namespace forestdb {
             case kSpecial:
                 break;
             default:
-                throw "Unexpected tag in read()";
+                throw error(error::CorruptIndexData); // Unexpected tag in read()
         }
         return slice(start, _data.buf);
     }

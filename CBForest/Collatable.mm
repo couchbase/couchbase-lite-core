@@ -15,6 +15,7 @@
 
 #import <Foundation/Foundation.h>
 #import "Collatable.hh"
+#import "error.hh"
 
 
 namespace forestdb {
@@ -76,7 +77,7 @@ namespace forestdb {
             expectTag(kString);
         const void* end = _data.findByte(0);
         if (!end)
-            throw "malformed string";
+            throw error(error::CorruptIndexData); // malformed string
         size_t nBytes = _data.offsetOf(end);
 
         if (nBytes > 1024) {
@@ -127,9 +128,9 @@ namespace forestdb {
                 return result;
             }
             case kSpecial:
-                throw "can't convert Special tag to NSObject";
+                throw error(error::CorruptIndexData); // can't convert Special tag to NSObject
             default:
-                throw "invalid tag in Collatable data";
+                throw error(error::CorruptIndexData); // invalid tag in Collatable data
         }
     }
 
