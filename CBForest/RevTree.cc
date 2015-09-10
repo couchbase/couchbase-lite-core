@@ -278,6 +278,11 @@ namespace forestdb {
         return owner->get(parentIndex);
     }
 
+    const Revision* Revision::next() const {
+        auto i = index() + 1;
+        return i < owner->size() ? owner->get(i) : NULL;
+    }
+
     std::vector<const Revision*> Revision::history() const {
         std::vector<const Revision*> h;
         for (const Revision* rev = this; rev; rev = rev->parent())

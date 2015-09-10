@@ -46,24 +46,25 @@ namespace forestdb {
 
         unsigned index() const;
         const Revision* parent() const;
+        const Revision* next() const;       // next by order in array, i.e. descending priority
         std::vector<const Revision*> history() const;
 
         bool operator< (const Revision& rev) const;
 
-    private:
         enum Flags : uint8_t {
             kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
             kLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
             kNew            = 0x04, /**< Has this rev been inserted since decoding? */
             kHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
         };
+        Flags flags;
 
+    private:
         static const uint16_t kNoParent = UINT16_MAX;
         
         slice       body;           /**< Revision body (JSON), or empty if not stored in this tree*/
         uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
         uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
-        Flags       flags;          /**< Leaf/deleted flags */
 
         void read(const RawRevision *src);
         RawRevision* write(RawRevision* dst, uint64_t bodyOffset) const;

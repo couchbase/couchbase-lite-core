@@ -125,6 +125,8 @@
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		2757DE581B9FC3C9002EE261 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; settings = {ASSET_TAGS = (); }; };
+		2757DE5B1B9FC5C7002EE261 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; settings = {ASSET_TAGS = (); }; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
@@ -514,6 +516,11 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
+		275607781BA21DAB00F58218 /* c4View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4View.h; sourceTree = "<group>"; };
+		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
+		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
+		2757DE591B9FC3F1002EE261 /* c4.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4.h; sourceTree = "<group>"; };
+		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = c4.c; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
@@ -777,6 +784,7 @@
 			isa = PBXGroup;
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
+				2757DE551B9FC34E002EE261 /* C API */,
 				27E4871019217187007D8940 /* CBForest */,
 				27A4F2111B66FB1E00117AEA /* Encryption */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
@@ -964,6 +972,19 @@
 				27E45D011A6F01AD001A3A03 /* time_utils.h */,
 			);
 			path = utils;
+			sourceTree = "<group>";
+		};
+		2757DE551B9FC34E002EE261 /* C API */ = {
+			isa = PBXGroup;
+			children = (
+				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
+				275607781BA21DAB00F58218 /* c4View.h */,
+				2757DE571B9FC3C9002EE261 /* c4Database.h */,
+				2757DE591B9FC3F1002EE261 /* c4.h */,
+				2757DE5A1B9FC5C7002EE261 /* c4.c */,
+			);
+			name = "C API";
+			path = C;
 			sourceTree = "<group>";
 		};
 		27A4F2111B66FB1E00117AEA /* Encryption */ = {
@@ -1679,6 +1700,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2757DE5B1B9FC5C7002EE261 /* c4.c in Sources */,
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
@@ -1692,6 +1714,7 @@
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
+				2757DE581B9FC3C9002EE261 /* c4Database.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
