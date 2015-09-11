@@ -65,6 +65,8 @@ namespace forestdb {
         /** Gets the metadata of a document without having to instantiate a VersionedDocument */
         static bool readMeta(const Document&, Flags&, revid&, slice& docType);
 
+        void updateMeta();
+
 #if DEBUG
         std::string dump()          {return RevTree::dump();}
 #endif
@@ -77,7 +79,6 @@ namespace forestdb {
 
     private:
         void decode();
-        void updateMeta();
         VersionedDocument(const VersionedDocument&); // forbidden
 
         KeyStore    _db;

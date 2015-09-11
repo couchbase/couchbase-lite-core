@@ -88,27 +88,6 @@ extern "C" {
     //////// DOCUMENTS:
 
 
-    /** Opaque handle to a version-controlled document. */
-    typedef struct C4Document C4Document;
-
-    /** Frees a C4Document handle. */
-    void c4doc_free(C4Document *doc);
-
-    /** Gets a document from the database. If there's no such document, the behavior depends on
-        the mustExist flag. If it's true, NULL is returned. If it's false, a valid C4Document
-        handle is returned. */
-    C4Document* c4doc_get(C4Database *database,
-                          C4Slice docID,
-                          bool mustExist,
-                          C4Error *outError);
-
-    /** Returns the document's current revision ID. */
-    C4SliceResult c4doc_getRevID(C4Document *doc);
-
-    /** Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
-    C4SliceResult c4doc_getType(C4Document *doc);
-
-
     /** Flags describing a document. */
     typedef enum {
         kDeleted        = 0x01,     /**< The document's current revision is deleted. */
@@ -118,8 +97,73 @@ extern "C" {
         kExists         = 0x1000    /**< The document exists (i.e. has revisions.) */
     } C4DocumentFlags; // Note: Superset of VersionedDocument::Flags
 
-    /** Returns the flags of a document. */
-    C4DocumentFlags c4doc_getFlags(C4Document *doc);
+    /** Flags that apply to a revision. */
+    typedef enum {
+        kRevDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
+        kRevLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
+        kRevNew            = 0x04, /**< Has this rev been inserted since decoding? */
+        kRevHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
+    } C4RevisionFlags; // Note: Same as Revision::Flags
+
+
+    /** Describes a version-controlled document. */
+    typedef struct {
+        C4DocumentFlags flags;
+        C4Slice docID;
+        C4Slice revID;
+
+        struct {
+            C4Slice revID;
+            C4RevisionFlags flags;
+            C4SequenceNumber sequence;
+            C4Slice body;
+        } selectedRev;
+    } C4Document;
+
+    /** Frees a C4Document. */
+    void c4doc_free(C4Document *doc);
+
+    /** Gets a document from the database. If there's no such document, the behavior depends on
+        the mustExist flag. If it's true, NULL is returned. If it's false, a valid C4Document
+        The current revision is selected (if the document exists.) */
+    C4Document* c4doc_get(C4Database *database,
+                          C4Slice docID,
+                          bool mustExist,
+                          C4Error *outError);
+
+    /** Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
+    C4SliceResult c4doc_getType(C4Document *doc);
+
+
+    //////// REVISIONS:
+
+
+    /** Selects a specific revision of a document (or no revision, if revID is NULL.) */
+    bool c4doc_selectRevision(C4Document* doc,
+                              C4Slice revID,
+                              bool withBody,
+                              C4Error *outError);
+
+    /** Selects the current revision of a document. */
+    bool c4doc_selectCurrentRevision(C4Document* doc);
+
+    /** Populates the body field of a doc's selected revision,
+        if it was initially loaded without its body. */
+    bool c4doc_loadRevisionBody(C4Document* doc,
+                                C4Error *outError);
+
+    /** Selects the parent of the selected revision, if it's known, else returns NULL. */
+    bool c4doc_selectParentRevision(C4Document* doc);
+
+    /** Selects the next revision in priority order.
+        This can be used to iterate over all revisions, starting from the current revision. */
+    bool c4doc_selectNextRevision(C4Document* doc);
+
+    /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves. */
+    bool c4doc_selectNextLeafRevision(C4Document* doc,
+                                      bool includeDeleted,
+                                      bool withBody,
+                                      C4Error *outError);
 
 
     //////// DOCUMENT ENUMERATORS:
@@ -151,75 +195,22 @@ extern "C" {
                                            C4Error *outError);
 
     /** Returns the next document from an enumerator, or NULL if there are no more. */
-    C4Document* c4enum_nextDocument(C4DocEnumerator *e);
+    C4Document* c4enum_nextDocument(C4DocEnumerator *e,
+                                    C4Error *outError);
 
 
-    //////// REVISIONS:
-
-
-    /** Flags that apply to a revision. */
-    typedef enum {
-        kRevDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
-        kRevLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
-        kRevNew            = 0x04, /**< Has this rev been inserted since decoding? */
-        kRevHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
-    } C4RevisionFlags; // Note: Same as Revision::Flags
-
-    /** Describes a document revision. */
-    typedef struct {
-        C4Slice revID;
-        C4Slice body;
-        C4SequenceNumber sequence;
-        C4RevisionFlags flags;
-
-        void* _rev; // internal; don't touch
-    } C4Revision;
-
-    /** Frees the data of a C4Revision. */
-    void c4rev_free(C4Revision *rev);
-
-    /** Gets the current revision of a document. */
-    C4Revision* c4doc_getCurrentRevision(C4Document* doc,
-                                         bool withBody,
-                                         C4Error *outError);
-
-    /** Gets a specific revision of a document (the current revision, if revID is NULL.) */
-    C4Revision* c4doc_getRevision(C4Document* doc,
-                                  C4Slice revID,
-                                  bool withBody,
-                                  C4Error *outError);
-
-    /** Populates the body field of a C4Revision, if it was initially loaded without its body. */
-    bool c4rev_loadBody(C4Revision *rev,
-                        C4Error *outError);
-
-    /** Returns a revision's parent revision, if it's known, else returns NULL. */
-    C4Revision* c4rev_getParent(C4Revision* rev);
-
-    /** Gets the next revision in priority order. 
-        This can be used to iterate over all revisions, starting from the current revision. */
-    C4Revision* c4rev_getNext(C4Revision* rev);
-
-    /** Gets the next leaf revision. This is like getNextRevision but skips over non-leaves. */
-    C4Revision* c4rev_getNextLeaf(C4Revision* rev,
-                                  bool includeDeleted,
-                                  bool withBody,
-                                  C4Error *outError);
-
-    
     //////// INSERTING REVISIONS:
 
 
-    /** Adds a revision to a document.
+    /** Adds a revision to a document, as a child of the currently selected revision
+        (or as a root revision if there is no selected revision.)
+        On success, the new revision will be selected.
         Must be called within a transaction.
-        Warning: This call invalidates all C4Revision structs already created from this document.
-        They should be freed without being accessed.
         @param doc  The document.
         @param revID  The ID of the revision being inserted.
         @param body  The (JSON) body of the revision.
         @param deleted  True if this revision is a deletion (tombstone).
         @param hasAttachments  True if this revision contains an _attachments dictionary.
-        @param parent  The existing parent revision.
         @param allowConflict  If false, and the parent is not a leaf, a 409 error is returned.
         @param outError  Error information is stored here.
         @return True on success. */
@@ -228,14 +219,12 @@ extern "C" {
                               C4Slice body,
                               bool deleted,
                               bool hasAttachments,
-                              C4Revision* parent,
                               bool allowConflict,
                               C4Error *outError);
 
     /** Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
+        On success, the new revision will be selected.
         Must be called within a transaction.
-        Warning: This call invalidates all C4Revision structs already created from this document.
-        They should be freed without being accessed.
         @param doc  The document.
         @param revID  The ID of the revision being inserted.
         @param body  The (JSON) body of the revision.
