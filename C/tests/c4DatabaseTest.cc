@@ -152,26 +152,11 @@ class C4DatabaseTest : public CppUnit::TestFixture {
     void testCreateMultipleRevisions() {
         const C4Slice kRev2ID = C4STR("2-d00d3333");
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-        C4Error error;
-        {
-            // Add 1st revision:
-            TransactionHelper t(db);
-            C4Document *doc = c4doc_get(db, kDocID, false, &error);
-            Assert(c4doc_insertRevision(doc, kRevID,  kBody,  false, false, false, &error));
-            Assert(c4doc_save(doc, 20, &error));
-            c4doc_free(doc);
-        }
-        {
-            // Add 2nd revision:
-            TransactionHelper t(db);
-            C4Document *doc = c4doc_get(db, kDocID, false, &error);
-            Assert(c4doc_insertRevision(doc, kRev2ID, kBody2, false, false, false, &error));
-            AssertEqual(doc->selectedRev.revID, kRev2ID);
-            Assert(c4doc_save(doc, 20, &error));
-            c4doc_free(doc);
-        }
+        createRev(kDocID, kRevID, kBody);
+        createRev(kDocID, kRev2ID, kBody2);
 
         // Reload the doc:
+        C4Error error;
         C4Document *doc = c4doc_get(db, kDocID, true, &error);
         Assert(doc != NULL);
         AssertEqual(doc->flags, kExists);
@@ -186,12 +171,107 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
         AssertEqual(doc->selectedRev.body, kC4SliceNull);
-        Assert(c4doc_loadRevisionBody(doc, &error));
+        Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         AssertEqual(doc->selectedRev.body, kBody);
         Assert(!c4doc_selectParentRevision(doc));
     }
 
+
+    void testAllDocs() {
+        char docID[20];
+        for (int i = 1; i < 100; i++) {
+            sprintf(docID, "doc-%03d", i);
+            createRev(c4str(docID), kRevID, kBody);
+        }
+
+        C4Error error;
+        C4DocEnumerator* e;
+        C4Document* doc;
+
+        // No start or end ID:
+        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull,
+                                  false, true, 0, false, &error);
+        Assert(e);
+        int i = 1;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            sprintf(docID, "doc-%03d", i);
+            AssertEqual(doc->docID, c4str(docID));
+            AssertEqual(doc->revID, kRevID);
+            AssertEqual(doc->selectedRev.revID, kRevID);
+            AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)i);
+            AssertEqual(doc->selectedRev.body, kC4SliceNull);
+            // Doc was loaded without its body, but it should load on demand:
+            Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
+            AssertEqual(doc->selectedRev.body, kBody);
+
+            c4doc_free(doc);
+            i++;
+        }
+
+        // Start and end ID:
+        e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"),
+                                  false, true, 0, false, &error);
+        Assert(e);
+        i = 7;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            sprintf(docID, "doc-%03d", i);
+            AssertEqual(doc->docID, c4str(docID));
+            c4doc_free(doc);
+            i++;
+        }
+        AssertEqual(i, 91);
+    }
+
+
+    void testChanges() {
+        char docID[20];
+        for (int i = 1; i < 100; i++) {
+            sprintf(docID, "doc-%03d", i);
+            createRev(c4str(docID), kRevID, kBody);
+        }
+
+        C4Error error;
+        C4DocEnumerator* e;
+        C4Document* doc;
+
+        // Since start:
+        e = c4db_enumerateChanges(db, 0, false, &error);
+        Assert(e);
+        C4SequenceNumber seq = 1;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            AssertEqual(doc->selectedRev.sequence, seq);
+            sprintf(docID, "doc-%03llu", seq);
+            AssertEqual(doc->docID, c4str(docID));
+            c4doc_free(doc);
+            seq++;
+        }
+
+        // Since 6:
+        e = c4db_enumerateChanges(db, 6, false, &error);
+        Assert(e);
+        seq = 7;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            AssertEqual(doc->selectedRev.sequence, seq);
+            sprintf(docID, "doc-%03llu", seq);
+            AssertEqual(doc->docID, c4str(docID));
+            c4doc_free(doc);
+            seq++;
+        }
+        AssertEqual(seq, 100ull);
+    }
+
+
     private:
+
+    void createRev(C4Slice docID, C4Slice revID, C4Slice body) {
+        TransactionHelper t(db);
+        C4Error error;
+        C4Document *doc = c4doc_get(db, docID, false, &error);
+        Assert(doc != NULL);
+        Assert(c4doc_insertRevision(doc, revID,  body,  false, false, false, &error));
+        Assert(c4doc_save(doc, 20, &error));
+        c4doc_free(doc);
+    }
 
     C4Database *db;
 
@@ -204,6 +284,8 @@ class C4DatabaseTest : public CppUnit::TestFixture {
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
+    CPPUNIT_TEST( testAllDocs );
+    CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST_SUITE_END();
 };
 

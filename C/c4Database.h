@@ -178,7 +178,16 @@ extern "C" {
     /** Frees a C4DocEnumerator handle. */
     void c4enum_free(C4DocEnumerator *e);
 
-    /** Creates an enumerator ordered by sequence. */
+    /** Creates an enumerator ordered by sequence.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param database  The database.
+        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
+        @param withBodies  If false, document bodies will not be preloaded, just the metadata
+            (docID, revID, sequence, flags.) This is faster if you don't need to access the 
+            revision tree or revision bodies. You can still access all the data of the document, 
+            but it will trigger loading the document body from the database.
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                            C4SequenceNumber since,
                                            bool withBodies,
@@ -187,7 +196,20 @@ extern "C" {
     /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
         There's no 'limit' option; just stop enumerating when you're done.
-        If withBodies==false, document bodies will not be loaded; this is faster. */
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param database  The database.
+        @param startDocID  The document ID to begin at.
+        @param endDocID  The document ID to end at.
+        @param descending  If true, iteration goes by descending document ID. The startDocID must
+            be higher than the endDocID.
+        @param inclusiveEnd  If false, iteration stops just _before_ the endDocID.
+        @param skip  The number of initial results to skip.
+        @param withBodies  If false, document bodies will not be preloaded, just the metadata
+            (docID, revID, sequence, flags.) This is faster if you don't need to access the 
+            revision tree or revision bodies. You can still access all the data of the document, 
+            but it will trigger loading the document body from the database.
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            C4Slice startDocID,
                                            C4Slice endDocID,
@@ -197,7 +219,9 @@ extern "C" {
                                            bool withBodies,
                                            C4Error *outError);
 
-    /** Returns the next document from an enumerator, or NULL if there are no more. */
+    /** Returns the next document from an enumerator, or NULL if there are no more.
+        The caller is responsible for freeing the C4Document.
+        Don't forget to free the enumerator itself when finished with it. */
     C4Document* c4enum_nextDocument(C4DocEnumerator *e,
                                     C4Error *outError);
 
