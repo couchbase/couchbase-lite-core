@@ -4,3 +4,6 @@
 xcuserdata/
 build/
 DerivedData/
+*.userprefs
+bin/
+obj/

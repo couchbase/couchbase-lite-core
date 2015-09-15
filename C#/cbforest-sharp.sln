@@ -1,0 +1,69 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cbforest-sharp", "cbforest-sharp.csproj", "{20839831-948C-42BA-AAF1-75081209E6C5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{20839831-948C-42BA-AAF1-75081209E6C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20839831-948C-42BA-AAF1-75081209E6C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20839831-948C-42BA-AAF1-75081209E6C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20839831-948C-42BA-AAF1-75081209E6C5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.TextStylePolicy = $1
+		$1.RemoveTrailingWhitespace = False
+		$1.NoTabsAfterNonTabs = True
+		$1.inheritsSet = VisualStudio
+		$1.inheritsScope = text/plain
+		$1.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $2
+		$2.SimplePropertyFormatting = ForceNewLine
+		$2.AutoPropertyFormatting = ForceOneLine
+		$2.IndentPreprocessorDirectives = False
+		$2.AnonymousMethodBraceStyle = NextLine
+		$2.PropertyBraceStyle = NextLine
+		$2.SimpleGetBlockFormatting = ForceOneLine
+		$2.SimpleSetBlockFormatting = ForceOneLine
+		$2.EventBraceStyle = NextLine
+		$2.ArrayInitializerWrapping = DoNotWrap
+		$2.ArrayInitializerBraceStyle = NextLine
+		$2.BeforeMethodDeclarationParentheses = False
+		$2.BeforeMethodCallParentheses = False
+		$2.BeforeConstructorDeclarationParentheses = False
+		$2.NewLineBeforeConstructorInitializerColon = SameLine
+		$2.NewLineAfterConstructorInitializerColon = SameLine
+		$2.BeforeIndexerDeclarationBracket = False
+		$2.BeforeDelegateDeclarationParentheses = False
+		$2.NewParentheses = False
+		$2.IfParentheses = False
+		$2.WhileParentheses = False
+		$2.ForParentheses = False
+		$2.ForeachParentheses = False
+		$2.CatchParentheses = False
+		$2.SwitchParentheses = False
+		$2.LockParentheses = False
+		$2.UsingParentheses = False
+		$2.SpacesBeforeBrackets = False
+		$2.MethodCallArgumentWrapping = DoNotWrap
+		$2.NewLineAferMethodCallOpenParentheses = SameLine
+		$2.MethodCallClosingParenthesesOnNewLine = SameLine
+		$2.MethodDeclarationParameterWrapping = DoNotWrap
+		$2.NewLineAferMethodDeclarationOpenParentheses = SameLine
+		$2.MethodDeclarationClosingParenthesesOnNewLine = SameLine
+		$2.IndexerDeclarationParameterWrapping = DoNotWrap
+		$2.NewLineAferIndexerDeclarationOpenBracket = SameLine
+		$2.IndexerDeclarationClosingBracketOnNewLine = SameLine
+		$2.IndexerArgumentWrapping = DoNotWrap
+		$2.NewLineAferIndexerOpenBracket = SameLine
+		$2.IndexerClosingBracketOnNewLine = SameLine
+		$2.inheritsSet = Mono
+		$2.inheritsScope = text/x-csharp
+		$2.scope = text/x-csharp
+	EndGlobalSection
+EndGlobal
