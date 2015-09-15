@@ -16,6 +16,11 @@
 #include <string.h>
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /** A database sequence number, representing the order in which a revision was created. */
 typedef uint64_t C4SequenceNumber;
 
@@ -87,5 +92,9 @@ static inline C4Slice c4str(const char *str) {
 /** Frees the memory of a heap-allocated slice by calling free(chars). */
 void c4slice_free(C4Slice);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* c4_h */

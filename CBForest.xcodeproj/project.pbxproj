@@ -124,10 +124,7 @@
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04111BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
-		274D04121BA762A900FF7C35 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
-		274D04131BA762A900FF7C35 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		274D04141BA762FE00FF7C35 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
-		274D04151BA7630800FF7C35 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		274D04201BA892B100FF7C35 /* libCBForest-Interop.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */; };
 		275072C718E4AA5000A80C5A /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
 		275072C818E4AA5000A80C5A /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
 		275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
@@ -361,7 +358,6 @@
 		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
 		720EA3E31BA7EAD9002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		720EA3EA1BA7EAD9002B8416 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		720EA3EB1BA7EAD9002B8416 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		720EA3EC1BA7EAD9002B8416 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		720EA3F01BA7EAD9002B8416 /* native_glue.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D03ED1BA734A300FF7C35 /* native_glue.hh */; };
@@ -432,6 +428,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
+		};
+		274D04211BA892C500FF7C35 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "CBForest-Interop";
 		};
 		27766E1E1982DED300CAA464 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -572,6 +575,7 @@
 		274D04081BA75E1C00FF7C35 /* CppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CppTests; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libcppunit-1.13.0.dylib"; path = "../../../../usr/local/Cellar/cppunit/1.13.2/lib/libcppunit-1.13.0.dylib"; sourceTree = "<group>"; };
+		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724418E3E52800A80C5A /* CBForest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CBForest-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
@@ -830,8 +834,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				274D04151BA7630800FF7C35 /* Foundation.framework in Frameworks */,
-				274D04141BA762FE00FF7C35 /* libCBForest.a in Frameworks */,
+				274D04201BA892B100FF7C35 /* libCBForest-Interop.dylib in Frameworks */,
 				274D04111BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -871,7 +874,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				720EA3F71BA7EAEF002B8416 /* libstdc++.dylib in Frameworks */,
-				720EA3EA1BA7EAD9002B8416 /* Security.framework in Frameworks */,
 				720EA3EB1BA7EAD9002B8416 /* Foundation.framework in Frameworks */,
 				720EA3EC1BA7EAD9002B8416 /* libCBForest.a in Frameworks */,
 			);
@@ -1171,6 +1173,7 @@
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				275607781BA21DAB00F58218 /* c4View.h */,
+				274D04231BA8932800FF7C35 /* c4.exp */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
 			name = "C API";
@@ -1609,6 +1612,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
 				274D04181BA7636C00FF7C35 /* PBXTargetDependency */,
 			);
 			name = CppTests;
@@ -1899,8 +1903,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				274D04121BA762A900FF7C35 /* c4.c in Sources */,
-				274D04131BA762A900FF7C35 /* c4Database.cc in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 			);
@@ -2102,6 +2104,11 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
 			targetProxy = 274D04191BA763AE00FF7C35 /* PBXContainerItemProxy */;
+		};
+		274D04221BA892C500FF7C35 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
+			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
 		};
 		27766E1F1982DED300CAA464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2758,6 +2765,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = C/c4.exp;
 				GCC_NO_COMMON_BLOCKS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -2782,6 +2790,7 @@
 				DYLIB_CURRENT_VERSION = 1;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = C/c4.exp;
 				GCC_NO_COMMON_BLOCKS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
