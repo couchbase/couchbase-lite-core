@@ -103,7 +103,9 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 (JNIEnv *env, jclass clazz, jlong docHandle, jstring jtype)
 {
     jstringSlice type(env, jtype);
-    c4doc_setType((C4Document*)docHandle, type);
+    C4Error error;
+    if (!c4doc_setType((C4Document*)docHandle, type, &error))
+        throwError(env, error);
 }
 
 
@@ -115,7 +117,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
     jstringSlice revID(env, jrevID);
     C4Error error;
     bool ok = c4doc_selectRevision(doc, revID, withBody, &error);
-    if (ok || error.domain == C4Error::HTTPDomain)
+    if (ok || error.domain == HTTPDomain)
         updateSelection(env, self, doc);
     else
         throwError(env, error);
@@ -159,7 +161,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
     auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
     C4Error error;
     bool ok = c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &error);
-    if (ok || error.domain == C4Error::HTTPDomain)  // 404 or 410 don't trigger exceptions
+    if (ok || error.domain == HTTPDomain)  // 404 or 410 don't trigger exceptions
         updateSelection(env, self, doc, withBody);
     else
         throwError(env, error);

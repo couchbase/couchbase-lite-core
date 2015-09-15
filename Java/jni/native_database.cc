@@ -51,7 +51,9 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
     auto db = getDbHandle(env, self);
     if (db) {
         env->SetLongField(self, kHandleField, 0);
-        c4db_close(db);
+        C4Error error;
+        if (!c4db_close(db, &error))
+            throwError(env, error);
     }
 }
 

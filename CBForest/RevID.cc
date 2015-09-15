@@ -103,6 +103,8 @@ namespace forestdb {
     }
 
     alloc_slice revid::expanded() const {
+        if (!buf)
+            return alloc_slice();
         alloc_slice result(expandedSize());
         _expandInto(result);
         return result;

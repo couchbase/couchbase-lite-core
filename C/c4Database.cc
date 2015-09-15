@@ -39,26 +39,24 @@ using namespace forestdb;
 #define kAutoCompactInterval (5*60.0)
 
 
-static void recordHTTPError(int httpStatus, C4Error* outError) {
+static void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
     if (outError) {
-        outError->domain = C4Error::HTTPDomain;
-        outError->code = httpStatus;
+        outError->domain = domain;
+        outError->code = code;
     }
 }
 
+static void recordHTTPError(int httpStatus, C4Error* outError) {
+    recordError(HTTPDomain, httpStatus, outError);
+}
+
 static void recordError(error e, C4Error* outError) {
-    if (outError) {
-        outError->domain = C4Error::ForestDBDomain;
-        outError->code = e.status;
-    }
+    recordError(ForestDBDomain, e.status, outError);
 }
 
 static void recordUnknownException(C4Error* outError) {
     Warn("Unexpected C++ exception thrown from CBForest");
-    if (outError) {
-        outError->domain = C4Error::C4Domain;
-        outError->code = 2;
-    }
+    recordError(C4Domain, kC4ErrorInternalException, outError);
 }
 
 
@@ -96,8 +94,23 @@ struct c4Database {
 
     bool inTransaction() { return _transactionLevel > 0; }
 
-    void endTransaction(bool commit = true) {
-        assert(_transactionLevel > 0);
+    bool mustBeInTransaction(C4Error *outError) {
+        if (inTransaction())
+            return true;
+        recordError(C4Domain, kC4ErrorNotInTransaction, outError);
+        return false;
+    }
+
+    bool mustNotBeInTransaction(C4Error *outError) {
+        if (!inTransaction())
+            return true;
+        recordError(C4Domain, kC4ErrorTransactionNotClosed, outError);
+        return false;
+    }
+
+    bool endTransaction(bool commit, C4Error *outError) {
+        if (!mustBeInTransaction(outError))
+            return false;
         if (--_transactionLevel == 0) {
             auto t = _transaction;
             _transaction = NULL;
@@ -105,6 +118,7 @@ struct c4Database {
                 t->abort();
             delete t; // this commits/aborts the transaction
         }
+        return true;
     }
 
 private:
@@ -136,8 +150,26 @@ C4Database* c4db_open(C4Slice path,
 }
 
 
-void c4db_close(C4Database* database) {
-    delete database;
+bool c4db_close(C4Database* database, C4Error *outError) {
+    if (!database->mustNotBeInTransaction(outError))
+        return false;
+    try {
+        delete database;
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
+bool c4db_delete(C4Database* database, C4Error *outError) {
+    if (!database->mustNotBeInTransaction(outError))
+        return false;
+    try {
+        database->_db->deleteDatabase();
+        delete database;
+        return true;
+    } catchError(outError);
+    return false;
 }
 
 
@@ -168,6 +200,7 @@ bool c4db_isInTransaction(C4Database* database) {
     return database->inTransaction();
 }
 
+
 bool c4db_beginTransaction(C4Database* database,
                            C4Error *outError)
 {
@@ -183,8 +216,7 @@ bool c4db_endTransaction(C4Database* database,
                          C4Error *outError)
 {
     try {
-        database->endTransaction(commit);
-        return true;
+        return database->endTransaction(commit, outError);
     } catchError(outError);
     return false;
 }
@@ -243,10 +275,10 @@ bool c4raw_put(C4Database* database,
         else
             localWriter.del(key);
         abort = false;
-        database->endTransaction();
+        return database->endTransaction(true, outError);
     } catchError(outError);
     if (abort)
-        database->endTransaction(false);
+        database->endTransaction(false, NULL);
     return false;
 }
 
@@ -258,6 +290,8 @@ struct C4DocumentInternal : public C4Document {
     C4Database* _db;
     VersionedDocument _versionedDoc;
     const Revision *_selectedRev;
+    alloc_slice _revIDBuf;
+    alloc_slice _selectedRevIDBuf;
     alloc_slice _loadedBody;
 
     C4DocumentInternal(C4Database* database, C4Slice docID)
@@ -278,23 +312,30 @@ struct C4DocumentInternal : public C4Document {
 
     void init() {
         docID = _versionedDoc.docID();
-        revID = _versionedDoc.revID();
         flags = (C4DocumentFlags)_versionedDoc.flags();
         if (_versionedDoc.exists())
             flags = (C4DocumentFlags)(flags | kExists);
+        initRevID();
         selectRevision(_versionedDoc.currentRevision());
+    }
+
+    void initRevID() {
+        _revIDBuf = _versionedDoc.revID().expanded();
+        revID = _revIDBuf;
     }
 
     bool selectRevision(const Revision *rev, C4Error *outError =NULL) {
         _selectedRev = rev;
         _loadedBody = slice::null;
         if (rev) {
-            selectedRev.revID = rev->revID;
+            _selectedRevIDBuf = rev->revID.expanded();
+            selectedRev.revID = _selectedRevIDBuf;
             selectedRev.flags = (C4RevisionFlags)rev->flags;
             selectedRev.sequence = rev->sequence;
             selectedRev.body = rev->inlineBody();
             return true;
         } else {
+            _selectedRevIDBuf = slice::null;
             selectedRev.revID = slice::null;
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
@@ -322,7 +363,7 @@ struct C4DocumentInternal : public C4Document {
     void updateMeta() {
         _versionedDoc.updateMeta();
         flags = (C4DocumentFlags)(_versionedDoc.flags() | kExists);
-        revID = _versionedDoc.revID();
+        initRevID();
     }
 };
 
@@ -428,10 +469,12 @@ bool c4doc_insertRevision(C4Document *doc,
                           C4Error *outError)
 {
     auto idoc = internal(doc);
-    assert(idoc->_db->inTransaction());
+    if (!idoc->_db->mustBeInTransaction(outError))
+        return false;
     try {
+        revidBuffer encodedRevID(revID);
         int httpStatus;
-        auto newRev = idoc->_versionedDoc.insert(revidBuffer(revID),
+        auto newRev = idoc->_versionedDoc.insert(encodedRevID,
                                                  body,
                                                  deleted,
                                                  hasAttachments,
@@ -440,6 +483,7 @@ bool c4doc_insertRevision(C4Document *doc,
                                                  httpStatus);
         if (newRev) {
             idoc->updateMeta();
+            newRev = idoc->_versionedDoc.get(encodedRevID);
             return idoc->selectRevision(newRev);
         }
         recordHTTPError(httpStatus, outError);
@@ -458,7 +502,8 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
                                     C4Error *outError)
 {
     auto idoc = internal(doc);
-    assert(idoc->_db->inTransaction());
+    if (!idoc->_db->mustBeInTransaction(outError))
+        return -1;
     int commonAncestor = -1;
     try {
         std::vector<revidBuffer> revIDBuffers;
@@ -488,10 +533,12 @@ C4SliceResult c4doc_getType(C4Document *doc) {
     return (C4SliceResult){result.buf, result.size};
 }
 
-void c4doc_setType(C4Document *doc, C4Slice docType) {
+bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError) {
     auto idoc = internal(doc);
-    assert(idoc->_db->inTransaction());
+    if (!idoc->_db->mustBeInTransaction(outError))
+        return false;
     idoc->_versionedDoc.setDocType(docType);
+    return true;
 }
 
 
@@ -500,7 +547,8 @@ bool c4doc_save(C4Document *doc,
                 C4Error *outError)
 {
     auto idoc = internal(doc);
-    assert(idoc->_db->inTransaction());
+    if (!idoc->_db->mustBeInTransaction(outError))
+        return false;
     try {
         idoc->_versionedDoc.prune(maxRevTreeDepth);
         idoc->_versionedDoc.save(*idoc->_db->transaction());
@@ -545,12 +593,15 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        bool withBodies,
                                        C4Error *outError)
 {
-    auto options = DocEnumerator::Options::kDefault;
-    options.inclusiveEnd = true;
-    options.includeDeleted = false;
-    if (!withBodies)
-        options.contentOptions = KeyStore::kMetaOnly;
-    return new C4DocEnumerator(database, since+1, UINT64_MAX, options);
+    try {
+        auto options = DocEnumerator::Options::kDefault;
+        options.inclusiveEnd = true;
+        options.includeDeleted = false;
+        if (!withBodies)
+            options.contentOptions = KeyStore::kMetaOnly;
+        return new C4DocEnumerator(database, since+1, UINT64_MAX, options);
+    } catchError(outError);
+    return NULL;
 }
 
 
@@ -563,13 +614,16 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        bool withBodies,
                                        C4Error *outError)
 {
-    auto options = DocEnumerator::Options::kDefault;
-    options.skip = skip;
-    options.descending = descending;
-    options.inclusiveEnd = inclusiveEnd;
-    if (!withBodies)
-        options.contentOptions = KeyStore::kMetaOnly;
-    return new C4DocEnumerator(database, startDocID, endDocID, options);
+    try {
+        auto options = DocEnumerator::Options::kDefault;
+        options.skip = skip;
+        options.descending = descending;
+        options.inclusiveEnd = inclusiveEnd;
+        if (!withBodies)
+            options.contentOptions = KeyStore::kMetaOnly;
+        return new C4DocEnumerator(database, startDocID, endDocID, options);
+    } catchError(outError);
+    return NULL;
 }
 
 

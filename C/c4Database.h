@@ -29,7 +29,10 @@ extern "C" {
                           C4Error *outError);
 
     /** Closes the database and frees the object. */
-    void c4db_close(C4Database* database);
+    bool c4db_close(C4Database* database, C4Error *outError);
+
+    /** Closes the database, deletes the file, and frees the object. */
+    bool c4db_delete(C4Database* database, C4Error *outError);
 
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);
@@ -246,7 +249,7 @@ extern "C" {
 
     /** Sets a document's docType. (By convention this is the value of the "type" property of the current revision's JSON; this value can be used as optimization when indexing a view.)
         The change will not be persisted until the document is saved. */
-    void c4doc_setType(C4Document *doc, C4Slice docType);
+    bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
