@@ -25,52 +25,75 @@ static const size_t kViewDBWALThreshold = 1024;
 
 
 struct c4Key : public Collatable {
-    c4Key()     :Collatable() { }
+    c4Key()                 :Collatable() { }
+    c4Key(C4Slice bytes)    :Collatable(bytes, true) { }
 };
 
+C4Key* c4key_new()                              {return new c4Key();}
+C4Key* c4key_withBytes(C4Slice bytes)           {return new c4Key(bytes);}
+void c4key_free(C4Key *key)                     {delete key;}
+void c4key_addNull(C4Key *key)                  {key->addNull();}
+void c4key_addBool(C4Key *key, bool b)          {key->addBool(b);}
+void c4key_addNumber(C4Key *key, double n)      {*key << n;}
+void c4key_addString(C4Key *key, C4Slice str)   {*key << str;}
+void c4key_addMapKey(C4Key *key, C4Slice mapKey){*key << mapKey;}
+void c4key_beginArray(C4Key *key)               {key->beginArray();}
+void c4key_endArray(C4Key *key)                 {key->endArray();}
+void c4key_beginMap(C4Key *key)                 {key->beginMap();}
+void c4key_endMap(C4Key *key)                   {key->endMap();}
 
-C4Key* c4key_new() {
-    return new c4Key();
+// C4KeyReader is really a stand-in for CollatableReader, which itself consists of nothing but
+// a slice. So these functions use pointer-casting to reinterpret C4KeyReader as CollatableReader.
+
+C4KeyReader c4key_read(C4Key *key) {
+    CollatableReader r(*key);
+    return *(C4KeyReader*)&r;
 }
 
-void c4key_free(C4Key *key) {
-    delete key;
+
+C4KeyToken c4key_peek(C4KeyReader* r) {
+    static const C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,
+                                    kC4Number, kC4String, kC4Array, kC4Map, kC4Error, kC4Special};
+    Collatable::Tag t = ((CollatableReader*)r)->peekTag();
+    if (t >= sizeof(tagToType)/sizeof(tagToType[0]))
+        return kC4Error;
+    return tagToType[t];
 }
 
-void c4Key_addNull(C4Key *key) {
-    key->addNull();
+void c4key_skipToken(C4KeyReader* r) {
+    ((CollatableReader*)r)->skipTag();
 }
 
-void c4key_addBool(C4Key *key, bool b) {
-    key->addBool(b);
+bool c4key_readBool(C4KeyReader* r) {
+    bool result = false;
+    try {
+        result = ((CollatableReader*)r)->peekTag() >= CollatableReader::kTrue;
+        ((CollatableReader*)r)->skipTag();
+    } catchError(NULL)
+    return result;
 }
 
-void c4key_addNumber(C4Key *key, double n) {
-    *key << n;
+double c4key_readNumber(C4KeyReader* r) {
+    try {
+    return ((CollatableReader*)r)->readDouble();
+    } catchError(NULL)
+    return nan("err");  // ????
 }
 
-void c4key_addString(C4Key *key, C4Slice str) {
-    *key << str;
+C4SliceResult c4key_readString(C4KeyReader* r) {
+    slice s;
+    try {
+        s = ((CollatableReader*)r)->readString().copy();
+        //OPT: This makes an extra copy because I can't find a way to 'adopt' the allocated block
+        // managed by the alloc_slice's std::shared_ptr.
+    } catchError(NULL)
+    return (C4SliceResult){s.buf, s.size};
 }
 
-void c4key_addMapKey(C4Key *key, C4Slice mapKey) {
-    *key << mapKey;
-}
-
-void c4key_beginArray(C4Key *key) {
-    key->beginArray();
-}
-
-void c4key_endArray(C4Key *key) {
-    key->endArray();
-}
-
-void c4key_beginMap(C4Key *key) {
-    key->beginMap();
-}
-
-void c4key_endMap(C4Key *key) {
-    key->endMap();
+C4SliceResult c4key_dump(C4KeyReader* r) {
+    std::string str = ((CollatableReader*)r)->dump();
+    auto s = ((slice)str).copy();
+    return (C4SliceResult){s.buf, s.size};
 }
 
 

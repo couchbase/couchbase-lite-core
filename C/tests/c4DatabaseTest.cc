@@ -6,74 +6,15 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-//  Requires CppUnit <http://sourceforge.net/projects/cppunit/> which you can install using
-//  'brew' or 'apt_get' or whatever.
+//  Requires CppUnit <http://sourceforge.net/projects/cppunit/>,
+//  which you can install using 'brew' or 'apt_get' or whatever.
 
-#include <cppunit/TestCase.h>
-#include <cppunit/extensions/HelperMacros.h>
-#include "c4Database.h"
+#include "c4Test.hh"
 #include "forestdb.h"
-#include "iostream"
 
 
-#define Assert CPPUNIT_ASSERT
-#define AssertEqual(ACTUAL, EXPECTED) CPPUNIT_ASSERT_EQUAL(EXPECTED, ACTUAL)
-
-
-static bool operator== (C4Slice s1, C4Slice s2) {
-    return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
-}
-
-static std::ostream& operator<< (std::ostream& o, C4Slice s) {
-    auto buf = (const uint8_t*)s.buf;
-    for (size_t i = 0; i < s.size; i++) {
-        if (buf[i] < 32 || buf[i] > 126)
-            return o << "C4Slice[binary, " << s.size << " bytes]";
-    }
-    return o << "C4Slice[\"" << std::string((char*)s.buf, s.size) << "\"]";
-}
-
-
-// This helper is necessary because it ends an open transaction if an assertion fails.
-// If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.
-class TransactionHelper {
+class C4DatabaseTest : public C4Test {
     public:
-    TransactionHelper(C4Database* db)
-    :_db(NULL)
-    {
-        C4Error error;
-        Assert(c4db_beginTransaction(db, &error));
-        _db = db;
-    }
-
-    ~TransactionHelper() {
-        if (_db) {
-            C4Error error;
-            Assert(c4db_endTransaction(_db, true, &error));
-        }
-    }
-
-    private:
-    C4Database* _db;
-};
-
-
-class C4DatabaseTest : public CppUnit::TestFixture {
-    public:
-
-    void setUp() {
-        const char *dbPath = "/tmp/forest_temp.fdb";
-        ::unlink(dbPath);
-        C4Error error;
-        db = c4db_open(c4str(dbPath), false, &error);
-        Assert(db != NULL);
-    }
-
-    void tearDown() {
-        C4Error error;
-        Assert(c4db_delete(db, &error));
-    }
-
 
     void testTransaction() {
         AssertEqual(c4db_getDocumentCount(db), 0uLL);
@@ -189,7 +130,9 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         C4Document* doc;
 
         // No start or end ID:
-        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, NULL, &error);
+        C4AllDocsOptions options = kC4DefaultAllDocsOptions;
+        options.includeBodies = false;
+        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
         Assert(e);
         int i = 1;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -261,24 +204,6 @@ class C4DatabaseTest : public CppUnit::TestFixture {
     }
 
 
-    private:
-
-    void createRev(C4Slice docID, C4Slice revID, C4Slice body) {
-        TransactionHelper t(db);
-        C4Error error;
-        C4Document *doc = c4doc_get(db, docID, false, &error);
-        Assert(doc != NULL);
-        Assert(c4doc_insertRevision(doc, revID,  body,  false, false, false, &error));
-        Assert(c4doc_save(doc, 20, &error));
-        c4doc_free(doc);
-    }
-
-    C4Database *db;
-
-    static const C4Slice kDocID;
-    static const C4Slice kRevID;
-    static const C4Slice kBody;
-
     CPPUNIT_TEST_SUITE( C4DatabaseTest );
     CPPUNIT_TEST( testTransaction );
     CPPUNIT_TEST( testCreateRawDoc );
@@ -288,11 +213,6 @@ class C4DatabaseTest : public CppUnit::TestFixture {
     CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST_SUITE_END();
 };
-
-
-const C4Slice C4DatabaseTest::kDocID = C4STR("mydoc");
-const C4Slice C4DatabaseTest::kRevID = C4STR("1-abcdef");
-const C4Slice C4DatabaseTest::kBody  = C4STR("{\"name\":007}");
 
 
 CPPUNIT_TEST_SUITE_REGISTRATION(C4DatabaseTest);

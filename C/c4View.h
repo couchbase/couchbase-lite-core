@@ -21,13 +21,14 @@ extern "C" {
     //////// KEYS:
 
 
-    /** An opaque value used as a key in a view index. JSON-compatible. */
+    /** An opaque value used as a key or value in a view index. JSON-compatible. */
     typedef struct c4Key C4Key;
 
     C4Key* c4key_new();
+    C4Key* c4key_withBytes(C4Slice);
     void c4key_free(C4Key*);
 
-    void c4Key_addNull(C4Key*);
+    void c4key_addNull(C4Key*);
     void c4key_addBool(C4Key*, bool);
     void c4key_addNumber(C4Key*, double);
     void c4key_addString(C4Key*, C4Slice);
@@ -40,8 +41,13 @@ extern "C" {
     void c4key_endMap(C4Key*);
 
 
-    typedef C4Slice C4KeyReader;
+    /** An opaque struct pointing to the raw data of an encoded key. The functions that operate
+        on this allow it to be parsed by reading items one at a time (similar to SAX parsing.) */
+    typedef struct {
+        const void *a, *b;
+    } C4KeyReader;
 
+    /** The types of tokens in a key. */
     typedef enum {
         kC4Null,
         kC4Bool,
@@ -52,13 +58,28 @@ extern "C" {
         kC4EndSequence,
         kC4Special,
         kC4Error = 255
-    } C4KeyItemType;
+    } C4KeyToken;
 
-    C4KeyItemType c4key_peek(C4KeyReader*);
-    void c4key_next(C4KeyReader*);
-    bool c4Key_readBool(C4KeyReader*);
-    double c4Key_readNumber(C4KeyReader*);
-    C4SliceResult c4Key_readString(C4KeyReader*);  // remember to free the result
+    /** Returns a C4KeyReader that can parse the contents of a C4Key.
+        Warning: Adding to the C4Key will invalidate the reader. */
+    C4KeyReader c4key_read(C4Key *key);
+
+    /** Returns the type of the next item in the key, or kC4Error at the end of the key or if the
+        data is corrupt. */
+    C4KeyToken c4key_peek(C4KeyReader*);
+
+    /** Skips the next token in the key. If that token is kC4Array or kC4Map, the reader will
+        now be positioned at the first item of the collection. */
+    void c4key_skipToken(C4KeyReader*);
+
+    bool c4key_readBool(C4KeyReader*);
+    double c4key_readNumber(C4KeyReader*);
+    C4SliceResult c4key_readString(C4KeyReader*);  // remember to free the result
+
+    /** Returns a string with a human-readable dump of the key, in a form almost like JSON.
+        (It's actually identical to JSON except that special characters in strings arent' escaped.)
+        For testing/debugging purposes only. Remember to free the result. */
+    C4SliceResult c4key_dump(C4KeyReader*);
 
 
     //////// VIEWS:

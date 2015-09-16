@@ -244,15 +244,15 @@ namespace forestdb {
         }
         switch(peekTag()) {
             case kNull:
-                skipTag();
+                _skipTag();
                 out << "null";
                 break;
             case kFalse:
-                skipTag();
+                _skipTag();
                 out << "false";
                 break;
             case kTrue:
-                skipTag();
+                _skipTag();
                 out << "true";
                 break;
             case kNegative:

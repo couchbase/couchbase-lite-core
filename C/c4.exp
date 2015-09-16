@@ -45,7 +45,7 @@ _kC4DefaultQueryOptions
 
 _c4key_new
 _c4key_free
-_c4Key_addNull
+_c4key_addNull
 _c4key_addBool
 _c4key_addNumber
 _c4key_addString
@@ -54,6 +54,14 @@ _c4key_beginArray
 _c4key_endArray
 _c4key_beginMap
 _c4key_endMap
+
+_c4key_read
+_c4key_peek
+_c4key_skipToken
+_c4key_readBool
+_c4key_readNumber
+_c4key_readString
+_c4key_dump
 
 _c4view_open
 _c4view_close
