@@ -3,10 +3,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{20839831-948C-42BA-AAF1-75081209E6C5}</ProjectGuid>
+    <ProjectGuid>{E1929D98-BF32-47E4-8E1E-897782DAED1F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>forestdbsharp</RootNamespace>
-    <AssemblyName>cbforest-sharp</AssemblyName>
+    <RootNamespace>cbforestsharptests.Net45</RootNamespace>
+    <AssemblyName>cbforest-sharp-tests.Net45</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -33,16 +33,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="nunit.framework">
+      <HintPath>..\..\..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
+    </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Types.cs" />
-    <Compile Include="Native.cs" />
-  </ItemGroup>
+  <Import Project="..\cbforest-sharp-tests.Shared\cbforest-sharp-tests.Shared.projitems" Label="Shared" Condition="Exists('..\cbforest-sharp-tests.Shared\cbforest-sharp-tests.Shared.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="cbforest-sharp.dll.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\cbforest-sharp.Net45\cbforest-sharp.Net45.csproj">
+      <Project>{20839831-948C-42BA-AAF1-75081209E6C5}</Project>
+      <Name>cbforest-sharp.Net45</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

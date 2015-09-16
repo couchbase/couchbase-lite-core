@@ -24,9 +24,19 @@ using System.Runtime.InteropServices;
 
 namespace CBForest
 {
+#if __IOS__
+    [ObjCRuntime.LinkWith("libCBForest-iOS.a", ObjCRuntime.LinkTarget.Arm64 | ObjCRuntime.LinkTarget.ArmV7 | ObjCRuntime.LinkTarget.ArmV7s)]
+#endif
     public static unsafe class Native
     {
+#if __IOS__
+        private const string DLL_NAME = "__Internal";
+#else
         private const string DLL_NAME = "CBForest.dll";
+#endif
+        
+        [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
+        public static extern int memcmp(void* b1, void* b2, UIntPtr count);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4slice_free(C4Slice slice);
@@ -118,6 +128,16 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4doc_free(C4Document *doc);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern C4Document* c4doc_get(C4Database *db, C4Slice docID, byte mustExist, C4Error *outError);
+        
+        public static C4Document* c4doc_get(C4Database *db, string docID, bool mustExist, C4Error *outError)
+        {
+            using(var docID_ = new C4String(docID)) {
+                return c4doc_get(db, docID_.AsC4Slice(), Convert.ToByte(mustExist), outError);   
+            }
+        }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_getType")]
         private static extern C4Slice _c4doc_getType(C4Document *doc);

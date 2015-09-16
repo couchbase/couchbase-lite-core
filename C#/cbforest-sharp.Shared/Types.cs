@@ -45,7 +45,7 @@ namespace CBForest
         public int code;
     }
     
-    public struct C4String : IDisposable
+    internal struct C4String : IDisposable
     {
         private GCHandle _handle;
         
@@ -67,7 +67,7 @@ namespace CBForest
         
         public unsafe C4Slice AsC4Slice()
         {
-            if(_handle.Target == null || !_handle.IsAllocated) {
+            if(!_handle.IsAllocated || _handle.Target == null) {
                 return C4Slice.NULL;
             }
 
@@ -76,18 +76,12 @@ namespace CBForest
         }
     }
     
-    public unsafe struct C4Slice
+    public unsafe struct C4Slice : IEquatable<string>
     {
         public static readonly C4Slice NULL = new C4Slice();
         
-        public void* buf;
-        public UIntPtr size;
-        
-        public C4Slice()
-        {
-            buf = null;
-            size = UIntPtr.Zero;
-        }
+        public readonly void* buf;
+        public readonly UIntPtr size;
         
         public C4Slice(void *buf, uint size)
         {
@@ -100,6 +94,72 @@ namespace CBForest
             var bytes = (SByte*)slice.buf; 
             return new string(bytes, 0, (int)slice.size.ToUInt32(), Encoding.UTF8);
         }
+        
+        public static bool operator ==(C4Slice a, C4Slice b)
+        {
+            return a.Equals(b);   
+        }
+        
+        public static bool operator ==(C4Slice a, string b)
+        {
+            return a.Equals(b);   
+        }
+        
+        public static bool operator !=(C4Slice a, C4Slice b)
+        {
+            return !a.Equals(b);   
+        }
+
+        public static bool operator !=(C4Slice a, string b)
+        {
+            return !a.Equals(b);   
+        }
+        
+        private bool Equals(C4Slice other)
+        {
+            return size == other.size && Native.memcmp(buf, other.buf, size) == 0;
+        }
+        
+        public override string ToString()
+        {
+            return String.Format("C4Slice[\"{0}\"]", (string)this);
+        }
+        
+        public override bool Equals(object obj)
+        {
+            if(obj is C4Slice) {
+                return Equals((C4Slice)obj);
+            }
+            
+            var str = obj as string;
+            return str != null && Equals(str);
+        }
+        
+        public override int GetHashCode()
+        {
+            unchecked 
+            {
+                int hash = 17;
+  
+                hash = hash * 23 + (int)size.ToUInt32();
+                var ptr = (byte*)buf;
+                hash = hash * 23 + ptr[size.ToUInt32() - 1];
+                
+                return hash;
+            }
+        }
+
+        #region IEquatable implementation
+
+        public bool Equals(string other)
+        {
+            var bytes = Encoding.UTF8.GetBytes(other);
+            fixed(byte* ptr = bytes) {
+                return Native.memcmp(buf, ptr, size) == 0;
+            }
+        }
+
+        #endregion
     }
     
     public struct C4RawDocument

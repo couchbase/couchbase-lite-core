@@ -358,10 +358,24 @@
 		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
 		720EA3E31BA7EAD9002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		720EA3EB1BA7EAD9002B8416 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
-		720EA3EC1BA7EAD9002B8416 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
-		720EA3F01BA7EAD9002B8416 /* native_glue.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D03ED1BA734A300FF7C35 /* native_glue.hh */; };
-		720EA3F71BA7EAEF002B8416 /* libstdc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */; };
+		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
+		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
+		720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
+		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		720EA40F1BA8D834002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		720EA4101BA8D834002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		720EA4131BA8D834002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		720EA4141BA8D834002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		720EA4151BA8D834002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		720EA4181BA8D834002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
@@ -471,12 +485,19 @@
 			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
 			remoteInfo = forestdb;
 		};
-		720EA3DD1BA7EAD9002B8416 /* PBXContainerItemProxy */ = {
+		720EA4211BA8F386002B8416 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
-			remoteInfo = "CBForest static";
+			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
+			remoteInfo = forestdb;
+		};
+		720EA4231BA8F388002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF807319142C2500A327B9;
+			remoteInfo = Tokenizer;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -873,9 +894,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				720EA3F71BA7EAEF002B8416 /* libstdc++.dylib in Frameworks */,
-				720EA3EB1BA7EAD9002B8416 /* Foundation.framework in Frameworks */,
-				720EA3EC1BA7EAD9002B8416 /* libCBForest.a in Frameworks */,
+				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
+				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1503,7 +1523,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				720EA3F01BA7EAD9002B8416 /* native_glue.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1702,7 +1721,8 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
-				720EA3DC1BA7EAD9002B8416 /* PBXTargetDependency */,
+				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
+				720EA4221BA8F386002B8416 /* PBXTargetDependency */,
 			);
 			name = "CBForest-Interop";
 			productName = CBForestJNI;
@@ -2072,7 +2092,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				720EA4101BA8D834002B8416 /* Document.cc in Sources */,
+				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
+				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
 				720EA3E31BA7EAD9002B8416 /* c4.c in Sources */,
+				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
+				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
+				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
+				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
+				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
+				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
+				720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */,
+				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
+				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
+				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
+				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
+				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
+				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2135,10 +2171,15 @@
 			target = 275072C218E4AA4400A80C5A /* forestdb */;
 			targetProxy = 27FA99E11917F10C00912F96 /* PBXContainerItemProxy */;
 		};
-		720EA3DC1BA7EAD9002B8416 /* PBXTargetDependency */ = {
+		720EA4221BA8F386002B8416 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
-			targetProxy = 720EA3DD1BA7EAD9002B8416 /* PBXContainerItemProxy */;
+			target = 275072C218E4AA4400A80C5A /* forestdb */;
+			targetProxy = 720EA4211BA8F386002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA4241BA8F388002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF807319142C2500A327B9 /* Tokenizer */;
+			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
