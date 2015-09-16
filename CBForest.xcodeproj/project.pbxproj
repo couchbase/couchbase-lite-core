@@ -212,8 +212,6 @@
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
@@ -376,6 +374,27 @@
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
+		720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		720EA4541BA909C4002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		720EA4561BA909C4002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		720EA4571BA909C4002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		720EA45F1BA909C4002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		720EA4611BA909C4002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		720EA4621BA909C4002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
+		720EA4651BA909C4002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
+		720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
+		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
+		720EA4701BA90A0C002B8416 /* libstdc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46F1BA90A0C002B8416 /* libstdc++.dylib */; };
+		720EA4711BA90A18002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		720EA4721BA90A1C002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
@@ -499,6 +518,20 @@
 			remoteGlobalIDString = 27EF807319142C2500A327B9;
 			remoteInfo = Tokenizer;
 		};
+		720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
+			remoteInfo = "forestdb iOS";
+		};
+		720EA4501BA909C4002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FA99F419180B5F00912F96;
+			remoteInfo = "Tokenizer-iOS";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -521,6 +554,15 @@
 			runOnlyForDeploymentPostprocessing = 1;
 		};
 		27EF810E1917EEC600A327B9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		720EA46A1BA909C4002B8416 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -795,6 +837,8 @@
 		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = ../CBForest/varint.hh; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libCBForest-Interop.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
+		720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-Interop.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		720EA46F1BA90A0C002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk/usr/lib/libstdc++.dylib"; sourceTree = DEVELOPER_DIR; };
 		9399E72C1B7E536700D4BE79 /* Slice_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slice_Test.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -899,6 +943,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		720EA4661BA909C4002B8416 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA4701BA90A0C002B8416 /* libstdc++.dylib in Frameworks */,
+				720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */,
+				720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -1000,6 +1054,7 @@
 				274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */,
 				274D04081BA75E1C00FF7C35 /* CppTests */,
 				720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */,
+				720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1007,6 +1062,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				720EA46F1BA90A0C002B8416 /* libstdc++.dylib */,
 				720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */,
 				274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */,
 				274D03E31BA7330A00FF7C35 /* libstdc++.tbd */,
@@ -1729,6 +1785,25 @@
 			productReference = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
+		720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */;
+			buildPhases = (
+				720EA4511BA909C4002B8416 /* Sources */,
+				720EA4661BA909C4002B8416 /* Frameworks */,
+				720EA46A1BA909C4002B8416 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				720EA44D1BA909C4002B8416 /* PBXTargetDependency */,
+				720EA44F1BA909C4002B8416 /* PBXTargetDependency */,
+			);
+			name = "CBForest-Interop iOS";
+			productName = "CBForest-iOS";
+			productReference = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1776,6 +1851,7 @@
 				274D03D21BA732B000FF7C35 /* CBForestJNI */,
 				274D04071BA75E1C00FF7C35 /* CppTests */,
 				720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */,
+				720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -1834,7 +1910,6 @@
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
 				2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */,
-				27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
@@ -1948,7 +2023,6 @@
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
 				2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */,
-				27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
@@ -2113,6 +2187,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		720EA4511BA909C4002B8416 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA4721BA90A1C002B8416 /* c4.c in Sources */,
+				720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */,
+				720EA4541BA909C4002B8416 /* Database.cc in Sources */,
+				720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */,
+				720EA4561BA909C4002B8416 /* Document.cc in Sources */,
+				720EA4571BA909C4002B8416 /* Geohash.cc in Sources */,
+				720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */,
+				720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */,
+				720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */,
+				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
+				720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */,
+				720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */,
+				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
+				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
+				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
+				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
+				720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */,
+				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -2180,6 +2279,16 @@
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
 			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA44D1BA909C4002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
+			targetProxy = 720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA44F1BA909C4002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FA99F419180B5F00912F96 /* Tokenizer-iOS */;
+			targetProxy = 720EA4501BA909C4002B8416 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2797,6 +2906,7 @@
 		720EA3F31BA7EAD9002B8416 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"ADDITIONAL_SDKS[arch=*]" = "";
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				DEAD_CODE_STRIPPING = YES;
@@ -2842,6 +2952,51 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "CBForest-Interop";
+			};
+			name = Release;
+		};
+		720EA46C1BA909C4002B8416 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/CBForest_iOS.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "CBForest-Interop";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+			};
+			name = Debug;
+		};
+		720EA46D1BA909C4002B8416 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DSTROOT = /tmp/CBForest_iOS.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "CBForest-Interop";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -2961,6 +3116,15 @@
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				720EA46C1BA909C4002B8416 /* Debug */,
+				720EA46D1BA909C4002B8416 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

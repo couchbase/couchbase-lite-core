@@ -33,7 +33,7 @@ namespace CBForest.Tests
     
     internal unsafe sealed class TransactionHelper : IDisposable
     {
-        private C4Database *_db;
+        private readonly C4Database *_db;
         
         public TransactionHelper(C4Database *db)
         {
@@ -63,8 +63,10 @@ namespace CBForest.Tests
         [SetUp]
         public void SetUp()
         {
-            var dbPath = Path.Combine(Path.GetTempPath(), "forest_temp.fdb");
+            var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp.fdb");
+#if !__IOS__
             TestNative.unlink(dbPath);
+#endif
             C4Error error;
             _db = Native.c4db_open(dbPath, false, &error);
             Assert.IsFalse(_db == null);

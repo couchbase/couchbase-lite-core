@@ -22,11 +22,14 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 
+#if __IOS__
+[assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
+    ObjCRuntime.LinkTarget.Arm64 | ObjCRuntime.LinkTarget.ArmV7 | ObjCRuntime.LinkTarget.ArmV7s, ForceLoad=true,
+    LinkerFlags="-lsqlite3 -lc++", Frameworks="", IsCxx=true)]
+#endif
+
 namespace CBForest
 {
-#if __IOS__
-    [ObjCRuntime.LinkWith("libCBForest-iOS.a", ObjCRuntime.LinkTarget.Arm64 | ObjCRuntime.LinkTarget.ArmV7 | ObjCRuntime.LinkTarget.ArmV7s)]
-#endif
     public static unsafe class Native
     {
 #if __IOS__
