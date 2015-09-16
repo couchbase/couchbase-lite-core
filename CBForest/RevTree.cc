@@ -17,7 +17,11 @@
 #include "varint.hh"
 #include <forestdb.h>
 #include <algorithm>
+#ifdef _MSC_VER
+#include <WinSock2.h>
+#else
 #include <arpa/inet.h>  // for htons, etc.
+#endif
 #include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
@@ -162,7 +166,7 @@ namespace forestdb {
         if (dst->flags & RawRevision::kHasData) {
             memcpy(dstData, this->body.buf, this->body.size);
         } else if (dst->flags & RawRevision::kHasBodyOffset) {
-            /*dstData +=*/ PutUVarInt(dstData, this->oldBodyOffset ?: bodyOffset);
+            /*dstData +=*/ PutUVarInt(dstData, this->oldBodyOffset ? this->oldBodyOffset : bodyOffset);
         }
 
         return (RawRevision*)offsetby(dst, revSize);
@@ -480,7 +484,7 @@ namespace forestdb {
 
     void RevTree::compact() {
         // Create a mapping from current to new rev indexes (after removing pruned/purged revs)
-        uint16_t map[_revs.size()];
+		std::vector<uint16_t> map(_revs.size());
         unsigned i = 0, j = 0;
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev, ++i) {
             if (rev->revID.size > 0)
@@ -526,7 +530,8 @@ namespace forestdb {
 
         // oldParents maps rev index to the original parentIndex, before the sort.
         // At the same time we change parentIndex[i] to i, so we can track what the sort did.
-        uint16_t oldParents[_revs.size()];
+		
+        std::vector<uint16_t> oldParents(_revs.size());
         for (uint16_t i = 0; i < _revs.size(); ++i) {
             oldParents[i] = _revs[i].parentIndex;
             _revs[i].parentIndex = i;
@@ -535,7 +540,7 @@ namespace forestdb {
         std::sort(_revs.begin(), _revs.end());
 
         // oldToNew maps old array indexes to new (sorted) ones.
-        uint16_t oldToNew[_revs.size()];
+		std::vector<uint16_t> oldToNew(_revs.size());
         for (uint16_t i = 0; i < _revs.size(); ++i) {
             uint16_t oldIndex = _revs[i].parentIndex;
             oldToNew[oldIndex] = i;
