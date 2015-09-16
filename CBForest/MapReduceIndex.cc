@@ -299,8 +299,13 @@ namespace forestdb {
         emitter emit;
         if (!doc.deleted())
             (*_map)(mappable, emit); // Call map function!
-        _lastSequenceIndexed = doc.sequence();
-        if (IndexWriter(this,t).update(doc.key(), doc.sequence(), emit.keys, emit.values, _rowCount)) {
+        return emitForDocument(t, doc.key(), doc.sequence(), emit.keys, emit.values);
+    }
+
+    bool MapReduceIndex::emitForDocument(Transaction& t, slice docID, sequence docSequence, std::vector<Collatable> keys, std::vector<Collatable> values)
+    {
+        _lastSequenceIndexed = docSequence;
+        if (IndexWriter(this,t).update(docID, docSequence, keys, values, _rowCount)) {
             _lastSequenceChangedAt = _lastSequenceIndexed;
             return true;
         }
@@ -323,33 +328,42 @@ namespace forestdb {
     }
 
 
-    bool MapReduceIndexer::run() {
-        KeyStore sourceStore = _indexes[0]->sourceStore();
-        _latestDbSequence = sourceStore.lastSequence();
+    KeyStore MapReduceIndexer::sourceStore() {
+        return _indexes[0]->sourceStore();
+    }
+
+
+    sequence MapReduceIndexer::startingSequence() {
+        _latestDbSequence = sourceStore().lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
-        // Also start a transaction for each index:
         sequence startSequence = _latestDbSequence+1;
         for (auto idx = _indexes.begin(); idx != _indexes.end(); ++idx) {
             sequence lastSequence = (*idx)->lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
             } else if (*idx == _triggerIndex) {
-                return false; // The trigger index doesn't need to be updated, so abort
+                return UINT64_MAX; // The trigger index doesn't need to be updated, so abort
             }
             _lastSequences.push_back(lastSequence);
         }
+        if (startSequence > _latestDbSequence)
+            startSequence = UINT64_MAX; // no updating needed
+        return startSequence;
+    }
 
+    bool MapReduceIndexer::run() {
+        sequence startSequence = startingSequence();
         if (startSequence > _latestDbSequence)
             return false; // no updating needed
 
         // Enumerate all the documents:
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
-        for (DocEnumerator e(sourceStore, startSequence, UINT64_MAX, options); e.next(); ) {
+        for (DocEnumerator e(sourceStore(), startSequence, UINT64_MAX, options); e.next(); ) {
             addDocument(*e);
         }
-        _finished = true;
+        finished();
         return true;
     }
 
@@ -373,6 +387,20 @@ namespace forestdb {
         const size_t n = indexCount();
         for (size_t i = 0; i < n; ++i)
             updateDocInIndex(i, mappable);
+    }
+
+    void MapReduceIndexer::emitDocIntoView(slice docID,
+                                           sequence docSequence,
+                                           unsigned viewNumber,
+                                           std::vector<Collatable> keys,
+                                           std::vector<Collatable> values)
+    {
+        emitter emit;
+        for (unsigned i = 0; i < keys.size(); ++i)
+            emit.emit(keys[i], values[i]);
+        _indexes[viewNumber]->emitForDocument(*_transactions[viewNumber],
+                                              docID, docSequence,
+                                              emit.keys, emit.values);
     }
 
 }

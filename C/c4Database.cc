@@ -6,18 +6,8 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#include "slice.hh"
-typedef forestdb::slice C4Slice;
-typedef struct {
-    const void *buf;
-    size_t size;
-} C4SliceResult;
-
-#define kC4SliceNull forestdb::slice::null
-
-#define C4_IMPL
+#include "c4Impl.hh"
 #include "c4Database.h"
-#undef C4_IMPL
 
 #include "Database.hh"
 #include "Document.hh"
@@ -30,42 +20,34 @@ using namespace forestdb;
 
 
 // Size of ForestDB buffer cache allocated for a database
-#define kDBBufferCacheSize (8*1024*1024)
+static const size_t kDBBufferCacheSize = (8*1024*1024);
 
 // ForestDB Write-Ahead Log size (# of records)
-#define kDBWALThreshold 1024
+static const size_t kDBWALThreshold = 1024;
 
 // How often ForestDB should check whether databases need auto-compaction
-#define kAutoCompactInterval (5*60.0)
+static const uint64_t kAutoCompactInterval = (5*60);
 
 
-static void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
+void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
     if (outError) {
         outError->domain = domain;
         outError->code = code;
     }
 }
 
-static void recordHTTPError(int httpStatus, C4Error* outError) {
+void recordHTTPError(int httpStatus, C4Error* outError) {
     recordError(HTTPDomain, httpStatus, outError);
 }
 
-static void recordError(error e, C4Error* outError) {
+void recordError(error e, C4Error* outError) {
     recordError(ForestDBDomain, e.status, outError);
 }
 
-static void recordUnknownException(C4Error* outError) {
+void recordUnknownException(C4Error* outError) {
     Warn("Unexpected C++ exception thrown from CBForest");
     recordError(C4Domain, kC4ErrorInternalException, outError);
 }
-
-
-#define catchError(OUTERR) \
-    catch (error err) { \
-        recordError(err, OUTERR); \
-    } catch (...) { \
-        recordUnknownException(OUTERR); \
-    }
 
 
 void c4slice_free(C4Slice slice) {
@@ -127,6 +109,11 @@ private:
 };
 
 
+forestdb::Database* internal(C4Database *db) {
+    return db->_db;
+}
+
+
 C4Database* c4db_open(C4Slice path,
                       bool readOnly,
                       C4Error *outError)
@@ -138,7 +125,7 @@ C4Database* c4db_open(C4Slice path,
     config.wal_flush_before_commit = true;
     config.seqtree_opt = true;
     config.compress_document_body = true;
-    config.compactor_sleep_duration = (uint64_t)kAutoCompactInterval;
+    config.compactor_sleep_duration = kAutoCompactInterval;
 
     auto c4db = new c4Database;
     try {
@@ -321,7 +308,7 @@ struct C4DocumentInternal : public C4Document {
         } else {
             // Doc body (rev tree) isn't available, but we know most things about the current rev:
             selectedRev.revID = revID;
-            selectedRev.sequence = _versionedDoc.sequence();
+            selectedRev.sequence = sequence;
             int revFlags = 0;
             if (flags & kExists) {
                 revFlags |= kRevLeaf;
@@ -337,6 +324,7 @@ struct C4DocumentInternal : public C4Document {
     void initRevID() {
         _revIDBuf = _versionedDoc.revID().expanded();
         revID = _revIDBuf;
+        sequence = _versionedDoc.sequence();
     }
 
     bool selectRevision(const Revision *rev, C4Error *outError =NULL) {
@@ -599,6 +587,17 @@ bool c4doc_save(C4Document *doc,
 #pragma mark - DOC ENUMERATION:
 
 
+const C4AllDocsOptions kC4DefaultAllDocsOptions = {
+    .inclusiveStart = true,
+    .inclusiveEnd = true,
+    .includeBodies = true
+};
+
+const C4ChangesOptions kC4DefaultChangesOptions = {
+    .includeBodies = true
+};
+
+
 struct C4DocEnumerator {
     C4Database *_database;
     DocEnumerator _e;
@@ -628,14 +627,16 @@ void c4enum_free(C4DocEnumerator *e) {
 
 C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4SequenceNumber since,
-                                       bool withBodies,
+                                       const C4ChangesOptions *c4options,
                                        C4Error *outError)
 {
     try {
+        if (!c4options)
+            c4options = &kC4DefaultChangesOptions;
         auto options = DocEnumerator::Options::kDefault;
         options.inclusiveEnd = true;
-        options.includeDeleted = false;
-        if (!withBodies)
+        options.includeDeleted = c4options->includeDeleted;
+        if (!c4options->includeBodies)
             options.contentOptions = KeyStore::kMetaOnly;
         return new C4DocEnumerator(database, since+1, UINT64_MAX, options);
     } catchError(outError);
@@ -646,18 +647,19 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
 C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Slice startDocID,
                                        C4Slice endDocID,
-                                       bool descending,
-                                       bool inclusiveEnd,
-                                       unsigned skip,
-                                       bool withBodies,
+                                       const C4AllDocsOptions *c4options,
                                        C4Error *outError)
 {
     try {
+        if (!c4options)
+            c4options = &kC4DefaultAllDocsOptions;
         auto options = DocEnumerator::Options::kDefault;
-        options.skip = skip;
-        options.descending = descending;
-        options.inclusiveEnd = inclusiveEnd;
-        if (!withBodies)
+        options.skip = c4options->skip;
+        options.descending = c4options->descending;
+        options.inclusiveStart = c4options->inclusiveStart;
+        options.inclusiveEnd = c4options->inclusiveEnd;
+        options.includeDeleted = c4options->includeDeleted;
+        if (!c4options->includeBodies)
             options.contentOptions = KeyStore::kMetaOnly;
         return new C4DocEnumerator(database, startDocID, endDocID, options);
     } catchError(outError);

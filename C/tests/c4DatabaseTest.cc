@@ -189,8 +189,7 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         C4Document* doc;
 
         // No start or end ID:
-        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull,
-                                  false, true, 0, false, &error);
+        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, NULL, &error);
         Assert(e);
         int i = 1;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -209,8 +208,7 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         }
 
         // Start and end ID:
-        e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"),
-                                  false, true, 0, false, &error);
+        e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"), NULL, &error);
         Assert(e);
         i = 7;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -235,7 +233,9 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         C4Document* doc;
 
         // Since start:
-        e = c4db_enumerateChanges(db, 0, false, &error);
+        C4ChangesOptions options = kC4DefaultChangesOptions;
+        options.includeBodies = false;
+        e = c4db_enumerateChanges(db, 0, &options, &error);
         Assert(e);
         C4SequenceNumber seq = 1;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -247,7 +247,7 @@ class C4DatabaseTest : public CppUnit::TestFixture {
         }
 
         // Since 6:
-        e = c4db_enumerateChanges(db, 6, false, &error);
+        e = c4db_enumerateChanges(db, 6, &options, &error);
         Assert(e);
         seq = 7;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {

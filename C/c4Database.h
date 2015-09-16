@@ -111,9 +111,10 @@ extern "C" {
 
     /** Describes a version-controlled document. */
     typedef struct {
-        C4DocumentFlags flags;
-        C4Slice docID;
-        C4Slice revID;
+        C4DocumentFlags flags;      /**< Document flags */
+        C4Slice docID;              /**< Document ID */
+        C4Slice revID;              /**< RevID of current revision */
+        C4SequenceNumber sequence;  /**< Sequence at which doc was last updated */
 
         struct {
             C4Slice revID;
@@ -171,7 +172,36 @@ extern "C" {
 
     //////// DOCUMENT ENUMERATORS:
 
+
+    /** Options for enumerating over all documents. */
+    typedef struct {
+        bool descending;     /**< If true, iteration goes by descending document IDs. */
+        bool inclusiveStart; /**< If false, iteration starts just _after_ the startDocID. */
+        bool inclusiveEnd;   /**< If false, iteration stops just _before_ the endDocID. */
+        unsigned skip;       /**< The number of initial results to skip. */
+        bool includeDeleted; /**< If true, include deleted documents. */
+        bool includeBodies;  /**< If false, document bodies will not be preloaded, just the
+                                  metadata (docID, revID, sequence, flags.) This is faster if you
+                                  don't need to access the revision tree or revision bodies. You
+                                  can still access all the data of the document, but it will
+                                  trigger loading the document body from the database. */
+    } C4AllDocsOptions;
+
+    /** Default all-docs enumeration options. */
+    extern const C4AllDocsOptions kC4DefaultAllDocsOptions;
     
+
+    /** Options for enumerating over database changes. */
+    typedef struct {
+        bool includeDeleted; /**< If true, include deleted documents. */
+        bool includeBodies;  /**< If false, document bodies will not be preloaded. See
+                                  C4AllDocsOptions.includeBodies for more details. */
+    } C4ChangesOptions;
+
+    /** Default change-enumeration options. */
+    extern const C4ChangesOptions kC4DefaultChangesOptions;
+
+
     /** Opaque handle to a document enumerator. */
     typedef struct C4DocEnumerator C4DocEnumerator;
 
@@ -182,15 +212,12 @@ extern "C" {
         Caller is responsible for freeing the enumerator when finished with it.
         @param database  The database.
         @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
-        @param withBodies  If false, document bodies will not be preloaded, just the metadata
-            (docID, revID, sequence, flags.) This is faster if you don't need to access the 
-            revision tree or revision bodies. You can still access all the data of the document, 
-            but it will trigger loading the document body from the database.
+        @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                            C4SequenceNumber since,
-                                           bool withBodies,
+                                           const C4ChangesOptions *options,
                                            C4Error *outError);
 
     /** Creates an enumerator ordered by docID.
@@ -200,23 +227,13 @@ extern "C" {
         @param database  The database.
         @param startDocID  The document ID to begin at.
         @param endDocID  The document ID to end at.
-        @param descending  If true, iteration goes by descending document ID. The startDocID must
-            be higher than the endDocID.
-        @param inclusiveEnd  If false, iteration stops just _before_ the endDocID.
-        @param skip  The number of initial results to skip.
-        @param withBodies  If false, document bodies will not be preloaded, just the metadata
-            (docID, revID, sequence, flags.) This is faster if you don't need to access the 
-            revision tree or revision bodies. You can still access all the data of the document, 
-            but it will trigger loading the document body from the database.
+        @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            C4Slice startDocID,
                                            C4Slice endDocID,
-                                           bool descending,
-                                           bool inclusiveEnd,
-                                           unsigned skip,
-                                           bool withBodies,
+                                           const C4AllDocsOptions *options,
                                            C4Error *outError);
 
     /** Returns the next document from an enumerator, or NULL if there are no more.
