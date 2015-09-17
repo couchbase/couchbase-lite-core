@@ -76,7 +76,7 @@ namespace CBForest
         }
     }
     
-    public unsafe struct C4Slice : IEquatable<string>
+    public unsafe struct C4Slice
     {
         public static readonly C4Slice NULL = new C4Slice();
         
@@ -95,29 +95,17 @@ namespace CBForest
             return new string(bytes, 0, (int)slice.size.ToUInt32(), Encoding.UTF8);
         }
         
-        public static bool operator ==(C4Slice a, C4Slice b)
-        {
-            return a.Equals(b);   
-        }
-        
-        public static bool operator ==(C4Slice a, string b)
-        {
-            return a.Equals(b);   
-        }
-        
-        public static bool operator !=(C4Slice a, C4Slice b)
-        {
-            return !a.Equals(b);   
-        }
-
-        public static bool operator !=(C4Slice a, string b)
-        {
-            return !a.Equals(b);   
-        }
-        
         private bool Equals(C4Slice other)
         {
             return size == other.size && Native.memcmp(buf, other.buf, size) == 0;
+        }
+        
+        private bool Equals(string other)
+        {
+            var bytes = Encoding.UTF8.GetBytes(other);
+            fixed(byte* ptr = bytes) {
+                return Native.memcmp(buf, ptr, size) == 0;
+            }
         }
         
         public override string ToString()
@@ -148,18 +136,6 @@ namespace CBForest
                 return hash;
             }
         }
-
-        #region IEquatable implementation
-
-        public bool Equals(string other)
-        {
-            var bytes = Encoding.UTF8.GetBytes(other);
-            fixed(byte* ptr = bytes) {
-                return Native.memcmp(buf, ptr, size) == 0;
-            }
-        }
-
-        #endregion
     }
     
     public struct C4RawDocument

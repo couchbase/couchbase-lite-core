@@ -105,9 +105,9 @@ namespace CBForest.Tests
             
             var doc = Native.c4raw_get(_db, "test", key, &error);
             Assert.IsTrue(doc != null);
-            Assert.AreEqual(key, doc->key);
-            Assert.AreEqual(meta, doc->meta);
-            Assert.AreEqual(BODY, doc->body);
+            Assert.IsTrue(doc->key.Equals(key));
+            Assert.IsTrue(doc->meta.Equals(meta));
+            Assert.IsTrue(doc->body.Equals(BODY));
             Native.c4raw_free(doc);
         }
         
@@ -125,16 +125,16 @@ namespace CBForest.Tests
             doc = Native.c4doc_get(_db, DOC_ID, false, &error);
             Assert.IsTrue(doc != null);
             Assert.AreEqual((C4DocumentFlags)0, doc->flags);
-            Assert.AreEqual(DOC_ID, doc->docID);
+            Assert.IsTrue(doc->docID.Equals(DOC_ID));
             Assert.IsTrue(doc->revID.buf == null);
             Assert.IsTrue(doc->selectedRev.revID.buf == null);
             
             using(var t = new TransactionHelper(_db)) {
                 Assert.IsTrue(Native.c4doc_insertRevision(doc, REV_ID, BODY, false, false, false, &error));
-                Assert.AreEqual(REV_ID, doc->revID);
-                Assert.AreEqual(REV_ID, doc->selectedRev.revID);
+                Assert.IsTrue(doc->revID.Equals(REV_ID));
+                Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
                 Assert.AreEqual(C4RevisionFlags.RevNew | C4RevisionFlags.RevLeaf, doc->selectedRev.flags);
-                Assert.AreEqual(BODY, doc->selectedRev.body);
+                Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
                 Assert.IsTrue(Native.c4doc_save(doc, 20, &error));
                 Native.c4doc_free(doc);
             }
@@ -143,11 +143,11 @@ namespace CBForest.Tests
             doc = Native.c4doc_get(_db, DOC_ID, true, &error);
             Assert.IsTrue(doc != null);
             Assert.AreEqual(C4DocumentFlags.Exists, doc->flags);
-            Assert.AreEqual(DOC_ID, doc->docID);
-            Assert.AreEqual(REV_ID, doc->revID);
-            Assert.AreEqual(REV_ID, doc->selectedRev.revID);
-            Assert.AreEqual(1, doc->selectedRev.sequence);
-            Assert.AreEqual(BODY, doc->selectedRev.body);
+            Assert.IsTrue(doc->docID.Equals(DOC_ID));
+            Assert.IsTrue(doc->revID.Equals(REV_ID));
+            Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
+            Assert.AreEqual(1UL, doc->selectedRev.sequence);
+            Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
         }
         
         [Test]
@@ -163,19 +163,19 @@ namespace CBForest.Tests
             var doc = Native.c4doc_get(_db, DOC_ID, true, &error);
             Assert.IsTrue(doc != null);
             Assert.AreEqual(C4DocumentFlags.Exists, doc->flags);
-            Assert.AreEqual(DOC_ID, doc->docID);
-            Assert.AreEqual(REV_2_ID, doc->revID);
-            Assert.AreEqual(REV_2_ID, doc->selectedRev.revID);
-            Assert.AreEqual(2, doc->selectedRev.sequence);
-            Assert.AreEqual(BODY_2, doc->selectedRev.body);
+            Assert.IsTrue(doc->docID.Equals(DOC_ID));
+            Assert.IsTrue(doc->revID.Equals(REV_2_ID));
+            Assert.IsTrue(doc->selectedRev.revID.Equals(REV_2_ID));
+            Assert.AreEqual(2UL, doc->selectedRev.sequence);
+            Assert.IsTrue(doc->selectedRev.body.Equals(BODY_2));
             
             // Select 1st revision:
             Assert.IsTrue(Native.c4doc_selectParentRevision(doc));
-            Assert.AreEqual(REV_ID, doc->selectedRev.revID);
-            Assert.AreEqual(1, doc->selectedRev.sequence);
+            Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
+            Assert.AreEqual(1UL, doc->selectedRev.sequence);
             Assert.AreEqual(C4Slice.NULL, doc->selectedRev.body);
             Assert.IsTrue(Native.c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-            Assert.AreEqual(BODY, doc->selectedRev.body);
+            Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
             Assert.IsFalse(Native.c4doc_selectParentRevision(doc));
         }
         
@@ -192,18 +192,18 @@ namespace CBForest.Tests
             
             var e = Native.c4db_enumerateAllDocs(_db, null, null, false, true, 0, false, &error);
             Assert.IsTrue(e != null);
-            var j = 1;
+            var j = 1UL;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 var docID = String.Format("doc-{0}", j.ToString("D3"));
-                Assert.AreEqual(docID, doc->docID);
-                Assert.AreEqual(REV_ID, doc->revID);
-                Assert.AreEqual(REV_ID, doc->selectedRev.revID);
+                Assert.IsTrue(doc->docID.Equals(docID));
+                Assert.IsTrue(doc->revID.Equals(REV_ID));
+                Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
                 Assert.AreEqual(j, doc->selectedRev.sequence);
                 Assert.AreEqual(C4Slice.NULL, doc->selectedRev.body);
                 
                 // Doc was loaded without its body, but it should load on demand:
                 Assert.IsTrue(Native.c4doc_loadRevisionBody(doc, &error));
-                Assert.AreEqual(BODY, doc->selectedRev.body);
+                Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
                 Native.c4doc_free(doc);
                 j++;
             }
@@ -216,7 +216,7 @@ namespace CBForest.Tests
             j = 7;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 var docID = String.Format("doc-{0,3}", j.ToString("D3"));
-                Assert.AreEqual(docID, doc->docID);
+                Assert.IsTrue(doc->docID.Equals(docID));
                 Native.c4doc_free(doc);
                 j++;
             }
@@ -242,7 +242,7 @@ namespace CBForest.Tests
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 Assert.AreEqual(seq, doc->selectedRev.sequence);
                 var docID = String.Format("doc-{0,3}", seq.ToString("D3"));
-                Assert.AreEqual(docID, doc->docID);
+                Assert.IsTrue(doc->docID.Equals(docID));
                 Native.c4doc_free(doc);
                 seq++;
             }
@@ -256,7 +256,7 @@ namespace CBForest.Tests
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 Assert.AreEqual(seq, doc->selectedRev.sequence);
                 var docID = String.Format("doc-{0,3}", seq.ToString("D3"));
-                Assert.AreEqual(docID, doc->docID);
+                Assert.IsTrue(doc->docID.Equals(docID));
                 Native.c4doc_free(doc);
                 seq++;
             } 

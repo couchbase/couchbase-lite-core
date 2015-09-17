@@ -16,7 +16,7 @@
 #include "Tokenizer.hh"
 #include "english_stopwords.h"
 #include <assert.h>
-#if !defined(__GNUC__) || defined(__clang__)
+#ifndef __unused
 #define __unused
 #endif
 #ifdef _MSC_VER
