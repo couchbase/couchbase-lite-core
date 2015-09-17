@@ -1,0 +1,37 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "95BD7FD70F525D599BE3B03B349FA96B7F09E4A7",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "073B5630A41468111630CB02A17BF6B9B89CE1A3" : 0,
+    "95BD7FD70F525D599BE3B03B349FA96B7F09E4A7" : 0,
+    "F084A5E79D508F8E5EB6C3DC3C9997CD80515925" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "7D983762-252E-46F8-AD63-D9DE94C0CE88",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "073B5630A41468111630CB02A17BF6B9B89CE1A3" : "cbforestvendor\/forestdb",
+    "95BD7FD70F525D599BE3B03B349FA96B7F09E4A7" : "cbforest",
+    "F084A5E79D508F8E5EB6C3DC3C9997CD80515925" : "cbforestvendor\/sqlite3-unicodesn"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "CBForest",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "CBForest.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/couchbaselabs\/forestdb.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "073B5630A41468111630CB02A17BF6B9B89CE1A3"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:couchbaselabs\/cbforest.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "95BD7FD70F525D599BE3B03B349FA96B7F09E4A7"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "git:\/\/github.com\/snej\/sqlite3-unicodesn.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "F084A5E79D508F8E5EB6C3DC3C9997CD80515925"
+    }
+  ]
+}

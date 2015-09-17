@@ -167,7 +167,9 @@ namespace CBForest.Tests
             C4Error error;
             C4Document* doc;
             
-            var e = Native.c4db_enumerateAllDocs(_db, null, null, false, true, 0, false, &error);
+            var options = C4AllDocsOptions.DEFAULT;
+            options.includeBodies = false;
+            var e = Native.c4db_enumerateAllDocs(_db, null, null, &options, &error);
             Assert.IsTrue(e != null);
             var j = 1UL;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
@@ -188,7 +190,7 @@ namespace CBForest.Tests
             Native.c4enum_free(e);
             
             // Start and end ID:
-            e = Native.c4db_enumerateAllDocs(_db, "doc-007", "doc-090", false, true, 0, false, &error);
+            e = Native.c4db_enumerateAllDocs(_db, "doc-007", "doc-090", null, &error);
             Assert.IsTrue(e != null);
             j = 7;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {

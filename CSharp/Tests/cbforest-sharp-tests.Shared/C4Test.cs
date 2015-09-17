@@ -51,6 +51,16 @@ namespace CBForest.Tests
             Assert.IsTrue(Native.c4db_delete(_db, &error));
         }
         
+        public string Dump(C4KeyReader r)
+        {
+            return Native.c4key_dump(&r);
+        }
+        
+        public string Dump(C4Key *key)
+        {
+            return Dump(Native.c4key_read(key));   
+        }
+        
         protected void CreateRev(string docID, string revID, string body)
         {
             using(var t = new TransactionHelper(_db)) {

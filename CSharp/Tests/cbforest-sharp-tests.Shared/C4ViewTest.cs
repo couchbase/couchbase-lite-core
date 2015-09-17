@@ -41,7 +41,7 @@ namespace CBForest.Tests
         public override void TearDown()
         {
             C4Error error;
-            Assert.IsTrue(Native.c4view_close(_view, &error));
+            Assert.IsTrue(Native.c4view_delete(_view, &error));
             base.TearDown();
         }
         
@@ -56,18 +56,57 @@ namespace CBForest.Tests
         [Test]
         public void TestCreateIndex()
         {
+            CreateIndex();
+            
+            Assert.AreEqual(200UL, Native.c4view_getTotalRows(_view));
+            Assert.AreEqual(100UL, Native.c4view_getLastSequenceIndexed(_view));
+            Assert.AreEqual(100UL, Native.c4view_getLastSequenceChangedAt(_view));
+        }
+        
+        [Test]
+        public void TestQueryIndex()
+        {
+            CreateIndex();
+            
+            C4Error error;
+            var e = Native.c4view_query(_view, null, &error);
+            Assert.IsTrue(e != null);
+            
+            var i = 0;
+            while(Native.c4queryenum_next(e, &error)) {
+                ++i;
+                var buf = default(string);
+                if(i <= 100) {
+                    buf = i.ToString();
+                } else {
+                    buf = String.Format("\"doc-{0}\"", (i - 100).ToString("D3"));
+                }   
+                
+                Assert.AreEqual(buf, Dump(e->key));
+                Assert.AreEqual(C4KeyToken.EndSequence, Native.c4key_peek(&e->value));
+            }
+            
+            Assert.AreEqual(0, error.code);
+            Assert.AreEqual(200, i);
+        }
+        
+        private void CreateIndex()
+        {
             for(int i = 1; i <= 100; i++) {
                 var docId = String.Format("doc-{0}", i.ToString("D3"));
                 CreateRev(docId, REV_ID, BODY);
             }
             
             C4Error error;
-            var ind = Native.c4indexer_begin(_db, new C4View*[] { _view }, 1, &error);
+            C4Indexer* ind;
+            fixed(C4View** viewPtr = &_view) {
+                ind = Native.c4indexer_begin(_db, viewPtr, 1, &error);
+            }
             Assert.IsTrue(ind != null);
-            
+
             var e = Native.c4indexer_enumerateDocuments(ind, &error);
             Assert.IsTrue(e != null);
-            
+
             C4Document* doc;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 // Index 'doc':
@@ -79,12 +118,9 @@ namespace CBForest.Tests
                 Native.c4key_free(keys[0]);
                 Native.c4key_free(keys[1]);
             }
-            
+
             Assert.AreEqual(0, error.code);
-            
-            Assert.AreEqual(200UL, Native.c4view_getTotalRows(_view));
-            Assert.AreEqual(100UL, Native.c4view_getLastSequenceIndexed(_view));
-            Assert.AreEqual(100UL, Native.c4view_getLastSequenceChangedAt(_view));
+            Assert.IsTrue(Native.c4indexer_end(ind, true, &error));
         }
     }
 }

@@ -284,10 +284,6 @@ namespace CBForest
     {
     }
     
-    public struct C4QueryEnumerator
-    {
-    }
-    
     public unsafe struct C4QueryOptions
     {
         public static readonly C4QueryOptions DEFAULT = 
@@ -295,46 +291,21 @@ namespace CBForest
         
         public uint skip;   
         public uint limit;
-        public uint groupLevel;
-        public uint prefixMatchLevel;
-        public C4Slice startKeyJSON;
-        public C4Slice endKeyJSON;
-        public C4Slice startKeyDocID;
-        public C4Slice endKeyDocID;
-        public C4Slice* keys;
-        public uint keysCount;
         private byte _descending;
-        private byte _includeDocs;
-        private byte _updateSeq;
-        private byte _localSeq;
         private byte _inclusiveStart;
         private byte _inclusiveEnd;
-        private byte _reduceSpecified;
-        private byte _reduce;                   // Ignored if !reduceSpecified
-        private byte _group;
         
+        public C4Key* startKey;
+        public C4Key* endKey;
+        public C4Slice startKeyDocID;
+        public C4Slice endKeyDocID;
+        public C4Key** keys;
+        public uint keysCount;
+
         public bool descending 
         { 
             get { return Convert.ToBoolean (_descending); } 
             set { _descending = Convert.ToByte(value); }
-        }
-        
-        public bool includeDocs
-        { 
-            get { return Convert.ToBoolean(_includeDocs); }
-            set { _includeDocs = Convert.ToByte(value); }
-        }
-        
-        public bool updateSeq
-        { 
-            get { return Convert.ToBoolean(_updateSeq); }
-            set { _updateSeq = Convert.ToByte(value); }
-        }
-        
-        public bool localSeq
-        { 
-            get { return Convert.ToBoolean(_localSeq); }
-            set { _localSeq = Convert.ToByte(value); }
         }
         
         public bool inclusiveStart
@@ -348,27 +319,9 @@ namespace CBForest
             get { return Convert.ToBoolean(_inclusiveEnd); }
             set { _inclusiveEnd = Convert.ToByte(value); }
         }
-        
-        public bool reduceSpecified
-        { 
-            get { return Convert.ToBoolean(_reduceSpecified); }
-            set { _reduceSpecified = Convert.ToByte(value); }
-        }
-        
-        public bool reduce
-        { 
-            get { return Convert.ToBoolean(_reduce); }
-            set { _reduce = Convert.ToByte(value); }
-        }
-        
-        public bool group
-        { 
-            get { return Convert.ToBoolean(_group); }
-            set { _group = Convert.ToByte(value); }
-        }
     }
     
-    public struct C4QueryRow
+    public struct C4QueryEnumerator
     {
         public C4KeyReader key;   
         public C4KeyReader value;

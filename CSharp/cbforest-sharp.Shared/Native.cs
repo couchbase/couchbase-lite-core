@@ -214,16 +214,15 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, byte descending,
-            byte inclusiveEnd, uint skip, byte withBodies, C4Error *outError);
+        private static extern C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
+            C4AllDocsOptions *options, C4Error *outError);
         
-        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, bool descending,
-            bool inclusiveEnd, uint skip, bool withBodies, C4Error *outError)
+        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, C4AllDocsOptions *options,
+            C4Error *outError)
         {
             using(var startDocID_ = new C4String(startDocID))
             using(var endDocID_ = new C4String(endDocID)) {
-                return c4db_enumerateAllDocs(db, startDocID_.AsC4Slice(), endDocID_.AsC4Slice(), Convert.ToByte(descending), 
-                    Convert.ToByte(inclusiveEnd), skip, Convert.ToByte(withBodies), outError);
+                return c4db_enumerateAllDocs(db, startDocID_.AsC4Slice(), endDocID_.AsC4Slice(), options, outError);
             }
         }
         
@@ -355,7 +354,7 @@ namespace CBForest
         public static extern C4KeyReader c4key_read(C4Key *key);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4KeyToken c4key_peak(C4KeyReader *reader);
+        public static extern C4KeyToken c4key_peek(C4KeyReader *reader);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_skipToken(C4KeyReader *reader);
@@ -433,7 +432,7 @@ namespace CBForest
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4Indexer* c4indexer_begin(C4Database *db, C4View*[] views, int viewCount, C4Error *outError);
+        public static extern C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
@@ -459,14 +458,16 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4QueryEnumerator* c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError);
         
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4QueryRow* c4queryenum_next(C4QueryEnumerator *e);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4queryenum_next")]
+        private static extern byte _c4queryenum_next(C4QueryEnumerator *e, C4Error *outError);
+        
+        public static bool c4queryenum_next(C4QueryEnumerator *e, C4Error *outError)
+        {
+            return Convert.ToBoolean(_c4queryenum_next(e, outError));   
+        }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4queryenum_free(C4QueryEnumerator *e);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4queryrow_free(C4QueryRow *row);
         
         private static string BridgeSlice(Func<C4Slice> nativeFunc)
         {
