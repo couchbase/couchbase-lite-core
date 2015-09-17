@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
-//#include <unistd.h>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
@@ -118,9 +117,7 @@ namespace forestdb {
     Database::config Database::defaultConfig() {
         config c;
         *(fdb_config*)&c = fdb_get_default_config();
-        #ifdef CBFOREST_ENCRYPTION
         c.encrypted = false;
-        #endif
         return c;
     }
 
@@ -193,10 +190,13 @@ namespace forestdb {
 
 
     void Database::reopen(std::string path) {
-        #ifdef CBFOREST_ENCRYPTION
-        if (_config.encrypted)
+        if (_config.encrypted) {
+            #ifdef CBFOREST_ENCRYPTION
             fdb_registerEncryptionKey(path.c_str(), (EncryptionKey*)&_config.encryptionKey);
-        #endif
+            #else
+            check(FDB_RESULT_INVALID_CONFIG);   // no encryption support
+            #endif
+        }
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
         fdb_set_log_callback(_handle, logCallback, _handle);
