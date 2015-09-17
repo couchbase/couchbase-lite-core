@@ -19,7 +19,9 @@
 #include "Tokenizer.hh"
 #include "LogInternal.hh"
 #include <assert.h>
-
+#ifdef _MSC_VER
+#include <algorithm>
+#endif
 
 namespace forestdb {
 

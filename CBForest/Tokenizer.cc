@@ -1,4 +1,4 @@
-//
+﻿//
 //  Tokenizer.cc
 //  CBForest
 //
@@ -16,6 +16,10 @@
 #include "Tokenizer.hh"
 #include "english_stopwords.h"
 #include <assert.h>
+#ifdef _MSC_VER
+#define __unused
+#include "memmem.h"
+#endif
 
 extern "C" {
 #include "fts3_tokenizer.h"

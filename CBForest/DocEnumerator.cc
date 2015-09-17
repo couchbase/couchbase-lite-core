@@ -34,13 +34,13 @@ namespace forestdb {
 
 
     const DocEnumerator::Options DocEnumerator::Options::kDefault = {
-        .skip = 0,
-        .limit = UINT_MAX,
-        .descending = false,
-        .inclusiveStart = true,
-        .inclusiveEnd = true,
-        .includeDeleted = false,
-        .contentOptions = KeyStore::kDefaultContent,
+        0,
+        UINT_MAX,
+        false,
+        true,
+        true,
+        false,
+        KeyStore::kDefaultContent,
     };
 
 

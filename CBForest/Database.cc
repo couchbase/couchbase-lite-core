@@ -23,10 +23,13 @@
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
+#ifdef _MSC_VER
+#include "asprintf.h"
+#endif
 
 
 namespace forestdb {
