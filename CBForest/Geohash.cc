@@ -51,7 +51,7 @@ THE SOFTWARE.
 namespace geohash {
 
 static const char BASE32_ENCODE_TABLE[33] = "0123456789bcdefghjkmnpqrstuvwxyz";
-static const char BASE32_DECODE_TABLE[44] = {
+static const int8_t BASE32_DECODE_TABLE[44] = {
     /* 0 */   0, /* 1 */   1, /* 2 */   2, /* 3 */   3, /* 4 */   4,    
     /* 5 */   5, /* 6 */   6, /* 7 */   7, /* 8 */   8, /* 9 */   9,    
     /* : */  -1, /* ; */  -1, /* < */  -1, /* = */  -1, /* > */  -1, 
@@ -335,7 +335,7 @@ area hash::decode() const {
         if (c > 43) {
             return area();  // invalid hash
         }
-        char bits = BASE32_DECODE_TABLE[c];
+        int8_t bits = BASE32_DECODE_TABLE[c];
         if (bits == -1) {
             return area();  // invalid hash
         }
