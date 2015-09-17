@@ -52,31 +52,8 @@ namespace CBForest.Tests
     }
     
     [TestFixture]
-    public unsafe class C4DatabaseTest
+    public unsafe class C4DatabaseTest : C4Test
     {
-        private const string BODY = "{\"name\":007}";
-        private const string DOC_ID = "mydoc";
-        private const string REV_ID = "1-abcdef";
-        
-        private C4Database *_db;
-        
-        [SetUp]
-        public void SetUp()
-        {
-            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-            var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp.fdb");
-            C4Error error;
-            _db = Native.c4db_open(dbPath, false, &error);
-            Assert.IsFalse(_db == null);
-        }
-        
-        [TearDown]
-        public void TearDown()
-        {
-            C4Error error;
-            Assert.IsTrue(Native.c4db_delete(_db, &error));
-        }
-        
         [Test]
         public void TestTransaction()
         {
@@ -262,18 +239,6 @@ namespace CBForest.Tests
             } 
             
             Assert.AreEqual(100, seq);
-        }
-        
-        private void CreateRev(string docID, string revID, string body)
-        {
-            using(var t = new TransactionHelper(_db)) {
-                C4Error error;
-                var doc = Native.c4doc_get(_db, docID, false, &error);
-                Assert.IsTrue(doc != null);
-                Assert.IsTrue(Native.c4doc_insertRevision(doc, revID, body, false, false, false, &error));
-                Assert.IsTrue(Native.c4doc_save(doc, 20, &error));
-                Native.c4doc_free(doc);
-            }
         }
     }
 }

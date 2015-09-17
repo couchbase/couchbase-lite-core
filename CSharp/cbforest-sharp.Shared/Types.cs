@@ -163,11 +163,25 @@ namespace CBForest
         RevHasAttachments = 0x08
     }
     
+    public enum C4KeyToken
+    {
+        Null,
+        Bool,
+        Number,
+        String,
+        Array,
+        Map,
+        EndSequence,
+        Special,
+        Error = 255
+    }
+    
     public struct C4Document
     {
         public C4DocumentFlags flags;
         public C4Slice docID;
         public C4Slice revID;
+        public ulong sequence;
         
         public struct rev
         {
@@ -180,12 +194,185 @@ namespace CBForest
         public rev selectedRev;
     }
     
+    public struct C4AllDocsOptions
+    {
+        public static readonly C4AllDocsOptions DEFAULT = 
+            new C4AllDocsOptions { inclusiveStart = true, inclusiveEnd = true, includeBodies = true };
+        
+        private byte _descending;    
+        private byte _inclusiveStart; 
+        private byte _inclusiveEnd;   
+        public uint skip;      
+        private byte _includeDeleted;
+        private byte _includeBodies;  
+        
+        public bool descending
+        {
+            get { return Convert.ToBoolean(_descending); }
+            set { _descending = Convert.ToByte(value); }
+        }
+        
+        public bool inclusiveStart
+        {
+            get { return Convert.ToBoolean(_inclusiveStart); }
+            set { _inclusiveStart = Convert.ToByte(value); }
+        }
+        
+        public bool inclusiveEnd
+        {
+            get { return Convert.ToBoolean(_inclusiveEnd); }
+            set { _inclusiveEnd = Convert.ToByte(value); }
+        }
+        
+        public bool includeDeleted
+        {
+            get { return Convert.ToBoolean(_includeDeleted); }
+            set { _includeDeleted = Convert.ToByte(value); }
+        }
+        
+        public bool includeBodies
+        {
+            get { return Convert.ToBoolean(_includeBodies); }
+            set { _includeBodies = Convert.ToByte(value); }
+        }
+    }
+    
+    public struct C4ChangesOptions
+    {
+        public static readonly C4ChangesOptions DEFAULT = 
+            new C4ChangesOptions { includeBodies = true };
+        
+        private byte _includeDeleted;
+        private byte _includeBodies;
+        
+        public bool includeDeleted
+        {
+            get { return Convert.ToBoolean(_includeDeleted); }
+            set { _includeDeleted = Convert.ToByte(value); }
+        }
+
+        public bool includeBodies
+        {
+            get { return Convert.ToBoolean(_includeBodies); }
+            set { _includeBodies = Convert.ToByte(value); }
+        }
+    }
+    
+    public unsafe struct C4KeyReader
+    {
+        public void* a;
+        public void* b;
+    }
+    
     public struct C4Database
     {
     }
     
     public struct C4DocEnumerator
     {
+    }
+    
+    public struct C4Key
+    {   
+    }
+    
+    public struct C4View
+    {
+    }
+    
+    public struct C4Indexer
+    {
+    }
+    
+    public struct C4QueryEnumerator
+    {
+    }
+    
+    public unsafe struct C4QueryOptions
+    {
+        public static readonly C4QueryOptions DEFAULT = 
+            new C4QueryOptions { limit = UInt32.MaxValue, inclusiveStart = true, inclusiveEnd = true };
+        
+        public uint skip;   
+        public uint limit;
+        public uint groupLevel;
+        public uint prefixMatchLevel;
+        public C4Slice startKeyJSON;
+        public C4Slice endKeyJSON;
+        public C4Slice startKeyDocID;
+        public C4Slice endKeyDocID;
+        public C4Slice* keys;
+        public uint keysCount;
+        private byte _descending;
+        private byte _includeDocs;
+        private byte _updateSeq;
+        private byte _localSeq;
+        private byte _inclusiveStart;
+        private byte _inclusiveEnd;
+        private byte _reduceSpecified;
+        private byte _reduce;                   // Ignored if !reduceSpecified
+        private byte _group;
+        
+        public bool descending 
+        { 
+            get { return Convert.ToBoolean (_descending); } 
+            set { _descending = Convert.ToByte(value); }
+        }
+        
+        public bool includeDocs
+        { 
+            get { return Convert.ToBoolean(_includeDocs); }
+            set { _includeDocs = Convert.ToByte(value); }
+        }
+        
+        public bool updateSeq
+        { 
+            get { return Convert.ToBoolean(_updateSeq); }
+            set { _updateSeq = Convert.ToByte(value); }
+        }
+        
+        public bool localSeq
+        { 
+            get { return Convert.ToBoolean(_localSeq); }
+            set { _localSeq = Convert.ToByte(value); }
+        }
+        
+        public bool inclusiveStart
+        { 
+            get { return Convert.ToBoolean(_inclusiveStart); }
+            set { _inclusiveStart = Convert.ToByte(value); }
+        }
+        
+        public bool inclusiveEnd
+        { 
+            get { return Convert.ToBoolean(_inclusiveEnd); }
+            set { _inclusiveEnd = Convert.ToByte(value); }
+        }
+        
+        public bool reduceSpecified
+        { 
+            get { return Convert.ToBoolean(_reduceSpecified); }
+            set { _reduceSpecified = Convert.ToByte(value); }
+        }
+        
+        public bool reduce
+        { 
+            get { return Convert.ToBoolean(_reduce); }
+            set { _reduce = Convert.ToByte(value); }
+        }
+        
+        public bool group
+        { 
+            get { return Convert.ToBoolean(_group); }
+            set { _group = Convert.ToByte(value); }
+        }
+    }
+    
+    public struct C4QueryRow
+    {
+        public C4KeyReader key;   
+        public C4KeyReader value;
+        public C4Slice docID;
     }
 }
 

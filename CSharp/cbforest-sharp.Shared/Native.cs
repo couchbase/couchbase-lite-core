@@ -21,6 +21,7 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 #if __IOS__
 [assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
@@ -147,10 +148,7 @@ namespace CBForest
         
         public static string c4doc_getType(C4Document *doc)
         {
-            var rawRetVal = _c4doc_getType(doc);
-            var retVal = (string)rawRetVal;
-            c4slice_free(rawRetVal);
-            return retVal;
+            return BridgeSlice(() => _c4doc_getType(doc));
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
@@ -287,6 +285,195 @@ namespace CBForest
         public static bool c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError)
         {
             return Convert.ToBoolean(_c4doc_save(doc, maxRevTreeDepth, outError));
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4Key* c4key_new();
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern C4Key* c4key_withBytes(C4Slice slice);
+        
+        public static C4Key* c4key_withBytes(IEnumerable<byte> bytes)
+        {
+            var realized = bytes.ToArray();
+            fixed(byte* ptr = realized) {
+                var slice = new C4Slice(ptr, (uint)realized.Length);
+                return c4key_withBytes(slice);
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_free(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_addNull(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern void c4key_addBool(C4Key *key, byte b);
+        
+        public static void c4key_addBool(C4Key *key, bool b)
+        {
+            c4key_addBool(key, Convert.ToByte(b));   
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_addNumber(C4Key *key, double d);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_addString(C4Key *key, C4Slice s);
+        
+        public static void c4key_addString(C4Key *key, string s)
+        {
+            using(var s_ = new C4String(s)) {
+                c4key_addString(key, s_.AsC4Slice());   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern void c4key_addMapKey(C4Key *key, C4Slice s);
+
+        public static void c4key_addMapKey(C4Key *key, string s)
+        {
+            using(var s_ = new C4String(s)) {
+                c4key_addMapKey(key, s_.AsC4Slice());   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_beginArray(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_endArray(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_beginMap(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_endMap(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4KeyReader c4key_read(C4Key *key);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4KeyToken c4key_peak(C4KeyReader *reader);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_skipToken(C4KeyReader *reader);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readBool")]
+        private static extern byte _c4key_readBool(C4KeyReader *reader);
+        
+        public static bool c4key_readBool(C4KeyReader *reader)
+        {
+            return Convert.ToBoolean(c4key_readBool(reader));   
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern double c4key_readNumber(C4KeyReader *reader);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readString")]
+        private static extern C4Slice _c4key_readString(C4KeyReader *reader);
+        
+        public static string c4key_readString(C4KeyReader *reader)
+        {
+            return BridgeSlice(() => _c4key_readString(reader));
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_dump")]
+        private static extern C4Slice _c4key_dump(C4KeyReader *reader);
+
+        public static string c4key_dump(C4KeyReader *reader)
+        {
+            return BridgeSlice(() => _c4key_dump(reader));
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, C4Error *outError);
+        
+        public static C4View* c4view_open(C4Database *db, string path, string viewName, string version, C4Error *outError)
+        {
+            using(var path_ = new C4String(path))
+            using(var viewName_ = new C4String(viewName))
+            using(var version_ = new C4String(version)) {
+                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), outError);   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_close")]
+        private static extern byte _c4view_close(C4View *view, C4Error *outError);
+        
+        public static bool c4view_close(C4View *view, C4Error *outError)
+        {
+            return Convert.ToBoolean(_c4view_close(view, outError));
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_eraseIndex")]
+        private static extern byte _c4view_eraseIndex(C4View *view, C4Error *outError);
+        
+        public static bool c4view_eraseIndex(C4View *view, C4Error *outError)
+        {
+            return Convert.ToBoolean(_c4view_eraseIndex(view, outError));   
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_delete")]
+        private static extern byte _c4view_delete(C4View *view, C4Error *outError);
+
+        public static bool c4view_delete(C4View *view, C4Error *outError)
+        {
+            return Convert.ToBoolean(_c4view_delete(view, outError));   
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern ulong c4view_getTotalRows(C4View *view);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern ulong c4view_getLastSequenceIndexed(C4View *view);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4Indexer* c4indexer_begin(C4Database *db, C4View*[] views, int viewCount, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_emit")]
+        private static extern byte _c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
+            C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError);
+        
+        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
+            C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError)
+        {
+            return Convert.ToBoolean(_c4indexer_emit(indexer, document, viewNumber, emitCount, emittedKeys, emittedValues, outError));
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern byte c4indexer_end(C4Indexer *indexer, byte commit, C4Error *outError);
+        
+        public static bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError)
+        {
+            return Convert.ToBoolean(c4indexer_end(indexer, Convert.ToByte(commit), outError));   
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4QueryEnumerator* c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4QueryRow* c4queryenum_next(C4QueryEnumerator *e);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4queryenum_free(C4QueryEnumerator *e);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4queryrow_free(C4QueryRow *row);
+        
+        private static string BridgeSlice(Func<C4Slice> nativeFunc)
+        {
+            var rawRetVal = nativeFunc();
+            var retVal = (string)rawRetVal;
+            c4slice_free(rawRetVal);
+            return retVal;
         }
     }
 }

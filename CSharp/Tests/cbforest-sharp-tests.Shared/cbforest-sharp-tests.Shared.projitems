@@ -6,9 +6,11 @@
     <SharedGUID>{3EBFD1C4-63AB-4598-B15A-B2C28BAB5E9A}</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>cbforest-sharp-tests.Shared</Import_RootNamespace>
+    <Import_RootNamespace>CBForest.Tests</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)C4DatabaseTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)C4Test.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)C4ViewTest.cs" />
   </ItemGroup>
 </Project>
