@@ -58,8 +58,6 @@ LOCAL_CPPFLAGS += -include $(PCH_FILE)
 LOCAL_LDLIBS    := -llog
 #LOCAL_LDLIBS    += -latomic  # for armeabi
 
-LOCAL_STATIC_LIBRARIES := CommonCrypto
-
 LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(SQLITE3_PATH)/fts3_unicodesn.c \
 					$(SQLITE3_PATH)/libstemmer_c/runtime/api_sq3.c \
