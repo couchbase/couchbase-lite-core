@@ -232,6 +232,7 @@ namespace forestdb {
     static DocEnumerator::Options docOptions(DocEnumerator::Options options) {
         options.limit = DocEnumerator::Options::kDefault.limit;
         options.skip = DocEnumerator::Options::kDefault.skip;
+        options.contentOptions = KeyStore::kDefaultContent; // read() method needs the doc bodies
         return options;
     }
 

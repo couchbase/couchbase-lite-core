@@ -55,3 +55,12 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body) {
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kRevID = C4STR("1-abcdef");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
+
+
+// Dumps a C4Key to a C++ string
+std::string dump(C4KeyReader r) {
+    C4SliceResult dump = c4key_dump(&r);
+    std::string result((char*)dump.buf, dump.size);
+    c4slice_free(dump);
+    return result;
+}

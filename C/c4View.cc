@@ -42,12 +42,17 @@ void c4key_endArray(C4Key *key)                 {key->endArray();}
 void c4key_beginMap(C4Key *key)                 {key->beginMap();}
 void c4key_endMap(C4Key *key)                   {key->endMap();}
 
-// C4KeyReader is really a stand-in for CollatableReader, which itself consists of nothing but
+// C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
 // a slice. So these functions use pointer-casting to reinterpret C4KeyReader as CollatableReader.
+
+static inline C4KeyReader asKeyReader(const CollatableReader &r) {
+    return *(C4KeyReader*)&r;
+}
+
 
 C4KeyReader c4key_read(C4Key *key) {
     CollatableReader r(*key);
-    return *(C4KeyReader*)&r;
+    return asKeyReader(r);
 }
 
 
@@ -227,8 +232,10 @@ C4Indexer* c4indexer_begin(C4Database *db,
 C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
     try {
         sequence startSequence = indexer->startingSequence();
-        if (startSequence == UINT64_MAX)
+        if (startSequence == UINT64_MAX) {
+            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
             return NULL;
+        }
         auto options = kC4DefaultChangesOptions;
         options.includeDeleted = true;
         return c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
@@ -273,8 +280,90 @@ bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) {
 #pragma mark - QUERIES:
 
 
+struct C4QueryEnumInternal : public C4QueryEnumerator {
+    C4QueryEnumInternal(C4View *view,
+                        Collatable startKey, slice startKeyDocID,
+                        Collatable endKey, slice endKeyDocID,
+                        const DocEnumerator::Options &options)
+    :_enum(&view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
+    { }
+
+    C4QueryEnumInternal(C4View *view,
+                        std::vector<KeyRange> keyRanges,
+                        const DocEnumerator::Options &options)
+    :_enum(&view->_index, keyRanges, options)
+    { }
+
+    IndexEnumerator _enum;
+};
+
+static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
+
+
 const C4QueryOptions kC4DefaultQueryOptions = {
     .limit = UINT_MAX,
     .inclusiveStart = true,
     .inclusiveEnd = true
 };
+
+
+C4QueryEnumerator* c4view_query(C4View *view,
+                                const C4QueryOptions *c4options,
+                                C4Error *outError)
+{
+    try {
+        if (!c4options)
+            c4options = &kC4DefaultQueryOptions;
+        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
+        options.skip = c4options->skip;
+        options.limit = c4options->limit;
+        options.descending = c4options->descending;
+        options.inclusiveStart = c4options->inclusiveStart;
+        options.inclusiveEnd = c4options->inclusiveEnd;
+
+        if (c4options->keysCount == 0 && c4options->keys == NULL) {
+            Collatable noKey;
+            return new C4QueryEnumInternal(view,
+                                           (c4options->startKey ? *c4options->startKey : noKey),
+                                           c4options->startKeyDocID,
+                                           (c4options->endKey ? *c4options->endKey : noKey),
+                                           c4options->endKeyDocID,
+                                           options);
+        } else {
+            std::vector<KeyRange> keyRanges;
+            for (int i = 0; i < c4options->keysCount; i++) {
+                const C4Key* key = c4options->keys[i];
+                if (key)
+                    keyRanges.push_back(KeyRange(*key));
+            }
+            return new C4QueryEnumInternal(view, keyRanges, options);
+        }
+    } catchError(outError);
+    return NULL;
+}
+
+
+bool c4queryenum_next(C4QueryEnumerator *e,
+                      C4Error *outError)
+{
+    try {
+        auto ei = asInternal(e);
+        if (ei->_enum.next()) {
+            ei->key = asKeyReader(ei->_enum.key());
+            ei->value = asKeyReader(ei->_enum.value());
+            ei->docID = ei->_enum.docID();
+            return true;
+        } else {
+            ei->key = ei->value = (C4KeyReader){NULL, 0};
+            ei->docID = slice::null;
+            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+            return false;
+        }
+    } catchError(outError);
+    return false;
+}
+
+
+void c4queryenum_free(C4QueryEnumerator *e) {
+    delete asInternal(e);
+}

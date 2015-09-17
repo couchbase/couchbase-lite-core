@@ -179,50 +179,44 @@ extern "C" {
     typedef struct {
         unsigned skip;
         unsigned limit;
-        unsigned groupLevel;
-        unsigned prefixMatchLevel;
-        C4Slice startKeyJSON;
-        C4Slice endKeyJSON;
-        C4Slice startKeyDocID;
-        C4Slice endKeyDocID;
-        const C4Slice* keys;
-        unsigned keysCount;
         bool descending;
-        bool includeDocs;
-        bool updateSeq;
-        bool localSeq;
         bool inclusiveStart;
         bool inclusiveEnd;
-        bool reduceSpecified;
-        bool reduce;                   // Ignored if !reduceSpecified
-        bool group;
+
+        C4Key *startKey;
+        C4Key *endKey;
+        C4Slice startKeyDocID;
+        C4Slice endKeyDocID;
+        
+        const C4Key **keys;
+        unsigned keysCount;
     } C4QueryOptions;
 
     /** Default query options. */
     extern const C4QueryOptions kC4DefaultQueryOptions;
 
-    /** Opaque reference to a view query result enumerator. */
-    typedef struct c4QueryEnumerator C4QueryEnumerator;
-
+    /** A view query result enumerator. Created by c4view_query.
+        The fields of the object are invalidated by the next call to c4queryenum_next or
+        c4queryenum_free. */
     typedef struct {
         C4KeyReader key;
         C4KeyReader value;
         C4Slice docID;
-    } C4QueryRow;
+    } C4QueryEnumerator;
 
-    /** Runs a query and returns an enumerator for the results. */
+    /** Runs a query and returns an enumerator for the results.
+        The enumerator's fields are not valid until you call c4queryenum_next(), though. */
     C4QueryEnumerator* c4view_query(C4View*,
                                     const C4QueryOptions *options,
                                     C4Error *outError);
 
-    /** Returns the next result row from a view query, or NULL at the end of the results. */
-    C4QueryRow* c4queryenum_next(C4QueryEnumerator *e);
+    /** Advances a query enumerator to the next row, populating its fields.
+        Returns true on success, false at the end of enumeration or on error. */
+    bool c4queryenum_next(C4QueryEnumerator *e,
+                          C4Error *outError);
 
-    /** Frees a query enumerator. Must be called after you're finished with it. */
+    /** Frees a query enumerator. */
     void c4queryenum_free(C4QueryEnumerator *e);
-
-    /** Frees a query row. */
-    void c4queryrow_free(C4QueryRow *row);
 
 #ifdef __cplusplus
 }

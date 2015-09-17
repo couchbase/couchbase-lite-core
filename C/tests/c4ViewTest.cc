@@ -8,6 +8,9 @@
 
 #include "c4Test.hh"
 #include "C4View.h"
+#include <iostream>
+
+static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
 
 
 class C4ViewTest : public C4Test {
@@ -17,15 +20,15 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
+        ::unlink(kViewIndexPath);
         C4Error error;
-        view = c4view_open(db, c4str("/tmp/forest_temp.view.index"), c4str("myview"), c4str("1"),
-                           &error);
+        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"), &error);
         Assert(view);
     }
 
     virtual void tearDown() {
         C4Error error;
-        Assert(c4view_close(view, &error));
+        Assert(c4view_delete(view, &error));
         C4Test::tearDown();
     }
 
@@ -36,7 +39,7 @@ public:
         AssertEqual(c4view_getLastSequenceChangedAt(view), 0ull);
     }
 
-    void testCreateIndex() {
+    void createIndex() {
         char docID[20];
         for (int i = 1; i <= 100; i++) {
             sprintf(docID, "doc-%03d", i);
@@ -64,15 +67,47 @@ public:
             c4key_free(keys[1]);
         }
         AssertEqual(error.code, 0);
+        Assert(c4indexer_end(ind, true, &error));
+    }
+
+    void testCreateIndex() {
+        createIndex();
 
         AssertEqual(c4view_getTotalRows(view), 200ull);
         AssertEqual(c4view_getLastSequenceIndexed(view), 100ull);
         AssertEqual(c4view_getLastSequenceChangedAt(view), 100ull);
-}
+    }
+
+    void testQueryIndex() {
+        createIndex();
+
+        C4Error error;
+        auto e = c4view_query(view, NULL, &error);
+        Assert(e);
+
+        int i = 0;
+        while (c4queryenum_next(e, &error)) {
+            ++i;
+            //std::cerr << "Key: " << dump(e->key) << "  Value: " << dump(e->value) << "\n";
+            char buf[20];
+            if (i <= 100)
+                sprintf(buf, "%d", i);
+            else
+                sprintf(buf, "\"doc-%03d\"", i - 100);
+            AssertEqual(dump(e->key), std::string(buf));
+            AssertEqual(c4key_peek(&e->value), kC4EndSequence);
+
+        }
+        AssertEqual(error.code, 0);
+        AssertEqual(i, 200);
+    }
+
+
 
     CPPUNIT_TEST_SUITE( C4ViewTest );
     CPPUNIT_TEST( testEmptyState );
     CPPUNIT_TEST( testCreateIndex );
+    CPPUNIT_TEST( testQueryIndex );
     CPPUNIT_TEST_SUITE_END();
 };
 

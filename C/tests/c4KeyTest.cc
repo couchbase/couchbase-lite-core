@@ -10,16 +10,6 @@
 #include "C4View.h"
 
 
-// Dumps a C4Key to a C++ string
-static std::string dump(C4Key *key) {
-    C4KeyReader r = c4key_read(key);
-    C4SliceResult dump = c4key_dump(&r);
-    std::string result((char*)dump.buf, dump.size);
-    c4slice_free(dump);
-    return result;
-}
-
-
 class C4KeyTest : public CppUnit::TestFixture {
 public:
 

@@ -76,7 +76,6 @@ _c4indexer_enumerateDocuments
 _c4indexer_emit
 _c4indexer_end
 
-#_c4view_query
-#_c4queryenum_next
-#_c4queryenum_free
-#_c4queryrow_free
+_c4view_query
+_c4queryenum_next
+_c4queryenum_free

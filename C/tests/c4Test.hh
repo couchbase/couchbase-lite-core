@@ -10,6 +10,7 @@
 #define c4Test_hh
 
 #include "c4Database.h"
+#include "c4View.h"
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include "iostream"
@@ -69,6 +70,12 @@ protected:
     static const C4Slice kRevID;    // "1-abcdef"
     static const C4Slice kBody;     // "{\"name\":007}"
 };
+
+
+// Dumps a C4Key to a C++ string
+std::string dump(C4KeyReader);
+
+static inline std::string dump(C4Key* key)    {return dump(c4key_read(key));}
 
 
 #endif /* c4Test_hh */
