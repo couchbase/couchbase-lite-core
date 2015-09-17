@@ -16,7 +16,9 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "LogInternal.hh"
+#ifdef CBFOREST_ENCRYPTION
 #include "filemgr_ops_encrypted.h"
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
@@ -98,6 +100,7 @@ namespace forestdb {
         WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
     }
 
+    #ifdef CBFOREST_ENCRYPTION
     void Database::encryptionConfig::setEncryptionKey(slice key) {
         if (key.buf) {
             assert(key.size == sizeof(encryptionKey));
@@ -107,11 +110,14 @@ namespace forestdb {
             encrypted = false;
         }
     }
+    #endif
 
     Database::config Database::defaultConfig() {
         config c;
         *(fdb_config*)&c = fdb_get_default_config();
+        #ifdef CBFOREST_ENCRYPTION
         c.encrypted = false;
+        #endif
         return c;
     }
 
@@ -184,8 +190,10 @@ namespace forestdb {
 
 
     void Database::reopen(std::string path) {
+        #ifdef CBFOREST_ENCRYPTION
         if (_config.encrypted)
             fdb_registerEncryptionKey(path.c_str(), (EncryptionKey*)&_config.encryptionKey);
+        #endif
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
         fdb_set_log_callback(_handle, logCallback, _handle);
@@ -197,9 +205,11 @@ namespace forestdb {
         check(::fdb_close(_fileHandle));
         deleted();
 
+        #ifdef CBFOREST_ENCRYPTION
         // fdb_destroy reopens the file, so register the encryption key again:
         if (_config.encrypted)
             fdb_registerEncryptionKey(path.c_str(), (EncryptionKey*)&_config.encryptionKey);
+        #endif
         check(fdb_destroy(path.c_str(), &_config));
         if (andReopen)
             reopen(path);
@@ -213,12 +223,14 @@ namespace forestdb {
         check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
     }
 
+    #ifdef CBFOREST_ENCRYPTION
     void Database::copyToFile(std::string toPath, const encryptionConfig &encConfig) {
         const EncryptionKey* key = NULL;
         if (encConfig.encrypted)
             key = (const EncryptionKey*)encConfig.encryptionKey;
         check(fdb_copy_open_file(filename().c_str(), toPath.c_str(), key));
     }
+    #endif
 
 
 #pragma mark - TRANSACTION:

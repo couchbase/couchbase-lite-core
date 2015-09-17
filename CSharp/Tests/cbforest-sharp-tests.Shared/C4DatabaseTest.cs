@@ -63,10 +63,8 @@ namespace CBForest.Tests
         [SetUp]
         public void SetUp()
         {
+            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp.fdb");
-#if !__IOS__
-            TestNative.unlink(dbPath);
-#endif
             C4Error error;
             _db = Native.c4db_open(dbPath, false, &error);
             Assert.IsFalse(_db == null);
