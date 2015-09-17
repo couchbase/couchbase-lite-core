@@ -216,6 +216,7 @@ C4Indexer* c4indexer_begin(C4Database *db,
             auto t = new Transaction(views[i]->_viewDB);
             indexer->addIndex(&views[i]->_index, t);
         }
+        return indexer;
     } catchError(outError);
     if (indexer)
         delete indexer;
@@ -248,7 +249,7 @@ bool c4indexer_emit(C4Indexer *indexer,
         if (!(doc->flags & kDeleted)) {
             for (unsigned i = 0; i < emitCount; ++i) {
                 keys.push_back(*emittedKeys[i]);
-                values.push_back(*emittedValues[i]);
+                values.push_back(emittedValues[i] ? *emittedValues[i] : Collatable());
             }
         }
         indexer->emitDocIntoView(doc->docID, doc->sequence, viewIndex, keys, values);
