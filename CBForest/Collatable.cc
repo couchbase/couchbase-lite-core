@@ -15,8 +15,8 @@
 
 #include "Collatable.hh"
 #include "forestdb_endian.h"
-#include "geohash.hh"
-#include "error.hh"
+#include "Geohash.hh"
+#include "Error.hh"
 #include <sstream>
 
 namespace forestdb {

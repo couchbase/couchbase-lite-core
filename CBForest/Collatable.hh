@@ -19,7 +19,7 @@
 #include <string>
 #include <iostream>
 #include "slice.hh"
-#include "geohash.hh"
+#include "Geohash.hh"
 
 namespace forestdb {
 

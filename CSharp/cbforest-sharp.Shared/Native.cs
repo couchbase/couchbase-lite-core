@@ -35,7 +35,7 @@ namespace CBForest
 #if __IOS__
         private const string DLL_NAME = "__Internal";
 #else
-        private const string DLL_NAME = "CBForest.dll";
+        private const string DLL_NAME = "CBForest-Interop";
 #endif
         
         [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]

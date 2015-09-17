@@ -37,8 +37,9 @@
   <Import Project="..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems" Label="Shared" Condition="Exists('..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="cbforest-sharp.dll.config">
+    <None Include="libCBForest-Interop.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="cbforest-sharp.dll.config" />
   </ItemGroup>
 </Project>
