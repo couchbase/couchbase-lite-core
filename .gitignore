@@ -10,3 +10,4 @@ obj/
 [dD]ebug
 *.o
 *.class
+packages/
