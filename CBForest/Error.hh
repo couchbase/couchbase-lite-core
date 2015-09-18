@@ -27,6 +27,7 @@ namespace forestdb {
             BadRevisionID = -1000,
             CorruptRevisionData = -1001,
             CorruptIndexData = -1002,
+            AssertionFailed = -1003
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
@@ -34,7 +35,17 @@ namespace forestdb {
 
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
+
+        static void assertionFailed(const char *func, const char *file, unsigned line,
+                                    const char *expr)   __attribute((noreturn));
     };
+
+
+    // Like C assert() but throws an exception instead of aborting
+    #define	CBFAssert(e) \
+        (__builtin_expect(!(e), 0) ? forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+                                   : (void)0)
+
 
 }
 

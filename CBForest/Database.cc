@@ -19,7 +19,6 @@
 #ifdef CBFOREST_ENCRYPTION
 #include "filemgr_ops_encrypted.h"
 #endif
-#include <assert.h>
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
@@ -51,6 +50,14 @@ namespace forestdb {
             LogCallback(level, formatted);
         }
     }
+
+    void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
+        if (LogLevel > kError || LogCallback == NULL)
+            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+        WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+        throw error(error::AssertionFailed);
+    }
+
 
 #pragma mark - FILE:
 
@@ -105,7 +112,7 @@ namespace forestdb {
     #ifdef CBFOREST_ENCRYPTION
     void Database::encryptionConfig::setEncryptionKey(slice key) {
         if (key.buf) {
-            assert(key.size == sizeof(encryptionKey));
+            CBFAssert(key.size == sizeof(encryptionKey));
             ::memcpy(encryptionKey, key.buf, sizeof(encryptionKey));
             encrypted = true;
         } else {
@@ -262,7 +269,7 @@ namespace forestdb {
         }
 
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
-        assert(_file->_transaction == t);
+        CBFAssert(_file->_transaction == t);
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
 

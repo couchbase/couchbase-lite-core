@@ -18,7 +18,6 @@
 #include "GeoIndex.hh"
 #include "Tokenizer.hh"
 #include "LogInternal.hh"
-#include <assert.h>
 #include <algorithm>
 
 namespace forestdb {
@@ -63,7 +62,7 @@ namespace forestdb {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
-        assert(t.database()->contains(*this));
+        CBFAssert(t.database()->contains(*this));
         _lastMapVersion = _mapVersion;
 
         Collatable stateKey;
@@ -107,8 +106,8 @@ namespace forestdb {
     void MapReduceIndex::setup(Transaction &t, int indexType, MapFn *map, std::string mapVersion) {
         Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
               this, indexType, map, mapVersion.c_str());
-        assert(t.database()->contains(*this));
-        assert(map != NULL);
+        CBFAssert(t.database()->contains(*this));
+        CBFAssert(map != NULL);
         readState();
         _map = map;
         _mapVersion = mapVersion;
@@ -126,7 +125,7 @@ namespace forestdb {
 
     void MapReduceIndex::erase(Transaction& t) {
         Debug("MapReduceIndex: Erasing");
-        assert(t.database()->contains(*this));
+        CBFAssert(t.database()->contains(*this));
         KeyStore::erase(t);
         _lastSequenceIndexed = _lastSequenceChangedAt = 0;
         _rowCount = 0;
@@ -292,7 +291,7 @@ namespace forestdb {
 
 
     bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
-        assert(t.database()->contains(*this));
+        CBFAssert(t.database()->contains(*this));
         const Document& doc = mappable.document();
         if (doc.sequence() <= _lastSequenceIndexed)
             return false;
@@ -321,8 +320,8 @@ namespace forestdb {
 
 
     void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
-        assert(index);
-        assert(t);
+        CBFAssert(index);
+        CBFAssert(t);
         _indexes.push_back(index);
         _transactions.push_back(t);
     }

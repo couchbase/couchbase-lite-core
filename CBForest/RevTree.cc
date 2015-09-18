@@ -22,7 +22,6 @@
 #else
 #include <arpa/inet.h>  // for htons, etc.
 #endif
-#include <assert.h>
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -120,7 +119,7 @@ namespace forestdb {
                 // Prune body of an already-saved rev that's no longer a leaf:
                 rev->body.buf = NULL;
                 rev->body.size = 0;
-                assert(_bodyOffset > 0);
+                CBFAssert(_bodyOffset > 0);
                 rev->oldBodyOffset = _bodyOffset;
             }
             size += rev->sizeToWrite();
@@ -134,7 +133,7 @@ namespace forestdb {
             dst = src->write(dst, _bodyOffset);
         }
         dst->size = htonl(0);   // write trailing 0 size marker
-        assert((&dst->size + 1) == result.end());
+        CBFAssert((&dst->size + 1) == result.end());
         return result;
     }
 
@@ -213,14 +212,14 @@ namespace forestdb {
 #pragma mark - ACCESSORS:
 
     const Revision* RevTree::currentRevision() {
-        assert(!_unknown);
+        CBFAssert(!_unknown);
         sort();
         return _revs.size() == 0 ? NULL : &_revs[0];
     }
 
     const Revision* RevTree::get(unsigned index) const {
-        assert(!_unknown);
-        assert(index < _revs.size());
+        CBFAssert(!_unknown);
+        CBFAssert(index < _revs.size());
         return &_revs[index];
     }
 
@@ -229,7 +228,7 @@ namespace forestdb {
             if (rev->revID == revID)
                 return &*rev;
         }
-        assert(!_unknown);
+        CBFAssert(!_unknown);
         return NULL;
     }
 
@@ -238,13 +237,13 @@ namespace forestdb {
             if (rev->sequence == seq)
                 return &*rev;
         }
-        assert(!_unknown);
+        CBFAssert(!_unknown);
         return NULL;
     }
 
     bool RevTree::hasConflict() const {
         if (_revs.size() < 2) {
-            assert(!_unknown);
+            CBFAssert(!_unknown);
             return false;
         } else if (_sorted) {
             return _revs[1].isActive();
@@ -261,7 +260,7 @@ namespace forestdb {
     }
 
     std::vector<const Revision*> RevTree::currentRevisions() const {
-        assert(!_unknown);
+        CBFAssert(!_unknown);
         std::vector<const Revision*> cur;
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->isLeaf())
@@ -272,7 +271,7 @@ namespace forestdb {
 
     unsigned Revision::index() const {
         ptrdiff_t index = this - &owner->_revs[0];
-        assert(index >= 0 && index < owner->_revs.size());
+        CBFAssert(index >= 0 && index < owner->_revs.size());
         return (unsigned)index;
     }
 
@@ -323,7 +322,7 @@ namespace forestdb {
                                      bool deleted,
                                      bool hasAttachments)
     {
-        assert(!_unknown);
+        CBFAssert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.push_back(alloc_slice(unownedRevID));
         revid revID = revid(_insertedData.back());
@@ -417,7 +416,7 @@ namespace forestdb {
 
     int RevTree::insertHistory(const std::vector<revid> history, slice data,
                                bool deleted, bool hasAttachments) {
-        assert(history.size() > 0);
+        CBFAssert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
         unsigned lastGen = 0;

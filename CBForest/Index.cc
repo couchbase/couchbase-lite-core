@@ -17,7 +17,6 @@
 #include "Collatable.hh"
 #include "varint.hh"
 #include "LogInternal.hh"
-#include <assert.h>
 
 
 namespace forestdb {
@@ -33,7 +32,7 @@ namespace forestdb {
     IndexWriter::IndexWriter(Index* index, Transaction& t)
     :KeyStoreWriter(*index, t)
     {
-        assert(t.database()->contains(*index));
+        CBFAssert(t.database()->contains(*index));
     }
 
 
@@ -195,7 +194,7 @@ namespace forestdb {
 
         Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
         Document doc = get(realKey);
-        assert(doc.exists());
+        CBFAssert(doc.exists());
 
         CollatableReader realValue(doc.body());
         realValue.beginArray();

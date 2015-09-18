@@ -17,7 +17,6 @@
 #include "LogInternal.hh"
 #include "forestdb.h"
 #include <algorithm>
-#include <assert.h>
 #include <limits.h>
 #include <string.h>
 
@@ -262,7 +261,7 @@ namespace forestdb {
             status = fdb_iterator_get_metaonly(_iterator, &docP);
         else
             status = fdb_iterator_get(_iterator, &docP);
-        assert(docP == (fdb_doc*)_doc);
+        CBFAssert(docP == (fdb_doc*)_doc);
         if (status == FDB_RESULT_ITERATOR_FAIL) {
             close();
             return false;

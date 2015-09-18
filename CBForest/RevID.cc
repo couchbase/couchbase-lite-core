@@ -16,7 +16,6 @@
 #include "RevID.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include <assert.h>
 #include <math.h>
 #ifdef _MSC_VER
 #include <BaseTsd.h>

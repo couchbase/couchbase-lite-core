@@ -41,8 +41,8 @@ THE SOFTWARE.
 */
 
 #include "Geohash.hh"
+#include "Error.hh"
 #include <algorithm>
-#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <sstream>
@@ -358,7 +358,7 @@ static inline void setBit(unsigned char &bits, range &r, double value, int offse
     
 hash::hash(coord c, unsigned len)
 {
-    assert(len <= hash::kMaxLength);
+    CBFAssert(len <= hash::kMaxLength);
     if (!c.isValid()) {
         string[0] = '\0';
         return; // invalid coord, so return invalid hash
@@ -400,9 +400,9 @@ hash::hash(coord c, unsigned len)
 // Adds n to a geohash character, returning the resulting character or \0 if out of range
 static char addChar(char c, unsigned n) {
     unsigned char uc = (unsigned char)toupper(c) - 0x030;
-    assert(uc < 44);
+    CBFAssert(uc < 44);
     int index = BASE32_DECODE_TABLE[uc];
-    assert(index >= 0);
+    CBFAssert(index >= 0);
     index += n;
     if (index >= 32)
         return 0;
@@ -434,7 +434,7 @@ bool hashRange::compact() {
 }
 
 hash hashRange::operator[](unsigned i) const {
-    assert(i < count);
+    CBFAssert(i < count);
     hash h = *(const hash*)this;
     if (i > 0) {
         size_t max = strlen(h.string)-1;
