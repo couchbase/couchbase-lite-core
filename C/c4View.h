@@ -44,7 +44,8 @@ extern "C" {
     /** An opaque struct pointing to the raw data of an encoded key. The functions that operate
         on this allow it to be parsed by reading items one at a time (similar to SAX parsing.) */
     typedef struct {
-        const void *a, *b;
+        const void *bytes;
+        size_t length;
     } C4KeyReader;
 
     /** The types of tokens in a key. */
@@ -76,10 +77,8 @@ extern "C" {
     double c4key_readNumber(C4KeyReader*);
     C4SliceResult c4key_readString(C4KeyReader*);  // remember to free the result
 
-    /** Returns a string with a human-readable dump of the key, in a form almost like JSON.
-        (It's actually identical to JSON except that special characters in strings arent' escaped.)
-        For testing/debugging purposes only. Remember to free the result. */
-    C4SliceResult c4key_dump(C4KeyReader*);
+    /** Converts a C4Key to JSON. Remember to free the result. */
+    C4SliceResult c4key_toJSON(const C4KeyReader*);
 
 
     //////// VIEWS:

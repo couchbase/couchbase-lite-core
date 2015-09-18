@@ -88,13 +88,13 @@ public:
         int i = 0;
         while (c4queryenum_next(e, &error)) {
             ++i;
-            //std::cerr << "Key: " << dump(e->key) << "  Value: " << dump(e->value) << "\n";
+            //std::cerr << "Key: " << toJSON(e->key) << "  Value: " << toJSON(e->value) << "\n";
             char buf[20];
             if (i <= 100)
                 sprintf(buf, "%d", i);
             else
                 sprintf(buf, "\"doc-%03d\"", i - 100);
-            AssertEqual(dump(e->key), std::string(buf));
+            AssertEqual(toJSON(e->key), std::string(buf));
             AssertEqual(c4key_peek(&e->value), kC4EndSequence);
 
         }

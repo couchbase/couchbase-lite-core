@@ -58,8 +58,8 @@ const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
 
 
 // Dumps a C4Key to a C++ string
-std::string dump(C4KeyReader r) {
-    C4SliceResult dump = c4key_dump(&r);
+std::string toJSON(C4KeyReader r) {
+    C4SliceResult dump = c4key_toJSON(&r);
     std::string result((char*)dump.buf, dump.size);
     c4slice_free(dump);
     return result;

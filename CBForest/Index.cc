@@ -132,7 +132,7 @@ namespace forestdb {
 
                         if (oldValue == (slice)*value) {
                             Log("Old k/v pair (%s, %s) unchanged",
-                                  key->dump().c_str(), value->dump().c_str());
+                                  key->toJSON().c_str(), value->toJSON().c_str());
                             continue;  // Value is unchanged, so this is a no-op; skip to next key!
                         }
                     } else {
@@ -146,7 +146,7 @@ namespace forestdb {
             Collatable realValue;
             realValue.beginArray() << docSequence << *value;
             realValue.endArray();
-            Log("**** update: realKey = %s", realKey.dump().c_str());
+            Log("**** update: realKey = %s", realKey.toJSON().c_str());
             set(realKey, slice::null, realValue);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
@@ -193,7 +193,7 @@ namespace forestdb {
             realKey << emitIndex;
         realKey.endArray();
 
-        Log("**** getEntry: realKey = %s", realKey.dump().c_str());
+        Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
         Document doc = get(realKey);
         assert(doc.exists());
 
@@ -270,7 +270,7 @@ namespace forestdb {
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
         for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
-            Debug("    key range: %s -- %s (%d)", i->start.dump().c_str(), i->end.dump().c_str(), i->inclusiveEnd);
+            Debug("    key range: %s -- %s (%d)", i->start.toJSON().c_str(), i->end.toJSON().c_str(), i->inclusiveEnd);
         nextKeyRange();
     }
 
@@ -337,7 +337,7 @@ namespace forestdb {
 
             // Return it as the next row:
             Debug("IndexEnumerator: found key=%s",
-                    forestdb::CollatableReader(_key).dump().c_str());
+                    forestdb::CollatableReader(_key).toJSON().c_str());
             return true;
         }
     }
@@ -371,7 +371,7 @@ namespace forestdb {
         }
 
         Collatable& startKey = _keyRanges[_currentKeyIndex].start;
-        Debug("IndexEnumerator: Advance to key '%s'", startKey.dump().c_str());
+        Debug("IndexEnumerator: Advance to key '%s'", startKey.toJSON().c_str());
         if (!_dbEnum)
             _dbEnum = DocEnumerator(*_index, slice::null, slice::null, docOptions(_options));
         _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));

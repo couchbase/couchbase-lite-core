@@ -39,7 +39,7 @@ public:
 
     void testCreateKey() {
         populateKey();
-        AssertEqual(dump(key), std::string("[null,false,true,0,12345,-2468,\"foo\",[]]"));
+        AssertEqual(toJSON(key), std::string("[null,false,true,0,12345,-2468,\"foo\",[]]"));
     }
 
     void testReadKey() {

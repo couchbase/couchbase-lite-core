@@ -73,9 +73,9 @@ protected:
 
 
 // Dumps a C4Key to a C++ string
-std::string dump(C4KeyReader);
+std::string toJSON(C4KeyReader);
 
-static inline std::string dump(C4Key* key)    {return dump(c4key_read(key));}
+static inline std::string toJSON(C4Key* key)    {return toJSON(c4key_read(key));}
 
 
 #endif /* c4Test_hh */

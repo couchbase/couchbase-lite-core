@@ -61,7 +61,7 @@ _c4key_skipToken
 _c4key_readBool
 _c4key_readNumber
 _c4key_readString
-_c4key_dump
+_c4key_toJSON
 
 _c4view_open
 _c4view_close

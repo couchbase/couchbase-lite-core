@@ -133,7 +133,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
         area a = e.keyBoundingBox();
         ++found;
         int64_t emitID = e.value().readInt();
-        NSLog(@"key = %s = (%g, %g)...(%g, %g) doc = '%@' #%lld", e.key().dump().c_str(),
+        NSLog(@"key = %s = (%g, %g)...(%g, %g) doc = '%@' #%lld", e.key().toJSON().c_str(),
               a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max,
               (NSString*)e.docID(), emitID);
         XCTAssert(a.intersects(queryArea));

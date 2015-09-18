@@ -204,4 +204,48 @@ static id roundTrip(id input) {
     AssertEq(readSequence, 1234);
 }
 
+static NSString* toJSON(Collatable c) {
+    std::string json = c.toJSON();
+    return [[NSString alloc] initWithBytes: json.data() length: json.size()
+                                  encoding: NSUTF8StringEncoding];
+}
+
+- (void) testDump {
+    Collatable("howdy");
+    Collatable c;
+    c.addBool(false);
+    AssertEqual(toJSON(c), @"false");
+    c = Collatable();
+    c.addBool(true);
+    AssertEqual(toJSON(c), @"true");
+    AssertEqual(toJSON(Collatable(66)), @"66");
+
+    AssertEqual(toJSON(Collatable("howdy")), @"\"howdy\"");
+    AssertEqual(toJSON(Collatable("\"ironic\"")), @"\"\\\"ironic\\\"\"");
+    AssertEqual(toJSON(Collatable("an \"ironic\" twist")), @"\"an \\\"ironic\\\" twist\"");
+    AssertEqual(toJSON(Collatable("\\foo\\")), @"\"\\\\foo\\\\\"");
+
+    c = Collatable();
+    c.beginArray();
+    c << 1234;
+    c.endArray();
+    AssertEqual(toJSON(c), @"[1234]");
+
+    c = Collatable();
+    c.beginArray();
+    c << 1234;
+    c << 5678;
+    c.endArray();
+    AssertEqual(toJSON(c), @"[1234,5678]");
+
+    c = Collatable();
+    c.beginMap();
+    c << "name";
+    c << "Frank";
+    c << "age";
+    c << 11;
+    c.endMap();
+    AssertEqual(toJSON(c), @"{\"name\":\"Frank\",\"age\":11}");
+}
+
 @end

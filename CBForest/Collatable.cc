@@ -25,6 +25,7 @@ namespace forestdb {
     static uint8_t kCharInversePriority[256];
 
     static void initCharPriorityMap();
+    static bool sCharPriorityMapInitialized;
 
 
     union swappedDouble {
@@ -51,9 +52,7 @@ namespace forestdb {
 
 
     Collatable::Collatable()
-    {
-        initCharPriorityMap();
-    }
+    { }
 
     Collatable::Collatable(slice s, bool)
     :_str((std::string)s)
@@ -74,6 +73,8 @@ namespace forestdb {
     }
 
     static inline void encodeChars(std::string &str, size_t first) {
+        if (!sCharPriorityMapInitialized)
+            initCharPriorityMap();
         for (auto c=str.begin()+first; c != str.end(); ++c) {
             *c = kCharPriority[(uint8_t)*c];
         }
@@ -109,8 +110,8 @@ namespace forestdb {
         return *this;
     }
 
-    std::string Collatable::dump() {
-        return CollatableReader(*this).dump();
+    std::string Collatable::toJSON() {
+        return CollatableReader(*this).toJSON();
     }
 
 
@@ -237,9 +238,24 @@ namespace forestdb {
         expectTag(kEndSequence);
     }
 
-    void CollatableReader::dumpTo(std::ostream &out) {
+    static void writeJSONString(std::ostream& out, slice str) {
+        out << "\"";
+        auto start = (const uint8_t*)str.buf;
+        auto end = (const uint8_t*)str.end();
+        for (auto p = start; p <= end; p++) {
+            if (*p == '"' || *p == '\\') {
+                // Write characters from start up to p-1:
+                out << std::string((char*)start, p-start);
+                out << "\\";
+                start = p;
+            }
+        }
+        out << std::string((char*)start, end-start);
+        out << "\"";
+    }
+
+    void CollatableReader::writeJSONTo(std::ostream &out) {
         if (_data.size == 0) {
-            out << "(nil)";
             return;
         }
         switch(peekTag()) {
@@ -260,7 +276,7 @@ namespace forestdb {
                 out << readDouble();
                 break;
             case kString:
-                out << '"' << (std::string)readString() << '"';
+                writeJSONString(out, readString());
                 break;
             case kArray: {
                 out << '[';
@@ -271,7 +287,7 @@ namespace forestdb {
                         first = false;
                     else
                         out << ",";
-                    dumpTo(out);
+                    writeJSONTo(out);
                 }
                 endArray();
                 out << ']';
@@ -286,9 +302,9 @@ namespace forestdb {
                         first = false;
                     else
                         out << ",";
-                    dumpTo(out);
+                    writeJSONTo(out);
                     out << ':';
-                    dumpTo(out);
+                    writeJSONTo(out);
                 }
                 out << '}';
                 endMap();
@@ -306,9 +322,9 @@ namespace forestdb {
         }
     }
 
-    std::string CollatableReader::dump() {
+    std::string CollatableReader::toJSON() {
         std::stringstream out;
-        dumpTo(out);
+        writeJSONTo(out);
         return out.str();
     }
 
@@ -320,8 +336,7 @@ namespace forestdb {
     // ordering. Bytes 0x80--0xFF (i.e. UTF-8 encoded sequences) map to themselves.
     // The table cannot contain any 0 values, because 0 is reserved as an end-of-string marker.
     static void initCharPriorityMap() {
-        static bool initialized;
-        if (!initialized) {
+        if (!sCharPriorityMapInitialized) {
             static const char* const kInverseMap = "\t\n\r `^_-,;:!?.'\"()[]{}@*/\\&#%+<=>|~$0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
             uint8_t priority = 1;
             for (int i=0; i<strlen(kInverseMap); i++)
@@ -332,7 +347,7 @@ namespace forestdb {
             kCharPriority[127] = kCharPriority[(int)' '];// and DEL (there's no room for a unique #)
             for (int i=128; i<256; i++)
                 kCharPriority[i] = (uint8_t)i;
-            initialized = true;
+            sCharPriorityMapInitialized = true;
         }
     }
 

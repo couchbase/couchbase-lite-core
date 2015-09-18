@@ -82,7 +82,7 @@ namespace forestdb {
         bool operator< (const Collatable& c) const  {return _str < c._str;}
         bool operator== (const Collatable& c) const {return _str == c._str;}
 
-        std::string dump();
+        std::string toJSON();
 
     private:
         void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
@@ -121,8 +121,8 @@ namespace forestdb {
         void beginMap();
         void endMap();
 
-        void dumpTo(std::ostream &out);
-        std::string dump();
+        void writeJSONTo(std::ostream &out);
+        std::string toJSON();
 
         static uint8_t* getInverseCharPriorityMap();
 
