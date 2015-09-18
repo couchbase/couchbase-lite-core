@@ -11,3 +11,5 @@ obj/
 *.o
 *.class
 packages/
+*.sdf
+*.opensdf

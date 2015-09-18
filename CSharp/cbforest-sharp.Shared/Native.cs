@@ -432,19 +432,30 @@ namespace CBForest
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
-        
+        private static extern C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
+
+        public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, int viewCount, C4Error* outError)
+        {
+            fixed(C4View** viewPtr = views) {
+                return c4indexer_begin(db, viewPtr, viewCount, outError);
+            }
+        }
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_emit")]
         private static extern byte _c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
-            C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError);
+            C4Key** emittedKeys, C4Key** emittedValues, C4Error *outError);
         
         public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
             C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError)
         {
-            return Convert.ToBoolean(_c4indexer_emit(indexer, document, viewNumber, emitCount, emittedKeys, emittedValues, outError));
+            fixed(C4Key** keysPtr = emittedKeys)
+            fixed(C4Key** valuesPtr = emittedValues)
+            {
+                return Convert.ToBoolean(_c4indexer_emit(indexer, document, viewNumber, emitCount, keysPtr, valuesPtr, outError));
+            }
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]

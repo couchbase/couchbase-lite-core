@@ -215,7 +215,7 @@ namespace forestdb {
     const Revision* RevTree::currentRevision() {
         assert(!_unknown);
         sort();
-        return &_revs[0];
+        return _revs.size() == 0 ? NULL : &_revs[0];
     }
 
     const Revision* RevTree::get(unsigned index) const {

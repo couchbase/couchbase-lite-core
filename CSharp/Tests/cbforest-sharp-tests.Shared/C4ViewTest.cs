@@ -99,10 +99,7 @@ namespace CBForest.Tests
             }
             
             C4Error error;
-            C4Indexer* ind;
-            fixed(C4View** viewPtr = &_view) {
-                ind = Native.c4indexer_begin(_db, viewPtr, 1, &error);
-            }
+            C4Indexer* ind = Native.c4indexer_begin(_db, new[] { _view }, 1, &error);
             Assert.IsTrue(ind != null);
 
             var e = Native.c4indexer_enumerateDocuments(ind, &error);

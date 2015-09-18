@@ -20,6 +20,10 @@
 extern "C" {
 #endif
 
+#ifdef _MSC_VER
+#define inline __forceinline
+#endif
+
 
 /** A database sequence number, representing the order in which a revision was created. */
 typedef uint64_t C4SequenceNumber;
@@ -79,14 +83,15 @@ typedef C4Slice C4SliceResult;
 
 /** Creates a slice from a C string. */
 static inline C4Slice c4str(const char *str) {
-    return (C4Slice){str, str ? strlen(str) : 0};
+	C4Slice foo = { str, str ? strlen(str) : 0 };
+	return foo;
 }
 
 // Macro version of c4str, for use in initializing compile-time constants
-#define C4STR(STR) (C4Slice){("" STR), sizeof(("" STR))-1}
+#define C4STR(STR) ({("" STR), sizeof(("" STR))-1})
 
 // A convenient constant denoting a null slice.
-#define kC4SliceNull ((C4Slice){NULL, 0})
+#define kC4SliceNull ({NULL, 0})
 
 #endif
 

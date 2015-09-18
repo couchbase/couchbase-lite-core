@@ -97,7 +97,7 @@ C4SliceResult c4key_readString(C4KeyReader* r) {
 
 C4SliceResult c4key_toJSON(const C4KeyReader* r) {
     if (!r || r->length == 0)
-        return (C4SliceResult){NULL, 0};
+        return {NULL, 0};
     std::string str = ((CollatableReader*)r)->toJSON();
     auto s = ((slice)str).copy();
     return {s.buf, s.size};
@@ -166,6 +166,10 @@ bool c4view_eraseIndex(C4View *view, C4Error *outError) {
 
 bool c4view_delete(C4View *view, C4Error *outError) {
     try {
+		if (view == NULL) {
+			return true;
+		}
+
         view->_viewDB->deleteDatabase();
         delete view;
         return true;
