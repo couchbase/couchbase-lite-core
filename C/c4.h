@@ -78,20 +78,29 @@ typedef struct {
     size_t size;
 } C4Slice;
 
-/** A slice returned from a function needs to have its buf freed by the caller. */
+/** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
 typedef C4Slice C4SliceResult;
 
-/** Creates a slice from a C string. */
+/** Creates a slice pointing to the contents of a C string. */
 static inline C4Slice c4str(const char *str) {
 	C4Slice foo = { str, str ? strlen(str) : 0 };
 	return foo;
 }
 
-// Macro version of c4str, for use in initializing compile-time constants
+// Macro version of c4str, for use in initializing compile-time constants.
+// STR must be a C string literal.
+#ifdef _MSC_VER
 #define C4STR(STR) ({("" STR), sizeof(("" STR))-1})
+#else
+#define C4STR(STR) ((C4Slice){("" STR), sizeof(("" STR))-1})
+#endif
 
 // A convenient constant denoting a null slice.
+#ifdef _MSC_VER
 #define kC4SliceNull ({NULL, 0})
+#else
+#define kC4SliceNull ((C4Slice){NULL, 0})
+#endif
 
 #endif
 

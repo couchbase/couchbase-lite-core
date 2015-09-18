@@ -50,13 +50,13 @@ static inline C4KeyReader asKeyReader(const CollatableReader &r) {
 }
 
 
-C4KeyReader c4key_read(C4Key *key) {
+C4KeyReader c4key_read(const C4Key *key) {
     CollatableReader r(*key);
     return asKeyReader(r);
 }
 
 
-C4KeyToken c4key_peek(C4KeyReader* r) {
+C4KeyToken c4key_peek(const C4KeyReader* r) {
     static const C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,
                                     kC4Number, kC4String, kC4Array, kC4Map, kC4Error, kC4Special};
     Collatable::Tag t = ((CollatableReader*)r)->peekTag();
