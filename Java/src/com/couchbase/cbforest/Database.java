@@ -36,5 +36,5 @@ public class Database {
     private native long _open(String path, boolean readOnly) throws ForestException;
     private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
-    private long _handle; // handle to native C4Database*
+    long _handle; // handle to native C4Database*
 }

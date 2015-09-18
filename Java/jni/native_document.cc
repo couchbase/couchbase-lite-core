@@ -25,7 +25,7 @@ static jfieldID kField_SelectedBody;
 
 
 bool forestdb::jni::initDocument(JNIEnv *env) {
-    jclass documentClass = env->FindClass("Document");
+    jclass documentClass = env->FindClass("com/couchbase/cbforest/Document");
     if (!documentClass)
         return false;
     kField_Handle = env->GetFieldID(documentClass, "_handle", "J");

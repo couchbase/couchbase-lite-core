@@ -41,6 +41,7 @@ enum {
     kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception
     kC4ErrorNotInTransaction,           // Function must be called while in a transaction
     kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
+    kC4ErrorInvalidKey,                 // Object in key is not JSON-compatible
 };
 
 

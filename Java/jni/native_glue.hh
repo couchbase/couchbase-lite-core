@@ -17,8 +17,10 @@ namespace forestdb {
     namespace jni {
 
 
-bool initDatabase(JNIEnv*); // Implemented in native_database.cc
-bool initDocument(JNIEnv*); // Implemented in native_document.cc
+bool initDatabase(JNIEnv*);     // Implemented in native_database.cc
+bool initDocument(JNIEnv*);     // Implemented in native_document.cc
+bool initQueryIterator(JNIEnv*);// Implemented in native_queryIterator.cc
+bool initView(JNIEnv*);         // Implemented in native_view.cc
 
 
 // Creates a temporary slice value from a Java String object

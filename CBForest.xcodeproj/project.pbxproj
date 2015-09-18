@@ -358,6 +358,11 @@
 		27FA9A3A19180B5F00912F96 /* stem_ISO_8859_2_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */; };
 		27FA9A3B19180B5F00912F96 /* stem_UTF_8_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */; };
 		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
+		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; settings = {ASSET_TAGS = (); }; };
+		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; settings = {ASSET_TAGS = (); }; };
+		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; settings = {ASSET_TAGS = (); }; };
+		27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; settings = {ASSET_TAGS = (); }; };
+		27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */; settings = {ASSET_TAGS = (); }; };
 		720EA3E31BA7EAD9002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
@@ -396,7 +401,6 @@
 		720EA4651BA909C4002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
 		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
-		720EA4701BA90A0C002B8416 /* libstdc++.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46F1BA90A0C002B8416 /* libstdc++.dylib */; };
 		720EA4711BA90A18002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA4721BA90A1C002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
@@ -414,7 +418,7 @@
 				"$(DERIVED_FILE_DIR)/Java_com_couchbase_cbforest_Database.h",
 				"",
 			);
-			script = "/usr/bin/javah -classpath $SRCROOT/java/src -d $DERIVED_FILE_DIR com.couchbase.cbforest.$INPUT_FILE_BASE";
+			script = "set -e\n/usr/bin/javah -classpath $SRCROOT/java/src -d $DERIVED_FILE_DIR com.couchbase.cbforest.$INPUT_FILE_BASE";
 		};
 		720EA3F11BA7EAD9002B8416 /* PBXBuildRule */ = {
 			isa = PBXBuildRule;
@@ -838,6 +842,11 @@
 		27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libTokenizer-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = ../CBForest/varint.cc; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = ../CBForest/varint.hh; sourceTree = "<group>"; };
+		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/cbforest/View.java; sourceTree = "<group>"; };
+		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
+		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/cbforest/QueryIterator.java; sourceTree = "<group>"; };
+		27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_queryIterator.cc; sourceTree = "<group>"; };
+		27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.0.sdk/usr/lib/libstdc++.tbd"; sourceTree = DEVELOPER_DIR; };
 		720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libCBForest-Interop.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
 		720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-Interop.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -950,7 +959,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				720EA4701BA90A0C002B8416 /* libstdc++.dylib in Frameworks */,
 				720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */,
 				720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */,
 			);
@@ -1003,6 +1011,8 @@
 				274D03E91BA734A300FF7C35 /* native_database.cc */,
 				274D03EA1BA734A300FF7C35 /* native_document.cc */,
 				274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */,
+				27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */,
+				27FF7E551BAB64BE004EB8D4 /* native_view.cc */,
 				274D03EC1BA734A300FF7C35 /* native_glue.cc */,
 				274D03ED1BA734A300FF7C35 /* native_glue.hh */,
 			);
@@ -1069,6 +1079,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */,
 				720EA46F1BA90A0C002B8416 /* libstdc++.dylib */,
 				720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */,
 				274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */,
@@ -1241,6 +1252,8 @@
 				274D03F41BA734C100FF7C35 /* Document.java */,
 				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
 				274D03F61BA734C100FF7C35 /* ForestException.java */,
+				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
+				27FF7E541BAB60E2004EB8D4 /* View.java */,
 				274D03E81BA734A300FF7C35 /* jni */,
 				274D03FA1BA7414100FF7C35 /* jni.h */,
 				274D03FE1BA7443600FF7C35 /* CBForestJNI.exp */,
@@ -1993,11 +2006,16 @@
 				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
 				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
+				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
+				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,
 				274D03DF1BA732E400FF7C35 /* c4.c in Sources */,
 				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
+				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
+				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
 				274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */,
 				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
+				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

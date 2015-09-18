@@ -17,11 +17,15 @@ JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved)
 {
     JNIEnv *env;
-    if (jvm->GetEnv((void **)&env, JNI_VERSION_1_2))
-        return JNI_ERR; // JNI version not supported
-    if (!initDatabase(env) || !initDocument(env))
+    if (jvm->GetEnv((void **)&env, JNI_VERSION_1_2) == JNI_OK
+            && initDatabase(env)
+            && initDocument(env)
+            && initQueryIterator(env)
+            && initView(env)) {
+        return JNI_VERSION_1_2;
+    } else {
         return JNI_ERR;
-    return JNI_VERSION_1_2;
+    }
 }
 
 
@@ -74,7 +78,7 @@ namespace forestdb {
 
 
         void throwError(JNIEnv *env, C4Error error) {
-            jclass xclass = env->FindClass("ForestException");
+            jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
             assert(xclass);
             jmethodID m = env->GetMethodID(xclass, "throwError", "(II)");
             assert(m);

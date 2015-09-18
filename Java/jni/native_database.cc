@@ -23,7 +23,7 @@ static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
 }
 
 bool forestdb::jni::initDatabase(JNIEnv *env) {
-    jclass dbClass = env->FindClass("Database");
+    jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;
     kHandleField = env->GetFieldID(dbClass, "_handle", "L");
@@ -99,8 +99,10 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Database_isInTransaction
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1iterateChanges
 (JNIEnv *env, jobject self, jlong since, jboolean bodies)
 {
+    C4ChangesOptions options = kC4DefaultChangesOptions;
+    options.includeBodies = bodies;
     C4Error error;
-    C4DocEnumerator* e = c4db_enumerateChanges(getDbHandle(env, self), since, bodies, &error);
+    C4DocEnumerator* e = c4db_enumerateChanges(getDbHandle(env, self), since, &options, &error);
     if (!e)
         throwError(env, error);
     return (jlong)e;

@@ -317,8 +317,8 @@ C4QueryEnumerator* c4view_query(C4View *view,
         if (!c4options)
             c4options = &kC4DefaultQueryOptions;
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
-        options.skip = c4options->skip;
-        options.limit = c4options->limit;
+        options.skip = (unsigned)c4options->skip;
+        options.limit = (unsigned)c4options->limit;
         options.descending = c4options->descending;
         options.inclusiveStart = c4options->inclusiveStart;
         options.inclusiveEnd = c4options->inclusiveEnd;

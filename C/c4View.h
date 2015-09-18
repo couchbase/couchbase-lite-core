@@ -176,8 +176,8 @@ extern "C" {
 
     /** Options for view queries. */
     typedef struct {
-        unsigned skip;
-        unsigned limit;
+        uint64_t skip;
+        uint64_t limit;
         bool descending;
         bool inclusiveStart;
         bool inclusiveEnd;
@@ -188,7 +188,7 @@ extern "C" {
         C4Slice endKeyDocID;
         
         const C4Key **keys;
-        unsigned keysCount;
+        size_t keysCount;
     } C4QueryOptions;
 
     /** Default query options. */
