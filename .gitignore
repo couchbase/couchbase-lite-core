@@ -8,3 +8,4 @@ DerivedData/
 bin/
 obj/
 [dD]ebug
+*.o

@@ -23,10 +23,18 @@ namespace forestdb {
 
 void _Log(logLevel, const char *message, ...);
 
-#define Debug(MESSAGE, ...)      if(LogLevel > kDebug) ; else _Log(kDebug, MESSAGE)
-#define Log(MESSAGE, ...)        if(LogLevel > kInfo) ; else _Log(kInfo, MESSAGE)
-#define Warn(MESSAGE, ...)       if(LogLevel > kWarning) ; else _Log(kWarning, MESSAGE)
-#define WarnError(MESSAGE, ...)  if(LogLevel > kError) ; else _Log(kError, MESSAGE)
+#ifdef _MSC_VER
+    // Apparently vararg macro syntax is slightly different in MSVC than in Clang/GCC
+    #define Debug(MESSAGE, ...)      if(LogLevel > kDebug) ; else _Log(kDebug, MESSAGE)
+    #define Log(MESSAGE, ...)        if(LogLevel > kInfo) ; else _Log(kInfo, MESSAGE)
+    #define Warn(MESSAGE, ...)       if(LogLevel > kWarning) ; else _Log(kWarning, MESSAGE)
+    #define WarnError(MESSAGE, ...)  if(LogLevel > kError) ; else _Log(kError, MESSAGE)
+#else
+    #define Debug(MESSAGE...)      if(LogLevel > kDebug) ; else _Log(kDebug, MESSAGE)
+    #define Log(MESSAGE...)        if(LogLevel > kInfo) ; else _Log(kInfo, MESSAGE)
+    #define Warn(MESSAGE...)       if(LogLevel > kWarning) ; else _Log(kWarning, MESSAGE)
+    #define WarnError(MESSAGE...)  if(LogLevel > kError) ; else _Log(kError, MESSAGE)
+#endif
 
 }
 

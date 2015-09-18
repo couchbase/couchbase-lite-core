@@ -17,3 +17,6 @@
 #ifdef __OBJC__
     #import <Foundation/Foundation.h>
 #endif
+
+// Enable encryption support
+#define CBFOREST_ENCRYPTION
