@@ -25,7 +25,6 @@ using System.IO;
 
 namespace CBForest.Tests
 {
-    [TestFixture]
     public unsafe class C4Test
     {
         protected const string BODY = "{\"name\":007}";
@@ -51,14 +50,14 @@ namespace CBForest.Tests
             Assert.IsTrue(Native.c4db_delete(_db, &error));
         }
         
-        public string Dump(C4KeyReader r)
+        public string ToJSON(C4KeyReader r)
         {
-            return Native.c4key_dump(&r);
+            return Native.c4key_toJSON(&r);
         }
         
-        public string Dump(C4Key *key)
+        public string ToJSON(C4Key *key)
         {
-            return Dump(Native.c4key_read(key));   
+            return ToJSON(Native.c4key_read(key));   
         }
         
         protected void CreateRev(string docID, string revID, string body)

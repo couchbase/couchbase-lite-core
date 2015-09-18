@@ -36,7 +36,8 @@ namespace CBForest
     {
         InternalException = 1,
         NotInTransaction,
-        TransactionNotClosed
+        TransactionNotClosed,
+        InvalidKey
     }
     
     public struct C4Error
@@ -260,8 +261,8 @@ namespace CBForest
     
     public unsafe struct C4KeyReader
     {
-        public void* a;
-        public void* b;
+        public void* bytes;
+        public UIntPtr length;
     }
     
     public struct C4Database
@@ -289,8 +290,8 @@ namespace CBForest
         public static readonly C4QueryOptions DEFAULT = 
             new C4QueryOptions { limit = UInt32.MaxValue, inclusiveStart = true, inclusiveEnd = true };
         
-        public uint skip;   
-        public uint limit;
+        public ulong skip;   
+        public ulong limit;
         private byte _descending;
         private byte _inclusiveStart;
         private byte _inclusiveEnd;
@@ -300,7 +301,7 @@ namespace CBForest
         public C4Slice startKeyDocID;
         public C4Slice endKeyDocID;
         public C4Key** keys;
-        public uint keysCount;
+        public UIntPtr keysCount;
 
         public bool descending 
         { 

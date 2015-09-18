@@ -25,6 +25,7 @@ using NUnit.Framework;
 
 namespace CBForest.Tests
 {
+    [TestFixture]
     public unsafe class C4ViewTest : C4Test
     {
         private C4View *_view;
@@ -82,7 +83,7 @@ namespace CBForest.Tests
                     buf = String.Format("\"doc-{0}\"", (i - 100).ToString("D3"));
                 }   
                 
-                Assert.AreEqual(buf, Dump(e->key));
+                Assert.AreEqual(buf, ToJSON(e->key));
                 Assert.AreEqual(C4KeyToken.EndSequence, Native.c4key_peek(&e->value));
             }
             

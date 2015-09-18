@@ -364,7 +364,7 @@ namespace CBForest
         
         public static bool c4key_readBool(C4KeyReader *reader)
         {
-            return Convert.ToBoolean(c4key_readBool(reader));   
+            return Convert.ToBoolean(_c4key_readBool(reader));   
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
@@ -378,12 +378,12 @@ namespace CBForest
             return BridgeSlice(() => _c4key_readString(reader));
         }
         
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_dump")]
-        private static extern C4Slice _c4key_dump(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_toJSON")]
+        private static extern C4Slice _c4key_toJSON(C4KeyReader *reader);
 
-        public static string c4key_dump(C4KeyReader *reader)
+        public static string c4key_toJSON(C4KeyReader *reader)
         {
-            return BridgeSlice(() => _c4key_dump(reader));
+            return BridgeSlice(() => _c4key_toJSON(reader));
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
