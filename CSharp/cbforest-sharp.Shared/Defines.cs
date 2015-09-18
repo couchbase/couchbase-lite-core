@@ -21,6 +21,53 @@
 using System;
 namespace CBForest
 {
+    public enum C4ErrorDomain 
+    {
+        HTTP,
+        POSIX,
+        ForestDB,
+        C4
+    }
+
+    public enum C4ErrorCode
+    {
+        InternalException = 1,
+        NotInTransaction,
+        TransactionNotClosed,
+        InvalidKey
+    }
+    
+    [Flags]
+    public enum C4DocumentFlags
+    {
+        Deleted = 0x01,
+        Conflicted = 0x02,
+        HasAttachments = 0x04,
+        Exists = 0x1000
+    }
+
+    [Flags]
+    public enum C4RevisionFlags
+    {
+        RevDeleted = 0x01,
+        RevLeaf = 0x02,
+        RevNew = 0x04,
+        RevHasAttachments = 0x08
+    }
+
+    public enum C4KeyToken
+    {
+        Null,
+        Bool,
+        Number,
+        String,
+        Array,
+        Map,
+        EndSequence,
+        Special,
+        Error = 255
+    }
+    
     public enum fdb_status
     {
         /// <summary>
