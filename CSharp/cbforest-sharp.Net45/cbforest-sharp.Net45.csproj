@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <IsMac>false</IsMac>
@@ -42,6 +42,12 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Condition=" !$(IsMac) AND '$(OS)' == 'Unix' " Include="libCBForest-Interop.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="CBForest-Interop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="ForestDB.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Condition=" $(IsMac) " Include="libCBForest-Interop.dylib">

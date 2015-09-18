@@ -92,13 +92,13 @@ C4SliceResult c4key_readString(C4KeyReader* r) {
         //OPT: This makes an extra copy because I can't find a way to 'adopt' the allocated block
         // managed by the alloc_slice's std::shared_ptr.
     } catchError(NULL)
-    return (C4SliceResult){s.buf, s.size};
+    return {s.buf, s.size};
 }
 
 C4SliceResult c4key_dump(C4KeyReader* r) {
     std::string str = ((CollatableReader*)r)->dump();
     auto s = ((slice)str).copy();
-    return (C4SliceResult){s.buf, s.size};
+    return {s.buf, s.size};
 }
 
 
@@ -301,9 +301,11 @@ static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnu
 
 
 const C4QueryOptions kC4DefaultQueryOptions = {
-    .limit = UINT_MAX,
-    .inclusiveStart = true,
-    .inclusiveEnd = true
+	0,
+    UINT_MAX,
+	false,
+    true,
+    true
 };
 
 
@@ -354,7 +356,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
             ei->docID = ei->_enum.docID();
             return true;
         } else {
-            ei->key = ei->value = (C4KeyReader){NULL, 0};
+            ei->key = ei->value = {NULL, 0};
             ei->docID = slice::null;
             recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
             return false;

@@ -78,6 +78,18 @@
     <ClInclude Include="asprintf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\C\c4Database.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\C\c4Impl.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\C\c4View.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\C\c4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\CBForest\VersionedDocument.cc">
@@ -125,13 +137,22 @@
     <ClCompile Include="..\CBForest\varint.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memmem.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="asprintf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vasprintf-msvc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memmem.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4Database.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4View.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -556,7 +556,7 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
 
 C4SliceResult c4doc_getType(C4Document *doc) {
     slice result = internal(doc)->_versionedDoc.docType().copy();
-    return (C4SliceResult){result.buf, result.size};
+    return {result.buf, result.size};
 }
 
 bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError) {
@@ -586,15 +586,18 @@ bool c4doc_save(C4Document *doc,
 
 #pragma mark - DOC ENUMERATION:
 
-
 const C4AllDocsOptions kC4DefaultAllDocsOptions = {
-    .inclusiveStart = true,
-    .inclusiveEnd = true,
-    .includeBodies = true
+	false,
+    true,
+    true,
+	0,
+	false,
+    true
 };
 
 const C4ChangesOptions kC4DefaultChangesOptions = {
-    .includeBodies = true
+    false,
+	true
 };
 
 
