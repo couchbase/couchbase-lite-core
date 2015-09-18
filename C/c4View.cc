@@ -114,7 +114,7 @@ struct c4View {
            C4Slice version)
     :_sourceDB(sourceDB),
      _viewDB(viewDB),
-     _index(viewDB, (std::string)name, internal(sourceDB)->defaultKeyStore()),
+     _index(viewDB, (std::string)name, asDatabase(sourceDB)->defaultKeyStore()),
      _version(version)
     { }
 

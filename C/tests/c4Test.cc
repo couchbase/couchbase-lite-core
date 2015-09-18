@@ -37,7 +37,8 @@ void C4Test::setUp() {
 
 void C4Test::tearDown() {
     C4Error error;
-    Assert(c4db_delete(db, &error));
+    if (db)
+        Assert(c4db_delete(db, &error));
 }
 
 

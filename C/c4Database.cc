@@ -58,15 +58,17 @@ void c4slice_free(C4Slice slice) {
 #pragma mark - DATABASES:
 
 
-struct c4Database {
-    Database* _db;
+struct c4Database : public Database {
 
-    c4Database()    :_db(NULL), _transaction(NULL), _transactionLevel(0) { }
-    ~c4Database()   {assert(_transactionLevel == 0); delete _db;}
+    c4Database(std::string path, const config& cfg)
+    :Database(path, cfg),
+     _transaction(NULL),
+     _transactionLevel(0)
+    { }
 
     void beginTransaction() {
         if (++_transactionLevel == 1)
-            _transaction = new Transaction(_db);
+            _transaction = new Transaction(this);
     }
 
     Transaction* transaction() {
@@ -109,8 +111,8 @@ private:
 };
 
 
-forestdb::Database* internal(C4Database *db) {
-    return db->_db;
+forestdb::Database* asDatabase(C4Database *db) {
+    return db;
 }
 
 
@@ -127,17 +129,16 @@ C4Database* c4db_open(C4Slice path,
     config.compress_document_body = true;
     config.compactor_sleep_duration = kAutoCompactInterval;
 
-    auto c4db = new c4Database;
     try {
-        c4db->_db = new Database((std::string)path, config);
-        return c4db;
+        return new c4Database((std::string)path, config);
     } catchError(outError);
-    delete c4db;
     return NULL;
 }
 
 
 bool c4db_close(C4Database* database, C4Error *outError) {
+    if (database == NULL)
+        return true;
     if (!database->mustNotBeInTransaction(outError))
         return false;
     try {
@@ -152,7 +153,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
     if (!database->mustNotBeInTransaction(outError))
         return false;
     try {
-        database->_db->deleteDatabase();
+        database->deleteDatabase();
         delete database;
         return true;
     } catchError(outError);
@@ -166,9 +167,9 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
         opts.contentOptions = Database::kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(*database->_db, forestdb::slice::null, forestdb::slice::null, opts);
+        for (DocEnumerator e(*database, forestdb::slice::null, forestdb::slice::null, opts);
                 e.next(); ) {
-            VersionedDocument vdoc(*database->_db, *e);
+            VersionedDocument vdoc(*database, *e);
             if (!vdoc.isDeleted())
                 ++count;
         }
@@ -179,7 +180,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
 
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) {
-    return database->_db->lastSequence();
+    return database->lastSequence();
 }
 
 
@@ -228,7 +229,7 @@ C4RawDocument* c4raw_get(C4Database* database,
                          C4Error *outError)
 {
     try {
-        KeyStore localDocs(database->_db, (std::string)storeName);
+        KeyStore localDocs(database, (std::string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
             recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -255,7 +256,7 @@ bool c4raw_put(C4Database* database,
     try {
         database->beginTransaction();
         abort = true;
-        KeyStore localDocs(database->_db, (std::string)storeName);
+        KeyStore localDocs(database, (std::string)storeName);
         KeyStoreWriter localWriter = (*database->transaction())(localDocs);
         if (body.buf || meta.buf)
             localWriter.set(key, meta, body);
@@ -283,7 +284,7 @@ struct C4DocumentInternal : public C4Document {
 
     C4DocumentInternal(C4Database* database, C4Slice docID)
     :_db(database),
-     _versionedDoc(*_db->_db, docID),
+     _versionedDoc(*_db, docID),
      _selectedRev(NULL)
     {
         init();
@@ -291,7 +292,7 @@ struct C4DocumentInternal : public C4Document {
 
     C4DocumentInternal(C4Database *database, const Document &doc)
     :_db(database),
-     _versionedDoc(*_db->_db, doc),
+     _versionedDoc(*_db, doc),
      _selectedRev(NULL)
     {
         init();
@@ -610,7 +611,7 @@ struct C4DocEnumerator {
                     sequence end,
                     const DocEnumerator::Options& options)
     :_database(database),
-     _e(*database->_db, start, end, options)
+     _e(*database, start, end, options)
     { }
 
     C4DocEnumerator(C4Database *database,
@@ -618,7 +619,7 @@ struct C4DocEnumerator {
                     C4Slice endDocID,
                     const DocEnumerator::Options& options)
     :_database(database),
-     _e(*database->_db, startDocID, endDocID, options)
+     _e(*database, startDocID, endDocID, options)
     { }
 };
 

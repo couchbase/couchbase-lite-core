@@ -30,7 +30,7 @@ typedef struct {
 
 using namespace forestdb;
 
-Database* internal(C4Database*);
+Database* asDatabase(C4Database*);
 
 
 void recordError(C4ErrorDomain domain, int code, C4Error* outError);

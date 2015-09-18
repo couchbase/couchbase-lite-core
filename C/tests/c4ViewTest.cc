@@ -28,7 +28,8 @@ public:
 
     virtual void tearDown() {
         C4Error error;
-        Assert(c4view_delete(view, &error));
+        if (view)
+            Assert(c4view_delete(view, &error));
         C4Test::tearDown();
     }
 
