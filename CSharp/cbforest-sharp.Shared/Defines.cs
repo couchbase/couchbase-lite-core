@@ -19,42 +19,106 @@
 //  limitations under the License.
 //
 using System;
+
 namespace CBForest
 {
+    /// <summary>
+    /// Domain of the error code returned in a C4Error object
+    /// </summary>
     public enum C4ErrorDomain 
     {
+        /// <summary>
+        /// code is an HTTP status code
+        /// </summary>
         HTTP,
+        /// <summary>
+        /// code is an errno
+        /// </summary>
         POSIX,
+        /// <summary>
+        /// code is a fdb_status
+        /// </summary>
         ForestDB,
+        /// <summary>
+        /// code is C4-specific code (TBD)
+        /// </summary>
         C4
     }
 
+    /// <summary>
+    /// Error codes for the C4 Domain
+    /// </summary>
     public enum C4ErrorCode
     {
+        /// <summary>
+        /// CBForest threw an unexpected C++ exception
+        /// </summary>
         InternalException = 1,
+        /// <summary>
+        /// Function must be called while in a transaction
+        /// </summary>
         NotInTransaction,
+        /// <summary>
+        /// Database can't be closed while a transaction is open
+        /// </summary>
         TransactionNotClosed,
+        /// <summary>
+        /// Object in key is not JSON-compatible
+        /// </summary>
         InvalidKey
     }
-    
+
+    /// <summary>
+    /// Flags describing a document.
+    /// </summary>
     [Flags]
     public enum C4DocumentFlags
     {
+        /// <summary>
+        /// The document's current revision is deleted.
+        /// </summary>
         Deleted = 0x01,
+        /// <summary>
+        /// The document is in conflict.
+        /// </summary>
         Conflicted = 0x02,
+        /// <summary>
+        /// The document's current revision has attachments.
+        /// </summary>
         HasAttachments = 0x04,
+        /// <summary>
+        /// The document exists (i.e. has revisions.)
+        /// </summary>
         Exists = 0x1000
     }
 
+    /// <summary>
+    /// Flags that apply to a revision.
+    /// </summary>
     [Flags]
     public enum C4RevisionFlags
     {
+        /// <summary>
+        /// Is this revision a deletion/tombstone?
+        /// </summary>
         RevDeleted = 0x01,
+        /// <summary>
+        /// Is this revision a leaf (no children?)
+        /// </summary>
         RevLeaf = 0x02,
+        /// <summary>
+        /// Has this rev been inserted since decoding?
+        /// </summary>
         RevNew = 0x04,
+        /// <summary>
+        /// Does this rev's body contain attachments?
+        /// </summary>
         RevHasAttachments = 0x08
     }
 
+    /// <summary>
+    /// The types of tokens in a key.
+    /// </summary>
     public enum C4KeyToken
     {
         Null,

@@ -47,9 +47,6 @@
     <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="CBForest-Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="ForestDB.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Condition=" $(IsMac) " Include="libCBForest-Interop.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

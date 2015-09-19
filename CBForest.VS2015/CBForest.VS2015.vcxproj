@@ -29,27 +29,27 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -71,27 +71,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(UniversalCRT_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(UniversalCRT_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
   </PropertyGroup>
@@ -101,13 +101,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_USE_MATH_DEFINES;WIN32;_DEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;forestdb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
@@ -118,13 +118,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_USE_MATH_DEFINES;_DEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;_DEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;forestdb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
@@ -137,7 +137,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_USE_MATH_DEFINES;WIN32;NDEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;NDEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -145,7 +145,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;forestdb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
@@ -158,7 +158,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_USE_MATH_DEFINES;NDEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;NDEBUG;_WINDOWS;_USRDLL;CBFORESTVS2015_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -166,38 +166,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;forestdb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\CBForest\CBForest.hh" />
-    <ClInclude Include="..\CBForest\Collatable.hh" />
-    <ClInclude Include="..\CBForest\Database.hh" />
-    <ClInclude Include="..\CBForest\DocEnumerator.hh" />
-    <ClInclude Include="..\CBForest\Document.hh" />
-    <ClInclude Include="..\CBForest\english_stopwords.h" />
-    <ClInclude Include="..\CBForest\Error.hh" />
-    <ClInclude Include="..\CBForest\Geohash.hh" />
-    <ClInclude Include="..\CBForest\GeoIndex.hh" />
-    <ClInclude Include="..\CBForest\Index.hh" />
-    <ClInclude Include="..\CBForest\KeyStore.hh" />
-    <ClInclude Include="..\CBForest\LogInternal.hh" />
-    <ClInclude Include="..\CBForest\MapReduceIndex.hh" />
-    <ClInclude Include="..\CBForest\RevID.hh" />
-    <ClInclude Include="..\CBForest\RevTree.hh" />
-    <ClInclude Include="..\CBForest\slice.hh" />
-    <ClInclude Include="..\CBForest\Tokenizer.hh" />
-    <ClInclude Include="..\CBForest\varint.hh" />
-    <ClInclude Include="..\C\c4.h" />
-    <ClInclude Include="..\C\c4Database.h" />
-    <ClInclude Include="..\C\c4Impl.hh" />
-    <ClInclude Include="..\C\c4View.h" />
-    <ClInclude Include="asprintf.h" />
-    <ClInclude Include="memmem.h" />
-    <ClInclude Include="sqlite3.h" />
-  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\CBForest\Collatable.cc" />
     <ClCompile Include="..\CBForest\Database.cc" />
@@ -217,17 +190,67 @@
     <ClCompile Include="..\C\c4.c" />
     <ClCompile Include="..\C\c4Database.cc" />
     <ClCompile Include="..\C\c4View.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\api_wrapper.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\avltree.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\blockcache.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\btree.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\btreeblock.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\btree_fast_str_kv.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\btree_kv.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\btree_str_kv.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\compactor.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\configuration.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\docio.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\fdb_errors.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\filemgr.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\filemgr_ops.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\filemgr_ops_windows.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\forestdb.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\hash.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\hash_functions.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\hbtrie.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\iterator.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\kv_instance.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\list.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\snapshot.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\transaction.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\wal.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\crc32.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\debug.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\gettimeofday_vs.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\iniparser.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\memleak.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\partiallock.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\system_resource_stats.cc" />
+    <ClCompile Include="..\vendor\forestdb\utils\time_utils.cc" />
+    <ClCompile Include="..\vendor\snappy\snappy-c.cc" />
+    <ClCompile Include="..\vendor\snappy\snappy-sinksource.cc" />
+    <ClCompile Include="..\vendor\snappy\snappy-stubs-internal.cc" />
+    <ClCompile Include="..\vendor\snappy\snappy.cc" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\extension.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\fts3_unicode2.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\fts3_unicodesn.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\runtime\api_sq3.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\runtime\utilities_sq3.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_danish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_dutch.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_english.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_finnish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_french.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_german.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_hungarian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_italian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_norwegian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_porter.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_portuguese.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_romanian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_russian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_spanish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_swedish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_turkish.c" />
     <ClCompile Include="asprintf.c" />
     <ClCompile Include="memmem.cc" />
     <ClCompile Include="vasprintf-msvc.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\vendor\sqlite3-unicodesn\Tokenizer\Tokenizer.vcxproj">
-      <Project>{bbc005dd-2aa9-4c05-870d-6bb5fb4221e6}</Project>
-    </ProjectReference>
-    <ProjectReference Include="ForestDB\ForestDB.vcxproj">
-      <Project>{e21f8412-3fba-4b63-87e7-e3271e327f9e}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

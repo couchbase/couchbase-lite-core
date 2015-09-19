@@ -16,6 +16,10 @@
 #ifndef CBForest_Error_h
 #define CBForest_Error_h
 
+#ifndef __attribute
+#define __attribute(x)
+#endif
+
 #include "forestdb.h"
 
 namespace forestdb {
@@ -42,9 +46,14 @@ namespace forestdb {
 
 
     // Like C assert() but throws an exception instead of aborting
+#ifdef _MSC_VER
+	#define CBFAssert(e) \
+		if(!(e)) forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e)
+#else
     #define	CBFAssert(e) \
         (__builtin_expect(!(e), 0) ? forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
                                    : (void)0)
+#endif
 
 
 }

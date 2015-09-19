@@ -213,9 +213,11 @@ namespace CBForest.Tests
 
             C4Error error;
             C4Document* doc;
-            
+
             // Since start:
-            var e = Native.c4db_enumerateChanges(_db, 0, false, &error);
+            var options = C4ChangesOptions.DEFAULT;
+            options.includeBodies = false;
+            var e = Native.c4db_enumerateChanges(_db, 0, &options, &error);
             Assert.IsTrue(e != null);
             var seq = 1UL;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
@@ -229,7 +231,7 @@ namespace CBForest.Tests
             Native.c4enum_free(e);
             
             // Since 6:
-            e = Native.c4db_enumerateChanges(_db, 6, false, &error);
+            e = Native.c4db_enumerateChanges(_db, 6, &options, &error);
             Assert.IsTrue(e != null);
             seq = 7UL;
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
