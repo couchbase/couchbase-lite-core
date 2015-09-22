@@ -14,7 +14,8 @@
 			);
 			dependencies = (
 				27410EAA198BFD97007EE67C /* PBXTargetDependency */,
-				27B7E0F818F8FB5700044EBA /* PBXTargetDependency */,
+				2701C2311C4DA840006D7A99 /* PBXTargetDependency */,
+				2701C22F1C4DA83E006D7A99 /* PBXTargetDependency */,
 			);
 			name = All;
 			productName = All;
@@ -23,79 +24,21 @@
 
 /* Begin PBXBuildFile section */
 		2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
-		2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		2701C22C1C4DA4D2006D7A99 /* libCBForest-Interop.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */; };
+		2701C22D1C4DA76B006D7A99 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
 		2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
-		2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
-		2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
 		2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
-		2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
 		2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
-		2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
-		2709F29D191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
 		2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
-		2709F29F191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
 		2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
-		2709F2A1191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
 		270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
-		270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
-		27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1C18F8E9750021A9A3 /* Cocoa.framework */; };
-		27139B5C18F8EDA20021A9A3 /* docio.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729818E4857900A80C5A /* docio.cc */; };
-		27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D418F5E8D8007D8C23 /* snappy-sinksource.cc */; };
-		27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729718E4857900A80C5A /* btreeblock.cc */; };
-		27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729C18E4857900A80C5A /* filemgr.cc */; };
-		27139B6218F8EDA20021A9A3 /* hbtrie.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A018E4857900A80C5A /* hbtrie.cc */; };
-		27139B6318F8EDA20021A9A3 /* wal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A318E4857900A80C5A /* wal.cc */; };
-		27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
-		27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3DA18F5E8D8007D8C23 /* snappy.cc */; };
-		27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */; };
-		27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
-		27139B6918F8EDA20021A9A3 /* list.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A218E4857900A80C5A /* list.cc */; };
-		27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
-		27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729D18E4857900A80C5A /* forestdb.cc */; };
-		27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729618E4857900A80C5A /* btree.cc */; };
-		27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729E18E4857900A80C5A /* hash_functions.cc */; };
-		27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A118E4857900A80C5A /* iterator.cc */; };
-		27139B7218F8EDA20021A9A3 /* hash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729F18E4857900A80C5A /* hash.cc */; };
-		27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
-		27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
-		27139B7518F8EDA20021A9A3 /* filemgr_ops_linux.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729918E4857900A80C5A /* filemgr_ops_linux.cc */; };
-		27139B7818F8EDA20021A9A3 /* snappy-stubs-internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D618F5E8D8007D8C23 /* snappy-stubs-internal.cc */; };
-		27139B7C18F8EDA20021A9A3 /* snappy.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3DB18F5E8D8007D8C23 /* snappy.h */; };
-		27139B7D18F8EDA20021A9A3 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E718F5EB15007D8C23 /* config.h */; };
-		27139B7F18F8EDA20021A9A3 /* snappy-stubs-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3D718F5E8D8007D8C23 /* snappy-stubs-internal.h */; };
-		27139B8118F8EDA20021A9A3 /* snappy-c.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3D218F5E8D8007D8C23 /* snappy-c.h */; };
-		27139B8218F8EDA20021A9A3 /* snappy-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3D318F5E8D8007D8C23 /* snappy-internal.h */; };
-		27139B8418F8EDA20021A9A3 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
-		27139B8618F8EDA20021A9A3 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
-		27139B8718F8EDA20021A9A3 /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
-		27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
-		27139B8C18F8EDA20021A9A3 /* snappy-sinksource.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3D518F5E8D8007D8C23 /* snappy-sinksource.h */; };
-		27139B9618F8EE3A0021A9A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
-		27139BA318F8EE3A0021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
-		27139BA418F8EE3A0021A9A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2750723E18E3E52800A80C5A /* Foundation.framework */; };
-		27139BA618F8EE3A0021A9A3 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139BA518F8EE3A0021A9A3 /* UIKit.framework */; };
-		27139BA918F8EE3A0021A9A3 /* libCBForest-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */; };
-		27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
-		27139BC418F8EEC80021A9A3 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
-		272230441A0812FF00BFF25C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 272230431A0812FF00BFF25C /* Security.framework */; };
-		272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
-		272230491A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
-		2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
-		272230501A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		2733A7531BD6C7A400F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
-		2733A7541BD6C7A500F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
-		273A96541C3467600056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
-		273A96551C3467600056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
-		273A96561C34696E0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
-		273A96571C34696F0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
-		273A96591C3C29350056532E /* c4GeoTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96581C3C29350056532E /* c4GeoTest.cc */; };
-		273A965A1C3C563B0056532E /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -109,27 +52,25 @@
 		273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3DB18F5E8D8007D8C23 /* snappy.h */; };
 		273AD3E918F5EB15007D8C23 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E718F5EB15007D8C23 /* config.h */; };
 		273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
-		273E9FDA1C4583E3004D7058 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		273E9FDB1C4583E3004D7058 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
-		273E9FDC1C4583E3004D7058 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
-		273E9FDD1C4583E3004D7058 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
-		273E9FDE1C4583E3004D7058 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
-		273E9FDF1C4583E4004D7058 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		273E9FE01C4583E4004D7058 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
-		273E9FE11C4583E4004D7058 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
-		273E9FE21C4583E4004D7058 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
-		273E9FE31C4583E4004D7058 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
-		273E9FE51C45B5D2004D7058 /* FullTextResult.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9FE41C45B5D2004D7058 /* FullTextResult.java */; };
+		273E9EC21C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
+		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
+		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
+		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
+		273E9ECA1C506CBC003115A6 /* c4GeoTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC71C506CB4003115A6 /* c4GeoTest.cc */; };
+		273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECB1C506D76003115A6 /* FullTextResult.java */; };
+		273E9ECE1C506D76003115A6 /* Indexer.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECC1C506D76003115A6 /* Indexer.java */; };
+		273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECF1C506D8C003115A6 /* native_indexer.cc */; };
+		273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ED11C506DB4003115A6 /* FullTextIndex.cc */; };
+		273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ED11C506DB4003115A6 /* FullTextIndex.cc */; };
+		273E9ED71C506DB4003115A6 /* FullTextIndex.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED21C506DB4003115A6 /* FullTextIndex.hh */; };
+		273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED31C506DB4003115A6 /* SecureDigest.hh */; };
+		273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED41C506DB4003115A6 /* SecureRandomize.hh */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
-		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
-		274415221900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
 		274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
-		274A698D1BED28C000D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274A69901BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		274A69911BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
-		274A69921BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		274A69931BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
 		274A69941BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
 		274D03DF1BA732E400FF7C35 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
@@ -172,105 +113,56 @@
 		275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
-		27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
-		275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 275F1444195CC588009DADB2 /* VersionedDocument.mm */; };
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
-		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
+		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
-		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
-		278270CD1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
-		278270CE1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
-		278270CF1C221E7E00F4786F /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278270CC1C221E7E00F4786F /* c4DocEnumerator.h */; };
-		278270D61C236ABD00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
-		278270DE1C249C0800F4786F /* Indexer.java in Sources */ = {isa = PBXBuildFile; fileRef = 278270DD1C249C0800F4786F /* Indexer.java */; };
-		278270E01C24A1D000F4786F /* native_indexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270DF1C24A1D000F4786F /* native_indexer.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
-		278EBFA31976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
-		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
-		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		2797BCB11C10F6B400E5C991 /* C_API_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCB01C10F6B400E5C991 /* C_API_Test.mm */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
-		2797BCB31C10F75000E5C991 /* libCBForest-Interop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */; };
 		2797BCB41C10F76100E5C991 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
-		2797BCB91C10F79100E5C991 /* libCBForest-Interop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
-		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27A994EC1BF2B6C900320AF2 /* staleblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A994E91BF2B6C100320AF2 /* staleblock.cc */; };
-		27A994ED1BF2B6CA00320AF2 /* staleblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A994E91BF2B6C100320AF2 /* staleblock.cc */; };
 		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
-		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
-		27B086C41B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
 		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
-		27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
-		27CD6C5A1BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
-		27DD14F119328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
-		27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
-		27DD1514193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DF46BD1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
-		27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BC1A0D90C7007BB4A4 /* GeoIndex_Test.mm */; };
 		27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
-		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
-		27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
-		27E48714192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
-		27E4871C19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		27E4871E19226508007D8940 /* Database_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871D19226508007D8940 /* Database_Test.mm */; };
-		27E4871F19226508007D8940 /* Database_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871D19226508007D8940 /* Database_Test.mm */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
-		27E487241922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E487271923B80E007D8940 /* slice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E487261923B80E007D8940 /* slice.mm */; };
-		27E487281923B80E007D8940 /* slice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E487261923B80E007D8940 /* slice.mm */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
-		27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		27E4872F1924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
-		27E487301924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		27E487331924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
-		27E487341924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
 		27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
-		27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873519254D45007D8940 /* Collatable_Test.mm */; };
 		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
-		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
-		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		27E7218B1BB634F1001500DF /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
-		27E7218C1BB634F1001500DF /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
 		27E7218D1BB634F1001500DF /* encryption.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E7218A1BB634F1001500DF /* encryption.h */; };
-		27E7218E1BB634F1001500DF /* encryption.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E7218A1BB634F1001500DF /* encryption.h */; };
 		27E721921BB65C8C001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
-		27E721931BB65C8D001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
 		27E721941BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
-		27E721951BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
 		27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
-		27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
 		27E721A11BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
-		27E721A21BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
 		27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
-		27E721A41BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
-		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
-		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
-		27EF7F921911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -339,79 +231,10 @@
 		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
 		27EF81081917EEC600A327B9 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
-		27EF810C1917EEC600A327B9 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
 		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
-		27FA99F619180B5F00912F96 /* stem_UTF_8_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */; };
-		27FA99F719180B5F00912F96 /* stem_ISO_8859_1_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */; };
-		27FA99F819180B5F00912F96 /* stem_UTF_8_swedish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF11914296D00A327B9 /* stem_UTF_8_swedish.c */; };
-		27FA99F919180B5F00912F96 /* stem_ISO_8859_1_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB91914296D00A327B9 /* stem_ISO_8859_1_dutch.c */; };
-		27FA99FA19180B5F00912F96 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
-		27FA99FB19180B5F00912F96 /* stem_UTF_8_english.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD91914296D00A327B9 /* stem_UTF_8_english.c */; };
-		27FA99FC19180B5F00912F96 /* stem_ISO_8859_1_german.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC11914296D00A327B9 /* stem_ISO_8859_1_german.c */; };
-		27FA99FD19180B5F00912F96 /* stem_UTF_8_french.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDD1914296D00A327B9 /* stem_UTF_8_french.c */; };
-		27FA99FE19180B5F00912F96 /* utilities_sq3.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB51914296D00A327B9 /* utilities_sq3.c */; };
-		27FA99FF19180B5F00912F96 /* stem_UTF_8_italian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE31914296D00A327B9 /* stem_UTF_8_italian.c */; };
-		27FA9A0019180B5F00912F96 /* stem_ISO_8859_1_norwegian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC71914296D00A327B9 /* stem_ISO_8859_1_norwegian.c */; };
-		27FA9A0119180B5F00912F96 /* stem_KOI8_R_russian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD31914296D00A327B9 /* stem_KOI8_R_russian.c */; };
-		27FA9A0219180B5F00912F96 /* stem_UTF_8_finnish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDB1914296D00A327B9 /* stem_UTF_8_finnish.c */; };
-		27FA9A0319180B5F00912F96 /* stem_ISO_8859_1_english.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBB1914296D00A327B9 /* stem_ISO_8859_1_english.c */; };
-		27FA9A0419180B5F00912F96 /* stem_UTF_8_danish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD51914296D00A327B9 /* stem_UTF_8_danish.c */; };
-		27FA9A0519180B5F00912F96 /* stem_ISO_8859_1_finnish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBD1914296D00A327B9 /* stem_ISO_8859_1_finnish.c */; };
-		27FA9A0619180B5F00912F96 /* stem_UTF_8_portuguese.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE91914296D00A327B9 /* stem_UTF_8_portuguese.c */; };
-		27FA9A0719180B5F00912F96 /* stem_ISO_8859_1_swedish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCF1914296D00A327B9 /* stem_ISO_8859_1_swedish.c */; };
-		27FA9A0819180B5F00912F96 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
-		27FA9A0919180B5F00912F96 /* stem_UTF_8_russian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FED1914296D00A327B9 /* stem_UTF_8_russian.c */; };
-		27FA9A0A19180B5F00912F96 /* stem_ISO_8859_1_french.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FBF1914296D00A327B9 /* stem_ISO_8859_1_french.c */; };
-		27FA9A0B19180B5F00912F96 /* stem_UTF_8_german.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FDF1914296D00A327B9 /* stem_UTF_8_german.c */; };
-		27FA9A0C19180B5F00912F96 /* stem_UTF_8_porter.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE71914296D00A327B9 /* stem_UTF_8_porter.c */; };
-		27FA9A0D19180B5F00912F96 /* stem_ISO_8859_1_danish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB71914296D00A327B9 /* stem_ISO_8859_1_danish.c */; };
-		27FA9A0E19180B5F00912F96 /* stem_UTF_8_norwegian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE51914296D00A327B9 /* stem_UTF_8_norwegian.c */; };
-		27FA9A0F19180B5F00912F96 /* stem_ISO_8859_1_italian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC51914296D00A327B9 /* stem_ISO_8859_1_italian.c */; };
-		27FA9A1019180B5F00912F96 /* stem_UTF_8_romanian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FEB1914296D00A327B9 /* stem_UTF_8_romanian.c */; };
-		27FA9A1119180B5F00912F96 /* api_sq3.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FB31914296D00A327B9 /* api_sq3.c */; };
-		27FA9A1219180B5F00912F96 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
-		27FA9A1319180B5F00912F96 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
-		27FA9A1419180B5F00912F96 /* stem_ISO_8859_1_spanish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCD1914296D00A327B9 /* stem_ISO_8859_1_spanish.c */; };
-		27FA9A1519180B5F00912F96 /* stem_ISO_8859_2_romanian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD11914296D00A327B9 /* stem_ISO_8859_2_romanian.c */; };
-		27FA9A1619180B5F00912F96 /* stem_UTF_8_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FE11914296D00A327B9 /* stem_UTF_8_hungarian.c */; };
-		27FA9A1719180B5F00912F96 /* stem_ISO_8859_1_porter.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC91914296D00A327B9 /* stem_ISO_8859_1_porter.c */; };
-		27FA9A1819180B5F00912F96 /* stem_UTF_8_spanish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FEF1914296D00A327B9 /* stem_UTF_8_spanish.c */; };
-		27FA9A1919180B5F00912F96 /* stem_ISO_8859_1_portuguese.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FCB1914296D00A327B9 /* stem_ISO_8859_1_portuguese.c */; };
-		27FA9A1C19180B5F00912F96 /* stem_UTF_8_russian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEE1914296D00A327B9 /* stem_UTF_8_russian.h */; };
-		27FA9A1D19180B5F00912F96 /* stem_ISO_8859_1_italian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC61914296D00A327B9 /* stem_ISO_8859_1_italian.h */; };
-		27FA9A1E19180B5F00912F96 /* stem_ISO_8859_1_norwegian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC81914296D00A327B9 /* stem_ISO_8859_1_norwegian.h */; };
-		27FA9A1F19180B5F00912F96 /* stem_ISO_8859_1_dutch.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBA1914296D00A327B9 /* stem_ISO_8859_1_dutch.h */; };
-		27FA9A2019180B5F00912F96 /* stem_UTF_8_portuguese.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEA1914296D00A327B9 /* stem_UTF_8_portuguese.h */; };
-		27FA9A2119180B5F00912F96 /* stem_ISO_8859_1_hungarian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC41914296D00A327B9 /* stem_ISO_8859_1_hungarian.h */; };
-		27FA9A2219180B5F00912F96 /* stem_ISO_8859_1_portuguese.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCC1914296D00A327B9 /* stem_ISO_8859_1_portuguese.h */; };
-		27FA9A2319180B5F00912F96 /* stem_UTF_8_english.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDA1914296D00A327B9 /* stem_UTF_8_english.h */; };
-		27FA9A2419180B5F00912F96 /* stem_ISO_8859_1_french.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC01914296D00A327B9 /* stem_ISO_8859_1_french.h */; };
-		27FA9A2519180B5F00912F96 /* stem_UTF_8_italian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE41914296D00A327B9 /* stem_UTF_8_italian.h */; };
-		27FA9A2619180B5F00912F96 /* stem_UTF_8_german.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE01914296D00A327B9 /* stem_UTF_8_german.h */; };
-		27FA9A2719180B5F00912F96 /* stem_UTF_8_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FEC1914296D00A327B9 /* stem_UTF_8_romanian.h */; };
-		27FA9A2919180B5F00912F96 /* stem_UTF_8_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */; };
-		27FA9A2A19180B5F00912F96 /* stem_UTF_8_hungarian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE21914296D00A327B9 /* stem_UTF_8_hungarian.h */; };
-		27FA9A2B19180B5F00912F96 /* stem_KOI8_R_russian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD41914296D00A327B9 /* stem_KOI8_R_russian.h */; };
-		27FA9A2C19180B5F00912F96 /* stem_UTF_8_norwegian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE61914296D00A327B9 /* stem_UTF_8_norwegian.h */; };
-		27FA9A2D19180B5F00912F96 /* stem_UTF_8_finnish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDC1914296D00A327B9 /* stem_UTF_8_finnish.h */; };
-		27FA9A2E19180B5F00912F96 /* stem_UTF_8_dutch.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD81914296D00A327B9 /* stem_UTF_8_dutch.h */; };
-		27FA9A2F19180B5F00912F96 /* stem_ISO_8859_1_finnish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBE1914296D00A327B9 /* stem_ISO_8859_1_finnish.h */; };
-		27FA9A3019180B5F00912F96 /* stem_ISO_8859_1_german.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FC21914296D00A327B9 /* stem_ISO_8859_1_german.h */; };
-		27FA9A3119180B5F00912F96 /* stem_ISO_8859_1_spanish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCE1914296D00A327B9 /* stem_ISO_8859_1_spanish.h */; };
-		27FA9A3219180B5F00912F96 /* stem_ISO_8859_1_danish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FB81914296D00A327B9 /* stem_ISO_8859_1_danish.h */; };
-		27FA9A3319180B5F00912F96 /* stem_ISO_8859_1_english.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FBC1914296D00A327B9 /* stem_ISO_8859_1_english.h */; };
-		27FA9A3419180B5F00912F96 /* stem_ISO_8859_1_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD01914296D00A327B9 /* stem_ISO_8859_1_swedish.h */; };
-		27FA9A3519180B5F00912F96 /* stem_UTF_8_french.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FDE1914296D00A327B9 /* stem_UTF_8_french.h */; };
-		27FA9A3619180B5F00912F96 /* stem_UTF_8_danish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD61914296D00A327B9 /* stem_UTF_8_danish.h */; };
-		27FA9A3719180B5F00912F96 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
-		27FA9A3819180B5F00912F96 /* stem_UTF_8_spanish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF01914296D00A327B9 /* stem_UTF_8_spanish.h */; };
-		27FA9A3919180B5F00912F96 /* stem_ISO_8859_1_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FCA1914296D00A327B9 /* stem_ISO_8859_1_porter.h */; };
-		27FA9A3A19180B5F00912F96 /* stem_ISO_8859_2_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */; };
-		27FA9A3B19180B5F00912F96 /* stem_UTF_8_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */; };
-		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
 		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
@@ -435,28 +258,7 @@
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
-		720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
-		720EA4541BA909C4002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
-		720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		720EA4561BA909C4002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
-		720EA4571BA909C4002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
-		720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
-		720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
-		720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
-		720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
-		720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
-		720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
-		720EA45F1BA909C4002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
-		720EA4611BA909C4002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
-		720EA4621BA909C4002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
-		720EA4651BA909C4002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
-		720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
-		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
-		720EA4711BA90A18002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		720EA4721BA90A1C002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
-		721FD7ED1BD9FDAC0089B343 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
-		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -487,19 +289,19 @@
 /* End PBXBuildRule section */
 
 /* Begin PBXContainerItemProxy section */
-		27139BA718F8EE3A0021A9A3 /* PBXContainerItemProxy */ = {
+		2701C22E1C4DA83E006D7A99 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 27139B9418F8EE3A0021A9A3;
-			remoteInfo = "CBForest-iOS";
+			remoteGlobalIDString = 274D03D21BA732B000FF7C35;
+			remoteInfo = CBForestJNI;
 		};
-		27139BB818F8EE820021A9A3 /* PBXContainerItemProxy */ = {
+		2701C2301C4DA840006D7A99 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
-			remoteInfo = "forestdb iOS";
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "CBForest-Interop";
 		};
 		27410EA9198BFD97007EE67C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -536,27 +338,6 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
 		};
-		2797BCB71C10F78C00E5C991 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 720EA44C1BA909C4002B8416;
-			remoteInfo = "CBForest-Interop iOS";
-		};
-		27B7E0F718F8FB5700044EBA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27139B9418F8EE3A0021A9A3;
-			remoteInfo = "CBForest-iOS";
-		};
-		27E940671954BCF500A9732E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FA99F419180B5F00912F96;
-			remoteInfo = "Tokenizer-iOS";
-		};
 		27EF81151917EF4000A327B9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -585,32 +366,9 @@
 			remoteGlobalIDString = 27EF807319142C2500A327B9;
 			remoteInfo = Tokenizer;
 		};
-		720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
-			remoteInfo = "forestdb iOS";
-		};
-		720EA4501BA909C4002B8416 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FA99F419180B5F00912F96;
-			remoteInfo = "Tokenizer-iOS";
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		27139B9318F8EE3A0021A9A3 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		274D04061BA75E1C00FF7C35 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -621,15 +379,6 @@
 			runOnlyForDeploymentPostprocessing = 1;
 		};
 		27EF810E1917EEC600A327B9 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		720EA46A1BA909C4002B8416 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -654,9 +403,6 @@
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		27139B2118F8E9750021A9A3 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		27139B9018F8EDA20021A9A3 /* libforestdb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libforestdb.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "CBForest-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA518F8EE3A0021A9A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		271E03501A21A331007B843E /* fdb_errors.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fdb_errors.cc; sourceTree = "<group>"; };
 		271E03531A21A372007B843E /* partiallock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = partiallock.cc; sourceTree = "<group>"; };
@@ -671,11 +417,6 @@
 		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
 		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
-		273A96501C31E51B0056532E /* SecureRandomize.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
-		273A96511C334AE40056532E /* SecureDigest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
-		273A96521C3467600056532E /* FullTextIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FullTextIndex.cc; sourceTree = "<group>"; };
-		273A96531C3467600056532E /* FullTextIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FullTextIndex.hh; sourceTree = "<group>"; };
-		273A96581C3C29350056532E /* c4GeoTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4GeoTest.cc; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -692,7 +433,17 @@
 		273AD3DB18F5E8D8007D8C23 /* snappy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snappy.h; sourceTree = "<group>"; };
 		273AD3E718F5EB15007D8C23 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
-		273E9FE41C45B5D2004D7058 /* FullTextResult.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = FullTextResult.java; path = src/com/couchbase/cbforest/FullTextResult.java; sourceTree = "<group>"; };
+		273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
+		273E9EC11C506C60003115A6 /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
+		273E9EC61C506C70003115A6 /* c4.def */ = {isa = PBXFileReference; lastKnownFileType = text; path = c4.def; sourceTree = "<group>"; };
+		273E9EC71C506CB4003115A6 /* c4GeoTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4GeoTest.cc; sourceTree = "<group>"; };
+		273E9ECB1C506D76003115A6 /* FullTextResult.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = FullTextResult.java; path = src/com/couchbase/cbforest/FullTextResult.java; sourceTree = "<group>"; };
+		273E9ECC1C506D76003115A6 /* Indexer.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Indexer.java; path = src/com/couchbase/cbforest/Indexer.java; sourceTree = "<group>"; };
+		273E9ECF1C506D8C003115A6 /* native_indexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_indexer.cc; sourceTree = "<group>"; };
+		273E9ED11C506DB4003115A6 /* FullTextIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FullTextIndex.cc; sourceTree = "<group>"; };
+		273E9ED21C506DB4003115A6 /* FullTextIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FullTextIndex.hh; sourceTree = "<group>"; };
+		273E9ED31C506DB4003115A6 /* SecureDigest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
+		273E9ED41C506DB4003115A6 /* SecureRandomize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
@@ -715,7 +466,7 @@
 		274D03FE1BA7443600FF7C35 /* CBForestJNI.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = CBForestJNI.exp; sourceTree = "<group>"; };
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
 		274D04081BA75E1C00FF7C35 /* CppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CppTests; sourceTree = BUILT_PRODUCTS_DIR; };
-		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../CppTests/main.cpp; sourceTree = "<group>"; };
+		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libcppunit-1.13.0.dylib"; path = "../../../../usr/local/Cellar/cppunit/1.13.2/lib/libcppunit-1.13.0.dylib"; sourceTree = "<group>"; };
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04241BA8A58200FF7C35 /* c4View.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4View.cc; sourceTree = "<group>"; };
@@ -778,10 +529,6 @@
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../CBForest/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
-		278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
-		278270CC1C221E7E00F4786F /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
-		278270DD1C249C0800F4786F /* Indexer.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Indexer.java; path = src/com/couchbase/cbforest/Indexer.java; sourceTree = "<group>"; };
-		278270DF1C24A1D000F4786F /* native_indexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_indexer.cc; sourceTree = "<group>"; };
 		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
 		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
 		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
@@ -850,7 +597,7 @@
 		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
-		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; tabWidth = 8; };
+		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
 		27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_unicodesn.h; sourceTree = "<group>"; };
 		27EF7FA91914296D00A327B9 /* fts3Int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3Int.h; sourceTree = "<group>"; };
 		27EF7FAA1914296D00A327B9 /* libstemmer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libstemmer.h; sourceTree = "<group>"; };
@@ -933,7 +680,6 @@
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
 		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
-		27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libTokenizer-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = ../CBForest/varint.cc; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = ../CBForest/varint.hh; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/cbforest/View.java; sourceTree = "<group>"; };
@@ -943,7 +689,6 @@
 		27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.0.sdk/usr/lib/libstdc++.tbd"; sourceTree = DEVELOPER_DIR; };
 		720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libCBForest-Interop.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
-		720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-Interop.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA46F1BA90A0C002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk/usr/lib/libstdc++.dylib"; sourceTree = DEVELOPER_DIR; };
 		9399E72C1B7E536700D4BE79 /* Slice_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slice_Test.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -953,41 +698,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2701C22C1C4DA4D2006D7A99 /* libCBForest-Interop.dylib in Frameworks */,
 				2797BCB41C10F76100E5C991 /* libCBForest.a in Frameworks */,
-				2797BCB31C10F75000E5C991 /* libCBForest-Interop.a in Frameworks */,
 				27766E161982DA8E00CAA464 /* Security.framework in Frameworks */,
-				27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */,
 				27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139B7918F8EDA20021A9A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139B9218F8EE3A0021A9A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */,
-				27139BC418F8EEC80021A9A3 /* libforestdb.a in Frameworks */,
-				27139B9618F8EE3A0021A9A3 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139B9F18F8EE3A0021A9A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2797BCB91C10F79100E5C991 /* libCBForest-Interop.a in Frameworks */,
-				272230441A0812FF00BFF25C /* Security.framework in Frameworks */,
-				27139BA318F8EE3A0021A9A3 /* XCTest.framework in Frameworks */,
-				27139BA618F8EE3A0021A9A3 /* UIKit.framework in Frameworks */,
-				27139BA418F8EE3A0021A9A3 /* Foundation.framework in Frameworks */,
-				27139BA918F8EE3A0021A9A3 /* libCBForest-iOS.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1030,15 +744,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2701C22D1C4DA76B006D7A99 /* libforestdb.a in Frameworks */,
 				27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */,
-				27EF810C1917EEC600A327B9 /* libforestdb.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27FA9A1A19180B5F00912F96 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1048,15 +755,6 @@
 			files = (
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
 				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		720EA4661BA909C4002B8416 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */,
-				720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1107,9 +805,9 @@
 				274D03E91BA734A300FF7C35 /* native_database.cc */,
 				274D03EA1BA734A300FF7C35 /* native_document.cc */,
 				274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */,
+				273E9ECF1C506D8C003115A6 /* native_indexer.cc */,
 				27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */,
 				27FF7E551BAB64BE004EB8D4 /* native_view.cc */,
-				278270DF1C24A1D000F4786F /* native_indexer.cc */,
 				274D03EC1BA734A300FF7C35 /* native_glue.cc */,
 				274D03ED1BA734A300FF7C35 /* native_glue.hh */,
 			);
@@ -1125,10 +823,17 @@
 				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
-				273A96581C3C29350056532E /* c4GeoTest.cc */,
-				274D040A1BA75E1C00FF7C35 /* main.cpp */,
+				273E9EC71C506CB4003115A6 /* c4GeoTest.cc */,
 			);
 			path = tests;
+			sourceTree = "<group>";
+		};
+		274D04091BA75E1C00FF7C35 /* CppTests */ = {
+			isa = PBXGroup;
+			children = (
+				274D040A1BA75E1C00FF7C35 /* main.cpp */,
+			);
+			path = CppTests;
 			sourceTree = "<group>";
 		};
 		2750723218E3E52800A80C5A = {
@@ -1139,6 +844,7 @@
 				275607791BA22E5700F58218 /* Java */,
 				27E4871019217187007D8940 /* CBForest */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
+				274D04091BA75E1C00FF7C35 /* CppTests */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
 				273AD3D018F5E8B0007D8C23 /* snappy */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
@@ -1152,16 +858,11 @@
 			children = (
 				275072C318E4AA4400A80C5A /* libforestdb.a */,
 				27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */,
-				27139B9018F8EDA20021A9A3 /* libforestdb.a */,
-				27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */,
-				27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */,
 				27EF807419142C2500A327B9 /* libTokenizer.a */,
 				27EF81121917EEC600A327B9 /* libCBForest.a */,
-				27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */,
 				274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */,
 				274D04081BA75E1C00FF7C35 /* CppTests */,
 				720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */,
-				720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1356,10 +1057,10 @@
 				274D03F41BA734C100FF7C35 /* Document.java */,
 				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
 				274D03F61BA734C100FF7C35 /* ForestException.java */,
-				278270DD1C249C0800F4786F /* Indexer.java */,
+				273E9ECB1C506D76003115A6 /* FullTextResult.java */,
+				273E9ECC1C506D76003115A6 /* Indexer.java */,
 				27A82D0D1BBB2727005CB742 /* Logger.java */,
 				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
-				273E9FE41C45B5D2004D7058 /* FullTextResult.java */,
 				27FF7E541BAB60E2004EB8D4 /* View.java */,
 				274D03E81BA734A300FF7C35 /* jni */,
 				274D03FA1BA7414100FF7C35 /* jni.h */,
@@ -1378,13 +1079,14 @@
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
-				278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */,
-				278270CC1C221E7E00F4786F /* c4DocEnumerator.h */,
+				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
+				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				274D04241BA8A58200FF7C35 /* c4View.cc */,
 				275607781BA21DAB00F58218 /* c4View.h */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
 				274A698F1BED3E0500D16D37 /* c4Key.h */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
+				273E9EC61C506C70003115A6 /* c4.def */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
 			name = "C API";
@@ -1417,12 +1119,12 @@
 				27E4873919255EA8007D8940 /* MapReduceIndex.hh */,
 				27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */,
 				27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */,
+				273E9ED11C506DB4003115A6 /* FullTextIndex.cc */,
+				273E9ED21C506DB4003115A6 /* FullTextIndex.hh */,
 				2722304D1A0858A100BFF25C /* GeoIndex.cc */,
 				2722304E1A0858A100BFF25C /* GeoIndex.hh */,
 				272230461A0815E700BFF25C /* Geohash.cc */,
 				272230471A0815E700BFF25C /* Geohash.hh */,
-				273A96521C3467600056532E /* FullTextIndex.cc */,
-				273A96531C3467600056532E /* FullTextIndex.hh */,
 				2701993919F1972E00FDC239 /* Tokenizer.cc */,
 				2701993A19F1972E00FDC239 /* Tokenizer.hh */,
 				27E4872D1924178B007D8940 /* Collatable.cc */,
@@ -1434,10 +1136,10 @@
 				27E487261923B80E007D8940 /* slice.mm */,
 				27FDFC0018EA58BF00AC4647 /* varint.cc */,
 				27FDFC0218EA58DA00AC4647 /* varint.hh */,
-				273A96501C31E51B0056532E /* SecureRandomize.hh */,
-				273A96511C334AE40056532E /* SecureDigest.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
+				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
+				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				2750724318E3E52800A80C5A /* Supporting Files */,
 			);
 			path = CBForest;
@@ -1574,36 +1276,12 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		27139B7A18F8EDA20021A9A3 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				274415201900E8D800964583 /* fdb_errors.h in Headers */,
-				27139B7C18F8EDA20021A9A3 /* snappy.h in Headers */,
-				27EF7F921911A85800A327B9 /* snapshot.h in Headers */,
-				27139B7D18F8EDA20021A9A3 /* config.h in Headers */,
-				27139B7F18F8EDA20021A9A3 /* snappy-stubs-internal.h in Headers */,
-				27139B8118F8EDA20021A9A3 /* snappy-c.h in Headers */,
-				27E721A21BB9BB38001500DF /* crypto_primitives.h in Headers */,
-				27139B8218F8EDA20021A9A3 /* snappy-internal.h in Headers */,
-				27B086C41B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */,
-				2709F29D191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */,
-				27139B8418F8EDA20021A9A3 /* configuration.h in Headers */,
-				2709F2A1191EA10E00C5A8A3 /* compactor.h in Headers */,
-				27139B8618F8EDA20021A9A3 /* snappy-stubs-public.h in Headers */,
-				274415221900E8D800964583 /* fdb_types.h in Headers */,
-				27E7218E1BB634F1001500DF /* encryption.h in Headers */,
-				27139B8718F8EDA20021A9A3 /* crc32.h in Headers */,
-				27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */,
-				27139B8C18F8EDA20021A9A3 /* snappy-sinksource.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		274D03D11BA732B000FF7C35 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				274D03F21BA734A300FF7C35 /* native_glue.hh in Headers */,
+				273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */,
 				274A69931BED3E0500D16D37 /* c4Key.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1671,50 +1349,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FA9A1B19180B5F00912F96 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27FA9A1C19180B5F00912F96 /* stem_UTF_8_russian.h in Headers */,
-				27FA9A1D19180B5F00912F96 /* stem_ISO_8859_1_italian.h in Headers */,
-				27FA9A1E19180B5F00912F96 /* stem_ISO_8859_1_norwegian.h in Headers */,
-				27FA9A1F19180B5F00912F96 /* stem_ISO_8859_1_dutch.h in Headers */,
-				27FA9A2019180B5F00912F96 /* stem_UTF_8_portuguese.h in Headers */,
-				27FA9A2119180B5F00912F96 /* stem_ISO_8859_1_hungarian.h in Headers */,
-				27FA9A2219180B5F00912F96 /* stem_ISO_8859_1_portuguese.h in Headers */,
-				27FA9A2319180B5F00912F96 /* stem_UTF_8_english.h in Headers */,
-				27FA9A2419180B5F00912F96 /* stem_ISO_8859_1_french.h in Headers */,
-				27FA9A2519180B5F00912F96 /* stem_UTF_8_italian.h in Headers */,
-				27FA9A2619180B5F00912F96 /* stem_UTF_8_german.h in Headers */,
-				27FA9A2719180B5F00912F96 /* stem_UTF_8_romanian.h in Headers */,
-				27FA9A2919180B5F00912F96 /* stem_UTF_8_swedish.h in Headers */,
-				27FA9A2A19180B5F00912F96 /* stem_UTF_8_hungarian.h in Headers */,
-				27FA9A2B19180B5F00912F96 /* stem_KOI8_R_russian.h in Headers */,
-				27FA9A2C19180B5F00912F96 /* stem_UTF_8_norwegian.h in Headers */,
-				27FA9A2D19180B5F00912F96 /* stem_UTF_8_finnish.h in Headers */,
-				27FA9A2E19180B5F00912F96 /* stem_UTF_8_dutch.h in Headers */,
-				27FA9A2F19180B5F00912F96 /* stem_ISO_8859_1_finnish.h in Headers */,
-				27FA9A3019180B5F00912F96 /* stem_ISO_8859_1_german.h in Headers */,
-				27FA9A3119180B5F00912F96 /* stem_ISO_8859_1_spanish.h in Headers */,
-				27FA9A3219180B5F00912F96 /* stem_ISO_8859_1_danish.h in Headers */,
-				27FA9A3319180B5F00912F96 /* stem_ISO_8859_1_english.h in Headers */,
-				27FA9A3419180B5F00912F96 /* stem_ISO_8859_1_swedish.h in Headers */,
-				27FA9A3519180B5F00912F96 /* stem_UTF_8_french.h in Headers */,
-				27FA9A3619180B5F00912F96 /* stem_UTF_8_danish.h in Headers */,
-				27FA9A3719180B5F00912F96 /* stem_UTF_8_turkish.h in Headers */,
-				27FA9A3819180B5F00912F96 /* stem_UTF_8_spanish.h in Headers */,
-				27FA9A3919180B5F00912F96 /* stem_ISO_8859_1_porter.h in Headers */,
-				27FA9A3A19180B5F00912F96 /* stem_ISO_8859_2_romanian.h in Headers */,
-				27FA9A3B19180B5F00912F96 /* stem_UTF_8_porter.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		720EA3EF1BA7EAD9002B8416 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
+				273E9ED71C506DB4003115A6 /* FullTextIndex.hh in Headers */,
+				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
 				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
-				278270CF1C221E7E00F4786F /* c4DocEnumerator.h in Headers */,
+				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1738,61 +1381,6 @@
 			name = "CBForest Tests";
 			productName = CBForestTests;
 			productReference = 27139B3018F8E9750021A9A3 /* CBForest Tests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		27139B5A18F8EDA20021A9A3 /* forestdb iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27139B8D18F8EDA20021A9A3 /* Build configuration list for PBXNativeTarget "forestdb iOS" */;
-			buildPhases = (
-				27139B5B18F8EDA20021A9A3 /* Sources */,
-				27139B7918F8EDA20021A9A3 /* Frameworks */,
-				27139B7A18F8EDA20021A9A3 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "forestdb iOS";
-			productName = forestdb;
-			productReference = 27139B9018F8EDA20021A9A3 /* libforestdb.a */;
-			productType = "com.apple.product-type.library.static";
-		};
-		27139B9418F8EE3A0021A9A3 /* CBForest-iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27139BB218F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS" */;
-			buildPhases = (
-				27139B9118F8EE3A0021A9A3 /* Sources */,
-				27139B9218F8EE3A0021A9A3 /* Frameworks */,
-				27139B9318F8EE3A0021A9A3 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				27139BB918F8EE820021A9A3 /* PBXTargetDependency */,
-				27E940681954BCF500A9732E /* PBXTargetDependency */,
-			);
-			name = "CBForest-iOS";
-			productName = "CBForest-iOS";
-			productReference = 27139B9518F8EE3A0021A9A3 /* libCBForest-iOS.a */;
-			productType = "com.apple.product-type.library.static";
-		};
-		27139BA118F8EE3A0021A9A3 /* CBForest-iOS Tests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS Tests" */;
-			buildPhases = (
-				27139B9E18F8EE3A0021A9A3 /* Sources */,
-				27139B9F18F8EE3A0021A9A3 /* Frameworks */,
-				27139BA018F8EE3A0021A9A3 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				2797BCB81C10F78C00E5C991 /* PBXTargetDependency */,
-				27139BA818F8EE3A0021A9A3 /* PBXTargetDependency */,
-			);
-			name = "CBForest-iOS Tests";
-			productName = "CBForest-iOSTests";
-			productReference = 27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		274D03D21BA732B000FF7C35 /* CBForestJNI */ = {
@@ -1885,23 +1473,6 @@
 			productReference = 27EF81121917EEC600A327B9 /* libCBForest.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		27FA99F419180B5F00912F96 /* Tokenizer-iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27FA9A3C19180B5F00912F96 /* Build configuration list for PBXNativeTarget "Tokenizer-iOS" */;
-			buildPhases = (
-				27FA99F519180B5F00912F96 /* Sources */,
-				27FA9A1A19180B5F00912F96 /* Frameworks */,
-				27FA9A1B19180B5F00912F96 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "Tokenizer-iOS";
-			productName = Tokenizer;
-			productReference = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */;
-			productType = "com.apple.product-type.library.static";
-		};
 		720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop" */;
@@ -1922,25 +1493,6 @@
 			productReference = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */;
-			buildPhases = (
-				720EA4511BA909C4002B8416 /* Sources */,
-				720EA4661BA909C4002B8416 /* Frameworks */,
-				720EA46A1BA909C4002B8416 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				720EA44D1BA909C4002B8416 /* PBXTargetDependency */,
-				720EA44F1BA909C4002B8416 /* PBXTargetDependency */,
-			);
-			name = "CBForest-Interop iOS";
-			productName = "CBForest-iOS";
-			productReference = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */;
-			productType = "com.apple.product-type.library.static";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1952,9 +1504,6 @@
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
 						TestTargetID = 27EF80F91917EEC600A327B9;
-					};
-					27139BA118F8EE3A0021A9A3 = {
-						TestTargetID = 27139B9418F8EE3A0021A9A3;
 					};
 					274D03D21BA732B000FF7C35 = {
 						CreatedOnToolsVersion = 7.0;
@@ -1977,31 +1526,19 @@
 			projectRoot = "";
 			targets = (
 				27EF80F91917EEC600A327B9 /* CBForest static */,
-				27139B9418F8EE3A0021A9A3 /* CBForest-iOS */,
 				27139B2F18F8E9750021A9A3 /* CBForest Tests */,
-				27139BA118F8EE3A0021A9A3 /* CBForest-iOS Tests */,
-				275072C218E4AA4400A80C5A /* forestdb */,
-				27139B5A18F8EDA20021A9A3 /* forestdb iOS */,
-				27B7E0F118F8FB4700044EBA /* All */,
-				27EF807319142C2500A327B9 /* Tokenizer */,
-				27FA99F419180B5F00912F96 /* Tokenizer-iOS */,
-				274D03D21BA732B000FF7C35 /* CBForestJNI */,
 				274D04071BA75E1C00FF7C35 /* CppTests */,
+				274D03D21BA732B000FF7C35 /* CBForestJNI */,
 				720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */,
-				720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */,
+				27EF807319142C2500A327B9 /* Tokenizer */,
+				275072C218E4AA4400A80C5A /* forestdb */,
+				27B7E0F118F8FB4700044EBA /* All */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		27139B2E18F8E9750021A9A3 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139BA018F8EE3A0021A9A3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -2029,133 +1566,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27139B5B18F8EDA20021A9A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				278EBFA31976325A006362F8 /* debug.cc in Sources */,
-				276E74EE1956853C0030ED3D /* crc32.cc in Sources */,
-				27139B5C18F8EDA20021A9A3 /* docio.cc in Sources */,
-				2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
-				27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */,
-				27E721951BB65C9C001500DF /* bgflusher.cc in Sources */,
-				27A994ED1BF2B6CA00320AF2 /* staleblock.cc in Sources */,
-				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
-				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
-				2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */,
-				27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */,
-				27139B6218F8EDA20021A9A3 /* hbtrie.cc in Sources */,
-				2709F29F191EA10E00C5A8A3 /* compactor.cc in Sources */,
-				27139B6318F8EDA20021A9A3 /* wal.cc in Sources */,
-				2733A7541BD6C7A500F0FF07 /* version.cc in Sources */,
-				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
-				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
-				2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */,
-				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
-				27E721A41BB9BC9E001500DF /* encryption_bogus.cc in Sources */,
-				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
-				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
-				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
-				27139B6918F8EDA20021A9A3 /* list.cc in Sources */,
-				27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */,
-				27E7218C1BB634F1001500DF /* encryption.cc in Sources */,
-				2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */,
-				27E721931BB65C8D001500DF /* filemgr_ops.cc in Sources */,
-				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
-				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
-				27A82D181BBB72DF005CB742 /* checksum.cc in Sources */,
-				27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */,
-				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
-				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
-				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
-				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
-				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
-				27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
-				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
-				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
-				27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */,
-				27139B7518F8EDA20021A9A3 /* filemgr_ops_linux.cc in Sources */,
-				27139B7818F8EDA20021A9A3 /* snappy-stubs-internal.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139B9118F8EE3A0021A9A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
-				27E487281923B80E007D8940 /* slice.mm in Sources */,
-				27E48714192171EA007D8940 /* Database.cc in Sources */,
-				273E9FDF1C4583E4004D7058 /* c4Database.cc in Sources */,
-				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
-				27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */,
-				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
-				27E4872C1923F24D007D8940 /* VersionedDocument.cc in Sources */,
-				27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */,
-				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
-				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
-				273E9FE01C4583E4004D7058 /* c4Document.cc in Sources */,
-				27E487301924178B007D8940 /* Collatable.cc in Sources */,
-				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
-				273A96551C3467600056532E /* FullTextIndex.cc in Sources */,
-				2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */,
-				27DD1514193CD005009A367D /* RevID.cc in Sources */,
-				273E9FE11C4583E4004D7058 /* c4DocEnumerator.cc in Sources */,
-				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
-				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
-				27E487341924242C007D8940 /* Index.cc in Sources */,
-				273E9FE31C4583E4004D7058 /* c4Key.cc in Sources */,
-				275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */,
-				27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */,
-				273E9FE21C4583E4004D7058 /* c4View.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27139B9E18F8EE3A0021A9A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27CD6C5A1BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
-				9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */,
-				27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */,
-				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,
-				27DD14F119328576009A367D /* Index_Test.mm in Sources */,
-				27DD14F41934F44F009A367D /* MapReduce_Test.mm in Sources */,
-				27DF46BE1A0D90C7007BB4A4 /* GeoIndex_Test.mm in Sources */,
-				270A4B081925746900DE4104 /* VersionedDocument_Tests.mm in Sources */,
-				272230451A08133300BFF25C /* Tokenizer_Test.mm in Sources */,
-				2722304C1A08178200BFF25C /* GeoHash_Test.mm in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		274D03CF1BA732B000FF7C35 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				278270E01C24A1D000F4786F /* native_indexer.cc in Sources */,
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
-				273E9FE51C45B5D2004D7058 /* FullTextResult.java in Sources */,
 				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
+				273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
-				278270DE1C249C0800F4786F /* Indexer.java in Sources */,
 				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
+				273E9ECE1C506D76003115A6 /* Indexer.java in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
 				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,
 				274A69901BED3E0500D16D37 /* c4Key.cc in Sources */,
 				274D03DF1BA732E400FF7C35 /* c4.c in Sources */,
+				273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */,
 				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
 				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
 				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
 				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
-				278270D61C236ABD00F4786F /* c4DocEnumerator.cc in Sources */,
+				273E9EC21C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */,
 				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
 				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
 				274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */,
-				273A965A1C3C563B0056532E /* sqlite_glue.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2166,7 +1603,7 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
-				273A96591C3C29350056532E /* c4GeoTest.cc in Sources */,
+				273E9ECA1C506CBC003115A6 /* c4GeoTest.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
@@ -2209,6 +1646,7 @@
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				27A82D171BBB72DE005CB742 /* checksum.cc in Sources */,
 				27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */,
+				276FFD741B2E03910027B51A /* (null) in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
@@ -2274,7 +1712,6 @@
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
-				273E9FDA1C4583E3004D7058 /* c4Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
@@ -2282,64 +1719,16 @@
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
-				273E9FDB1C4583E3004D7058 /* c4Document.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
-				273A96541C3467600056532E /* FullTextIndex.cc in Sources */,
+				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
-				273E9FDC1C4583E3004D7058 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
-				273E9FDE1C4583E3004D7058 /* c4Key.cc in Sources */,
 				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
-				273E9FDD1C4583E3004D7058 /* c4View.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27FA99F519180B5F00912F96 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27FA99F619180B5F00912F96 /* stem_UTF_8_dutch.c in Sources */,
-				27FA99F719180B5F00912F96 /* stem_ISO_8859_1_hungarian.c in Sources */,
-				27FA99F819180B5F00912F96 /* stem_UTF_8_swedish.c in Sources */,
-				27FA99F919180B5F00912F96 /* stem_ISO_8859_1_dutch.c in Sources */,
-				27513A631A6D837E0055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */,
-				27FA99FA19180B5F00912F96 /* fts3_unicodesn.c in Sources */,
-				27FA99FB19180B5F00912F96 /* stem_UTF_8_english.c in Sources */,
-				27FA99FC19180B5F00912F96 /* stem_ISO_8859_1_german.c in Sources */,
-				27FA99FD19180B5F00912F96 /* stem_UTF_8_french.c in Sources */,
-				27FA99FE19180B5F00912F96 /* utilities_sq3.c in Sources */,
-				27FA99FF19180B5F00912F96 /* stem_UTF_8_italian.c in Sources */,
-				27FA9A0019180B5F00912F96 /* stem_ISO_8859_1_norwegian.c in Sources */,
-				27FA9A0119180B5F00912F96 /* stem_KOI8_R_russian.c in Sources */,
-				27FA9A0219180B5F00912F96 /* stem_UTF_8_finnish.c in Sources */,
-				27FA9A0319180B5F00912F96 /* stem_ISO_8859_1_english.c in Sources */,
-				27FA9A0419180B5F00912F96 /* stem_UTF_8_danish.c in Sources */,
-				27FA9A0519180B5F00912F96 /* stem_ISO_8859_1_finnish.c in Sources */,
-				27FA9A0619180B5F00912F96 /* stem_UTF_8_portuguese.c in Sources */,
-				27FA9A0719180B5F00912F96 /* stem_ISO_8859_1_swedish.c in Sources */,
-				27FA9A0819180B5F00912F96 /* fts3_unicode2.c in Sources */,
-				27FA9A0919180B5F00912F96 /* stem_UTF_8_russian.c in Sources */,
-				27FA9A0A19180B5F00912F96 /* stem_ISO_8859_1_french.c in Sources */,
-				27FA9A0B19180B5F00912F96 /* stem_UTF_8_german.c in Sources */,
-				27FA9A0C19180B5F00912F96 /* stem_UTF_8_porter.c in Sources */,
-				27FA9A0D19180B5F00912F96 /* stem_ISO_8859_1_danish.c in Sources */,
-				27FA9A0E19180B5F00912F96 /* stem_UTF_8_norwegian.c in Sources */,
-				27FA9A0F19180B5F00912F96 /* stem_ISO_8859_1_italian.c in Sources */,
-				27FA9A1019180B5F00912F96 /* stem_UTF_8_romanian.c in Sources */,
-				27FA9A1119180B5F00912F96 /* api_sq3.c in Sources */,
-				27FA9A1219180B5F00912F96 /* stem_UTF_8_turkish.c in Sources */,
-				27FA9A1319180B5F00912F96 /* libstemmer_utf8.c in Sources */,
-				27FA9A1419180B5F00912F96 /* stem_ISO_8859_1_spanish.c in Sources */,
-				27FA9A1519180B5F00912F96 /* stem_ISO_8859_2_romanian.c in Sources */,
-				27FA9A1619180B5F00912F96 /* stem_UTF_8_hungarian.c in Sources */,
-				27FA9A1719180B5F00912F96 /* stem_ISO_8859_1_porter.c in Sources */,
-				27FA9A1819180B5F00912F96 /* stem_UTF_8_spanish.c in Sources */,
-				27FA9A1919180B5F00912F96 /* stem_ISO_8859_1_portuguese.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2350,11 +1739,12 @@
 				720EA4101BA8D834002B8416 /* Document.cc in Sources */,
 				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
 				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
+				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
-				273A96561C34696E0056532E /* FullTextIndex.cc in Sources */,
+				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
@@ -2363,56 +1753,26 @@
 				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
-				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
-				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
-				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
-				278270CD1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */,
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
+				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		720EA4511BA909C4002B8416 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				720EA4721BA90A1C002B8416 /* c4.c in Sources */,
-				721FD7ED1BD9FDAC0089B343 /* c4View.cc in Sources */,
-				720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */,
-				720EA4541BA909C4002B8416 /* Database.cc in Sources */,
-				720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */,
-				720EA4561BA909C4002B8416 /* Document.cc in Sources */,
-				720EA4571BA909C4002B8416 /* Geohash.cc in Sources */,
-				720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */,
-				273A96571C34696F0056532E /* FullTextIndex.cc in Sources */,
-				720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */,
-				720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */,
-				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
-				720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */,
-				720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */,
-				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
-				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
-				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
-				274A698D1BED28C000D16D37 /* c4Document.cc in Sources */,
-				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
-				274A69921BED3E0500D16D37 /* c4Key.cc in Sources */,
-				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
-				278270CE1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */,
+				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		27139BA818F8EE3A0021A9A3 /* PBXTargetDependency */ = {
+		2701C22F1C4DA83E006D7A99 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27139B9418F8EE3A0021A9A3 /* CBForest-iOS */;
-			targetProxy = 27139BA718F8EE3A0021A9A3 /* PBXContainerItemProxy */;
+			target = 274D03D21BA732B000FF7C35 /* CBForestJNI */;
+			targetProxy = 2701C22E1C4DA83E006D7A99 /* PBXContainerItemProxy */;
 		};
-		27139BB918F8EE820021A9A3 /* PBXTargetDependency */ = {
+		2701C2311C4DA840006D7A99 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
-			targetProxy = 27139BB818F8EE820021A9A3 /* PBXContainerItemProxy */;
+			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
+			targetProxy = 2701C2301C4DA840006D7A99 /* PBXContainerItemProxy */;
 		};
 		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2439,21 +1799,6 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
 			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
 		};
-		2797BCB81C10F78C00E5C991 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */;
-			targetProxy = 2797BCB71C10F78C00E5C991 /* PBXContainerItemProxy */;
-		};
-		27B7E0F818F8FB5700044EBA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27139B9418F8EE3A0021A9A3 /* CBForest-iOS */;
-			targetProxy = 27B7E0F718F8FB5700044EBA /* PBXContainerItemProxy */;
-		};
-		27E940681954BCF500A9732E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FA99F419180B5F00912F96 /* Tokenizer-iOS */;
-			targetProxy = 27E940671954BCF500A9732E /* PBXContainerItemProxy */;
-		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
@@ -2473,16 +1818,6 @@
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
 			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
-		};
-		720EA44D1BA909C4002B8416 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
-			targetProxy = 720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */;
-		};
-		720EA44F1BA909C4002B8416 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FA99F419180B5F00912F96 /* Tokenizer-iOS */;
-			targetProxy = 720EA4501BA909C4002B8416 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2536,149 +1871,6 @@
 			};
 			name = Release;
 		};
-		27139B8E18F8EDA20021A9A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
-				EXECUTABLE_PREFIX = lib;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
-				GCC_WARN_SHADOW = NO;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = NO;
-				GCC_WARN_UNUSED_VALUE = NO;
-				GCC_WARN_UNUSED_VARIABLE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"vendor/forestdb/**",
-				);
-				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_NAME = forestdb;
-				SDKROOT = iphoneos;
-				WARNING_CFLAGS = (
-					"-Wformat-security",
-					"-Wmissing-declarations",
-					"-Woverriding-method-mismatch",
-					"-Wbool-conversion",
-					"-Wno-arc-retain-cycles",
-				);
-			};
-			name = Debug;
-		};
-		27139B8F18F8EDA20021A9A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
-				EXECUTABLE_PREFIX = lib;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
-				GCC_WARN_SHADOW = NO;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = NO;
-				GCC_WARN_UNUSED_VALUE = NO;
-				GCC_WARN_UNUSED_VARIABLE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"vendor/forestdb/**",
-				);
-				PRODUCT_NAME = forestdb;
-				SDKROOT = iphoneos;
-				WARNING_CFLAGS = (
-					"-Wformat-security",
-					"-Wmissing-declarations",
-					"-Woverriding-method-mismatch",
-					"-Wbool-conversion",
-					"-Wno-arc-retain-cycles",
-				);
-			};
-			name = Release;
-		};
-		27139BB318F8EE3A0021A9A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DSTROOT = /tmp/CBForest_iOS.dst;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRIP_INSTALLED_PRODUCT = NO;
-			};
-			name = Debug;
-		};
-		27139BB418F8EE3A0021A9A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				DSTROOT = /tmp/CBForest_iOS.dst;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRIP_INSTALLED_PRODUCT = NO;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		27139BB618F8EE3A0021A9A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SDKROOT)/Developer/Library/Frameworks",
-					"$(inherited)",
-					"$(DEVELOPER_FRAMEWORKS_DIR)",
-				);
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
-				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				WRAPPER_EXTENSION = xctest;
-			};
-			name = Debug;
-		};
-		27139BB718F8EE3A0021A9A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SDKROOT)/Developer/Library/Frameworks",
-					"$(inherited)",
-					"$(DEVELOPER_FRAMEWORKS_DIR)",
-				);
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
-				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				VALIDATE_PRODUCT = YES;
-				WRAPPER_EXTENSION = xctest;
-			};
-			name = Release;
-		};
 		274D03DA1BA732B100FF7C35 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2703,6 +1895,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Debug;
 		};
@@ -2729,6 +1923,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Release;
 		};
@@ -2754,6 +1950,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Debug;
 		};
@@ -2778,6 +1976,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Release;
 		};
@@ -2832,9 +2032,9 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
+				ONLY_ACTIVE_ARCH = NO;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator";
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
@@ -2897,8 +2097,9 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				SDKROOT = macosx;
+				ONLY_ACTIVE_ARCH = NO;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator";
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wformat-security",
@@ -2913,7 +2114,6 @@
 		275072C518E4AA4400A80C5A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
@@ -2942,7 +2142,6 @@
 		275072C618E4AA4400A80C5A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
@@ -2985,7 +2184,6 @@
 		27EF807619142C2500A327B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3008,7 +2206,6 @@
 		27EF807719142C2500A327B9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
@@ -3041,7 +2238,6 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
-				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = CBForest;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -3069,54 +2265,10 @@
 			};
 			name = Release;
 		};
-		27FA9A3D19180B5F00912F96 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				EXECUTABLE_PREFIX = lib;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
-				GCC_WARN_SHADOW = NO;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DDOC_COMP",
-					"-DSQLITE_ENABLE_FTS4_UNICODE61",
-					"-DSQLITE_ENABLE_FTS4",
-					"-DWITH_STEMMER_english",
-				);
-				PRODUCT_NAME = "Tokenizer-iOS";
-				SDKROOT = iphoneos;
-			};
-			name = Debug;
-		};
-		27FA9A3E19180B5F00912F96 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				EXECUTABLE_PREFIX = lib;
-				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
-				GCC_WARN_SHADOW = NO;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DDOC_COMP",
-					"-DSQLITE_ENABLE_FTS4_UNICODE61",
-					"-DSQLITE_ENABLE_FTS4",
-					"-DWITH_STEMMER_english",
-				);
-				PRODUCT_NAME = "Tokenizer-iOS";
-				SDKROOT = iphoneos;
-			};
-			name = Release;
-		};
 		720EA3F31BA7EAD9002B8416 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				"ADDITIONAL_SDKS[arch=*]" = "";
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
@@ -3144,7 +2296,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
@@ -3167,58 +2318,6 @@
 			};
 			name = Release;
 		};
-		720EA46C1BA909C4002B8416 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DSTROOT = /tmp/CBForest_iOS.dst;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-					NO_SQLITE_GLUE,
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "CBForest-Interop";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRIP_INSTALLED_PRODUCT = NO;
-			};
-			name = Debug;
-		};
-		720EA46D1BA909C4002B8416 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				DSTROOT = /tmp/CBForest_iOS.dst;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					NO_SQLITE_GLUE,
-					"$(inherited)",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/vendor/forestdb/include/**",
-				);
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
-				OTHER_LDFLAGS = "-ObjC";
-				PRODUCT_NAME = "CBForest-Interop";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				STRIP_INSTALLED_PRODUCT = NO;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -3227,33 +2326,6 @@
 			buildConfigurations = (
 				27139B4218F8E9750021A9A3 /* Debug */,
 				27139B4318F8E9750021A9A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		27139B8D18F8EDA20021A9A3 /* Build configuration list for PBXNativeTarget "forestdb iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27139B8E18F8EDA20021A9A3 /* Debug */,
-				27139B8F18F8EDA20021A9A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		27139BB218F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27139BB318F8EE3A0021A9A3 /* Debug */,
-				27139BB418F8EE3A0021A9A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		27139BB518F8EE3A0021A9A3 /* Build configuration list for PBXNativeTarget "CBForest-iOS Tests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27139BB618F8EE3A0021A9A3 /* Debug */,
-				27139BB718F8EE3A0021A9A3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -3321,29 +2393,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27FA9A3C19180B5F00912F96 /* Build configuration list for PBXNativeTarget "Tokenizer-iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27FA9A3D19180B5F00912F96 /* Debug */,
-				27FA9A3E19180B5F00912F96 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				720EA46C1BA909C4002B8416 /* Debug */,
-				720EA46D1BA909C4002B8416 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
