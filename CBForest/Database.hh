@@ -32,7 +32,8 @@ namespace forestdb {
         kDebug,
         kInfo,
         kWarning,
-        kError
+        kError,
+        kNone
     };
     extern logLevel LogLevel;
     extern void (*LogCallback)(logLevel, const char *message);

@@ -108,6 +108,25 @@ static inline C4Slice c4str(const char *str) {
 void c4slice_free(C4Slice);
 
 
+/** Logging levels. */
+typedef enum {
+    kC4LogDebug,
+    kC4LogInfo,
+    kC4LogWarning,
+    kC4LogError
+} C4LogLevel;
+
+/** A logging callback that the application can register. */
+typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
+
+/** Registers (or unregisters) a log callback, and sets the minimum log level to report.
+    Before this is called, logs are by default written to stderr for warnings and errors.
+    Note that this setting is global to the entire process.
+    @param level  The minimum level of message to log.
+    @param callback  The logging callback, or NULL to disable logging entirely. */
+void c4log_register(C4LogLevel level, C4LogCallback callback);
+
+
 #ifdef __cplusplus
 }
 #endif

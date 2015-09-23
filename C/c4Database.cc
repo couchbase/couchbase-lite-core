@@ -55,6 +55,27 @@ void c4slice_free(C4Slice slice) {
 }
 
 
+static C4LogCallback clientLogCallback;
+
+static void logCallback(logLevel level, const char *message) {
+    auto cb = clientLogCallback;
+    if (cb)
+        cb((C4LogLevel)level, slice(message));
+}
+
+
+void c4log_register(C4LogLevel level, C4LogCallback callback) {
+    if (callback) {
+        LogLevel = (logLevel)level;
+        LogCallback = logCallback;
+    } else {
+        LogLevel = kNone;
+        LogCallback = NULL;
+    }
+    clientLogCallback = callback;
+}
+
+
 #pragma mark - DATABASES:
 
 

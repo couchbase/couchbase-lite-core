@@ -5,6 +5,7 @@
 #  Copyright © 2015 Couchbase. All rights reserved.
 
 _c4slice_free
+_c4log_register
 
 _c4db_open
 _c4db_close
