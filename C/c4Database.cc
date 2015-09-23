@@ -137,21 +137,30 @@ forestdb::Database* asDatabase(C4Database *db) {
 }
 
 
-C4Database* c4db_open(C4Slice path,
-                      bool readOnly,
-                      C4Error *outError)
-{
+Database::config c4DbConfig(C4DatabaseFlags flags) {
     auto config = Database::defaultConfig();
-    config.flags = readOnly ? FDB_OPEN_FLAG_RDONLY : FDB_OPEN_FLAG_CREATE;
+    config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
+    if (flags & kC4DB_ReadOnly)
+        config.flags |= FDB_OPEN_FLAG_RDONLY;
+    if (flags & kC4DB_Create)
+        config.flags |= FDB_OPEN_FLAG_CREATE;
     config.buffercache_size = kDBBufferCacheSize;
     config.wal_threshold = kDBWALThreshold;
     config.wal_flush_before_commit = true;
     config.seqtree_opt = true;
     config.compress_document_body = true;
-    config.compactor_sleep_duration = kAutoCompactInterval;
+    config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
+    config.compactor_sleep_duration = kAutoCompactInterval; // global to all databases
+    return config;
+}
 
+
+C4Database* c4db_open(C4Slice path,
+                      C4DatabaseFlags flags,
+                      C4Error *outError)
+{
     try {
-        return new c4Database((std::string)path, config);
+        return new c4Database((std::string)path, c4DbConfig(flags));
     } catchError(outError);
     return NULL;
 }

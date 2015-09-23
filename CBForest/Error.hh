@@ -40,9 +40,21 @@ namespace forestdb {
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
 
+        static void _throw(fdb_status) __attribute((noreturn));
+
         static void assertionFailed(const char *func, const char *file, unsigned line,
                                     const char *expr)   __attribute((noreturn));
     };
+
+    static inline void check(fdb_status status) {
+#ifdef _MSC_VER
+        if (status != FDB_RESULT_SUCCESS)
+            error::_throw(status);
+#else
+        if (__builtin_expect(status != FDB_RESULT_SUCCESS, 0))
+            error::_throw(status);
+#endif
+    }
 
 
     // Like C assert() but throws an exception instead of aborting

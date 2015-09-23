@@ -51,6 +51,12 @@ namespace forestdb {
         }
     }
 
+    void error::_throw(fdb_status status) {
+        WarnError("%s (%d)\n", fdb_error_msg(status), status);
+        throw error{status};
+    }
+
+
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
         if (LogLevel > kError || LogCallback == NULL)
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
@@ -93,13 +99,6 @@ namespace forestdb {
 
 #pragma mark - DATABASE:
 
-
-    static void check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS) {
-            WarnError("FORESTDB ERROR %d\n", status);
-            throw error{status};
-        }
-    }
 
     static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
         // don't warn about read errors: VersionedDocument can trigger them when it looks for a

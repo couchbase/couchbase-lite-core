@@ -29,7 +29,6 @@ std::ostream& operator<< (std::ostream& o, C4Slice s) {
 static void log(C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
     fprintf(stderr, "CBForest-C %s: %*s\n", kLevelNames[level], (int)message.size, message.buf);
-    Assert(level < kC4LogWarning); // Tests should not trigger warnings
 }
 
 
@@ -38,7 +37,7 @@ void C4Test::setUp() {
     const char *dbPath = "/tmp/forest_temp.fdb";
     ::unlink(dbPath);
     C4Error error;
-    db = c4db_open(c4str(dbPath), false, &error);
+    db = c4db_open(c4str(dbPath), kC4DB_Create, &error);
     Assert(db != NULL);
 }
 
@@ -46,7 +45,7 @@ void C4Test::setUp() {
 void C4Test::tearDown() {
     C4Error error;
     if (db)
-        Assert(c4db_delete(db, &error));
+        c4db_delete(db, &error);
 }
 
 

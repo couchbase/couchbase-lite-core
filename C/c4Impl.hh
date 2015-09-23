@@ -10,6 +10,7 @@
 #define c4Impl_h
 
 #include "slice.hh"
+#include "Database.hh"
 
 typedef forestdb::slice C4Slice;
 
@@ -29,6 +30,8 @@ typedef struct {
 #include "Database.hh"
 
 using namespace forestdb;
+
+Database::config c4DbConfig(C4DatabaseFlags flags);
 
 Database* asDatabase(C4Database*);
 

@@ -129,16 +129,14 @@ C4View* c4view_open(C4Database* db,
                     C4Slice path,
                     C4Slice viewName,
                     C4Slice version,
+                    C4DatabaseFlags flags,
                     C4Error *outError)
 {
     try {
-        auto config = Database::defaultConfig();
-        config.flags = FDB_OPEN_FLAG_CREATE;
+        auto config = c4DbConfig(flags);
         config.buffercache_size = kViewDBBufferCacheSize;
         config.wal_threshold = kViewDBWALThreshold;
-        config.wal_flush_before_commit = true;
         config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
-        config.compaction_threshold = 50;
 
         auto viewDB = new Database((std::string)path, config);
         return new c4View(db, viewDB, viewName, version);

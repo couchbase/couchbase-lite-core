@@ -12,14 +12,6 @@
 
 namespace forestdb {
 
-    static void check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS) {
-            WarnError("FORESTDB ERROR %d\n", status);
-            throw error{status};
-        }
-    }
-
-
     KeyStore::KeyStore(const Database* db, std::string name)
     :_handle(db->openKVS(name))
     { }

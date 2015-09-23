@@ -26,12 +26,6 @@ namespace forestdb {
 #pragma mark - ENUMERATION:
 
 
-    static void check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS)
-            throw error{status};
-    }
-
-
     const DocEnumerator::Options DocEnumerator::Options::kDefault = {
         0,
         UINT_MAX,

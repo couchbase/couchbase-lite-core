@@ -20,12 +20,20 @@ extern "C" {
     //////// DATABASES:
 
 
+    /** Boolean options specified when opening a database or view. */
+    typedef enum {
+        kC4DB_Create        = 1,    /**< Create the file if it doesn't exist */
+        kC4DB_ReadOnly      = 2,    /**< Open file read-only */
+        kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
+    } C4DatabaseFlags;
+
+
     /** Opaque handle to an opened database. */
     typedef struct c4Database C4Database;
 
     /** Opens a database. */
     C4Database* c4db_open(C4Slice path,
-                          bool readOnly,
+                          C4DatabaseFlags flags,
                           C4Error *outError);
 
     /** Closes the database and frees the object. */
