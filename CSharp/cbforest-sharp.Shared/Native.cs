@@ -68,7 +68,7 @@ namespace CBForest
         public static extern void c4slice_free(C4Slice slice);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Database* c4db_open(C4Slice path, byte readOnly, C4Error *outError);
+        private static extern C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
 
         /// <summary>
         /// Opens a database.
@@ -77,29 +77,22 @@ namespace CBForest
         /// <param name="readOnly">Whether or not the DB should be opened in read-only mode</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
-        public static C4Database *c4db_open(string path, bool readOnly, C4Error *outError)
+        public static C4Database *c4db_open(string path, C4DatabaseFlags flags, C4Error *outError)
         {
             using(var path_ = new C4String(path)) {
-                return c4db_open(path_.AsC4Slice(), Convert.ToByte(readOnly), outError);
+                return c4db_open(path_.AsC4Slice(), flags, outError);
             }
         }
         
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_close")]
-        private static extern byte _c4db_close(C4Database *db, C4Error *outError);
-
         /// <summary>
         /// Closes the database and frees the object.
         /// </summary>
         /// <param name="db">The DB object to close</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_close(C4Database *db, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4db_close(db, outError));   
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_delete")]
-        private static extern byte _c4db_delete(C4Database *db, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_close(C4Database *db, C4Error *outError);
 
         /// <summary>
         /// Closes the database, deletes the file, and frees the object
@@ -107,10 +100,9 @@ namespace CBForest
         /// <param name="db">The DB object to delete</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_delete(C4Database *db, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4db_delete(db, outError));
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_delete(C4Database *db, C4Error *outError);
 
         /// <summary>
         /// Returns the number of (undeleted) documents in the database.
@@ -127,9 +119,6 @@ namespace CBForest
         /// <returns>The latest sequence number allocated to a revision.</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern ulong c4db_getLastSequence(C4Database *db);
-     
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_beginTransaction")]
-        private static extern byte _c4db_beginTransaction(C4Database *db, C4Error *outError);
 
         /// <summary>
         /// Begins a transaction.
@@ -138,13 +127,9 @@ namespace CBForest
         /// <param name="db">The database object to start a transaction on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_beginTransaction(C4Database *db, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4db_beginTransaction(db, outError));
-        }
-        
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4db_endTransaction(C4Database *db, byte commit, C4Error *outError);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_beginTransaction(C4Database *db, C4Error *outError);
 
         /// <summary>
         /// Commits or aborts a transaction. If there have been multiple calls to beginTransaction, 
@@ -155,23 +140,18 @@ namespace CBForest
         /// <param name="commit">If true, commit the results, otherwise abort</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_endTransaction(C4Database *db, bool commit, C4Error *outError)
-        {
-            return Convert.ToBoolean(c4db_endTransaction(db, Convert.ToByte(commit), outError));
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_isInTransaction")]
-        private static extern byte _c4db_isInTransaction(C4Database *db);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_endTransaction(C4Database *db, [MarshalAs(UnmanagedType.U1)]bool commit, C4Error *outError);
 
         /// <summary>
         /// Is a transaction active?
         /// </summary>
         /// <param name="db">The database to check</param>
         /// <returns>Whether or not a transaction is active</returns>
-        public static bool c4db_isInTransaction(C4Database *db)
-        {
-            return Convert.ToBoolean(_c4db_isInTransaction(db));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_isInTransaction(C4Database *db);
 
 
         /// <summary>
@@ -202,7 +182,8 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
             C4Slice body, C4Error *outError);
 
         /// <summary>
@@ -221,8 +202,8 @@ namespace CBForest
             using(var key_ = new C4String(key))
             using(var meta_ = new C4String(meta))
             using(var body_ = new C4String(body)) {
-                return Convert.ToBoolean(c4raw_put(db, storeName_.AsC4Slice(), key_.AsC4Slice(), meta_.AsC4Slice(), 
-                                body_.AsC4Slice(), outError));  
+                return c4raw_put(db, storeName_.AsC4Slice(), key_.AsC4Slice(), meta_.AsC4Slice(), 
+                                body_.AsC4Slice(), outError);  
             }
         }
 
@@ -234,7 +215,8 @@ namespace CBForest
         public static extern void c4doc_free(C4Document *doc);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Document* c4doc_get(C4Database *db, C4Slice docID, byte mustExist, C4Error *outError);
+        private static extern C4Document* c4doc_get(C4Database *db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, 
+            C4Error *outError);
 
         /// <summary>
         /// Gets a document from the database. If there's no such document, the behavior depends on
@@ -249,7 +231,7 @@ namespace CBForest
         public static C4Document* c4doc_get(C4Database *db, string docID, bool mustExist, C4Error *outError)
         {
             using(var docID_ = new C4String(docID)) {
-                return c4doc_get(db, docID_.AsC4Slice(), Convert.ToByte(mustExist), outError);   
+                return c4doc_get(db, docID_.AsC4Slice(), mustExist, outError);   
             }
         }
         
@@ -269,7 +251,9 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4doc_selectRevision(C4Document *doc, C4Slice revID, byte withBody, C4Error *outError);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool c4doc_selectRevision(C4Document *doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody, 
+            C4Error *outError);
 
         /// <summary>
         /// Selects a specific revision of a document (or no revision, if revID is NULL.)
@@ -282,25 +266,18 @@ namespace CBForest
         public static bool c4doc_selectRevision(C4Document *doc, string revID, bool withBody, C4Error *outError)
         {
             using(var revID_ = new C4String(revID)) {
-                return Convert.ToBoolean(c4doc_selectRevision(doc, revID_.AsC4Slice(), Convert.ToByte(withBody), outError));
+                return c4doc_selectRevision(doc, revID_.AsC4Slice(), withBody, outError);
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_selectCurrentRevision")]
-        private static extern byte _c4doc_selectCurrentRevision(C4Document *doc);
 
         /// <summary>
         /// Selects the current revision of a document. 
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_selectCurrentRevision(C4Document *doc)
-        {
-            return Convert.ToBoolean(_c4doc_selectCurrentRevision(doc)); 
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_loadRevisionBody")]
-        private static extern byte _c4doc_loadRevisionBody(C4Document *doc, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectCurrentRevision(C4Document *doc);
 
         /// <summary>
         /// Populates the body field of a doc's selected revision,
@@ -309,26 +286,18 @@ namespace CBForest
         /// <param name="doc">The document to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_loadRevisionBody(C4Document *doc, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4doc_loadRevisionBody(doc, outError));
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_selectParentRevision")]
-        private static extern byte _c4doc_selectParentRevision(C4Document *doc);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_loadRevisionBody(C4Document *doc, C4Error *outError);
 
         /// <summary>
         /// Selects the parent of the selected revision, if it's known, else inserts null.
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_selectParentRevision(C4Document *doc)
-        {
-            return Convert.ToBoolean(_c4doc_selectParentRevision(doc));
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_selectNextRevision")]
-        private static extern byte _c4doc_selectNextRevision(C4Document *doc);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectParentRevision(C4Document *doc);
 
         /// <summary>
         /// Selects the next revision in priority order.
@@ -336,10 +305,9 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_selectNextRevision(C4Document *doc)
-        {
-            return Convert.ToBoolean(_c4doc_selectNextRevision(doc));
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectNextRevision(C4Document *doc);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern byte c4doc_selectNextLeafRevision(C4Document *doc, byte includeDeleted, byte withBody, C4Error *outError);
@@ -352,11 +320,10 @@ namespace CBForest
         /// <param name="withBody">Whether or not to automatically load the body of the revision</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_selectNextLeafRevision(C4Document *doc, bool includeDeleted, bool withBody, C4Error *outError)
-        {
-            return Convert.ToBoolean(c4doc_selectNextLeafRevision(doc, Convert.ToByte(includeDeleted), Convert.ToByte(withBody),
-                outError));
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectNextLeafRevision(C4Document *doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted, 
+            [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error *outError);
         
         /// <summary>
         /// 
@@ -414,8 +381,10 @@ namespace CBForest
         public static extern C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, byte deleted, byte hasAttachments,
-            byte allowConflict, C4Error *outError);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
+            [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments,
+            [MarshalAs(UnmanagedType.U1)]bool allowConflict, C4Error *outError);
         
         /// <summary>
         /// Adds a revision to a document, as a child of the currently selected revision
@@ -436,14 +405,15 @@ namespace CBForest
         {
             using(var revID_ = new C4String(revID))
             using(var body_ = new C4String(body)) {
-                return Convert.ToBoolean(c4doc_insertRevision(doc, revID_.AsC4Slice(), body_.AsC4Slice(), 
-                    Convert.ToByte(deleted), Convert.ToByte(hasAttachments), Convert.ToByte(allowConflict), outError));
+                return c4doc_insertRevision(doc, revID_.AsC4Slice(), body_.AsC4Slice(), deleted, 
+                    hasAttachments, allowConflict, outError);
             }
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice revID, C4Slice body, byte deleted, 
-            byte hasAttachments, C4Slice[] history, uint historyCount, C4Error *outError);
+        private static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice revID, C4Slice body, 
+            [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history, 
+            uint historyCount, C4Error *outError);
 
         /// <summary>
         ///  Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
@@ -468,9 +438,12 @@ namespace CBForest
                 flattenedStringArray[i + 2] = new C4String(history[i]);
             }
             
-            var retVal = c4doc_insertRevisionWithHistory(doc, flattenedStringArray[0].AsC4Slice(), flattenedStringArray[1].AsC4Slice(), 
-                Convert.ToByte(deleted), Convert.ToByte(hasAttachments), 
-                flattenedStringArray.Skip(2).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray(), historyCount, outError);
+            var sliceArray = flattenedStringArray.Skip(2).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray(); 
+            var retVal = default(int);
+            fixed(C4Slice *a = sliceArray) {
+                retVal = c4doc_insertRevisionWithHistory(doc, flattenedStringArray[0].AsC4Slice(), 
+                    flattenedStringArray[1].AsC4Slice(), deleted, hasAttachments, a, historyCount, outError);
+            }
             
             foreach(var s in flattenedStringArray) {
                 s.Dispose();   
@@ -480,7 +453,8 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
 
         /// <summary>
         /// Sets a document's docType. (By convention this is the value of the "type" property of the 
@@ -494,12 +468,9 @@ namespace CBForest
         public static bool c4doc_setType(C4Document *doc, string docType, C4Error *outError)
         {
             using(var docType_ = new C4String(docType)) {
-                return Convert.ToBoolean(c4doc_setType(doc, docType_.AsC4Slice(), outError));   
+                return c4doc_setType(doc, docType_.AsC4Slice(), outError);   
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_save")]
-        private static extern byte _c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError);
 
         /// <summary>
         /// Saves changes to a C4Document.
@@ -510,10 +481,9 @@ namespace CBForest
         /// <param name="maxRevTreeDepth">The maximum number of revision history to save</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4doc_save(doc, maxRevTreeDepth, outError));
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError);
 
         /// <summary>
         /// Creates a new empty C4Key.
@@ -552,19 +522,14 @@ namespace CBForest
         /// <param name="key">The key to operate on</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_addNull(C4Key *key);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern void c4key_addBool(C4Key *key, byte b);
 
         /// <summary>
         /// Adds a boolean value to a C4Key.
         /// </summary>
         /// <param name="key">he key to operate on</param>
         /// <param name="b">The value to store</param>
-        public static void c4key_addBool(C4Key *key, bool b)
-        {
-            c4key_addBool(key, Convert.ToByte(b));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4key_addBool(C4Key *key, [MarshalAs(UnmanagedType.U1)]bool b);
 
         /// <summary>
         /// Adds a number to a C4Key.
@@ -660,19 +625,15 @@ namespace CBForest
         /// <param name="reader">The reader to operate on</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_skipToken(C4KeyReader *reader);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readBool")]
-        private static extern byte _c4key_readBool(C4KeyReader *reader);
 
         /// <summary>
         /// Reads a boolean value.
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The boolean value of the next token of the key</returns>
-        public static bool c4key_readBool(C4KeyReader *reader)
-        {
-            return Convert.ToBoolean(_c4key_readBool(reader));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4key_readBool(C4KeyReader *reader);
 
         /// <summary>
         /// Reads a number value
@@ -709,7 +670,8 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, C4Error *outError);
+        private static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
+            C4DatabaseFlags flags, C4Error *outError);
 
         /// <summary>
         /// Opens a view, or creates it if the file doesn't already exist.
@@ -720,17 +682,15 @@ namespace CBForest
         /// <param name="version">The version of the view's map function</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the view on success, otherwise null</returns>
-        public static C4View* c4view_open(C4Database *db, string path, string viewName, string version, C4Error *outError)
+        public static C4View* c4view_open(C4Database *db, string path, string viewName, string version, C4DatabaseFlags flags,
+            C4Error *outError)
         {
             using(var path_ = new C4String(path))
             using(var viewName_ = new C4String(viewName))
             using(var version_ = new C4String(version)) {
-                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), outError);   
+                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), flags, outError);   
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_close")]
-        private static extern byte _c4view_close(C4View *view, C4Error *outError);
 
         /// <summary>
         /// Closes the view and frees the object.
@@ -738,13 +698,9 @@ namespace CBForest
         /// <param name="view">The view to close</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4view_close(C4View *view, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4view_close(view, outError));
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_eraseIndex")]
-        private static extern byte _c4view_eraseIndex(C4View *view, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4view_close(C4View *view, C4Error *outError);
 
         /// <summary>
         /// Erases the view index, but doesn't delete the database file.
@@ -752,13 +708,9 @@ namespace CBForest
         /// <param name="view">The view that will have its index erased</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4view_eraseIndex(C4View *view, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4view_eraseIndex(view, outError));   
-        }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_delete")]
-        private static extern byte _c4view_delete(C4View *view, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4view_eraseIndex(C4View *view, C4Error *outError);
 
         /// <summary>
         /// Deletes the database file and closes/frees the C4View.
@@ -766,10 +718,9 @@ namespace CBForest
         /// <param name="view">The view to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4view_delete(C4View *view, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4view_delete(view, outError));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4view_delete(C4View *view, C4Error *outError);
 
         /// <summary>
         /// Returns the total number of rows in the view index.
@@ -823,8 +774,9 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
         
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_emit")]
-        private static extern byte _c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
             C4Key** emittedKeys, C4Key** emittedValues, C4Error *outError);
 
         /// <summary>
@@ -846,12 +798,9 @@ namespace CBForest
             fixed(C4Key** keysPtr = emittedKeys)
             fixed(C4Key** valuesPtr = emittedValues)
             {
-                return Convert.ToBoolean(_c4indexer_emit(indexer, document, viewNumber, emitCount, keysPtr, valuesPtr, outError));
+                return c4indexer_emit(indexer, document, viewNumber, emitCount, keysPtr, valuesPtr, outError);
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4indexer_end(C4Indexer *indexer, byte commit, C4Error *outError);
 
         /// <summary>
         /// Finishes an indexing task and frees the indexer reference.
@@ -860,10 +809,9 @@ namespace CBForest
         /// <param name="commit">True to commit changes to the indexes, false to abort</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError)
-        {
-            return Convert.ToBoolean(c4indexer_end(indexer, Convert.ToByte(commit), outError));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError);
 
         /// <summary>
         /// Runs a query and returns an enumerator for the results.
@@ -875,9 +823,6 @@ namespace CBForest
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4QueryEnumerator* c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4queryenum_next")]
-        private static extern byte _c4queryenum_next(C4QueryEnumerator *e, C4Error *outError);
 
         /// <summary>
         /// Advances a query enumerator to the next row, populating its fields.
@@ -886,10 +831,9 @@ namespace CBForest
         /// <param name="e">The enumerator to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false on error or end reached</returns>
-        public static bool c4queryenum_next(C4QueryEnumerator *e, C4Error *outError)
-        {
-            return Convert.ToBoolean(_c4queryenum_next(e, outError));   
-        }
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4queryenum_next(C4QueryEnumerator *e, C4Error *outError);
 
         /// <summary>
         /// Frees a query enumerator.
@@ -897,6 +841,16 @@ namespace CBForest
         /// <param name="e">The enumerator to free</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4queryenum_free(C4QueryEnumerator *e);
+        
+        /// <summary>
+        /// Registers (or unregisters) a log callback, and sets the minimum log level to report.
+        /// Before this is called, logs are by default written to stderr for warnings and errors.
+        ///    Note that this setting is global to the entire process.
+        /// </summary>
+        /// <param name="level">The minimum level of message to log</param>
+        /// <param name="callback">The logging callback, or NULL to disable logging entirely</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
         
         private static string BridgeSlice(Func<C4Slice> nativeFunc)
         {

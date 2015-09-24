@@ -19,9 +19,28 @@
 //  limitations under the License.
 //
 using System;
+using System.Runtime.InteropServices;
 
 namespace CBForest
 {
+    
+    /// <summary>
+    /// A logging callback that the application can register
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void C4LogCallback(C4LogLevel level, C4Slice message);
+    
+    /// <summary>
+    /// Logging levels
+    /// </summary>
+    public enum C4LogLevel
+    {
+        Debug,
+        Info,
+        Warning,
+        Error
+    }
+    
     /// <summary>
     /// Domain of the error code returned in a C4Error object
     /// </summary>
@@ -66,6 +85,17 @@ namespace CBForest
         /// Object in key is not JSON-compatible
         /// </summary>
         InvalidKey
+    }
+    
+    /// <summary>
+    /// Boolean options specified when opening a database or view
+    /// </summary>
+    [Flags]
+    public enum C4DatabaseFlags
+    {
+        Create = 1,
+        ReadOnly = 2,
+        AutoCompact = 4
     }
 
     /// <summary>

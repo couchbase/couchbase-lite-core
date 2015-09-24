@@ -36,10 +36,11 @@ namespace CBForest.Tests
         [SetUp]
         public virtual void SetUp()
         {
+            Native.c4log_register(C4LogLevel.Warning, Log);
             Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp.fdb");
             C4Error error;
-            _db = Native.c4db_open(dbPath, false, &error);
+            _db = Native.c4db_open(dbPath, C4DatabaseFlags.Create, &error);
             Assert.IsFalse(_db == null);
         }
         
@@ -47,7 +48,7 @@ namespace CBForest.Tests
         public virtual void TearDown()
         {
             C4Error error;
-            Assert.IsTrue(Native.c4db_delete(_db, &error));
+            Native.c4db_delete(_db, &error);
         }
         
         public string ToJSON(C4KeyReader r)
@@ -70,6 +71,12 @@ namespace CBForest.Tests
                 Assert.IsTrue(Native.c4doc_save(doc, 20, &error));
                 Native.c4doc_free(doc);
             }
+        }
+        
+        private static void Log(C4LogLevel level, C4Slice message)
+        {
+            string[] levelNames = new[] { "debug", "info", "WARNING", "ERROR" };
+            Console.Error.WriteLineAsync(String.Format("CBForest-C {0}: {1}", levelNames[(int)level], (string)message));
         }
     }
 }

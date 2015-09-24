@@ -1,5 +1,6 @@
 EXPORTS
 c4slice_free
+c4log_register
 c4db_open
 c4db_close
 c4db_delete

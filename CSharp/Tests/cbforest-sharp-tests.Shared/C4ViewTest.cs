@@ -35,7 +35,7 @@ namespace CBForest.Tests
             base.SetUp();
             C4Error error;
             var viewPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp_view.index");
-            _view = Native.c4view_open(_db, viewPath, "myview", "1", &error);
+            _view = Native.c4view_open(_db, viewPath, "myview", "1", C4DatabaseFlags.Create, &error);
             Assert.IsTrue(_view != null);
         }
         
@@ -99,7 +99,7 @@ namespace CBForest.Tests
             }
             
             C4Error error;
-            C4Indexer* ind = Native.c4indexer_begin(_db, new[] { _view }, 1, &error);
+            C4Indexer* ind = Native.c4indexer_begin(_db, new C4View*[] { _view }, 1, &error);
             Assert.IsTrue(ind != null);
 
             var e = Native.c4indexer_enumerateDocuments(ind, &error);
