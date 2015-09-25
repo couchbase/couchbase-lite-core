@@ -58,6 +58,7 @@ namespace forestdb {
         typedef fdb_file_info info;
 
         static config defaultConfig();
+        static void setDefaultConfig(const config&);
 
         Database(std::string path, const config&);
         Database(Database* original, sequence snapshotSequence);
@@ -73,6 +74,10 @@ namespace forestdb {
         void erase()                            {deleteDatabase(true);}
 
         void compact();
+        bool isCompacting() const               {return _isCompacting;}
+        static bool isAnyCompacting();
+
+        static void (*onCompactCallback)(Database* db, bool compacting);
 
         /** Copies the database to a new file, optionally encrypting it. */
         void copyToFile(std::string toPath, const encryptionConfig&);
@@ -92,6 +97,11 @@ namespace forestdb {
     protected:
         virtual void deleted();
 
+        virtual bool onCompact(fdb_compaction_status status,
+                               fdb_doc *doc,
+                               uint64_t lastOldFileOffset,
+                               uint64_t lastNewFileOffset);
+
     private:
         class File;
         friend class KeyStore;
@@ -105,10 +115,17 @@ namespace forestdb {
         Database(const Database&);              // forbidden
         Database& operator=(const Database&);   // forbidden
 
+        static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
+                                                       fdb_compaction_status status,
+                                                       fdb_doc *doc,
+                                                       uint64_t last_oldfile_offset,
+                                                       uint64_t last_newfile_offset,
+                                                       void *ctx);
         File* _file;
         config _config;
         fdb_file_handle* _fileHandle;
         std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
+        bool _isCompacting;
     };
 
 

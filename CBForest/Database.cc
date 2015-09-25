@@ -19,6 +19,7 @@
 #ifdef CBFOREST_ENCRYPTION
 #include "filemgr_ops_encrypted.h"
 #endif
+#include "atomic.h"           // forestdb internal
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
@@ -114,20 +115,34 @@ namespace forestdb {
     }
     #endif
 
+    static Database::config sDefaultConfig;
+    static bool sDefaultConfigInitialized = false;
+
     Database::config Database::defaultConfig() {
-        config c;
-        *(fdb_config*)&c = fdb_get_default_config();
-        c.encrypted = false;
-        c.purging_interval = 1; // WORKAROUND for ForestDB bug MB-16384
-        return c;
+        if (!sDefaultConfigInitialized) {
+            *(fdb_config*)&sDefaultConfig = fdb_get_default_config();
+            sDefaultConfig.purging_interval = 1; // WORKAROUND for ForestDB bug MB-16384
+            sDefaultConfig.compaction_cb_mask = FDB_CS_BEGIN | FDB_CS_COMPLETE;
+            sDefaultConfig.encrypted = false;
+            sDefaultConfigInitialized = true;
+        }
+        return sDefaultConfig;
+    }
+
+    void Database::setDefaultConfig(const Database::config &cfg) {
+        check(fdb_init((fdb_config*)&cfg));
+        sDefaultConfig = cfg;
     }
 
     Database::Database(std::string path, const config& cfg)
     :KeyStore(NULL),
      _file(File::forPath(path)),
      _config(cfg),
-     _fileHandle(NULL)
+     _fileHandle(NULL),
+     _isCompacting(false)
     {
+        _config.compaction_cb = compactionCallback;
+        _config.compaction_cb_ctx = this;
         reopen(path);
     }
 
@@ -219,10 +234,6 @@ namespace forestdb {
             reopen(path);
     }
 
-    void Database::compact() {
-        check(fdb_compact(_fileHandle, NULL));
-    }
-
     void Database::commit() {
         check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
     }
@@ -297,5 +308,58 @@ namespace forestdb {
             forestdb::check(status); // throw exception
         }
     }
+
+#pragma mark - COMPACTION:
+
+    static atomic_uint32_t sCompactCount;
+
+    void (*Database::onCompactCallback)(Database* db, bool compacting);
+
+
+    void Database::compact() {
+        check(fdb_compact(_fileHandle, NULL));
+    }
+
+    fdb_compact_decision Database::compactionCallback(fdb_file_handle *fhandle,
+                                                      fdb_compaction_status status,
+                                                      fdb_doc *doc,
+                                                      uint64_t last_oldfile_offset,
+                                                      uint64_t last_newfile_offset,
+                                                      void *ctx)
+    {
+        if (((Database*)ctx)->onCompact(status, doc, last_oldfile_offset, last_newfile_offset))
+            return FDB_CS_KEEP_DOC;
+        else
+            return FDB_CS_DROP_DOC;
+    }
+
+    bool Database::onCompact(fdb_compaction_status status,
+                             fdb_doc *doc,
+                             uint64_t last_oldfile_offset,
+                             uint64_t last_newfile_offset)
+    {
+        switch (status) {
+            case FDB_CS_BEGIN:
+                _isCompacting = true;
+                atomic_incr_uint32_t(&sCompactCount);
+                Log("Database %p COMPACTING...", this);
+                break;
+            case FDB_CS_COMPLETE:
+                _isCompacting = false;
+                atomic_decr_uint32_t(&sCompactCount);
+                Log("Database %p END COMPACTING", this);
+                break;
+            default:
+                return true; // skip the onCompactCallback
+        }
+        if (onCompactCallback)
+            onCompactCallback(this, _isCompacting);
+        return true;
+    }
+
+    bool Database::isAnyCompacting() {
+        return atomic_get_uint32_t(&sCompactCount) > 0;
+    }
+    
 
 }

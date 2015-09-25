@@ -12,5 +12,6 @@
 #define AssertEq    XCTAssertEqual
 #define AssertEqual XCTAssertEqualObjects
 
+void CreateTestDir();
 std::string PathForDatabaseNamed(NSString *name);
 forestdb::Database::config TestDBConfig();

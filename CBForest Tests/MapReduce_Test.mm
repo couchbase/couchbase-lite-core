@@ -92,6 +92,7 @@ public:
 
 - (void) setUp {
     [super setUp];
+    CreateTestDir();
     dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
     source = (KeyStore)*db;

@@ -78,6 +78,7 @@ public:
 
 - (void) setUp {
     [super setUp];
+    CreateTestDir();
     dbPath = PathForDatabaseNamed(@"geo_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
     source = (KeyStore)*db;

@@ -36,6 +36,7 @@ static revidBuffer stringToRev(NSString* str) {
 - (void)setUp
 {
     [super setUp];
+    CreateTestDir();
     dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
 }

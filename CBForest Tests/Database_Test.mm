@@ -27,8 +27,22 @@ using namespace forestdb;
     Database* db;
 }
 
+static NSString* sTestDir;
+
+void CreateTestDir() {
+    if (!sTestDir)
+        sTestDir = [NSTemporaryDirectory() stringByAppendingPathComponent: @"CBForest_Unit_Tests"];
+    NSError* error;
+    [[NSFileManager defaultManager] removeItemAtPath: sTestDir error: nil];
+    BOOL ok = [[NSFileManager defaultManager] createDirectoryAtPath: sTestDir
+                                        withIntermediateDirectories: NO
+                                                         attributes: nil
+                                                              error: &error];
+    assert(ok);
+}
+
 std::string PathForDatabaseNamed(NSString *name) {
-    const char *path = [NSTemporaryDirectory() stringByAppendingPathComponent: name].fileSystemRepresentation;
+    const char *path = [sTestDir stringByAppendingPathComponent: name].fileSystemRepresentation;
     ::unlink(path);
     return std::string(path);
 }
@@ -52,6 +66,7 @@ Database::config TestDBConfig() {
 - (void)setUp
 {
     [super setUp];
+    CreateTestDir();
     dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
 }
@@ -471,6 +486,44 @@ Database::config TestDBConfig() {
 
     Document doc = newDB.get(slice("doc-001"));
     Assert(doc.exists());
+}
+
+
+static Database_Test *sCurrentTest;
+static Database* sExpectedCompactingDB;
+static int sNumCompactCalls;
+
+static void onCompact(Database* db, bool compacting) {
+    id self = sCurrentTest;
+    AssertEq(db, sExpectedCompactingDB);
+    Assert(sNumCompactCalls < 2);
+    if (sNumCompactCalls == 0)
+        Assert(compacting);
+    else
+        Assert(!compacting);
+    ++sNumCompactCalls;
+}
+
+- (void) test13_Compact {
+    [self createNumberedDocs];
+
+    {
+        Transaction t(db);
+        for (int i = 1; i <= 100; i += 3) {
+            NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
+            Document doc = db->get((nsstring_slice)docID);
+            t.del(doc);
+        }
+    }
+
+    Database::onCompactCallback = onCompact;
+    sCurrentTest = self;
+    sExpectedCompactingDB = db;
+    sNumCompactCalls = 0;
+
+    db->compact();
+
+    AssertEq(sNumCompactCalls, 2);
 }
 
 @end

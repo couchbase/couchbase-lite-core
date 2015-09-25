@@ -72,6 +72,7 @@ static boolBlock scopedEnumerate() {
 
 - (void) setUp {
     [super setUp];
+    CreateTestDir();
     dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
     database = new Database(dbPath, TestDBConfig());
     index = new Index(database, "index");
