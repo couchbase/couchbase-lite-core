@@ -136,10 +136,8 @@
 		27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
-		278EBF9F1976325A006362F8 /* adler32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9719763203006362F8 /* adler32.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
-		278EBFA21976325A006362F8 /* adler32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9719763203006362F8 /* adler32.cc */; };
 		278EBFA31976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
@@ -188,6 +186,8 @@
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		27E721871BB609CD001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
+		27E721881BB609CD001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
@@ -524,8 +524,6 @@
 		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
 		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
 		278EBF94197631B1006362F8 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = vendor/forestdb/utils/debug.h; sourceTree = SOURCE_ROOT; };
-		278EBF9719763203006362F8 /* adler32.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adler32.cc; path = vendor/forestdb/utils/adler32.cc; sourceTree = SOURCE_ROOT; };
-		278EBF9819763203006362F8 /* adler32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = adler32.h; path = vendor/forestdb/utils/adler32.h; sourceTree = SOURCE_ROOT; };
 		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_encrypted.cc; sourceTree = "<group>"; };
@@ -569,6 +567,10 @@
 		27E4873919255EA8007D8940 /* MapReduceIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = MapReduceIndex.hh; path = ../CBForest/MapReduceIndex.hh; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DocEnumerator.cc; path = ../CBForest/DocEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* DocEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = DocEnumerator.hh; path = ../CBForest/DocEnumerator.hh; sourceTree = "<group>"; };
+		27E721831BB609CD001500DF /* bgflusher.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bgflusher.cc; sourceTree = "<group>"; };
+		27E721841BB609CD001500DF /* bgflusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bgflusher.h; sourceTree = "<group>"; };
+		27E721851BB609CD001500DF /* checksum.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = checksum.cc; sourceTree = "<group>"; };
+		27E721861BB609CD001500DF /* checksum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = checksum.h; sourceTree = "<group>"; };
 		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
 		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Collatable.mm; path = ../CBForest/Collatable.mm; sourceTree = "<group>"; };
@@ -860,8 +862,8 @@
 		2750726218E3E72900A80C5A /* src */ = {
 			isa = PBXGroup;
 			children = (
-				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
 				2726A0641A8BF9CC0042F944 /* atomic */,
+				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
 				27B086BE1B3B2DD100D3D9D8 /* atomic.h */,
 				2750729318E4857900A80C5A /* avltree.cc */,
 				2750729418E4857900A80C5A /* blockcache.cc */,
@@ -870,6 +872,10 @@
 				2750729618E4857900A80C5A /* btree.cc */,
 				2750729718E4857900A80C5A /* btreeblock.cc */,
 				278EBF8F1976317D006362F8 /* btree_str_kv.cc */,
+				27E721831BB609CD001500DF /* bgflusher.cc */,
+				27E721841BB609CD001500DF /* bgflusher.h */,
+				27E721851BB609CD001500DF /* checksum.cc */,
+				27E721861BB609CD001500DF /* checksum.h */,
 				2709F298191EA10E00C5A8A3 /* compactor.cc */,
 				273AD3BD18EF263B007D8C23 /* configuration.cc */,
 				2750729818E4857900A80C5A /* docio.cc */,
@@ -947,8 +953,6 @@
 		275072DB18E4ACE100A80C5A /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				278EBF9719763203006362F8 /* adler32.cc */,
-				278EBF9819763203006362F8 /* adler32.h */,
 				275072DD18E4ACE100A80C5A /* bitwise_utils.h */,
 				275072DE18E4ACE100A80C5A /* crc32.cc */,
 				275072DF18E4ACE100A80C5A /* crc32.h */,
@@ -1508,7 +1512,6 @@
 				2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */,
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
-				278EBFA21976325A006362F8 /* adler32.cc in Sources */,
 				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */,
 				27139B6118F8EDA20021A9A3 /* filemgr.cc in Sources */,
@@ -1596,7 +1599,6 @@
 				2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				273AD3DF18F5E8D8007D8C23 /* snappy-sinksource.cc in Sources */,
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
-				278EBF9F1976325A006362F8 /* adler32.cc in Sources */,
 				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */,
 				275072D018E4AA5000A80C5A /* filemgr.cc in Sources */,
@@ -1683,9 +1685,11 @@
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
+				27E721881BB609CD001500DF /* checksum.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
+				27E721871BB609CD001500DF /* bgflusher.cc in Sources */,
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,

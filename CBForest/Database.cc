@@ -118,6 +118,7 @@ namespace forestdb {
         config c;
         *(fdb_config*)&c = fdb_get_default_config();
         c.encrypted = false;
+        c.purging_interval = 1; // WORKAROUND for ForestDB bug MB-16384
         return c;
     }
 

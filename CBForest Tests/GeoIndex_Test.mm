@@ -121,7 +121,6 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 }
 
 - (void) testGeoIndex {
-    LogLevel = kDebug;
     [self addCoords: 100];
     auto queryArea = area(coord(10, 10), coord(40, 40));
 
