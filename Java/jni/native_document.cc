@@ -223,6 +223,7 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
             alloc_slice item = jbyteArraySlice::copy(env, jitem);
             historyAlloc.push_back(item); // so its memory won't be freed
             history[i] = (C4Slice){item.buf, item.size};
+            env->DeleteLocalRef(jitem);
         }
 
         jstringSlice revID(env, jrevID);

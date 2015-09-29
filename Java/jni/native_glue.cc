@@ -22,6 +22,8 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
             && initDocument(env)
             && initQueryIterator(env)
             && initView(env)) {
+        assert(gJVM == NULL);
+        gJVM = jvm;
         return JNI_VERSION_1_2;
     } else {
         return JNI_ERR;
@@ -32,6 +34,8 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
 namespace forestdb {
     namespace jni {
 
+        JavaVM *gJVM;
+        
         jstringSlice::jstringSlice(JNIEnv *env, jstring js)
         :_env(env),
          _jstr(js)

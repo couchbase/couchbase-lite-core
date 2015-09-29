@@ -16,11 +16,13 @@
 #ifndef CBForest_Error_h
 #define CBForest_Error_h
 
+#include "forestdb.h"
+
 #ifndef __attribute
 #define __attribute(x)
 #endif
 
-#include "forestdb.h"
+#undef check
 
 namespace forestdb {
 

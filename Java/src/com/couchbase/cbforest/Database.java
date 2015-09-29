@@ -2,8 +2,13 @@ package com.couchbase.cbforest;
 
 public class Database {
 
-    public Database(String path, boolean readOnly) throws ForestException {
-        _handle = _open(path, readOnly);
+    // Database-opening flags:
+    public static final int Create = 1;
+    public static final int ReadOnly = 2;
+    public static final int AutoCompact = 4;
+
+    public Database(String path, int flags) throws ForestException {
+        _handle = _open(path, flags);
     }
 
     public native void free();
@@ -33,7 +38,10 @@ public class Database {
         free();
     }
 
-    private native long _open(String path, boolean readOnly) throws ForestException;
+    /** Sets (or clears) a logging callback for CBForest. */
+    public native static void setLogger(Logger logger, int level);
+
+    private native long _open(String path, int flags) throws ForestException;
     private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
     long _handle; // handle to native C4Database*

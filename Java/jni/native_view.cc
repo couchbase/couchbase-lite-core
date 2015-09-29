@@ -35,11 +35,11 @@ bool forestdb::jni::initView(JNIEnv *env) {
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View__1open
-  (JNIEnv *env, jobject self, jstring jpath, jlong dbHandle, jstring jname, jstring jversion)
+  (JNIEnv *env, jobject self, jlong dbHandle, jstring jpath, jint flags, jstring jname, jstring jversion)
 {
     jstringSlice path(env, jpath), name(env, jname), version(env, jversion);
     C4Error error;
-    C4View *view = c4view_open((C4Database*)dbHandle, path, name, version, &error);
+    C4View *view = c4view_open((C4Database*)dbHandle, path, name, version, (C4DatabaseFlags)flags, &error);
     if (!view)
         throwError(env, error);
     return (jlong)view;

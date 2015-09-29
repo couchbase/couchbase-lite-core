@@ -17,6 +17,7 @@ using namespace forestdb::jni;
 
 
 static jfieldID kHandleField;
+static jmethodID kLoggerLogMethod;
 
 static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
     return (C4Database*)env->GetLongField(self, kHandleField);
@@ -27,17 +28,25 @@ bool forestdb::jni::initDatabase(JNIEnv *env) {
     if (!dbClass)
         return false;
     kHandleField = env->GetFieldID(dbClass, "_handle", "L");
-    return (kHandleField != NULL);
+    if (!kHandleField)
+        return false;
+    jclass loggerClass = env->FindClass("com/couchbase/cbforest/Logger");
+    if (!loggerClass)
+        return false;
+    kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang;String;)V");
+    if (!kLoggerLogMethod)
+        return false;
+    return true;
 }
 
 
 jlong JNICALL Java_com_couchbase_cbforest_Database__1open
-(JNIEnv *env, jobject self, jstring jpath, jboolean readOnly)
+(JNIEnv *env, jobject self, jstring jpath, jint flags)
 {
     jstringSlice path(env, jpath);
 
     C4Error error;
-    C4Database* db = c4db_open(path, readOnly, &error);
+    C4Database* db = c4db_open(path, (C4DatabaseFlags)flags, &error);
     if (!db)
         throwError(env, error);
 
@@ -106,4 +115,34 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1iterateChanges
     if (!e)
         throwError(env, error);
     return (jlong)e;
+}
+
+
+#pragma mark - LOGGING:
+
+
+static jobject sLoggerRef;  // Global ref to the currently registered Logger instance
+
+static void logCallback(C4LogLevel level, C4Slice message) {
+    jobject logger = sLoggerRef;
+    if (logger) {
+        JNIEnv *env;
+        if (gJVM->GetEnv((void**)&env, JNI_VERSION_1_2) == JNI_OK) {
+            env->PushLocalFrame(1);
+            jobject jmessage = toJString(env, message);
+            env->CallVoidMethod(logger, kLoggerLogMethod, (jint)level, jmessage);
+            env->PopLocalFrame(NULL);
+        }
+    }
+}
+
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
+(JNIEnv *env, jclass klass, jobject logger, jint level)
+{
+    jobject oldLoggerRef = sLoggerRef;
+    sLoggerRef = env->NewGlobalRef(logger);
+    if (oldLoggerRef)
+        env->DeleteGlobalRef(oldLoggerRef);
+    c4log_register((C4LogLevel)level, &logCallback);
 }

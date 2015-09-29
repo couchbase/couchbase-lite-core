@@ -16,6 +16,7 @@
 namespace forestdb {
     namespace jni {
 
+extern JavaVM *gJVM;
 
 bool initDatabase(JNIEnv*);     // Implemented in native_database.cc
 bool initDocument(JNIEnv*);     // Implemented in native_document.cc

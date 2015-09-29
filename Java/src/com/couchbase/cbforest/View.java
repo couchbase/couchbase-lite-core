@@ -6,8 +6,8 @@ import java.util.Map;
 
 public class View {
 
-    public View(String path, Database db, String name, String version) throws ForestException {
-        _handle = _open(path, db._handle, name, version);
+    public View(Database sourceDB, String viewDbPath, int viewDbFlags, String viewName, String version) throws ForestException {
+        _handle = _open(sourceDB._handle, viewDbPath, viewDbFlags, viewName, version);
     }
 
     public native void close();
@@ -146,7 +146,7 @@ public class View {
                                      boolean inclusiveEnd,
                                      long keys[]) throws ForestException; // array of C4Key*
 
-    private native long _open(String path, long dbHandle, String name, String version) throws ForestException;
+    private native long _open(long sourceDbHandle, String viewDbPath, int viewDbFlags, String viewName, String version) throws ForestException;
 
     private long _handle; // handle to native C4View*
 }
