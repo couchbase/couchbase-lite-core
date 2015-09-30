@@ -7,8 +7,11 @@ public class Database {
     public static final int ReadOnly = 2;
     public static final int AutoCompact = 4;
 
-    public Database(String path, int flags) throws ForestException {
-        _handle = _open(path, flags);
+    public static final int NoEncryption = 0;
+    public static final int AES256Encryption = 1;
+
+    public Database(String path, int flags, int encryptionAlgorithm, byte[] encryptionKey) throws ForestException {
+        _handle = _open(path, flags, encryptionAlgorithm, encryptionKey);
     }
 
     public native void free();
@@ -41,7 +44,8 @@ public class Database {
     /** Sets (or clears) a logging callback for CBForest. */
     public native static void setLogger(Logger logger, int level);
 
-    private native long _open(String path, int flags) throws ForestException;
+    private native long _open(String path, int flags,
+                              int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
     private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
     long _handle; // handle to native C4Database*

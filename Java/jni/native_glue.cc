@@ -7,6 +7,8 @@
 //
 
 #include "native_glue.hh"
+#include "c4Database.h"
+#include "fdb_errors.h"
 #include <assert.h>
 
 using namespace forestdb::jni;
@@ -83,7 +85,7 @@ namespace forestdb {
 
         void throwError(JNIEnv *env, C4Error error) {
             jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
-            assert(xclass);
+            assert(xclass); // if we can't even throw an exception, we're really fuxored
             jmethodID m = env->GetMethodID(xclass, "throwError", "(II)");
             assert(m);
             env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code);
@@ -108,6 +110,25 @@ namespace forestdb {
                 env->SetByteArrayRegion(array, 0, (jsize)s.size, (const jbyte*)s.buf);
             return array;
         }
+
+
+        bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes,
+                              C4EncryptionKey *outKey)
+        {
+            outKey->algorithm = keyAlg;
+            if (keyAlg != kC4EncryptionNone) {
+                jbyteArraySlice keyBytes(env, jKeyBytes);
+                forestdb::slice keySlice = keyBytes;
+                if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
+                    throwError(env, C4Error{ForestDBDomain, FDB_RESULT_CRYPTO_ERROR});
+                    return false;
+                }
+                memset(outkey->bytes, 0, sizeof(outKey->bytes));
+                memcpy(outKey->bytes, keySlice.buf, keySlice.size);
+            }
+            return true;
+        }
+
 
     }
 }

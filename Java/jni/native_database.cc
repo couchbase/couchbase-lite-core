@@ -41,12 +41,16 @@ bool forestdb::jni::initDatabase(JNIEnv *env) {
 
 
 jlong JNICALL Java_com_couchbase_cbforest_Database__1open
-(JNIEnv *env, jobject self, jstring jpath, jint flags)
+(JNIEnv *env, jobject self, jstring jpath,
+ jint flags, jint encryptionAlg, jbyteArray encryptionKey)
 {
     jstringSlice path(env, jpath);
+    C4EncryptionKey key;
+    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
+        return 0;
 
     C4Error error;
-    C4Database* db = c4db_open(path, (C4DatabaseFlags)flags, &error);
+    C4Database* db = c4db_open(path, (C4DatabaseFlags)flags, &key, &error);
     if (!db)
         throwError(env, error);
 

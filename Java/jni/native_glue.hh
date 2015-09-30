@@ -10,7 +10,7 @@
 #define native_glue_hpp
 
 #include <JavaVM/jni.h>
-#include "c4.h"
+#include "c4Database.h"
 #include "slice.hh"
 
 namespace forestdb {
@@ -59,6 +59,13 @@ private:
     jbyteArray _jbytes;
     bool _critical;
 };
+
+// Copies an encryption key to a C4EncryptionKey. Returns false on exception.
+bool getEncryptionKey(JNIEnv *env,
+                      jint keyAlg,
+                      jbyteArray jKeyBytes,
+                      C4EncryptionKey *outKey);
+
 
 
 jstring toJString(JNIEnv*, C4Slice);
