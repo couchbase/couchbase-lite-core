@@ -99,6 +99,8 @@ namespace forestdb {
     private:
         void saveState(Transaction& t);
         bool updateDocInIndex(Transaction&, const Mappable&);
+        bool emitForDocument(Transaction& t, slice docID, sequence docSequence,
+                             std::vector<Collatable> keys, std::vector<Collatable> values);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
 
         forestdb::KeyStore _sourceDatabase;
@@ -125,9 +127,25 @@ namespace forestdb {
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}
 
+        KeyStore sourceStore();
+
         bool run();
 
+        void finished()                             {_finished = true;}
+
         sequence latestDbSequence() const           {return _latestDbSequence;}
+
+        // Incremental mode:
+
+        /** Determines at which sequence indexing should start.
+            Returns UINT64_MAX if no re-indexing is necessary. */
+        sequence startingSequence();
+
+        void emitDocIntoView(slice docID,
+                             sequence docSequence,
+                             unsigned viewNumber,
+                             std::vector<Collatable> keys,
+                             std::vector<Collatable> values);
 
     protected:
         /** Transforms the Document to a Mappable and invokes addMappable.

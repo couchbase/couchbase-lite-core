@@ -20,7 +20,6 @@
 #include "filemgr_ops_encrypted.h"
 #endif
 #include "atomic.h"           // forestdb internal
-#include <assert.h>
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
@@ -52,6 +51,20 @@ namespace forestdb {
             LogCallback(level, formatted);
         }
     }
+
+    void error::_throw(fdb_status status) {
+        WarnError("%s (%d)\n", fdb_error_msg(status), status);
+        throw error{status};
+    }
+
+
+    void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
+        if (LogLevel > kError || LogCallback == NULL)
+            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+        WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+        throw error(error::AssertionFailed);
+    }
+
 
 #pragma mark - FILE:
 
@@ -88,13 +101,6 @@ namespace forestdb {
 #pragma mark - DATABASE:
 
 
-    static void check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS) {
-            WarnError("FORESTDB ERROR %d\n", status);
-            throw error{status};
-        }
-    }
-
     static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
         // don't warn about read errors: VersionedDocument can trigger them when it looks for a
         // revision that's been compacted away.
@@ -106,7 +112,7 @@ namespace forestdb {
     #ifdef CBFOREST_ENCRYPTION
     void Database::encryptionConfig::setEncryptionKey(slice key) {
         if (key.buf) {
-            assert(key.size == sizeof(encryptionKey));
+            CBFAssert(key.size == sizeof(encryptionKey));
             ::memcpy(encryptionKey, key.buf, sizeof(encryptionKey));
             encrypted = true;
         } else {
@@ -274,7 +280,7 @@ namespace forestdb {
         }
 
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
-        assert(_file->_transaction == t);
+        CBFAssert(_file->_transaction == t);
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
 

@@ -16,7 +16,6 @@
 #include "VersionedDocument.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include <assert.h>
 #include <ostream>
 
 namespace forestdb {
@@ -115,7 +114,7 @@ namespace forestdb {
         meta.writeFrom(revID);
         WriteUVarInt(&meta, _docType.size);
         meta.writeFrom(_docType);
-        assert(meta.size == 0);
+        CBFAssert(meta.size == 0);
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {

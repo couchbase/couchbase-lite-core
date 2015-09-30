@@ -9,3 +9,8 @@ bin/
 obj/
 [dD]ebug
 *.o
+*.class
+packages/
+*.sdf
+*.opensdf
+[Rr]elease

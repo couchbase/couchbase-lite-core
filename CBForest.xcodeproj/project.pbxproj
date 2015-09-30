@@ -105,6 +105,27 @@
 		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
 		274415221900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
+		274D03DF1BA732E400FF7C35 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
+		274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
+		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
+		274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
+		274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		274D03E71BA7333800FF7C35 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D03E91BA734A300FF7C35 /* native_database.cc */; };
+		274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D03EA1BA734A300FF7C35 /* native_document.cc */; };
+		274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */; };
+		274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D03EC1BA734A300FF7C35 /* native_glue.cc */; };
+		274D03F21BA734A300FF7C35 /* native_glue.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D03ED1BA734A300FF7C35 /* native_glue.hh */; };
+		274D03F91BA73B1600FF7C35 /* Database.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F31BA734C100FF7C35 /* Database.java */; };
+		274D03FB1BA7418B00FF7C35 /* Document.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F41BA734C100FF7C35 /* Document.java */; };
+		274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F51BA734C100FF7C35 /* DocumentIterator.java */; };
+		274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F61BA734C100FF7C35 /* ForestException.java */; };
+		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
+		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
+		274D04111BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
+		274D04201BA892B100FF7C35 /* libCBForest-Interop.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */; };
+		274D04251BA8A58200FF7C35 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		275072C718E4AA5000A80C5A /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
 		275072C818E4AA5000A80C5A /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
 		275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
@@ -144,6 +165,11 @@
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		27A4F2141B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
 		27A4F2151B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
+		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
+		27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
+		27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
+		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
+		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
@@ -186,14 +212,10 @@
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
-		27E721871BB609CD001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
-		27E721881BB609CD001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F901911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
 		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
@@ -267,6 +289,9 @@
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
 		27EF81081917EEC600A327B9 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		27EF810C1917EEC600A327B9 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
+		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
+		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
+		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		27FA99F619180B5F00912F96 /* stem_UTF_8_dutch.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FD71914296D00A327B9 /* stem_UTF_8_dutch.c */; };
 		27FA99F719180B5F00912F96 /* stem_ISO_8859_1_hungarian.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FC31914296D00A327B9 /* stem_ISO_8859_1_hungarian.c */; };
@@ -336,9 +361,81 @@
 		27FA9A3A19180B5F00912F96 /* stem_ISO_8859_2_romanian.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FD21914296D00A327B9 /* stem_ISO_8859_2_romanian.h */; };
 		27FA9A3B19180B5F00912F96 /* stem_UTF_8_porter.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FE81914296D00A327B9 /* stem_UTF_8_porter.h */; };
 		27FA9A4019180B9100912F96 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
+		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
+		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
+		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
+		27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
+		27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */; };
+		720EA3E31BA7EAD9002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
+		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
+		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
+		720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
+		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		720EA40F1BA8D834002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		720EA4101BA8D834002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		720EA4131BA8D834002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		720EA4141BA8D834002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		720EA4151BA8D834002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		720EA4181BA8D834002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
+		720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		720EA4541BA909C4002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		720EA4561BA909C4002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		720EA4571BA909C4002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
+		720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
+		720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
+		720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
+		720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
+		720EA45F1BA909C4002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		720EA4611BA909C4002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
+		720EA4621BA909C4002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
+		720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
+		720EA4651BA909C4002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
+		720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
+		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
+		720EA4711BA90A18002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		720EA4721BA90A1C002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		274D03F71BA73A7D00FF7C35 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.java";
+			fileType = sourcecode.java;
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILE_DIR)/Java_com_couchbase_cbforest_Database.h",
+				"",
+			);
+			script = "set -e\n/usr/bin/javah -classpath $SRCROOT/java/src -d $DERIVED_FILE_DIR com.couchbase.cbforest.$INPUT_FILE_BASE";
+		};
+		720EA3F11BA7EAD9002B8416 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.java";
+			fileType = sourcecode.java;
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILE_DIR)/Java_com_couchbase_cbforest_Database.h",
+				"",
+			);
+			script = "/usr/bin/javah -classpath $SRCROOT/java/src -d $DERIVED_FILE_DIR com.couchbase.cbforest.$INPUT_FILE_BASE";
+		};
+/* End PBXBuildRule section */
 
 /* Begin PBXContainerItemProxy section */
 		27139BA718F8EE3A0021A9A3 /* PBXContainerItemProxy */ = {
@@ -361,6 +458,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
+		};
+		274D04191BA763AE00FF7C35 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "CBForest static";
+		};
+		274D04211BA892C500FF7C35 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "CBForest-Interop";
 		};
 		27766E1E1982DED300CAA464 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -397,6 +508,34 @@
 			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
 			remoteInfo = forestdb;
 		};
+		720EA4211BA8F386002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
+			remoteInfo = forestdb;
+		};
+		720EA4231BA8F388002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF807319142C2500A327B9;
+			remoteInfo = Tokenizer;
+		};
+		720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27139B5A18F8EDA20021A9A3;
+			remoteInfo = "forestdb iOS";
+		};
+		720EA4501BA909C4002B8416 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FA99F419180B5F00912F96;
+			remoteInfo = "Tokenizer-iOS";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -409,7 +548,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		274D04061BA75E1C00FF7C35 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		27EF810E1917EEC600A327B9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		720EA46A1BA909C4002B8416 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -467,6 +624,27 @@
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
+		274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libCBForestJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
+		274D03E31BA7330A00FF7C35 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
+		274D03E91BA734A300FF7C35 /* native_database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_database.cc; sourceTree = "<group>"; };
+		274D03EA1BA734A300FF7C35 /* native_document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_document.cc; sourceTree = "<group>"; };
+		274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_documentiterator.cc; sourceTree = "<group>"; };
+		274D03EC1BA734A300FF7C35 /* native_glue.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_glue.cc; sourceTree = "<group>"; };
+		274D03ED1BA734A300FF7C35 /* native_glue.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = native_glue.hh; sourceTree = "<group>"; };
+		274D03F31BA734C100FF7C35 /* Database.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = Database.java; path = src/com/couchbase/cbforest/Database.java; sourceTree = "<group>"; };
+		274D03F41BA734C100FF7C35 /* Document.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = Document.java; path = src/com/couchbase/cbforest/Document.java; sourceTree = "<group>"; };
+		274D03F51BA734C100FF7C35 /* DocumentIterator.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = DocumentIterator.java; path = src/com/couchbase/cbforest/DocumentIterator.java; sourceTree = "<group>"; };
+		274D03F61BA734C100FF7C35 /* ForestException.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = ForestException.java; path = src/com/couchbase/cbforest/ForestException.java; sourceTree = "<group>"; };
+		274D03FA1BA7414100FF7C35 /* jni.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jni.h; sourceTree = "<group>"; };
+		274D03FE1BA7443600FF7C35 /* CBForestJNI.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = CBForestJNI.exp; sourceTree = "<group>"; };
+		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
+		274D04081BA75E1C00FF7C35 /* CppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CppTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libcppunit-1.13.0.dylib"; path = "../../../../usr/local/Cellar/cppunit/1.13.2/lib/libcppunit-1.13.0.dylib"; sourceTree = "<group>"; };
+		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
+		274D04241BA8A58200FF7C35 /* c4View.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4View.cc; sourceTree = "<group>"; };
+		274D04261BA8A5BC00FF7C35 /* c4Impl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Impl.hh; sourceTree = "<group>"; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724418E3E52800A80C5A /* CBForest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CBForest-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
@@ -514,6 +692,11 @@
 		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
+		275607781BA21DAB00F58218 /* c4View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4View.h; sourceTree = "<group>"; };
+		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
+		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
+		2757DE591B9FC3F1002EE261 /* c4.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4.h; sourceTree = "<group>"; };
+		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = c4.c; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
@@ -528,6 +711,7 @@
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_encrypted.cc; sourceTree = "<group>"; };
 		27A4F2131B66FC4200117AEA /* filemgr_ops_encrypted.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filemgr_ops_encrypted.h; sourceTree = "<group>"; };
+		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
 		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
 		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
 		27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = system_resource_stats.h; sourceTree = "<group>"; };
@@ -657,9 +841,22 @@
 		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF80C7191445CF00A327B9 /* english_stopwords.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = english_stopwords.h; path = ../CBForest/english_stopwords.h; sourceTree = "<group>"; };
 		27EF81121917EEC600A327B9 /* libCBForest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCBForest.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
+		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
+		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
+		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
 		27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libTokenizer-iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = ../CBForest/varint.cc; sourceTree = "<group>"; };
 		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = ../CBForest/varint.hh; sourceTree = "<group>"; };
+		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/cbforest/View.java; sourceTree = "<group>"; };
+		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
+		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/cbforest/QueryIterator.java; sourceTree = "<group>"; };
+		27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_queryIterator.cc; sourceTree = "<group>"; };
+		27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.0.sdk/usr/lib/libstdc++.tbd"; sourceTree = DEVELOPER_DIR; };
+		720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libCBForest-Interop.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
+		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
+		720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libCBForest-Interop.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		720EA46F1BA90A0C002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk/usr/lib/libstdc++.dylib"; sourceTree = DEVELOPER_DIR; };
 		9399E72C1B7E536700D4BE79 /* Slice_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slice_Test.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -704,6 +901,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		274D03D01BA732B000FF7C35 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				274D03E71BA7333800FF7C35 /* Security.framework in Frameworks */,
+				274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */,
+				274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */,
+				274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */,
+				274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		274D04051BA75E1C00FF7C35 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				274D04201BA892B100FF7C35 /* libCBForest-Interop.dylib in Frameworks */,
+				274D04111BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		275072C018E4AA4400A80C5A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -731,6 +949,24 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		720EA3E91BA7EAD9002B8416 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
+				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		720EA4661BA909C4002B8416 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */,
+				720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -775,13 +1011,50 @@
 			path = vendor/snappy;
 			sourceTree = "<group>";
 		};
+		274D03E81BA734A300FF7C35 /* jni */ = {
+			isa = PBXGroup;
+			children = (
+				274D03E91BA734A300FF7C35 /* native_database.cc */,
+				274D03EA1BA734A300FF7C35 /* native_document.cc */,
+				274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */,
+				27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */,
+				27FF7E551BAB64BE004EB8D4 /* native_view.cc */,
+				274D03EC1BA734A300FF7C35 /* native_glue.cc */,
+				274D03ED1BA734A300FF7C35 /* native_glue.hh */,
+			);
+			path = jni;
+			sourceTree = "<group>";
+		};
+		274D03FF1BA7554700FF7C35 /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
+				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
+				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
+				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
+				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
+			);
+			path = tests;
+			sourceTree = "<group>";
+		};
+		274D04091BA75E1C00FF7C35 /* CppTests */ = {
+			isa = PBXGroup;
+			children = (
+				274D040A1BA75E1C00FF7C35 /* main.cpp */,
+			);
+			path = CppTests;
+			sourceTree = "<group>";
+		};
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
+				2757DE551B9FC34E002EE261 /* C API */,
+				275607791BA22E5700F58218 /* Java */,
 				27E4871019217187007D8940 /* CBForest */,
 				27A4F2111B66FB1E00117AEA /* Encryption */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
+				274D04091BA75E1C00FF7C35 /* CppTests */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
 				273AD3D018F5E8B0007D8C23 /* snappy */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
@@ -801,6 +1074,10 @@
 				27EF807419142C2500A327B9 /* libTokenizer.a */,
 				27EF81121917EEC600A327B9 /* libCBForest.a */,
 				27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */,
+				274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */,
+				274D04081BA75E1C00FF7C35 /* CppTests */,
+				720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */,
+				720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -808,6 +1085,12 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */,
+				720EA46F1BA90A0C002B8416 /* libstdc++.dylib */,
+				720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */,
+				274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */,
+				274D03E31BA7330A00FF7C35 /* libstdc++.tbd */,
+				274D03E11BA732FC00FF7C35 /* JavaVM.framework */,
 				272230431A0812FF00BFF25C /* Security.framework */,
 				27766E151982DA8E00CAA464 /* Security.framework */,
 				2750724C18E3E5BB00A80C5A /* libforestdb.dylib */,
@@ -968,6 +1251,40 @@
 				27E45D011A6F01AD001A3A03 /* time_utils.h */,
 			);
 			path = utils;
+			sourceTree = "<group>";
+		};
+		275607791BA22E5700F58218 /* Java */ = {
+			isa = PBXGroup;
+			children = (
+				274D03F31BA734C100FF7C35 /* Database.java */,
+				274D03F41BA734C100FF7C35 /* Document.java */,
+				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
+				274D03F61BA734C100FF7C35 /* ForestException.java */,
+				27A82D0D1BBB2727005CB742 /* Logger.java */,
+				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
+				27FF7E541BAB60E2004EB8D4 /* View.java */,
+				274D03E81BA734A300FF7C35 /* jni */,
+				274D03FA1BA7414100FF7C35 /* jni.h */,
+				274D03FE1BA7443600FF7C35 /* CBForestJNI.exp */,
+			);
+			path = Java;
+			sourceTree = "<group>";
+		};
+		2757DE551B9FC34E002EE261 /* C API */ = {
+			isa = PBXGroup;
+			children = (
+				2757DE5A1B9FC5C7002EE261 /* c4.c */,
+				2757DE591B9FC3F1002EE261 /* c4.h */,
+				274D04261BA8A5BC00FF7C35 /* c4Impl.hh */,
+				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
+				2757DE571B9FC3C9002EE261 /* c4Database.h */,
+				274D04241BA8A58200FF7C35 /* c4View.cc */,
+				275607781BA21DAB00F58218 /* c4View.h */,
+				274D04231BA8932800FF7C35 /* c4.exp */,
+				274D03FF1BA7554700FF7C35 /* tests */,
+			);
+			name = "C API";
+			path = C;
 			sourceTree = "<group>";
 		};
 		27A4F2111B66FB1E00117AEA /* Encryption */ = {
@@ -1182,6 +1499,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		274D03D11BA732B000FF7C35 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				274D03F21BA734A300FF7C35 /* native_glue.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		275072C118E4AA4400A80C5A /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -1281,6 +1606,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		720EA3EF1BA7EAD9002B8416 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -1356,6 +1688,43 @@
 			productReference = 27139BA218F8EE3A0021A9A3 /* CBForest-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		274D03D21BA732B000FF7C35 /* CBForestJNI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 274D03D91BA732B100FF7C35 /* Build configuration list for PBXNativeTarget "CBForestJNI" */;
+			buildPhases = (
+				274D03CF1BA732B000FF7C35 /* Sources */,
+				274D03D01BA732B000FF7C35 /* Frameworks */,
+				274D03D11BA732B000FF7C35 /* Headers */,
+			);
+			buildRules = (
+				274D03F71BA73A7D00FF7C35 /* PBXBuildRule */,
+			);
+			dependencies = (
+				274D041A1BA763AE00FF7C35 /* PBXTargetDependency */,
+			);
+			name = CBForestJNI;
+			productName = CBForestJNI;
+			productReference = 274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		274D04071BA75E1C00FF7C35 /* CppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "CppTests" */;
+			buildPhases = (
+				274D04041BA75E1C00FF7C35 /* Sources */,
+				274D04051BA75E1C00FF7C35 /* Frameworks */,
+				274D04061BA75E1C00FF7C35 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
+			);
+			name = CppTests;
+			productName = CppTests;
+			productReference = 274D04081BA75E1C00FF7C35 /* CppTests */;
+			productType = "com.apple.product-type.tool";
+		};
 		275072C218E4AA4400A80C5A /* forestdb */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb" */;
@@ -1426,6 +1795,45 @@
 			productReference = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop" */;
+			buildPhases = (
+				720EA3DE1BA7EAD9002B8416 /* Sources */,
+				720EA3E91BA7EAD9002B8416 /* Frameworks */,
+				720EA3EF1BA7EAD9002B8416 /* Headers */,
+			);
+			buildRules = (
+				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
+			);
+			dependencies = (
+				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
+				720EA4221BA8F386002B8416 /* PBXTargetDependency */,
+			);
+			name = "CBForest-Interop";
+			productName = CBForestJNI;
+			productReference = 720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */;
+			buildPhases = (
+				720EA4511BA909C4002B8416 /* Sources */,
+				720EA4661BA909C4002B8416 /* Frameworks */,
+				720EA46A1BA909C4002B8416 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				720EA44D1BA909C4002B8416 /* PBXTargetDependency */,
+				720EA44F1BA909C4002B8416 /* PBXTargetDependency */,
+			);
+			name = "CBForest-Interop iOS";
+			productName = "CBForest-iOS";
+			productReference = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1440,6 +1848,12 @@
 					};
 					27139BA118F8EE3A0021A9A3 = {
 						TestTargetID = 27139B9418F8EE3A0021A9A3;
+					};
+					274D03D21BA732B000FF7C35 = {
+						CreatedOnToolsVersion = 7.0;
+					};
+					274D04071BA75E1C00FF7C35 = {
+						CreatedOnToolsVersion = 7.0;
 					};
 				};
 			};
@@ -1464,6 +1878,10 @@
 				27B7E0F118F8FB4700044EBA /* All */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
 				27FA99F419180B5F00912F96 /* Tokenizer-iOS */,
+				274D03D21BA732B000FF7C35 /* CBForestJNI */,
+				274D04071BA75E1C00FF7C35 /* CppTests */,
+				720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */,
+				720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -1521,7 +1939,6 @@
 				27139B6518F8EDA20021A9A3 /* blockcache.cc in Sources */,
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
 				2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */,
-				27EF008619492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
@@ -1531,9 +1948,11 @@
 				2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */,
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
+				27A82D181BBB72DF005CB742 /* checksum.cc in Sources */,
 				276FFD751B2E03920027B51A /* (null) in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
+				27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
@@ -1589,6 +2008,41 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		274D03CF1BA732B000FF7C35 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
+				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
+				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
+				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
+				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
+				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,
+				274D03DF1BA732E400FF7C35 /* c4.c in Sources */,
+				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
+				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
+				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
+				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
+				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
+				274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */,
+				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
+				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
+				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		274D04041BA75E1C00FF7C35 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
+				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
+				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
+				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
+				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		275072BF18E4AA4400A80C5A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1608,7 +2062,6 @@
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
 				2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */,
-				27EF008519492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
@@ -1618,9 +2071,11 @@
 				2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */,
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
+				27A82D171BBB72DE005CB742 /* checksum.cc in Sources */,
 				276FFD741B2E03910027B51A /* (null) in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
+				27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
@@ -1685,11 +2140,9 @@
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
-				27E721881BB609CD001500DF /* checksum.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
-				27E721871BB609CD001500DF /* bgflusher.cc in Sources */,
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
@@ -1750,6 +2203,57 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		720EA3DE1BA7EAD9002B8416 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA4101BA8D834002B8416 /* Document.cc in Sources */,
+				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
+				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
+				720EA3E31BA7EAD9002B8416 /* c4.c in Sources */,
+				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
+				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
+				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
+				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
+				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
+				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
+				720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */,
+				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
+				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
+				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
+				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
+				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
+				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
+				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
+				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		720EA4511BA909C4002B8416 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				720EA4721BA90A1C002B8416 /* c4.c in Sources */,
+				720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */,
+				720EA4541BA909C4002B8416 /* Database.cc in Sources */,
+				720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */,
+				720EA4561BA909C4002B8416 /* Document.cc in Sources */,
+				720EA4571BA909C4002B8416 /* Geohash.cc in Sources */,
+				720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */,
+				720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */,
+				720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */,
+				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
+				720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */,
+				720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */,
+				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
+				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
+				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
+				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
+				720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */,
+				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1767,6 +2271,16 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
 			targetProxy = 27410EA9198BFD97007EE67C /* PBXContainerItemProxy */;
+		};
+		274D041A1BA763AE00FF7C35 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
+			targetProxy = 274D04191BA763AE00FF7C35 /* PBXContainerItemProxy */;
+		};
+		274D04221BA892C500FF7C35 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
+			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
 		};
 		27766E1F1982DED300CAA464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1792,6 +2306,26 @@
 			isa = PBXTargetDependency;
 			target = 275072C218E4AA4400A80C5A /* forestdb */;
 			targetProxy = 27FA99E11917F10C00912F96 /* PBXContainerItemProxy */;
+		};
+		720EA4221BA8F386002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 275072C218E4AA4400A80C5A /* forestdb */;
+			targetProxy = 720EA4211BA8F386002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA4241BA8F388002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF807319142C2500A327B9 /* Tokenizer */;
+			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA44D1BA909C4002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27139B5A18F8EDA20021A9A3 /* forestdb iOS */;
+			targetProxy = 720EA44E1BA909C4002B8416 /* PBXContainerItemProxy */;
+		};
+		720EA44F1BA909C4002B8416 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FA99F419180B5F00912F96 /* Tokenizer-iOS */;
+			targetProxy = 720EA4501BA909C4002B8416 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1988,6 +2522,106 @@
 			};
 			name = Release;
 		};
+		274D03DA1BA732B100FF7C35 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = java/CBForestJNI.exp;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		274D03DB1BA732B100FF7C35 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = java/CBForestJNI.exp;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		274D040D1BA75E1C00FF7C35 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/local/Cellar/cppunit/1.13.2/include/,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/cppunit/1.13.2/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		274D040E1BA75E1C00FF7C35 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/local/Cellar/cppunit/1.13.2/include/,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/cppunit/1.13.2/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		2750724718E3E52800A80C5A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2112,6 +2746,7 @@
 		275072C518E4AA4400A80C5A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
@@ -2144,6 +2779,7 @@
 		275072C618E4AA4400A80C5A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
@@ -2186,6 +2822,7 @@
 		27EF807619142C2500A327B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2208,6 +2845,7 @@
 		27EF807719142C2500A327B9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
@@ -2310,6 +2948,105 @@
 			};
 			name = Release;
 		};
+		720EA3F31BA7EAD9002B8416 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"ADDITIONAL_SDKS[arch=*]" = "";
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = C/c4.exp;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "CBForest-Interop";
+			};
+			name = Debug;
+		};
+		720EA3F41BA7EAD9002B8416 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				EXPORTED_SYMBOLS_FILE = C/c4.exp;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "CBForest-Interop";
+			};
+			name = Release;
+		};
+		720EA46C1BA909C4002B8416 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/CBForest_iOS.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "CBForest-Interop";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+			};
+			name = Debug;
+		};
+		720EA46D1BA909C4002B8416 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DSTROOT = /tmp/CBForest_iOS.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/vendor/forestdb/include/**",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "CBForest-Interop";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -2345,6 +3082,24 @@
 			buildConfigurations = (
 				27139BB618F8EE3A0021A9A3 /* Debug */,
 				27139BB718F8EE3A0021A9A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		274D03D91BA732B100FF7C35 /* Build configuration list for PBXNativeTarget "CBForestJNI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				274D03DA1BA732B100FF7C35 /* Debug */,
+				274D03DB1BA732B100FF7C35 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "CppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				274D040D1BA75E1C00FF7C35 /* Debug */,
+				274D040E1BA75E1C00FF7C35 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -2399,6 +3154,24 @@
 			buildConfigurations = (
 				27FA9A3D19180B5F00912F96 /* Debug */,
 				27FA9A3E19180B5F00912F96 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				720EA3F31BA7EAD9002B8416 /* Debug */,
+				720EA3F41BA7EAD9002B8416 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		720EA46B1BA909C4002B8416 /* Build configuration list for PBXNativeTarget "CBForest-Interop iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				720EA46C1BA909C4002B8416 /* Debug */,
+				720EA46D1BA909C4002B8416 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -32,7 +32,8 @@ namespace forestdb {
         kDebug,
         kInfo,
         kWarning,
-        kError
+        kError,
+        kNone
     };
     extern logLevel LogLevel;
     extern void (*LogCallback)(logLevel, const char *message);
@@ -42,7 +43,6 @@ namespace forestdb {
         A Database also acts as its default KeyStore. */
     class Database : public KeyStore {
     public:
-
         struct encryptionConfig {
             bool encrypted;
             uint8_t encryptionKey[32];

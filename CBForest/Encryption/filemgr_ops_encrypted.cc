@@ -16,6 +16,7 @@
 #include <Security/Security.h>
 #include <CommonCrypto/CommonCryptor.h>
 #include <CommonCrypto/CommonDigest.h>
+#include <CommonCrypto/CommonRandom.h>
 
 
 #define ENABLE_LOG 0    // To get log messages, set to 1 and set LogLevel to kInfo
@@ -417,7 +418,7 @@ extern "C" {
 
     EncryptionKey fdb_randomEncryptionKey() {
         EncryptionKey key;
-        ::SecRandomCopyBytes(kSecRandomDefault, sizeof(key), key.bytes);
+        CCRandomGenerateBytes(key.bytes, sizeof(key));
         return key;
     }
 

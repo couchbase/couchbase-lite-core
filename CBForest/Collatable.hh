@@ -19,7 +19,7 @@
 #include <string>
 #include <iostream>
 #include "slice.hh"
-#include "geohash.hh"
+#include "Geohash.hh"
 
 namespace forestdb {
 
@@ -82,7 +82,7 @@ namespace forestdb {
         bool operator< (const Collatable& c) const  {return _str < c._str;}
         bool operator== (const Collatable& c) const {return _str == c._str;}
 
-        std::string dump();
+        std::string toJSON();
 
     private:
         void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
@@ -101,6 +101,7 @@ namespace forestdb {
         bool atEnd() const                  {return _data.size == 0;}
         
         Tag peekTag() const;
+        void skipTag()                      {if (_data.size > 0) _skipTag();}
 
         int64_t readInt();
         double readDouble();
@@ -120,14 +121,14 @@ namespace forestdb {
         void beginMap();
         void endMap();
 
-        void dumpTo(std::ostream &out);
-        std::string dump();
+        void writeJSONTo(std::ostream &out);
+        std::string toJSON();
 
         static uint8_t* getInverseCharPriorityMap();
 
     private:
         void expectTag(Tag tag);
-        void skipTag()                      {_data.moveStart(1);}
+        void _skipTag()                     {_data.moveStart(1);} // like skipTag but unsafe
         alloc_slice readString(Tag);
 
         slice _data;

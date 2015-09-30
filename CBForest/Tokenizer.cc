@@ -15,10 +15,12 @@
 
 #include "Tokenizer.hh"
 #include "english_stopwords.h"
-#include <assert.h>
+#include "Error.hh"
+
 #ifndef __unused
 #define __unused
 #endif
+
 #ifdef _MSC_VER
 #include "memmem.h"
 #endif
@@ -123,7 +125,7 @@ namespace forestdb {
         __unused int err = sModule->xOpen(tokenizer.getTokenizer(),
                                           (const char*)text.buf, (int)text.size,
                                           &_cursor);
-        assert(!err);
+        CBFAssert(!err);
         _cursor->pTokenizer = tokenizer.getTokenizer(); // module expects sqlite3 to have initialized this
         next(); // advance to 1st token
     }

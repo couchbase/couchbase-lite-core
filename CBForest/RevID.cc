@@ -16,7 +16,6 @@
 #include "RevID.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include <assert.h>
 #include <math.h>
 #ifdef _MSC_VER
 #include <BaseTsd.h>
@@ -107,6 +106,8 @@ namespace forestdb {
     }
 
     alloc_slice revid::expanded() const {
+        if (!buf)
+            return alloc_slice();
         alloc_slice result(expandedSize());
         _expandInto(result);
         return result;

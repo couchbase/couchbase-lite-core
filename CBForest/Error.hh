@@ -18,6 +18,12 @@
 
 #include "forestdb.h"
 
+#ifndef __attribute
+#define __attribute(x)
+#endif
+
+#undef check
+
 namespace forestdb {
 
     /** Most API calls can throw this. */
@@ -27,6 +33,7 @@ namespace forestdb {
             BadRevisionID = -1000,
             CorruptRevisionData = -1001,
             CorruptIndexData = -1002,
+            AssertionFailed = -1003
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
@@ -34,7 +41,34 @@ namespace forestdb {
 
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
+
+        static void _throw(fdb_status) __attribute((noreturn));
+
+        static void assertionFailed(const char *func, const char *file, unsigned line,
+                                    const char *expr)   __attribute((noreturn));
     };
+
+    static inline void check(fdb_status status) {
+#ifdef _MSC_VER
+        if (status != FDB_RESULT_SUCCESS)
+            error::_throw(status);
+#else
+        if (__builtin_expect(status != FDB_RESULT_SUCCESS, 0))
+            error::_throw(status);
+#endif
+    }
+
+
+    // Like C assert() but throws an exception instead of aborting
+#ifdef _MSC_VER
+	#define CBFAssert(e) \
+		if(!(e)) forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e)
+#else
+    #define	CBFAssert(e) \
+        (__builtin_expect(!(e), 0) ? forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+                                   : (void)0)
+#endif
+
 
 }
 
