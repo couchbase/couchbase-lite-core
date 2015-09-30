@@ -214,5 +214,28 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST_SUITE_END();
 };
 
-
 CPPUNIT_TEST_SUITE_REGISTRATION(C4DatabaseTest);
+
+
+class C4EncryptedDatabaseTest : public C4DatabaseTest {
+    static C4EncryptionKey sKey;
+    const C4EncryptionKey* encryptionKey()  {
+        sKey.algorithm = kC4EncryptionAES256;
+        memcpy(sKey.bytes, "this is not a random key at all...", 32);
+        return &sKey;
+    }
+
+
+    CPPUNIT_TEST_SUITE( C4EncryptedDatabaseTest );
+    CPPUNIT_TEST( testTransaction );
+    CPPUNIT_TEST( testCreateRawDoc );
+    CPPUNIT_TEST( testCreateVersionedDoc );
+    CPPUNIT_TEST( testCreateMultipleRevisions );
+    CPPUNIT_TEST( testAllDocs );
+    CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+C4EncryptionKey C4EncryptedDatabaseTest::sKey;
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4EncryptedDatabaseTest);

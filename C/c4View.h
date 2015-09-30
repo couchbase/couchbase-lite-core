@@ -116,6 +116,7 @@ extern "C" {
                         C4Slice viewName,
                         C4Slice version,
                         C4DatabaseFlags flags,
+                        const C4EncryptionKey *encryptionKey,
                         C4Error *outError);
 
     /** Closes the view and frees the object. */

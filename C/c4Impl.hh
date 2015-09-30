@@ -31,7 +31,7 @@ typedef struct {
 
 using namespace forestdb;
 
-Database::config c4DbConfig(C4DatabaseFlags flags);
+Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key);
 
 Database* asDatabase(C4Database*);
 

@@ -163,8 +163,6 @@
 		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
-		27A4F2141B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
-		27A4F2151B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
 		27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
@@ -386,7 +384,6 @@
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
 		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
-		720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
 		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		720EA40F1BA8D834002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		720EA4101BA8D834002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
@@ -416,7 +413,6 @@
 		720EA45F1BA909C4002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		720EA4611BA909C4002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		720EA4621BA909C4002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
-		720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */; };
 		720EA4651BA909C4002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		720EA4671BA909C4002B8416 /* libTokenizer-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA9A3F19180B5F00912F96 /* libTokenizer-iOS.a */; };
 		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
@@ -725,8 +721,6 @@
 		278EBF94197631B1006362F8 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = vendor/forestdb/utils/debug.h; sourceTree = SOURCE_ROOT; };
 		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
-		27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_encrypted.cc; sourceTree = "<group>"; };
-		27A4F2131B66FC4200117AEA /* filemgr_ops_encrypted.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filemgr_ops_encrypted.h; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
 		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
 		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
@@ -1310,16 +1304,6 @@
 			);
 			name = "C API";
 			path = C;
-			sourceTree = "<group>";
-		};
-		27A4F2111B66FB1E00117AEA /* Encryption */ = {
-			isa = PBXGroup;
-			children = (
-				27A4F2121B66FC4200117AEA /* filemgr_ops_encrypted.cc */,
-				27A4F2131B66FC4200117AEA /* filemgr_ops_encrypted.h */,
-			);
-			name = Encryption;
-			path = CBForest/Encryption;
 			sourceTree = "<group>";
 		};
 		27E4871019217187007D8940 /* CBForest */ = {
@@ -2256,7 +2240,6 @@
 				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
 				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
-				720EA40D1BA8D81F002B8416 /* filemgr_ops_encrypted.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
 				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
 				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
@@ -2288,7 +2271,6 @@
 				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
 				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
 				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
-				720EA4631BA909C4002B8416 /* filemgr_ops_encrypted.cc in Sources */,
 				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

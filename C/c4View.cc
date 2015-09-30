@@ -130,10 +130,11 @@ C4View* c4view_open(C4Database* db,
                     C4Slice viewName,
                     C4Slice version,
                     C4DatabaseFlags flags,
+                    const C4EncryptionKey *key,
                     C4Error *outError)
 {
     try {
-        auto config = c4DbConfig(flags);
+        auto config = c4DbConfig(flags, key);
         config.buffercache_size = kViewDBBufferCacheSize;
         config.wal_threshold = kViewDBWALThreshold;
         config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering

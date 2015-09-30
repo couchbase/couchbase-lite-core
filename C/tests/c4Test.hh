@@ -62,6 +62,8 @@ public:
 protected:
     C4Database *db;
 
+    virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
+
     // Creates a new document revision
     void createRev(C4Slice docID, C4Slice revID, C4Slice body);
 

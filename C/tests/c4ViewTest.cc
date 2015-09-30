@@ -23,7 +23,7 @@ public:
         ::unlink(kViewIndexPath);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                           kC4DB_Create, &error);
+                           kC4DB_Create, encryptionKey(), &error);
         Assert(view);
     }
 

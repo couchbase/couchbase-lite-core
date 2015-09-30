@@ -27,6 +27,17 @@ extern "C" {
         kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
     } C4DatabaseFlags;
 
+    /** Encryption algorithms. */
+    enum {
+        kC4EncryptionNone = 0,      /**< No encryption (default) */
+        kC4EncryptionAES256 = 1     /**< AES with 256-bit key */
+    };
+
+    typedef struct {
+        int32_t algorithm;
+        uint8_t bytes[32];
+    } C4EncryptionKey;
+
 
     /** Opaque handle to an opened database. */
     typedef struct c4Database C4Database;
@@ -34,6 +45,7 @@ extern "C" {
     /** Opens a database. */
     C4Database* c4db_open(C4Slice path,
                           C4DatabaseFlags flags,
+                          const C4EncryptionKey *encryptionKey,
                           C4Error *outError);
 
     /** Closes the database and frees the object. */

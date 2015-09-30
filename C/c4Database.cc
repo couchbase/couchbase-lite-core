@@ -137,7 +137,7 @@ forestdb::Database* asDatabase(C4Database *db) {
 }
 
 
-Database::config c4DbConfig(C4DatabaseFlags flags) {
+Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
     auto config = Database::defaultConfig();
     config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
     if (flags & kC4DB_ReadOnly)
@@ -151,16 +151,21 @@ Database::config c4DbConfig(C4DatabaseFlags flags) {
     config.compress_document_body = true;
     config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
     config.compactor_sleep_duration = kAutoCompactInterval; // global to all databases
+    if (key) {
+        config.encryption_key.algorithm = key->algorithm;
+        memcpy(config.encryption_key.bytes, key->bytes, sizeof(config.encryption_key.bytes));
+    }
     return config;
 }
 
 
 C4Database* c4db_open(C4Slice path,
                       C4DatabaseFlags flags,
+                      const C4EncryptionKey *encryptionKey,
                       C4Error *outError)
 {
     try {
-        return new c4Database((std::string)path, c4DbConfig(flags));
+        return new c4Database((std::string)path, c4DbConfig(flags, encryptionKey));
     } catchError(outError);
     return NULL;
 }

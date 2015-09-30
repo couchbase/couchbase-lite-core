@@ -37,7 +37,7 @@ void C4Test::setUp() {
     const char *dbPath = "/tmp/forest_temp.fdb";
     ::unlink(dbPath);
     C4Error error;
-    db = c4db_open(c4str(dbPath), kC4DB_Create, &error);
+    db = c4db_open(c4str(dbPath), kC4DB_Create, encryptionKey(), &error);
     Assert(db != NULL);
 }
 
