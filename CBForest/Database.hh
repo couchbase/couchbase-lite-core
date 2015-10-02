@@ -43,19 +43,9 @@ namespace forestdb {
         A Database also acts as its default KeyStore. */
     class Database : public KeyStore {
     public:
-        struct encryptionConfig {
-            bool encrypted;
-            uint8_t encryptionKey[32];
 
-            encryptionConfig() :encrypted(false) { }
-
-            void setEncryptionKey(slice);
-        };
-
-        struct config : fdb_config, encryptionConfig {
-        };
-
-        typedef fdb_file_info info;
+        typedef ::fdb_file_info info;
+        typedef ::fdb_config config;
 
         static config defaultConfig();
         static void setDefaultConfig(const config&);
@@ -79,8 +69,7 @@ namespace forestdb {
 
         static void (*onCompactCallback)(Database* db, bool compacting);
 
-        /** Copies the database to a new file, optionally encrypting it. */
-        void copyToFile(std::string toPath, const encryptionConfig&);
+        void rekey(const fdb_encryption_key&);
 
         /** Records a commit before the transaction exits scope. Not normally needed. */
         void commit();

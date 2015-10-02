@@ -39,6 +39,8 @@ namespace forestdb {
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
         int status;
 
+        const char *message() const {return fdb_error_msg((fdb_status)status);}
+
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
 

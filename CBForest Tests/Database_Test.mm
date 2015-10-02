@@ -10,7 +10,6 @@
 #import "testutil.h"
 #import "Database.hh"
 #import "DocEnumerator.hh"
-#import "filemgr_ops_encrypted.h"
 
 using namespace forestdb;
 
@@ -47,12 +46,15 @@ std::string PathForDatabaseNamed(NSString *name) {
     return std::string(path);
 }
 
+static void randomAESKey(fdb_encryption_key &key) {
+    key.algorithm = FDB_ENCRYPTION_AES256;
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(key.bytes), (uint8_t*)&key.bytes);
+}
+
 Database::config TestDBConfig() {
     auto config = Database::defaultConfig();
 #if ENCRYPT_DATABASES
-    SecRandomCopyBytes(kSecRandomDefault, sizeof(config.encryptionKey),
-                       (uint8_t*)&config.encryptionKey);
-    config.encrypted = true;
+    randomAESKey(config.encryption_key);
 #endif
     return config;
 }
@@ -73,8 +75,10 @@ Database::config TestDBConfig() {
 
 - (void)tearDown
 {
-    db->deleteDatabase();
-    delete db;
+    if (db) {
+        db->deleteDatabase();
+        delete db;
+    }
     [super tearDown];
 }
 
@@ -82,7 +86,7 @@ Database::config TestDBConfig() {
     try{
         [super invokeTest];
     } catch (error e) {
-        XCTFail(@"Exception: %d", e.status);
+        XCTFail(@"Exception: %s (%d)", e.message(), e.status);
     }
 }
 
@@ -434,8 +438,10 @@ Database::config TestDBConfig() {
     }
     // Reopen db as read-only:
     Database::config config = db->getConfig();
+    NSLog(@"//// Closing db");
     delete db;
     db = nil;
+    NSLog(@"//// Reopening db");
     config.flags = FDB_OPEN_FLAG_RDONLY;
     db = new Database(dbPath, config);
 
@@ -463,6 +469,7 @@ Database::config TestDBConfig() {
     AssertEq(status, FDB_RESULT_NO_SUCH_FILE);
 }
 
+#if 0
 - (void) test12_Copy {
     [self createNumberedDocs];
 
@@ -487,6 +494,7 @@ Database::config TestDBConfig() {
     Document doc = newDB.get(slice("doc-001"));
     Assert(doc.exists());
 }
+#endif
 
 
 static Database_Test *sCurrentTest;
@@ -523,7 +531,25 @@ static void onCompact(Database* db, bool compacting) {
 
     db->compact();
 
+    Database::onCompactCallback = NULL;
     AssertEq(sNumCompactCalls, 2);
+}
+
+
+- (void) test14_rekey {
+    Database::config config = db->getConfig();
+    [self createNumberedDocs];
+    fdb_encryption_key newKey;
+    randomAESKey(newKey);
+
+    db->rekey(newKey);
+    delete db;
+    db = nil;
+
+    config.encryption_key = newKey;
+    db = new Database(dbPath, config);
+    Document doc = db->get((slice)"doc-001");
+    Assert(doc.exists());
 }
 
 @end

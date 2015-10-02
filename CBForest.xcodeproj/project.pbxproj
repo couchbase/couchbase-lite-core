@@ -212,6 +212,22 @@
 		27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		27E7218B1BB634F1001500DF /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
+		27E7218C1BB634F1001500DF /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
+		27E7218D1BB634F1001500DF /* encryption.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E7218A1BB634F1001500DF /* encryption.h */; };
+		27E7218E1BB634F1001500DF /* encryption.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E7218A1BB634F1001500DF /* encryption.h */; };
+		27E721921BB65C8C001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
+		27E721931BB65C8D001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
+		27E721941BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
+		27E721951BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
+		27E721961BB65CA3001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
+		27E721971BB65CA4001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
+		27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
+		27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
+		27E721A11BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
+		27E721A21BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
+		27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
+		27E721A41BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF00801949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
@@ -755,6 +771,11 @@
 		27E721841BB609CD001500DF /* bgflusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bgflusher.h; sourceTree = "<group>"; };
 		27E721851BB609CD001500DF /* checksum.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = checksum.cc; sourceTree = "<group>"; };
 		27E721861BB609CD001500DF /* checksum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = checksum.h; sourceTree = "<group>"; };
+		27E721891BB634F1001500DF /* encryption.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption.cc; sourceTree = "<group>"; };
+		27E7218A1BB634F1001500DF /* encryption.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = encryption.h; sourceTree = "<group>"; };
+		27E7218F1BB6404C001500DF /* encryption_aes.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_aes.cc; sourceTree = "<group>"; };
+		27E721981BB66ECD001500DF /* encryption_bogus.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_bogus.cc; sourceTree = "<group>"; };
+		27E721A01BB9BB38001500DF /* crypto_primitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypto_primitives.h; sourceTree = "<group>"; };
 		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
 		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Collatable.mm; path = ../CBForest/Collatable.mm; sourceTree = "<group>"; };
@@ -1052,7 +1073,6 @@
 				2757DE551B9FC34E002EE261 /* C API */,
 				275607791BA22E5700F58218 /* Java */,
 				27E4871019217187007D8940 /* CBForest */,
-				27A4F2111B66FB1E00117AEA /* Encryption */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
 				274D04091BA75E1C00FF7C35 /* CppTests */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
@@ -1147,7 +1167,6 @@
 			children = (
 				2726A0641A8BF9CC0042F944 /* atomic */,
 				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
-				27B086BE1B3B2DD100D3D9D8 /* atomic.h */,
 				2750729318E4857900A80C5A /* avltree.cc */,
 				2750729418E4857900A80C5A /* blockcache.cc */,
 				27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */,
@@ -1156,12 +1175,13 @@
 				2750729718E4857900A80C5A /* btreeblock.cc */,
 				278EBF8F1976317D006362F8 /* btree_str_kv.cc */,
 				27E721831BB609CD001500DF /* bgflusher.cc */,
-				27E721841BB609CD001500DF /* bgflusher.h */,
 				27E721851BB609CD001500DF /* checksum.cc */,
-				27E721861BB609CD001500DF /* checksum.h */,
 				2709F298191EA10E00C5A8A3 /* compactor.cc */,
 				273AD3BD18EF263B007D8C23 /* configuration.cc */,
 				2750729818E4857900A80C5A /* docio.cc */,
+				27E721891BB634F1001500DF /* encryption.cc */,
+				27E7218F1BB6404C001500DF /* encryption_aes.cc */,
+				27E721981BB66ECD001500DF /* encryption_bogus.cc */,
 				271E03501A21A331007B843E /* fdb_errors.cc */,
 				2750729918E4857900A80C5A /* filemgr_ops_linux.cc */,
 				2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */,
@@ -1178,7 +1198,9 @@
 				27EF007E1949297F001BF7F3 /* transaction.cc */,
 				275072A318E4857900A80C5A /* wal.cc */,
 				2750726318E3E72900A80C5A /* arch.h */,
+				27B086BE1B3B2DD100D3D9D8 /* atomic.h */,
 				2750726518E3E72900A80C5A /* avltree.h */,
+				27E721841BB609CD001500DF /* bgflusher.h */,
 				2750726718E3E72900A80C5A /* blockcache.h */,
 				2750726A18E3E72900A80C5A /* btree.h */,
 				27B62989197ED63D00F7148E /* btree_fast_str_kv.h */,
@@ -1186,10 +1208,12 @@
 				278EBF901976317D006362F8 /* btree_str_kv.h */,
 				2750727018E3E72900A80C5A /* btreeblock.h */,
 				2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */,
+				27E721861BB609CD001500DF /* checksum.h */,
 				2750727218E3E72900A80C5A /* common.h */,
 				2709F299191EA10E00C5A8A3 /* compactor.h */,
 				273AD3BE18EF263B007D8C23 /* configuration.h */,
 				2750727418E3E72900A80C5A /* docio.h */,
+				27E7218A1BB634F1001500DF /* encryption.h */,
 				27EF00811949299A001BF7F3 /* fdb_internal.h */,
 				2750727718E3E72900A80C5A /* filemgr.h */,
 				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
@@ -1236,6 +1260,7 @@
 		275072DB18E4ACE100A80C5A /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				27E721A01BB9BB38001500DF /* crypto_primitives.h */,
 				275072DD18E4ACE100A80C5A /* bitwise_utils.h */,
 				275072DE18E4ACE100A80C5A /* crc32.cc */,
 				275072DF18E4ACE100A80C5A /* crc32.h */,
@@ -1486,6 +1511,7 @@
 				27139B7D18F8EDA20021A9A3 /* config.h in Headers */,
 				27139B7F18F8EDA20021A9A3 /* snappy-stubs-internal.h in Headers */,
 				27139B8118F8EDA20021A9A3 /* snappy-c.h in Headers */,
+				27E721A21BB9BB38001500DF /* crypto_primitives.h in Headers */,
 				27139B8218F8EDA20021A9A3 /* snappy-internal.h in Headers */,
 				27B086C41B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */,
 				2709F29D191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */,
@@ -1493,6 +1519,7 @@
 				2709F2A1191EA10E00C5A8A3 /* compactor.h in Headers */,
 				27139B8618F8EDA20021A9A3 /* snappy-stubs-public.h in Headers */,
 				274415221900E8D800964583 /* fdb_types.h in Headers */,
+				27E7218E1BB634F1001500DF /* encryption.h in Headers */,
 				27139B8718F8EDA20021A9A3 /* crc32.h in Headers */,
 				27139B8818F8EDA20021A9A3 /* bitwise_utils.h in Headers */,
 				27139B8C18F8EDA20021A9A3 /* snappy-sinksource.h in Headers */,
@@ -1517,6 +1544,7 @@
 				273AD3E918F5EB15007D8C23 /* config.h in Headers */,
 				273AD3E218F5E8D8007D8C23 /* snappy-stubs-internal.h in Headers */,
 				273AD3DD18F5E8D8007D8C23 /* snappy-c.h in Headers */,
+				27E721A11BB9BB38001500DF /* crypto_primitives.h in Headers */,
 				273AD3DE18F5E8D8007D8C23 /* snappy-internal.h in Headers */,
 				27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */,
 				2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */,
@@ -1524,6 +1552,7 @@
 				2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */,
 				273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */,
 				274415211900E8D800964583 /* fdb_types.h in Headers */,
+				27E7218D1BB634F1001500DF /* encryption.h in Headers */,
 				275072F318E4ACE100A80C5A /* crc32.h in Headers */,
 				275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */,
 				273AD3E018F5E8D8007D8C23 /* snappy-sinksource.h in Headers */,
@@ -1929,6 +1958,7 @@
 				27139B5C18F8EDA20021A9A3 /* docio.cc in Sources */,
 				2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */,
+				27E721951BB65C9C001500DF /* bgflusher.cc in Sources */,
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
 				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */,
@@ -1940,16 +1970,20 @@
 				27139B6618F8EDA20021A9A3 /* snappy.cc in Sources */,
 				2707DEA81ABDF43F00A34C57 /* partiallock.cc in Sources */,
 				27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
+				27E721A41BB9BC9E001500DF /* encryption_bogus.cc in Sources */,
 				27EF7F901911A85800A327B9 /* snapshot.cc in Sources */,
 				27139B6718F8EDA20021A9A3 /* filemgr_ops_windows.cc in Sources */,
 				27139B6818F8EDA20021A9A3 /* btree_kv.cc in Sources */,
 				27139B6918F8EDA20021A9A3 /* list.cc in Sources */,
 				27139B6A18F8EDA20021A9A3 /* snappy-c.cc in Sources */,
+				27E7218C1BB634F1001500DF /* encryption.cc in Sources */,
 				2707DEAA1ABE0A3A00A34C57 /* fdb_errors.cc in Sources */,
+				27E721931BB65C8D001500DF /* filemgr_ops.cc in Sources */,
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
 				27A82D181BBB72DF005CB742 /* checksum.cc in Sources */,
 				276FFD751B2E03920027B51A /* (null) in Sources */,
+				27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
 				27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */,
@@ -1957,6 +1991,7 @@
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
 				27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
+				27E721971BB65CA4001500DF /* checksum.cc in Sources */,
 				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
 				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
 				27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */,
@@ -1986,7 +2021,6 @@
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
 				27E487341924242C007D8940 /* Index.cc in Sources */,
-				27A4F2151B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */,
 				275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */,
 			);
@@ -2052,6 +2086,7 @@
 				275072CC18E4AA5000A80C5A /* docio.cc in Sources */,
 				2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				273AD3DF18F5E8D8007D8C23 /* snappy-sinksource.cc in Sources */,
+				27E721941BB65C9C001500DF /* bgflusher.cc in Sources */,
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
 				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */,
@@ -2063,16 +2098,20 @@
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
 				2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */,
 				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
+				27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */,
 				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
 				275072D618E4AA5000A80C5A /* list.cc in Sources */,
 				273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */,
+				27E7218B1BB634F1001500DF /* encryption.cc in Sources */,
 				2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */,
+				27E721921BB65C8C001500DF /* filemgr_ops.cc in Sources */,
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				27A82D171BBB72DE005CB742 /* checksum.cc in Sources */,
 				276FFD741B2E03910027B51A /* (null) in Sources */,
+				27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
 				27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */,
@@ -2080,6 +2119,7 @@
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
 				27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
+				27E721961BB65CA3001500DF /* checksum.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
 				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
 				275072C718E4AA5000A80C5A /* avltree.cc in Sources */,
@@ -2153,7 +2193,6 @@
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
-				27A4F2141B66FC4200117AEA /* filemgr_ops_encrypted.cc in Sources */,
 				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 			);
