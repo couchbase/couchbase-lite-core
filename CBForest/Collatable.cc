@@ -242,7 +242,7 @@ namespace forestdb {
         out << "\"";
         auto start = (const uint8_t*)str.buf;
         auto end = (const uint8_t*)str.end();
-        for (auto p = start; p <= end; p++) {
+        for (auto p = start; p < end; p++) {
             if (*p == '"' || *p == '\\') {
                 // Write characters from start up to p-1:
                 out << std::string((char*)start, p-start);
