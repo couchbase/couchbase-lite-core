@@ -27,13 +27,13 @@ bool forestdb::jni::initDatabase(JNIEnv *env) {
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;
-    kHandleField = env->GetFieldID(dbClass, "_handle", "L");
+    kHandleField = env->GetFieldID(dbClass, "_handle", "J");
     if (!kHandleField)
         return false;
     jclass loggerClass = env->FindClass("com/couchbase/cbforest/Logger");
     if (!loggerClass)
         return false;
-    kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang;String;)V");
+    kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang/String;)V");
     if (!kLoggerLogMethod)
         return false;
     return true;

@@ -9,7 +9,7 @@
 #ifndef native_glue_hpp
 #define native_glue_hpp
 
-#include <JavaVM/jni.h>
+#include <jni.h>
 #include "c4Database.h"
 #include "slice.hh"
 
@@ -22,7 +22,6 @@ bool initDatabase(JNIEnv*);     // Implemented in native_database.cc
 bool initDocument(JNIEnv*);     // Implemented in native_document.cc
 bool initQueryIterator(JNIEnv*);// Implemented in native_queryIterator.cc
 bool initView(JNIEnv*);         // Implemented in native_view.cc
-
 
 // Creates a temporary slice value from a Java String object
 class jstringSlice {
@@ -69,6 +68,8 @@ bool getEncryptionKey(JNIEnv *env,
 
 
 jstring toJString(JNIEnv*, C4Slice);
+
+jstring toJString(JNIEnv*, C4SliceResult);
 
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 

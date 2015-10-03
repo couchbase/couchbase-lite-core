@@ -20,7 +20,6 @@ using namespace forestdb::jni;
 
 static jfieldID kHandleField;
 
-
 static inline C4View* getViewHandle(JNIEnv *env, jobject self) {
     return (C4View*)env->GetLongField(self, kHandleField);
 }
@@ -29,10 +28,11 @@ bool forestdb::jni::initView(JNIEnv *env) {
     jclass viewClass = env->FindClass("com/couchbase/cbforest/View");
     if (!viewClass)
         return false;
-    kHandleField = env->GetFieldID(viewClass, "_handle", "L");
+    kHandleField = env->GetFieldID(viewClass, "_handle", "J");
     return (kHandleField != NULL);
 }
 
+//////// VIEWS:
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View__1open
   (JNIEnv *env, jobject self, jlong dbHandle, jstring jpath,
@@ -103,6 +103,68 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getLastSequenceChangedA
     return c4view_getLastSequenceChangedAt(getViewHandle(env, self));
 }
 
+//////// INDEXING:
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_beginIndex
+        (JNIEnv *env, jobject self, jlong dbHandle, jlong viewHandle)
+{
+    C4View* view = (C4View*)viewHandle;
+    C4Error error;
+    C4Indexer* indexer = c4indexer_begin((C4Database*)dbHandle, &view, 1, &error);
+    if (!indexer)
+        throwError(env, error);
+    return (jlong)indexer;
+}
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_enumerateDocuments
+        (JNIEnv *env, jobject self, jlong indexerHandle){
+    C4Error error;
+    C4DocEnumerator* e = c4indexer_enumerateDocuments((C4Indexer*)indexerHandle, &error);
+    if(!e)
+        throwError(env, error);
+    return (jlong)e;
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobject self, jlong indexerHandle, jlong documentHandler, jlongArray jkeys, jlongArray jvalues)
+{
+    C4Indexer* indexer = (C4Indexer*)indexerHandle;
+    C4Document* doc = (C4Document*)documentHandler;
+    size_t count = env->GetArrayLength(jkeys);
+    jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
+    jlong *values = env->GetLongArrayElements(jvalues, NULL);
+    C4Key *c4keys[count];
+    C4Key *c4values[count];
+    for(int i = 0; i < count; i++){
+        c4keys[i]   = (C4Key *)keys[i];
+        c4values[i] = (C4Key *)values[i];
+    }
+    C4Error error;
+    bool result = c4indexer_emit(indexer, doc, 0, count,
+                                 c4keys, c4values, &error);
+    env->ReleaseLongArrayElements(jkeys,   keys,   JNI_ABORT);
+    env->ReleaseLongArrayElements(jvalues, values, JNI_ABORT);
+    if(!result)
+        throwError(env, error);
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_endIndex
+        (JNIEnv *env, jobject self, jlong indexerHandle, jboolean commit)
+{
+    C4Error error;
+    if(!c4indexer_end((C4Indexer *)indexerHandle, commit, &error))
+        throwError(env, error);
+}
+
+//////// QUERYING:
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__J
+        (JNIEnv *env, jclass clazz, jlong viewHandle)
+{
+    C4Error error;
+    C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, NULL, &error);
+    if (!e)
+        throwError(env, error);
+    return (jlong)e;
+}
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZJJLjava_lang_String_2Ljava_lang_String_2
   (JNIEnv *env, jclass clazz, jlong viewHandle,
@@ -225,3 +287,47 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyEndMap
     c4key_endMap((C4Key*)jkey);
 }
 
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_keyReader(JNIEnv *env, jclass clazz, jlong jkey)
+{
+    return (jlong)c4key_reader((C4Key*)jkey);
+}
+
+JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyToJSON(JNIEnv *env, jclass clazz, jlong jkey)
+{
+    C4KeyReader reader = c4key_read((C4Key*)jkey);
+    C4SliceResult dump = c4key_toJSON(&reader);
+    jstring result = toJString(env, dump);
+    c4slice_free(dump);
+    return result;
+}
+
+JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_View_keyPeek(JNIEnv *env, jclass clazz, jlong jreader){
+    return (jint)c4key_peek((C4KeyReader*)jreader);
+}
+
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keySkipToken(JNIEnv *env, jclass clazz, jlong jreader){
+    c4key_skipToken((C4KeyReader*)jreader);
+}
+
+
+JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_View_keyReadBool(JNIEnv *env, jclass clazz, jlong jreader){
+    return (jboolean)c4key_readBool((C4KeyReader*)jreader);
+}
+
+
+JNIEXPORT jdouble JNICALL Java_com_couchbase_cbforest_View_keyReadNumber(JNIEnv *env, jclass clazz, jlong jreader){
+    return (jdouble)c4key_readNumber((C4KeyReader*)jreader);
+}
+
+
+JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyReadString(JNIEnv *env, jclass clazz, jlong jreader){
+    C4SliceResult dump = c4key_readString((C4KeyReader*)jreader);
+    jstring result = toJString(env, dump);
+    c4slice_free(dump);
+    return result;
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeKeyReader(JNIEnv *env, jclass clazz, jlong jreader){
+    if(jreader != 0) c4key_freeReader((C4KeyReader*)jreader);
+}

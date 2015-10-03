@@ -2,6 +2,8 @@ package com.couchbase.cbforest;
 
 public class Document {
 
+    public String getDocID()        { return _docID; }
+
     public String getRevID()        { return _revID; }
 
     public int getFlags()           { return _flags; }
@@ -32,6 +34,9 @@ public class Document {
         }
         return _selectedBody;
     }
+
+    // For Test
+    protected byte[] getSelectedBodyTest(){ return _selectedBody; }
 
     public long getSelectedSequence() { return _selectedSequence; }
 
@@ -75,7 +80,7 @@ public class Document {
     private native static void free(long handle);
     private native byte[] readSelectedBody() throws ForestException;
 
-    private long _handle;
+    protected long _handle;
     private String _docID, _revID;
     private int _flags;
 

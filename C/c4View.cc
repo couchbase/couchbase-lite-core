@@ -55,6 +55,15 @@ C4KeyReader c4key_read(const C4Key *key) {
     return asKeyReader(r);
 }
 
+/** for java binding */
+C4KeyReader* c4key_reader(const C4Key *key){
+    return (C4KeyReader*)new CollatableReader(*key);
+}
+
+/** Free a C4KeyReader */
+void c4key_freeReader(C4KeyReader* r){
+    if(r != NULL) delete r;
+}
 
 C4KeyToken c4key_peek(const C4KeyReader* r) {
     static const C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,

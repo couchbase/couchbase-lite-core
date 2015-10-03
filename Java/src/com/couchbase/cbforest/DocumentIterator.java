@@ -1,9 +1,20 @@
 package com.couchbase.cbforest;
 
 class DocumentIterator {
+    DocumentIterator(long handle, boolean dummy) {
+        _handle = handle;
+    }
 
-    DocumentIterator(long dbHandle) {
-        _handle = dbHandle;
+    DocumentIterator(long dbHandle) throws ForestException {
+        _handle = initEnumerateAllDocs(dbHandle, null, null);
+    }
+
+    DocumentIterator(long dbHandle, String startDocID, String endDocID) throws ForestException {
+        _handle = initEnumerateAllDocs(dbHandle, startDocID, endDocID);
+    }
+
+    DocumentIterator(long dbHandle, long sinceSequence) throws ForestException {
+        _handle = initEnumerateChanges(dbHandle, sinceSequence);
     }
 
     // Returns null at end
@@ -16,13 +27,12 @@ class DocumentIterator {
         return new Document(docHandle);
     }
 
-
     public synchronized void free() { if (_handle != 0) {free(_handle); _handle = 0;} }
+
     protected void finalize()       { free(); }
 
-    
-    private native static long init(long dbHandle, long sinceSequence, boolean withBodies)
-                throws ForestException;
+    private native long initEnumerateChanges(long dbHandle, long sinceSequence) throws ForestException;
+    private native long initEnumerateAllDocs(long dbHandle, String startDocID, String endDocID) throws ForestException;
     private native static long nextDocumentHandle(long handle) throws ForestException;
     private native static void free(long handle);
 
