@@ -19,6 +19,7 @@
 //  limitations under the License.
 //
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -67,6 +68,54 @@ namespace CBForest
         }
     }
 
+    internal unsafe struct C4SliceEnumerator : IEnumerator<byte>
+    {
+        private readonly IntPtr _ptr;
+        private readonly int _length;
+        private int _index;
+
+        public C4SliceEnumerator(void *buf, int length)
+        {
+            _index = -1;
+            _ptr = new IntPtr(buf);
+            _length = length;
+        }
+
+        public bool MoveNext()
+        {
+            if (_index >= _length - 1) {
+                return false;
+            }
+
+            _index++;
+            return true;
+        }
+
+        public void Reset()
+        {
+            _index = 0;
+        }
+
+        object System.Collections.IEnumerator.Current
+        {
+            get {
+                return Current;
+            }
+        }
+
+        public void Dispose()
+        {
+            // No-op
+        }
+
+        public byte Current
+        {
+            get {
+                return Marshal.ReadByte(new IntPtr(_ptr.ToInt64() + _index));
+            }
+        }
+    }
+
     /// <summary>
     /// A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string.
     ///  A "null slice" has chars==NULL and length==0.
@@ -76,14 +125,14 @@ namespace CBForest
     /// A slice _returned from_ a function points to newly-allocated memory and must be freed by the
     /// caller, with c4slice_free().
     /// </summary>
-    public unsafe struct C4Slice
+    public unsafe struct C4Slice : IEnumerable<byte>
     {
         /// <summary>
         /// A convenient constant denoting a null slice.  Note that as a struct
         /// it is not required to be new'd and will have its contents zero'd by
         /// the runtime
         /// </summary>
-        public static readonly C4Slice NULL;
+        public static readonly C4Slice NULL = default(C4Slice);
         
         /// <summary>
         /// The data being held by this instance
@@ -158,6 +207,17 @@ namespace CBForest
                 return hash;
             }
         }
+
+        public IEnumerator<byte> GetEnumerator()
+        {
+            return new C4SliceEnumerator(buf, (int)size.ToUInt32());
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
     }
 
     /// <summary>
