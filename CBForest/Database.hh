@@ -66,6 +66,7 @@ namespace forestdb {
         void compact();
         bool isCompacting() const               {return _isCompacting;}
         static bool isAnyCompacting();
+        void setCompactionMode(fdb_compaction_mode_t);
 
         static void (*onCompactCallback)(Database* db, bool compacting);
 

@@ -333,6 +333,10 @@ namespace forestdb {
     bool Database::isAnyCompacting() {
         return atomic_get_uint32_t(&sCompactCount) > 0;
     }
-    
+
+    void Database::setCompactionMode(fdb_compaction_mode_t mode) {
+        check(fdb_switch_compaction_mode(_fileHandle, mode,  _config.compaction_threshold));
+        _config.compaction_mode = mode;
+    }
 
 }
