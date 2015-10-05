@@ -168,6 +168,8 @@
 		27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
+		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
+		27A82D961BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
@@ -722,6 +724,7 @@
 		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
+		27A82D941BC48E38005CB742 /* sqlite_glue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite_glue.c; sourceTree = "<group>"; };
 		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
 		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
 		27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = system_resource_stats.h; sourceTree = "<group>"; };
@@ -1121,6 +1124,7 @@
 			isa = PBXGroup;
 			children = (
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
+				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 			);
 			name = "Supporting Files";
 			path = ../CBForest;
@@ -2241,6 +2245,7 @@
 				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
+				27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
 				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
@@ -2267,6 +2272,7 @@
 				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
 				720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */,
 				720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */,
+				27A82D961BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
 				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
 				720EA4611BA909C4002B8416 /* slice.cc in Sources */,

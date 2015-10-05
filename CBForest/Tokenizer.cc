@@ -26,13 +26,8 @@
 #endif
 
 extern "C" {
-#include "fts3_tokenizer.h"
-#include "fts3_unicodesn.h"
-
-    void *sqlite3_malloc(int size)              {return malloc(size);}
-    void *sqlite3_realloc(void* ptr, int size)  {return realloc(ptr, size);}
-    void sqlite3_free(void* ptr)                {return free(ptr);}
-
+    #include "fts3_tokenizer.h"
+    #include "fts3_unicodesn.h"
 }
 
 namespace forestdb {
