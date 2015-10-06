@@ -25,11 +25,18 @@ using System.IO;
 
 namespace CBForest.Tests
 {
-    public unsafe class C4Test
+    public unsafe abstract class C4Test
     {
         protected const string BODY = "{\"name\":007}";
         protected const string DOC_ID = "mydoc";
         protected const string REV_ID = "1-abcdef";
+        
+        protected virtual C4EncryptionKey* EncryptionKey 
+        {
+            get {
+                return null;
+            }
+        }
         
         protected C4Database *_db;
         
@@ -40,7 +47,7 @@ namespace CBForest.Tests
             Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp.fdb");
             C4Error error;
-            _db = Native.c4db_open(dbPath, C4DatabaseFlags.Create, &error);
+            _db = Native.c4db_open(dbPath, C4DatabaseFlags.Create, EncryptionKey, &error);
             Assert.IsFalse(_db == null);
         }
         
@@ -72,7 +79,7 @@ namespace CBForest.Tests
                 Native.c4doc_free(doc);
             }
         }
-        
+
         private static void Log(C4LogLevel level, C4Slice message)
         {
             string[] levelNames = new[] { "debug", "info", "WARNING", "ERROR" };

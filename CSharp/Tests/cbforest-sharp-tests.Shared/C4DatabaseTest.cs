@@ -22,6 +22,7 @@ using System;
 using System.IO;
 using NUnit.Framework;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CBForest.Tests
 {
@@ -243,6 +244,26 @@ namespace CBForest.Tests
             } 
             
             Assert.AreEqual(100, seq);
+        }
+    }
+    
+    public unsafe class C4EncryptedDatabaseTest : C4DatabaseTest
+    {
+        private static C4EncryptionKey _EncryptionKey;
+        
+        protected override C4EncryptionKey* EncryptionKey
+        {
+            get { 
+                fixed(C4EncryptionKey *p = &_EncryptionKey) {
+                    return p;
+                }
+            }
+        }  
+        
+        static C4EncryptedDatabaseTest()
+        {
+            _EncryptionKey.algorithm = C4EncryptionType.AES256;
+            _EncryptionKey.bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
         }
     }
 }

@@ -29,6 +29,12 @@ namespace CBForest
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void C4LogCallback(C4LogLevel level, C4Slice message);
+
+    public enum C4EncryptionType
+    {
+        None = 0,
+        AES256 = 1
+    }
     
     /// <summary>
     /// Logging levels

@@ -68,19 +68,22 @@ namespace CBForest
         public static extern void c4slice_free(C4Slice slice);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
+        private static extern C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
+            C4EncryptionKey *encryptionKey, C4Error *outError);
 
         /// <summary>
         /// Opens a database.
         /// </summary>
         /// <param name="path">The path to the DB file</param>
         /// <param name="readOnly">Whether or not the DB should be opened in read-only mode</param>
+        /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
-        public static C4Database *c4db_open(string path, C4DatabaseFlags flags, C4Error *outError)
+        public static C4Database *c4db_open(string path, C4DatabaseFlags flags,
+            C4EncryptionKey *encryptionKey, C4Error *outError)
         {
             using(var path_ = new C4String(path)) {
-                return c4db_open(path_.AsC4Slice(), flags, outError);
+                return c4db_open(path_.AsC4Slice(), flags, encryptionKey, outError);
             }
         }
         
@@ -671,7 +674,7 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
-            C4DatabaseFlags flags, C4Error *outError);
+            C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError);
 
         /// <summary>
         /// Opens a view, or creates it if the file doesn't already exist.
@@ -680,15 +683,17 @@ namespace CBForest
         /// <param name="path">The file that the view is stored in</param>
         /// <param name="viewName">The name of the view</param>
         /// <param name="version">The version of the view's map function</param>
+        /// <param name="flags">The flags for opening the view file</param>
+        /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the view on success, otherwise null</returns>
         public static C4View* c4view_open(C4Database *db, string path, string viewName, string version, C4DatabaseFlags flags,
-            C4Error *outError)
+            C4EncryptionKey *encryptionKey, C4Error *outError)
         {
             using(var path_ = new C4String(path))
             using(var viewName_ = new C4String(viewName))
             using(var version_ = new C4String(version)) {
-                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), flags, outError);   
+                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), flags, encryptionKey, outError);   
             }
         }
 

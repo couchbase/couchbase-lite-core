@@ -261,9 +261,72 @@ namespace CBForest
             public C4RevisionFlags flags;
             public ulong sequence;
             public C4Slice body;
+
+            public bool IsDeleted
+            {
+                get {
+                    return flags.HasFlag(C4RevisionFlags.RevDeleted);
+                }
+            }
+
+            public bool IsLeaf
+            {
+                get {
+                    return flags.HasFlag(C4RevisionFlags.RevLeaf);
+                }
+            }
+
+            public bool IsNew
+            {
+                get {
+                    return flags.HasFlag(C4RevisionFlags.RevNew);
+                }
+            }
+
+            public bool HasAttachments
+            {
+                get {
+                    return flags.HasFlag(C4RevisionFlags.RevHasAttachments);
+                }
+            }
+
+            public bool IsActive
+            {
+                get {
+                    return IsLeaf && !IsDeleted;
+                }
+            }
         }
         
         public rev selectedRev;
+
+        public bool IsDeleted
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Deleted);
+            }
+        }
+
+        public bool IsConflicted
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Conflicted);
+            }
+        }
+
+        public bool HasAttachments
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.HasAttachments);
+            }
+        }
+
+        public bool Exists
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Exists);
+            }
+        }
     }
 
     /// <summary>
@@ -477,6 +540,14 @@ namespace CBForest
         public C4KeyReader key;   
         public C4KeyReader value;
         public C4Slice docID;
+    }
+
+    public struct C4EncryptionKey
+    {
+        public C4EncryptionType algorithm;
+
+        [MarshalAs(UnmanagedType.LPArray, SizeConst=32)]
+        public byte[] bytes;
     }
 }
 

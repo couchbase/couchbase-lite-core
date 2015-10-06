@@ -35,7 +35,7 @@ namespace CBForest.Tests
             base.SetUp();
             C4Error error;
             var viewPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp_view.index");
-            _view = Native.c4view_open(_db, viewPath, "myview", "1", C4DatabaseFlags.Create, &error);
+            _view = Native.c4view_open(_db, viewPath, "myview", "1", C4DatabaseFlags.Create, EncryptionKey, &error);
             Assert.IsTrue(_view != null);
         }
         
