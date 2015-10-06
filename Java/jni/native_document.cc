@@ -33,7 +33,7 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
     kField_RevID = env->GetFieldID(documentClass, "_revID", "Ljava/lang/String;");
     kField_SelectedRevID = env->GetFieldID(documentClass, "_selectedRevID", "Ljava/lang/String;");
     kField_SelectedRevFlags = env->GetFieldID(documentClass, "_selectedRevFlags", "I");
-    kField_SelectedSequence = env->GetFieldID(documentClass, "_selectedSequence", "I");
+    kField_SelectedSequence = env->GetFieldID(documentClass, "_selectedSequence", "J");
     kField_SelectedBody = env->GetFieldID(documentClass, "_selectedBody", "[B");
     return kField_Handle && kField_Flags && kField_RevID && kField_SelectedRevID
         && kField_SelectedRevFlags && kField_SelectedSequence && kField_SelectedBody;
@@ -54,7 +54,10 @@ static void updateSelection
     env->SetObjectField(self, kField_SelectedRevID,    toJString(env, sel->revID));
     env->SetLongField  (self, kField_SelectedSequence, sel->sequence);
     env->SetIntField   (self, kField_SelectedRevFlags, sel->flags);
-    env->SetObjectField(self, kField_SelectedBody,     toJByteArray(env, sel->body));
+    if(withBody)
+        env->SetObjectField(self, kField_SelectedBody, toJByteArray(env, sel->body));
+    else
+        env->SetObjectField(self, kField_SelectedBody, NULL);
 }
 
 
@@ -69,7 +72,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_init
         return 0;
     }
     updateRevIDAndFlags(env, self, doc);
-    updateSelection(env, self, doc);
+    updateSelection(env, self, doc, true);
     return (jlong)doc;
 }
 
@@ -191,15 +194,20 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_insertRevision
  jboolean deleted, jboolean hasAtt,
  jboolean allowConflict)
 {
+    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
     bool ok;
     C4Error error;
     {
-        auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+
         jstringSlice revID(env, jrevID);
         jbyteArraySlice body(env, jbody, true); // critical
         ok = c4doc_insertRevision(doc, revID, body, deleted, hasAtt, allowConflict, &error);
     }
-    if (!ok)
+    if (ok){
+        updateSelection(env, self, doc, true);
+        updateRevIDAndFlags(env, self, doc);
+    }
+    else
         throwError(env, error);
 }
 

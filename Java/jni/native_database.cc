@@ -27,13 +27,13 @@ bool forestdb::jni::initDatabase(JNIEnv *env) {
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;
-    kHandleField = env->GetFieldID(dbClass, "_handle", "L");
+    kHandleField = env->GetFieldID(dbClass, "_handle", "J");
     if (!kHandleField)
         return false;
     jclass loggerClass = env->FindClass("com/couchbase/cbforest/Logger");
     if (!loggerClass)
         return false;
-    kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang;String;)V");
+    kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang/String;)V");
     if (!kLoggerLogMethod)
         return false;
     return true;
@@ -150,3 +150,47 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
         env->DeleteGlobalRef(oldLoggerRef);
     c4log_register((C4LogLevel)level, &logCallback);
 }
+
+#pragma mark - RAW DOCUMENTS:
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut
+(JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jbyteArray jmeta, jbyteArray jbody)
+{
+    jstringSlice    store(env, jstore);
+    jstringSlice    key(env, jkey);
+    jbyteArraySlice meta(env, jmeta, true); // critical
+    jbyteArraySlice body(env, jbody, true); // critical
+    C4Error error;
+    if(!c4raw_put((C4Database*)db, store, key, meta, body, &error))
+        throwError(env, error);
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database__1rawGet
+(JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey) {
+    // obtain raw document
+    jstringSlice store(env, jstore);
+    jstringSlice key(env, jkey);
+    C4Error error;
+    C4RawDocument *doc = c4raw_get((C4Database *)db, store, key, &error);
+    if (doc == NULL) {
+        throwError(env, error);
+        // NOTE: throwError() is not same with throw Exception() of java.
+        // Need to return, otherwise, following codes will be executed.
+        return NULL;
+    }
+
+    // create two dimension array to return meta and body byte array
+    jclass elemType = env->FindClass("[B");
+    jobjectArray rows = env->NewObjectArray(2, elemType, NULL);
+    if (rows != NULL) {
+        env->SetObjectArrayElement(rows, 0, toJByteArray(env, doc->meta));
+        env->SetObjectArrayElement(rows, 1, toJByteArray(env, doc->body));
+    }
+
+    // release raw document
+    c4raw_free(doc);
+    doc = NULL;
+
+    return rows;
+}
+

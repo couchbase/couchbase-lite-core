@@ -2,6 +2,8 @@ package com.couchbase.cbforest;
 
 public class Database {
 
+    //////// DATABASES:
+
     // Database-opening flags:
     public static final int Create = 1;
     public static final int ReadOnly = 2;
@@ -26,16 +28,13 @@ public class Database {
 
     public native boolean isInTransaction();
 
-
     public Document getDocument(String docID, boolean mustExist) throws ForestException {
         return new Document(_handle, docID, mustExist);
     }
 
-
     public DocumentIterator iterateChanges(long sinceSequence, boolean withBodies) throws ForestException {
         return new DocumentIterator(_iterateChanges(sinceSequence, withBodies));
     }
-
 
     protected void finalize() {
         free();
@@ -49,4 +48,20 @@ public class Database {
     private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
     long _handle; // handle to native C4Database*
+
+
+    //////// RAW DOCUMENTS (i.e. info or _local)
+
+    public void rawPut(String store, String key, byte[] meta, byte[] body) throws ForestException {
+        _rawPut(_handle, store, key, meta, body);
+    }
+
+    // This returns an array of two byte arrays; the first is the meta, the second is the body
+    public byte[][] rawGet(String store, String key) throws ForestException {
+        return _rawGet(_handle, store, key);
+    }
+
+    private native static void _rawPut(long db, String store, String key, byte[] meta, byte[] body) throws ForestException;
+    private native static byte[][] _rawGet(long db, String store, String key) throws ForestException;
+
 }

@@ -27,7 +27,7 @@ bool forestdb::jni::initQueryIterator(JNIEnv *env) {
     jclass queryIterClass = env->FindClass("com/couchbase/cbforest/QueryIterator");
     if (!queryIterClass)
         return false;
-    kHandleField = env->GetFieldID(queryIterClass, "_handle", "L");
+    kHandleField = env->GetFieldID(queryIterClass, "_handle", "J");
     return (kHandleField != NULL);
 }
 

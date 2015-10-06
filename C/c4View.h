@@ -81,6 +81,12 @@ extern "C" {
         Warning: Adding to the C4Key will invalidate the reader. */
     C4KeyReader c4key_read(const C4Key *key);
 
+    /** for java binding */
+    C4KeyReader* c4key_newReader(const C4Key *key);
+
+    /** Free a C4KeyReader */
+    void c4key_freeReader(C4KeyReader*);
+
     /** Returns the type of the next item in the key, or kC4Error at the end of the key or if the
         data is corrupt.
         To move on to the next item, you must call skipToken or one of the read___ functions. */

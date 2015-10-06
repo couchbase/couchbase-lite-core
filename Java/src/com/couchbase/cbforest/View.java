@@ -6,26 +6,94 @@ import java.util.Map;
 
 public class View {
 
+    //////// VIEWS
+
     public View(Database sourceDB, String viewDbPath,
                 int viewDbFlags, int encryptionAlgorithm, byte[] encryptionKey,
                 String viewName, String version) throws ForestException {
+        _dbHandle = sourceDB._handle;
         _handle = _open(sourceDB._handle, viewDbPath, viewDbFlags, encryptionAlgorithm,
                         encryptionKey, viewName, version);
+        _indexerHandle = 0;
     }
 
+    protected void finalize() {
+        closeView();
+    }
+
+    public void closeView(){
+        if(_indexerHandle != 0) {
+            try {
+                endIndex(false);
+            } catch (ForestException e) {}
+        }
+
+        close();
+        _handle = 0;
+        _dbHandle = 0;
+    }
+
+    // native methods for view
+    private native long _open(long sourceDbHandle, String viewDbPath, int viewDbFlags,
+                              int encryptionAlgorithm, byte[] encryptionKey,
+                              String viewName, String version) throws ForestException;
     public native void close();
-
     public native void eraseIndex() throws ForestException;
-
     public native void delete() throws ForestException;
-
-
     public native long getTotalRows();
-
     public native long getLastSequenceIndexed();
-
     public native long getLastSequenceChangedAt();
 
+    protected long _handle;    // handle to native C4View*
+    protected long _dbHandle; // handle to native C4Database*
+
+    //////// INDEXING:
+
+    public void beginIndex() throws ForestException {
+        _indexerHandle = beginIndex(_dbHandle, _handle);
+    }
+
+    public DocumentIterator enumerator() {
+        return new DocumentIterator(enumerateDocuments(_indexerHandle), false);
+    }
+
+    public void emit(Document doc, Object[] keys, Object[] values) throws ForestException {
+
+        // initialize C4Key
+        long keyHandles[] = new long[keys.length];
+        long valueHandles[] = new long[values.length];
+        for (int i = 0; i < keys.length; i++) {
+            keyHandles[i] = objectToKey(keys[i]);
+            valueHandles[i] = objectToKey(values[i]);
+        }
+
+        emit(_indexerHandle, doc._handle, keyHandles, valueHandles);
+
+        // release C4Key
+        for (int i = 0; i < keys.length; i++) {
+            freeKey(keyHandles[i]);
+            freeKey(valueHandles[i]);
+        }
+    }
+
+    public void endIndex(boolean commit) throws ForestException {
+        endIndex(_indexerHandle, commit);
+        _indexerHandle = 0;
+    }
+
+    // native methods for indexer
+    private native long beginIndex(long dbHandle, long viewHandle) throws ForestException;
+    private native long enumerateDocuments(long indexerHandler);
+    private native void emit(long indexerHandler, long docHandler, long[] keys, long[] values) throws ForestException;
+    private native void endIndex(long indexerHandler, boolean commit) throws ForestException;
+    // NOTE: endIndex also frees Indexer
+
+    protected long _indexerHandle; // handle to native C4View*
+
+    //////// QUERYING:
+    public QueryIterator query() throws ForestException {
+        return new QueryIterator(query(_handle));
+    }
 
     public QueryIterator query(long skip,
                                long limit,
@@ -60,6 +128,31 @@ public class View {
                                        inclusiveStart, inclusiveEnd, keyHandles));
     }
 
+    // native methods for query
+
+    private static native long query(long viewHandle) throws ForestException;
+
+    private static native long query(long viewHandle,   // C4View*
+                                     long skip,
+                                     long limit,
+                                     boolean descending,
+                                     boolean inclusiveStart,
+                                     boolean inclusiveEnd,
+                                     long startKey,     // C4Key*
+                                     long endKey,       // C4Key*
+                                     String startKeyDocID,
+                                     String endKeyDocID) throws ForestException;
+
+    private static native long query(long viewHandle,   // C4View*
+                                     long skip,
+                                     long limit,
+                                     boolean descending,
+                                     boolean inclusiveStart,
+                                     boolean inclusiveEnd,
+                                     long keys[]) throws ForestException; // array of C4Key*
+
+
+    //////// KEY:
 
     // Key generation:
 
@@ -112,46 +205,25 @@ public class View {
         }
     }
 
-    static native long newKey();
-    static native void freeKey(long key);
-    static native void keyAddNull(long key);
-    static native void keyAdd(long key, boolean b);
-    static native void keyAdd(long key, double d);
-    static native void keyAdd(long key, String s);
-    static native void keyBeginArray(long key);
-    static native void keyEndArray(long key);
-    static native void keyBeginMap(long key);
-    static native void keyEndMap(long key);
+    // native methods for Key
+    static native long   newKey();
+    static native void   freeKey(long key);
+    static native void   keyAddNull(long key);
+    static native void   keyAdd(long key, boolean b);
+    static native void   keyAdd(long key, double d);
+    static native void   keyAdd(long key, String s);
+    static native void   keyBeginArray(long key);
+    static native void   keyEndArray(long key);
+    static native void   keyBeginMap(long key);
+    static native void   keyEndMap(long key);
+    static native String keyToJSON(long key);
+    static native long   keyReader(long key);
 
-
-    // Internals:
-    
-    protected void finalize() {
-        close();
-    }
-
-    private static native long query(long viewHandle,   // C4View*
-                                     long skip,
-                                     long limit,
-                                     boolean descending,
-                                     boolean inclusiveStart,
-                                     boolean inclusiveEnd,
-                                     long startKey,     // C4Key*
-                                     long endKey,       // C4Key*
-                                     String startKeyDocID,
-                                     String endKeyDocID) throws ForestException;
-
-    private static native long query(long viewHandle,   // C4View*
-                                     long skip,
-                                     long limit,
-                                     boolean descending,
-                                     boolean inclusiveStart,
-                                     boolean inclusiveEnd,
-                                     long keys[]) throws ForestException; // array of C4Key*
-
-    private native long _open(long sourceDbHandle, String viewDbPath, int viewDbFlags,
-                              int encryptionAlgorithm, byte[] encryptionKey,
-                              String viewName, String version) throws ForestException;
-
-    private long _handle; // handle to native C4View*
+    // native methods for KeyReader
+    static native int     keyPeek(long reader);
+    static native void    keySkipToken(long reader);
+    static native boolean keyReadBool(long reader);
+    static native double  keyReadNumber(long reader);
+    static native String  keyReadString(long reader);
+    static native void    freeKeyReader(long reader);
 }

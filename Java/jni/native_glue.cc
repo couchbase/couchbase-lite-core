@@ -58,6 +58,12 @@ namespace forestdb {
          _jbytes(jbytes),
          _critical(critical)
         {
+            if(jbytes == NULL){
+                _slice.buf = NULL;
+                _slice.size = 0;
+                return;
+            }
+
             jboolean isCopy;
             if (critical)
                 _slice.buf = env->GetPrimitiveArrayCritical(jbytes, &isCopy);
@@ -86,11 +92,10 @@ namespace forestdb {
         void throwError(JNIEnv *env, C4Error error) {
             jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
-            jmethodID m = env->GetMethodID(xclass, "throwError", "(II)");
+            jmethodID m = env->GetStaticMethodID(xclass, "throwException", "(II)V");
             assert(m);
             env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code);
         }
-
 
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == NULL)
@@ -98,19 +103,20 @@ namespace forestdb {
             char utf8Buf[s.size + 1];   // FIX: Use heap if string is too long for stack
             ::memcpy(utf8Buf, s.buf, s.size);
             utf8Buf[s.size] = '\0';
+            // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
             return env->NewStringUTF(utf8Buf);
         }
-
 
         jbyteArray toJByteArray(JNIEnv *env, C4Slice s) {
             if (s.buf == NULL)
                 return NULL;
+            // NOTE: Local reference is taken care by JVM.
+            // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html#global_local
             jbyteArray array = env->NewByteArray((jsize)s.size);
             if (array)
                 env->SetByteArrayRegion(array, 0, (jsize)s.size, (const jbyte*)s.buf);
             return array;
         }
-
 
         bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes,
                               C4EncryptionKey *outKey)
@@ -123,12 +129,10 @@ namespace forestdb {
                     throwError(env, C4Error{ForestDBDomain, FDB_RESULT_CRYPTO_ERROR});
                     return false;
                 }
-                memset(outkey->bytes, 0, sizeof(outKey->bytes));
+                memset(outKey->bytes, 0, sizeof(outKey->bytes));
                 memcpy(outKey->bytes, keySlice.buf, keySlice.size);
             }
             return true;
         }
-
-
     }
 }

@@ -10,4 +10,12 @@ public class ForestException extends Exception {
         x.code = code;
         throw x;
     }
+
+    @Override
+    public String toString() {
+        return "ForestException{" +
+                "domain=" + domain +
+                ", code=" + code +
+                '}';
+    }
 }
