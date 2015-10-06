@@ -58,6 +58,12 @@ namespace forestdb {
          _jbytes(jbytes),
          _critical(critical)
         {
+            if(jbytes == NULL){
+                _slice.buf = NULL;
+                _slice.size = 0;
+                return;
+            }
+
             jboolean isCopy;
             if (critical)
                 _slice.buf = env->GetPrimitiveArrayCritical(jbytes, &isCopy);

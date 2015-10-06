@@ -171,9 +171,13 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database__1rawGet
     jstringSlice store(env, jstore);
     jstringSlice key(env, jkey);
     C4Error error;
-    C4RawDocument *doc = c4raw_get((C4Database *) db, store, key, &error);
-    if (doc == NULL)
+    C4RawDocument *doc = c4raw_get((C4Database *)db, store, key, &error);
+    if (doc == NULL) {
         throwError(env, error);
+        // NOTE: throwError() is not same with throw Exception() of java.
+        // Need to return, otherwise, following codes will be executed.
+        return NULL;
+    }
 
     // create two dimension array to return meta and body byte array
     jclass elemType = env->FindClass("[B");
