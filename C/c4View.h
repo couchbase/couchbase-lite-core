@@ -82,7 +82,7 @@ extern "C" {
     C4KeyReader c4key_read(const C4Key *key);
 
     /** for java binding */
-    C4KeyReader* c4key_reader(const C4Key *key);
+    C4KeyReader* c4key_newReader(const C4Key *key);
 
     /** Free a C4KeyReader */
     void c4key_freeReader(C4KeyReader*);

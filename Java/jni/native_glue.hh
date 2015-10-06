@@ -65,11 +65,7 @@ bool getEncryptionKey(JNIEnv *env,
                       jbyteArray jKeyBytes,
                       C4EncryptionKey *outKey);
 
-
-
 jstring toJString(JNIEnv*, C4Slice);
-
-jstring toJString(JNIEnv*, C4SliceResult);
 
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 

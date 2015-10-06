@@ -289,7 +289,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyEndMap
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_keyReader(JNIEnv *env, jclass clazz, jlong jkey)
 {
-    return (jlong)c4key_reader((C4Key*)jkey);
+    return (jlong)c4key_newReader((C4Key*)jkey);
 }
 
 JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyToJSON(JNIEnv *env, jclass clazz, jlong jkey)

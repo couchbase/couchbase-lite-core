@@ -56,13 +56,13 @@ C4KeyReader c4key_read(const C4Key *key) {
 }
 
 /** for java binding */
-C4KeyReader* c4key_reader(const C4Key *key){
+C4KeyReader* c4key_newReader(const C4Key *key){
     return (C4KeyReader*)new CollatableReader(*key);
 }
 
 /** Free a C4KeyReader */
 void c4key_freeReader(C4KeyReader* r){
-    if(r != NULL) delete r;
+    delete r;
 }
 
 C4KeyToken c4key_peek(const C4KeyReader* r) {

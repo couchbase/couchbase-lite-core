@@ -20,8 +20,3 @@
 
 // Enable encryption support
 #define CBFOREST_ENCRYPTION
-
-// Android/Java is not ready for encryption.
-#ifdef NO_CBFOREST_ENCRYPTION
-#undef CBFOREST_ENCRYPTION
-#endif
