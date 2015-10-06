@@ -150,3 +150,53 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
         env->DeleteGlobalRef(oldLoggerRef);
     c4log_register((C4LogLevel)level, &logCallback);
 }
+
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawFree(JNIEnv *env, jclass clazz, jlong db)
+{
+    c4raw_free((C4RawDocument *)db);
+}
+
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut(JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jstring jmeta, jbyteArray jbody)
+{
+    jstringSlice store(env, jstore);
+    jstringSlice key(env, jkey);
+    jstringSlice meta(env, jmeta);
+    jbyteArraySlice body(env, jbody, true); // critical
+    C4Error error;
+    if(!c4raw_put((C4Database*)db, store, key, meta, body, &error))
+        throwError(env, error);
+}
+
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1rawGet(JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey)
+{
+    jstringSlice store(env, jstore);
+    jstringSlice key(env, jkey);
+    C4Error error;
+    C4RawDocument *doc = c4raw_get((C4Database*)db, store, key, &error);
+    if(doc == NULL)
+        throwError(env, error);
+    return (jlong)doc;
+}
+
+JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Database_rawKey
+        (JNIEnv *env, jclass clazz, jlong handle){
+    C4RawDocument *doc = (C4RawDocument *)handle;
+    return toJString(env, doc->key);
+}
+
+
+JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Database_rawMeta
+        (JNIEnv *env, jclass clazz, jlong handle){
+    C4RawDocument *doc = (C4RawDocument *)handle;
+    return toJString(env, doc->meta);
+}
+
+
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Database_rawBody
+        (JNIEnv *env, jclass clazz, jlong handle){
+    C4RawDocument *doc = (C4RawDocument *)handle;
+    return toJByteArray(env, doc->body);
+}

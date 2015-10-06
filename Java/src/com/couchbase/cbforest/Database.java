@@ -48,5 +48,26 @@ public class Database {
                               int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
     private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
+    public void rawFree(long rawDocHandle) {
+        _rawFree(rawDocHandle);
+    }
+
+    public void rawPut(String storeName, String key, String meta, byte[] body) throws ForestException {
+        _rawPut(_handle, storeName, key, meta, body);
+    }
+
+    public long rawGet(String store, String key) throws ForestException {
+        return _rawGet(_handle, store, key);
+    }
+
+    private native static void _rawFree(long rawDocHandle);
+    private native static void _rawPut(long dbHandle, String store, String key, String meta, byte[] body)throws ForestException;
+    private native static long _rawGet(long dbHandle, String store, String key)throws ForestException;
+
+    public native static String rawKey(long handle);
+    public native static String rawMeta(long handle);
+    public native static byte[] rawBody(long handle);
+
+
     long _handle; // handle to native C4Database*
 }
