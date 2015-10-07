@@ -22,6 +22,7 @@ _c4raw_put
 
 _c4doc_free
 _c4doc_get
+_c4doc_getBySequence
 _c4doc_getType
 _c4doc_selectRevision
 _c4doc_selectCurrentRevision

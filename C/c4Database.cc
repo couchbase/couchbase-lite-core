@@ -447,6 +447,22 @@ C4Document* c4doc_get(C4Database *database,
 }
 
 
+C4Document* c4doc_getBySequence(C4Database *database,
+                                C4SequenceNumber sequence,
+                                C4Error *outError)
+{
+    try {
+        auto doc = new C4DocumentInternal(database, database->get(sequence));
+        if (!doc->_versionedDoc.exists()) {
+            delete doc;
+            doc = NULL;
+            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
+        }
+        return doc;
+    } catchError(outError);
+    return NULL;
+}
+
 #pragma mark - REVISIONS:
 
 

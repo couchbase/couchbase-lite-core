@@ -87,6 +87,16 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
         AssertEqual(doc->selectedRev.body, kBody);
+
+        // Get the doc by its sequence:
+        doc = c4doc_getBySequence(db, 1, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->flags, kExists);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->revID, kRevID);
+        AssertEqual(doc->selectedRev.revID, kRevID);
+        AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
+        AssertEqual(doc->selectedRev.body, kBody);
     }
 
 

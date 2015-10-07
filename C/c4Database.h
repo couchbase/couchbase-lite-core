@@ -148,12 +148,19 @@ extern "C" {
     void c4doc_free(C4Document *doc);
 
     /** Gets a document from the database. If there's no such document, the behavior depends on
-        the mustExist flag. If it's true, NULL is returned. If it's false, a valid C4Document
+        the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
+        C4Document is returned, that doesn't yet exist in the database (but will be added when
+        saved.)
         The current revision is selected (if the document exists.) */
     C4Document* c4doc_get(C4Database *database,
                           C4Slice docID,
                           bool mustExist,
                           C4Error *outError);
+
+    /** Gets a document from the database given its sequence number. */
+    C4Document* c4doc_getBySequence(C4Database *database,
+                                    C4SequenceNumber,
+                                    C4Error *outError);
 
     /** Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
     C4SliceResult c4doc_getType(C4Document *doc);
