@@ -139,7 +139,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
         c4values[i] = (C4Key *)values[i];
     }
     C4Error error;
-    bool result = c4indexer_emit(indexer, doc, 0, count,
+    bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
                                  c4keys, c4values, &error);
     env->ReleaseLongArrayElements(jkeys,   keys,   JNI_ABORT);
     env->ReleaseLongArrayElements(jvalues, values, JNI_ABORT);
