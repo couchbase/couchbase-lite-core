@@ -34,10 +34,12 @@ namespace CBForest
         public C4ErrorDomain domain;
         public int code;
     }
-    
-    // Helper class for marshalling string <-> C4Slice without creating an extra copy
-    // of the bytes.  Not for storage or long-term use
-    internal struct C4String : IDisposable
+
+    /// <summary>
+    /// Helper class for marshalling string <-> C4Slice without creating an extra copy
+    /// of the bytes.  Not for storage or long-term use
+    /// </summary>
+    public struct C4String : IDisposable
     {
         private GCHandle _handle; // Stores the UTF-8 bytes in a pinned location
         

@@ -218,7 +218,7 @@ namespace CBForest
         public static extern void c4doc_free(C4Document *doc);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Document* c4doc_get(C4Database *db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, 
+        public static extern C4Document* c4doc_get(C4Database *db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, 
             C4Error *outError);
 
         /// <summary>
