@@ -18,6 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
+#define FAKE_ENCRYPTION
 using System;
 using System.IO;
 using NUnit.Framework;
@@ -275,7 +276,11 @@ namespace CBForest.Tests
         
         static C4EncryptedDatabaseTest()
         {
+#if FAKE_ENCRYPTION
+            _EncryptionKey.algorithm = (C4EncryptionType)(-1);
+#else
             _EncryptionKey.algorithm = C4EncryptionType.AES256;
+#endif
             _EncryptionKey.bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
         }
         
