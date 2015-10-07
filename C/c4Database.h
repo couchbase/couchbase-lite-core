@@ -173,6 +173,9 @@ extern "C" {
     /** Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
     C4SliceResult c4doc_getType(C4Document *doc);
 
+    /** Removes all trace of a document and its revisions from the database. */
+    bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError);
+
 
     //////// REVISIONS:
 
@@ -183,7 +186,8 @@ extern "C" {
                               bool withBody,
                               C4Error *outError);
 
-    /** Selects the current revision of a document. */
+    /** Selects the current revision of a document.
+        (This is the first revision, in the order they appear in the document.) */
     bool c4doc_selectCurrentRevision(C4Document* doc);
 
     /** Populates the body field of a doc's selected revision,
@@ -288,7 +292,7 @@ extern "C" {
     /** Adds a revision to a document, as a child of the currently selected revision
         (or as a root revision if there is no selected revision.)
         On success, the new revision will be selected.
-        Must be called within a transaction.
+        Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document.
         @param revID  The ID of the revision being inserted.
         @param body  The (JSON) body of the revision.
@@ -307,7 +311,7 @@ extern "C" {
 
     /** Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
         On success, the new revision will be selected.
-        Must be called within a transaction.
+        Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document.
         @param revID  The ID of the revision being inserted.
         @param body  The (JSON) body of the revision.
@@ -326,6 +330,20 @@ extern "C" {
                                         C4Slice history[],
                                         unsigned historyCount,
                                         C4Error *outError);
+
+    /** Removes a branch from a document's history. The revID must correspond to a leaf
+        revision; that revision and its ancestors will be removed, except for ancestors that are
+        shared with another branch.
+        If the document has only one branch (no conflicts), the purge will remove every revision,
+        and saving the document will purge it (remove it completely from the database.)
+        Must be called within a transaction. Remember to save the document afterwards.
+        @param doc  The document.
+        @param revID  The ID of the revision to purge.
+        @param outError  Error information is stored here.
+        @return  The total number of revisions purged (including ancestors), or -1 on error. */
+    int c4doc_purgeRevision(C4Document *doc,
+                            C4Slice revID,
+                            C4Error *outError);
 
     /** Sets a document's docType. (By convention this is the value of the "type" property of the current revision's JSON; this value can be used as optimization when indexing a view.)
         The change will not be persisted until the document is saved. */

@@ -138,6 +138,14 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.body, kC4SliceNull);
         Assert(!c4doc_hasRevisionBody(doc));
         Assert(!c4doc_loadRevisionBody(doc, &error));
+
+        // Purge doc
+        {
+            TransactionHelper t(db);
+            int nPurged = c4doc_purgeRevision(doc, kRev2ID, &error);
+            AssertEqual(nPurged, 2);
+            Assert(c4doc_save(doc, 20, &error));
+        }
     }
 
 

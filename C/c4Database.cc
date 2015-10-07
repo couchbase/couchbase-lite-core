@@ -385,7 +385,11 @@ struct C4DocumentInternal : public C4Document {
     }
 
     void initRevID() {
-        _revIDBuf = _versionedDoc.revID().expanded();
+        if (_versionedDoc.revID().size > 0) {
+            _revIDBuf = _versionedDoc.revID().expanded();
+        } else {
+            _revIDBuf = slice::null;
+        }
         revID = _revIDBuf;
         sequence = _versionedDoc.sequence();
     }
@@ -489,6 +493,18 @@ C4Document* c4doc_getBySequence(C4Database *database,
     } catchError(outError);
     return NULL;
 }
+
+
+bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError) {
+    if (!db->mustBeInTransaction(outError))
+        return false;
+    try {
+        db->transaction()->del(docID);
+        return true;
+    } catchError(outError)
+    return false;
+}
+
 
 #pragma mark - REVISIONS:
 
@@ -639,6 +655,26 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
         }
     } catchError(outError)
     return commonAncestor;
+}
+
+
+int c4doc_purgeRevision(C4Document *doc,
+                        C4Slice revID,
+                        C4Error *outError)
+{
+    auto idoc = internal(doc);
+    if (!idoc->_db->mustBeInTransaction(outError))
+        return -1;
+    try {
+        int total = idoc->_versionedDoc.purge(revidBuffer(revID));
+        if (total > 0) {
+            idoc->updateMeta();
+            if (idoc->_selectedRevIDBuf == revID)
+                idoc->selectRevision(idoc->_versionedDoc[0]);
+        }
+        return total;
+    } catchError(outError)
+    return -1;
 }
 
 

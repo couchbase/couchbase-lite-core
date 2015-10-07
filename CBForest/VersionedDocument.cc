@@ -89,20 +89,26 @@ namespace forestdb {
     }
 
     void VersionedDocument::updateMeta() {
-        const Revision* curRevision = currentRevision();
-        slice revID = curRevision->revID;
-
-        // Compute flags:
+        slice revID;
         Flags flags = 0;
-        if (curRevision->isDeleted())
-            flags |= kDeleted;
-        if (hasConflict())
-            flags |= kConflicted;
-        for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
-            if (rev->hasAttachments()) {
-                flags |= kHasAttachments;
-                break;
+
+        const Revision* curRevision = currentRevision();
+        if (curRevision) {
+            revID = curRevision->revID;
+
+            // Compute flags:
+            if (curRevision->isDeleted())
+                flags |= kDeleted;
+            if (hasConflict())
+                flags |= kConflicted;
+            for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
+                if (rev->hasAttachments()) {
+                    flags |= kHasAttachments;
+                    break;
+                }
             }
+        } else {
+            flags = kDeleted;
         }
 
         // Write to _doc.meta:
@@ -147,9 +153,13 @@ namespace forestdb {
         if (!_changed)
             return;
         updateMeta();
-        // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
-        // the existing body buffer.
-        _doc.updateSequence( transaction(_db).set(_doc.key(), _doc.meta(), encode()) );
+        if (currentRevision()) {
+            // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
+            // the existing body buffer.
+            _doc.updateSequence( transaction(_db).set(_doc.key(), _doc.meta(), encode()) );
+        } else {
+            transaction(_db).del(_doc.key());
+        }
         _changed = false;
     }
 

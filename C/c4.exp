@@ -41,6 +41,7 @@ _c4enum_free
 
 _c4doc_insertRevision
 _c4doc_insertRevisionWithHistory
+_c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save
 
