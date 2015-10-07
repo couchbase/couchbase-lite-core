@@ -526,6 +526,15 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
 }
 
 
+bool c4doc_hasRevisionBody(C4Document* doc) {
+    try {
+        auto idoc = internal(doc);
+        return idoc->_selectedRev && idoc->_selectedRev->isBodyAvailable();
+    } catchError(NULL);
+    return false;
+}
+
+
 bool c4doc_selectParentRevision(C4Document* doc) {
     auto idoc = internal(doc);
     if (idoc->_selectedRev)

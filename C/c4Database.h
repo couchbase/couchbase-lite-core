@@ -191,6 +191,10 @@ extern "C" {
     bool c4doc_loadRevisionBody(C4Document* doc,
                                 C4Error *outError);
 
+    /** Returns true if the body of the selected revision is available,
+        i.e. if c4doc_loadRevisionBody() would succeed. */
+    bool c4doc_hasRevisionBody(C4Document* doc);
+
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc);
 

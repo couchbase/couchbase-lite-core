@@ -35,7 +35,10 @@ static void log(C4LogLevel level, C4Slice message) {
 void C4Test::setUp() {
     c4log_register(kC4LogWarning, log);
     const char *dbPath = "/tmp/forest_temp.fdb";
-    ::unlink(dbPath);
+    ::unlink("/tmp/forest_temp.fdb");
+    ::unlink("/tmp/forest_temp.fdb.0");
+    ::unlink("/tmp/forest_temp.fdb.1");
+    ::unlink("/tmp/forest_temp.fdb.meta");
     C4Error error;
     db = c4db_open(c4str(dbPath), kC4DB_Create, encryptionKey(), &error);
     Assert(db != NULL);

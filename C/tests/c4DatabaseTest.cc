@@ -122,12 +122,22 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
         AssertEqual(doc->selectedRev.body, kC4SliceNull);
+        Assert(c4doc_hasRevisionBody(doc));
         Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         AssertEqual(doc->selectedRev.body, kBody);
         Assert(!c4doc_selectParentRevision(doc));
 
         // Compact database:
         Assert(c4db_compact(db, &error));
+
+        doc = c4doc_get(db, kDocID, true, &error);
+        Assert(doc != NULL);
+        Assert(c4doc_selectParentRevision(doc));
+        AssertEqual(doc->selectedRev.revID, kRevID);
+        AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
+        AssertEqual(doc->selectedRev.body, kC4SliceNull);
+        Assert(!c4doc_hasRevisionBody(doc));
+        Assert(!c4doc_loadRevisionBody(doc, &error));
     }
 
 

@@ -178,6 +178,8 @@
 		27B6298B197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
+		27CD6C5A1BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F119328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
@@ -1925,6 +1927,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
 				27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */,
 				27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27DD14F019328576009A367D /* Index_Test.mm in Sources */,
@@ -2018,6 +2021,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27CD6C5A1BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
 				9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */,
 				27E4873719254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27E4871F19226508007D8940 /* Database_Test.mm in Sources */,

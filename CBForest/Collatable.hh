@@ -37,12 +37,13 @@ namespace forestdb {
             kMap,
             kGeohash,           // Geohash string
             kSpecial,           // Placeholder for doc (Only used in values, not keys)
-            kError = 255        // Something went wrong...
+            kError = 255        // Something went wrong. (Never stored, only returned from peekTag)
         } Tag;
     };
 
     /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics
         using a dumb binary compare (like memcmp).
+        Data format spec: https://github.com/couchbaselabs/cbforest/wiki/Collatable-Data-Format
         Collatable owns its data, in the form of a C++ string object. */
     class Collatable : public CollatableTypes {
     public:
@@ -92,7 +93,7 @@ namespace forestdb {
     };
 
 
-    /** A decoder of Collatable-format data. Does not own its data (reads from a slice.) */
+    /** A decoder of Collatable-format data. Does _not_ own its data (reads from a slice.) */
     class CollatableReader : public CollatableTypes {
     public:
         CollatableReader(slice s);

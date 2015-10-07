@@ -120,10 +120,10 @@ namespace forestdb {
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {
         if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
             return true;
-        if (atOffset == 0)
+        if (atOffset == 0 || atOffset >= _doc.offset())
             return false;
         VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
-        if (oldVersDoc.sequence() != rev->sequence)
+        if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
             return false;
         const Revision* oldRev = oldVersDoc.get(rev->revID);
         return (oldRev && RevTree::isBodyOfRevisionAvailable(oldRev, atOffset));
@@ -132,10 +132,10 @@ namespace forestdb {
     alloc_slice VersionedDocument::readBodyOfRevision(const Revision* rev, uint64_t atOffset) const {
         if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
             return RevTree::readBodyOfRevision(rev, atOffset);
-        if (atOffset == 0)
+        if (atOffset == 0 || atOffset >= _doc.offset())
             return alloc_slice();
         VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
-        if (oldVersDoc.sequence() != rev->sequence)
+        if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
             return alloc_slice();
         const Revision* oldRev = oldVersDoc.get(rev->revID);
         if (!oldRev)
