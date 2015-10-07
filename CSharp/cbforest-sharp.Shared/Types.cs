@@ -204,7 +204,9 @@ namespace CBForest
   
                 hash = hash * 23 + (int)size.ToUInt32();
                 var ptr = (byte*)buf;
-                hash = hash * 23 + ptr[size.ToUInt32() - 1];
+                if(ptr != null) {
+                    hash = hash * 23 + ptr[size.ToUInt32() - 1];
+                }
                 
                 return hash;
             }

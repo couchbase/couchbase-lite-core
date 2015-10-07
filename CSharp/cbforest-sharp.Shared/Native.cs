@@ -106,6 +106,14 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_delete(C4Database *db, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_compact(C4Database *db, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_rekey(C4Database *db, C4EncryptionKey *newKey, C4Error *outError);
 
         /// <summary>
         /// Returns the number of (undeleted) documents in the database.
@@ -237,6 +245,9 @@ namespace CBForest
                 return c4doc_get(db, docID_.AsC4Slice(), mustExist, outError);   
             }
         }
+
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4Document* c4doc_getBySequence(C4Database *db, ulong sequence, C4Error *outError);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_getType")]
         private static extern C4Slice _c4doc_getType(C4Document *doc);

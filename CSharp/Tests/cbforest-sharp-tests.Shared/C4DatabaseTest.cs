@@ -126,6 +126,16 @@ namespace CBForest.Tests
             Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
             Assert.AreEqual(1UL, doc->selectedRev.sequence);
             Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
+            
+            // Get the doc by its sequence:
+            doc = Native.c4doc_getBySequence(_db, 1, &error);
+            Assert.IsTrue(doc != null);
+            Assert.AreEqual(C4DocumentFlags.Exists, doc->flags);
+            Assert.IsTrue(doc->docID.Equals(DOC_ID));
+            Assert.IsTrue(doc->revID.Equals(REV_ID));
+            Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
+            Assert.AreEqual(1UL, doc->selectedRev.sequence);
+            Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
         }
         
         [Test]
@@ -155,6 +165,9 @@ namespace CBForest.Tests
             Assert.IsTrue(Native.c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
             Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
             Assert.IsFalse(Native.c4doc_selectParentRevision(doc));
+            
+            // Compact database:
+            Assert.IsTrue(Native.c4db_compact(_db, &error));
         }
         
         [Test]
@@ -265,6 +278,19 @@ namespace CBForest.Tests
             _EncryptionKey.algorithm = C4EncryptionType.AES256;
             _EncryptionKey.bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
         }
+        
+        [Test]
+        public void TestRekey() 
+        {
+            TestCreateRawDoc();
+
+            C4Error error;
+            Assert.IsTrue(Native.c4db_rekey(_db, null, &error));
+
+            C4RawDocument *doc = Native.c4raw_get(_db, "test", "key", &error);
+            Assert.IsTrue(doc != null);
+        }
+        
     }
 }
 
