@@ -107,7 +107,6 @@ namespace forestdb {
         Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
               this, indexType, map, mapVersion.c_str());
         CBFAssert(t.database()->contains(*this));
-        CBFAssert(map != NULL);
         readState();
         _map = map;
         _mapVersion = mapVersion;
@@ -292,6 +291,7 @@ namespace forestdb {
 
     bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
         CBFAssert(t.database()->contains(*this));
+        CBFAssert(_map != NULL);
         const Document& doc = mappable.document();
         if (doc.sequence() <= _lastSequenceIndexed)
             return false;

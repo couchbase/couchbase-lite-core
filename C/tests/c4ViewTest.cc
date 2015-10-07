@@ -104,12 +104,38 @@ public:
         AssertEqual(i, 200);
     }
 
+    void testIndexVersion() {
+        createIndex();
+
+        // Reopen view with same version string:
+        C4Error error;
+        Assert(c4view_close(view, &error));
+        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
+                           kC4DB_Create, encryptionKey(), &error);
+        Assert(view != NULL);
+
+        AssertEqual(c4view_getTotalRows(view), 200ull);
+        AssertEqual(c4view_getLastSequenceIndexed(view), 100ull);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), 100ull);
+
+        // Reopen view with different version string:
+        Assert(c4view_close(view, &error));
+        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("2"),
+                           kC4DB_Create, encryptionKey(), &error);
+        Assert(view != NULL);
+
+        AssertEqual(c4view_getTotalRows(view), 0ull);
+        AssertEqual(c4view_getLastSequenceIndexed(view), 0ull);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), 0ull);
+    }
+
 
 
     CPPUNIT_TEST_SUITE( C4ViewTest );
     CPPUNIT_TEST( testEmptyState );
     CPPUNIT_TEST( testCreateIndex );
     CPPUNIT_TEST( testQueryIndex );
+    CPPUNIT_TEST( testIndexVersion );
     CPPUNIT_TEST_SUITE_END();
 };
 

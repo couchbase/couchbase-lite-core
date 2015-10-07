@@ -118,19 +118,21 @@ C4SliceResult c4key_toJSON(const C4KeyReader* r) {
 
 struct c4View {
     c4View(C4Database *sourceDB,
-           Database *viewDB,
+           C4Slice path,
            C4Slice name,
+           const Database::config &config,
            C4Slice version)
     :_sourceDB(sourceDB),
-     _viewDB(viewDB),
-     _index(viewDB, (std::string)name, asDatabase(sourceDB)->defaultKeyStore()),
-     _version(version)
-    { }
+     _viewDB((std::string)path, config),
+     _index(&_viewDB, (std::string)name, asDatabase(sourceDB)->defaultKeyStore())
+    {
+        Transaction t(&_viewDB);
+        _index.setup(t, -1, NULL, (std::string)version);
+    }
 
     C4Database *_sourceDB;
-    Database *_viewDB;
+    Database _viewDB;
     MapReduceIndex _index;
-    std::string _version;
 };
 
 
@@ -148,8 +150,7 @@ C4View* c4view_open(C4Database* db,
         config.wal_threshold = kViewDBWALThreshold;
         config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
 
-        auto viewDB = new Database((std::string)path, config);
-        return new c4View(db, viewDB, viewName, version);
+        return new c4View(db, path, viewName, config, version);
     } catchError(outError);
     return NULL;
 }
@@ -165,7 +166,7 @@ bool c4view_close(C4View* view, C4Error *outError) {
 
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
     try {
-        Transaction t(view->_viewDB);
+        Transaction t(&view->_viewDB);
         view->_index.erase(t);
         return true;
     } catchError(outError);
@@ -178,7 +179,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 			return true;
 		}
 
-        view->_viewDB->deleteDatabase();
+        view->_viewDB.deleteDatabase();
         delete view;
         return true;
     } catchError(outError)
@@ -232,7 +233,7 @@ C4Indexer* c4indexer_begin(C4Database *db,
     try {
         indexer = new c4Indexer(db);
         for (int i = 0; i < viewCount; ++i) {
-            auto t = new Transaction(views[i]->_viewDB);
+            auto t = new Transaction(&views[i]->_viewDB);
             indexer->addIndex(&views[i]->_index, t);
         }
         return indexer;
