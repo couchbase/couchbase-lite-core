@@ -207,6 +207,22 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 }
 
 
+bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
+    if (!database->mustNotBeInTransaction(outError))
+        return false;
+    try {
+        fdb_encryption_key key = {FDB_ENCRYPTION_NONE, {}};
+        if (newKey) {
+            key.algorithm = newKey->algorithm;
+            memcpy(key.bytes, newKey->bytes, sizeof(key.bytes));
+        }
+        database->rekey(key);
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
 uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
         auto opts = DocEnumerator::Options::kDefault;

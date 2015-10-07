@@ -57,6 +57,11 @@ extern "C" {
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database, C4Error *outError);
 
+    /** Changes a database's encryption key (removing encryption if it's NULL.) */
+    bool c4db_rekey(C4Database* database,
+                    const C4EncryptionKey *newKey,
+                    C4Error *outError);
+
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);
 

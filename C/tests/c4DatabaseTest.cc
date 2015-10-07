@@ -239,6 +239,18 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     }
 
 
+    void testRekey() {
+        testCreateRawDoc();
+        
+        C4Error error;
+        Assert(c4db_rekey(db, NULL, &error));
+
+        const C4Slice key = c4str("key");
+        C4RawDocument *doc = c4raw_get(db, c4str("test"), key, &error);
+        Assert(doc != NULL);
+    }
+
+
     CPPUNIT_TEST_SUITE( C4EncryptedDatabaseTest );
     CPPUNIT_TEST( testTransaction );
     CPPUNIT_TEST( testCreateRawDoc );
@@ -246,6 +258,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     CPPUNIT_TEST( testCreateMultipleRevisions );
     CPPUNIT_TEST( testAllDocs );
     CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST( testRekey );
     CPPUNIT_TEST_SUITE_END();
 };
 
