@@ -125,6 +125,9 @@ class C4DatabaseTest : public C4Test {
         Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         AssertEqual(doc->selectedRev.body, kBody);
         Assert(!c4doc_selectParentRevision(doc));
+
+        // Compact database:
+        Assert(c4db_compact(db, &error));
     }
 
 

@@ -54,6 +54,9 @@ extern "C" {
     /** Closes the database, deletes the file, and frees the object. */
     bool c4db_delete(C4Database* database, C4Error *outError);
 
+    /** Manually compacts the database. */
+    bool c4db_compact(C4Database* database, C4Error *outError);
+
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);
 

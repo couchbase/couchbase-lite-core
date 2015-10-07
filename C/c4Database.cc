@@ -196,6 +196,17 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 }
 
 
+bool c4db_compact(C4Database* database, C4Error *outError) {
+    if (!database->mustNotBeInTransaction(outError))
+        return false;
+    try {
+        database->compact();
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
 uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
         auto opts = DocEnumerator::Options::kDefault;
