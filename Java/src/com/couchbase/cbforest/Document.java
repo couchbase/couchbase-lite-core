@@ -25,6 +25,9 @@ public class Document {
 
     public native boolean selectNextLeaf(boolean includeDeleted, boolean withBody) throws ForestException;
 
+    public boolean hasRevisionBody(){
+        return hasRevisionBody(_handle);
+    }
 
     public String getSelectedRevID()        { return _selectedRevID; }
 
@@ -57,6 +60,9 @@ public class Document {
 
     public native void save(int maxRevTreeDepth) throws ForestException;
 
+    public int purgeRevision(String revID) throws ForestException {
+        return purgeRevision(_handle, revID);
+    }
     // INTERNALS:
 
     Document(long dbHandle, String docID, boolean mustExist) throws ForestException {
@@ -64,7 +70,10 @@ public class Document {
         _docID = docID;
         _revID = _selectedRevID;
     }
-
+    Document(long dbHandle, long sequence) throws ForestException {
+        _handle = initWithSequence(dbHandle, sequence);
+        _revID = _selectedRevID;
+    }
     Document(long docHandle) {
         _handle = docHandle;
         _docID = initWithDocHandle(docHandle);
@@ -72,10 +81,15 @@ public class Document {
     }
 
     private native long init(long dbHandle, String docID, boolean mustExist) throws ForestException;
+    private native long initWithSequence(long dbHandle, long sequence) throws ForestException;
     private native String initWithDocHandle(long docHandle);
 
     private native static String getType(long handle);
     private native static void setType(long handle, String type);
+
+    private native static boolean hasRevisionBody(long handle);
+
+    private native static int purgeRevision(long handle, String revID) throws ForestException;
 
     private native static void free(long handle);
     private native byte[] readSelectedBody() throws ForestException;

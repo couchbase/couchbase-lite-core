@@ -57,6 +57,19 @@ jlong JNICALL Java_com_couchbase_cbforest_Database__1open
     return (jlong)db;
 }
 
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_rekey
+(JNIEnv *env, jobject self, jint encryptionAlg, jbyteArray encryptionKey){
+    C4EncryptionKey key;
+    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
+        return;
+
+    auto db = getDbHandle(env, self);
+    if (db) {
+        C4Error error;
+        if(!c4db_rekey(db, &key, &error))
+            throwError(env, error);
+    }
+}
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
 (JNIEnv *env, jobject self)
@@ -70,6 +83,16 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
     }
 }
 
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_compact
+(JNIEnv *env, jobject self)
+{
+    auto db = getDbHandle(env, self);
+    if (db) {
+        C4Error error;
+        if (!c4db_compact(db, &error))
+            throwError(env, error);
+    }
+}
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_getDocumentCount
 (JNIEnv *env, jobject self)

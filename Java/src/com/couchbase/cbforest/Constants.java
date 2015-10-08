@@ -186,6 +186,10 @@ interface Constants {
          * Fail to read asynchronous I/O events from the completion queue.
          */
         int FDB_RESULT_AIO_GETEVENTS_FAIL = -43;
+        /**
+         * Error encrypting or decrypting data, or unsupported encryption algorithm.
+         */
+        int FDB_RESULT_CRYPTO_ERROR = -44;
     }
 
     // Flags describing a document.
