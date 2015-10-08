@@ -146,6 +146,7 @@ namespace CBForest.Tests
             const string BODY_2 = "{\"ok\":\"go\"}";
             CreateRev(DOC_ID, REV_ID, BODY);
             CreateRev(DOC_ID, REV_2_ID, BODY_2);
+            CreateRev(DOC_ID, REV_2_ID, BODY_2); // test redundant insert
             
             // Reload the doc:
             C4Error error;
@@ -163,12 +164,28 @@ namespace CBForest.Tests
             Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
             Assert.AreEqual(1UL, doc->selectedRev.sequence);
             Assert.AreEqual(C4Slice.NULL, doc->selectedRev.body);
+            Assert.IsTrue(Native.c4doc_hasRevisionBody(doc));
             Assert.IsTrue(Native.c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
             Assert.IsTrue(doc->selectedRev.body.Equals(BODY));
             Assert.IsFalse(Native.c4doc_selectParentRevision(doc));
             
             // Compact database:
             Assert.IsTrue(Native.c4db_compact(_db, &error));
+            
+            doc = Native.c4doc_get(_db, DOC_ID, true, &error);
+            Assert.IsTrue(doc != null);
+            Assert.IsTrue(Native.c4doc_selectParentRevision(doc));
+            Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
+            Assert.AreEqual(1L, doc->selectedRev.sequence);
+            Assert.IsTrue(doc->selectedRev.body.Equals(C4Slice.NULL));
+            Assert.IsFalse(Native.c4doc_hasRevisionBody(doc));
+            Assert.IsFalse(Native.c4doc_loadRevisionBody(doc, &error));
+            
+            using(var t = new TransactionHelper(_db)) {
+                int nPurged = Native.c4doc_purgeRevision(doc, REV_2_ID, &error);
+                Assert.AreEqual(2, nPurged);
+                Assert.IsTrue(Native.c4doc_save(doc, 20, &error));   
+            }
         }
         
         [Test]

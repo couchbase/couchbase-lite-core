@@ -165,7 +165,7 @@ namespace CBForest
         public static explicit operator string(C4Slice slice)
         {
             var bytes = (sbyte*)slice.buf; 
-            return new string(bytes, 0, (int)slice.size.ToUInt32(), Encoding.UTF8);
+            return new string(bytes, 0, (int)slice.size.ToUInt32());
         }
         
         private bool Equals(C4Slice other)

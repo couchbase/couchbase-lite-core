@@ -18,9 +18,11 @@ c4doc_free
 c4doc_get
 c4doc_getBySequence
 c4doc_getType
+c4db_purgeDoc
 c4doc_selectRevision
 c4doc_selectCurrentRevision
 c4doc_loadRevisionBody
+c4doc_hasRevisionBody
 c4doc_selectParentRevision
 c4doc_selectNextRevision
 c4doc_selectNextLeafRevision
@@ -30,6 +32,7 @@ c4enum_nextDocument
 c4enum_free
 c4doc_insertRevision
 c4doc_insertRevisionWithHistory
+c4doc_purgeRevision
 c4doc_setType
 c4doc_save
 c4key_new

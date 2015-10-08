@@ -37,7 +37,7 @@ namespace CBForest
     public static unsafe class Native
     {
 #if __IOS__
-        private const string DLL_NAME = "__Internal";
+        private const string DLL_NAME = "__public";
 #else
         private const string DLL_NAME = "CBForest-Interop";
 #endif
@@ -68,7 +68,7 @@ namespace CBForest
         public static extern void c4slice_free(C4Slice slice);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
+        public static extern C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
             C4EncryptionKey *encryptionKey, C4Error *outError);
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace CBForest
         public static extern void c4raw_free(C4RawDocument *rawDoc);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4RawDocument* c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError);
+        public static extern C4RawDocument* c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError);
 
         /// <summary>
         /// Reads a raw document from the database. In Couchbase Lite the store named "info" is used for 
@@ -194,7 +194,7 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
+        public static extern bool c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
             C4Slice body, C4Error *outError);
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace CBForest
         public static extern C4Document* c4doc_getBySequence(C4Database *db, ulong sequence, C4Error *outError);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_getType")]
-        private static extern C4Slice _c4doc_getType(C4Document *doc);
+        public static extern C4Slice _c4doc_getType(C4Document *doc);
 
         /// <summary>
         /// Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention 
@@ -263,10 +263,21 @@ namespace CBForest
         {
             return BridgeSlice(() => _c4doc_getType(doc));
         }
+
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_purgeDoc(C4Database *db, C4Slice docId, C4Error *outError);
+
+        public static bool c4db_purgeDoc(C4Database *db, string docId, C4Error *outError)
+        {
+            using (var docId_ = new C4String(docId)) {
+                return c4db_purgeDoc(db, docId_.AsC4Slice(), outError);
+            }
+        }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool c4doc_selectRevision(C4Document *doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody, 
+        public static extern bool c4doc_selectRevision(C4Document *doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody, 
             C4Error *outError);
 
         /// <summary>
@@ -303,6 +314,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_loadRevisionBody(C4Document *doc, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_hasRevisionBody(C4Document *doc);
 
         /// <summary>
         /// Selects the parent of the selected revision, if it's known, else inserts null.
@@ -322,9 +337,6 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_selectNextRevision(C4Document *doc);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern byte c4doc_selectNextLeafRevision(C4Document *doc, byte includeDeleted, byte withBody, C4Error *outError);
 
         /// <summary>
         /// Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
@@ -359,7 +371,7 @@ namespace CBForest
         public static extern C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4ChangesOptions* options, C4Error* outError);
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
+        public static extern C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
             C4AllDocsOptions *options, C4Error *outError);
 
         /// <summary>
@@ -396,7 +408,7 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
+        public static extern bool c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments,
             [MarshalAs(UnmanagedType.U1)]bool allowConflict, C4Error *outError);
         
@@ -425,7 +437,7 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice revID, C4Slice body, 
+        public static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice revID, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history, 
             uint historyCount, C4Error *outError);
 
@@ -468,7 +480,17 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
+        public static extern bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern int c4doc_purgeRevision(C4Document *doc, C4Slice revId, C4Error *outError);
+        
+        public static int c4doc_purgeRevision(C4Document *doc, string revId, C4Error *outError)
+        {
+            using(var revId_ = new C4String(revId)) {
+                return c4doc_purgeRevision(doc, revId_.AsC4Slice(), outError);   
+            }
+        }
 
         /// <summary>
         /// Sets a document's docType. (By convention this is the value of the "type" property of the 
@@ -507,7 +529,7 @@ namespace CBForest
         public static extern C4Key* c4key_new();
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Key* c4key_withBytes(C4Slice slice);
+        public static extern C4Key* c4key_withBytes(C4Slice slice);
 
         /// <summary>
         /// Creates a C4Key by copying the data, which must be in the C4Key binary format.
@@ -658,7 +680,7 @@ namespace CBForest
         public static extern double c4key_readNumber(C4KeyReader *reader);
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readString")]
-        private static extern C4Slice _c4key_readString(C4KeyReader *reader);
+        public static extern C4Slice _c4key_readString(C4KeyReader *reader);
 
         /// <summary>
         /// Reads a string value
@@ -671,7 +693,7 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_toJSON")]
-        private static extern C4Slice _c4key_toJSON(C4KeyReader *reader);
+        public static extern C4Slice _c4key_toJSON(C4KeyReader *reader);
 
         /// <summary>
         /// Converts a C4KeyReader to JSON.
@@ -684,7 +706,7 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
+        public static extern C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
             C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError);
 
         /// <summary>
@@ -764,7 +786,7 @@ namespace CBForest
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
+        public static extern C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
 
         /// <summary>
         /// Creates an indexing task on one or more views in a database.
@@ -792,7 +814,7 @@ namespace CBForest
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
+        public static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
             C4Key** emittedKeys, C4Key** emittedValues, C4Error *outError);
 
         /// <summary>

@@ -13,8 +13,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Types.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Defines.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestHistoryEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestDocEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestQueryEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestDocument.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CBForestException.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Properties\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Utils\" />
   </ItemGroup>
 </Project>

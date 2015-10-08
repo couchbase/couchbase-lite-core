@@ -29,13 +29,14 @@ namespace CBForest.Tests
     public unsafe class C4ViewTest : C4Test
     {
         private C4View *_view;
+        private static readonly string VIEW_INDEX_PATH = 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp_view.index");
         
         public override void SetUp()
         {
             base.SetUp();
             C4Error error;
-            var viewPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "forest_temp_view.index");
-            _view = Native.c4view_open(_db, viewPath, "myview", "1", C4DatabaseFlags.Create, EncryptionKey, &error);
+            _view = Native.c4view_open(_db, VIEW_INDEX_PATH, "myview", "1", C4DatabaseFlags.Create, EncryptionKey, &error);
             Assert.IsTrue(_view != null);
         }
         
@@ -89,6 +90,31 @@ namespace CBForest.Tests
             
             Assert.AreEqual(0, error.code);
             Assert.AreEqual(200, i);
+        }
+        
+        [Test]
+        public void TestIndexVersion()
+        {
+            CreateIndex();
+            
+            // Reopen view with same version string:
+            var error = default(C4Error);
+            Assert.IsTrue(Native.c4view_close(_view, &error));
+            _view = Native.c4view_open(_db, VIEW_INDEX_PATH, "myview", "1", C4DatabaseFlags.Create, EncryptionKey, &error);
+            Assert.IsTrue(_view != null);
+            
+            Assert.AreEqual(200UL, Native.c4view_getTotalRows(_view));
+            Assert.AreEqual(100UL, Native.c4view_getLastSequenceIndexed(_view));
+            Assert.AreEqual(100UL, Native.c4view_getLastSequenceChangedAt(_view));
+            
+            // Reopen view with different version string:
+            Assert.IsTrue(Native.c4view_close(_view, &error));
+            _view = Native.c4view_open(_db, VIEW_INDEX_PATH, "myview", "2", C4DatabaseFlags.Create, EncryptionKey, &error);
+            Assert.IsTrue(_view != null);
+
+            Assert.AreEqual(0UL, Native.c4view_getTotalRows(_view));
+            Assert.AreEqual(0UL, Native.c4view_getLastSequenceIndexed(_view));
+            Assert.AreEqual(0UL, Native.c4view_getLastSequenceChangedAt(_view));
         }
         
         private void CreateIndex()
