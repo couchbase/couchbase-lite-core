@@ -369,10 +369,12 @@ bool c4queryenum_next(C4QueryEnumerator *e,
             ei->key = asKeyReader(ei->_enum.key());
             ei->value = asKeyReader(ei->_enum.value());
             ei->docID = ei->_enum.docID();
+            ei->docSequence = ei->_enum.sequence();
             return true;
         } else {
             ei->key = ei->value = {NULL, 0};
             ei->docID = slice::null;
+            ei->docSequence = 0;
             recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
             return false;
         }

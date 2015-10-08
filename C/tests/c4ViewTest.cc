@@ -92,10 +92,13 @@ public:
             ++i;
             //std::cerr << "Key: " << toJSON(e->key) << "  Value: " << toJSON(e->value) << "\n";
             char buf[20];
-            if (i <= 100)
+            if (i <= 100) {
                 sprintf(buf, "%d", i);
-            else
+                AssertEqual(e->docSequence, (C4SequenceNumber)i);
+            } else {
                 sprintf(buf, "\"doc-%03d\"", i - 100);
+                AssertEqual(e->docSequence, (C4SequenceNumber)(i - 100));
+            }
             AssertEqual(toJSON(e->key), std::string(buf));
             AssertEqual(c4key_peek(&e->value), kC4EndSequence);
 

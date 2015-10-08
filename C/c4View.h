@@ -21,7 +21,8 @@ extern "C" {
     //////// KEYS:
 
 
-    /** An opaque value used as a key or value in a view index. JSON-compatible. */
+    /** An opaque value used as a key or value in a view index. The data types that can be stored
+        in a C4Key are the same as JSON, but the actual data format is quite different. */
     typedef struct c4Key C4Key;
 
     /** Creates a new empty C4Key. */
@@ -167,9 +168,10 @@ extern "C" {
     C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer,
                                                   C4Error *outError);
 
-    /** Emits new keys/values derived from one document, for one view.
-        This function needs to be called once for each (document, view) pair. Even if the view's map
-        function didn't emit anything, the old keys/values need to be cleaned up.
+    /** Adds index rows for the keys/values derived from one document, for one view.
+        This function needs to be called *exactly once* for each (document, view) pair during
+        indexing. (Even if the view's map function didn't emit anything, the old keys/values need to
+        be cleaned up.)
         @param indexer  The indexer task.
         @param document  The document being indexed.
         @param viewNumber  The position of the view in the indexer's views[] array.
@@ -226,6 +228,7 @@ extern "C" {
         C4KeyReader key;
         C4KeyReader value;
         C4Slice docID;
+        C4SequenceNumber docSequence;
     } C4QueryEnumerator;
 
     /** Runs a query and returns an enumerator for the results.
