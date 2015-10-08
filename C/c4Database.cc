@@ -610,9 +610,13 @@ bool c4doc_insertRevision(C4Document *doc,
                                                  allowConflict,
                                                  httpStatus);
         if (newRev) {
+            // Success:
             idoc->updateMeta();
             newRev = idoc->_versionedDoc.get(encodedRevID);
             return idoc->selectRevision(newRev);
+        } else if (httpStatus == 200) {
+            // Revision already exists, so nothing was added. Not an error.
+            return c4doc_selectRevision(doc, revID, true, outError);
         }
         recordHTTPError(httpStatus, outError);
     } catchError(outError)

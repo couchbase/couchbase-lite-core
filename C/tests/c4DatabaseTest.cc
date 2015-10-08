@@ -105,6 +105,7 @@ class C4DatabaseTest : public C4Test {
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
         createRev(kDocID, kRevID, kBody);
         createRev(kDocID, kRev2ID, kBody2);
+        createRev(kDocID, kRev2ID, kBody2); // test redundant insert
 
         // Reload the doc:
         C4Error error;
