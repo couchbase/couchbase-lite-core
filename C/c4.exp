@@ -37,6 +37,7 @@ _c4doc_selectNextLeafRevision
 
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
+_c4db_enumerateSomeDocs
 _c4enum_nextDocument
 _c4enum_free
 
