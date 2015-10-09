@@ -1,6 +1,6 @@
 package com.couchbase.cbforest;
 
-class DocumentIterator {
+public class DocumentIterator {
     DocumentIterator(long handle, boolean dummy) {
         _handle = handle;
     }
