@@ -74,6 +74,14 @@ public class Database {
     long _handle; // handle to native C4Database*
 
 
+    //////// DOCUMENTS
+
+    public void purgeDoc(String docID)throws ForestException{
+        purgeDoc(_handle, docID);
+    }
+
+    private native static void purgeDoc(long dbHandle, String docID) throws ForestException;
+
     //////// RAW DOCUMENTS (i.e. info or _local)
 
     public void rawPut(String store, String key, byte[] meta, byte[] body) throws ForestException {

@@ -174,6 +174,17 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
     c4log_register((C4LogLevel)level, &logCallback);
 }
 
+#pragma mark - DOCUMENTS:
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
+(JNIEnv *env, jclass clazz, jlong db, jstring jdocID)
+{
+    jstringSlice docID(env, jdocID);
+    C4Error error;
+    if(!c4db_purgeDoc((C4Database*)db, docID, &error))
+        throwError(env, error);
+}
+
 #pragma mark - RAW DOCUMENTS:
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut
