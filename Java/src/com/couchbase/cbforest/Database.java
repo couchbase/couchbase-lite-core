@@ -48,6 +48,10 @@ public class Database {
         return new DocumentIterator(_handle, startDocID, endDocID);
     }
 
+    public DocumentIterator iterator(String[] docIDs) throws ForestException {
+        return new DocumentIterator(_handle, docIDs);
+    }
+
     public DocumentIterator iterator(long sinceSequence) throws ForestException {
         return new DocumentIterator(_handle, sinceSequence);
     }
