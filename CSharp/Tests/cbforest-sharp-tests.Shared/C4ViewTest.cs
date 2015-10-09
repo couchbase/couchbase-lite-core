@@ -80,8 +80,10 @@ namespace CBForest.Tests
                 var buf = default(string);
                 if(i <= 100) {
                     buf = i.ToString();
+                    Assert.AreEqual(i, e->docSequence);
                 } else {
                     buf = String.Format("\"doc-{0}\"", (i - 100).ToString("D3"));
+                    Assert.AreEqual(i - 100, e->docSequence);
                 }   
                 
                 Assert.AreEqual(buf, ToJSON(e->key));

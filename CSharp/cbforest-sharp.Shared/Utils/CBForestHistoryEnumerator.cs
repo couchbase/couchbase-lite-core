@@ -26,37 +26,75 @@ namespace CBForest
 {
     public sealed unsafe class CBForestHistoryEnumerator : IEnumerable<CBForestDocStatus>, IEnumerator<CBForestDocStatus>
     {
+
+        #region Variables
+
         private readonly C4Document *_doc;
         private CBForestDocStatus _current;
         private readonly bool _onlyLeaf;
+        private readonly bool _byParent;
+        private readonly bool _owner;
 
-        public CBForestHistoryEnumerator(C4Document *doc, bool onlyLeaf)
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Creates a CBForestHistoryEnumerator that enumerates all specified revisions
+        /// of a document
+        /// </summary>
+        /// <param name="doc">The document to enumerate</param>
+        /// <param name="onlyLeaf">If set to <c>true</c> only leaf revisions (i.e. revisions
+        /// with no children) will be processed</param>
+        /// <param name="owner">If set to <c>true</c>, the enumerator will free the document
+        /// when finished</param>
+        public CBForestHistoryEnumerator(C4Document *doc, bool onlyLeaf, bool owner)
         {
+            var err = default(C4Error);
+            var selectedCurrent = Native.c4doc_selectCurrentRevision(doc);
+            if (!selectedCurrent) {
+                throw new CBForestException(err.code, err.domain);
+            }
+
             _doc = doc;
             _onlyLeaf = onlyLeaf;
+            _owner = owner;
         }
 
-        ~CBForestHistoryEnumerator()
+        /// <summary>
+        /// Creates a CBForestHistoryEnumerator that enumerates the the revision
+        /// history of a document by parent (i.e. the "winning" chain)
+        /// </summary>
+        /// <param name="doc">The document to enumerate</param>
+        /// <param name="owner">If set to <c>true</c>, the enumerator will free the document
+        /// when finished</param>
+        public CBForestHistoryEnumerator(C4Document* doc, bool owner)
+            : this(doc, false, owner)
         {
-            Dispose(true);
+            _byParent = true;
         }
 
-        private void Dispose(bool disposing)
-        {
-            Native.c4doc_free(_doc);
-        }
+        #endregion
 
         public bool MoveNext()
         {
+            if (_current == null) {
+                _current = new CBForestDocStatus(_doc, _owner);
+                return true;
+            }
+
             var retVal = false;
-            if (_onlyLeaf) {
+            if (_byParent) {
+                retVal = Native.c4doc_selectParentRevision(_doc);
+            } else if (_onlyLeaf) {
                 retVal = Native.c4doc_selectNextLeafRevision(_doc, true, true, null);
             } else {
                 retVal = Native.c4doc_selectNextRevision(_doc);
             }
 
             if (retVal) {
-                _current = new CBForestDocStatus(_doc);
+                _current.Dispose();
+                _current = new CBForestDocStatus(_doc, _owner);
             }
 
             return retVal;
@@ -94,8 +132,10 @@ namespace CBForest
 
         public void Dispose()
         {
-            Dispose(false);
-            GC.SuppressFinalize(this);
+            if (_current != null) {
+                _current.Dispose();
+                _current = null;
+            }
         }
     }
 }

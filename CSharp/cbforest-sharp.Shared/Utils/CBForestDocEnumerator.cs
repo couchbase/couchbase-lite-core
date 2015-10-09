@@ -27,10 +27,15 @@ namespace CBForest
     public unsafe sealed class CBForestDocStatus : IDisposable
     {
         public readonly C4Document *Document;
+        private readonly bool _owner;
 
-        public CBForestDocStatus(C4Document *doc)
+        public CBForestDocStatus(C4Document *doc, bool owner)
         {
             Document = doc;
+            _owner = owner;
+            if (!_owner) {
+                GC.SuppressFinalize(this);
+            }
         }
 
         ~CBForestDocStatus()
@@ -46,6 +51,10 @@ namespace CBForest
 
         public void Dispose()
         {
+            if (!_owner) {
+                return;
+            }
+
             Dispose(false);
         }
     }
@@ -68,6 +77,15 @@ namespace CBForest
         {
             var err = default(C4Error);
             _e = Native.c4indexer_enumerateDocuments(indexer, &err);
+            if (_e == null && err.code != 0 || err.domain != C4ErrorDomain.ForestDB) {
+                throw new CBForestException(err.code, err.domain);
+            }
+        }
+
+        public CBForestDocEnumerator(C4Database *db, long lastSequence, C4ChangesOptions options)
+        {
+            var err = default(C4Error);
+            _e = Native.c4db_enumerateChanges(db, (ulong)lastSequence, &options, &err);
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
@@ -99,7 +117,7 @@ namespace CBForest
                 return false;
             }
 
-            _current = new CBForestDocStatus(docPtr);
+            _current = new CBForestDocStatus(docPtr, true);
             return true;
         }
 

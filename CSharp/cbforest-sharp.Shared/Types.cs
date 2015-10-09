@@ -164,6 +164,10 @@ namespace CBForest
         /// <param name="slice">The slice to convert to a string</param>
         public static explicit operator string(C4Slice slice)
         {
+            if (slice.buf == null) {
+                return null;
+            }
+
             var bytes = (sbyte*)slice.buf; 
             return new string(bytes, 0, (int)slice.size.ToUInt32());
         }
@@ -544,6 +548,7 @@ namespace CBForest
         public C4KeyReader key;   
         public C4KeyReader value;
         public C4Slice docID;
+        public ulong docSequence;
     }
 
     public struct C4EncryptionKey

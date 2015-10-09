@@ -33,6 +33,8 @@ namespace CBForest
 
         public readonly C4KeyReader Value;
 
+        public readonly long DocSequence;
+
         public string DocID
         {
             get {
@@ -54,11 +56,12 @@ namespace CBForest
             }
         }
 
-        internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4KeyReader value)
+        internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4KeyReader value, long docSequence)
         {
             _docID = new Lazy<string>(() => (string)docID);
             Key = key;
             Value = value;
+            DocSequence = docSequence;
             _keyJSON = new Lazy<string>(() =>
             {
                 var localKey = key;
@@ -99,7 +102,7 @@ namespace CBForest
         {
             var retVal = Native.c4queryenum_next(_e, null);
             if (retVal) {
-                _current = new CBForestQueryStatus(_e->docID, _e->key, _e->value);
+                _current = new CBForestQueryStatus(_e->docID, _e->key, _e->value, (long)_e->docSequence);
             }
 
             return retVal;
