@@ -127,7 +127,7 @@ namespace CBForest.Tests
             }
             
             C4Error error;
-            C4Indexer* ind = Native.c4indexer_begin(_db, new C4View*[] { _view }, 1, &error);
+            C4Indexer* ind = Native.c4indexer_begin(_db, new C4View*[] { _view }, &error);
             Assert.IsTrue(ind != null);
 
             var e = Native.c4indexer_enumerateDocuments(ind, &error);
@@ -140,7 +140,7 @@ namespace CBForest.Tests
                 var vals = new C4Key*[] { null, null };
                 Native.c4key_addString(keys[0], doc->docID);
                 Native.c4key_addNumber(keys[1], doc->sequence);
-                Assert.IsTrue(Native.c4indexer_emit(ind, doc, 0, 2, keys, vals, &error));
+                Assert.IsTrue(Native.c4indexer_emit(ind, doc, 0, keys, vals, &error));
                 Native.c4key_free(keys[0]);
                 Native.c4key_free(keys[1]);
             }

@@ -51,6 +51,7 @@ namespace CBForest
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
         {
+            #if DEBUG
             foreach (var pair in _AllocatedObjects) {
                 Console.WriteLine("ERROR: {0}* at 0x{1} leaked", pair.Value, pair.Key.ToString("X"));
             }
@@ -58,6 +59,7 @@ namespace CBForest
             if (_AllocatedObjects.Any()) {
                 throw new ApplicationException("Memory leaks detected");
             }
+            #endif
         }
 
         /// <summary>
@@ -150,7 +152,7 @@ namespace CBForest
             return _c4db_close(db, outError);
         }
             
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_delete")]
         [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool _c4db_delete(C4Database *db, C4Error *outError);
 
@@ -587,6 +589,35 @@ namespace CBForest
             }
         }
 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateSomeDocs")]
+        private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, uint docIDsCount, 
+            C4AllDocsOptions *options, C4Error *outError);
+
+        public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *db, string[] docIDs, C4AllDocsOptions *options,
+            C4Error *outError)
+        {
+            var c4StringArr = docIDs.Select(x => new C4String(x)).ToArray();
+            var sliceArr = c4StringArr.Select(x => x.AsC4Slice()).ToArray();
+            var retVal = default(C4DocEnumerator*);
+            fixed(C4Slice* ptr = sliceArr) {
+                retVal = _c4db_enumerateSomeDocs(db, ptr, (uint)docIDs.Length, options, outError);
+                #if DEBUG
+                if(retVal != null) {
+                    _AllocatedObjects[(IntPtr)retVal] = "C4DocEnumerator";
+                #if ENABLE_LOGGING
+                    Console.WriteLine("[c4db_enumerateSomeDocs] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+                }
+                #endif
+            }
+
+            foreach (var c4str in c4StringArr) {
+                c4str.Dispose();
+            }
+
+            return retVal;
+        }
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_nextDocument")]
         private static extern C4Document* _c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError);
 
@@ -660,16 +691,15 @@ namespace CBForest
         /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
         /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
         /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
-        /// <param name="historyCount">The number of items in the history array</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions added to the document, or -1 on error.</returns>
         public static int c4doc_insertRevisionWithHistory(C4Document *doc, string revID, string body, bool deleted, 
-            bool hasAttachments, string[] history, uint historyCount, C4Error *outError)
+            bool hasAttachments, string[] history, C4Error *outError)
         {
             var flattenedStringArray = new C4String[history.Length + 2];
             flattenedStringArray[0] = new C4String(revID);
             flattenedStringArray[1] = new C4String(body);
-            for(int i = 0; i < historyCount; i++) {
+            for(int i = 0; i < history.Length; i++) {
                 flattenedStringArray[i + 2] = new C4String(history[i]);
             }
             
@@ -677,7 +707,7 @@ namespace CBForest
             var retVal = default(int);
             fixed(C4Slice *a = sliceArray) {
                 retVal = c4doc_insertRevisionWithHistory(doc, flattenedStringArray[0].AsC4Slice(), 
-                    flattenedStringArray[1].AsC4Slice(), deleted, hasAttachments, a, historyCount, outError);
+                    flattenedStringArray[1].AsC4Slice(), deleted, hasAttachments, a, (uint)history.Length, outError);
             }
             
             foreach(var s in flattenedStringArray) {
@@ -1100,35 +1130,29 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_begin")]
         private static extern C4Indexer* _c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
 
-        public static C4Indexer* c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError)
-        {
-            #if DEBUG
-            var retVal = _c4indexer_begin(db, views, viewCount, outError);
-            if(retVal != null) {
-                _AllocatedObjects[(IntPtr)retVal] = "C4Indexer";
-                #if ENABLE_LOGGING
-                Console.WriteLine("[c4indexer_begin] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
-            }
-
-            return retVal;
-            #else
-            return _c4indexer_begin(db, views, viewCount, outError);
-            #endif
-        }
-
         /// <summary>
         /// Creates an indexing task on one or more views in a database.
         /// </summary>
         /// <param name="db">The database to operate on</param>
         /// <param name="views">An array of views whose indexes should be updated in parallel.</param>
-        /// <param name="viewCount">The number of views in the views[] array</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the indexer on success, otherwise null</returns>
-        public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, int viewCount, C4Error* outError)
+        public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, C4Error* outError)
         {
             fixed(C4View** viewPtr = views) {
-                return c4indexer_begin(db, viewPtr, viewCount, outError);
+                #if DEBUG
+                var retVal = _c4indexer_begin(db, viewPtr, views.Length, outError);
+                if(retVal != null) {
+                    _AllocatedObjects[(IntPtr)retVal] = "C4Indexer";
+                #if ENABLE_LOGGING
+                    Console.WriteLine("[c4indexer_begin] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+                }
+
+                return retVal;
+                #else
+                return _c4indexer_begin(db, viewPtr, views.Length, outError);
+                #endif
             }
         }
             
@@ -1172,18 +1196,17 @@ namespace CBForest
         /// <param name="indexer">The indexer to operate on</param>
         /// <param name="document">The document being indexed</param>
         /// <param name="viewNumber">The position of the view in the indexer's views[] array</param>
-        /// <param name="emitCount">The number of emitted key/value pairs</param>
         /// <param name="emittedKeys">Array of keys being emitted</param>
         /// <param name="emittedValues"> Array of values being emitted</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
+        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
             C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError)
         {
             fixed(C4Key** keysPtr = emittedKeys)
             fixed(C4Key** valuesPtr = emittedValues)
             {
-                return c4indexer_emit(indexer, document, viewNumber, emitCount, keysPtr, valuesPtr, outError);
+                return c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, keysPtr, valuesPtr, outError);
             }
         }
 

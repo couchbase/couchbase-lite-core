@@ -28,6 +28,7 @@ c4doc_selectNextRevision
 c4doc_selectNextLeafRevision
 c4db_enumerateChanges
 c4db_enumerateAllDocs
+c4db_enumerateSomeDocs
 c4enum_nextDocument
 c4enum_free
 c4doc_insertRevision

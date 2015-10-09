@@ -233,6 +233,20 @@ namespace CBForest.Tests
             }
             
             Assert.AreEqual(91, j);
+            
+            // Some docs, by ID:
+            var docIDs = new[] { "doc-042", "doc-007", "bogus", "doc-001" };
+            e = Native.c4db_enumerateSomeDocs(_db, docIDs, null, &error);
+            Assert.IsTrue(e != null);
+            j = 0;
+            while (null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                Assert.IsTrue(doc->docID.Equals(docIDs[j]));
+                Assert.AreEqual(j != 2, doc->sequence != 0);
+                Native.c4doc_free(doc);
+                j++;
+            }
+            Assert.AreEqual(4, j);
+            
         }
         
         [Test]
