@@ -279,6 +279,21 @@ extern "C" {
                                            const C4AllDocsOptions *options,
                                            C4Error *outError);
 
+    /** Creates an enumerator on a series of document IDs.
+        Options have the same meanings as in Couchbase Lite.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param database  The database.
+        @param docIDs  Array of doc IDs to traverse in order.
+        @param docIDsCount  Number of doc IDs.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
+                                            C4Slice docIDs[],
+                                            unsigned docIDsCount,
+                                            const C4AllDocsOptions *options,
+                                            C4Error *outError);
+
     /** Returns the next document from an enumerator, or NULL if there are no more.
         The caller is responsible for freeing the C4Document.
         Don't forget to free the enumerator itself when finished with it. */

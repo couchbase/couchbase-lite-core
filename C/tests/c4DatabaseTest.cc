@@ -193,6 +193,19 @@ class C4DatabaseTest : public C4Test {
             i++;
         }
         AssertEqual(i, 91);
+
+        // Some docs, by ID:
+        C4Slice docIDs[4] = {C4STR("doc-042"), C4STR("doc-007"), C4STR("bogus"), C4STR("doc-001")};
+        e = c4db_enumerateSomeDocs(db, docIDs, 4, NULL, &error);
+        Assert(e);
+        i = 0;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            AssertEqual(doc->docID, docIDs[i]);
+            AssertEqual(doc->sequence != 0, i != 2);
+            c4doc_free(doc);
+            i++;
+        }
+        AssertEqual(i, 4);
     }
 
 

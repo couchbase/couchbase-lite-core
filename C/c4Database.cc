@@ -748,6 +748,13 @@ struct C4DocEnumerator {
     :_database(database),
      _e(*database, startDocID, endDocID, options)
     { }
+
+    C4DocEnumerator(C4Database *database,
+                    std::vector<std::string>docIDs,
+                    const DocEnumerator::Options& options)
+    :_database(database),
+     _e(*database, docIDs, options)
+    { }
 };
 
 
@@ -775,6 +782,21 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
 }
 
 
+static DocEnumerator::Options allDocOptions(const C4AllDocsOptions *c4options) {
+    if (!c4options)
+        c4options = &kC4DefaultAllDocsOptions;
+    auto options = DocEnumerator::Options::kDefault;
+    options.skip = c4options->skip;
+    options.descending = c4options->descending;
+    options.inclusiveStart = c4options->inclusiveStart;
+    options.inclusiveEnd = c4options->inclusiveEnd;
+    options.includeDeleted = c4options->includeDeleted;
+    if (!c4options->includeBodies)
+        options.contentOptions = KeyStore::kMetaOnly;
+    return options;
+}
+
+
 C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Slice startDocID,
                                        C4Slice endDocID,
@@ -782,17 +804,23 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Error *outError)
 {
     try {
-        if (!c4options)
-            c4options = &kC4DefaultAllDocsOptions;
-        auto options = DocEnumerator::Options::kDefault;
-        options.skip = c4options->skip;
-        options.descending = c4options->descending;
-        options.inclusiveStart = c4options->inclusiveStart;
-        options.inclusiveEnd = c4options->inclusiveEnd;
-        options.includeDeleted = c4options->includeDeleted;
-        if (!c4options->includeBodies)
-            options.contentOptions = KeyStore::kMetaOnly;
-        return new C4DocEnumerator(database, startDocID, endDocID, options);
+        return new C4DocEnumerator(database, startDocID, endDocID, allDocOptions(c4options));
+    } catchError(outError);
+    return NULL;
+}
+
+
+C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
+                                        C4Slice docIDs[],
+                                        unsigned docIDsCount,
+                                        const C4AllDocsOptions *c4options,
+                                        C4Error *outError)
+{
+    try {
+        std::vector<std::string> docIDStrings;
+        for (unsigned i = 0; i < docIDsCount; ++i)
+            docIDStrings.push_back((std::string)docIDs[i]);
+        return new C4DocEnumerator(database, docIDStrings, allDocOptions(c4options));
     } catchError(outError);
     return NULL;
 }
