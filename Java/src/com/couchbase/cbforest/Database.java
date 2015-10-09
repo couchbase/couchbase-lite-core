@@ -16,7 +16,11 @@ public class Database {
         _handle = _open(path, flags, encryptionAlgorithm, encryptionKey);
     }
 
+    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
+
     public native void free();
+
+    public native void compact() throws ForestException;
 
     public native long getDocumentCount();
 
@@ -30,6 +34,22 @@ public class Database {
 
     public Document getDocument(String docID, boolean mustExist) throws ForestException {
         return new Document(_handle, docID, mustExist);
+    }
+
+    public Document getDocumentBySequence(long sequence) throws ForestException {
+        return new Document(_handle, sequence);
+    }
+
+    public DocumentIterator iterator() throws ForestException {
+        return new DocumentIterator(_handle);
+    }
+
+    public DocumentIterator iterator(String startDocID, String endDocID) throws ForestException {
+        return new DocumentIterator(_handle, startDocID, endDocID);
+    }
+
+    public DocumentIterator iterator(long sinceSequence) throws ForestException {
+        return new DocumentIterator(_handle, sinceSequence);
     }
 
     public DocumentIterator iterateChanges(long sinceSequence, boolean withBodies) throws ForestException {

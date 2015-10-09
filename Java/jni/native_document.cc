@@ -17,6 +17,7 @@ using namespace forestdb::jni;
 
 static jfieldID kField_Handle;
 static jfieldID kField_Flags;
+static jfieldID kField_DocID;
 static jfieldID kField_RevID;
 static jfieldID kField_SelectedRevID;
 static jfieldID kField_SelectedRevFlags;
@@ -30,6 +31,7 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
         return false;
     kField_Handle = env->GetFieldID(documentClass, "_handle", "J");
     kField_Flags = env->GetFieldID(documentClass, "_flags", "I");
+    kField_DocID = env->GetFieldID(documentClass, "_docID", "Ljava/lang/String;");
     kField_RevID = env->GetFieldID(documentClass, "_revID", "Ljava/lang/String;");
     kField_SelectedRevID = env->GetFieldID(documentClass, "_selectedRevID", "Ljava/lang/String;");
     kField_SelectedRevFlags = env->GetFieldID(documentClass, "_selectedRevFlags", "I");
@@ -39,6 +41,10 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
         && kField_SelectedRevFlags && kField_SelectedSequence && kField_SelectedBody;
 }
 
+// Updates the _docID field of the Java Document object
+static void updateDocID(JNIEnv *env, jobject self, C4Document *doc) {
+    env->SetObjectField(self, kField_DocID, toJString(env, doc->docID));
+}
 
 // Updates the _revID and _flags fields of the Java Document object
 static void updateRevIDAndFlags
@@ -76,6 +82,20 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_init
     return (jlong)doc;
 }
 
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_initWithSequence
+        (JNIEnv *env, jobject self, jlong dbHandle, jlong sequence)
+{
+    C4Error error;
+    C4Document *doc = c4doc_getBySequence((C4Database*)dbHandle, sequence, &error);
+    if (!doc) {
+        throwError(env, error);
+        return 0;
+    }
+    updateDocID(env, self, doc);
+    updateRevIDAndFlags(env, self, doc);
+    updateSelection(env, self, doc, true);
+    return (jlong)doc;
+}
 
 JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
 (JNIEnv *env, jobject self, jlong docHandle)
@@ -86,6 +106,22 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
     updateRevIDAndFlags(env, self, doc);
     updateSelection(env, self, doc);
     return toJString(env, doc->docID);
+}
+JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_hasRevisionBody
+        (JNIEnv *env, jclass clazz, jlong docHandle)
+{
+    return c4doc_hasRevisionBody((C4Document *) docHandle);
+}
+
+JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_purgeRevision
+        (JNIEnv *env, jclass clazz, jlong docHandle, jstring jrevid){
+    auto doc = (C4Document *) docHandle;
+    jstringSlice revID(env, jrevid);
+    C4Error error;
+    int num = c4doc_purgeRevision(doc, revID, &error);
+    if (num == -1)
+        throwError(env, error);
+    return num;
 }
 
 

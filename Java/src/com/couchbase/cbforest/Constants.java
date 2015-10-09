@@ -3,7 +3,7 @@ package com.couchbase.cbforest;
 /**
  * Created by hideki on 9/30/15.
  */
-interface Constants {
+public interface Constants {
 
     // fdb_errors.h
     interface FDBErrors {
@@ -186,7 +186,13 @@ interface Constants {
          * Fail to read asynchronous I/O events from the completion queue.
          */
         int FDB_RESULT_AIO_GETEVENTS_FAIL = -43;
+        /**
+         * Error encrypting or decrypting data, or unsupported encryption algorithm.
+         */
+        int FDB_RESULT_CRYPTO_ERROR = -44;
     }
+
+    //////// DOCUMENTS:
 
     // Flags describing a document.
     // Note: Superset of VersionedDocument::Flags
