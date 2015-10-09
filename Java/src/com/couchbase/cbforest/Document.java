@@ -1,6 +1,6 @@
 package com.couchbase.cbforest;
 
-public class Document {
+public class Document implements Constants{
 
     public String getDocID()        { return _docID; }
 
@@ -102,4 +102,38 @@ public class Document {
     private int _selectedRevFlags;
     private long _selectedSequence;
     private byte[] _selectedBody;
+
+    // helper methods for Document
+    public boolean deleted(){
+        return isFlags(C4DocumentFlags.kDeleted);
+    }
+    public boolean conflicted(){
+        return isFlags(C4DocumentFlags.kConflicted);
+    }
+    public boolean hasAttachments(){
+        return isFlags(C4DocumentFlags.kHasAttachments);
+    }
+    public boolean exists(){
+        return isFlags(C4DocumentFlags.kExists);
+    }
+    private boolean isFlags(int flag){
+        return (_flags & flag) == flag;
+    }
+
+    // helper methods for Revision
+    public boolean selectedRevDeleted(){
+        return isSelectedRevFlags(C4RevisionFlags.kRevDeleted);
+    }
+    public boolean selectedRevLeaf(){
+        return isSelectedRevFlags(C4RevisionFlags.kRevLeaf);
+    }
+    public boolean selectedRevNew(){
+        return isSelectedRevFlags(C4RevisionFlags.kRevNew);
+    }
+    public boolean selectedRevHasAttachments(){
+        return isSelectedRevFlags(C4RevisionFlags.kRevHasAttachments);
+    }
+    private boolean isSelectedRevFlags(int flag){
+        return (_selectedRevFlags & flag) == flag;
+    }
 }

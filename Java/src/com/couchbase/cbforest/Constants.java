@@ -3,7 +3,7 @@ package com.couchbase.cbforest;
 /**
  * Created by hideki on 9/30/15.
  */
-interface Constants {
+public interface Constants {
 
     // fdb_errors.h
     interface FDBErrors {
@@ -191,6 +191,8 @@ interface Constants {
          */
         int FDB_RESULT_CRYPTO_ERROR = -44;
     }
+
+    //////// DOCUMENTS:
 
     // Flags describing a document.
     // Note: Superset of VersionedDocument::Flags
