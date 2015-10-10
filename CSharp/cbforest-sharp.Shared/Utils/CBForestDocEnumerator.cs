@@ -64,6 +64,15 @@ namespace CBForest
         private readonly C4DocEnumerator *_e;
         private CBForestDocStatus _current;
 
+        public CBForestDocEnumerator(C4Database *db, string[] keys, C4AllDocsOptions options)
+        {
+            var err = default(C4Error);
+            _e = Native.c4db_enumerateSomeDocs(db, keys, &options, &err);
+            if (_e == null) {
+                throw new CBForestException(err.code, err.domain);
+            }
+        }
+
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4AllDocsOptions options)
         {
             var err = default(C4Error);
@@ -77,7 +86,7 @@ namespace CBForest
         {
             var err = default(C4Error);
             _e = Native.c4indexer_enumerateDocuments(indexer, &err);
-            if (_e == null && err.code != 0 || err.domain != C4ErrorDomain.ForestDB) {
+            if (_e == null && (err.code != 0 || err.domain != C4ErrorDomain.ForestDB)) {
                 throw new CBForestException(err.code, err.domain);
             }
         }
