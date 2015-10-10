@@ -68,13 +68,13 @@ namespace CBForest.Tests
             return ToJSON(Native.c4key_read(key));   
         }
         
-        protected void CreateRev(string docID, string revID, string body)
+        protected void CreateRev(string docID, string revID, string body, bool isNew = true)
         {
             using(var t = new TransactionHelper(_db)) {
                 C4Error error;
                 var doc = Native.c4doc_get(_db, docID, false, &error);
                 Assert.IsTrue(doc != null);
-                Assert.IsTrue(Native.c4doc_insertRevision(doc, revID, body, false, false, false, &error));
+                Assert.AreEqual(isNew ? 1 : 0, Native.c4doc_insertRevision(doc, revID, body, false, false, false, &error));
                 Assert.IsTrue(Native.c4doc_save(doc, 20, &error));
                 Native.c4doc_free(doc);
             }

@@ -109,7 +109,7 @@ namespace CBForest.Tests
             Assert.IsTrue(doc->selectedRev.revID.buf == null);
             
             using(var t = new TransactionHelper(_db)) {
-                Assert.IsTrue(Native.c4doc_insertRevision(doc, REV_ID, BODY, false, false, false, &error));
+                Assert.AreEqual(1, Native.c4doc_insertRevision(doc, REV_ID, BODY, false, false, false, &error));
                 Assert.IsTrue(doc->revID.Equals(REV_ID));
                 Assert.IsTrue(doc->selectedRev.revID.Equals(REV_ID));
                 Assert.AreEqual(C4RevisionFlags.RevNew | C4RevisionFlags.RevLeaf, doc->selectedRev.flags);
@@ -146,7 +146,7 @@ namespace CBForest.Tests
             const string BODY_2 = "{\"ok\":\"go\"}";
             CreateRev(DOC_ID, REV_ID, BODY);
             CreateRev(DOC_ID, REV_2_ID, BODY_2);
-            CreateRev(DOC_ID, REV_2_ID, BODY_2); // test redundant insert
+            CreateRev(DOC_ID, REV_2_ID, BODY_2, false); // test redundant insert
             
             // Reload the doc:
             C4Error error;

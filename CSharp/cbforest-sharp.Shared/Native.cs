@@ -647,8 +647,7 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
+        public static extern int c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments,
             [MarshalAs(UnmanagedType.U1)]bool allowConflict, C4Error *outError);
         
@@ -665,8 +664,8 @@ namespace CBForest
         /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
         /// <param name="allowConflict">If false, and the parent is not a leaf, a 409 error is returned</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_insertRevision(C4Document *doc, string revID, string body, bool deleted, bool hasAttachments,
+        /// <returns>The number of revisions inserted (0, 1, or -1 on error)</returns>
+        public static int c4doc_insertRevision(C4Document *doc, string revID, string body, bool deleted, bool hasAttachments,
             bool allowConflict, C4Error *outError)
         {
             using(var revID_ = new C4String(revID))
