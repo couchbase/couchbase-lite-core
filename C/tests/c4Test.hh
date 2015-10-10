@@ -65,7 +65,7 @@ protected:
     virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
 
     // Creates a new document revision
-    void createRev(C4Slice docID, C4Slice revID, C4Slice body);
+    void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"

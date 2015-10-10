@@ -52,12 +52,12 @@ void C4Test::tearDown() {
 }
 
 
-void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body) {
+void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     TransactionHelper t(db);
     C4Error error;
     C4Document *doc = c4doc_get(db, docID, false, &error);
     Assert(doc != NULL);
-    Assert(c4doc_insertRevision(doc, revID,  body,  false, false, false, &error));
+    AssertEqual(c4doc_insertRevision(doc, revID,  body,  false, false, false, &error), (int)isNew);
     Assert(c4doc_save(doc, 20, &error));
     c4doc_free(doc);
 }

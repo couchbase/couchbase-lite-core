@@ -304,7 +304,7 @@ extern "C" {
     //////// INSERTING REVISIONS:
 
 
-    /** Adds a revision to a document, as a child of the currently selected revision
+    /** Adds a new revision to a document, as a child of the currently selected revision
         (or as a root revision if there is no selected revision.)
         On success, the new revision will be selected.
         Must be called within a transaction. Remember to save the document afterwards.
@@ -315,14 +315,14 @@ extern "C" {
         @param hasAttachments  True if this revision contains an _attachments dictionary.
         @param allowConflict  If false, and the parent is not a leaf, a 409 error is returned.
         @param outError  Error information is stored here.
-        @return True on success. */
-    bool c4doc_insertRevision(C4Document *doc,
-                              C4Slice revID,
-                              C4Slice body,
-                              bool deleted,
-                              bool hasAttachments,
-                              bool allowConflict,
-                              C4Error *outError);
+        @return The number of revisions added (0 or 1), or -1 on error. */
+    int c4doc_insertRevision(C4Document *doc,
+                             C4Slice revID,
+                             C4Slice body,
+                             bool deleted,
+                             bool hasAttachments,
+                             bool allowConflict,
+                             C4Error *outError);
 
     /** Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
         On success, the new revision will be selected.

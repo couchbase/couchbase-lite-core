@@ -68,7 +68,7 @@ class C4DatabaseTest : public C4Test {
         {
             TransactionHelper t(db);
 
-            Assert(c4doc_insertRevision(doc, kRevID, kBody, false, false, false, &error));
+            AssertEqual(c4doc_insertRevision(doc, kRevID, kBody, false, false, false, &error), 1);
 
             AssertEqual(doc->revID, kRevID);
             AssertEqual(doc->selectedRev.revID, kRevID);
@@ -105,7 +105,7 @@ class C4DatabaseTest : public C4Test {
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
         createRev(kDocID, kRevID, kBody);
         createRev(kDocID, kRev2ID, kBody2);
-        createRev(kDocID, kRev2ID, kBody2); // test redundant insert
+        createRev(kDocID, kRev2ID, kBody2, false); // test redundant insert
 
         // Reload the doc:
         C4Error error;

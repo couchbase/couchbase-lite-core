@@ -46,11 +46,11 @@ public class Document implements Constants{
     public long getSelectedRevFlags() { return _selectedRevFlags; }
 
 
-    public native void insertRevision(String revID,
-                                      byte[] body,
-                                      boolean deleted,
-                                      boolean hasAttachments,
-                                      boolean allowConflict) throws ForestException;
+    public native boolean insertRevision(String revID,
+                                         byte[] body,
+                                         boolean deleted,
+                                         boolean hasAttachments,
+                                         boolean allowConflict) throws ForestException;
 
     public native int insertRevisionWithHistory(String revID,
                                                 byte[] body,

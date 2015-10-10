@@ -224,27 +224,27 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Document_readSelectedBo
 #pragma mark - INSERTING REVISIONS:
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_insertRevision 
+JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_insertRevision
 (JNIEnv *env, jobject self,
  jstring jrevID, jbyteArray jbody,
  jboolean deleted, jboolean hasAtt,
  jboolean allowConflict)
 {
     auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
-    bool ok;
+    int inserted;
     C4Error error;
     {
-
         jstringSlice revID(env, jrevID);
         jbyteArraySlice body(env, jbody, true); // critical
-        ok = c4doc_insertRevision(doc, revID, body, deleted, hasAtt, allowConflict, &error);
+        inserted = c4doc_insertRevision(doc, revID, body, deleted, hasAtt, allowConflict, &error);
     }
-    if (ok){
-        updateSelection(env, self, doc, true);
-        updateRevIDAndFlags(env, self, doc);
-    }
-    else
+    if (inserted < 0) {
         throwError(env, error);
+        return false;
+    }
+    updateSelection(env, self, doc, true);
+    updateRevIDAndFlags(env, self, doc);
+    return (inserted > 0);
 }
 
 

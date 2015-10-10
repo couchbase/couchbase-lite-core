@@ -586,7 +586,7 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 #pragma mark - INSERTING REVISIONS
 
 
-bool c4doc_insertRevision(C4Document *doc,
+int c4doc_insertRevision(C4Document *doc,
                           C4Slice revID,
                           C4Slice body,
                           bool deleted,
@@ -596,9 +596,9 @@ bool c4doc_insertRevision(C4Document *doc,
 {
     auto idoc = internal(doc);
     if (!idoc->_db->mustBeInTransaction(outError))
-        return false;
+        return -1;
     if (!idoc->loadRevisions(NULL))
-        return false;
+        return -1;
     try {
         revidBuffer encodedRevID(revID);
         int httpStatus;
@@ -613,14 +613,16 @@ bool c4doc_insertRevision(C4Document *doc,
             // Success:
             idoc->updateMeta();
             newRev = idoc->_versionedDoc.get(encodedRevID);
-            return idoc->selectRevision(newRev);
+            idoc->selectRevision(newRev);
+            return 1;
         } else if (httpStatus == 200) {
             // Revision already exists, so nothing was added. Not an error.
-            return c4doc_selectRevision(doc, revID, true, outError);
+            c4doc_selectRevision(doc, revID, true, outError);
+            return 0;
         }
         recordHTTPError(httpStatus, outError);
     } catchError(outError)
-    return false;
+    return -1;
 }
 
 
