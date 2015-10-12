@@ -695,7 +695,7 @@ namespace CBForest
             bool hasAttachments, string[] history, C4Error *outError)
         {
             var flattenedStringArray = new C4String[history.Length + 1];
-            flattenedStringArray[1] = new C4String(body);
+            flattenedStringArray[0] = new C4String(body);
             for(int i = 0; i < history.Length; i++) {
                 flattenedStringArray[i + 1] = new C4String(history[i]);
             }

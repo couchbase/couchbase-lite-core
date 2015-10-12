@@ -33,6 +33,19 @@ namespace CBForest
     {
         public C4ErrorDomain domain;
         public int code;
+
+        public override string ToString()
+        {
+            if (domain == C4ErrorDomain.C4) {
+                return String.Format("[C4Error {0}]", (C4ErrorCode)code);
+            }
+
+            if (domain == C4ErrorDomain.ForestDB) {
+                return String.Format("[C4Error {0}]", (ForestDBStatus)code);
+            }
+
+            return String.Format("[C4Error {0},{1}]", domain, code);
+        }
     }
 
     /// <summary>

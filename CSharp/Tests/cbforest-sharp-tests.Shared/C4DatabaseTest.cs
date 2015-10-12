@@ -99,7 +99,7 @@ namespace CBForest.Tests
             var doc = Native.c4doc_get(_db, DOC_ID, true, &error);
             Assert.IsTrue(doc == null);
             Assert.AreEqual(C4ErrorDomain.ForestDB, error.domain);
-            Assert.AreEqual(fdb_status.RESULT_KEY_NOT_FOUND, (fdb_status)error.code);
+            Assert.AreEqual(ForestDBStatus.KeyNotFound, (ForestDBStatus)error.code);
             
             // Now get the doc with mustExist=false, which returns an empty doc:
             doc = Native.c4doc_get(_db, DOC_ID, false, &error);
@@ -321,7 +321,7 @@ namespace CBForest.Tests
             }
             
             if(n < 0) {
-                Console.Error.WriteLine(String.Format("Error({0},{1})", error.domain, error.code));
+                Console.Error.WriteLine(String.Format("Error({0})", error));
             }
             
             Assert.AreEqual(historyCount - 2, n);

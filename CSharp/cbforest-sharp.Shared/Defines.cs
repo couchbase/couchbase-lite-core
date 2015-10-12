@@ -168,147 +168,147 @@ namespace CBForest
         Error = 255
     }
     
-    public enum fdb_status
+    public enum ForestDBStatus
     {
         /// <summary>
         /// ForestDB operation success.
         /// </summary>
-        RESULT_SUCCESS = 0,
+        Success = 0,
 
         /// <summary>
         /// Invalid parameters to ForestDB APIs.
         /// </summary>
-        RESULT_INVALID_ARGS = -1,
+        InvalidArgs = -1,
 
         /// <summary>
         /// Database open operation fails.
         /// </summary>
-        RESULT_OPEN_FAIL = -2,
+        OpenFail = -2,
 
         /// <summary>
         /// Database file not found.
         /// </summary>
-        RESULT_NO_SUCH_FILE = -3,
+        NoSuchFile = -3,
 
         /// <summary>
         /// Database write operation fails.
         /// </summary>
-        RESULT_WRITE_FAIL = -4,
+        WriteFail = -4,
 
         /// <summary>
         /// Database read operation fails.
         /// </summary>
-        RESULT_READ_FAIL = -5,
+        ReadFail = -5,
 
         /// <summary>
         /// Database close operation fails.
         /// </summary>
-        RESULT_CLOSE_FAIL = -6,
+        CloseFail = -6,
 
         /// <summary>
         /// Database commit operation fails.
         /// </summary>
-        RESULT_COMMIT_FAIL = -7,
+        CommitFail = -7,
 
         /// <summary>
         /// Memory allocation fails.
         /// </summary>
-        RESULT_ALLOC_FAIL = -8,
+        AllocFail = -8,
 
         /// <summary>
         /// A key not found in database.
         /// </summary>
-        RESULT_KEY_NOT_FOUND = -9,
+        KeyNotFound = -9,
 
         /// <summary>
         /// Read-only access violation.
         /// </summary>
-        RESULT_RONLY_VIOLATION = -10,
+        ReadOnlyViolation = -10,
 
         /// <summary>
         /// Database compaction fails.
         /// </summary>
-        RESULT_COMPACTION_FAIL = -11,
+        CompactionFail = -11,
 
         /// <summary>
         /// Database iterator operation fails.
         /// </summary>
-        RESULT_ITERATOR_FAIL = -12,
+        IteratorFail = -12,
 
         /// <summary>
         /// ForestDB I/O seek failure.
         /// </summary>
-        RESULT_SEEK_FAIL = -13,
+        SeekFail = -13,
 
         /// <summary>
         /// ForestDB I/O fsync failure.
         /// </summary>
-        RESULT_FSYNC_FAIL = -14,
+        FsyncFail = -14,
 
         /// <summary>
         /// ForestDB I/O checksum error.
         /// </summary>
-        RESULT_CHECKSUM_ERROR = -15,
+        ChecksumError = -15,
 
         /// <summary>
         /// ForestDB I/O file corruption.
         /// </summary>
-        RESULT_FILE_CORRUPTION = -16,
+        FileCorruption = -16,
 
         /// <summary>
         /// ForestDB I/O compression error.
         /// </summary>
-        RESULT_COMPRESSION_FAIL = -17,
+        CompressionFail = -17,
 
         /// <summary>
         /// A database instance with a given sequence number was not found.
         /// </summary>
-        RESULT_NO_DB_INSTANCE = -18,
+        NoDbInstance = -18,
 
         /// <summary>
         /// Requested FDB operation failed as rollback is currently being executed.
         /// </summary>
-        RESULT_FAIL_BY_ROLLBACK = -19,
+        FailByRollback = -19,
 
         /// <summary>
         /// ForestDB config value is invalid.
         /// </summary>
-        RESULT_INVALID_CONFIG = -20,
+        InvalidConfig = -20,
 
         /// <summary>
         /// Try to perform manual compaction when compaction daemon is enabled.
         /// </summary>
-        RESULT_MANUAL_COMPACTION_FAIL = -21,
+        ManualCompactionFail = -21,
 
         /// <summary>
         /// Open a file with invalid compaction mode.
         /// </summary>
-        RESULT_INVALID_COMPACTION_MODE = -22,
+        InvalidCompactionMode = -22,
 
         /// <summary>
         /// Operation cannot be performed as file handle has not been closed.
         /// </summary>
-        RESULT_FILE_IS_BUSY = -23,
+        FileIsBusy = -23,
 
         /// <summary>
         /// Database file remove operation fails.
         /// </summary>
-        RESULT_FILE_REMOTE_FAIL = -24,
+        FileRemoveFail = -24,
 
         /// <summary>
         /// Database file rename operation fails.
         /// </summary>
-        RESULT_FILE_RENAME_FAIL = -25,
+        FileRenameFail = -25,
 
         /// <summary>
         /// Transaction operation fails.
         /// </summary>
-        RESULT_TRANSACTION_FAIL = -26,
+        TransactionFail = -26,
 
         /// <summary>
         /// Requested FDB operation failed due to active transactions.
         /// </summary>
-        RESULT_FAIL_BY_TRANSACTION = -27,
+        FailByTransaction = -27,
 
         /// <summary>
         /// Requested FDB operation failed due to an active compaction task.
@@ -318,80 +318,88 @@ namespace CBForest
         /// <summary>
         /// Filename is too long.
         /// </summary>
-        RESULT_TOO_LONG_FILENAME = -29,
+        TooLongFilename = -29,
 
         /// <summary>
         /// Passed ForestDB handle is Invalid.
         /// </summary>
-        RESULT_INVALID_HANDLE = -30,
+        InvalidHandle = -30,
 
         /// <summary>
         /// A KV store not found in database.
         /// </summary>
-        RESULT_KV_STORE_NOT_FOUND = -31,
+        KVStoreNotFound = -31,
 
         /// <summary>
         /// There is an opened handle of the KV store.
         /// </summary>
-        RESULT_KV_STORE_BUSY = -32,
+        KVStoreBusy = -32,
 
         /// <summary>
         /// Same KV instance name already exists.
         /// </summary>
-        RESULT_INVALID_KV_INSTANCE_NAME = -33,
+        InvalidKVInstanceName = -33,
 
         /// <summary>
         /// Custom compare function is assigned incorrectly.
         /// </summary>
-        RESULT_INVALID_CMP_FUNCTION = -34,
+        InvalidCmpFunction = -34,
 
         /// <summary>
         /// DB file can't be destroyed as the file is being compacted.
         /// Please retry in sometime.
         /// </summary>
-        RESULT_IN_USE_BY_COMPACTOR = -35,
+        InUseByCompactor = -35,
 
         /// <summary>
         /// DB file used in this operation has not been opened
         /// </summary>
-        RESULT_FILE_NOT_OPEN = -36,
+        FileNotOpen = -36,
 
         /// <summary>
         /// Buffer cache is too big to be configured because it is greater than
         /// the physical memory available.
         /// </summary>
-        RESULT_TOO_BIG_BUFFER_CACHE = -37,
+        TooBigBufferCache = -37,
 
         /// <summary>
         /// No commit headers in a database file.
         /// </summary>
-        RESULT_NO_DB_HEADERS = -38,
+        NoDbHeaders = -38,
 
         /// <summary>
         /// DB handle is being used by another thread. Forestdb handles must not be
         /// shared among multiple threads.
         /// </summary>
-        RESULT_HANDLE_BUSY = -39,
+        HandleBusy = -39,
 
         /// <summary>
         /// Asynchronous I/O is not supported in the current OS version.
         /// </summary>
-        RESULT_AIO_NOT_SUPPORTED = -40,
+        AIONotSupported = -40,
 
         /// <summary>
         /// Asynchronous I/O init fails.
         /// </summary>
-        RESULT_AIO_INIT_FAIL = -41,
+        AIOInitFail = -41,
 
         /// <summary>
         /// Asynchronous I/O submit fails.
         /// </summary>
-        RESULT_AIO_SUBMIT_FAIL = -42,
+        AIOSubmitFail = -42,
 
         /// <summary>
         /// Fail to read asynchronous I/O events from the completion queue.
         /// </summary>
-        RESULT_AIO_GETEVENTS_FAIL = -43
+        AIOGetEventsFail = -43,
+
+        BadRevisionID = -1000,
+
+        CorruptRevisionData = -1001,
+
+        CorruptIndexData = -1002,
+
+        AssertionFailed = -1003
     }
 }
 
