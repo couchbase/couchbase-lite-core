@@ -20,10 +20,11 @@
 //
 #define FAKE_ENCRYPTION
 using System;
-using System.IO;
-using NUnit.Framework;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+
+using NUnit.Framework;
 
 namespace CBForest.Tests
 {
@@ -289,6 +290,41 @@ namespace CBForest.Tests
             } 
             
             Assert.AreEqual(100, seq);
+        }
+        
+        [Test]
+        public void TestInsertRevisionWithHistory()
+        {
+            const string REV_2_ID = "2-d00d3333";
+            const string BODY_2 = @"{""ok"":""go""}";
+            CreateRev(DOC_ID, REV_ID, BODY);
+            CreateRev(DOC_ID, REV_2_ID, BODY_2);
+            
+            // Reload the doc:
+            C4Error error;
+            var doc = Native.c4doc_get(_db, DOC_ID, true, &error);
+            
+            // Add 18 revisions; the last two entries in the history repeat the two existing revs:
+            const int historyCount = 20;
+            var revIDs = new List<string>(historyCount);
+            var rand = new Random();
+            for(uint i = historyCount - 1; i >= 2; i--) {
+                revIDs.Add(String.Format("{0}-{1:x8}", i+1, rand.Next())); 
+            }
+            
+            revIDs.Add(REV_2_ID);
+            revIDs.Add(REV_ID);
+            
+            int n;
+            using(var t = new TransactionHelper(_db)) {
+                n = Native.c4doc_insertRevisionWithHistory(doc, @"{""foo"":true}", false, false, revIDs.ToArray(), &error);
+            }
+            
+            if(n < 0) {
+                Console.Error.WriteLine(String.Format("Error({0},{1})", error.domain, error.code));
+            }
+            
+            Assert.AreEqual(historyCount - 2, n);
         }
     }
     

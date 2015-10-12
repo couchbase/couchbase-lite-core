@@ -676,7 +676,7 @@ namespace CBForest
         }
         
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice revID, C4Slice body, 
+        public static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history, 
             uint historyCount, C4Error *outError);
 
@@ -685,28 +685,26 @@ namespace CBForest
         /// On success, the new revision will be selected.
         /// Must be called within a transaction.
         /// <param name="doc">The document to operate on</param>
-        /// <param name="revID">The ID of the revision being inserted</param>
         /// <param name="body">The (JSON) body of the revision</param>
         /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
         /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
         /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions added to the document, or -1 on error.</returns>
-        public static int c4doc_insertRevisionWithHistory(C4Document *doc, string revID, string body, bool deleted, 
+        public static int c4doc_insertRevisionWithHistory(C4Document *doc, string body, bool deleted, 
             bool hasAttachments, string[] history, C4Error *outError)
         {
-            var flattenedStringArray = new C4String[history.Length + 2];
-            flattenedStringArray[0] = new C4String(revID);
+            var flattenedStringArray = new C4String[history.Length + 1];
             flattenedStringArray[1] = new C4String(body);
             for(int i = 0; i < history.Length; i++) {
-                flattenedStringArray[i + 2] = new C4String(history[i]);
+                flattenedStringArray[i + 1] = new C4String(history[i]);
             }
             
-            var sliceArray = flattenedStringArray.Skip(2).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray(); 
+            var sliceArray = flattenedStringArray.Skip(1).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray(); 
             var retVal = default(int);
             fixed(C4Slice *a = sliceArray) {
-                retVal = c4doc_insertRevisionWithHistory(doc, flattenedStringArray[0].AsC4Slice(), 
-                    flattenedStringArray[1].AsC4Slice(), deleted, hasAttachments, a, (uint)history.Length, outError);
+                retVal = c4doc_insertRevisionWithHistory(doc, 
+                    flattenedStringArray[0].AsC4Slice(), deleted, hasAttachments, a, (uint)history.Length, outError);
             }
             
             foreach(var s in flattenedStringArray) {
