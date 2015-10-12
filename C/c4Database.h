@@ -328,17 +328,16 @@ extern "C" {
         On success, the new revision will be selected.
         Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document.
-        @param revID  The ID of the revision being inserted.
-        @param body  The (JSON) body of the revision.
-        @param deleted  True if this revision is a deletion (tombstone).
-        @param hasAttachments  True if this revision contains an _attachments dictionary.
-        @param history  The ancestors' revision IDs, starting with the parent, in reverse order.
+        @param body  The (JSON) body of the new revision.
+        @param deleted  True if the new revision is a deletion (tombstone).
+        @param hasAttachments  True if the new revision contains an _attachments dictionary.
+        @param history  The ancestors' revision IDs, starting with the new revision's,
+                        in reverse order.
         @param historyCount  The number of items in the history array.
         @param outError  Error information is stored here.
         @return The number of revisions added to the document, or -1 on error. */
 
     int c4doc_insertRevisionWithHistory(C4Document *doc,
-                                        C4Slice revID,
                                         C4Slice body,
                                         bool deleted,
                                         bool hasAttachments,

@@ -150,6 +150,47 @@ class C4DatabaseTest : public C4Test {
     }
 
 
+    void testInsertRevisionWithHistory() {
+        const C4Slice kRev2ID = C4STR("2-d00d3333");
+        const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
+        createRev(kDocID, kRevID, kBody);
+        createRev(kDocID, kRev2ID, kBody2);
+
+        // Reload the doc:
+        C4Error error;
+        C4Document *doc = c4doc_get(db, kDocID, true, &error);
+
+        // Add 18 revisions; the last two entries in the history repeat the two existing revs:
+        const unsigned kHistoryCount = 20;
+        std::vector<std::string> revIDs;
+        revIDs.reserve(kHistoryCount);
+        for (unsigned i = kHistoryCount - 1; i >= 2; i--) {
+            char buf[20];
+            sprintf(buf, "%u-%08lx", i+1, (unsigned long)random());
+            std::string str(buf);
+            revIDs.push_back(str);
+        }
+        revIDs.push_back(toString(kRev2ID));
+        revIDs.push_back(toString(kRevID));
+
+        C4Slice history[kHistoryCount];
+        for (unsigned i = 0; i < kHistoryCount; i++) {
+            history[i] = c4str(revIDs[i].c_str());
+        }
+
+        int n;
+        {
+            TransactionHelper t(db);
+            n = c4doc_insertRevisionWithHistory(doc, c4str("{\"foo\":true}"),
+                                                false, false,
+                                                history, kHistoryCount, &error);
+        }
+        if (n < 0)
+            std::cerr << "Error(" << error.domain << "," << error.code << ")\n";
+        AssertEqual(n, (int)(kHistoryCount-2));
+    }
+
+
     void testAllDocs() {
         char docID[20];
         for (int i = 1; i < 100; i++) {
@@ -254,6 +295,7 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
+    CPPUNIT_TEST( testInsertRevisionWithHistory );
     CPPUNIT_TEST( testAllDocs );
     CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST_SUITE_END();

@@ -250,7 +250,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_insertRevision
 
 JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHistory
 (JNIEnv *env, jobject self,
- jstring jrevID, jbyteArray jbody,
+ jbyteArray jbody,
  jboolean deleted, jboolean hasAtt,
  jobjectArray jhistory)
 {
@@ -270,9 +270,8 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
             env->DeleteLocalRef(jitem);
         }
 
-        jstringSlice revID(env, jrevID);
         jbyteArraySlice body(env, jbody, true); // critical
-        inserted = c4doc_insertRevisionWithHistory(doc, revID, body, deleted, hasAtt,
+        inserted = c4doc_insertRevisionWithHistory(doc, body, deleted, hasAtt,
                                                    history, n,
                                                    &error);
     }

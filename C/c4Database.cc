@@ -627,7 +627,6 @@ int c4doc_insertRevision(C4Document *doc,
 
 
 int c4doc_insertRevisionWithHistory(C4Document *doc,
-                                    C4Slice revID,
                                     C4Slice body,
                                     bool deleted,
                                     bool hasAttachments,
@@ -635,6 +634,8 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
                                     unsigned historyCount,
                                     C4Error *outError)
 {
+    if (historyCount < 1)
+        return 0;
     auto idoc = internal(doc);
     if (!idoc->_db->mustBeInTransaction(outError))
         return -1;
@@ -642,12 +643,12 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
         return false;
     int commonAncestor = -1;
     try {
-        std::vector<revidBuffer> revIDBuffers;
+        std::vector<revidBuffer> revIDBuffers(historyCount);
         std::vector<revid> revIDs;
-        revIDs.push_back(revidBuffer(revID));
+        revIDs.reserve(historyCount);
         for (unsigned i = 0; i < historyCount; i++) {
-            revIDBuffers.push_back(revidBuffer(history[i]));
-            revIDs.push_back(revIDBuffers.back());
+            revIDBuffers[i].parse(history[i]);
+            revIDs.push_back(revIDBuffers[i]);
         }
         commonAncestor = idoc->_versionedDoc.insertHistory(revIDs,
                                                            body,
@@ -655,7 +656,7 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
                                                            hasAttachments);
         if (commonAncestor >= 0) {
             idoc->updateMeta();
-            idoc->selectRevision(idoc->_versionedDoc[revidBuffer(revID)]);
+            idoc->selectRevision(idoc->_versionedDoc[revidBuffer(history[0])]);
         } else {
             recordHTTPError(400, outError); // must be invalid revision IDs
         }

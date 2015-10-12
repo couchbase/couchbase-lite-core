@@ -79,5 +79,6 @@ std::string toJSON(C4KeyReader);
 
 static inline std::string toJSON(C4Key* key)    {return toJSON(c4key_read(key));}
 
+static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
 
 #endif /* c4Test_hh */

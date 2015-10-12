@@ -52,8 +52,7 @@ public class Document implements Constants{
                                          boolean hasAttachments,
                                          boolean allowConflict) throws ForestException;
 
-    public native int insertRevisionWithHistory(String revID,
-                                                byte[] body,
+    public native int insertRevisionWithHistory(byte[] body,
                                                 boolean deleted,
                                                 boolean hasAttachments,
                                                 String[] history) throws ForestException;

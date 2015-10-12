@@ -42,7 +42,6 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
     }
 
     std::vector<jstringSlice *> keeper;
-    jboolean isCopy;
     for (jsize i = 0; i < n; i++) {
         jstring js = (jstring)env->GetObjectArrayElement(jdocIDs, i);
         jstringSlice* item = new jstringSlice(env, js);
