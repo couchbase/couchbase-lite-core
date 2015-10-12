@@ -224,6 +224,8 @@ static NSString* toJSON(Collatable c) {
     AssertEqual(toJSON(Collatable("\"ironic\"")), @"\"\\\"ironic\\\"\"");
     AssertEqual(toJSON(Collatable("an \"ironic\" twist")), @"\"an \\\"ironic\\\" twist\"");
     AssertEqual(toJSON(Collatable("\\foo\\")), @"\"\\\\foo\\\\\"");
+    AssertEqual(toJSON(Collatable("\tline1\nline2\t")), @"\"\\tline1\\nline2\\t\"");
+    AssertEqual(toJSON(Collatable("line1\01\02line2")), @"\"line1\\u0001\\u0002line2\"");
 
     c = Collatable();
     c.beginArray();

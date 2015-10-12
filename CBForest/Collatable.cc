@@ -243,11 +243,30 @@ namespace forestdb {
         auto start = (const uint8_t*)str.buf;
         auto end = (const uint8_t*)str.end();
         for (auto p = start; p < end; p++) {
-            if (*p == '"' || *p == '\\') {
+            uint8_t ch = *p;
+            if (ch == '"' || ch == '\\' || ch < 32 || ch == 127) {
                 // Write characters from start up to p-1:
                 out << std::string((char*)start, p-start);
-                out << "\\";
-                start = p;
+                start = p + 1;
+                switch (ch) {
+                    case '"':
+                    case '\\':
+                        out << "\\";
+                        --start; // ch will be written in next pass
+                        break;
+                    case '\n':
+                        out << "\\n";
+                        break;
+                    case '\t':
+                        out << "\\t";
+                        break;
+                    default: {
+                        char buf[7];
+                        sprintf(buf, "\\u%04u", (unsigned)ch);
+                        out << buf;
+                        break;
+                    }
+                }
             }
         }
         out << std::string((char*)start, end-start);
