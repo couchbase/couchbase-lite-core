@@ -111,6 +111,9 @@ namespace forestdb {
             flags = kDeleted;
         }
 
+        // update _flags instance variable
+        _flags = flags;
+
         // Write to _doc.meta:
         slice meta = _doc.resizeMeta(2 + revID.size + SizeOfVarInt(_docType.size) + _docType.size);
         meta.writeFrom(slice(&flags,1));

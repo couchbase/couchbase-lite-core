@@ -261,22 +261,28 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
         // Convert jhistory, a Java String[], to a C array of C4Slice:
         jsize n = env->GetArrayLength(jhistory);
         C4Slice history[n];
-        std::vector<alloc_slice> historyAlloc;
+        std::vector<jstringSlice*> historyAlloc;
         for (jsize i = 0; i < n; i++) {
-            jbyteArray jitem = (jbyteArray) env->GetObjectArrayElement(jhistory, i);
-            alloc_slice item = jbyteArraySlice::copy(env, jitem);
+            jstring js = (jstring)env->GetObjectArrayElement(jhistory, i);
+            jstringSlice *item = new jstringSlice(env, js);
             historyAlloc.push_back(item); // so its memory won't be freed
-            history[i] = (C4Slice){item.buf, item.size};
-            env->DeleteLocalRef(jitem);
+            history[i] = *item;
         }
 
         jbyteArraySlice body(env, jbody, true); // critical
         inserted = c4doc_insertRevisionWithHistory(doc, body, deleted, hasAtt,
                                                    history, n,
                                                    &error);
+
+        // release memory
+        for (jsize i = 0; i < n; i++)
+            delete historyAlloc.at(i);
+        historyAlloc.clear();
     }
-    if (inserted >= 0)
+    if (inserted >= 0) {
+        updateSelection(env, self, doc);
         updateRevIDAndFlags(env, self, doc);
+    }
     else
         throwError(env, error);
     return inserted;
