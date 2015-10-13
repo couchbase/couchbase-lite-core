@@ -139,18 +139,23 @@ forestdb::Database* asDatabase(C4Database *db) {
 
 Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
     auto config = Database::defaultConfig();
+    // global to all databases:
+    config.buffercache_size = kDBBufferCacheSize;
+    config.compress_document_body = true;
+    config.compactor_sleep_duration = kAutoCompactInterval;
+    config.num_compactor_threads = 1;
+    config.num_bgflusher_threads = 1;
+
+    // per-database settings:
     config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
     if (flags & kC4DB_ReadOnly)
         config.flags |= FDB_OPEN_FLAG_RDONLY;
     if (flags & kC4DB_Create)
         config.flags |= FDB_OPEN_FLAG_CREATE;
-    config.buffercache_size = kDBBufferCacheSize;
     config.wal_threshold = kDBWALThreshold;
     config.wal_flush_before_commit = true;
     config.seqtree_opt = true;
-    config.compress_document_body = true;
     config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
-    config.compactor_sleep_duration = kAutoCompactInterval; // global to all databases
     if (key) {
         config.encryption_key.algorithm = key->algorithm;
         memcpy(config.encryption_key.bytes, key->bytes, sizeof(config.encryption_key.bytes));

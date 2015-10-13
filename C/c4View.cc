@@ -14,9 +14,6 @@
 using namespace forestdb;
 
 
-// Size of ForestDB buffer cache allocated for a database
-static const size_t kViewDBBufferCacheSize = (8*1024*1024);
-
 // ForestDB Write-Ahead Log size (# of records)
 static const size_t kViewDBWALThreshold = 1024;
 
@@ -146,7 +143,6 @@ C4View* c4view_open(C4Database* db,
 {
     try {
         auto config = c4DbConfig(flags, key);
-        config.buffercache_size = kViewDBBufferCacheSize;
         config.wal_threshold = kViewDBWALThreshold;
         config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
 
