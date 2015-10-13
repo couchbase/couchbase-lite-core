@@ -644,13 +644,9 @@ int c4doc_insertRevisionWithHistory(C4Document *doc,
     int commonAncestor = -1;
     try {
         std::vector<revidBuffer> revIDBuffers(historyCount);
-        std::vector<revid> revIDs;
-        revIDs.reserve(historyCount);
-        for (unsigned i = 0; i < historyCount; i++) {
+        for (unsigned i = 0; i < historyCount; i++)
             revIDBuffers[i].parse(history[i]);
-            revIDs.push_back(revIDBuffers[i]);
-        }
-        commonAncestor = idoc->_versionedDoc.insertHistory(revIDs,
+        commonAncestor = idoc->_versionedDoc.insertHistory(revIDBuffers,
                                                            body,
                                                            deleted,
                                                            hasAttachments);

@@ -116,7 +116,8 @@ namespace forestdb {
                                const Revision* parent,
                                bool allowConflict,
                                int &httpStatus);
-        int insertHistory(const std::vector<revid> history, slice body,
+        int insertHistory(const std::vector<revidBuffer> history,
+                          slice body,
                           bool deleted, bool hasAttachments);
 
         unsigned prune(unsigned maxDepth);

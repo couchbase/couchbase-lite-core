@@ -414,7 +414,7 @@ namespace forestdb {
         return insert(revID, body, deleted, hasAttachments, parent, allowConflict, httpStatus);
     }
 
-    int RevTree::insertHistory(const std::vector<revid> history, slice data,
+    int RevTree::insertHistory(const std::vector<revidBuffer> history, slice data,
                                bool deleted, bool hasAttachments) {
         CBFAssert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
