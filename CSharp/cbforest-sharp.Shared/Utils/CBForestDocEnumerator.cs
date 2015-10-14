@@ -121,6 +121,10 @@ namespace CBForest
                 _current = null;
             }
 
+            if(_e == null) {
+                return false;
+            }
+
             var docPtr = Native.c4enum_nextDocument(_e, null);
             if (docPtr == null) {
                 return false;

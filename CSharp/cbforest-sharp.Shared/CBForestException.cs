@@ -30,8 +30,7 @@ namespace CBForest
 
         #region Variables
 
-        private readonly int _code;
-        private readonly C4ErrorDomain _domain;
+        public readonly C4Error Error;
 
         #endregion
 
@@ -43,7 +42,7 @@ namespace CBForest
         public int Code 
         {
             get {
-                return _code;
+                return Error.code;
             }
         }
 
@@ -54,7 +53,7 @@ namespace CBForest
         public C4ErrorDomain Domain
         {
             get {
-                return _domain;
+                return Error.domain;
             }
         }
 
@@ -63,10 +62,14 @@ namespace CBForest
         #region Constructors
 
         public CBForestException(int code, C4ErrorDomain domain) 
-            : base(String.Format("CBForest exception ({0} : {1})", domain, code))
+            : this(new C4Error { code = code, domain = domain })
         {
-            _code = code;
-            _domain = domain;
+        }
+
+        public CBForestException(C4Error error)
+            : base(String.Format("CBForest exception ({0})", error))
+        {
+            Error = error;
         }
 
         #endregion
