@@ -559,7 +559,7 @@ namespace CBForest
     public struct C4QueryEnumerator
     {
         public C4KeyReader key;   
-        public C4KeyReader value;
+        public C4Slice value;
         public C4Slice docID;
         public ulong docSequence;
     }

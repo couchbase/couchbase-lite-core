@@ -1183,28 +1183,45 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
-            C4Key** emittedKeys, C4Key** emittedValues, C4Error *outError);
+            C4Key** emittedKeys, C4Slice* emittedValues, C4Error *outError);
 
         /// <summary>
         /// Emits new keys/values derived from one document, for one view.
         /// This function needs to be called once for each(document, view) pair.Even if the view's map
         /// function didn't emit anything, the old keys/values need to be cleaned up.
+        ///      
+        /// Values are uninterpreted by CBForest, but by convention are JSON. A special value "*"
+        /// (a single asterisk) is used as a placeholder for the entire document.
+        ///
         /// </summary>
         /// <param name="indexer">The indexer to operate on</param>
         /// <param name="document">The document being indexed</param>
         /// <param name="viewNumber">The position of the view in the indexer's views[] array</param>
         /// <param name="emittedKeys">Array of keys being emitted</param>
-        /// <param name="emittedValues"> Array of values being emitted</param>
+        /// <param name="emittedValues">Array of values being emitted. (JSON by convention.)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
         public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
-            C4Key*[] emittedKeys, C4Key*[] emittedValues, C4Error *outError)
+            C4Key*[] emittedKeys, C4Slice[] emittedValues, C4Error *outError)
         {
             fixed(C4Key** keysPtr = emittedKeys)
-            fixed(C4Key** valuesPtr = emittedValues)
+            fixed(C4Slice* valuesPtr = emittedValues)
             {
                 return c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, keysPtr, valuesPtr, outError);
             }
+        }
+
+        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
+            C4Key*[] emittedKeys, string[] emittedValues, C4Error *outError)
+        {
+            var c4StringArr = emittedValues.Select(x => new C4String(x)).ToArray();
+            var sliceArr = c4StringArr.Select(x => x.AsC4Slice()).ToArray();
+            var retVal = c4indexer_emit(indexer, document, viewNumber, emittedKeys, sliceArr, outError);
+            foreach(var c4str in c4StringArr) {
+                c4str.Dispose();
+            }
+    
+            return retVal;
         }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_end")]

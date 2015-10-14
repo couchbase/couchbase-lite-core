@@ -30,8 +30,8 @@ namespace CBForest
         private readonly Lazy<string> _valueJSON;
 
         public readonly C4KeyReader Key;
-
-        public readonly C4KeyReader Value;
+        
+        public readonly C4Slice Value;
 
         public readonly long DocSequence;
 
@@ -56,7 +56,7 @@ namespace CBForest
             }
         }
 
-        internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4KeyReader value, long docSequence)
+        internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4Slice value, long docSequence)
         {
             _docID = new Lazy<string>(() => (string)docID);
             Key = key;
@@ -68,11 +68,7 @@ namespace CBForest
                 return Native.c4key_toJSON(&localKey);
             });
 
-            _valueJSON = new Lazy<string>(() =>
-            {
-                var localVal = value;
-                return Native.c4key_toJSON(&localVal);
-            });
+            _valueJSON = new Lazy<string>(() => (string)value);
         }
     }
 

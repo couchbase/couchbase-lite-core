@@ -87,7 +87,7 @@ namespace CBForest.Tests
                 }   
                 
                 Assert.AreEqual(buf, ToJSON(e->key));
-                Assert.AreEqual(C4KeyToken.EndSequence, Native.c4key_peek(&e->value));
+                Assert.IsTrue(e->value.Equals("1234"));
             }
             
             Assert.AreEqual(0, error.code);
@@ -137,7 +137,7 @@ namespace CBForest.Tests
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 // Index 'doc':
                 var keys = new C4Key*[] { Native.c4key_new(), Native.c4key_new() };
-                var vals = new C4Key*[] { null, null };
+                var vals = new string[] { "1234", "1234" };
                 Native.c4key_addString(keys[0], doc->docID);
                 Native.c4key_addNumber(keys[1], doc->sequence);
                 Assert.IsTrue(Native.c4indexer_emit(ind, doc, 0, keys, vals, &error));
