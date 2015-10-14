@@ -39,15 +39,15 @@ namespace forestdb {
 
     class EmitFn {
     public:
-        virtual void emit(Collatable key, Collatable value) =0;
-        virtual void emit(const geohash::area& boundingBox, slice geoJSON, Collatable value) =0;
+        virtual void emit(Collatable key, slice value) =0;
+        virtual void emit(const geohash::area& boundingBox, slice geoJSON, slice value) =0;
 
         /** Emits the text for full-text indexing. Each word in the text will be emitted separately
             as a string key. When querying, use IndexEnumerator::getTextToken to read the info. */
-        virtual void emitTextTokens(slice text, Collatable value) =0;
+        virtual void emitTextTokens(slice text, slice value) =0;
 
-        inline void operator() (Collatable key, Collatable value) {emit(key, value);}
-        inline void operator() (const geohash::area& bbox, slice geoJSON, Collatable value)
+        inline void operator() (Collatable key, slice value) {emit(key, value);}
+        inline void operator() (const geohash::area& bbox, slice geoJSON, slice value)
                                                             {emit(bbox, geoJSON, value);}
     };
 
@@ -100,7 +100,7 @@ namespace forestdb {
         void saveState(Transaction& t);
         bool updateDocInIndex(Transaction&, const Mappable&);
         bool emitForDocument(Transaction& t, slice docID, sequence docSequence,
-                             std::vector<Collatable> keys, std::vector<Collatable> values);
+                             std::vector<Collatable> keys, std::vector<alloc_slice> values);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
 
         forestdb::KeyStore _sourceDatabase;
@@ -145,7 +145,7 @@ namespace forestdb {
                              sequence docSequence,
                              unsigned viewNumber,
                              std::vector<Collatable> keys,
-                             std::vector<Collatable> values);
+                             std::vector<slice> values);
 
     protected:
         /** Transforms the Document to a Mappable and invokes addMappable.

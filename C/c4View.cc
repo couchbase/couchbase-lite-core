@@ -259,15 +259,16 @@ bool c4indexer_emit(C4Indexer *indexer,
                     unsigned viewIndex,
                     unsigned emitCount,
                     C4Key* emittedKeys[],
-                    C4Key* emittedValues[],
+                    C4Slice emittedValues[],
                     C4Error *outError)
 {
     try {
-        std::vector<Collatable> keys, values;
+        std::vector<Collatable> keys;
+        std::vector<slice> values;
         if (!(doc->flags & kDeleted)) {
             for (unsigned i = 0; i < emitCount; ++i) {
                 keys.push_back(*emittedKeys[i]);
-                values.push_back(emittedValues[i] ? *emittedValues[i] : Collatable());
+                values.push_back(emittedValues[i]);
             }
         }
         indexer->emitDocIntoView(doc->docID, doc->sequence, viewIndex, keys, values);
@@ -363,12 +364,13 @@ bool c4queryenum_next(C4QueryEnumerator *e,
         auto ei = asInternal(e);
         if (ei->_enum.next()) {
             ei->key = asKeyReader(ei->_enum.key());
-            ei->value = asKeyReader(ei->_enum.value());
+            ei->value = ei->_enum.value();
             ei->docID = ei->_enum.docID();
             ei->docSequence = ei->_enum.sequence();
             return true;
         } else {
-            ei->key = ei->value = {NULL, 0};
+            ei->key = {NULL, 0};
+            ei->value = slice::null;
             ei->docID = slice::null;
             ei->docSequence = 0;
             recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error

@@ -48,6 +48,10 @@ namespace forestdb {
                              Collatable key,
                              unsigned emitIndex);
 
+        /** Used as a placeholder for an index value that's stored out of line, i.e. that
+            represents the entire document being indexed. */
+        static const slice kSpecialValue;
+
     private:
         friend class IndexWriter;
         friend class IndexEnumerator;
@@ -65,7 +69,7 @@ namespace forestdb {
         bool update(slice docID,
                     sequence docSequence,
                     std::vector<Collatable> keys,
-                    std::vector<Collatable> values,
+                    std::vector<alloc_slice> values,
                     uint64_t &rowCount);
 
     private:
@@ -94,7 +98,7 @@ namespace forestdb {
         const Index* index() const              {return _index;}
 
         CollatableReader key() const            {return CollatableReader(_key);}
-        CollatableReader value() const          {return CollatableReader(_value);}
+        slice value() const                     {return _value;}
         slice docID() const                     {return _docID;}
         forestdb::sequence sequence() const     {return _sequence;}
 
@@ -110,7 +114,6 @@ namespace forestdb {
     protected:
         virtual bool approve(slice key)         {return true;}
         bool read();
-        void readValueAndSequence();
         void setValue(slice value)              {_value = value;}
 
     private:

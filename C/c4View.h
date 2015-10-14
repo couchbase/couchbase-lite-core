@@ -172,12 +172,16 @@ extern "C" {
         This function needs to be called *exactly once* for each (document, view) pair during
         indexing. (Even if the view's map function didn't emit anything, the old keys/values need to
         be cleaned up.)
+     
+        Values are uninterpreted by CBForest, but by convention are JSON. A special value "*"
+        (a single asterisk) is used as a placeholder for the entire document.
+
         @param indexer  The indexer task.
         @param document  The document being indexed.
         @param viewNumber  The position of the view in the indexer's views[] array.
         @param emitCount  The number of emitted key/value pairs.
         @param emittedKeys  Array of keys being emitted.
-        @param emittedValues  Array of values being emitted.
+        @param emittedValues  Array of values being emitted. (JSON by convention.)
         @param outError  On failure, error info will be stored here.
         @return  True on success, false on failure. */
     bool c4indexer_emit(C4Indexer *indexer,
@@ -185,7 +189,7 @@ extern "C" {
                         unsigned viewNumber,
                         unsigned emitCount,
                         C4Key* emittedKeys[],
-                        C4Key* emittedValues[],
+                        C4Slice emittedValues[],
                         C4Error *outError);
 
     /** Finishes an indexing task and frees the indexer reference.
@@ -197,6 +201,12 @@ extern "C" {
                        bool commit,
                        C4Error *outError);
 
+// A view value that represents a placeholder for the entire document
+#ifdef _MSC_VER
+#define kC4PlaceholderValue ({"*", 1})
+#else
+#define kC4PlaceholderValue ((C4Slice){"*", 1})
+#endif
 
     //////// QUERYING:
 
@@ -226,7 +236,7 @@ extern "C" {
         c4queryenum_free. */
     typedef struct {
         C4KeyReader key;
-        C4KeyReader value;
+        C4Slice value;
         C4Slice docID;
         C4SequenceNumber docSequence;
     } C4QueryEnumerator;

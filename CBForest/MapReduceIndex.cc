@@ -22,8 +22,8 @@
 
 namespace forestdb {
 
-    static int64_t kMinFormatVersion = 3;
-    static int64_t kCurFormatVersion = 3;
+    static int64_t kMinFormatVersion = 4;
+    static int64_t kCurFormatVersion = 4;
 
     MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
     :Index(db, name),
@@ -154,7 +154,7 @@ namespace forestdb {
         (void)reader.read(); // skip text
         if (reader.peekTag() == Collatable::kEndSequence)
             return alloc_slice();
-        return alloc_slice(reader.read());
+        return alloc_slice(reader.readString());
     }
 
     void MapReduceIndex::readGeoArea(slice docID, sequence seq, unsigned geoID,
@@ -162,6 +162,7 @@ namespace forestdb {
                                      alloc_slice& outGeoJSON,
                                      alloc_slice& outValue)
     {
+        // Reads data written by emitter::emit(const geohash::area&,...), below
         alloc_slice entry = getSpecialEntry(docID, seq, geoID);
         CollatableReader reader(entry);
         reader.beginArray();
@@ -173,7 +174,7 @@ namespace forestdb {
             else
                 (void)reader.read();
             if (reader.peekTag() != CollatableReader::kEndSequence)
-                outValue = alloc_slice(reader.read());
+                outValue = alloc_slice(reader.readString());
         }
     }
 
@@ -193,9 +194,9 @@ namespace forestdb {
             delete _tokenizer;
         }
 
-        inline void emit(Collatable key, Collatable value) {
+        inline void emit(Collatable key, slice value) {
             keys.push_back(key);
-            values.push_back(value);
+            values.push_back(alloc_slice(value));
             ++_emitCount;
         }
 
@@ -203,7 +204,7 @@ namespace forestdb {
             emit(key, value);
         }
 
-        void emitTextTokens(slice text, Collatable value) {
+        void emitTextTokens(slice text, slice value) {
             if (!_tokenizer)
                 _tokenizer = new Tokenizer();
             std::unordered_map<std::string, Collatable> tokens;
@@ -233,15 +234,12 @@ namespace forestdb {
 
         static const unsigned kMaxCoveringHashes = 4;
 
-        virtual void emit(const geohash::area& boundingBox, slice geoJSON, Collatable value) {
+        virtual void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
             Debug("emit {%g ... %g, %g ... %g}",
                   boundingBox.latitude.min, boundingBox.latitude.max,
                   boundingBox.longitude.min, boundingBox.longitude.max);
             // Emit the bbox, geoJSON, and value, under a special key:
-            Collatable geoJSONColl;
-            if (geoJSON.size > 0)
-                geoJSONColl << geoJSON;
-            unsigned specialKey = emitSpecial(boundingBox, geoJSONColl, value);
+            unsigned specialKey = emitSpecial(boundingBox, geoJSON, value);
             Collatable collValue(specialKey);
 
             // Now emit a set of geohashes that cover the given area:
@@ -257,7 +255,7 @@ namespace forestdb {
         // with an emit, such as the full text or the geo-JSON. This data is read by
         // MapReduceIndex::getSpecialEntry
         template <typename KEY>
-        unsigned emitSpecial(const KEY &key, Collatable value1, Collatable value2 = Collatable()) {
+        unsigned emitSpecial(const KEY &key, slice value1, slice value2 = slice::null) {
             Collatable collKey;
             collKey.addNull();
 
@@ -265,12 +263,12 @@ namespace forestdb {
             collValue.beginArray();
             collValue << key;
             // Write value1 (or a null placeholder) then value2
-            if (value1.size() > 0 || value2.size() > 0) {
-                if (value1.size() > 0)
+            if (value1.size > 0 || value2.size > 0) {
+                if (value1.size > 0)
                     collValue << value1;
                 else
                     collValue.addNull();
-                if (value2.size() > 0)
+                if (value2.size > 0)
                     collValue << value2;
             }
             collValue.endArray();
@@ -281,7 +279,7 @@ namespace forestdb {
         }
 
         std::vector<Collatable> keys;
-        std::vector<Collatable> values;
+        std::vector<alloc_slice> values;
 
     private:
         Tokenizer* _tokenizer;
@@ -301,7 +299,9 @@ namespace forestdb {
         return emitForDocument(t, doc.key(), doc.sequence(), emit.keys, emit.values);
     }
 
-    bool MapReduceIndex::emitForDocument(Transaction& t, slice docID, sequence docSequence, std::vector<Collatable> keys, std::vector<Collatable> values)
+    bool MapReduceIndex::emitForDocument(Transaction& t, slice docID, sequence docSequence,
+                                         std::vector<Collatable> keys,
+                                         std::vector<alloc_slice> values)
     {
         _lastSequenceIndexed = docSequence;
         if (IndexWriter(this,t).update(docID, docSequence, keys, values, _rowCount)) {
@@ -392,7 +392,7 @@ namespace forestdb {
                                            sequence docSequence,
                                            unsigned viewNumber,
                                            std::vector<Collatable> keys,
-                                           std::vector<Collatable> values)
+                                           std::vector<slice> values)
     {
         emitter emit;
         for (unsigned i = 0; i < keys.size(); ++i)

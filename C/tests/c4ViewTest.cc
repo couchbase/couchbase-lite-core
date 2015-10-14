@@ -58,12 +58,13 @@ public:
         C4Document *doc;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
-            C4Key *keys[2], *values[2];
+            C4Key *keys[2];
+            C4Slice values[2];
             keys[0] = c4key_new();
             keys[1] = c4key_new();
             c4key_addString(keys[0], doc->docID);
             c4key_addNumber(keys[1], doc->sequence);
-            values[0] = values[1] = NULL;
+            values[0] = values[1] = C4STR("1234");
             Assert(c4indexer_emit(ind, doc, 0, 2, keys, values, &error));
             c4key_free(keys[0]);
             c4key_free(keys[1]);
@@ -100,7 +101,7 @@ public:
                 AssertEqual(e->docSequence, (C4SequenceNumber)(i - 100));
             }
             AssertEqual(toJSON(e->key), std::string(buf));
-            AssertEqual(c4key_peek(&e->value), kC4EndSequence);
+            AssertEqual(e->value, C4STR("1234"));
 
         }
         AssertEqual(error.code, 0);

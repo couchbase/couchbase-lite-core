@@ -57,23 +57,16 @@ public class View {
         return new DocumentIterator(enumerateDocuments(_indexerHandle), false);
     }
 
-    public void emit(Document doc, Object[] keys, Object[] values) throws ForestException {
+    public void emit(Document doc, Object[] keys, byte[][] values) throws ForestException {
 
         // initialize C4Key
         long keyHandles[] = new long[keys.length];
-        long valueHandles[] = new long[values.length];
         for (int i = 0; i < keys.length; i++) {
             keyHandles[i] = objectToKey(keys[i]);
-            valueHandles[i] = objectToKey(values[i]);
         }
 
-        emit(_indexerHandle, doc._handle, keyHandles, valueHandles);
-
-        // release C4Key
-        for (int i = 0; i < keys.length; i++) {
-            freeKey(keyHandles[i]);
-            freeKey(valueHandles[i]);
-        }
+        emit(_indexerHandle, doc._handle, keyHandles, values);
+        // C4Keys in keyHandles are freed by the native method
     }
 
     public void endIndex(boolean commit) throws ForestException {
@@ -84,7 +77,7 @@ public class View {
     // native methods for indexer
     private native long beginIndex(long dbHandle, long viewHandle) throws ForestException;
     private native long enumerateDocuments(long indexerHandler);
-    private native void emit(long indexerHandler, long docHandler, long[] keys, long[] values) throws ForestException;
+    private native void emit(long indexerHandler, long docHandler, long[] keys, byte[][] values) throws ForestException;
     private native void endIndex(long indexerHandler, boolean commit) throws ForestException;
     // NOTE: endIndex also frees Indexer
 

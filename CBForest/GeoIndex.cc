@@ -78,8 +78,7 @@ namespace forestdb {
 
     bool GeoIndexEnumerator::approve(slice key) {
         // Have we seen this result before?
-        readValueAndSequence();
-        unsigned geoID = (unsigned)value().readInt();
+        unsigned geoID = (unsigned)CollatableReader(value()).readInt();
         ItemID item((std::string)docID(), geoID);
         if (_alreadySeen.find(item) != _alreadySeen.end()) {
             _dups++;

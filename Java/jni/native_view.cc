@@ -10,6 +10,7 @@
 #include "native_glue.hh"
 #include "c4View.h"
 #include <algorithm>
+#include <vector>
 
 
 using namespace forestdb::jni;
@@ -125,24 +126,34 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_enumerateDocuments
     return (jlong)e;
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobject self, jlong indexerHandle, jlong documentHandler, jlongArray jkeys, jlongArray jvalues)
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobject self, jlong indexerHandle, jlong documentHandler, jlongArray jkeys, jobjectArray jvalues)
 {
     C4Indexer* indexer = (C4Indexer*)indexerHandle;
     C4Document* doc = (C4Document*)documentHandler;
     size_t count = env->GetArrayLength(jkeys);
     jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
-    jlong *values = env->GetLongArrayElements(jvalues, NULL);
     C4Key *c4keys[count];
-    C4Key *c4values[count];
-    for(int i = 0; i < count; i++){
-        c4keys[i]   = (C4Key *)keys[i];
-        c4values[i] = (C4Key *)values[i];
+    C4Slice c4values[count];
+    std::vector<jbyteArraySlice> valueBufs;
+    for(int i = 0; i < count; i++) {
+        c4keys[i] = (C4Key*)keys[i];
+        jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
+        if (jvalue) {
+            valueBufs.push_back(jbyteArraySlice(env, jvalue));
+            c4values[i] = valueBufs.back();
+        } else {
+            c4values[i] = kC4SliceNull;
+        }
     }
+
     C4Error error;
     bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
                                  c4keys, c4values, &error);
-    env->ReleaseLongArrayElements(jkeys,   keys,   JNI_ABORT);
-    env->ReleaseLongArrayElements(jvalues, values, JNI_ABORT);
+
+    for(int i = 0; i < count; i++)
+        c4key_free(c4keys[i]);
+    env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
+
     if(!result)
         throwError(env, error);
 }

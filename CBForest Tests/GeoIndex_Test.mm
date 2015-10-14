@@ -36,7 +36,7 @@ public:
         ++numMapCalls;
         auto area = ((TestGeoMappable&)mappable).area;
         Collatable value(numMapCalls);
-        emit(area, slice::null, value);
+        emit(area, slice("{\"geo\":true}"), value);
     }
 };
 
@@ -132,11 +132,14 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
     for (GeoIndexEnumerator e(index, queryArea); e.next(); ) {
         area a = e.keyBoundingBox();
         ++found;
-        int64_t emitID = e.value().readInt();
+        int64_t emitID = CollatableReader(e.value()).readInt();
         NSLog(@"key = %s = (%g, %g)...(%g, %g) doc = '%@' #%lld", e.key().toJSON().c_str(),
               a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max,
               (NSString*)e.docID(), emitID);
         XCTAssert(a.intersects(queryArea));
+        NSString* geoJSON = (NSString*)e.keyGeoJSON();
+        NSLog(@"keyGeoJSON = %@", geoJSON);
+        AssertEqual(geoJSON, @"{\"geo\":true}");
     }
     NSLog(@"Found %u points in the query area", found);
 }

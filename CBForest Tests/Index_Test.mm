@@ -88,14 +88,13 @@ static boolBlock scopedEnumerate() {
 - (void) updateDoc: (NSString*)docID body: (NSArray*)body
             writer: (IndexWriter&)writer
 {
-    std::vector<Collatable> keys, values;
+    std::vector<Collatable> keys;
+    std::vector<alloc_slice> values;
     for (NSUInteger i = 1; i < body.count; i++) {
         Collatable key;
         key << [body[i] UTF8String];
         keys.push_back(key);
-        Collatable value;
-        value << [body[0] UTF8String];
-        values.push_back(value);
+        values.push_back(alloc_slice(nsstring_slice(body[0])));
     }
     bool changed = writer.update(nsstring_slice(docID), 1, keys, values, _rowCount);
     XCTAssert(changed);
@@ -109,7 +108,7 @@ static boolBlock scopedEnumerate() {
                            DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        alloc_slice valueStr = e.value().readString();
+        slice valueStr = e.value();
         NSLog(@"key = %.*s, value = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf,
               (int)valueStr.size, valueStr.buf,
@@ -205,12 +204,13 @@ static boolBlock scopedEnumerate() {
     {
         Transaction trans(database);
         IndexWriter writer(index, trans);
-        std::vector<Collatable> keys, values;
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
         Collatable key("Schlage");
         keys.push_back(key);
-        values.push_back(Collatable("purple"));
+        values.push_back(alloc_slice("purple"));
         keys.push_back(key);
-        values.push_back(Collatable("red"));
+        values.push_back(alloc_slice("red"));
         bool changed = writer.update(slice("doc1"), 1, keys, values, _rowCount);
         Assert(changed);
         AssertEq(_rowCount, 2u);
@@ -220,14 +220,15 @@ static boolBlock scopedEnumerate() {
     {
         Transaction trans(database);
         IndexWriter writer(index, trans);
-        std::vector<Collatable> keys, values;
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
         Collatable key("Schlage");
         keys.push_back(key);
-        values.push_back(Collatable("purple"));
+        values.push_back(alloc_slice("purple"));
         keys.push_back(key);
-        values.push_back(Collatable("crimson"));
+        values.push_back(alloc_slice("crimson"));
         keys.push_back(Collatable("Master"));
-        values.push_back(Collatable("gray"));
+        values.push_back(alloc_slice("gray"));
         bool changed = writer.update(slice("doc1"), 2, keys, values, _rowCount);
         Assert(changed);
         AssertEq(_rowCount, 3u);
