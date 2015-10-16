@@ -57,7 +57,8 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     C4Error error;
     C4Document *doc = c4doc_get(db, docID, false, &error);
     Assert(doc != NULL);
-    AssertEqual(c4doc_insertRevision(doc, revID,  body,  false, false, false, &error), (int)isNew);
+    bool deleted = (body.buf == NULL);
+    AssertEqual(c4doc_insertRevision(doc, revID,  body,  deleted, false, false, &error), (int)isNew);
     Assert(c4doc_save(doc, 20, &error));
     c4doc_free(doc);
 }
@@ -65,6 +66,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kRevID = C4STR("1-abcdef");
+const C4Slice C4Test::kRev2ID= C4STR("2-d00d3333");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
 
 

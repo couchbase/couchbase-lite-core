@@ -101,7 +101,6 @@ class C4DatabaseTest : public C4Test {
 
 
     void testCreateMultipleRevisions() {
-        const C4Slice kRev2ID = C4STR("2-d00d3333");
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
         createRev(kDocID, kRevID, kBody);
         createRev(kDocID, kRev2ID, kBody2);
@@ -151,7 +150,6 @@ class C4DatabaseTest : public C4Test {
 
 
     void testInsertRevisionWithHistory() {
-        const C4Slice kRev2ID = C4STR("2-d00d3333");
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
         createRev(kDocID, kRevID, kBody);
         createRev(kDocID, kRev2ID, kBody2);
@@ -191,13 +189,19 @@ class C4DatabaseTest : public C4Test {
     }
 
 
-    void testAllDocs() {
+    void setupAllDocs() {
         char docID[20];
         for (int i = 1; i < 100; i++) {
             sprintf(docID, "doc-%03d", i);
             createRev(c4str(docID), kRevID, kBody);
         }
+        // Add a deleted doc to make sure it's skipped by default:
+        createRev(c4str("doc-005DEL"), kRevID, kC4SliceNull);
+    }
 
+
+    void testAllDocs() {
+        setupAllDocs();
         C4Error error;
         C4DocEnumerator* e;
         C4Document* doc;
@@ -207,6 +211,7 @@ class C4DatabaseTest : public C4Test {
         options.includeBodies = false;
         e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
         Assert(e);
+        char docID[20];
         int i = 1;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
             sprintf(docID, "doc-%03d", i);
@@ -236,8 +241,10 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(i, 91);
 
         // Some docs, by ID:
+        options = kC4DefaultAllDocsOptions;
+        options.includeDeleted = true;
         C4Slice docIDs[4] = {C4STR("doc-042"), C4STR("doc-007"), C4STR("bogus"), C4STR("doc-001")};
-        e = c4db_enumerateSomeDocs(db, docIDs, 4, NULL, &error);
+        e = c4db_enumerateSomeDocs(db, docIDs, 4, &options, &error);
         Assert(e);
         i = 0;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -247,6 +254,32 @@ class C4DatabaseTest : public C4Test {
             i++;
         }
         AssertEqual(i, 4);
+    }
+
+
+    void testAllDocsIncludeDeleted() {
+        char docID[20];
+        setupAllDocs();
+
+        C4Error error;
+        C4DocEnumerator* e;
+        C4Document* doc;
+
+        C4AllDocsOptions options = kC4DefaultAllDocsOptions;
+        options.includeDeleted = true;
+        e = c4db_enumerateAllDocs(db, c4str("doc-004"), c4str("doc-007"), &options, &error);
+        Assert(e);
+        int i = 4;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            if (i == 6)
+                strcpy(docID, "doc-005DEL");
+            else
+                sprintf(docID, "doc-%03d", i - (i>=6));
+            AssertEqual(doc->docID, c4str(docID));
+            c4doc_free(doc);
+            i++;
+        }
+        AssertEqual(i, 9);
     }
 
 
@@ -331,6 +364,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
     CPPUNIT_TEST( testAllDocs );
+    CPPUNIT_TEST( testAllDocsIncludeDeleted );
     CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST( testRekey );
     CPPUNIT_TEST_SUITE_END();

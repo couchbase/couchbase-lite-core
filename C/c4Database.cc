@@ -736,29 +736,73 @@ const C4ChangesOptions kC4DefaultChangesOptions = {
 struct C4DocEnumerator {
     C4Database *_database;
     DocEnumerator _e;
+    bool _includeDeleted;
 
     C4DocEnumerator(C4Database *database,
                     sequence start,
                     sequence end,
-                    const DocEnumerator::Options& options)
+                    const C4ChangesOptions *options)
     :_database(database),
-     _e(*database, start, end, options)
+     _e(*database, start, end, changesOptions(options)),
+     _includeDeleted(options && options->includeDeleted)
     { }
 
     C4DocEnumerator(C4Database *database,
                     C4Slice startDocID,
                     C4Slice endDocID,
-                    const DocEnumerator::Options& options)
+                    const C4AllDocsOptions *options)
     :_database(database),
-     _e(*database, startDocID, endDocID, options)
+     _e(*database, startDocID, endDocID, allDocOptions(options)),
+     _includeDeleted(options && options->includeDeleted)
     { }
 
     C4DocEnumerator(C4Database *database,
                     std::vector<std::string>docIDs,
-                    const DocEnumerator::Options& options)
+                    const C4AllDocsOptions *options)
     :_database(database),
-     _e(*database, docIDs, options)
+     _e(*database, docIDs, allDocOptions(options)),
+     _includeDeleted(options && options->includeDeleted)
     { }
+
+    static DocEnumerator::Options changesOptions(const C4ChangesOptions *c4options) {
+        if (!c4options)
+            c4options = &kC4DefaultChangesOptions;
+        auto options = DocEnumerator::Options::kDefault;
+        options.inclusiveEnd = true;
+        options.includeDeleted = c4options->includeDeleted;
+        if (!c4options->includeBodies)
+            options.contentOptions = KeyStore::kMetaOnly;
+        return options;
+    }
+
+    static DocEnumerator::Options allDocOptions(const C4AllDocsOptions *c4options) {
+        if (!c4options)
+            c4options = &kC4DefaultAllDocsOptions;
+        auto options = DocEnumerator::Options::kDefault;
+        options.skip = c4options->skip;
+        options.descending = c4options->descending;
+        options.inclusiveStart = c4options->inclusiveStart;
+        options.inclusiveEnd = c4options->inclusiveEnd;
+        if (!c4options->includeBodies)
+            options.contentOptions = KeyStore::kMetaOnly;
+        return options;
+    }
+    
+    C4Document* next() {
+        do {
+            if (!_e.next())
+                return NULL;
+        } while (!_includeDeleted && isDeleted(_e.doc()));
+        return new C4DocumentInternal(_database, _e.doc());
+    }
+
+    static inline bool isDeleted(const Document &doc) {
+        VersionedDocument::Flags flags;
+        revid revID;
+        slice docType;
+        return !VersionedDocument::readMeta(doc, flags, revID, docType)
+            || (flags & VersionedDocument::kDeleted) != 0;
+    }
 };
 
 
@@ -773,31 +817,9 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError)
 {
     try {
-        if (!c4options)
-            c4options = &kC4DefaultChangesOptions;
-        auto options = DocEnumerator::Options::kDefault;
-        options.inclusiveEnd = true;
-        options.includeDeleted = c4options->includeDeleted;
-        if (!c4options->includeBodies)
-            options.contentOptions = KeyStore::kMetaOnly;
-        return new C4DocEnumerator(database, since+1, UINT64_MAX, options);
+        return new C4DocEnumerator(database, since+1, UINT64_MAX, c4options);
     } catchError(outError);
     return NULL;
-}
-
-
-static DocEnumerator::Options allDocOptions(const C4AllDocsOptions *c4options) {
-    if (!c4options)
-        c4options = &kC4DefaultAllDocsOptions;
-    auto options = DocEnumerator::Options::kDefault;
-    options.skip = c4options->skip;
-    options.descending = c4options->descending;
-    options.inclusiveStart = c4options->inclusiveStart;
-    options.inclusiveEnd = c4options->inclusiveEnd;
-    options.includeDeleted = c4options->includeDeleted;
-    if (!c4options->includeBodies)
-        options.contentOptions = KeyStore::kMetaOnly;
-    return options;
 }
 
 
@@ -808,7 +830,7 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Error *outError)
 {
     try {
-        return new C4DocEnumerator(database, startDocID, endDocID, allDocOptions(c4options));
+        return new C4DocEnumerator(database, startDocID, endDocID, c4options);
     } catchError(outError);
     return NULL;
 }
@@ -824,7 +846,7 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
         std::vector<std::string> docIDStrings;
         for (unsigned i = 0; i < docIDsCount; ++i)
             docIDStrings.push_back((std::string)docIDs[i]);
-        return new C4DocEnumerator(database, docIDStrings, allDocOptions(c4options));
+        return new C4DocEnumerator(database, docIDStrings, c4options);
     } catchError(outError);
     return NULL;
 }
@@ -832,9 +854,10 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
 
 C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) {
     try {
-        if (e->_e.next())
-            return new C4DocumentInternal(e->_database, e->_e.doc());
-        recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+        auto c4doc = e->next();
+        if (!c4doc)
+            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+        return c4doc;
     } catchError(outError)
     return NULL;
 }
