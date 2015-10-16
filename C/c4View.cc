@@ -247,7 +247,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
             recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
             return NULL;
         }
-        auto options = kC4DefaultChangesOptions;
+        auto options = kC4DefaultEnumeratorOptions;
         options.includeDeleted = true;
         return c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
     } catchError(outError);

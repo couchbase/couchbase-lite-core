@@ -218,32 +218,24 @@ extern "C" {
 
     /** Options for enumerating over all documents. */
     typedef struct {
-        bool descending;     /**< If true, iteration goes by descending document IDs. */
-        bool inclusiveStart; /**< If false, iteration starts just _after_ the startDocID. */
-        bool inclusiveEnd;   /**< If false, iteration stops just _before_ the endDocID. */
-        unsigned skip;       /**< The number of initial results to skip. */
-        bool includeDeleted; /**< If true, include deleted documents. */
-        bool includeBodies;  /**< If false, document bodies will not be preloaded, just the
+        bool descending;        /**< If true, iteration goes by descending document IDs. */
+        bool inclusiveStart;    /**< If false, iteration starts just _after_ the startDocID. */
+        bool inclusiveEnd;      /**< If false, iteration stops just _before_ the endDocID. */
+        unsigned skip;          /**< The number of initial results to skip. */
+        bool includeDeleted;    /**< If true, include deleted documents. */
+        bool includeNonConflicts;/**< If true, include documents _not_ in conflict. */
+        bool includeBodies;     /**< If false, document bodies will not be preloaded, just the
                                   metadata (docID, revID, sequence, flags.) This is faster if you
                                   don't need to access the revision tree or revision bodies. You
                                   can still access all the data of the document, but it will
                                   trigger loading the document body from the database. */
-    } C4AllDocsOptions;
+    } C4EnumeratorOptions;
 
-    /** Default all-docs enumeration options. */
-    extern const C4AllDocsOptions kC4DefaultAllDocsOptions;
+    /** Default all-docs enumeration options.
+        Includes inclusiveStart, inclusiveEnd, includeBodies, includeNonConflicts.
+        Does not include descending, skip, includeDeleted. */
+    extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
     
-
-    /** Options for enumerating over database changes. */
-    typedef struct {
-        bool includeDeleted; /**< If true, include deleted documents. */
-        bool includeBodies;  /**< If false, document bodies will not be preloaded. See
-                                  C4AllDocsOptions.includeBodies for more details. */
-    } C4ChangesOptions;
-
-    /** Default change-enumeration options. */
-    extern const C4ChangesOptions kC4DefaultChangesOptions;
-
 
     /** Opaque handle to a document enumerator. */
     typedef struct C4DocEnumerator C4DocEnumerator;
@@ -260,7 +252,7 @@ extern "C" {
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                            C4SequenceNumber since,
-                                           const C4ChangesOptions *options,
+                                           const C4EnumeratorOptions *options,
                                            C4Error *outError);
 
     /** Creates an enumerator ordered by docID.
@@ -276,7 +268,7 @@ extern "C" {
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            C4Slice startDocID,
                                            C4Slice endDocID,
-                                           const C4AllDocsOptions *options,
+                                           const C4EnumeratorOptions *options,
                                            C4Error *outError);
 
     /** Creates an enumerator on a series of document IDs.
@@ -291,7 +283,7 @@ extern "C" {
     C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                             C4Slice docIDs[],
                                             unsigned docIDsCount,
-                                            const C4AllDocsOptions *options,
+                                            const C4EnumeratorOptions *options,
                                             C4Error *outError);
 
     /** Returns the next document from an enumerator, or NULL if there are no more.

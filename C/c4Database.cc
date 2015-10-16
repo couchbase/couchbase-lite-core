@@ -719,72 +719,55 @@ bool c4doc_save(C4Document *doc,
 
 #pragma mark - DOC ENUMERATION:
 
-const C4AllDocsOptions kC4DefaultAllDocsOptions = {
+const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 	false,
     true,
     true,
 	0,
 	false,
+    true,
     true
-};
-
-const C4ChangesOptions kC4DefaultChangesOptions = {
-    false,
-	true
 };
 
 
 struct C4DocEnumerator {
     C4Database *_database;
     DocEnumerator _e;
-    bool _includeDeleted;
+    C4EnumeratorOptions _options;
 
     C4DocEnumerator(C4Database *database,
                     sequence start,
                     sequence end,
-                    const C4ChangesOptions *options)
+                    const C4EnumeratorOptions &options)
     :_database(database),
-     _e(*database, start, end, changesOptions(options)),
-     _includeDeleted(options && options->includeDeleted)
+     _e(*database, start, end, allDocOptions(options)),
+     _options(options)
     { }
 
     C4DocEnumerator(C4Database *database,
                     C4Slice startDocID,
                     C4Slice endDocID,
-                    const C4AllDocsOptions *options)
+                    const C4EnumeratorOptions &options)
     :_database(database),
      _e(*database, startDocID, endDocID, allDocOptions(options)),
-     _includeDeleted(options && options->includeDeleted)
+     _options(options)
     { }
 
     C4DocEnumerator(C4Database *database,
                     std::vector<std::string>docIDs,
-                    const C4AllDocsOptions *options)
+                    const C4EnumeratorOptions &options)
     :_database(database),
      _e(*database, docIDs, allDocOptions(options)),
-     _includeDeleted(options && options->includeDeleted)
+     _options(options)
     { }
 
-    static DocEnumerator::Options changesOptions(const C4ChangesOptions *c4options) {
-        if (!c4options)
-            c4options = &kC4DefaultChangesOptions;
+    static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         auto options = DocEnumerator::Options::kDefault;
-        options.inclusiveEnd = true;
-        options.includeDeleted = c4options->includeDeleted;
-        if (!c4options->includeBodies)
-            options.contentOptions = KeyStore::kMetaOnly;
-        return options;
-    }
-
-    static DocEnumerator::Options allDocOptions(const C4AllDocsOptions *c4options) {
-        if (!c4options)
-            c4options = &kC4DefaultAllDocsOptions;
-        auto options = DocEnumerator::Options::kDefault;
-        options.skip = c4options->skip;
-        options.descending = c4options->descending;
-        options.inclusiveStart = c4options->inclusiveStart;
-        options.inclusiveEnd = c4options->inclusiveEnd;
-        if (!c4options->includeBodies)
+        options.skip = c4options.skip;
+        options.descending = c4options.descending;
+        options.inclusiveStart = c4options.inclusiveStart;
+        options.inclusiveEnd = c4options.inclusiveEnd;
+        if (!c4options.includeBodies)
             options.contentOptions = KeyStore::kMetaOnly;
         return options;
     }
@@ -793,16 +776,20 @@ struct C4DocEnumerator {
         do {
             if (!_e.next())
                 return NULL;
-        } while (!_includeDeleted && isDeleted(_e.doc()));
+        } while (!useDoc());
         return new C4DocumentInternal(_database, _e.doc());
     }
 
-    static inline bool isDeleted(const Document &doc) {
+    inline bool useDoc() {
+        if (_options.includeDeleted && _options.includeNonConflicts)
+            return true;
         VersionedDocument::Flags flags;
         revid revID;
         slice docType;
-        return !VersionedDocument::readMeta(doc, flags, revID, docType)
-            || (flags & VersionedDocument::kDeleted) != 0;
+        if (!VersionedDocument::readMeta(_e.doc(), flags, revID, docType))
+            return false;
+        return (_options.includeDeleted      || (flags & VersionedDocument::kDeleted) == 0)
+            && (_options.includeNonConflicts || (flags & VersionedDocument::kConflicted) != 0);
     }
 };
 
@@ -814,11 +801,12 @@ void c4enum_free(C4DocEnumerator *e) {
 
 C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4SequenceNumber since,
-                                       const C4ChangesOptions *c4options,
+                                       const C4EnumeratorOptions *c4options,
                                        C4Error *outError)
 {
     try {
-        return new C4DocEnumerator(database, since+1, UINT64_MAX, c4options);
+        return new C4DocEnumerator(database, since+1, UINT64_MAX,
+                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
     return NULL;
 }
@@ -827,11 +815,12 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
 C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Slice startDocID,
                                        C4Slice endDocID,
-                                       const C4AllDocsOptions *c4options,
+                                       const C4EnumeratorOptions *c4options,
                                        C4Error *outError)
 {
     try {
-        return new C4DocEnumerator(database, startDocID, endDocID, c4options);
+        return new C4DocEnumerator(database, startDocID, endDocID,
+                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
     return NULL;
 }
@@ -840,14 +829,15 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
 C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                         C4Slice docIDs[],
                                         unsigned docIDsCount,
-                                        const C4AllDocsOptions *c4options,
+                                        const C4EnumeratorOptions *c4options,
                                         C4Error *outError)
 {
     try {
         std::vector<std::string> docIDStrings;
         for (unsigned i = 0; i < docIDsCount; ++i)
             docIDStrings.push_back((std::string)docIDs[i]);
-        return new C4DocEnumerator(database, docIDStrings, c4options);
+        return new C4DocEnumerator(database, docIDStrings,
+                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
     return NULL;
 }

@@ -47,8 +47,7 @@ _c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save
 
-_kC4DefaultAllDocsOptions
-_kC4DefaultChangesOptions
+_kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions
 
 _c4key_new

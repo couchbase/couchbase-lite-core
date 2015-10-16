@@ -207,7 +207,7 @@ class C4DatabaseTest : public C4Test {
         C4Document* doc;
 
         // No start or end ID:
-        C4AllDocsOptions options = kC4DefaultAllDocsOptions;
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.includeBodies = false;
         e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
         Assert(e);
@@ -241,7 +241,7 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(i, 91);
 
         // Some docs, by ID:
-        options = kC4DefaultAllDocsOptions;
+        options = kC4DefaultEnumeratorOptions;
         options.includeDeleted = true;
         C4Slice docIDs[4] = {C4STR("doc-042"), C4STR("doc-007"), C4STR("bogus"), C4STR("doc-001")};
         e = c4db_enumerateSomeDocs(db, docIDs, 4, &options, &error);
@@ -265,7 +265,7 @@ class C4DatabaseTest : public C4Test {
         C4DocEnumerator* e;
         C4Document* doc;
 
-        C4AllDocsOptions options = kC4DefaultAllDocsOptions;
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.includeDeleted = true;
         e = c4db_enumerateAllDocs(db, c4str("doc-004"), c4str("doc-007"), &options, &error);
         Assert(e);
@@ -295,7 +295,7 @@ class C4DatabaseTest : public C4Test {
         C4Document* doc;
 
         // Since start:
-        C4ChangesOptions options = kC4DefaultChangesOptions;
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.includeBodies = false;
         e = c4db_enumerateChanges(db, 0, &options, &error);
         Assert(e);
