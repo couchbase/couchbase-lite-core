@@ -154,10 +154,16 @@ namespace CBForest
         /// </summary>
         public readonly void* buf;
 
+        private UIntPtr _size;
+
         /// <summary>
         /// The size of the data being held by this instance
         /// </summary>
-        public readonly UIntPtr size;
+        public uint size
+        {
+            get { return _size.ToUInt32(); }
+            set { _size = (UIntPtr)value; }
+        }
         
         /// <summary>
         /// Constructor
@@ -167,7 +173,7 @@ namespace CBForest
         public C4Slice(void *buf, uint size)
         {
             this.buf = buf;
-            this.size = new UIntPtr(size);
+            _size = (UIntPtr)size;
         }
         
         /// <summary>
@@ -182,19 +188,19 @@ namespace CBForest
             }
 
             var bytes = (sbyte*)slice.buf; 
-            return new string(bytes, 0, (int)slice.size.ToUInt32());
+            return new string(bytes, 0, (int)slice.size);
         }
         
         private bool Equals(C4Slice other)
         {
-            return size == other.size && Native.memcmp(buf, other.buf, size) == 0;
+            return size == other.size && Native.memcmp(buf, other.buf, _size) == 0;
         }
         
         private bool Equals(string other)
         {
             var bytes = Encoding.UTF8.GetBytes(other);
             fixed(byte* ptr = bytes) {
-                return Native.memcmp(buf, ptr, size) == 0;
+                return Native.memcmp(buf, ptr, _size) == 0;
             }
         }
         
@@ -219,10 +225,10 @@ namespace CBForest
             {
                 int hash = 17;
   
-                hash = hash * 23 + (int)size.ToUInt32();
+                hash = hash * 23 + (int)size;
                 var ptr = (byte*)buf;
                 if(ptr != null) {
-                    hash = hash * 23 + ptr[size.ToUInt32() - 1];
+                    hash = hash * 23 + ptr[size - 1];
                 }
                 
                 return hash;
@@ -231,7 +237,7 @@ namespace CBForest
 
         public IEnumerator<byte> GetEnumerator()
         {
-            return new C4SliceEnumerator(buf, (int)size.ToUInt32());
+            return new C4SliceEnumerator(buf, (int)size);
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -364,13 +370,14 @@ namespace CBForest
         private byte _descending;    
         private byte _inclusiveStart; 
         private byte _inclusiveEnd;
-        private byte _includeDeleted;
-        private byte _includeBodies;
 
         /// <summary>
         /// The number of initial results to skip.
         /// </summary>
         public uint skip;
+
+        private byte _includeDeleted;
+        private byte _includeBodies;
 
         /// <summary>
         /// If true, iteration goes by descending document IDs.
@@ -467,10 +474,15 @@ namespace CBForest
         /// </summary>
         public readonly void* bytes;
 
+        private readonly UIntPtr _length;
+
         /// <summary>
         /// The length of the raw data in the key
         /// </summary>
-        public readonly UIntPtr length;
+        public uint length
+        {
+            get { return _length.ToUInt32(); }
+        }
     }
 
     /// <summary>
@@ -530,7 +542,7 @@ namespace CBForest
         public C4Slice startKeyDocID;
         public C4Slice endKeyDocID;
         public C4Key** keys;
-        public UIntPtr keysCount;
+        private UIntPtr _keysCount;
 
         public bool descending 
         { 
@@ -548,6 +560,12 @@ namespace CBForest
         { 
             get { return Convert.ToBoolean(_inclusiveEnd); }
             set { _inclusiveEnd = Convert.ToByte(value); }
+        }
+
+        public uint keysCount
+        {
+            get { return _keysCount.ToUInt32(); }
+            set { _keysCount = (UIntPtr)value; }
         }
     }
 

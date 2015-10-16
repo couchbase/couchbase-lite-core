@@ -63,6 +63,8 @@ namespace CBForest
     {
         private readonly C4DocEnumerator *_e;
         private CBForestDocStatus _current;
+        private delegate bool DocValidationDelegate(C4Document *doc);
+        private DocValidationDelegate _validationLogic;
 
         public CBForestDocEnumerator(C4Database *db, string[] keys, C4AllDocsOptions options)
         {
@@ -71,6 +73,8 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
+                
+            _validationLogic = doc => true;
         }
 
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4AllDocsOptions options)
@@ -80,6 +84,9 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
+
+            var allowDeleted = options.includeDeleted;
+            _validationLogic = doc => allowDeleted || !doc->IsDeleted;
         }
 
         public CBForestDocEnumerator(C4Indexer *indexer)
@@ -89,6 +96,8 @@ namespace CBForest
             if (_e == null && (err.code != 0 || err.domain != C4ErrorDomain.ForestDB)) {
                 throw new CBForestException(err.code, err.domain);
             }
+
+            _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");
         }
 
         public CBForestDocEnumerator(C4Database *db, long lastSequence, C4ChangesOptions options)
@@ -98,6 +107,9 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
+
+            var allowDeleted = options.includeDeleted;
+            _validationLogic = doc => allowDeleted || !doc->IsDeleted;
         }
 
         ~CBForestDocEnumerator()
@@ -125,10 +137,14 @@ namespace CBForest
                 return false;
             }
 
-            var docPtr = Native.c4enum_nextDocument(_e, null);
-            if (docPtr == null) {
-                return false;
-            }
+            var docPtr = default(C4Document*);
+            do {
+                Native.c4doc_free(docPtr);
+                docPtr = Native.c4enum_nextDocument(_e, null);
+                if (docPtr == null) {
+                    return false;
+                }
+            } while(!_validationLogic(docPtr));
 
             _current = new CBForestDocStatus(docPtr, true);
             return true;
