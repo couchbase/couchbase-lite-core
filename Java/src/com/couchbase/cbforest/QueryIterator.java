@@ -11,6 +11,7 @@ public class QueryIterator {
     public native byte[] keyJSON();
     public native byte[] valueJSON();
     public native String docID();
+    public native long   sequence();
 
     public native void free();
 

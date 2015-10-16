@@ -75,7 +75,11 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
 {
     return toJString(env, getEnum(env, self)->docID);
 }
-
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
+        (JNIEnv *env, jobject self)
+{
+    return getEnum(env, self)->docSequence;
+}
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
 (JNIEnv *env, jobject self)
 {

@@ -15,12 +15,22 @@
 using namespace forestdb::jni;
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateAllDocs
-        (JNIEnv *env, jobject self, jlong dbHandle, jstring jStartDocID, jstring jEndDocID)
+        (JNIEnv *env, jobject self, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
+         jboolean descending, jboolean inclusiveStart, jboolean inclusiveEnd,
+         jint skip, jboolean includeDeleted, jboolean includeBodies)
 {
     jstringSlice startDocID(env, jStartDocID);
     jstringSlice endDocID(env, jEndDocID);
+    const C4AllDocsOptions options = {
+            (bool)descending,
+            (bool)inclusiveStart,
+            (bool)inclusiveEnd,
+            (unsigned)skip,
+            (bool)includeDeleted,
+            (bool)includeBodies
+    };
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database*)dbHandle, startDocID, endDocID, NULL, &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database*)dbHandle, startDocID, endDocID, &options, &error);
     if (!e) {
         throwError(env, error);
         return 0;
@@ -68,10 +78,12 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateChanges
-        (JNIEnv *env, jobject self, jlong dbHandle, jlong since)
+        (JNIEnv *env, jobject self, jlong dbHandle, jlong since, jboolean withBodies)
 {
+    C4ChangesOptions options = kC4DefaultChangesOptions;
+    options.includeBodies = withBodies;
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateChanges((C4Database*)dbHandle, since, NULL, &error);
+    C4DocEnumerator *e = c4db_enumerateChanges((C4Database*)dbHandle, since, &options, &error);
     if (!e) {
         throwError(env, error);
         return 0;

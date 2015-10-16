@@ -19,6 +19,7 @@ static jfieldID kField_Handle;
 static jfieldID kField_Flags;
 static jfieldID kField_DocID;
 static jfieldID kField_RevID;
+static jfieldID kField_Sequence;
 static jfieldID kField_SelectedRevID;
 static jfieldID kField_SelectedRevFlags;
 static jfieldID kField_SelectedSequence;
@@ -33,6 +34,7 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
     kField_Flags = env->GetFieldID(documentClass, "_flags", "I");
     kField_DocID = env->GetFieldID(documentClass, "_docID", "Ljava/lang/String;");
     kField_RevID = env->GetFieldID(documentClass, "_revID", "Ljava/lang/String;");
+    kField_Sequence = env->GetFieldID(documentClass, "_sequence", "J");
     kField_SelectedRevID = env->GetFieldID(documentClass, "_selectedRevID", "Ljava/lang/String;");
     kField_SelectedRevFlags = env->GetFieldID(documentClass, "_selectedRevFlags", "I");
     kField_SelectedSequence = env->GetFieldID(documentClass, "_selectedSequence", "J");
@@ -50,6 +52,7 @@ static void updateDocID(JNIEnv *env, jobject self, C4Document *doc) {
 static void updateRevIDAndFlags
 (JNIEnv *env, jobject self, C4Document *doc) {
     env->SetObjectField(self, kField_RevID, toJString(env, doc->revID));
+    env->SetLongField  (self, kField_Sequence, doc->sequence);
     env->SetIntField   (self, kField_Flags, doc->flags);
 }
 
@@ -101,10 +104,9 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
-    env->SetLongField(self, kField_Handle, docHandle);
-    env->SetIntField(self, kField_Flags, doc->flags);
     updateRevIDAndFlags(env, self, doc);
-    updateSelection(env, self, doc);
+    if(c4doc_selectCurrentRevision(doc))
+        updateSelection(env, self, doc);
     return toJString(env, doc->docID);
 }
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_hasRevisionBody

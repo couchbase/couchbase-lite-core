@@ -6,6 +6,8 @@ public class Document implements Constants{
 
     public String getRevID()        { return _revID; }
 
+    public long getSequence()       { return _sequence; }
+
     public int getFlags()           { return _flags; }
 
     public String getType()         { return getType(_handle); }
@@ -95,6 +97,7 @@ public class Document implements Constants{
 
     protected long _handle;
     private String _docID, _revID;
+    private long _sequence;
     private int _flags;
 
     private String _selectedRevID;

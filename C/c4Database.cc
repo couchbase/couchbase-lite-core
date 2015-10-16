@@ -710,6 +710,7 @@ bool c4doc_save(C4Document *doc,
     try {
         idoc->_versionedDoc.prune(maxRevTreeDepth);
         idoc->_versionedDoc.save(*idoc->_db->transaction());
+        idoc->sequence = idoc->_versionedDoc.sequence();
         return true;
     } catchError(outError)
     return false;

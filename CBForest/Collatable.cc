@@ -18,6 +18,7 @@
 #include "Geohash.hh"
 #include "Error.hh"
 #include <sstream>
+#include <iomanip> // std::setprecision
 
 namespace forestdb {
 
@@ -292,7 +293,9 @@ namespace forestdb {
                 break;
             case kNegative:
             case kPositive:
-                out << readDouble();
+                // default precision is around 5, it makes double number rounded.
+                // double's precision should be 16.
+                out << std::setprecision(16) << readDouble();
                 break;
             case kString:
                 writeJSONString(out, readString());
