@@ -73,8 +73,6 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
-                
-            _validationLogic = doc => true;
         }
 
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4AllDocsOptions options)
@@ -84,9 +82,6 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
-
-            var allowDeleted = options.includeDeleted;
-            _validationLogic = doc => allowDeleted || !doc->IsDeleted;
         }
 
         public CBForestDocEnumerator(C4Indexer *indexer)
@@ -107,9 +102,6 @@ namespace CBForest
             if (_e == null) {
                 throw new CBForestException(err.code, err.domain);
             }
-
-            var allowDeleted = options.includeDeleted;
-            _validationLogic = doc => allowDeleted || !doc->IsDeleted;
         }
 
         ~CBForestDocEnumerator()
@@ -144,7 +136,7 @@ namespace CBForest
                 if (docPtr == null) {
                     return false;
                 }
-            } while(!_validationLogic(docPtr));
+            } while(_validationLogic != null && !_validationLogic(docPtr));
 
             _current = new CBForestDocStatus(docPtr, true);
             return true;

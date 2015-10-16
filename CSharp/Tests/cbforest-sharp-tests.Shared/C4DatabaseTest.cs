@@ -143,7 +143,6 @@ namespace CBForest.Tests
         [Test]
         public void TestCreateMultipleRevisions()
         {
-            const string REV_2_ID = "2-d00d3333";
             const string BODY_2 = "{\"ok\":\"go\"}";
             CreateRev(DOC_ID, REV_ID, BODY);
             CreateRev(DOC_ID, REV_2_ID, BODY_2);
@@ -192,11 +191,7 @@ namespace CBForest.Tests
         [Test]
         public void TestAllDocs()
         {
-            for(int i = 1; i < 100; i++) {
-                var docID = String.Format("doc-{0,3}", i.ToString("D3"));
-                CreateRev(docID, REV_ID, BODY);
-            }
-            
+            SetupAllDocs();
             C4Error error;
             C4Document* doc;
             
@@ -236,8 +231,10 @@ namespace CBForest.Tests
             Assert.AreEqual(91, j);
             
             // Some docs, by ID:
+            options = C4AllDocsOptions.DEFAULT;
+            options.includeDeleted = true;
             var docIDs = new[] { "doc-042", "doc-007", "bogus", "doc-001" };
-            e = Native.c4db_enumerateSomeDocs(_db, docIDs, null, &error);
+            e = Native.c4db_enumerateSomeDocs(_db, docIDs, &options, &error);
             Assert.IsTrue(e != null);
             j = 0;
             while (null != (doc = Native.c4enum_nextDocument(e, &error))) {
@@ -295,7 +292,6 @@ namespace CBForest.Tests
         [Test]
         public void TestInsertRevisionWithHistory()
         {
-            const string REV_2_ID = "2-d00d3333";
             const string BODY_2 = @"{""ok"":""go""}";
             CreateRev(DOC_ID, REV_ID, BODY);
             CreateRev(DOC_ID, REV_2_ID, BODY_2);
@@ -325,6 +321,41 @@ namespace CBForest.Tests
             }
             
             Assert.AreEqual(historyCount - 2, n);
+        }
+        
+        [Test]
+        public void TestAllDocsIncludeDeleted()
+        {
+            SetupAllDocs();
+            var error = default(C4Error);
+            var e = default(C4DocEnumerator*);
+            var doc = default(C4Document*);
+            
+            var options = C4AllDocsOptions.DEFAULT;
+            options.includeDeleted = true;
+            e = Native.c4db_enumerateAllDocs(_db, "doc-004", "doc-007", &options, &error);
+            Assert.IsTrue(e != null);
+            int i = 4;
+            while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                var offset = i > 6 ? 1 : 0;
+                var docID = i == 6 ? "doc-005DEL" : String.Format("doc-{0,3}", (i - offset).ToString("D3"));
+                Assert.IsTrue(doc->docID.Equals(docID));
+                Native.c4doc_free(doc);
+                i++;
+            }
+            
+            Assert.AreEqual(9, i);
+        }
+        
+        private void SetupAllDocs()
+        {
+            for(int i = 1; i < 100; i++) {
+                var docID = String.Format("doc-{0,3}", i.ToString("D3"));
+                CreateRev(docID, REV_ID, BODY);
+            }
+            
+            // Add a deleted doc to make sure it's skipped by default:
+            CreateRev("doc-005DEL", REV_ID, null);
         }
     }
     

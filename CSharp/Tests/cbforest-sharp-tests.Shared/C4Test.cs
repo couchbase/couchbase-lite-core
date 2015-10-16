@@ -30,6 +30,7 @@ namespace CBForest.Tests
         protected const string BODY = "{\"name\":007}";
         protected const string DOC_ID = "mydoc";
         protected const string REV_ID = "1-abcdef";
+        protected const string REV_2_ID = "2-d00d3333";
         
         protected virtual C4EncryptionKey* EncryptionKey 
         {
@@ -74,7 +75,8 @@ namespace CBForest.Tests
                 C4Error error;
                 var doc = Native.c4doc_get(_db, docID, false, &error);
                 Assert.IsTrue(doc != null);
-                Assert.AreEqual(isNew ? 1 : 0, Native.c4doc_insertRevision(doc, revID, body, false, false, false, &error));
+                var deleted = body == null;
+                Assert.AreEqual(isNew ? 1 : 0, Native.c4doc_insertRevision(doc, revID, body, deleted, false, false, &error));
                 Assert.IsTrue(Native.c4doc_save(doc, 20, &error));
                 Native.c4doc_free(doc);
             }
