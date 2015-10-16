@@ -217,7 +217,14 @@ public interface Constants {
         int POSIXDomain = 1;        // code is an errno
         int ForestDBDomain = 2;     // code is a fdb_status
         int C4Domain = 3;           // code is C4-specific code (TBD)
+    }
 
+    // Extra status codes not defined by fdb_errors.h
+    interface CBForestError {
+        int BadRevisionID = -1000;
+        int CorruptRevisionData = -1001;
+        int CorruptIndexData = -1002;
+        int AssertionFailed = -1003;
     }
 
     // C4Domain error codes:

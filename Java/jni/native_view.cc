@@ -212,6 +212,10 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
     size_t keyCount = env->GetArrayLength(jkeys);
     jboolean isCopy;
     auto keys = env->GetLongArrayElements(jkeys, &isCopy);
+    C4Key *c4keys[keyCount];
+    for(int i = 0; i < keyCount; i++){
+        c4keys[i]   = (C4Key *)keys[i];
+    }
     C4QueryOptions options = {
         (uint64_t)std::max(skip, 0ll),
         (uint64_t)std::max(limit, 0ll),
@@ -222,7 +226,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         NULL,
         kC4SliceNull,
         kC4SliceNull,
-        (const C4Key**)keys,
+        (const C4Key **)c4keys,
         keyCount
     };
     C4Error error;

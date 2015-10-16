@@ -53,7 +53,7 @@ public class View {
         _indexerHandle = beginIndex(_dbHandle, _handle);
     }
 
-    public DocumentIterator enumerator() {
+    public DocumentIterator enumerator() throws ForestException {
         return new DocumentIterator(enumerateDocuments(_indexerHandle), false);
     }
 
@@ -76,7 +76,7 @@ public class View {
 
     // native methods for indexer
     private native long beginIndex(long dbHandle, long viewHandle) throws ForestException;
-    private native long enumerateDocuments(long indexerHandler);
+    private native long enumerateDocuments(long indexerHandler) throws ForestException;
     private native void emit(long indexerHandler, long docHandler, long[] keys, byte[][] values) throws ForestException;
     private native void endIndex(long indexerHandler, boolean commit) throws ForestException;
     // NOTE: endIndex also frees Indexer
@@ -98,10 +98,16 @@ public class View {
                                String startKeyDocID,
                                String endKeyDocID) throws ForestException
     {
-        return new QueryIterator(query(_handle, skip, limit, descending,
-                                       inclusiveStart, inclusiveEnd,
-                                       objectToKey(startKey), objectToKey(endKey),
-                                       startKeyDocID, endKeyDocID));
+        return new QueryIterator(query(_handle,
+                skip,
+                limit,
+                descending,
+                inclusiveStart,
+                inclusiveEnd,
+                objectToKey(startKey),
+                objectToKey(endKey),
+                startKeyDocID,
+                endKeyDocID));
     }
 
 
@@ -142,7 +148,8 @@ public class View {
                                      boolean descending,
                                      boolean inclusiveStart,
                                      boolean inclusiveEnd,
-                                     long keys[]) throws ForestException; // array of C4Key*
+                                     long keys[])  // array of C4Key*
+            throws ForestException;
 
 
     //////// KEY:
@@ -174,7 +181,7 @@ public class View {
         } else if (o instanceof String) {
             keyAdd(key, (String)o);
         } else if (o instanceof Object[]) {
-            Object[] array = (Object[])o;
+            keyBeginArray(key);
             for (Object item : (Object[])o) {
                 keyAdd(key, item);
             }

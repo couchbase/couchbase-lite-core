@@ -40,24 +40,24 @@ public class Database {
         return new Document(_handle, sequence);
     }
 
-    public DocumentIterator iterator() throws ForestException {
-        return new DocumentIterator(_handle);
-    }
-
-    public DocumentIterator iterator(String startDocID, String endDocID) throws ForestException {
-        return new DocumentIterator(_handle, startDocID, endDocID);
+    public DocumentIterator iterator(String startDocID,
+                                     String endDocID,
+                                     boolean descending,
+                                     boolean inclusiveStart,
+                                     boolean inclusiveEnd,
+                                     int skip,
+                                     boolean includeDeleted,
+                                     boolean includeBodies)
+            throws ForestException {
+        return new DocumentIterator(_handle, startDocID, endDocID, descending, inclusiveStart, inclusiveEnd, skip, includeDeleted, includeBodies);
     }
 
     public DocumentIterator iterator(String[] docIDs) throws ForestException {
         return new DocumentIterator(_handle, docIDs);
     }
 
-    public DocumentIterator iterator(long sinceSequence) throws ForestException {
-        return new DocumentIterator(_handle, sinceSequence);
-    }
-
     public DocumentIterator iterateChanges(long sinceSequence, boolean withBodies) throws ForestException {
-        return new DocumentIterator(_iterateChanges(sinceSequence, withBodies));
+        return new DocumentIterator(_handle, sinceSequence, withBodies);
     }
 
     protected void finalize() {
@@ -69,7 +69,6 @@ public class Database {
 
     private native long _open(String path, int flags,
                               int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
-    private native long _iterateChanges(long sinceSequence, boolean withBodies) throws ForestException;
 
     long _handle; // handle to native C4Database*
 
