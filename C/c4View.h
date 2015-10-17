@@ -129,6 +129,11 @@ extern "C" {
     /** Closes the view and frees the object. */
     bool c4view_close(C4View* view, C4Error*);
 
+    /** Changes a view's encryption key (removing encryption if it's NULL.) */
+    bool c4view_rekey(C4View*,
+                      const C4EncryptionKey *newKey,
+                      C4Error *outError);
+
     /** Erases the view index, but doesn't delete the database file. */
     bool c4view_eraseIndex(C4View*, C4Error *outError);
 

@@ -160,6 +160,10 @@ bool c4view_close(C4View* view, C4Error *outError) {
     return false;
 }
 
+bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) {
+    return c4RekeyInternal(&view->_viewDB, newKey, outError);
+}
+
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
     try {
         Transaction t(&view->_viewDB);

@@ -213,8 +213,12 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
-    if (!database->mustNotBeInTransaction(outError))
-        return false;
+    return database->mustNotBeInTransaction(outError)
+        && c4RekeyInternal(database, newKey, outError);
+}
+
+
+bool c4RekeyInternal(Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
     try {
         fdb_encryption_key key = {FDB_ENCRYPTION_NONE, {}};
         if (newKey) {

@@ -64,6 +64,21 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_close
 }
 
 
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_rekey
+(JNIEnv *env, jobject self, jint encryptionAlg, jbyteArray encryptionKey){
+    C4EncryptionKey key;
+    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
+        return;
+
+    auto view = getViewHandle(env, self);
+    if (view) {
+        C4Error error;
+        if(!c4view_rekey(view, &key, &error))
+            throwError(env, error);
+    }
+}
+
+
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_eraseIndex
   (JNIEnv *env, jobject self)
 {

@@ -49,4 +49,7 @@ void recordUnknownException(C4Error* outError);
     }
 
 
+bool c4RekeyInternal(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
+
+
 #endif /* c4Impl_h */

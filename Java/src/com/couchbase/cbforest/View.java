@@ -38,6 +38,7 @@ public class View {
                               int encryptionAlgorithm, byte[] encryptionKey,
                               String viewName, String version) throws ForestException;
     public native void close();
+    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
     public native void eraseIndex() throws ForestException;
     public native void delete() throws ForestException;
     public native long getTotalRows();
