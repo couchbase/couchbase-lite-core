@@ -80,6 +80,9 @@ namespace CBForest
         [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
         public static extern int memcmp(void* b1, void* b2, UIntPtr count);
 
+        [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
+        public static extern int memcpy(void* dest, void* src, UIntPtr count);
+
         /// <summary>
         /// Frees the memory of a C4Slice.
         /// </summary>

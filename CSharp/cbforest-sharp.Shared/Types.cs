@@ -18,6 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
+#define FAKE_C4_ENCRYPTION
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -501,12 +502,32 @@ namespace CBForest
         public ulong docSequence;
     }
 
-    public struct C4EncryptionKey
+
+    public unsafe struct C4EncryptionKey
     {
+        #if FAKE_C4_ENCRYPTION
+        public const C4EncryptionType ENCRYPTION_MODE = (C4EncryptionType)(-1);
+        #else
+        public const C4EncryptionType ENCRYPTION_MODE = C4EncryptionType.AES256;
+        #endif
+
         public C4EncryptionType algorithm;
 
-        [MarshalAs(UnmanagedType.LPArray, SizeConst=32)]
-        public byte[] bytes;
+        public fixed byte bytes[32];
+
+        public C4EncryptionKey(C4EncryptionType algorithm, byte[] source)
+        {
+            this.algorithm = algorithm;
+            fixed(byte* dest = bytes)
+            fixed(byte* src = source) {
+                Native.memcpy(dest, src, (UIntPtr)32U);
+            }
+        }
+
+        public C4EncryptionKey(byte[] source) : this(ENCRYPTION_MODE, source)
+        {
+
+        }
     }
 }
 
