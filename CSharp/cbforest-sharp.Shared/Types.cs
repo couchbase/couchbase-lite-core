@@ -85,30 +85,30 @@ namespace CBForest
 
     internal unsafe struct C4SliceEnumerator : IEnumerator<byte>
     {
-        private readonly IntPtr _ptr;
+        private readonly byte* _start;
+        private byte* _current;
         private readonly int _length;
-        private int _index;
 
         public C4SliceEnumerator(void *buf, int length)
         {
-            _index = -1;
-            _ptr = new IntPtr(buf);
+            _start = (byte*)buf;
+            _current = _start - 1;
             _length = length;
         }
 
         public bool MoveNext()
         {
-            if (_index >= _length - 1) {
+            if ((_current - _start) >= _length - 1) {
                 return false;
             }
 
-            _index++;
+            _current++;
             return true;
         }
 
         public void Reset()
         {
-            _index = 0;
+            _current = _start;
         }
 
         object System.Collections.IEnumerator.Current
@@ -126,7 +126,7 @@ namespace CBForest
         public byte Current
         {
             get {
-                return Marshal.ReadByte(new IntPtr(_ptr.ToInt64() + _index));
+                return *_current;
             }
         }
     }
