@@ -359,108 +359,27 @@ namespace CBForest
     /// <summary>
     /// Options for enumerating over all documents.
     /// </summary>
-    public struct C4AllDocsOptions
+    public struct C4EnumeratorOptions
     {
         /// <summary>
-        /// Default all-docs enumeration options.
+        /// Default enumeration options.
         /// </summary>
-        public static readonly C4AllDocsOptions DEFAULT = 
-            new C4AllDocsOptions { inclusiveStart = true, inclusiveEnd = true, includeBodies = true };
-        
-        private byte _descending;    
-        private byte _inclusiveStart; 
-        private byte _inclusiveEnd;
+        public static readonly C4EnumeratorOptions DEFAULT =  new C4EnumeratorOptions { 
+            flags = C4EnumeratorFlags.InclusiveStart |
+                C4EnumeratorFlags.InclusiveEnd |
+                C4EnumeratorFlags.IncludeNonConflicted |
+                C4EnumeratorFlags.IncludeBodies 
+            };
 
         /// <summary>
         /// The number of initial results to skip.
         /// </summary>
         public uint skip;
 
-        private byte _includeDeleted;
-        private byte _includeBodies;
-
         /// <summary>
-        /// If true, iteration goes by descending document IDs.
+        /// Option flags
         /// </summary>
-        public bool descending
-        {
-            get { return Convert.ToBoolean(_descending); }
-            set { _descending = Convert.ToByte(value); }
-        }
-
-        /// <summary>
-        /// If false, iteration starts just _after_ the startDocID.
-        /// </summary>
-        public bool inclusiveStart
-        {
-            get { return Convert.ToBoolean(_inclusiveStart); }
-            set { _inclusiveStart = Convert.ToByte(value); }
-        }
-
-        /// <summary>
-        /// If false, iteration stops just _before_ the endDocID.
-        /// </summary>
-        public bool inclusiveEnd
-        {
-            get { return Convert.ToBoolean(_inclusiveEnd); }
-            set { _inclusiveEnd = Convert.ToByte(value); }
-        }
-
-        /// <summary>
-        /// If true, include deleted documents.
-        /// </summary>
-        public bool includeDeleted
-        {
-            get { return Convert.ToBoolean(_includeDeleted); }
-            set { _includeDeleted = Convert.ToByte(value); }
-        }
-
-        /// <summary>
-        /// If false, document bodies will not be preloaded, just the
-        /// metadata(docID, revID, sequence, flags.) This is faster if you
-        /// don't need to access the revision tree or revision bodies. You
-        /// can still access all the data of the document, but it will
-        /// trigger loading the document body from the database.
-        /// </summary>
-        public bool includeBodies
-        {
-            get { return Convert.ToBoolean(_includeBodies); }
-            set { _includeBodies = Convert.ToByte(value); }
-        }
-    }
-
-    /// <summary>
-    /// Options for enumerating over database changes.
-    /// </summary>
-    public struct C4ChangesOptions
-    {
-        /// <summary>
-        /// Default change-enumeration options.
-        /// </summary>
-        public static readonly C4ChangesOptions DEFAULT = 
-            new C4ChangesOptions { includeBodies = true };
-        
-        private byte _includeDeleted;
-        private byte _includeBodies;
-
-        /// <summary>
-        /// If true, include deleted documents.
-        /// </summary>
-        public bool includeDeleted
-        {
-            get { return Convert.ToBoolean(_includeDeleted); }
-            set { _includeDeleted = Convert.ToByte(value); }
-        }
-
-        /// <summary>
-        /// If false, document bodies will not be preloaded. See
-        /// <see cref="C4AllDocsOptions.includeBodies" /> for more details.
-        /// </summary>
-        public bool includeBodies
-        {
-            get { return Convert.ToBoolean(_includeBodies); }
-            set { _includeBodies = Convert.ToByte(value); }
-        }
+        public C4EnumeratorFlags flags;
     }
 
     /// <summary>

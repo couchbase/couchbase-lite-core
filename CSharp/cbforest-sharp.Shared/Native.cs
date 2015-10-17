@@ -516,7 +516,7 @@ namespace CBForest
         }
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint="c4db_enumerateChanges")]
-        private static extern C4DocEnumerator* _c4db_enumerateChanges(C4Database* db, ulong since, C4ChangesOptions* options, 
+        private static extern C4DocEnumerator* _c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options, 
             C4Error* outError);
 
         /// <summary>
@@ -528,7 +528,7 @@ namespace CBForest
         /// <param name="options">Enumeration options (NULL for defaults).</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumeator on success, otherwise null</returns>
-        public static C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4ChangesOptions* options, 
+        public static C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options, 
             C4Error* outError)
         {
             #if DEBUG
@@ -548,10 +548,10 @@ namespace CBForest
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateAllDocs")]
         private static extern C4DocEnumerator* _c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
-            C4AllDocsOptions *options, C4Error *outError);
+            C4EnumeratorOptions *options, C4Error *outError);
 
         public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
-            C4AllDocsOptions *options, C4Error *outError)
+            C4EnumeratorOptions *options, C4Error *outError)
         {
             #if DEBUG
             var retVal = _c4db_enumerateAllDocs(db, startDocID, endDocID, options, outError);
@@ -580,7 +580,7 @@ namespace CBForest
         /// <param name="options">Enumeration options (NULL for defaults)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumeator on success, otherwise null</returns>
-        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, C4AllDocsOptions *options,
+        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, C4EnumeratorOptions *options,
             C4Error *outError)
         {
             using(var startDocID_ = new C4String(startDocID))
@@ -591,9 +591,9 @@ namespace CBForest
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateSomeDocs")]
         private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, uint docIDsCount, 
-            C4AllDocsOptions *options, C4Error *outError);
+            C4EnumeratorOptions *options, C4Error *outError);
 
-        public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *db, string[] docIDs, C4AllDocsOptions *options,
+        public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *db, string[] docIDs, C4EnumeratorOptions *options,
             C4Error *outError)
         {
             var c4StringArr = docIDs.Select(x => new C4String(x)).ToArray();

@@ -66,7 +66,7 @@ namespace CBForest
         private delegate bool DocValidationDelegate(C4Document *doc);
         private DocValidationDelegate _validationLogic;
 
-        public CBForestDocEnumerator(C4Database *db, string[] keys, C4AllDocsOptions options)
+        public CBForestDocEnumerator(C4Database *db, string[] keys, C4EnumeratorOptions options)
         {
             var err = default(C4Error);
             _e = Native.c4db_enumerateSomeDocs(db, keys, &options, &err);
@@ -75,7 +75,7 @@ namespace CBForest
             }
         }
 
-        public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4AllDocsOptions options)
+        public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4EnumeratorOptions options)
         {
             var err = default(C4Error);
             _e = Native.c4db_enumerateAllDocs(db, startKey, endKey, &options, &err);
@@ -95,7 +95,7 @@ namespace CBForest
             _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");
         }
 
-        public CBForestDocEnumerator(C4Database *db, long lastSequence, C4ChangesOptions options)
+        public CBForestDocEnumerator(C4Database *db, long lastSequence, C4EnumeratorOptions options)
         {
             var err = default(C4Error);
             _e = Native.c4db_enumerateChanges(db, (ulong)lastSequence, &options, &err);

@@ -195,8 +195,8 @@ namespace CBForest.Tests
             C4Error error;
             C4Document* doc;
             
-            var options = C4AllDocsOptions.DEFAULT;
-            options.includeBodies = false;
+            var options = C4EnumeratorOptions.DEFAULT;
+            options.flags &= ~C4EnumeratorFlags.IncludeBodies;
             var e = Native.c4db_enumerateAllDocs(_db, null, null, &options, &error);
             Assert.IsTrue(e != null);
             var j = 1UL;
@@ -231,8 +231,8 @@ namespace CBForest.Tests
             Assert.AreEqual(91, j);
             
             // Some docs, by ID:
-            options = C4AllDocsOptions.DEFAULT;
-            options.includeDeleted = true;
+            options = C4EnumeratorOptions.DEFAULT;
+            options.flags |= C4EnumeratorFlags.IncludeDeleted;
             var docIDs = new[] { "doc-042", "doc-007", "bogus", "doc-001" };
             e = Native.c4db_enumerateSomeDocs(_db, docIDs, &options, &error);
             Assert.IsTrue(e != null);
@@ -259,8 +259,8 @@ namespace CBForest.Tests
             C4Document* doc;
 
             // Since start:
-            var options = C4ChangesOptions.DEFAULT;
-            options.includeBodies = false;
+            var options = C4EnumeratorOptions.DEFAULT;
+            options.flags &= ~C4EnumeratorFlags.IncludeBodies;
             var e = Native.c4db_enumerateChanges(_db, 0, &options, &error);
             Assert.IsTrue(e != null);
             var seq = 1UL;
@@ -331,8 +331,8 @@ namespace CBForest.Tests
             var e = default(C4DocEnumerator*);
             var doc = default(C4Document*);
             
-            var options = C4AllDocsOptions.DEFAULT;
-            options.includeDeleted = true;
+            var options = C4EnumeratorOptions.DEFAULT;
+            options.flags |= C4EnumeratorFlags.IncludeDeleted;
             e = Native.c4db_enumerateAllDocs(_db, "doc-004", "doc-007", &options, &error);
             Assert.IsTrue(e != null);
             int i = 4;

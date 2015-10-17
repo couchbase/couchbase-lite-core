@@ -129,6 +129,47 @@ namespace CBForest
     }
 
     /// <summary>
+    /// Options for enumerating over documents. */
+    /// </summary>
+    [Flags]
+    public enum C4EnumeratorFlags : ushort
+    {
+        /// <summary>
+        /// If true, iteration goes by descending document IDs.
+        /// </summary>
+        Descending = 0x01,
+
+        /// <summary>
+        /// If false, iteration starts just _after_ startDocID.
+        /// </summary>
+        InclusiveStart = 0x02,
+
+        /// <summary>
+        /// If false, iteration stops just _before_ endDocID.
+        /// </summary>
+        InclusiveEnd = 0x04,
+
+        /// <summary>
+        /// If true, include deleted documents.
+        /// </summary>
+        IncludeDeleted = 0x08,
+
+        /// <summary>
+        /// If false, include _only_ documents in conflict.
+        /// </summary>
+        IncludeNonConflicted = 0x10,
+
+        /// <summary>
+        /// If false, document bodies will not be preloaded, just
+        /// metadata (docID, revID, sequence, flags.) This is faster if you
+        /// don't need to access the revision tree or revision bodies. You
+        /// can still access all the data of the document, but it will
+        /// trigger loading the document body from the database.
+        /// </summary>
+        IncludeBodies = 0x20
+    }
+
+    /// <summary>
     /// Flags that apply to a revision.
     /// </summary>
     [Flags]
