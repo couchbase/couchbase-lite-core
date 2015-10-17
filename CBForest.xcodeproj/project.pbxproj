@@ -192,6 +192,7 @@
 		27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
+		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E48714192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
 		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
@@ -743,6 +744,7 @@
 		27DF46BF1A119860007BB4A4 /* kv_instance.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kv_instance.cc; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Document.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Document.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
+		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/cbforest/Constants.java; sourceTree = "<group>"; };
 		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
 		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
@@ -1281,6 +1283,7 @@
 		275607791BA22E5700F58218 /* Java */ = {
 			isa = PBXGroup;
 			children = (
+				27E11A5F1BD1EBAD00D8DB7D /* Constants.java */,
 				274D03F31BA734C100FF7C35 /* Database.java */,
 				274D03F41BA734C100FF7C35 /* Document.java */,
 				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
@@ -2054,6 +2057,7 @@
 				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
+				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

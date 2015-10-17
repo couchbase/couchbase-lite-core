@@ -720,13 +720,8 @@ bool c4doc_save(C4Document *doc,
 #pragma mark - DOC ENUMERATION:
 
 const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
-	false,
-    true,
-    true,
-	0,
-	false,
-    true,
-    true
+    0, // skip
+    kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies
 };
 
 
@@ -764,10 +759,10 @@ struct C4DocEnumerator {
     static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         auto options = DocEnumerator::Options::kDefault;
         options.skip = c4options.skip;
-        options.descending = c4options.descending;
-        options.inclusiveStart = c4options.inclusiveStart;
-        options.inclusiveEnd = c4options.inclusiveEnd;
-        if (!c4options.includeBodies)
+        options.descending = (c4options.flags & kC4Descending) != 0;
+        options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
+        options.inclusiveEnd = (c4options.flags & kC4InclusiveEnd) != 0;
+        if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOptions = KeyStore::kMetaOnly;
         return options;
     }
@@ -781,15 +776,16 @@ struct C4DocEnumerator {
     }
 
     inline bool useDoc() {
-        if (_options.includeDeleted && _options.includeNonConflicts)
+        auto optFlags = _options.flags;
+        if ((optFlags & kC4IncludeDeleted) && (optFlags & kC4IncludeNonConflicted))
             return true;
-        VersionedDocument::Flags flags;
+        VersionedDocument::Flags docFlags;
         revid revID;
         slice docType;
-        if (!VersionedDocument::readMeta(_e.doc(), flags, revID, docType))
+        if (!VersionedDocument::readMeta(_e.doc(), docFlags, revID, docType))
             return false;
-        return (_options.includeDeleted      || (flags & VersionedDocument::kDeleted) == 0)
-            && (_options.includeNonConflicts || (flags & VersionedDocument::kConflicted) != 0);
+        return (optFlags & kC4IncludeDeleted       || !(docFlags & VersionedDocument::kDeleted))
+            && (optFlags & kC4IncludeNonConflicted ||  (docFlags & VersionedDocument::kConflicted));
     }
 };
 

@@ -212,6 +212,18 @@ public interface Constants {
         int kRevHasAttachments = 0x08; // Does this rev's body contain attachments?
     }
 
+    // Flags for document iteration
+    interface IteratorFlags {
+        int kDescending             = 0x01;
+        int kInclusiveStart         = 0x02;
+        int kInclusiveEnd           = 0x04;
+        int kIncludeDeleted         = 0x08;
+        int kIncludeNonConflicted   = 0x10;
+        int kIncludeBodies          = 0x20;
+
+        int kDefault = kInclusiveStart | kInclusiveEnd | kIncludeNonConflicted | kIncludeBodies;
+    }
+
     interface C4ErrorDomain {
         int HTTPDomain = 0;         // code is an HTTP status code
         int POSIXDomain = 1;        // code is an errno

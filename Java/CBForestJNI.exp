@@ -6,7 +6,6 @@
 
 _JNI_OnLoad
 
-_Java_com_couchbase_cbforest_Database__1iterateChanges
 _Java_com_couchbase_cbforest_Database__1open
 _Java_com_couchbase_cbforest_Database_beginTransaction
 _Java_com_couchbase_cbforest_Database_endTransaction

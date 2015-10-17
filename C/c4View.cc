@@ -248,7 +248,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
             return NULL;
         }
         auto options = kC4DefaultEnumeratorOptions;
-        options.includeDeleted = true;
+        options.flags |= kC4IncludeDeleted;
         return c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
     } catchError(outError);
     return NULL;

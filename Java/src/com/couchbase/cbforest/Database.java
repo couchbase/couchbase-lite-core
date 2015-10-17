@@ -42,18 +42,14 @@ public class Database {
 
     public DocumentIterator iterator(String startDocID,
                                      String endDocID,
-                                     boolean descending,
-                                     boolean inclusiveStart,
-                                     boolean inclusiveEnd,
                                      int skip,
-                                     boolean includeDeleted,
-                                     boolean includeBodies)
+                                     int iteratorFlags)
             throws ForestException {
-        return new DocumentIterator(_handle, startDocID, endDocID, descending, inclusiveStart, inclusiveEnd, skip, includeDeleted, includeBodies);
+        return new DocumentIterator(_handle, startDocID, endDocID, skip, iteratorFlags);
     }
 
-    public DocumentIterator iterator(String[] docIDs) throws ForestException {
-        return new DocumentIterator(_handle, docIDs);
+    public DocumentIterator iterator(String[] docIDs, boolean withBodies) throws ForestException {
+        return new DocumentIterator(_handle, docIDs, withBodies);
     }
 
     public DocumentIterator iterateChanges(long sinceSequence, boolean withBodies) throws ForestException {

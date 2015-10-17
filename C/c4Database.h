@@ -216,19 +216,25 @@ extern "C" {
     //////// DOCUMENT ENUMERATORS:
 
 
+    enum {
+        kC4Descending           = 0x01, /**< If true, iteration goes by descending document IDs. */
+        kC4InclusiveStart       = 0x02, /**< If false, iteration starts just _after_ startDocID. */
+        kC4InclusiveEnd         = 0x04, /**< If false, iteration stops just _before_ endDocID. */
+        kC4IncludeDeleted       = 0x08, /**< If true, include deleted documents. */
+        kC4IncludeNonConflicted = 0x10, /**< If false, include _only_ documents in conflict. */
+        kC4IncludeBodies        = 0x20  /**< If false, document bodies will not be preloaded, just
+                                   metadata (docID, revID, sequence, flags.) This is faster if you
+                                   don't need to access the revision tree or revision bodies. You
+                                   can still access all the data of the document, but it will
+                                   trigger loading the document body from the database. */
+    };
+    typedef uint16_t C4EnumeratorFlags;
+
+
     /** Options for enumerating over all documents. */
     typedef struct {
-        bool descending;        /**< If true, iteration goes by descending document IDs. */
-        bool inclusiveStart;    /**< If false, iteration starts just _after_ the startDocID. */
-        bool inclusiveEnd;      /**< If false, iteration stops just _before_ the endDocID. */
-        unsigned skip;          /**< The number of initial results to skip. */
-        bool includeDeleted;    /**< If true, include deleted documents. */
-        bool includeNonConflicts;/**< If true, include documents _not_ in conflict. */
-        bool includeBodies;     /**< If false, document bodies will not be preloaded, just the
-                                  metadata (docID, revID, sequence, flags.) This is faster if you
-                                  don't need to access the revision tree or revision bodies. You
-                                  can still access all the data of the document, but it will
-                                  trigger loading the document body from the database. */
+        unsigned          skip;     /**< The number of initial results to skip. */
+        C4EnumeratorFlags flags;    /**< Option flags */
     } C4EnumeratorOptions;
 
     /** Default all-docs enumeration options.

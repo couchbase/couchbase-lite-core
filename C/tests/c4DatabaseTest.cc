@@ -208,7 +208,7 @@ class C4DatabaseTest : public C4Test {
 
         // No start or end ID:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.includeBodies = false;
+        options.flags &= ~kC4IncludeBodies;
         e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
         Assert(e);
         char docID[20];
@@ -242,7 +242,7 @@ class C4DatabaseTest : public C4Test {
 
         // Some docs, by ID:
         options = kC4DefaultEnumeratorOptions;
-        options.includeDeleted = true;
+        options.flags |= kC4IncludeDeleted;
         C4Slice docIDs[4] = {C4STR("doc-042"), C4STR("doc-007"), C4STR("bogus"), C4STR("doc-001")};
         e = c4db_enumerateSomeDocs(db, docIDs, 4, &options, &error);
         Assert(e);
@@ -266,7 +266,7 @@ class C4DatabaseTest : public C4Test {
         C4Document* doc;
 
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.includeDeleted = true;
+        options.flags |= kC4IncludeDeleted;
         e = c4db_enumerateAllDocs(db, c4str("doc-004"), c4str("doc-007"), &options, &error);
         Assert(e);
         int i = 4;
@@ -296,7 +296,7 @@ class C4DatabaseTest : public C4Test {
 
         // Since start:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.includeBodies = false;
+        options.flags &= ~kC4IncludeBodies;
         e = c4db_enumerateChanges(db, 0, &options, &error);
         Assert(e);
         C4SequenceNumber seq = 1;
