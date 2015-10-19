@@ -72,11 +72,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateChanges
-        (JNIEnv *env, jobject self, jlong dbHandle, jlong since, jboolean withBodies)
+        (JNIEnv *env, jobject self, jlong dbHandle, jlong since, jint optionFlags)
 {
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    if (!withBodies)
-        options.flags &= ~kC4IncludeBodies;
+    const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
     C4Error error;
     C4DocEnumerator *e = c4db_enumerateChanges((C4Database*)dbHandle, since, &options, &error);
     if (!e) {
