@@ -14,12 +14,12 @@ public class DocumentIterator {
         _handle = initEnumerateAllDocs(dbHandle, startDocID, endDocID, skip, iteratorFlags);
     }
 
-    DocumentIterator(long dbHandle, String[] docIDs, boolean withBodies) throws ForestException {
-        _handle = initEnumerateSomeDocs(dbHandle, docIDs, withBodies);
+    DocumentIterator(long dbHandle, String[] docIDs, int iteratorFlags) throws ForestException {
+        _handle = initEnumerateSomeDocs(dbHandle, docIDs, iteratorFlags);
     }
 
-    DocumentIterator(long dbHandle, long sinceSequence, boolean withBodies) throws ForestException {
-        _handle = initEnumerateChanges(dbHandle, sinceSequence, withBodies);
+    DocumentIterator(long dbHandle, long sinceSequence, int iteratorFlags) throws ForestException {
+        _handle = initEnumerateChanges(dbHandle, sinceSequence, iteratorFlags);
     }
 
     // Returns null at end
@@ -36,15 +36,14 @@ public class DocumentIterator {
 
     protected void finalize()       { free(); }
 
-    private native long initEnumerateChanges(long dbHandle, long sinceSequence, boolean withBodies) throws ForestException;
+    private native long initEnumerateChanges(long dbHandle, long sinceSequence, int optionFlags) throws ForestException;
     private native long initEnumerateAllDocs(long dbHandle,
                                              String startDocID,
                                              String endDocID,
                                              int skip,
                                              int optionFlags)
             throws ForestException;
-    private native long initEnumerateSomeDocs(long dbHandle, String[] docIDs,
-                                              boolean withBodies) throws ForestException;
+    private native long initEnumerateSomeDocs(long dbHandle, String[] docIDs, int optionFlags) throws ForestException;
     private native static long nextDocumentHandle(long handle) throws ForestException;
     private native static void free(long handle);
 
