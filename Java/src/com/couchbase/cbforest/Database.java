@@ -48,8 +48,8 @@ public class Database {
         return new DocumentIterator(_handle, startDocID, endDocID, skip, iteratorFlags);
     }
 
-    public DocumentIterator iterator(String[] docIDs, boolean withBodies) throws ForestException {
-        return new DocumentIterator(_handle, docIDs, withBodies);
+    public DocumentIterator iterator(String[] docIDs, int iteratorFlags) throws ForestException {
+        return new DocumentIterator(_handle, docIDs, iteratorFlags);
     }
 
     public DocumentIterator iterateChanges(long sinceSequence, boolean withBodies) throws ForestException {

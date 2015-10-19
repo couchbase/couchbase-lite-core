@@ -31,7 +31,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateSomeDocs
-        (JNIEnv *env, jobject self, jlong dbHandle, jobjectArray jdocIDs, jboolean withBodies)
+        (JNIEnv *env, jobject self, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags)
 {
     // Convert jdocIDs, a Java String[], to a C array of C4Slice:
 
@@ -51,9 +51,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
         keeper.push_back(item); // so its memory won't be freed
     }
 
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    if (!withBodies)
-        options.flags &= ~kC4IncludeBodies;
+    const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
     C4Error error;
     C4DocEnumerator *e = c4db_enumerateSomeDocs((C4Database*)dbHandle, docIDs, n, &options,
                                                 &error);
