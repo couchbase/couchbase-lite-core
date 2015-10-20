@@ -61,6 +61,7 @@ c4view_delete
 c4view_getTotalRows
 c4view_getLastSequenceIndexed
 c4view_getLastSequenceChangedAt
+c4view_rekey
 c4indexer_begin
 c4indexer_enumerateDocuments
 c4indexer_emit

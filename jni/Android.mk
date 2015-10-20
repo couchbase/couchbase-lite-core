@@ -126,6 +126,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(FORESTDB_PATH)/src/snapshot.cc \
 					$(FORESTDB_PATH)/src/transaction.cc \
 					$(FORESTDB_PATH)/src/wal.cc \
+					$(FORESTDB_PATH)/src/version.cc \
 					$(SNAPPY_PATH)/snappy.cc \
 					$(SNAPPY_PATH)/snappy-c.cc \
 					$(SNAPPY_PATH)/snappy-sinksource.cc \

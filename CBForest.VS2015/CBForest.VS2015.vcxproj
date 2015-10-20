@@ -215,6 +215,7 @@
     <ClCompile Include="..\vendor\forestdb\src\snapshot.cc" />
     <ClCompile Include="..\vendor\forestdb\src\transaction.cc" />
     <ClCompile Include="..\vendor\forestdb\src\wal.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\version.cc" />
     <ClCompile Include="..\vendor\forestdb\utils\crc32.cc" />
     <ClCompile Include="..\vendor\forestdb\utils\debug.cc" />
     <ClCompile Include="..\vendor\forestdb\utils\gettimeofday_vs.cc" />

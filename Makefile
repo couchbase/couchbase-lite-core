@@ -116,6 +116,7 @@ $(FORESTDB_PATH)/src/list.o \
 $(FORESTDB_PATH)/src/snapshot.o \
 $(FORESTDB_PATH)/src/transaction.o \
 $(FORESTDB_PATH)/src/wal.o \
+$(FORESTDB_PATH)/src/version.o \
 $(SNAPPY_PATH)/snappy.o \
 $(SNAPPY_PATH)/snappy-c.o \
 $(SNAPPY_PATH)/snappy-sinksource.o \

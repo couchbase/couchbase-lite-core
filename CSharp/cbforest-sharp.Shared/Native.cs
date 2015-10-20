@@ -1127,6 +1127,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4view_rekey(C4View *view, C4EncryptionKey *newKey, C4Error *outError);
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_begin")]
         private static extern C4Indexer* _c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
 
