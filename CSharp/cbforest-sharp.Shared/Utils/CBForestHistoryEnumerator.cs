@@ -29,7 +29,7 @@ namespace CBForest
 
         #region Variables
 
-        private readonly C4Document *_doc;
+        private C4Document *_doc;
         private CBForestDocStatus _current;
         private readonly bool _onlyLeaf;
         private readonly bool _byParent;
@@ -50,15 +50,12 @@ namespace CBForest
         /// when finished</param>
         public CBForestHistoryEnumerator(C4Document *doc, bool onlyLeaf, bool owner)
         {
-            var err = default(C4Error);
-            var selectedCurrent = Native.c4doc_selectCurrentRevision(doc);
-            if (!selectedCurrent) {
-                throw new CBForestException(err.code, err.domain);
-            }
-
             _doc = doc;
             _onlyLeaf = onlyLeaf;
             _owner = owner;
+            if (!_owner) {
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
@@ -74,12 +71,35 @@ namespace CBForest
             _byParent = true;
         }
 
+        ~CBForestHistoryEnumerator()
+        {
+            Dispose(true);
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void Dispose(bool disposing)
+        {
+            if (!_owner) {
+                return;
+            }
+
+            var doc = _doc;
+            _doc = null;
+            _current = null;
+            if (doc != null) {
+                Native.c4doc_free(doc);
+            }
+        }
+
         #endregion
 
         public bool MoveNext()
         {
             if (_current == null) {
-                _current = new CBForestDocStatus(_doc, _owner);
+                _current = new CBForestDocStatus(_doc, false);
                 return true;
             }
 
@@ -93,8 +113,7 @@ namespace CBForest
             }
 
             if (retVal) {
-                _current.Dispose();
-                _current = new CBForestDocStatus(_doc, _owner);
+                _current = new CBForestDocStatus(_doc, false);
             }
 
             return retVal;
@@ -132,10 +151,8 @@ namespace CBForest
 
         public void Dispose()
         {
-            if (_current != null) {
-                _current.Dispose();
-                _current = null;
-            }
+            Dispose(false);
+            GC.SuppressFinalize(this);
         }
     }
 }

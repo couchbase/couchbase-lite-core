@@ -147,7 +147,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4db_close] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)db);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -174,7 +174,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4db_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)db);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -255,7 +255,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4db_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)rawDoc);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -342,7 +342,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4doc_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)doc);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -510,7 +510,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4enum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)e);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -834,7 +834,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4key_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)key);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -1057,7 +1057,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4view_close] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)view);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -1094,7 +1094,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4view_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)view);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -1251,7 +1251,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4indexer_end] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)indexer);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
@@ -1314,7 +1314,7 @@ namespace CBForest
                 Console.WriteLine("WARNING: [c4queryenum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
             #endif
-                _AllocatedObjects.Remove((IntPtr)e);
+                _AllocatedObjects.Remove(ptr);
             #if ENABLE_LOGGING
             }
             #endif
