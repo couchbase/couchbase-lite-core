@@ -17,6 +17,7 @@
 #include "LogInternal.hh"
 #include <math.h>
 #include <set>
+#include <algorithm>
 
 
 namespace forestdb {

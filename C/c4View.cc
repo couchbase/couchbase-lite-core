@@ -10,7 +10,8 @@
 #include "c4View.h"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
-
+#include <math.h>
+#include <limits.h>
 using namespace forestdb;
 
 
