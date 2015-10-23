@@ -262,7 +262,11 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
     {
         // Convert jhistory, a Java String[], to a C array of C4Slice:
         jsize n = env->GetArrayLength(jhistory);
+#ifdef _MSC_VER
+        C4Slice* history = new C4Slice[n];
+#else
         C4Slice history[n];
+#endif
         std::vector<jstringSlice*> historyAlloc;
         for (jsize i = 0; i < n; i++) {
             jstring js = (jstring)env->GetObjectArrayElement(jhistory, i);
@@ -280,6 +284,10 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
         for (jsize i = 0; i < n; i++)
             delete historyAlloc.at(i);
         historyAlloc.clear();
+
+#ifdef _MSC_VER
+        delete[] history;
+#endif
     }
     if (inserted >= 0) {
         updateSelection(env, self, doc);

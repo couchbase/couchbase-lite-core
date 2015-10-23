@@ -147,8 +147,13 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
     C4Document* doc = (C4Document*)documentHandler;
     size_t count = env->GetArrayLength(jkeys);
     jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
+#ifdef _MSC_VER
+    C4Key** c4keys = new C4Key*[count];
+    C4Slice* c4values = new C4Slice[count];
+#else
     C4Key *c4keys[count];
     C4Slice c4values[count];
+#endif
     std::vector<jbyteArraySlice> valueBufs;
     for(int i = 0; i < count; i++) {
         c4keys[i] = (C4Key*)keys[i];
@@ -157,7 +162,11 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
             valueBufs.push_back(jbyteArraySlice(env, jvalue));
             c4values[i] = valueBufs.back();
         } else {
+#ifdef _MSC_VER
+            c4values[i] = {NULL, 0};
+#else
             c4values[i] = kC4SliceNull;
+#endif
         }
     }
 
@@ -168,6 +177,11 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
     for(int i = 0; i < count; i++)
         c4key_free(c4keys[i]);
     env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
+
+#ifdef _MSC_VER
+    delete[] c4keys;
+    delete[] c4values;
+#endif
 
     if(!result)
         throwError(env, error);
@@ -227,7 +241,11 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
     size_t keyCount = env->GetArrayLength(jkeys);
     jboolean isCopy;
     auto keys = env->GetLongArrayElements(jkeys, &isCopy);
+#ifdef _MSC_VER
+    C4Key** c4keys = new C4Key*[keyCount];
+#else
     C4Key *c4keys[keyCount];
+#endif
     for(int i = 0; i < keyCount; i++){
         c4keys[i]   = (C4Key *)keys[i];
     }
@@ -239,14 +257,22 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         (bool)inclusiveEnd,
         NULL,
         NULL,
+#ifdef _MSC_VER
+        {NULL, 0},
+        {NULL, 0},
+#else
         kC4SliceNull,
         kC4SliceNull,
+#endif
         (const C4Key **)c4keys,
         keyCount
     };
     C4Error error;
     C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, &options, &error);
     env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
+#ifdef _MSC_VER
+    delete[] c4keys;
+#endif
     if (!e)
         throwError(env, error);
     return (jlong)e;
