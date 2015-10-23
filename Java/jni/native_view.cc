@@ -149,26 +149,24 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
     jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
     C4Key *c4keys[count];
     C4Slice c4values[count];
-    std::vector<jbyteArraySlice*> valueBufs;
+    std::vector<jbyteArraySlice> valueBufs;
     for(int i = 0; i < count; i++) {
         c4keys[i] = (C4Key*)keys[i];
         jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
         if (jvalue) {
-            jbyteArraySlice* ptr = new  jbyteArraySlice(env, jvalue);
-            valueBufs.push_back(ptr);
-            //valueBufs.push_back(jbyteArraySlice(env, jvalue));
-            c4values[i] = *valueBufs.back();
+            valueBufs.push_back(jbyteArraySlice(env, jvalue));
+            c4values[i] = valueBufs.back();
         } else {
             c4values[i] = kC4SliceNull;
         }
     }
+
     C4Error error;
     bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
                                  c4keys, c4values, &error);
-    for(int i = 0; i < count; i++){
+
+    for(int i = 0; i < count; i++)
         c4key_free(c4keys[i]);
-        delete valueBufs.at(i);
-    }
     env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
 
     if(!result)

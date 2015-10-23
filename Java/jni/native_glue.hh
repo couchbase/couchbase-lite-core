@@ -29,6 +29,10 @@ public:
     jstringSlice(JNIEnv *env, jstring js);
     ~jstringSlice();
 
+    jstringSlice(jstringSlice&& s) // move constructor
+    :_slice(s._slice), _env(s._env), _jstr(s._jstr), _cstr(s._cstr)
+    { s._slice = slice::null; }
+
     operator slice()    {return _slice;}
     operator C4Slice()  {return (C4Slice){_slice.buf, _slice.size};}
 
@@ -45,6 +49,10 @@ class jbyteArraySlice {
 public:
     jbyteArraySlice(JNIEnv *env, jbyteArray jbytes, bool critical =false);
     ~jbyteArraySlice();
+
+    jbyteArraySlice(jbyteArraySlice&& s) // move constructor
+    :_slice(s._slice), _env(s._env), _jbytes(s._jbytes), _critical(s._critical)
+    { s._slice = slice::null; }
 
     operator slice()    {return _slice;}
     operator C4Slice()  {return (C4Slice){_slice.buf, _slice.size};}
