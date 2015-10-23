@@ -200,8 +200,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZJJLjava_la
 {
     jstringSlice startKeyDocID(env, jstartKeyDocID), endKeyDocID(env, jendKeyDocID);
     C4QueryOptions options = {
-        (uint64_t)std::max(skip, 0ll),
-        (uint64_t)std::max(limit, 0ll),
+        (uint64_t)std::max((long long)skip, 0ll),
+        (uint64_t)std::max((long long)limit, 0ll),
         (bool)descending,
         (bool)inclusiveStart,
         (bool)inclusiveEnd,
@@ -232,8 +232,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         c4keys[i]   = (C4Key *)keys[i];
     }
     C4QueryOptions options = {
-        (uint64_t)std::max(skip, 0ll),
-        (uint64_t)std::max(limit, 0ll),
+        (uint64_t)std::max((long long)skip, 0ll),
+        (uint64_t)std::max((long long)limit, 0ll),
         (bool)descending,
         (bool)inclusiveStart,
         (bool)inclusiveEnd,

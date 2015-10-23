@@ -42,8 +42,12 @@ namespace forestdb {
         :_env(env),
          _jstr(js)
         {
-            jboolean isCopy;
-            _cstr = env->GetStringUTFChars(js, &isCopy);
+            if(js == NULL){
+                _cstr = NULL;
+            }else{
+                jboolean isCopy;
+                _cstr = env->GetStringUTFChars(js, &isCopy);
+            }
             _slice = slice(_cstr);
         }
 
