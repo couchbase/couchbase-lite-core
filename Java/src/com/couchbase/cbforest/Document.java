@@ -17,17 +17,27 @@ public class Document implements Constants{
     protected void finalize()       { free(); }
 
 
-    public native boolean selectRevID(String revID, boolean withBody) throws ForestException;
+    public boolean selectRevID(String revID, boolean withBody) throws ForestException {
+        return selectRevID(_handle, revID, withBody);
+    }
 
-    public native boolean selectCurrentRev();
+    public boolean selectCurrentRev() {
+        return selectCurrentRev(_handle);
+    }
 
-    public native boolean selectParentRev();
+    public boolean selectParentRev() {
+        return selectParentRev(_handle);
+    }
 
-    public native boolean selectNextRev();
+    public boolean selectNextRev() {
+        return selectNextRev(_handle);
+    }
 
-    public native boolean selectNextLeaf(boolean includeDeleted, boolean withBody) throws ForestException;
+    public boolean selectNextLeaf(boolean includeDeleted, boolean withBody) throws ForestException {
+        return selectNextLeaf(_handle, includeDeleted, withBody);
+    }
 
-    public boolean hasRevisionBody(){
+    public boolean hasRevisionBody() {
         return hasRevisionBody(_handle);
     }
 
@@ -35,7 +45,7 @@ public class Document implements Constants{
 
     public byte[] getSelectedBody() throws ForestException {
         if (_selectedBody == null) {
-            _selectedBody = readSelectedBody();
+            _selectedBody = readSelectedBody(_handle);
         }
         return _selectedBody;
     }
@@ -48,22 +58,29 @@ public class Document implements Constants{
     public long getSelectedRevFlags() { return _selectedRevFlags; }
 
 
-    public native boolean insertRevision(String revID,
-                                         byte[] body,
+    public boolean insertRevision(String revID,
+                                  byte[] body,
+                                  boolean deleted,
+                                  boolean hasAttachments,
+                                  boolean allowConflict) throws ForestException {
+        return insertRevision(_handle, revID, body, deleted, hasAttachments, allowConflict);
+    }
+
+    public int insertRevisionWithHistory(byte[] body,
                                          boolean deleted,
                                          boolean hasAttachments,
-                                         boolean allowConflict) throws ForestException;
+                                         String[] history) throws ForestException {
+        return insertRevisionWithHistory(_handle, body, deleted, hasAttachments, history);
+    }
 
-    public native int insertRevisionWithHistory(byte[] body,
-                                                boolean deleted,
-                                                boolean hasAttachments,
-                                                String[] history) throws ForestException;
-
-    public native void save(int maxRevTreeDepth) throws ForestException;
+    public void save(int maxRevTreeDepth) throws ForestException {
+        save(_handle, maxRevTreeDepth);
+    }
 
     public int purgeRevision(String revID) throws ForestException {
         return purgeRevision(_handle, revID);
     }
+    
     // INTERNALS:
 
     Document(long dbHandle, String docID, boolean mustExist) throws ForestException {
@@ -88,12 +105,33 @@ public class Document implements Constants{
     private native static String getType(long handle);
     private native static void setType(long handle, String type);
 
+    private native boolean selectRevID(long handle, String revID, boolean withBody) throws ForestException;
+    private native boolean selectCurrentRev(long handle);
+    private native boolean selectParentRev(long handle);
+    private native boolean selectNextRev(long handle);
+    private native boolean selectNextLeaf(long handle, boolean includeDeleted, boolean withBody) throws ForestException;
+
     private native static boolean hasRevisionBody(long handle);
 
     private native static int purgeRevision(long handle, String revID) throws ForestException;
 
     private native static void free(long handle);
-    private native byte[] readSelectedBody() throws ForestException;
+    private native byte[] readSelectedBody(long handle) throws ForestException;
+
+    private native boolean insertRevision(long handle,
+                                          String revID,
+                                          byte[] body,
+                                          boolean deleted,
+                                          boolean hasAttachments,
+                                          boolean allowConflict) throws ForestException;
+
+    private native int insertRevisionWithHistory(long handle,
+                                                 byte[] body,
+                                                 boolean deleted,
+                                                 boolean hasAttachments,
+                                                 String[] history) throws ForestException;
+
+    private native void save(long handle, int maxRevTreeDepth) throws ForestException;
 
     protected long _handle;
     private String _docID, _revID;
