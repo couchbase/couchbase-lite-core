@@ -49,6 +49,7 @@ namespace CBForest
         #endif
 
         private static Action<C4LogLevel, string> _LogCallback;
+        private static C4LogCallback _NativeLogCallback;
 
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
@@ -1337,11 +1338,10 @@ namespace CBForest
         public static void c4log_register(C4LogLevel level, Action<C4LogLevel, string> callback)
         {
             _LogCallback = callback;
-            if (_LogCallback == null) {
-                c4log_register(level, (C4LogCallback)null);
-            } else {
-                c4log_register(level, c4log_wedge);
-            }
+
+            // This is needed to ensure that the delegate object itself doesn't get garbage collected
+            _NativeLogCallback = _LogCallback == null ? null : new C4LogCallback(c4log_wedge);
+            c4log_register(level, _NativeLogCallback);
         }
         
         private static string BridgeSlice(Func<C4Slice> nativeFunc)

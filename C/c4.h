@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-#define inline __forceinline
+//#define inline __forceinline
 #endif
 
 
@@ -90,14 +90,14 @@ static inline C4Slice c4str(const char *str) {
 // Macro version of c4str, for use in initializing compile-time constants.
 // STR must be a C string literal.
 #ifdef _MSC_VER
-#define C4STR(STR) ({("" STR), sizeof(("" STR))-1})
+#define C4STR(STR) {("" STR), sizeof(("" STR))-1}
 #else
 #define C4STR(STR) ((C4Slice){("" STR), sizeof(("" STR))-1})
 #endif
 
 // A convenient constant denoting a null slice.
 #ifdef _MSC_VER
-#define kC4SliceNull ({NULL, 0})
+const C4Slice kC4SliceNull = { NULL, 0 };
 #else
 #define kC4SliceNull ((C4Slice){NULL, 0})
 #endif
