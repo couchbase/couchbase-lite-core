@@ -49,11 +49,13 @@ namespace forestdb {
         inline void operator() (Collatable key, slice value) {emit(key, value);}
         inline void operator() (const geohash::area& bbox, slice geoJSON, slice value)
                                                             {emit(bbox, geoJSON, value);}
+        virtual ~EmitFn() { }
     };
 
     class MapFn {
     public:
         virtual void operator() (const Mappable&, EmitFn& emit) =0;
+        virtual ~MapFn() { }
     };
 
     /** An Index that uses a MapFn to index the documents of another KeyStore. */
@@ -120,7 +122,7 @@ namespace forestdb {
     class MapReduceIndexer {
     public:
         MapReduceIndexer();
-        ~MapReduceIndexer();
+        virtual ~MapReduceIndexer();
 
         void addIndex(MapReduceIndex*, Transaction*);
 
