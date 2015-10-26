@@ -147,13 +147,8 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
     C4Document* doc = (C4Document*)documentHandler;
     size_t count = env->GetArrayLength(jkeys);
     jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
-#ifdef _MSC_VER
-    C4Key** c4keys = new C4Key*[count];
-    C4Slice* c4values = new C4Slice[count];
-#else
-    C4Key *c4keys[count];
-    C4Slice c4values[count];
-#endif
+    std::vector<C4Key*> c4keys(count);
+    std::vector<C4Slice> c4values(count);
     std::vector<jbyteArraySlice> valueBufs;
     for(int i = 0; i < count; i++) {
         c4keys[i] = (C4Key*)keys[i];
@@ -168,16 +163,11 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
 
     C4Error error;
     bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
-                                 c4keys, c4values, &error);
+                                 c4keys.data(), c4values.data(), &error);
 
     for(int i = 0; i < count; i++)
         c4key_free(c4keys[i]);
     env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
-
-#ifdef _MSC_VER
-    delete[] c4keys;
-    delete[] c4values;
-#endif
 
     if(!result)
         throwError(env, error);
