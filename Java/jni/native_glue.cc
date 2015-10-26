@@ -104,16 +104,9 @@ namespace forestdb {
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == NULL)
                 return NULL;
-#ifdef _MSC_VER
             std::string utf8Buf((char*)s.buf, s.size);
-            return env->NewStringUTF(utf8Buf.c_str());
-#else
-            char utf8Buf[s.size + 1];   // FIX: Use heap if string is too long for stack
-            ::memcpy(utf8Buf, s.buf, s.size);
-            utf8Buf[s.size] = '\0';
             // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
-            return env->NewStringUTF(utf8Buf);
-#endif
+            return env->NewStringUTF(utf8Buf.c_str());
         }
 
         jbyteArray toJByteArray(JNIEnv *env, C4Slice s) {

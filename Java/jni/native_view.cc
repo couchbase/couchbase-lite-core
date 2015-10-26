@@ -237,11 +237,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
     size_t keyCount = env->GetArrayLength(jkeys);
     jboolean isCopy;
     auto keys = env->GetLongArrayElements(jkeys, &isCopy);
-#ifdef _MSC_VER
     std::vector<C4Key*> c4keys(keyCount);
-#else
-    C4Key *c4keys[keyCount];
-#endif
     for(int i = 0; i < keyCount; i++){
         c4keys[i]   = (C4Key *)keys[i];
     }
@@ -255,11 +251,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         NULL,
         kC4SliceNull,
         kC4SliceNull,
-#ifdef _MSC_VER
-        (const C4Key **)&c4keys[0],
-#else
-        (const C4Key **)c4keys,
-#endif
+        (const C4Key **)c4keys.data(),
         keyCount
     };
     C4Error error;
