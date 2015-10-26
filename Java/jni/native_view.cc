@@ -162,11 +162,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobjec
             valueBufs.push_back(jbyteArraySlice(env, jvalue));
             c4values[i] = valueBufs.back();
         } else {
-#ifdef _MSC_VER
-            c4values[i] = {NULL, 0};
-#else
             c4values[i] = kC4SliceNull;
-#endif
         }
     }
 
@@ -242,7 +238,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
     jboolean isCopy;
     auto keys = env->GetLongArrayElements(jkeys, &isCopy);
 #ifdef _MSC_VER
-    C4Key** c4keys = new C4Key*[keyCount];
+    std::vector<C4Key*> c4keys(keyCount);
 #else
     C4Key *c4keys[keyCount];
 #endif
@@ -257,22 +253,18 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         (bool)inclusiveEnd,
         NULL,
         NULL,
+        kC4SliceNull,
+        kC4SliceNull,
 #ifdef _MSC_VER
-        {NULL, 0},
-        {NULL, 0},
+        (const C4Key **)&c4keys[0],
 #else
-        kC4SliceNull,
-        kC4SliceNull,
-#endif
         (const C4Key **)c4keys,
+#endif
         keyCount
     };
     C4Error error;
     C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, &options, &error);
     env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
-#ifdef _MSC_VER
-    delete[] c4keys;
-#endif
     if (!e)
         throwError(env, error);
     return (jlong)e;

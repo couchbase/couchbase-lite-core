@@ -34,11 +34,7 @@ public:
     { s._slice = slice::null; }
 
     operator slice()    {return _slice;}
-#ifdef _MSC_VER
     operator C4Slice()  {return {_slice.buf, _slice.size};}
-#else
-    operator C4Slice()  {return (C4Slice){_slice.buf, _slice.size};}
-#endif
 
 private:
     slice _slice;
@@ -59,11 +55,7 @@ public:
     { s._slice = slice::null; }
 
     operator slice()    {return _slice;}
-#ifdef _MSC_VER
     operator C4Slice()  {return {_slice.buf, _slice.size};}
-#else
-    operator C4Slice()  {return (C4Slice){_slice.buf, _slice.size};}
-#endif
 
     // Copies a Java byte[] to an alloc_slice
     static alloc_slice copy(JNIEnv *env, jbyteArray jbytes);

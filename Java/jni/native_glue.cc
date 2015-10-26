@@ -105,13 +105,8 @@ namespace forestdb {
             if (s.buf == NULL)
                 return NULL;
 #ifdef _MSC_VER
-            char* utf8Buf = new char[s.size + 1];
-            ::memcpy(utf8Buf, s.buf, s.size);
-            utf8Buf[s.size] = '\0';
-            // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
-            jstring ret = env->NewStringUTF(utf8Buf);
-            delete[] utf8Buf;
-            return ret;
+            std::string utf8Buf((char*)s.buf, s.size);
+            return env->NewStringUTF(utf8Buf.c_str());
 #else
             char utf8Buf[s.size + 1];   // FIX: Use heap if string is too long for stack
             ::memcpy(utf8Buf, s.buf, s.size);
