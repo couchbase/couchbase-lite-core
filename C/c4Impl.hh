@@ -19,9 +19,6 @@ typedef struct {
     size_t size;
 } C4SliceResult;
 
-#define kC4SliceNull forestdb::slice::null
-
-
 #define C4_IMPL
 #include "c4Database.h"
 
