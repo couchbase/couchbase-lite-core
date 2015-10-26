@@ -9,6 +9,7 @@
     <RootNamespace>CBForest.iOS</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <AssemblyName>cbforest-sharp</AssemblyName>
+    <ReleaseVersion>1.1.1</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -46,7 +47,7 @@
   <Import Project="..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems" Label="Shared" Condition="Exists('..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
   <ItemGroup>
-    <ManifestResourceWithNoCulture Include="libCBForest-Interop.a">
+    <ManifestResourceWithNoCulture Include="..\prebuilt\libCBForest-Interop.a">
       <Link>libCBForest-Interop.a</Link>
     </ManifestResourceWithNoCulture>
   </ItemGroup>

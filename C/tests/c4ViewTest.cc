@@ -64,7 +64,7 @@ public:
             keys[1] = c4key_new();
             c4key_addString(keys[0], doc->docID);
             c4key_addNumber(keys[1], doc->sequence);
-            values[0] = values[1] = C4STR("1234");
+            values[0] = values[1] = c4str("1234");
             Assert(c4indexer_emit(ind, doc, 0, 2, keys, values, &error));
             c4key_free(keys[0]);
             c4key_free(keys[1]);
@@ -101,7 +101,7 @@ public:
                 AssertEqual(e->docSequence, (C4SequenceNumber)(i - 100));
             }
             AssertEqual(toJSON(e->key), std::string(buf));
-            AssertEqual(e->value, C4STR("1234"));
+            AssertEqual(e->value, c4str("1234"));
 
         }
         AssertEqual(error.code, 0);

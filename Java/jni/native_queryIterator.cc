@@ -19,10 +19,6 @@ using namespace forestdb::jni;
 static jfieldID kHandleField;
 
 
-static inline C4QueryEnumerator* getEnum(JNIEnv *env, jobject self) {
-    return (C4QueryEnumerator*)env->GetLongField(self, kHandleField);
-}
-
 bool forestdb::jni::initQueryIterator(JNIEnv *env) {
     jclass queryIterClass = env->FindClass("com/couchbase/cbforest/QueryIterator");
     if (!queryIterClass)
@@ -33,16 +29,16 @@ bool forestdb::jni::initQueryIterator(JNIEnv *env) {
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_QueryIterator_next
-  (JNIEnv *env, jobject self)
+  (JNIEnv *env, jobject self, jlong handle)
 {
-    auto e = getEnum(env, self);
+    auto e = (C4QueryEnumerator*)handle;
     if (!e)
         return false;
     C4Error error;
     jboolean result = c4queryenum_next(e, &error);
     if (!result) {
         // At end of iteration, proactively free the enumerator:
-        Java_com_couchbase_cbforest_QueryIterator_free(env, self);
+        Java_com_couchbase_cbforest_QueryIterator_free(env, self, handle);
         if (error.code != 0)
             throwError(env, error);
     }
@@ -59,31 +55,31 @@ static jbyteArray toJByteArray(JNIEnv *env, const C4KeyReader &r) {
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_keyJSON
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong handle)
 {
-    return toJByteArray(env, getEnum(env, self)->key);
+    return toJByteArray(env, ((C4QueryEnumerator*)handle)->key);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_valueJSON
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong handle)
 {
-    return toJByteArray(env, getEnum(env, self)->value);
+    return toJByteArray(env, ((C4QueryEnumerator*)handle)->value);
 }
 
 JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong handle)
 {
-    return toJString(env, getEnum(env, self)->docID);
+    return toJString(env, ((C4QueryEnumerator*)handle)->docID);
 }
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
-        (JNIEnv *env, jobject self)
+        (JNIEnv *env, jobject self, jlong handle)
 {
-    return getEnum(env, self)->docSequence;
+    return ((C4QueryEnumerator*)handle)->docSequence;
 }
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong handle)
 {
-    C4QueryEnumerator *e = getEnum(env, self);
+    C4QueryEnumerator *e = (C4QueryEnumerator*)handle;
     env->SetLongField(self, kHandleField, 0);
     c4queryenum_free(e);
 }

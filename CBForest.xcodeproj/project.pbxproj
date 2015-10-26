@@ -153,8 +153,6 @@
 		27696AD219F5B66800B8D3D6 /* Tokenizer_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */; };
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
-		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
-		276FFD751B2E03920027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
@@ -166,12 +164,9 @@
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
-		27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
-		27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
-		27A82D961BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
@@ -225,8 +220,6 @@
 		27E721931BB65C8D001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
 		27E721941BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
 		27E721951BB65C9C001500DF /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
-		27E721961BB65CA3001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
-		27E721971BB65CA4001500DF /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
 		27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
 		27E721A11BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
@@ -425,6 +418,7 @@
 		720EA4681BA909C4002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B9018F8EDA20021A9A3 /* libforestdb.a */; };
 		720EA4711BA90A18002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA4721BA90A1C002B8416 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
+		721FD7ED1BD9FDAC0089B343 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 		9399E72F1B7E53DD00D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
@@ -1868,7 +1862,7 @@
 		2750723318E3E52800A80C5A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0600;
+				LastUpgradeCheck = 0710;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
@@ -1983,16 +1977,13 @@
 				27139B6B18F8EDA20021A9A3 /* forestdb.cc in Sources */,
 				27139B6D18F8EDA20021A9A3 /* btree.cc in Sources */,
 				27A82D181BBB72DF005CB742 /* checksum.cc in Sources */,
-				276FFD751B2E03920027B51A /* (null) in Sources */,
 				27E7219C1BB6720B001500DF /* encryption_aes.cc in Sources */,
 				27139B7018F8EDA20021A9A3 /* hash_functions.cc in Sources */,
 				27DF46C11A119860007BB4A4 /* kv_instance.cc in Sources */,
-				27A82D161BBB72B6005CB742 /* bgflusher.cc in Sources */,
 				27139B7118F8EDA20021A9A3 /* iterator.cc in Sources */,
 				278EBFA41976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */,
 				27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
-				27E721971BB65CA4001500DF /* checksum.cc in Sources */,
 				27139B7218F8EDA20021A9A3 /* hash.cc in Sources */,
 				27139B7318F8EDA20021A9A3 /* configuration.cc in Sources */,
 				27139B7418F8EDA20021A9A3 /* avltree.cc in Sources */,
@@ -2114,16 +2105,13 @@
 				275072D118E4AA5000A80C5A /* forestdb.cc in Sources */,
 				275072CA18E4AA5000A80C5A /* btree.cc in Sources */,
 				27A82D171BBB72DE005CB742 /* checksum.cc in Sources */,
-				276FFD741B2E03910027B51A /* (null) in Sources */,
 				27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */,
 				275072D218E4AA5000A80C5A /* hash_functions.cc in Sources */,
 				27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */,
-				27A82D151BBB72B5005CB742 /* bgflusher.cc in Sources */,
 				275072D518E4AA5000A80C5A /* iterator.cc in Sources */,
 				278EBFA11976325A006362F8 /* memleak.cc in Sources */,
 				278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */,
 				27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */,
-				27E721961BB65CA3001500DF /* checksum.cc in Sources */,
 				275072D318E4AA5000A80C5A /* hash.cc in Sources */,
 				273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */,
 				275072C718E4AA5000A80C5A /* avltree.cc in Sources */,
@@ -2277,6 +2265,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				720EA4721BA90A1C002B8416 /* c4.c in Sources */,
+				721FD7ED1BD9FDAC0089B343 /* c4View.cc in Sources */,
 				720EA4521BA909C4002B8416 /* GeoIndex.cc in Sources */,
 				720EA4541BA909C4002B8416 /* Database.cc in Sources */,
 				720EA4551BA909C4002B8416 /* KeyStore.cc in Sources */,
@@ -2288,7 +2277,6 @@
 				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
 				720EA45C1BA909C4002B8416 /* Collatable.cc in Sources */,
 				720EA45D1BA909C4002B8416 /* RevTree.cc in Sources */,
-				27A82D961BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
 				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
 				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
@@ -2399,6 +2387,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = xctest;
 			};
@@ -2415,6 +2404,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = xctest;
 			};
@@ -2541,6 +2531,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				WRAPPER_EXTENSION = xctest;
@@ -2558,6 +2549,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
 				INFOPLIST_FILE = "CBForest Tests/CBForest Tests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.couchbase.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
@@ -2570,6 +2562,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2596,6 +2589,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2669,12 +2663,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_CXX0X_EXTENSIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -2684,7 +2679,8 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -2697,6 +2693,8 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
+				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
@@ -2731,12 +2729,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_CXX0X_EXTENSIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -2748,7 +2747,7 @@
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
@@ -2756,6 +2755,8 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
+				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
@@ -2998,6 +2999,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -3025,6 +3027,7 @@
 				ALWAYS_SEARCH_USER_PATHS = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -3054,12 +3057,14 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
+					NO_SQLITE_GLUE,
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "CBForest-Interop";
@@ -3076,11 +3081,13 @@
 				DSTROOT = /tmp/CBForest_iOS.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = NO_SQLITE_GLUE;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/vendor/forestdb/include/**",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "CBForest-Interop";
 				SDKROOT = iphoneos;

@@ -11,8 +11,9 @@
 
 #include "c4Test.hh"
 #include "forestdb.h"
-
-
+#ifdef _MSC_VER
+#define random() rand()
+#endif
 class C4DatabaseTest : public C4Test {
     public:
 

@@ -189,7 +189,7 @@ namespace CBForest
             }
 
             var bytes = (sbyte*)slice.buf; 
-            return new string(bytes, 0, (int)slice.size);
+            return new string(bytes, 0, (int)slice.size, Encoding.UTF8);
         }
         
         private bool Equals(C4Slice other)

@@ -15,7 +15,6 @@ using namespace forestdb;
 using namespace forestdb::jni;
 
 
-static jfieldID kField_Handle;
 static jfieldID kField_Flags;
 static jfieldID kField_DocID;
 static jfieldID kField_RevID;
@@ -30,7 +29,6 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
     jclass documentClass = env->FindClass("com/couchbase/cbforest/Document");
     if (!documentClass)
         return false;
-    kField_Handle = env->GetFieldID(documentClass, "_handle", "J");
     kField_Flags = env->GetFieldID(documentClass, "_flags", "I");
     kField_DocID = env->GetFieldID(documentClass, "_docID", "Ljava/lang/String;");
     kField_RevID = env->GetFieldID(documentClass, "_revID", "Ljava/lang/String;");
@@ -39,7 +37,7 @@ bool forestdb::jni::initDocument(JNIEnv *env) {
     kField_SelectedRevFlags = env->GetFieldID(documentClass, "_selectedRevFlags", "I");
     kField_SelectedSequence = env->GetFieldID(documentClass, "_selectedSequence", "J");
     kField_SelectedBody = env->GetFieldID(documentClass, "_selectedBody", "[B");
-    return kField_Handle && kField_Flags && kField_RevID && kField_SelectedRevID
+    return kField_Flags && kField_RevID && kField_SelectedRevID
         && kField_SelectedRevFlags && kField_SelectedSequence && kField_SelectedBody;
 }
 
@@ -152,9 +150,9 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
-(JNIEnv *env, jobject self, jstring jrevID, jboolean withBody)
+(JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     jstringSlice revID(env, jrevID);
     C4Error error;
     bool ok = c4doc_selectRevision(doc, revID, withBody, &error);
@@ -167,9 +165,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectCurrentRev
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong docHandle)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     bool ok = c4doc_selectCurrentRevision(doc);
     updateSelection(env, self, doc);
     return ok;
@@ -177,9 +175,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectCurrentRev
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectParentRev
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong docHandle)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     bool ok = c4doc_selectParentRevision(doc);
     updateSelection(env, self, doc);
     return ok;
@@ -187,9 +185,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectParentRev
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextRev
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong docHandle)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     bool ok = c4doc_selectNextRevision(doc);
     updateSelection(env, self, doc);
     return ok;
@@ -197,9 +195,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextRev
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
-(JNIEnv *env, jobject self, jboolean includeDeleted, jboolean withBody)
+(JNIEnv *env, jobject self, jlong docHandle, jboolean includeDeleted, jboolean withBody)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     C4Error error;
     bool ok = c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &error);
     if (ok || error.domain == HTTPDomain)  // 404 or 410 don't trigger exceptions
@@ -211,9 +209,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
 
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Document_readSelectedBody
-(JNIEnv *env, jobject self)
+(JNIEnv *env, jobject self, jlong docHandle)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     C4Error error;
     if (!c4doc_loadRevisionBody(doc, &error)) {
         throwError(env, error);
@@ -227,12 +225,12 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Document_readSelectedBo
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_insertRevision
-(JNIEnv *env, jobject self,
+(JNIEnv *env, jobject self, jlong docHandle,
  jstring jrevID, jbyteArray jbody,
  jboolean deleted, jboolean hasAtt,
  jboolean allowConflict)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     int inserted;
     C4Error error;
     {
@@ -251,12 +249,12 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_insertRevision
 
 
 JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHistory
-(JNIEnv *env, jobject self,
+(JNIEnv *env, jobject self, jlong docHandle,
  jbyteArray jbody,
  jboolean deleted, jboolean hasAtt,
  jobjectArray jhistory)
 {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+    auto doc = (C4Document*)docHandle;
     int inserted;
     C4Error error;
     {
@@ -300,8 +298,8 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
 
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_save
-(JNIEnv *env, jobject self, jint maxRevTreeDepth) {
-    auto doc = (C4Document*)env->GetLongField(self, kField_Handle);
+(JNIEnv *env, jobject self, jlong docHandle, jint maxRevTreeDepth) {
+    auto doc = (C4Document*)docHandle;
     C4Error error;
     if (c4doc_save(doc, maxRevTreeDepth, &error))
         updateRevIDAndFlags(env, self, doc);

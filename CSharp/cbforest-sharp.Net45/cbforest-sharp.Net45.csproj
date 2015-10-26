@@ -42,10 +42,10 @@
   <Import Project="..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems" Label="Shared" Condition="Exists('..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems')" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Condition=" !$(IsMac) AND '$(OS)' == 'Unix' " Include="libCBForest-Interop.so">
+    <None Condition=" !$(IsMac) AND '$(OS)' == 'Unix' " Include="..\prebuilt\libCBForest-Interop.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="CBForest-Interop.dll">
+    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="..\prebuilt\CBForest-Interop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\prebuilt\libCBForest-Interop.dylib" Condition=" $(IsMac) ">

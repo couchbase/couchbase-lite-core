@@ -28,6 +28,22 @@ namespace CBForest
     {
         public readonly C4Document *Document;
         private readonly bool _owner;
+        private Lazy<string> _docID;
+        private Lazy<string> _revID;
+
+        public string CurrentDocID { get { return _docID.Value;  } }
+
+        public string CurrentRevID { get { return _revID.Value;  } }
+
+        public bool HasRevisionBody { get { return Native.c4doc_hasRevisionBody(Document);  } }
+
+        public bool Exists { get { return Document->Exists; } }
+
+        public bool IsConflicted { get { return Document->IsConflicted; } }
+
+        public bool IsDeleted { get { return Document->IsDeleted; } }
+
+        public C4Document.rev SelectedRev { get { return Document->selectedRev; } }
 
         public CBForestDocStatus(C4Document *doc, bool owner)
         {
@@ -36,6 +52,9 @@ namespace CBForest
             if (!_owner) {
                 GC.SuppressFinalize(this);
             }
+
+            _docID = new Lazy<string>(() => (string)Document->docID);
+            _revID = new Lazy<string>(() => (string)Document->revID);
         }
 
         ~CBForestDocStatus()

@@ -28,7 +28,7 @@ using System.Runtime.InteropServices;
 #if __IOS__
 [assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
     ObjCRuntime.LinkTarget.Arm64 | ObjCRuntime.LinkTarget.ArmV7 | ObjCRuntime.LinkTarget.ArmV7s, ForceLoad=true,
-    LinkerFlags="-lsqlite3 -lc++", Frameworks="", IsCxx=true)]
+    LinkerFlags="-lsqlite3 -lc++", Frameworks="Security", IsCxx=true)]
 #endif
 
 namespace CBForest
@@ -47,6 +47,9 @@ namespace CBForest
         #if DEBUG
         private static readonly Dictionary<IntPtr, string> _AllocatedObjects = new Dictionary<IntPtr, string>();
         #endif
+
+        private static Action<C4LogLevel, string> _LogCallback;
+        private static C4LogCallback _NativeLogCallback;
 
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
@@ -1330,7 +1333,16 @@ namespace CBForest
         /// <param name="level">The minimum level of message to log</param>
         /// <param name="callback">The logging callback, or NULL to disable logging entirely</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
+        private static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
+
+        public static void c4log_register(C4LogLevel level, Action<C4LogLevel, string> callback)
+        {
+            _LogCallback = callback;
+
+            // This is needed to ensure that the delegate object itself doesn't get garbage collected
+            _NativeLogCallback = _LogCallback == null ? null : new C4LogCallback(c4log_wedge);
+            c4log_register(level, _NativeLogCallback);
+        }
         
         private static string BridgeSlice(Func<C4Slice> nativeFunc)
         {
@@ -1338,6 +1350,17 @@ namespace CBForest
             var retVal = (string)rawRetVal;
             c4slice_free(rawRetVal);
             return retVal;
+        }
+
+        #if __IOS__
+        [ObjCRuntime.MonoPInvokeCallback(typeof(C4LogCallback))]
+        #endif
+        private static void c4log_wedge(C4LogLevel level, C4Slice message)
+        {
+            if (_LogCallback != null) {
+                var sharpString = (string)message;
+                _LogCallback(level, sharpString);
+            }
         }
     }
 }

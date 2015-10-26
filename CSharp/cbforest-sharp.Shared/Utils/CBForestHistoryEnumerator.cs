@@ -58,6 +58,12 @@ namespace CBForest
             }
         }
 
+        public CBForestHistoryEnumerator(CBForestDocStatus docStatus, bool onlyLeaf, bool owner)
+            : this(docStatus.Document, onlyLeaf, owner)
+        {
+
+        }
+
         /// <summary>
         /// Creates a CBForestHistoryEnumerator that enumerates the the revision
         /// history of a document by parent (i.e. the "winning" chain)

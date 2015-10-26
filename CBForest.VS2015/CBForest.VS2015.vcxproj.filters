@@ -252,5 +252,26 @@
     <ClCompile Include="..\vendor\snappy\snappy.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\version.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\checksum.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\bgflusher.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\CBForest\sqlite_glue.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\encryption.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\encryption_aes.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\encryption_bogus.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

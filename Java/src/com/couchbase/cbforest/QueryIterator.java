@@ -6,18 +6,27 @@ public class QueryIterator {
         _handle = handle;
     }
 
-    public native boolean next() throws ForestException;
+    public boolean next() throws ForestException    {return next(_handle);}
 
-    public native byte[] keyJSON();
-    public native byte[] valueJSON();
-    public native String docID();
-    public native long   sequence();
+    public byte[] keyJSON()                         {return keyJSON(_handle);}
+    public byte[] valueJSON()                       {return valueJSON(_handle);}
+    public String docID()                           {return docID(_handle);}
+    public long   sequence()                        {return sequence(_handle);}
 
-    public native void free();
+    public void free() {
+        free(_handle);
+    }
 
     protected void finalize() {
         free();
     }
+
+    private native boolean next(long handle) throws ForestException;
+    private native byte[] keyJSON(long handle);
+    private native byte[] valueJSON(long handle);
+    private native String docID(long handle);
+    private native long sequence(long handle);
+    private native void free(long handle);
 
     private long _handle;  // Handle to native C4QueryEnumerator*
 }
