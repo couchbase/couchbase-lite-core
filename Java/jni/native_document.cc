@@ -269,10 +269,18 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
             history[i] = *item;
         }
 
-        jbyteArraySlice body(env, jbody, true); // critical
-        inserted = c4doc_insertRevisionWithHistory(doc, body, deleted, hasAtt,
-                                                   history.data(), n,
-                                                   &error);
+        // Make sure the body will be released before releasing keeper.
+        // Android ARM device caused memory access error when release jstringSlices (historyAlloc).
+        // It seems the error is caused by `GetPrimitiveArrayCritical` and order of releasing memories
+        // which are allocated through JNI methods.
+        // https://github.com/couchbase/couchbase-lite-java-core/issues/793
+        {
+            jbyteArraySlice body(env, jbody, true); // critical
+            inserted = c4doc_insertRevisionWithHistory(doc, body, deleted, hasAtt,
+                                                       history.data(), n,
+                                                       &error);
+        }
+
         // release memory
         for (jsize i = 0; i < n; i++)
             delete historyAlloc.at(i);
