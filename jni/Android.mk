@@ -78,7 +78,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_ISO_8859_1_swedish.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_ISO_8859_2_romanian.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_KOI8_R_russian.c \
-                    $(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_danish.c \
+          $(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_danish.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_dutch.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_english.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_finnish.c \
@@ -94,7 +94,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_spanish.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_swedish.c \
 					$(SQLITE3_PATH)/libstemmer_c/src_c/stem_UTF_8_turkish.c \
-                    $(FORESTDB_PATH)/utils/crc32.cc \
+          $(FORESTDB_PATH)/utils/crc32.cc \
 					$(FORESTDB_PATH)/utils/debug.cc \
 					$(FORESTDB_PATH)/utils/iniparser.cc \
 					$(FORESTDB_PATH)/utils/memleak.cc \
@@ -103,15 +103,20 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(FORESTDB_PATH)/utils/time_utils.cc \
 					$(FORESTDB_PATH)/src/api_wrapper.cc \
 					$(FORESTDB_PATH)/src/avltree.cc \
+					$(FORESTDB_PATH)/src/bgflusher.cc \
 					$(FORESTDB_PATH)/src/blockcache.cc \
 					$(FORESTDB_PATH)/src/btree.cc \
 					$(FORESTDB_PATH)/src/btree_fast_str_kv.cc \
 					$(FORESTDB_PATH)/src/btree_kv.cc \
 					$(FORESTDB_PATH)/src/btree_str_kv.cc \
 					$(FORESTDB_PATH)/src/btreeblock.cc \
+					$(FORESTDB_PATH)/src/checksum.cc \
 					$(FORESTDB_PATH)/src/compactor.cc \
 					$(FORESTDB_PATH)/src/configuration.cc \
 					$(FORESTDB_PATH)/src/docio.cc \
+					$(FORESTDB_PATH)/src/encryption.cc \
+					$(FORESTDB_PATH)/src/encryption_aes.cc \
+					$(FORESTDB_PATH)/src/encryption_bogus.cc \
 					$(FORESTDB_PATH)/src/fdb_errors.cc \
 					$(FORESTDB_PATH)/src/filemgr.cc \
 					$(FORESTDB_PATH)/src/filemgr_ops.cc \
@@ -146,6 +151,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(CBFOREST_PATH)/VersionedDocument.cc \
 					$(CBFOREST_PATH)/MapReduceIndex.cc \
 					$(CBFOREST_PATH)/Tokenizer.cc \
+					$(CBFOREST_PATH)/sqlite_glue.c \
 					$(LOCAL_PATH)/../C/c4.c \
 					$(LOCAL_PATH)/../C/c4Database.cc
 					

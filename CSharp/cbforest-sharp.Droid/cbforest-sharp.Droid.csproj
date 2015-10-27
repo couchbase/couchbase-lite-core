@@ -11,9 +11,9 @@
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <AndroidResgenClass>Resource</AndroidResgenClass>
     <AndroidResgenFile>Resources\Resource.designer.cs</AndroidResgenFile>
-    <AndroidUseLatestPlatformSdk>True</AndroidUseLatestPlatformSdk>
+    <AndroidUseLatestPlatformSdk>False</AndroidUseLatestPlatformSdk>
     <AssemblyName>cbforest-sharp</AssemblyName>
-    <TargetFrameworkVersion>v5.1</TargetFrameworkVersion>
+    <ReleaseVersion>1.1.1</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -60,17 +60,17 @@
   <Import Project="..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems" Label="Shared" Condition="Exists('..\cbforest-sharp.Shared\cbforest-sharp.Shared.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <ItemGroup>
-    <Folder Include="arm64-v8a\" />
-    <Folder Include="armeabi-v7a\" />
-    <Folder Include="mips64\" />
-    <Folder Include="x86\" />
-    <Folder Include="x86_64\" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedNativeLibrary Include="arm64-v8a\libCBForest-Interop.so" />
-    <EmbeddedNativeLibrary Include="armeabi-v7a\libCBForest-Interop.so" />
-    <EmbeddedNativeLibrary Include="mips64\libCBForest-Interop.so" />
-    <EmbeddedNativeLibrary Include="x86\libCBForest-Interop.so" />
-    <EmbeddedNativeLibrary Include="x86_64\libCBForest-Interop.so" />
+    <EmbeddedNativeLibrary Include="..\prebuilt\arm64-v8a\libCBForest-Interop.so">
+      <Link>arm64-v8a\libCBForest-Interop.so</Link>
+    </EmbeddedNativeLibrary>
+    <EmbeddedNativeLibrary Include="..\prebuilt\armeabi-v7a\libCBForest-Interop.so">
+      <Link>armeabi-v7a\libCBForest-Interop.so</Link>
+    </EmbeddedNativeLibrary>
+    <EmbeddedNativeLibrary Include="..\prebuilt\x86\libCBForest-Interop.so">
+      <Link>x86\libCBForest-Interop.so</Link>
+    </EmbeddedNativeLibrary>
+    <EmbeddedNativeLibrary Include="..\prebuilt\x86_64\libCBForest-Interop.so">
+      <Link>x86_64\libCBForest-Interop.so</Link>
+    </EmbeddedNativeLibrary>
   </ItemGroup>
 </Project>
