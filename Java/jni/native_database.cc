@@ -137,6 +137,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Database_isInTransaction
 
 static jobject sLoggerRef;  // Global ref to the currently registered Logger instance
 
+// NOTE: Log should not be used in critical (GetPrimitiveArrayCritical). It causes the memory error.
 static void logCallback(C4LogLevel level, C4Slice message) {
     jobject logger = sLoggerRef;
     if (logger) {

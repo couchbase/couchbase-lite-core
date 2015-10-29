@@ -57,6 +57,8 @@ namespace forestdb {
         }
 
 
+        // ATTN: In critical, should not call any other JNI methods.
+        // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html
         jbyteArraySlice::jbyteArraySlice(JNIEnv *env, jbyteArray jbytes, bool critical)
         :_env(env),
          _jbytes(jbytes),
