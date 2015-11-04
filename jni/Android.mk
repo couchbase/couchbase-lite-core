@@ -153,6 +153,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(CBFOREST_PATH)/Tokenizer.cc \
 					$(CBFOREST_PATH)/sqlite_glue.c \
 					$(LOCAL_PATH)/../C/c4.c \
-					$(LOCAL_PATH)/../C/c4Database.cc
+					$(LOCAL_PATH)/../C/c4Database.cc \
+					$(LOCAL_PATH)/../C/c4View.cc
 					
 include $(BUILD_SHARED_LIBRARY)
