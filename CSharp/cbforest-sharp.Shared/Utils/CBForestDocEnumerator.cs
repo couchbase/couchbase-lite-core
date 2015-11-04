@@ -87,40 +87,27 @@ namespace CBForest
 
         public CBForestDocEnumerator(C4Database *db, string[] keys, C4EnumeratorOptions options)
         {
-            var err = default(C4Error);
-            _e = Native.c4db_enumerateSomeDocs(db, keys, &options, &err);
-            if (_e == null) {
-                throw new CBForestException(err.code, err.domain);
-            }
+            var options_ = &options;
+            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateSomeDocs(db, keys, options_, err));
         }
 
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4EnumeratorOptions options)
         {
-            var err = default(C4Error);
-            _e = Native.c4db_enumerateAllDocs(db, startKey, endKey, &options, &err);
-            if (_e == null) {
-                throw new CBForestException(err.code, err.domain);
-            }
+            var options_ = &options;
+            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateAllDocs(db, startKey, endKey, options_, err));
         }
 
         public CBForestDocEnumerator(C4Indexer *indexer)
         {
-            var err = default(C4Error);
-            _e = Native.c4indexer_enumerateDocuments(indexer, &err);
-            if (_e == null && (err.code != 0 || err.domain != C4ErrorDomain.ForestDB)) {
-                throw new CBForestException(err.code, err.domain);
-            }
-
+            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().AllowError(0, C4ErrorDomain.ForestDB)
+                .Execute(err => Native.c4indexer_enumerateDocuments(indexer, err));
             _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");
         }
 
         public CBForestDocEnumerator(C4Database *db, long lastSequence, C4EnumeratorOptions options)
         {
-            var err = default(C4Error);
-            _e = Native.c4db_enumerateChanges(db, (ulong)lastSequence, &options, &err);
-            if (_e == null) {
-                throw new CBForestException(err.code, err.domain);
-            }
+            var options_ = &options;
+            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateChanges(db, (ulong)lastSequence, options_, err));
         }
 
         ~CBForestDocEnumerator()

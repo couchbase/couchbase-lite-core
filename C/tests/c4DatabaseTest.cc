@@ -18,7 +18,7 @@ class C4DatabaseTest : public C4Test {
     public:
 
     void testTransaction() {
-        AssertEqual(c4db_getDocumentCount(db), 0uLL);
+        AssertEqual(c4db_getDocumentCount(db), (C4SequenceNumber)0);
         Assert(!c4db_isInTransaction(db));
         C4Error(error);
         Assert(c4db_beginTransaction(db, &error));
@@ -320,7 +320,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             seq++;
         }
-        AssertEqual(seq, 100ull);
+        AssertEqual(seq, (C4SequenceNumber)100);
     }
 
 

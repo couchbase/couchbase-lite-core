@@ -7,7 +7,7 @@
 //
 
 #include "c4Test.hh"
-
+#include <unistd.h>
 
 bool operator== (C4Slice s1, C4Slice s2) {
     return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;

@@ -7,8 +7,9 @@
 //
 
 #include "c4Test.hh"
-#include "C4View.h"
+#include "c4View.h"
 #include <iostream>
+#include <unistd.h>
 
 static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
 
@@ -36,9 +37,9 @@ public:
 
 
     void testEmptyState() {
-        AssertEqual(c4view_getTotalRows(view), 0ull);
-        AssertEqual(c4view_getLastSequenceIndexed(view), 0ull);
-        AssertEqual(c4view_getLastSequenceChangedAt(view), 0ull);
+        AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)0);
+        AssertEqual(c4view_getLastSequenceIndexed(view), (C4SequenceNumber)0);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)0);
     }
 
     void createIndex() {
@@ -76,9 +77,9 @@ public:
     void testCreateIndex() {
         createIndex();
 
-        AssertEqual(c4view_getTotalRows(view), 200ull);
-        AssertEqual(c4view_getLastSequenceIndexed(view), 100ull);
-        AssertEqual(c4view_getLastSequenceChangedAt(view), 100ull);
+        AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)200);
+        AssertEqual(c4view_getLastSequenceIndexed(view), (C4SequenceNumber)100);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)100);
     }
 
     void testQueryIndex() {
@@ -118,9 +119,9 @@ public:
                            kC4DB_Create, encryptionKey(), &error);
         Assert(view != NULL);
 
-        AssertEqual(c4view_getTotalRows(view), 200ull);
-        AssertEqual(c4view_getLastSequenceIndexed(view), 100ull);
-        AssertEqual(c4view_getLastSequenceChangedAt(view), 100ull);
+        AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)200);
+        AssertEqual(c4view_getLastSequenceIndexed(view), (C4SequenceNumber)100);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)100);
 
         // Reopen view with different version string:
         Assert(c4view_close(view, &error));
@@ -128,9 +129,9 @@ public:
                            kC4DB_Create, encryptionKey(), &error);
         Assert(view != NULL);
 
-        AssertEqual(c4view_getTotalRows(view), 0ull);
-        AssertEqual(c4view_getLastSequenceIndexed(view), 0ull);
-        AssertEqual(c4view_getLastSequenceChangedAt(view), 0ull);
+        AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)0);
+        AssertEqual(c4view_getLastSequenceIndexed(view), (C4SequenceNumber)0);
+        AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)0);
     }
 
 

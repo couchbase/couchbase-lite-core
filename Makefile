@@ -93,15 +93,20 @@ $(FORESTDB_PATH)/utils/system_resource_stats.o \
 $(FORESTDB_PATH)/utils/time_utils.o \
 $(FORESTDB_PATH)/src/api_wrapper.o \
 $(FORESTDB_PATH)/src/avltree.o \
+$(FORESTDB_PATH)/src/bgflusher.o \
 $(FORESTDB_PATH)/src/blockcache.o \
 $(FORESTDB_PATH)/src/btree.o \
 $(FORESTDB_PATH)/src/btree_fast_str_kv.o \
 $(FORESTDB_PATH)/src/btree_kv.o \
 $(FORESTDB_PATH)/src/btree_str_kv.o \
 $(FORESTDB_PATH)/src/btreeblock.o \
+$(FORESTDB_PATH)/src/checksum.o \
 $(FORESTDB_PATH)/src/compactor.o \
 $(FORESTDB_PATH)/src/configuration.o \
 $(FORESTDB_PATH)/src/docio.o \
+$(FORESTDB_PATH)/src/encryption.o \
+$(FORESTDB_PATH)/src/encryption_aes.o \
+$(FORESTDB_PATH)/src/encryption_bogus.o \
 $(FORESTDB_PATH)/src/fdb_errors.o \
 $(FORESTDB_PATH)/src/filemgr.o \
 $(FORESTDB_PATH)/src/filemgr_ops.o \
@@ -137,7 +142,8 @@ $(CBFOREST_PATH)/VersionedDocument.o \
 $(CBFOREST_PATH)/MapReduceIndex.o \
 $(CBFOREST_PATH)/Tokenizer.o \
 C/c4.o \
-C/c4Database.o
+C/c4Database.o \
+C/c4View.o
 
 TARGET=libCBForest-Interop.so
 
@@ -145,7 +151,7 @@ all: $(TARGET)
 
 $(TARGET): $(SOURCES)
 	$(CC) $(LDFLAGS) -o $@ $^
-	strip -s -K=@C/c4.exp $(TARGET)
+	strip @stripopts
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -o $@ -x c $<
@@ -155,3 +161,6 @@ $(TARGET): $(SOURCES)
 
 clean:
 	rm -f $(TARGET) `find . -name *.o`
+
+install:
+	install -vD -m755 $(TARGET) CSharp/prebuilt/$(TARGET)

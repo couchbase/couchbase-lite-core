@@ -7,7 +7,7 @@
 //
 
 #include "c4Test.hh"
-#include "C4View.h"
+#include "c4View.h"
 
 
 class C4KeyTest : public CppUnit::TestFixture {
