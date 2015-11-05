@@ -15,4 +15,5 @@ packages/
 *.opensdf
 [Rr]elease
 *.xcscmblueprint
-CSharp/prebuilt
+CSharp/prebuilt/*
+!CSharp/prebuilt/README.txt
