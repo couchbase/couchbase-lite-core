@@ -723,7 +723,7 @@ bool c4doc_save(C4Document *doc,
 
 #pragma mark - DOC ENUMERATION:
 
-const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
+CBFOREST_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
     0, // skip
     kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies
 };

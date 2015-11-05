@@ -9,9 +9,15 @@
 #include "c4Test.hh"
 #include "c4View.h"
 #include <iostream>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
+#ifdef _MSC_VER
+static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
+#else
 static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
+#endif
 
 
 class C4ViewTest : public C4Test {

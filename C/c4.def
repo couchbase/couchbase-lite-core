@@ -69,5 +69,3 @@ c4indexer_end
 c4view_query
 c4queryenum_next
 c4queryenum_free
-kC4DefaultEnumeratorOptions
-kC4DefaultQueryOptions

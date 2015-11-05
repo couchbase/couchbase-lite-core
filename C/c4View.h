@@ -11,6 +11,7 @@
 #ifndef c4View_h
 #define c4View_h
 
+#include "c4.h"
 #include "c4Database.h"
 
 #ifdef __cplusplus
@@ -234,7 +235,7 @@ extern "C" {
     } C4QueryOptions;
 
     /** Default query options. */
-    extern const C4QueryOptions kC4DefaultQueryOptions;
+	CBFOREST_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
     /** A view query result enumerator. Created by c4view_query.
         The fields of the object are invalidated by the next call to c4queryenum_next or

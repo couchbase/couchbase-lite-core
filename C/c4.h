@@ -21,7 +21,11 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-//#define inline __forceinline
+#ifdef CBFOREST_EXPORTS
+#define CBFOREST_API __declspec(dllexport)
+#else
+#define CBFOREST_API __declspec(dllimport)
+#endif
 #endif
 
 

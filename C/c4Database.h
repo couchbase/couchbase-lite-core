@@ -240,7 +240,7 @@ extern "C" {
     /** Default all-docs enumeration options.
         Includes inclusiveStart, inclusiveEnd, includeBodies, includeNonConflicts.
         Does not include descending, skip, includeDeleted. */
-    extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
+    CBFOREST_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
     
 
     /** Opaque handle to a document enumerator. */

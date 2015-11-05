@@ -317,7 +317,7 @@ struct C4QueryEnumInternal : public C4QueryEnumerator {
 static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
 
 
-const C4QueryOptions kC4DefaultQueryOptions = {
+CBFOREST_API const C4QueryOptions kC4DefaultQueryOptions = {
 	0,
     UINT_MAX,
 	false,
