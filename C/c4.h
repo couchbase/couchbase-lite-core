@@ -26,6 +26,8 @@ extern "C" {
 #else
 #define CBFOREST_API __declspec(dllimport)
 #endif
+#else // _MSC_VER
+#define CBFOREST_API
 #endif
 
 
