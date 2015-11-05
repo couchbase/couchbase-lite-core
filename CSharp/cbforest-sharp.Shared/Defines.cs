@@ -24,12 +24,16 @@ using System.Runtime.InteropServices;
 namespace CBForest
 {
     
-    /// <summary>
-    /// A logging callback that the application can register
-    /// </summary>
+    // A logging callback that is used to glue together managed and unmanaged
+    // The callback the user receives will contain System.String instead of
+    // C4Slice
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
     internal delegate void C4LogCallback(C4LogLevel level, C4Slice message);
 
+    /// <summary>
+    /// The type of encryption to use when opening a ForestDB based
+    /// database
+    /// </summary>
     public enum C4EncryptionType
     {
         None = 0,
@@ -99,8 +103,17 @@ namespace CBForest
     [Flags]
     public enum C4DatabaseFlags
     {
+        /// <summary>
+        /// Create the database if it does not exist
+        /// </summary>
         Create = 1,
+        /// <summary>
+        /// Open the database as readonly
+        /// </summary>
         ReadOnly = 2,
+        /// <summary>
+        /// Automatically compact the database when needed
+        /// </summary>
         AutoCompact = 4
     }
 
@@ -434,12 +447,33 @@ namespace CBForest
         /// </summary>
         AIOGetEventsFail = -43,
 
+        /// <summary>
+        /// Encryption error
+        /// </summary>
+        CryptoError = -44,
+
+        /// <summary>
+        /// The revision ID for a revision is invalid.  It is required
+        /// to be hexidecimal.
+        /// </summary>
         BadRevisionID = -1000,
 
+        /// <summary>
+        /// The revision data received for the revision data
+        /// is not usable
+        /// </summary>
         CorruptRevisionData = -1001,
 
+        /// <summary>
+        /// A value in an index database has become corrupt
+        /// and cannot be read
+        /// </summary>
         CorruptIndexData = -1002,
 
+        /// <summary>
+        /// An assertion failed (instead of calling assert() and aborting
+        /// the program, an exception is thrown)
+        /// </summary>
         AssertionFailed = -1003
     }
 }

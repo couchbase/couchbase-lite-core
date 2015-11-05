@@ -24,6 +24,9 @@ using System.Collections.Generic;
 
 namespace CBForest
 {
+    /// <summary>
+    /// An enumerator that iterates over a given document's history
+    /// </summary>
     public sealed unsafe class CBForestHistoryEnumerator : IEnumerable<CBForestDocStatus>, IEnumerator<CBForestDocStatus>
     {
 
@@ -58,6 +61,15 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Creates a CBForestHistoryEnumerator that iterates over the document retrieved
+        /// from a given CBForestDocStatus
+        /// </summary>
+        /// <param name="docStatus">The doc status class to retrieve the document from</param>
+        /// <param name="onlyLeaf">If set to <c>true</c> only leaf revisions (i.e. revisions
+        /// with no children) will be processed</param>
+        /// <param name="owner">If set to <c>true</c>, the enumerator will free the document
+        /// when finished</param>
         public CBForestHistoryEnumerator(CBForestDocStatus docStatus, bool onlyLeaf, bool owner)
             : this(docStatus.Document, onlyLeaf, owner)
         {
@@ -102,6 +114,9 @@ namespace CBForest
 
         #endregion
 
+        #region IEnumerator
+        #pragma warning disable 1591
+
         public bool MoveNext()
         {
             if (_current == null) {
@@ -145,6 +160,10 @@ namespace CBForest
             }
         }
 
+        #endregion
+
+        #region IEnumerable
+
         public IEnumerator<CBForestDocStatus> GetEnumerator()
         {
             return this;
@@ -155,11 +174,18 @@ namespace CBForest
             return GetEnumerator();
         }
 
+        #endregion
+
+        #region IDisposable
+
         public void Dispose()
         {
             Dispose(false);
             GC.SuppressFinalize(this);
         }
+
+        #pragma warning restore 1591
+        #endregion
     }
 }
 

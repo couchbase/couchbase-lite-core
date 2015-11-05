@@ -16,7 +16,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestHistoryEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestDocEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestQueryEnumerator.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Utils\CBForestDocument.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CBForestException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\RetryHandler.cs" />
   </ItemGroup>

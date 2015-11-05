@@ -19,6 +19,7 @@
 // limitations under the License.
 //
 using System;
+
 namespace CBForest
 {
     /// <summary>
@@ -30,6 +31,9 @@ namespace CBForest
 
         #region Variables
 
+        /// <summary>
+        /// The error that caused the exception
+        /// </summary>
         public readonly C4Error Error;
 
         #endregion
@@ -61,11 +65,20 @@ namespace CBForest
 
         #region Constructors
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="code">The code of the error that is the source of the exception.</param>
+        /// <param name="domain">The domain of the error that is the source of the exception.</param>
         public CBForestException(int code, C4ErrorDomain domain) 
             : this(new C4Error { code = code, domain = domain })
         {
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="error">The error that is the source of the exception.</param>
         public CBForestException(C4Error error)
             : base(String.Format("CBForest exception ({0})", error))
         {

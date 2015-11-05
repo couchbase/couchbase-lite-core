@@ -32,9 +32,17 @@ namespace CBForest
     /// </summary>
     public struct C4Error
     {
+        /// <summary>
+        /// The domain of the error
+        /// </summary>
         public C4ErrorDomain domain;
+
+        /// <summary>
+        /// The error code
+        /// </summary>
         public int code;
 
+        #pragma warning disable 1591
         public override string ToString()
         {
             if (domain == C4ErrorDomain.C4) {
@@ -47,6 +55,7 @@ namespace CBForest
 
             return String.Format("[C4Error {0},{1}]", domain, code);
         }
+        #pragma warning restore 1591
     }
 
     /// <summary>
@@ -56,7 +65,11 @@ namespace CBForest
     public struct C4String : IDisposable
     {
         private GCHandle _handle; // Stores the UTF-8 bytes in a pinned location
-        
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="s">The string to store in this instance</param>
         public C4String(string s)
         {
             _handle = new GCHandle();
@@ -65,14 +78,12 @@ namespace CBForest
                 _handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);  
             }
         }
-        
-        public void Dispose()
-        {
-            if(_handle.IsAllocated) {
-                _handle.Free();   
-            }
-        }
-        
+
+        /// <summary>
+        /// Returns this object as a C4Slice.  This object will only be valid
+        /// while the original C4String object is valid.
+        /// </summary>
+        /// <returns>Ths C4String instance as a C4Slice</returns>
         public unsafe C4Slice AsC4Slice()
         {
             if(!_handle.IsAllocated || _handle.Target == null) {
@@ -82,6 +93,15 @@ namespace CBForest
             var bytes = _handle.Target as byte[];
             return new C4Slice(_handle.AddrOfPinnedObject().ToPointer(), (uint)bytes.Length);
         }
+
+        #pragma warning disable 1591
+        public void Dispose()
+        {
+            if(_handle.IsAllocated) {
+                _handle.Free();   
+            }
+        }
+        #pragma warning restore 1591
     }
 
     internal unsafe struct C4SliceEnumerator : IEnumerator<byte>
@@ -204,7 +224,8 @@ namespace CBForest
                 return Native.memcmp(buf, ptr, _size) == 0;
             }
         }
-        
+
+        #pragma warning disable 1591
         public override string ToString()
         {
             return String.Format("C4Slice[\"{0}\"]", (string)this);
@@ -245,7 +266,7 @@ namespace CBForest
         {
             return GetEnumerator();
         }
-
+        #pragma warning restore 1591
     }
 
     /// <summary>
@@ -253,8 +274,19 @@ namespace CBForest
     /// </summary>
     public struct C4RawDocument
     {
+        /// <summary>
+        /// The document key
+        /// </summary>
         public C4Slice key;
+
+        /// <summary>
+        /// Meta information about the document
+        /// </summary>
         public C4Slice meta;
+
+        /// <summary>
+        /// The document body
+        /// </summary>
         public C4Slice body;
     }
 
@@ -282,14 +314,35 @@ namespace CBForest
         /// Sequence at which the doc was last updated
         /// </summary>
         public ulong sequence;
-        
+
+        /// <summary>
+        /// A revision object
+        /// </summary>
         public struct rev
         {
+            /// <summary>
+            /// The revision ID
+            /// </summary>
             public C4Slice revID;
+
+            /// <summary>
+            /// Flags with information about the revision
+            /// </summary>
             public C4RevisionFlags flags;
+
+            /// <summary>
+            /// The revision sequence number
+            /// </summary>
             public ulong sequence;
+
+            /// <summary>
+            /// The revision body
+            /// </summary>
             public C4Slice body;
 
+            /// <summary>
+            /// Gets whether or not this revision is deleted
+            /// </summary>
             public bool IsDeleted
             {
                 get {
@@ -297,6 +350,9 @@ namespace CBForest
                 }
             }
 
+            /// <summary>
+            /// Gets whether or not this revision is a leaf (i.e. has no children)
+            /// </summary>
             public bool IsLeaf
             {
                 get {
@@ -304,6 +360,9 @@ namespace CBForest
                 }
             }
 
+            /// <summary>
+            /// Gets whether or not this revision is new
+            /// </summary>
             public bool IsNew
             {
                 get {
@@ -311,6 +370,9 @@ namespace CBForest
                 }
             }
 
+            /// <summary>
+            /// Gets whether or not this revision has attachments
+            /// </summary>
             public bool HasAttachments
             {
                 get {
@@ -318,6 +380,9 @@ namespace CBForest
                 }
             }
 
+            /// <summary>
+            /// Gets whether or not this revision is active (i.e. non-deleted and current)
+            /// </summary>
             public bool IsActive
             {
                 get {
@@ -325,9 +390,15 @@ namespace CBForest
                 }
             }
         }
-        
+
+        /// <summary>
+        /// The currently selected revision of this document
+        /// </summary>
         public rev selectedRev;
 
+        /// <summary>
+        /// Gets whether or not the document is deleted
+        /// </summary>
         public bool IsDeleted
         {
             get {
@@ -335,6 +406,9 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets whether or not the document is conflicted
+        /// </summary>
         public bool IsConflicted
         {
             get {
@@ -342,6 +416,9 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets whether or not the document has attachments
+        /// </summary>
         public bool HasAttachments
         {
             get {
@@ -349,6 +426,9 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets whether or not this document has any revisions
+        /// </summary>
         public bool Exists
         {
             get {
@@ -450,38 +530,78 @@ namespace CBForest
         /// </summary>
         public static readonly C4QueryOptions DEFAULT = 
             new C4QueryOptions { limit = UInt32.MaxValue, inclusiveStart = true, inclusiveEnd = true };
-        
+
+        /// <summary>
+        /// How many documents to skip before starting the query enumeration
+        /// </summary>
         public ulong skip;   
+
+        /// <summary>
+        /// The maximum number of documents to enumerate
+        /// </summary>
         public ulong limit;
         private byte _descending;
         private byte _inclusiveStart;
         private byte _inclusiveEnd;
-        
+
+        /// <summary>
+        /// The key to start enumerating at
+        /// </summary>
         public C4Key* startKey;
+
+        /// <summary>
+        /// The key to end enumerating at
+        /// </summary>
         public C4Key* endKey;
+
+        /// <summary>
+        /// The document ID of the document to start enumerating at
+        /// </summary>
         public C4Slice startKeyDocID;
+
+        /// <summary>
+        /// The document ID of the document to end enumerating at
+        /// </summary>
         public C4Slice endKeyDocID;
+
+        /// <summary>
+        /// A list of keys to enumerate
+        /// </summary>
         public C4Key** keys;
         private UIntPtr _keysCount;
 
+        /// <summary>
+        /// Gets or sets whether or not to enumerate in descending order
+        /// </summary>
         public bool descending 
         { 
             get { return Convert.ToBoolean (_descending); } 
             set { _descending = Convert.ToByte(value); }
         }
-        
+
+        /// <summary>
+        /// Gets or sets whether or not to include the first
+        /// document of the enumeration in the results
+        /// </summary>
         public bool inclusiveStart
         { 
             get { return Convert.ToBoolean(_inclusiveStart); }
             set { _inclusiveStart = Convert.ToByte(value); }
         }
-        
+
+        /// <summary>
+        /// Gets or sets whether or not to include the last
+        /// document of the enumeration in the results
+        /// </summary>
         public bool inclusiveEnd
         { 
             get { return Convert.ToBoolean(_inclusiveEnd); }
             set { _inclusiveEnd = Convert.ToByte(value); }
         }
 
+        /// <summary>
+        /// Gets or sets wthe number of keys in the keys array
+        /// </summary>
         public uint keysCount
         {
             get { return _keysCount.ToUInt32(); }
@@ -496,25 +616,58 @@ namespace CBForest
     /// </summary>
     public struct C4QueryEnumerator
     {
+        /// <summary>
+        /// The current key in the index
+        /// </summary>
         public C4KeyReader key;   
+
+        /// <summary>
+        /// The current value in the index
+        /// </summary>
         public C4Slice value;
+
+        /// <summary>
+        /// The document ID of the document this index
+        /// entry came from
+        /// </summary>
         public C4Slice docID;
+
+        /// <summary>
+        /// The sequence number of the document this index
+        /// entry came from
+        /// </summary>
         public ulong docSequence;
     }
 
-
+    /// <summary>
+    /// A class representing a key for encrypting a database
+    /// </summary>
     public unsafe struct C4EncryptionKey
     {
+        /// <summary>
+        /// The default mode of encryption used by this class
+        /// </summary>
         #if FAKE_C4_ENCRYPTION
         public const C4EncryptionType ENCRYPTION_MODE = (C4EncryptionType)(-1);
         #else
         public const C4EncryptionType ENCRYPTION_MODE = C4EncryptionType.AES256;
         #endif
 
+        /// <summary>
+        /// The algorithm being used by th ekey
+        /// </summary>
         public C4EncryptionType algorithm;
 
+        /// <summary>
+        /// The key data of the key (256-bit)
+        /// </summary>
         public fixed byte bytes[32];
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="algorithm">The algorithm to use when encrypting.</param>
+        /// <param name="source">The key data to use.</param>
         public C4EncryptionKey(C4EncryptionType algorithm, byte[] source)
         {
             this.algorithm = algorithm;
@@ -524,6 +677,10 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="source">The key data to use.</param>
         public C4EncryptionKey(byte[] source) : this(ENCRYPTION_MODE, source)
         {
 

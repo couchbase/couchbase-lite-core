@@ -23,18 +23,43 @@ using System.Collections.Generic;
 
 namespace CBForest
 {
+    /// <summary>
+    /// This class provides information about the current entry in a
+    /// CBForestQueryEnumerator
+    /// </summary>
     public sealed class CBForestQueryStatus
     {
+
+        #region Variables
+
         private readonly Lazy<string> _docID;
         private readonly Lazy<string> _keyJSON;
         private readonly Lazy<string> _valueJSON;
 
+        /// <summary>
+        /// The key of this entry
+        /// </summary>
         public readonly C4KeyReader Key;
-        
+
+        /// <summary>
+        /// The value of this entry
+        /// </summary>
         public readonly C4Slice Value;
 
+        /// <summary>
+        /// The sequence number of the document that
+        /// generated this entry
+        /// </summary>
         public readonly long DocSequence;
 
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the document ID of the document
+        /// that generated this entry
+        /// </summary>
         public string DocID
         {
             get {
@@ -42,6 +67,10 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets the key of this entry
+        /// in JSON format
+        /// </summary>
         public string KeyJSON
         {
             get {
@@ -49,12 +78,20 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets the value of this entry
+        /// in JSON format
+        /// </summary>
         public string ValueJSON
         {
             get {
                 return _valueJSON.Value;
             }
         }
+
+        #endregion
+
+        #region Constructors
 
         internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4Slice value, long docSequence)
         {
@@ -70,13 +107,29 @@ namespace CBForest
 
             _valueJSON = new Lazy<string>(() => (string)value);
         }
+
+        #endregion
     }
 
+    /// <summary>
+    /// An enumerator that iterates over query results
+    /// </summary>
     public unsafe sealed class CBForestQueryEnumerator : IEnumerator<CBForestQueryStatus>, IEnumerable<CBForestQueryStatus>
     {
+
+        #region Variables
+
         private readonly C4QueryEnumerator *_e;
         private CBForestQueryStatus _current;
 
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="e">The native query enumerator object to use</param>
         public CBForestQueryEnumerator(C4QueryEnumerator *e)
         {
             _e = e;
@@ -87,12 +140,19 @@ namespace CBForest
             Dispose(true);
         }
 
+        #endregion
+
+        #region Private Methods
+
         private void Dispose(bool disposing)
         {
             Native.c4queryenum_free(_e);
         }
 
+        #endregion
+
         #region IEnumerator implementation
+        #pragma warning disable 1591
 
         public bool MoveNext()
         {
@@ -149,6 +209,7 @@ namespace CBForest
             return GetEnumerator();
         }
 
+        #pragma warning restore 1591
         #endregion
     }
 }

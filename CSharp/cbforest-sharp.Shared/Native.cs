@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Collections.Concurrent;
 
 #if __IOS__
 [assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
@@ -47,7 +46,8 @@ namespace CBForest
 
         #if DEBUG
         private static string _Dummy;
-        private static readonly ConcurrentDictionary<IntPtr, string> _AllocatedObjects = new ConcurrentDictionary<IntPtr, string>();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string> _AllocatedObjects = new 
+            System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string>();
         private static readonly Dictionary<string, Action<IntPtr>> _GcAction = new Dictionary<string, Action<IntPtr>>
         {
             { "C4Database", p => _c4db_close((C4Database*)p.ToPointer(), null) },
@@ -112,6 +112,14 @@ namespace CBForest
         private static extern C4Database* _c4db_open(C4Slice path, C4DatabaseFlags flags, 
             C4EncryptionKey *encryptionKey, C4Error *outError);
 
+        /// <summary>
+        /// Opens a database.
+        /// </summary>
+        /// <param name="path">The path to the DB file</param>
+        /// <param name="readOnly">Whether or not the DB should be opened in read-only mode</param>
+        /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>A database instance for use in the C4 API</returns>
         public static C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
             C4EncryptionKey *encryptionKey, C4Error *outError)
         {
@@ -199,11 +207,25 @@ namespace CBForest
             #endif
             return _c4db_delete(db, outError);
         }
-        
+
+
+        /// <summary>
+        /// Triggers a manual compaction of the database
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        /// <param name="db">The database to compact.</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_compact(C4Database *db, C4Error *outError);
-        
+
+        /// <summary>
+        /// Changes the encryption key of a given database
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        /// <param name="db">The database to change the encryption key of</param>
+        /// <param name="newKey">The new encryption key to use</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_rekey(C4Database *db, C4EncryptionKey *newKey, C4Error *outError);
@@ -284,6 +306,15 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4raw_get")]
         private static extern C4RawDocument* _c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError);
 
+        /// <summary>
+        /// Reads a raw document from the database. In Couchbase Lite the store named "info" is used for 
+        /// per-database key/value pairs, and the store "_local" is used for local documents.
+        /// </summary>
+        /// <param name="db">The database to operate on</param>
+        /// <param name="storeName">The name of the store to read from</param>
+        /// <param name="docID">The ID of the document to retrieve</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
         public static C4RawDocument* c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError)
         {
             #if DEBUG
@@ -317,7 +348,17 @@ namespace CBForest
                 return c4raw_get(db, storeName_.AsC4Slice(), docID_.AsC4Slice(), outError);
             }
         }
-        
+
+        /// <summary>
+        /// Writes a raw document to the database, or deletes it if both meta and body are NULL.
+        /// </summary>
+        /// <param name="db">The database to operate on</param>
+        /// <param name="storeName">The store to write to</param>
+        /// <param name="key">The key to store</param>
+        /// <param name="meta">The metadata to store</param>
+        /// <param name="body">The body to store</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>true on success, false otherwise</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
@@ -344,13 +385,13 @@ namespace CBForest
             }
         }
 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_free")]
+        private static extern void _c4doc_free(C4Document *doc);
+
         /// <summary>
         /// Frees a C4Document.
         /// </summary>
         /// <param name="doc">The document to free</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_free")]
-        private static extern void _c4doc_free(C4Document *doc);
-
         public static void c4doc_free(C4Document *doc)
         {
             #if DEBUG
@@ -372,6 +413,16 @@ namespace CBForest
         private static extern C4Document* _c4doc_get(C4Database *db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, 
             C4Error *outError);
 
+        /// <summary>
+        /// Gets a document from the database. If there's no such document, the behavior depends on
+        /// the mustExist flag.If it's true, NULL is returned. If it's false, a valid C4Document
+        /// The current revision is selected(if the document exists.)
+        /// </summary>
+        /// <param name="db">The database to retrieve from</param>
+        /// <param name="docID">The ID of the document to retrieve</param>
+        /// <param name="mustExist">Whether or not to create the document on demand</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
         public static C4Document* c4doc_get(C4Database *db, C4Slice docID, bool mustExist, 
             C4Error *outError)
         {
@@ -407,9 +458,23 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Retrieves a document by its sequence number
+        /// </summary>
+        /// <returns>The document identified by the sequence number given, or null</returns>
+        /// <param name="db">The database to search in</param>
+        /// <param name="sequence">The sequence number to search for</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern C4Document* c4doc_getBySequence(C4Database *db, ulong sequence, C4Error *outError);
-        
+
+        /// <summary>
+        /// Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention 
+        /// Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization 
+        /// when indexing a view.
+        /// </summary>
+        /// <param name="doc">The document to operate on</param>
+        /// <returns>The document type of the document in question</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_getType")]
         public static extern C4Slice _c4doc_getType(C4Document *doc);
 
@@ -425,17 +490,41 @@ namespace CBForest
             return BridgeSlice(() => _c4doc_getType(doc));
         }
 
+        /// <summary>
+        /// Purges a document from the database.  When a purge occurs a document is immediately
+        /// removed with no trace.  This action is *not* replicated.
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        /// <param name="db">The database to purge the document from</param>
+        /// <param name="docId">The ID of the document to purge</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_purgeDoc(C4Database *db, C4Slice docId, C4Error *outError);
 
+        /// <summary>
+        /// Purges a document from the database.  When a purge occurs a document is immediately
+        /// removed with no trace.  This action is *not* replicated.
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        /// <param name="db">The database to purge the document from</param>
+        /// <param name="docId">The ID of the document to purge</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static bool c4db_purgeDoc(C4Database *db, string docId, C4Error *outError)
         {
             using (var docId_ = new C4String(docId)) {
                 return c4db_purgeDoc(db, docId_.AsC4Slice(), outError);
             }
         }
-        
+
+        /// <summary>
+        /// Selects a specific revision of a document (or no revision, if revID is NULL.)
+        /// </summary>
+        /// <param name="doc">The document to operate on</param>
+        /// <param name="revID">The revID of the revision to select</param>
+        /// <param name="withBody">Whether or not to load the body of the revision</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>true on success, false otherwise</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_selectRevision(C4Document *doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody, 
@@ -475,7 +564,12 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_loadRevisionBody(C4Document *doc, C4Error *outError);
-        
+
+        /// <summary>
+        /// Checks to see if a given document has a revision body
+        /// </summary>
+        /// <returns><c>true</c>, if a revision body is available, <c>false</c> otherwise.</returns>
+        /// <param name="doc">The document to check.</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_hasRevisionBody(C4Document *doc);
@@ -512,13 +606,14 @@ namespace CBForest
         public static extern bool c4doc_selectNextLeafRevision(C4Document *doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted, 
             [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error *outError);
         
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="e"></param>
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_free")]
         private static extern void _c4enum_free(C4DocEnumerator *e);
 
+        /// <summary>
+        /// Frees the resources used by a C4DocEnumerator
+        /// </summary>
+        /// <param name="e">The doc enumerator to free</param>
         public static void c4enum_free(C4DocEnumerator *e)
         {
             #if DEBUG
@@ -571,6 +666,15 @@ namespace CBForest
         private static extern C4DocEnumerator* _c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
             C4EnumeratorOptions *options, C4Error *outError);
 
+        /// <summary>
+        /// Creates an enumerator which will iterate over all documents in the database
+        /// </summary>
+        /// <returns>The enumerator object to use, or null on error</returns>
+        /// <param name="db">The database to enumerate</param>
+        /// <param name="startDocID">The document ID to start enumerating from</param>
+        /// <param name="endDocID">The document ID to finish enumerating at</param>
+        /// <param name="options">The enumeration options (null for defaults).</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
             C4EnumeratorOptions *options, C4Error *outError)
         {
@@ -600,7 +704,7 @@ namespace CBForest
         /// <param name="endDocID">The document ID to end at</param>
         /// <param name="options">Enumeration options (NULL for defaults)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        /// <returns>A pointer to the enumeator on success, otherwise null</returns>
+        /// <returns>A pointer to the enumerator on success, otherwise null</returns>
         public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, C4EnumeratorOptions *options,
             C4Error *outError)
         {
@@ -614,6 +718,15 @@ namespace CBForest
         private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, uint docIDsCount, 
             C4EnumeratorOptions *options, C4Error *outError);
 
+        /// <summary>
+        /// Enumerate a set of document IDs.  For each ID in the list, the enumerator
+        /// will attempt to retrieve the corresponding document.
+        /// </summary>
+        /// <returns>The enumerator, or null on failure.</returns>
+        /// <param name="db">The database to enumerate from</param>
+        /// <param name="docIDs">The document IDs to enumerate</param>
+        /// <param name="options">The enumeration options (null for defaults).</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *db, string[] docIDs, C4EnumeratorOptions *options,
             C4Error *outError)
         {
@@ -666,7 +779,21 @@ namespace CBForest
             return _c4enum_nextDocument(e, outError);
             #endif
         }
-        
+
+        /// <summary>
+        /// Adds a revision to a document, as a child of the currently selected revision
+        /// (or as a root revision if there is no selected revision.)
+        /// On success, the new revision will be selected.
+        /// Must be called within a transaction.
+        /// </summary>
+        /// <param name="doc">The document to operate on</param>
+        /// <param name="revID">The ID of the revision being inserted</param>
+        /// <param name="body">The (JSON) body of the revision</param>
+        /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
+        /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
+        /// <param name="allowConflict">If false, and the parent is not a leaf, a 409 error is returned</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>The number of revisions inserted (0, 1, or -1 on error)</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern int c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments,
@@ -695,7 +822,18 @@ namespace CBForest
                     hasAttachments, allowConflict, outError);
             }
         }
-        
+
+        /// <summary>
+        ///  Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
+        /// On success, the new revision will be selected.
+        /// Must be called within a transaction.
+        /// <param name="doc">The document to operate on</param>
+        /// <param name="body">The (JSON) body of the revision</param>
+        /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
+        /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
+        /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>The number of revisions added to the document, or -1 on error.</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice body, 
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history, 
@@ -734,13 +872,17 @@ namespace CBForest
             
             return retVal;
         }
-        
+
+        /// <summary>
+        /// Sets the document type on a given document
+        /// </summary>
+        /// <returns><c>true</c>, if the operation succeeeded, <c>false</c> otherwise.</returns>
+        /// <param name="doc">The document to modify.</param>
+        /// <param name="docType">The type to set.</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern int c4doc_purgeRevision(C4Document *doc, C4Slice revId, C4Error *outError);
 
         /// <summary>
         /// Sets a document's docType. (By convention this is the value of the "type" property of the 
@@ -757,7 +899,28 @@ namespace CBForest
                 return c4doc_setType(doc, docType_.AsC4Slice(), outError);   
             }
         }
-        
+
+        /// <summary>
+        /// Purges a revision from a document.  As with purgeDoc, this operation
+        /// is immediate and non-replicating.
+        /// </summary>
+        /// <returns>1 if the revision was purged, 0 if the revision didn't exist,
+        /// or -1 on error</returns>
+        /// <param name="doc">The document to modify.</param>
+        /// <param name="revId">The ID of the revision to purge</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern int c4doc_purgeRevision(C4Document *doc, C4Slice revId, C4Error *outError);
+
+        /// <summary>
+        /// Purges a revision from a document.  As with purgeDoc, this operation
+        /// is immediate and non-replicating.
+        /// </summary>
+        /// <returns>1 if the revision was purged, 0 if the revision didn't exist,
+        /// or -1 on error</returns>
+        /// <param name="doc">The document to modify.</param>
+        /// <param name="revId">The ID of the revision to purge</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static int c4doc_purgeRevision(C4Document *doc, string revId, C4Error *outError)
         {
             using(var revId_ = new C4String(revId)) {
@@ -805,6 +968,11 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_withBytes")]
         private static extern C4Key* _c4key_withBytes(C4Slice slice);
 
+        /// <summary>
+        /// Creates a C4Key by copying the data, which must be in the C4Key binary format.
+        /// </summary>
+        /// <param name="bytes">The data to use in the C4Key</param>
+        /// <returns>A pointer to the created C4Key</returns>
         public static C4Key* c4key_withBytes(C4Slice slice)
         {
             #if DEBUG
@@ -882,7 +1050,12 @@ namespace CBForest
         /// <param name="d">The value to store</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_addNumber(C4Key *key, double d);
-        
+
+        /// <summary>
+        /// Adds a string to a C4Key.
+        /// </summary>
+        /// <param name="key"The key to operate on></param>
+        /// <param name="s">The value to store</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_addString(C4Key *key, C4Slice s);
 
@@ -897,9 +1070,15 @@ namespace CBForest
                 c4key_addString(key, s_.AsC4Slice());   
             }
         }
-        
+
+        /// <summary>
+        /// Adds a map key, before the next value. When adding to a map, every value must be
+        /// preceded by a key.
+        /// </summary>
+        /// <param name="key">The key to operate on</param>
+        /// <param name="s">The value to store</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        private static extern void c4key_addMapKey(C4Key *key, C4Slice s);
+        public static extern void c4key_addMapKey(C4Key *key, C4Slice s);
 
         /// <summary>
         /// Adds a map key, before the next value. When adding to a map, every value must be
@@ -986,7 +1165,12 @@ namespace CBForest
         /// <returns>The numerical value of the next token of the key</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern double c4key_readNumber(C4KeyReader *reader);
-        
+
+        /// <summary>
+        /// Reads a string value
+        /// </summary>
+        /// <param name="reader">The reader to operate on</param>
+        /// <returns>The string value of the next token of the key</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readString")]
         public static extern C4Slice _c4key_readString(C4KeyReader *reader);
 
@@ -999,7 +1183,12 @@ namespace CBForest
         {
             return BridgeSlice(() => _c4key_readString(reader));
         }
-        
+
+        /// <summary>
+        /// Converts a C4KeyReader to JSON.
+        /// </summary>
+        /// <param name="reader">The reader to operate on</param>
+        /// <returns>The JSON string result</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_toJSON")]
         public static extern C4Slice _c4key_toJSON(C4KeyReader *reader);
 
@@ -1017,6 +1206,17 @@ namespace CBForest
         private static extern C4View* _c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
             C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError);
 
+        /// <summary>
+        /// Opens a view, or creates it if the file doesn't already exist.
+        /// </summary>
+        /// <param name="db">The database the view is associated with</param>
+        /// <param name="path">The file that the view is stored in</param>
+        /// <param name="viewName">The name of the view</param>
+        /// <param name="version">The version of the view's map function</param>
+        /// <param name="flags">The flags for opening the view file</param>
+        /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>A pointer to the view on success, otherwise null</returns>
         public static C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
             C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError)
         {
@@ -1145,6 +1345,13 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
 
+        /// <summary>
+        /// Changes the encryption key on a given view
+        /// </summary>
+        /// <returns><c>true</c>, if the operation succeeded, <c>false</c> otherwise.</returns>
+        /// <param name="view">The view to change the encryption key of.</param>
+        /// <param name="newKey">The new encryption key to use</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4view_rekey(C4View *view, C4EncryptionKey *newKey, C4Error *outError);
@@ -1181,6 +1388,12 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_enumerateDocuments")]
         private static extern C4DocEnumerator* _c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
 
+        /// <summary>
+        /// Enumerate the documents that still need to be indexed in a given indexer
+        /// </summary>
+        /// <returns>The enumerator, or null on failure</returns>
+        /// <param name="indexer">The indexer to check for documents.</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static C4DocEnumerator *c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError)
         {
             #if DEBUG
@@ -1204,7 +1417,6 @@ namespace CBForest
         /// <param name="indexer">The indexer to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
-        
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
@@ -1236,6 +1448,22 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Emits new keys/values derived from one document, for one view.
+        /// This function needs to be called once for each(document, view) pair.Even if the view's map
+        /// function didn't emit anything, the old keys/values need to be cleaned up.
+        ///      
+        /// Values are uninterpreted by CBForest, but by convention are JSON. A special value "*"
+        /// (a single asterisk) is used as a placeholder for the entire document.
+        ///
+        /// </summary>
+        /// <param name="indexer">The indexer to operate on</param>
+        /// <param name="document">The document being indexed</param>
+        /// <param name="viewNumber">The position of the view in the indexer's views[] array</param>
+        /// <param name="emittedKeys">Array of keys being emitted</param>
+        /// <param name="emittedValues">Array of values being emitted. (JSON by convention.)</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <returns>true on success, false otherwise</returns>
         public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
             C4Key*[] emittedKeys, string[] emittedValues, C4Error *outError)
         {
@@ -1350,6 +1578,12 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         private static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
 
+        /// <summary>
+        /// Register a logging callback with CBForest.  All internal logs will be forwarded
+        /// to this callback.
+        /// </summary>
+        /// <param name="level">The logging level to debug (the specified level and higher severity).</param>
+        /// <param name="callback">The logging callback logic.</param>
         public static void c4log_register(C4LogLevel level, Action<C4LogLevel, string> callback)
         {
             _LogCallback = callback;

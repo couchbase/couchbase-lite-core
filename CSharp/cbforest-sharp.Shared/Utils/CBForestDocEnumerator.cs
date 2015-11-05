@@ -24,27 +24,71 @@ using System.Collections.Generic;
 
 namespace CBForest
 {
+    /// <summary>
+    /// A class the represents an entry in a document enumerator
+    /// </summary>
     public unsafe sealed class CBForestDocStatus : IDisposable
     {
+
+        #region Variables
+
+        /// <summary>
+        /// The current native document object
+        /// </summary>
         public readonly C4Document *Document;
         private readonly bool _owner;
         private Lazy<string> _docID;
         private Lazy<string> _revID;
 
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the document ID of the current document
+        /// </summary>
         public string CurrentDocID { get { return _docID.Value;  } }
 
+        /// <summary>
+        /// Gets the revision ID of the current document revision
+        /// </summary>
         public string CurrentRevID { get { return _revID.Value;  } }
 
+        /// <summary>
+        /// Gets whether or not the current document revision has a body
+        /// </summary>
         public bool HasRevisionBody { get { return Native.c4doc_hasRevisionBody(Document);  } }
 
+        /// <summary>
+        /// Gets whether or not the current document has any revisions
+        /// </summary>
         public bool Exists { get { return Document->Exists; } }
 
+        /// <summary>
+        /// Gets whether or not the current document is conflicted
+        /// </summary>
         public bool IsConflicted { get { return Document->IsConflicted; } }
 
+        /// <summary>
+        /// Gets whether or not the current document is deleted
+        /// </summary>
         public bool IsDeleted { get { return Document->IsDeleted; } }
 
+        /// <summary>
+        /// Gets the current document revision
+        /// </summary>
         public C4Document.rev SelectedRev { get { return Document->selectedRev; } }
 
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="doc">The document to retrieve information form.</param>
+        /// <param name="owner">Whether or not the instance should own the
+        /// document (i.e. free it when it is finished)</param>
         public CBForestDocStatus(C4Document *doc, bool owner)
         {
             Document = doc;
@@ -62,11 +106,20 @@ namespace CBForest
             Dispose(true);
         }
 
+        #endregion
+
+        #region Private Methods
+
         private void Dispose(bool disposing)
         {
             Native.c4doc_free(Document);
             GC.SuppressFinalize(this);
         }
+
+        #endregion
+
+        #region IDisposable
+        #pragma warning disable 1591
 
         public void Dispose()
         {
@@ -76,27 +129,60 @@ namespace CBForest
 
             Dispose(false);
         }
+
+        #pragma warning restore 1591
+        #endregion
+
     }
 
+    /// <summary>
+    /// An enumerator that iterates over a given set of documents
+    /// (that "set" could also mean all documents)
+    /// </summary>
     public unsafe sealed class CBForestDocEnumerator : IEnumerable<CBForestDocStatus>, IEnumerator<CBForestDocStatus>
     {
+
+        #region Variables
+
         private readonly C4DocEnumerator *_e;
         private CBForestDocStatus _current;
         private delegate bool DocValidationDelegate(C4Document *doc);
         private DocValidationDelegate _validationLogic;
 
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructor for enumerating over a set of documents
+        /// </summary>
+        /// <param name="db">The database to retrieve documents from</param>
+        /// <param name="keys">The keys to retrieve.</param>
+        /// <param name="options">The enumeration options (null for default).</param>
         public CBForestDocEnumerator(C4Database *db, string[] keys, C4EnumeratorOptions options)
         {
             var options_ = &options;
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateSomeDocs(db, keys, options_, err));
         }
 
+        /// <summary>
+        /// Constructor for enumerating over a given subset of documents in a database
+        /// </summary>
+        /// <param name="db">The database to retrieve documents from</param>
+        /// <param name="startKey">The key to start enumeration from</param>
+        /// <param name="endKey">The key to end enumeration at</param>
+        /// <param name="options">The enumeration options (null for default).</param>
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4EnumeratorOptions options)
         {
             var options_ = &options;
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateAllDocs(db, startKey, endKey, options_, err));
         }
 
+        /// <summary>
+        /// Constructor for enumerating over documents which need indexing
+        /// by a given indexer
+        /// </summary>
+        /// <param name="indexer">The indexer to use for enumeration.</param>
         public CBForestDocEnumerator(C4Indexer *indexer)
         {
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().AllowError(0, C4ErrorDomain.ForestDB)
@@ -104,6 +190,12 @@ namespace CBForest
             _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");
         }
 
+        /// <summary>
+        /// Constructor for enumerating over all documents starting from a given sequence
+        /// </summary>
+        /// <param name="db">The database to retrieve documents from</param>
+        /// <param name="lastSequence">The sequence to start enumerating from</param>
+        /// <param name="options">The enumeration options (null for default).</param>
         public CBForestDocEnumerator(C4Database *db, long lastSequence, C4EnumeratorOptions options)
         {
             var options_ = &options;
@@ -115,6 +207,10 @@ namespace CBForest
             Dispose(true);
         }
 
+        #endregion
+
+        #region Private Methods
+
         private void Dispose(bool disposing)
         {
             if (!disposing && _current != null) {
@@ -123,6 +219,11 @@ namespace CBForest
 
             Native.c4enum_free(_e);
         }
+
+        #endregion
+
+        #region IEnumerator
+        #pragma warning disable 1591
 
         public bool MoveNext()
         {
@@ -168,6 +269,10 @@ namespace CBForest
             }
         }
 
+        #endregion
+
+        #region IEnumerable
+
         public IEnumerator<CBForestDocStatus> GetEnumerator()
         {
             return this;
@@ -178,12 +283,18 @@ namespace CBForest
             return GetEnumerator();
         }
 
+        #endregion
+
+        #region IDisposable
+
         public void Dispose()
         {
             Dispose(false);
             GC.SuppressFinalize(this);
         }
 
+        #pragma warning restore 1591
+        #endregion
     }
 }
 
