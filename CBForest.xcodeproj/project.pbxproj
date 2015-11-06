@@ -107,6 +107,14 @@
 		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
 		274415221900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
+		274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		274A698D1BED28C000D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		274A69901BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
+		274A69911BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
+		274A69921BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
+		274A69931BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
+		274A69941BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
 		274D03DF1BA732E400FF7C35 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
@@ -639,6 +647,10 @@
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
+		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
+		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
+		274A698E1BED3E0500D16D37 /* c4Key.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Key.cc; sourceTree = "<group>"; };
+		274A698F1BED3E0500D16D37 /* c4Key.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Key.h; sourceTree = "<group>"; };
 		274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libCBForestJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D03E31BA7330A00FF7C35 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
@@ -1306,8 +1318,12 @@
 				274D04261BA8A5BC00FF7C35 /* c4Impl.hh */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
+				274A69871BED288D00D16D37 /* c4Document.cc */,
+				274A69881BED288D00D16D37 /* c4Document.h */,
 				274D04241BA8A58200FF7C35 /* c4View.cc */,
 				275607781BA21DAB00F58218 /* c4View.h */,
+				274A698E1BED3E0500D16D37 /* c4Key.cc */,
+				274A698F1BED3E0500D16D37 /* c4Key.h */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
@@ -1524,6 +1540,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				274D03F21BA734A300FF7C35 /* native_glue.hh in Headers */,
+				274A69931BED3E0500D16D37 /* c4Key.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1632,6 +1649,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2045,6 +2063,7 @@
 				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
 				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,
+				274A69901BED3E0500D16D37 /* c4Key.cc in Sources */,
 				274D03DF1BA732E400FF7C35 /* c4.c in Sources */,
 				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
 				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
@@ -2056,6 +2075,7 @@
 				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
 				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
+				274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2241,6 +2261,7 @@
 				720EA4101BA8D834002B8416 /* Document.cc in Sources */,
 				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
 				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
+				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				720EA3E31BA7EAD9002B8416 /* c4.c in Sources */,
 				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
@@ -2254,6 +2275,7 @@
 				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
+				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
@@ -2280,7 +2302,9 @@
 				720EA45E1BA909C4002B8416 /* Tokenizer.cc in Sources */,
 				720EA45F1BA909C4002B8416 /* RevID.cc in Sources */,
 				720EA4611BA909C4002B8416 /* slice.cc in Sources */,
+				274A698D1BED28C000D16D37 /* c4Document.cc in Sources */,
 				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
+				274A69921BED3E0500D16D37 /* c4Key.cc in Sources */,
 				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

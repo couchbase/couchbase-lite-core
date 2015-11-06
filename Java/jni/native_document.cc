@@ -8,7 +8,7 @@
 
 #include "com_couchbase_cbforest_Document.h"
 #include "native_glue.hh"
-#include "c4Database.h"
+#include "c4Document.h"
 #include <vector>
 
 using namespace forestdb;

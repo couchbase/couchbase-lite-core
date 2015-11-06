@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4View.h"
+#include "c4Document.h"
 
 
 class C4KeyTest : public CppUnit::TestFixture {

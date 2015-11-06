@@ -16,6 +16,26 @@
 #include <string.h>
 
 
+// Macros for defining typed enumerations and option flags.
+// To define an enumeration whose values won't be combined:
+//      typedef C4_ENUM(baseIntType, name) { ... };
+// To define an enumeration of option flags that will be ORed together:
+//      typedef C4_OPTIONS(baseIntType, name) { ... };
+// These aren't just a convenience; they are required for Swift bindings.
+#if __APPLE__
+#include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
+    #define C4_ENUM CF_ENUM
+    #define C4_OPTIONS CF_OPTIONS
+#else
+    #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
+    #if (__cplusplus)
+        #define C4_OPTIONS(_type, _name) _type _name; enum : _type
+    #else
+        #define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+    #endif
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,12 +58,12 @@ typedef uint64_t C4SequenceNumber;
 //////// ERRORS:
 
 
-typedef enum {
+typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     HTTPDomain,         // code is an HTTP status code
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
-    C4Domain            // code is C4-specific code (TBD)
-} C4ErrorDomain;
+    C4Domain            // code is C4-specific (see below)
+};
 
 
 // C4Domain error codes:
@@ -108,19 +128,19 @@ const C4Slice kC4SliceNull = { NULL, 0 };
 #define kC4SliceNull ((C4Slice){NULL, 0})
 #endif
 
-#endif
+#endif // C4_IMPL
 
 /** Frees the memory of a heap-allocated slice by calling free(chars). */
 void c4slice_free(C4Slice);
 
 
 /** Logging levels. */
-typedef enum {
+typedef C4_ENUM(uint8_t, C4LogLevel) {
     kC4LogDebug,
     kC4LogInfo,
     kC4LogWarning,
     kC4LogError
-} C4LogLevel;
+};
 
 /** A logging callback that the application can register. */
 typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);

@@ -29,24 +29,26 @@ static const size_t kDBWALThreshold = 1024;
 static const uint64_t kAutoCompactInterval = (5*60);
 
 
-void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
-    if (outError) {
-        outError->domain = domain;
-        outError->code = code;
+namespace c4Internal {
+    void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
+        if (outError) {
+            outError->domain = domain;
+            outError->code = code;
+        }
     }
-}
 
-void recordHTTPError(int httpStatus, C4Error* outError) {
-    recordError(HTTPDomain, httpStatus, outError);
-}
+    void recordHTTPError(int httpStatus, C4Error* outError) {
+        recordError(HTTPDomain, httpStatus, outError);
+    }
 
-void recordError(error e, C4Error* outError) {
-    recordError(ForestDBDomain, e.status, outError);
-}
+    void recordError(error e, C4Error* outError) {
+        recordError(ForestDBDomain, e.status, outError);
+    }
 
-void recordUnknownException(C4Error* outError) {
-    Warn("Unexpected C++ exception thrown from CBForest");
-    recordError(C4Domain, kC4ErrorInternalException, outError);
+    void recordUnknownException(C4Error* outError) {
+        Warn("Unexpected C++ exception thrown from CBForest");
+        recordError(C4Domain, kC4ErrorInternalException, outError);
+    }
 }
 
 
@@ -132,35 +134,49 @@ private:
 };
 
 
-forestdb::Database* asDatabase(C4Database *db) {
-    return db;
-}
+namespace c4Internal {
 
-
-Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
-    auto config = Database::defaultConfig();
-    // global to all databases:
-    config.buffercache_size = kDBBufferCacheSize;
-    config.compress_document_body = true;
-    config.compactor_sleep_duration = kAutoCompactInterval;
-    config.num_compactor_threads = 1;
-    config.num_bgflusher_threads = 1;
-
-    // per-database settings:
-    config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
-    if (flags & kC4DB_ReadOnly)
-        config.flags |= FDB_OPEN_FLAG_RDONLY;
-    if (flags & kC4DB_Create)
-        config.flags |= FDB_OPEN_FLAG_CREATE;
-    config.wal_threshold = kDBWALThreshold;
-    config.wal_flush_before_commit = true;
-    config.seqtree_opt = true;
-    config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
-    if (key) {
-        config.encryption_key.algorithm = key->algorithm;
-        memcpy(config.encryption_key.bytes, key->bytes, sizeof(config.encryption_key.bytes));
+    forestdb::Database* asDatabase(C4Database *db) {
+        return db;
     }
-    return config;
+
+    bool mustBeInTransaction(C4Database *db, C4Error *outError) {
+        return db->mustBeInTransaction(outError);
+    }
+
+    Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
+        auto config = Database::defaultConfig();
+        // global to all databases:
+        config.buffercache_size = kDBBufferCacheSize;
+        config.compress_document_body = true;
+        config.compactor_sleep_duration = kAutoCompactInterval;
+        config.num_compactor_threads = 1;
+        config.num_bgflusher_threads = 1;
+
+        // per-database settings:
+        config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
+        if (flags & kC4DB_ReadOnly)
+            config.flags |= FDB_OPEN_FLAG_RDONLY;
+        if (flags & kC4DB_Create)
+            config.flags |= FDB_OPEN_FLAG_CREATE;
+        config.wal_threshold = kDBWALThreshold;
+        config.wal_flush_before_commit = true;
+        config.seqtree_opt = true;
+        config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
+        if (key) {
+            config.encryption_key.algorithm = key->algorithm;
+            memcpy(config.encryption_key.bytes, key->bytes, sizeof(config.encryption_key.bytes));
+        }
+        return config;
+    }
+
+    Document dbGetDoc(C4Database *db, sequence seq) {
+        return db->get(seq);
+    }
+
+    Transaction* dbGetTransaction(C4Database *db) {
+        return db->transaction();
+    }
 }
 
 
@@ -214,11 +230,12 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
     return database->mustNotBeInTransaction(outError)
-        && c4RekeyInternal(database, newKey, outError);
+        && rekey(database, newKey, outError);
 }
 
 
-bool c4RekeyInternal(Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
+bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
+                                 C4Error *outError) {
     try {
         fdb_encryption_key key = {FDB_ENCRYPTION_NONE, {}};
         if (newKey) {
@@ -277,6 +294,17 @@ bool c4db_endTransaction(C4Database* database,
     try {
         return database->endTransaction(commit, outError);
     } catchError(outError);
+    return false;
+}
+
+
+bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError) {
+    if (!db->mustBeInTransaction(outError))
+        return false;
+    try {
+        db->transaction()->del(docID);
+        return true;
+    } catchError(outError)
     return false;
 }
 
@@ -342,385 +370,6 @@ bool c4raw_put(C4Database* database,
 }
 
 
-#pragma mark - DOCUMENTS:
-
-
-struct C4DocumentInternal : public C4Document {
-    C4Database* _db;
-    VersionedDocument _versionedDoc;
-    const Revision *_selectedRev;
-    alloc_slice _revIDBuf;
-    alloc_slice _selectedRevIDBuf;
-    alloc_slice _loadedBody;
-
-    C4DocumentInternal(C4Database* database, C4Slice docID)
-    :_db(database),
-     _versionedDoc(*_db, docID),
-     _selectedRev(NULL)
-    {
-        init();
-    }
-
-    C4DocumentInternal(C4Database *database, const Document &doc)
-    :_db(database),
-     _versionedDoc(*_db, doc),
-     _selectedRev(NULL)
-    {
-        init();
-    }
-
-    void init() {
-        docID = _versionedDoc.docID();
-        flags = (C4DocumentFlags)_versionedDoc.flags();
-        if (_versionedDoc.exists())
-            flags = (C4DocumentFlags)(flags | kExists);
-        initRevID();
-        if (_versionedDoc.revsAvailable()) {
-            selectRevision(_versionedDoc.currentRevision());
-        } else {
-            // Doc body (rev tree) isn't available, but we know most things about the current rev:
-            selectedRev.revID = revID;
-            selectedRev.sequence = sequence;
-            int revFlags = 0;
-            if (flags & kExists) {
-                revFlags |= kRevLeaf;
-                if (flags & kDeleted)
-                    revFlags |= kRevDeleted;
-                if (flags & kHasAttachments)
-                    revFlags |= kRevHasAttachments;
-            }
-            selectedRev.flags = (C4RevisionFlags)revFlags;
-        }
-    }
-
-    void initRevID() {
-        if (_versionedDoc.revID().size > 0) {
-            _revIDBuf = _versionedDoc.revID().expanded();
-        } else {
-            _revIDBuf = slice::null;
-        }
-        revID = _revIDBuf;
-        sequence = _versionedDoc.sequence();
-    }
-
-    bool selectRevision(const Revision *rev, C4Error *outError =NULL) {
-        _selectedRev = rev;
-        _loadedBody = slice::null;
-        if (rev) {
-            _selectedRevIDBuf = rev->revID.expanded();
-            selectedRev.revID = _selectedRevIDBuf;
-            selectedRev.flags = (C4RevisionFlags)rev->flags;
-            selectedRev.sequence = rev->sequence;
-            selectedRev.body = rev->inlineBody();
-            return true;
-        } else {
-            _selectedRevIDBuf = slice::null;
-            selectedRev.revID = slice::null;
-            selectedRev.flags = (C4RevisionFlags)0;
-            selectedRev.sequence = 0;
-            selectedRev.body = slice::null;
-            recordHTTPError(404, outError);
-            return false;
-        }
-    }
-
-    bool loadRevisions(C4Error *outError) {
-        if (_versionedDoc.revsAvailable())
-            return true;
-        try {
-            _versionedDoc.read();
-            _selectedRev = _versionedDoc.currentRevision();
-            return true;
-        } catchError(outError)
-        return false;
-    }
-
-    bool loadSelectedRevBody(C4Error *outError) {
-        if (!loadRevisions(outError))
-            return false;
-        if (!_selectedRev)
-            return true;
-        if (selectedRev.body.buf)
-            return true;  // already loaded
-        try {
-            _loadedBody = _selectedRev->readBody();
-            selectedRev.body = _loadedBody;
-            if (_loadedBody.buf)
-                return true;
-            recordHTTPError(410, outError); // 410 Gone to denote body that's been compacted away
-        } catchError(outError);
-        return false;
-    }
-
-    void updateMeta() {
-        _versionedDoc.updateMeta();
-        flags = (C4DocumentFlags)(_versionedDoc.flags() | kExists);
-        initRevID();
-    }
-};
-
-static inline C4DocumentInternal *internal(C4Document *doc) {
-    return (C4DocumentInternal*)doc;
-}
-
-
-void c4doc_free(C4Document *doc) {
-    delete (C4DocumentInternal*)doc;
-}
-
-
-C4Document* c4doc_get(C4Database *database,
-                      C4Slice docID,
-                      bool mustExist,
-                      C4Error *outError)
-{
-    try {
-        auto doc = new C4DocumentInternal(database, docID);
-        if (mustExist && !doc->_versionedDoc.exists()) {
-            delete doc;
-            doc = NULL;
-            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
-        }
-        return doc;
-    } catchError(outError);
-    return NULL;
-}
-
-
-C4Document* c4doc_getBySequence(C4Database *database,
-                                C4SequenceNumber sequence,
-                                C4Error *outError)
-{
-    try {
-        auto doc = new C4DocumentInternal(database, database->get(sequence));
-        if (!doc->_versionedDoc.exists()) {
-            delete doc;
-            doc = NULL;
-            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
-        }
-        return doc;
-    } catchError(outError);
-    return NULL;
-}
-
-
-bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError) {
-    if (!db->mustBeInTransaction(outError))
-        return false;
-    try {
-        db->transaction()->del(docID);
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-#pragma mark - REVISIONS:
-
-
-bool c4doc_selectRevision(C4Document* doc,
-                          C4Slice revID,
-                          bool withBody,
-                          C4Error *outError)
-{
-    auto idoc = internal(doc);
-    if (revID.buf) {
-        if (!idoc->loadRevisions(outError))
-            return false;
-        const Revision *rev = idoc->_versionedDoc[revidBuffer(revID)];
-        return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
-    } else {
-        idoc->selectRevision(NULL);
-        return true;
-    }
-}
-
-
-bool c4doc_selectCurrentRevision(C4Document* doc)
-{
-    auto idoc = internal(doc);
-    if (!idoc->loadRevisions(NULL))
-        return false;
-    const Revision *rev = idoc->_versionedDoc.currentRevision();
-    return idoc->selectRevision(rev);
-}
-
-
-bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
-    return internal(doc)->loadSelectedRevBody(outError);
-}
-
-
-bool c4doc_hasRevisionBody(C4Document* doc) {
-    try {
-        auto idoc = internal(doc);
-        return idoc->_selectedRev && idoc->_selectedRev->isBodyAvailable();
-    } catchError(NULL);
-    return false;
-}
-
-
-bool c4doc_selectParentRevision(C4Document* doc) {
-    auto idoc = internal(doc);
-    if (idoc->_selectedRev)
-        idoc->selectRevision(idoc->_selectedRev->parent());
-    return idoc->_selectedRev != NULL;
-}
-
-
-bool c4doc_selectNextRevision(C4Document* doc) {
-    auto idoc = internal(doc);
-    if (idoc->_selectedRev)
-        idoc->selectRevision(idoc->_selectedRev->next());
-    return idoc->_selectedRev != NULL;
-}
-
-
-bool c4doc_selectNextLeafRevision(C4Document* doc,
-                                  bool includeDeleted,
-                                  bool withBody,
-                                  C4Error *outError)
-{
-    auto idoc = internal(doc);
-    auto rev = idoc->_selectedRev;
-    if (rev) {
-        do {
-            rev = rev->next();
-        } while (rev && (!rev->isLeaf() || (!includeDeleted && rev->isDeleted())));
-    }
-    return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
-}
-
-
-#pragma mark - INSERTING REVISIONS
-
-
-int c4doc_insertRevision(C4Document *doc,
-                          C4Slice revID,
-                          C4Slice body,
-                          bool deleted,
-                          bool hasAttachments,
-                          bool allowConflict,
-                          C4Error *outError)
-{
-    auto idoc = internal(doc);
-    if (!idoc->_db->mustBeInTransaction(outError))
-        return -1;
-    if (!idoc->loadRevisions(NULL))
-        return -1;
-    try {
-        revidBuffer encodedRevID(revID);
-        int httpStatus;
-        auto newRev = idoc->_versionedDoc.insert(encodedRevID,
-                                                 body,
-                                                 deleted,
-                                                 hasAttachments,
-                                                 idoc->_selectedRev,
-                                                 allowConflict,
-                                                 httpStatus);
-        if (newRev) {
-            // Success:
-            idoc->updateMeta();
-            newRev = idoc->_versionedDoc.get(encodedRevID);
-            idoc->selectRevision(newRev);
-            return 1;
-        } else if (httpStatus == 200) {
-            // Revision already exists, so nothing was added. Not an error.
-            c4doc_selectRevision(doc, revID, true, outError);
-            return 0;
-        }
-        recordHTTPError(httpStatus, outError);
-    } catchError(outError)
-    return -1;
-}
-
-
-int c4doc_insertRevisionWithHistory(C4Document *doc,
-                                    C4Slice body,
-                                    bool deleted,
-                                    bool hasAttachments,
-                                    C4Slice history[],
-                                    unsigned historyCount,
-                                    C4Error *outError)
-{
-    if (historyCount < 1)
-        return 0;
-    auto idoc = internal(doc);
-    if (!idoc->_db->mustBeInTransaction(outError))
-        return -1;
-    if (!idoc->loadRevisions(NULL))
-        return false;
-    int commonAncestor = -1;
-    try {
-        std::vector<revidBuffer> revIDBuffers(historyCount);
-        for (unsigned i = 0; i < historyCount; i++)
-            revIDBuffers[i].parse(history[i]);
-        commonAncestor = idoc->_versionedDoc.insertHistory(revIDBuffers,
-                                                           body,
-                                                           deleted,
-                                                           hasAttachments);
-        if (commonAncestor >= 0) {
-            idoc->updateMeta();
-            idoc->selectRevision(idoc->_versionedDoc[revidBuffer(history[0])]);
-        } else {
-            recordHTTPError(400, outError); // must be invalid revision IDs
-        }
-    } catchError(outError)
-    return commonAncestor;
-}
-
-
-int c4doc_purgeRevision(C4Document *doc,
-                        C4Slice revID,
-                        C4Error *outError)
-{
-    auto idoc = internal(doc);
-    if (!idoc->_db->mustBeInTransaction(outError))
-        return -1;
-    try {
-        int total = idoc->_versionedDoc.purge(revidBuffer(revID));
-        if (total > 0) {
-            idoc->updateMeta();
-            if (idoc->_selectedRevIDBuf == revID)
-                idoc->selectRevision(idoc->_versionedDoc[0]);
-        }
-        return total;
-    } catchError(outError)
-    return -1;
-}
-
-
-C4SliceResult c4doc_getType(C4Document *doc) {
-    slice result = internal(doc)->_versionedDoc.docType().copy();
-    return {result.buf, result.size};
-}
-
-bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError) {
-    auto idoc = internal(doc);
-    if (!idoc->_db->mustBeInTransaction(outError))
-        return false;
-    idoc->_versionedDoc.setDocType(docType);
-    return true;
-}
-
-
-bool c4doc_save(C4Document *doc,
-                unsigned maxRevTreeDepth,
-                C4Error *outError)
-{
-    auto idoc = internal(doc);
-    if (!idoc->_db->mustBeInTransaction(outError))
-        return false;
-    try {
-        idoc->_versionedDoc.prune(maxRevTreeDepth);
-        idoc->_versionedDoc.save(*idoc->_db->transaction());
-        idoc->sequence = idoc->_versionedDoc.sequence();
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
 #pragma mark - DOC ENUMERATION:
 
 CBFOREST_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
@@ -762,7 +411,7 @@ struct C4DocEnumerator {
 
     static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         auto options = DocEnumerator::Options::kDefault;
-        options.skip = c4options.skip;
+        options.skip = (unsigned)c4options.skip;
         options.descending = (c4options.flags & kC4Descending) != 0;
         options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
         options.inclusiveEnd = (c4options.flags & kC4InclusiveEnd) != 0;
@@ -776,7 +425,7 @@ struct C4DocEnumerator {
             if (!_e.next())
                 return NULL;
         } while (!useDoc());
-        return new C4DocumentInternal(_database, _e.doc());
+        return newC4Document(_database, _e.doc());
     }
 
     inline bool useDoc() {
@@ -828,13 +477,13 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
 
 C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                         C4Slice docIDs[],
-                                        unsigned docIDsCount,
+                                        size_t docIDsCount,
                                         const C4EnumeratorOptions *c4options,
                                         C4Error *outError)
 {
     try {
         std::vector<std::string> docIDStrings;
-        for (unsigned i = 0; i < docIDsCount; ++i)
+        for (size_t i = 0; i < docIDsCount; ++i)
             docIDStrings.push_back((std::string)docIDs[i]);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);

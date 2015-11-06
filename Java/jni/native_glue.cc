@@ -125,7 +125,7 @@ namespace forestdb {
         bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes,
                               C4EncryptionKey *outKey)
         {
-            outKey->algorithm = keyAlg;
+            outKey->algorithm = (C4EncryptionAlgorithm)keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
                 forestdb::slice keySlice = keyBytes;

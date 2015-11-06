@@ -82,7 +82,7 @@ class C4DatabaseTest : public C4Test {
         // Reload the doc:
         doc = c4doc_get(db, kDocID, true, &error);
         Assert(doc != NULL);
-        AssertEqual(doc->flags, kExists);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
         AssertEqual(doc->docID, kDocID);
         AssertEqual(doc->revID, kRevID);
         AssertEqual(doc->selectedRev.revID, kRevID);
@@ -92,7 +92,7 @@ class C4DatabaseTest : public C4Test {
         // Get the doc by its sequence:
         doc = c4doc_getBySequence(db, 1, &error);
         Assert(doc != NULL);
-        AssertEqual(doc->flags, kExists);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
         AssertEqual(doc->docID, kDocID);
         AssertEqual(doc->revID, kRevID);
         AssertEqual(doc->selectedRev.revID, kRevID);
@@ -111,7 +111,7 @@ class C4DatabaseTest : public C4Test {
         C4Error error;
         C4Document *doc = c4doc_get(db, kDocID, true, &error);
         Assert(doc != NULL);
-        AssertEqual(doc->flags, kExists);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
         AssertEqual(doc->docID, kDocID);
         AssertEqual(doc->revID, kRev2ID);
         AssertEqual(doc->selectedRev.revID, kRev2ID);
