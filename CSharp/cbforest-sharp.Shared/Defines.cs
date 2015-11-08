@@ -34,7 +34,7 @@ namespace CBForest
     /// The type of encryption to use when opening a ForestDB based
     /// database
     /// </summary>
-    public enum C4EncryptionType
+    public enum C4EncryptionAlgorithm
     {
         None = 0,
         AES256 = 1
@@ -54,7 +54,7 @@ namespace CBForest
     /// <summary>
     /// Domain of the error code returned in a C4Error object
     /// </summary>
-    public enum C4ErrorDomain 
+    public enum C4ErrorDomain : uint
     {
         /// <summary>
         /// code is an HTTP status code
@@ -101,7 +101,7 @@ namespace CBForest
     /// Boolean options specified when opening a database or view
     /// </summary>
     [Flags]
-    public enum C4DatabaseFlags
+    public enum C4DatabaseFlags : uint
     {
         /// <summary>
         /// Create the database if it does not exist
@@ -121,7 +121,7 @@ namespace CBForest
     /// Flags describing a document.
     /// </summary>
     [Flags]
-    public enum C4DocumentFlags
+    public enum C4DocumentFlags : uint
     {
         /// <summary>
         /// The document's current revision is deleted.
@@ -186,7 +186,7 @@ namespace CBForest
     /// Flags that apply to a revision.
     /// </summary>
     [Flags]
-    public enum C4RevisionFlags
+    public enum C4RevisionFlags : byte
     {
         /// <summary>
         /// Is this revision a deletion/tombstone?

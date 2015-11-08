@@ -375,11 +375,15 @@ namespace CBForest.Tests
         static C4EncryptedDatabaseTest()
         {
 #if FAKE_ENCRYPTION
-            _EncryptionKey.algorithm = (C4EncryptionType)(-1);
+            _EncryptionKey.algorithm = (C4EncryptionAlgorithm)(-1);
 #else
             _EncryptionKey.algorithm = C4EncryptionType.AES256;
 #endif
-            _EncryptionKey.bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
+            var bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
+            fixed(byte* src = bytes)
+            fixed(byte* dst = _EncryptionKey.bytes) {
+                Native.memcpy(dst, src, (UIntPtr)(uint)bytes.Length);
+            }
         }
         
         [Test]

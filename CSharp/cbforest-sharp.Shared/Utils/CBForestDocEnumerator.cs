@@ -77,7 +77,7 @@ namespace CBForest
         /// <summary>
         /// Gets the current document revision
         /// </summary>
-        public C4Document.rev SelectedRev { get { return Document->selectedRev; } }
+        public C4Revision SelectedRev { get { return Document->selectedRev; } }
 
         #endregion
 

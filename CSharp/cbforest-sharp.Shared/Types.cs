@@ -289,6 +289,82 @@ namespace CBForest
         /// </summary>
         public C4Slice body;
     }
+    
+    /// <summary>
+    /// A revision object
+    /// </summary>
+    public struct C4Revision
+    {
+        /// <summary>
+        /// The revision ID
+        /// </summary>
+        public C4Slice revID;
+
+        /// <summary>
+        /// Flags with information about the revision
+        /// </summary>
+        public C4RevisionFlags flags;
+
+        /// <summary>
+        /// The revision sequence number
+        /// </summary>
+        public ulong sequence;
+
+        /// <summary>
+        /// The revision body
+        /// </summary>
+        public C4Slice body;
+
+        /// <summary>
+        /// Gets whether or not this revision is deleted
+        /// </summary>
+        public bool IsDeleted
+        {
+            get {
+                return flags.HasFlag(C4RevisionFlags.RevDeleted);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not this revision is a leaf (i.e. has no children)
+        /// </summary>
+        public bool IsLeaf
+        {
+            get {
+                return flags.HasFlag(C4RevisionFlags.RevLeaf);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not this revision is new
+        /// </summary>
+        public bool IsNew
+        {
+            get {
+                return flags.HasFlag(C4RevisionFlags.RevNew);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not this revision has attachments
+        /// </summary>
+        public bool HasAttachments
+        {
+            get {
+                return flags.HasFlag(C4RevisionFlags.RevHasAttachments);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not this revision is active (i.e. non-deleted and current)
+        /// </summary>
+        public bool IsActive
+        {
+            get {
+                return IsLeaf && !IsDeleted;
+            }
+        }
+    }
 
     /// <summary>
     /// Describes a version-controlled document.
@@ -316,85 +392,9 @@ namespace CBForest
         public ulong sequence;
 
         /// <summary>
-        /// A revision object
-        /// </summary>
-        public struct rev
-        {
-            /// <summary>
-            /// The revision ID
-            /// </summary>
-            public C4Slice revID;
-
-            /// <summary>
-            /// Flags with information about the revision
-            /// </summary>
-            public C4RevisionFlags flags;
-
-            /// <summary>
-            /// The revision sequence number
-            /// </summary>
-            public ulong sequence;
-
-            /// <summary>
-            /// The revision body
-            /// </summary>
-            public C4Slice body;
-
-            /// <summary>
-            /// Gets whether or not this revision is deleted
-            /// </summary>
-            public bool IsDeleted
-            {
-                get {
-                    return flags.HasFlag(C4RevisionFlags.RevDeleted);
-                }
-            }
-
-            /// <summary>
-            /// Gets whether or not this revision is a leaf (i.e. has no children)
-            /// </summary>
-            public bool IsLeaf
-            {
-                get {
-                    return flags.HasFlag(C4RevisionFlags.RevLeaf);
-                }
-            }
-
-            /// <summary>
-            /// Gets whether or not this revision is new
-            /// </summary>
-            public bool IsNew
-            {
-                get {
-                    return flags.HasFlag(C4RevisionFlags.RevNew);
-                }
-            }
-
-            /// <summary>
-            /// Gets whether or not this revision has attachments
-            /// </summary>
-            public bool HasAttachments
-            {
-                get {
-                    return flags.HasFlag(C4RevisionFlags.RevHasAttachments);
-                }
-            }
-
-            /// <summary>
-            /// Gets whether or not this revision is active (i.e. non-deleted and current)
-            /// </summary>
-            public bool IsActive
-            {
-                get {
-                    return IsLeaf && !IsDeleted;
-                }
-            }
-        }
-
-        /// <summary>
         /// The currently selected revision of this document
         /// </summary>
-        public rev selectedRev;
+        public C4Revision selectedRev;
 
         /// <summary>
         /// Gets whether or not the document is deleted
@@ -455,7 +455,7 @@ namespace CBForest
         /// <summary>
         /// The number of initial results to skip.
         /// </summary>
-        public uint skip;
+        public ulong skip;
 
         /// <summary>
         /// Option flags
@@ -648,7 +648,7 @@ namespace CBForest
         /// The default mode of encryption used by this class
         /// </summary>
         #if FAKE_C4_ENCRYPTION
-        public const C4EncryptionType ENCRYPTION_MODE = (C4EncryptionType)(-1);
+        public const C4EncryptionAlgorithm ENCRYPTION_MODE = (C4EncryptionAlgorithm)(-1);
         #else
         public const C4EncryptionType ENCRYPTION_MODE = C4EncryptionType.AES256;
         #endif
@@ -656,7 +656,7 @@ namespace CBForest
         /// <summary>
         /// The algorithm being used by th ekey
         /// </summary>
-        public C4EncryptionType algorithm;
+        public C4EncryptionAlgorithm algorithm;
 
         /// <summary>
         /// The key data of the key (256-bit)
@@ -668,7 +668,7 @@ namespace CBForest
         /// </summary>
         /// <param name="algorithm">The algorithm to use when encrypting.</param>
         /// <param name="source">The key data to use.</param>
-        public C4EncryptionKey(C4EncryptionType algorithm, byte[] source)
+        public C4EncryptionKey(C4EncryptionAlgorithm algorithm, byte[] source)
         {
             this.algorithm = algorithm;
             fixed(byte* dest = bytes)

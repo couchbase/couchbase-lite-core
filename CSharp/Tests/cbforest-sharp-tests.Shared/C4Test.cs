@@ -82,10 +82,10 @@ namespace CBForest.Tests
             }
         }
 
-        private static void Log(C4LogLevel level, C4Slice message)
+        private static void Log(C4LogLevel level, string message)
         {
             string[] levelNames = new[] { "debug", "info", "WARNING", "ERROR" };
-            Console.Error.WriteLineAsync(String.Format("CBForest-C {0}: {1}", levelNames[(int)level], (string)message));
+            Console.Error.WriteLineAsync(String.Format("CBForest-C {0}: {1}", levelNames[(int)level], message));
         }
     }
 }

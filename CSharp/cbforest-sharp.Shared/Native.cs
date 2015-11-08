@@ -715,7 +715,7 @@ namespace CBForest
         }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateSomeDocs")]
-        private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, uint docIDsCount, 
+        private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, UIntPtr docIDsCount, 
             C4EnumeratorOptions *options, C4Error *outError);
 
         /// <summary>
@@ -734,7 +734,7 @@ namespace CBForest
             var sliceArr = c4StringArr.Select(x => x.AsC4Slice()).ToArray();
             var retVal = default(C4DocEnumerator*);
             fixed(C4Slice* ptr = sliceArr) {
-                retVal = _c4db_enumerateSomeDocs(db, ptr, (uint)docIDs.Length, options, outError);
+                retVal = _c4db_enumerateSomeDocs(db, ptr, (UIntPtr)(uint)docIDs.Length, options, outError);
                 #if DEBUG
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
@@ -1357,7 +1357,7 @@ namespace CBForest
         public static extern bool c4view_rekey(C4View *view, C4EncryptionKey *newKey, C4Error *outError);
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_begin")]
-        private static extern C4Indexer* _c4indexer_begin(C4Database *db, C4View** views, int viewCount, C4Error *outError);
+        private static extern C4Indexer* _c4indexer_begin(C4Database *db, C4View** views, UIntPtr viewCount, C4Error *outError);
 
         /// <summary>
         /// Creates an indexing task on one or more views in a database.
@@ -1380,7 +1380,7 @@ namespace CBForest
 
                 return retVal;
                 #else
-                return _c4indexer_begin(db, viewPtr, views.Length, outError);
+                return _c4indexer_begin(db, viewPtr, (UIntPtr)(uint)views.Length, outError);
                 #endif
             }
         }
