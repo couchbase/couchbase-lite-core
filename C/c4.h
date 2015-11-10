@@ -22,22 +22,22 @@
 // To define an enumeration of option flags that will be ORed together:
 //      typedef C4_OPTIONS(baseIntType, name) { ... };
 // These aren't just a convenience; they are required for Swift bindings.
-#if 0
-#include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
-#define C4_ENUM CF_ENUM
-#define C4_OPTIONS CF_OPTIONS
+#if APPLE
+    #include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
+    #define C4_ENUM CF_ENUM
+    #define C4_OPTIONS CF_OPTIONS
 #else
-#if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
-#define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
-#if (__cplusplus)
-#define C4_OPTIONS(_type, _name) _type _name; enum : _type
-#else
-#define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
-#endif
-#else
-#define C4_ENUM(_type, _name) _type _name; enum
-#define C4_OPTIONS(_type, _name) _type _name; enum
-#endif
+    #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
+        #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
+        #if (__cplusplus)
+            #define C4_OPTIONS(_type, _name) _type _name; enum : _type
+        #else
+            #define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+        #endif
+    #else
+        #define C4_ENUM(_type, _name) _type _name; enum
+        #define C4_OPTIONS(_type, _name) _type _name; enum
+    #endif
 #endif
 
 
@@ -76,7 +76,6 @@ enum {
     kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception
     kC4ErrorNotInTransaction,           // Function must be called while in a transaction
     kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
-    kC4ErrorInvalidKey,                 // Object in key is not JSON-compatible
 };
 
 

@@ -244,7 +244,6 @@ public interface Constants {
         int kC4ErrorInternalException = 1;    // CBForest threw an unexpected C++ exception
         int kC4ErrorNotInTransaction = 2;     // Function must be called while in a transaction
         int kC4ErrorTransactionNotClosed = 3; // Database can't be closed while a transaction is open
-        int kC4ErrorInvalidKey = 3;           // Object in key is not JSON-compatible
     }
 
     // The types of tokens in a key.
