@@ -299,18 +299,21 @@ namespace forestdb {
 
     fdb_compact_decision Database::compactionCallback(fdb_file_handle *fhandle,
                                                       fdb_compaction_status status,
+                                                      const char *kv_store_name,
                                                       fdb_doc *doc,
                                                       uint64_t last_oldfile_offset,
                                                       uint64_t last_newfile_offset,
                                                       void *ctx)
     {
-        if (((Database*)ctx)->onCompact(status, doc, last_oldfile_offset, last_newfile_offset))
+        if (((Database*)ctx)->onCompact(status, kv_store_name, doc,
+                                        last_oldfile_offset, last_newfile_offset))
             return FDB_CS_KEEP_DOC;
         else
             return FDB_CS_DROP_DOC;
     }
 
     bool Database::onCompact(fdb_compaction_status status,
+                             const char *kv_store_name,
                              fdb_doc *doc,
                              uint64_t last_oldfile_offset,
                              uint64_t last_newfile_offset)

@@ -91,6 +91,7 @@ namespace forestdb {
         virtual void deleted();
 
         virtual bool onCompact(fdb_compaction_status status,
+                               const char *kv_store_name,
                                fdb_doc *doc,
                                uint64_t lastOldFileOffset,
                                uint64_t lastNewFileOffset);
@@ -110,6 +111,7 @@ namespace forestdb {
 
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
                                                        fdb_compaction_status status,
+                                                       const char *kv_store_name,
                                                        fdb_doc *doc,
                                                        uint64_t last_oldfile_offset,
                                                        uint64_t last_newfile_offset,

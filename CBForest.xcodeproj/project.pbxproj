@@ -175,6 +175,8 @@
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
+		27A994EC1BF2B6C900320AF2 /* staleblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A994E91BF2B6C100320AF2 /* staleblock.cc */; };
+		27A994ED1BF2B6CA00320AF2 /* staleblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A994E91BF2B6C100320AF2 /* staleblock.cc */; };
 		27B086C11B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C21B3B2E0400D3D9D8 /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
 		27B086C31B3B2E0400D3D9D8 /* system_resource_stats.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */; };
@@ -737,6 +739,8 @@
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
 		27A82D941BC48E38005CB742 /* sqlite_glue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite_glue.c; sourceTree = "<group>"; };
+		27A994E91BF2B6C100320AF2 /* staleblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = staleblock.cc; sourceTree = "<group>"; };
+		27A994EA1BF2B6C100320AF2 /* staleblock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = staleblock.h; sourceTree = "<group>"; };
 		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
 		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
 		27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = system_resource_stats.h; sourceTree = "<group>"; };
@@ -1206,6 +1210,7 @@
 				27DF46BF1A119860007BB4A4 /* kv_instance.cc */,
 				275072A218E4857900A80C5A /* list.cc */,
 				27EF7F8D1911A85800A327B9 /* snapshot.cc */,
+				27A994E91BF2B6C100320AF2 /* staleblock.cc */,
 				27EF007E1949297F001BF7F3 /* transaction.cc */,
 				2733A74F1BD6C78400F0FF07 /* version.cc */,
 				275072A318E4857900A80C5A /* wal.cc */,
@@ -1236,6 +1241,7 @@
 				273AD3CE18F45E05007D8C23 /* internal_types.h */,
 				2750728B18E3E72900A80C5A /* list.h */,
 				27EF7F8E1911A85800A327B9 /* snapshot.h */,
+				27A994EA1BF2B6C100320AF2 /* staleblock.h */,
 				2733A7501BD6C78400F0FF07 /* version.h */,
 				2750729118E3E72900A80C5A /* wal.h */,
 			);
@@ -1970,6 +1976,7 @@
 				2709F29B191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				27139B5D18F8EDA20021A9A3 /* snappy-sinksource.cc in Sources */,
 				27E721951BB65C9C001500DF /* bgflusher.cc in Sources */,
+				27A994ED1BF2B6CA00320AF2 /* staleblock.cc in Sources */,
 				27139B5F18F8EDA20021A9A3 /* btreeblock.cc in Sources */,
 				27EF00801949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA61ABDF3FF00A34C57 /* time_utils.cc in Sources */,
@@ -2100,6 +2107,7 @@
 				2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */,
 				273AD3DF18F5E8D8007D8C23 /* snappy-sinksource.cc in Sources */,
 				27E721941BB65C9C001500DF /* bgflusher.cc in Sources */,
+				27A994EC1BF2B6C900320AF2 /* staleblock.cc in Sources */,
 				275072CB18E4AA5000A80C5A /* btreeblock.cc in Sources */,
 				27EF007F1949297F001BF7F3 /* transaction.cc in Sources */,
 				2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */,
