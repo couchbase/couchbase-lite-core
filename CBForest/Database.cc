@@ -207,9 +207,13 @@ namespace forestdb {
         check(::fdb_close(_fileHandle));
         deleted();
 
-        check(fdb_destroy(path.c_str(), &_config));
+        deleteDatabase(path, _config);
         if (andReopen)
             reopen(path);
+    }
+
+    void Database::deleteDatabase(std::string path, const config &cfg) {
+        check(fdb_destroy(path.c_str(), (config*)&cfg));
     }
 
     void Database::commit() {

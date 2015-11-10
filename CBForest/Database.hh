@@ -63,6 +63,9 @@ namespace forestdb {
         void deleteDatabase()                   {deleteDatabase(false);}
         void erase()                            {deleteDatabase(true);}
 
+        /** Deletes a database that isn't open. */
+        static void deleteDatabase(std::string path, const config&);
+
         void compact();
         bool isCompacting() const               {return _isCompacting;}
         static bool isAnyCompacting();
