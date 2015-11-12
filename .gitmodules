@@ -4,3 +4,6 @@
 [submodule "vendor/sqlite3-unicodesn"]
 	path = vendor/sqlite3-unicodesn
 	url = git://github.com/snej/sqlite3-unicodesn.git
+[submodule "vendor/openssl"]
+	path = vendor/openssl
+	url = https://github.com/couchbaselabs/couchbase-lib-crypto

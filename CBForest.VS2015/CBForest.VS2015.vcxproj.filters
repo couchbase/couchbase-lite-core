@@ -273,5 +273,14 @@
     <ClCompile Include="..\vendor\forestdb\src\encryption_bogus.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\staleblock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4Document.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4Key.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
