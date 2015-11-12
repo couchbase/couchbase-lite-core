@@ -1370,7 +1370,7 @@ namespace CBForest
         {
             fixed(C4View** viewPtr = views) {
                 #if DEBUG
-                var retVal = _c4indexer_begin(db, viewPtr, views.Length, outError);
+                var retVal = _c4indexer_begin(db, viewPtr, (UIntPtr)(uint)views.Length, outError);
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Indexer");
                 #if ENABLE_LOGGING

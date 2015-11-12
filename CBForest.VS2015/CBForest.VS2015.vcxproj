@@ -101,7 +101,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -201,6 +201,7 @@
     <ClCompile Include="..\vendor\forestdb\src\btree_kv.cc" />
     <ClCompile Include="..\vendor\forestdb\src\btree_str_kv.cc" />
     <ClCompile Include="..\vendor\forestdb\src\checksum.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\staleblock.cc" />
     <ClCompile Include="..\vendor\forestdb\src\compactor.cc" />
     <ClCompile Include="..\vendor\forestdb\src\configuration.cc" />
     <ClCompile Include="..\vendor\forestdb\src\docio.cc" />
