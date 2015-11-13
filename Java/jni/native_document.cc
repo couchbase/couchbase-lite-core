@@ -103,8 +103,7 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
 {
     auto doc = (C4Document*)docHandle;
     updateRevIDAndFlags(env, self, doc);
-    if(c4doc_selectCurrentRevision(doc))
-        updateSelection(env, self, doc);
+    updateSelection(env, self, doc);
     return toJString(env, doc->docID);
 }
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_hasRevisionBody
