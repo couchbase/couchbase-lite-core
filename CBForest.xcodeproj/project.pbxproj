@@ -3104,7 +3104,10 @@
 				DSTROOT = /tmp/CBForest_iOS.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CBForest/CBForest-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = NO_SQLITE_GLUE;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_SQLITE_GLUE,
+					"$(inherited)",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
