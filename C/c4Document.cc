@@ -49,22 +49,7 @@ struct C4DocumentInternal : public C4Document {
         if (_versionedDoc.exists())
             flags = (C4DocumentFlags)(flags | kExists);
         initRevID();
-        if (_versionedDoc.revsAvailable()) {
-            selectRevision(_versionedDoc.currentRevision());
-        } else {
-            // Doc body (rev tree) isn't available, but we know most things about the current rev:
-            selectedRev.revID = revID;
-            selectedRev.sequence = sequence;
-            int revFlags = 0;
-            if (flags & kExists) {
-                revFlags |= kRevLeaf;
-                if (flags & kDeleted)
-                    revFlags |= kRevDeleted;
-                if (flags & kHasAttachments)
-                    revFlags |= kRevHasAttachments;
-            }
-            selectedRev.flags = (C4RevisionFlags)revFlags;
-        }
+        selectCurrentRevision();
     }
 
     void initRevID() {
@@ -96,6 +81,32 @@ struct C4DocumentInternal : public C4Document {
             recordHTTPError(404, outError);
             return false;
         }
+    }
+
+    bool selectCurrentRevision() {
+        if (_versionedDoc.revsAvailable()) {
+            return selectRevision(_versionedDoc.currentRevision());
+        } else {
+            // Doc body (rev tree) isn't available, but we know enough about the current rev:
+            _selectedRev = NULL;
+            selectedRev.revID = revID;
+            selectedRev.sequence = sequence;
+            int revFlags = 0;
+            if (flags & kExists) {
+                revFlags |= kRevLeaf;
+                if (flags & kDeleted)
+                    revFlags |= kRevDeleted;
+                if (flags & kHasAttachments)
+                    revFlags |= kRevHasAttachments;
+            }
+            selectedRev.flags = (C4RevisionFlags)revFlags;
+            selectedRev.body = slice::null;
+            return true;
+        }
+    }
+
+    bool revisionsLoaded() const {
+        return _versionedDoc.revsAvailable();
     }
 
     bool loadRevisions(C4Error *outError) {
@@ -212,11 +223,7 @@ bool c4doc_selectRevision(C4Document* doc,
 
 bool c4doc_selectCurrentRevision(C4Document* doc)
 {
-    auto idoc = internal(doc);
-    if (!idoc->loadRevisions(NULL))
-        return false;
-    const Revision *rev = idoc->_versionedDoc.currentRevision();
-    return idoc->selectRevision(rev);
+    return internal(doc)->selectCurrentRevision();
 }
 
 
@@ -228,6 +235,9 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
 bool c4doc_hasRevisionBody(C4Document* doc) {
     try {
         auto idoc = internal(doc);
+        if (!idoc->revisionsLoaded()) {
+            Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
+        }
         return idoc->_selectedRev && idoc->_selectedRev->isBodyAvailable();
     } catchError(NULL);
     return false;
@@ -236,6 +246,9 @@ bool c4doc_hasRevisionBody(C4Document* doc) {
 
 bool c4doc_selectParentRevision(C4Document* doc) {
     auto idoc = internal(doc);
+    if (!idoc->revisionsLoaded()) {
+        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+    }
     if (idoc->_selectedRev)
         idoc->selectRevision(idoc->_selectedRev->parent());
     return idoc->_selectedRev != NULL;
@@ -244,6 +257,9 @@ bool c4doc_selectParentRevision(C4Document* doc) {
 
 bool c4doc_selectNextRevision(C4Document* doc) {
     auto idoc = internal(doc);
+    if (!idoc->revisionsLoaded()) {
+        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+    }
     if (idoc->_selectedRev)
         idoc->selectRevision(idoc->_selectedRev->next());
     return idoc->_selectedRev != NULL;
@@ -256,6 +272,9 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
                                   C4Error *outError)
 {
     auto idoc = internal(doc);
+    if (!idoc->revisionsLoaded()) {
+        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+    }
     auto rev = idoc->_selectedRev;
     if (rev) {
         do {
@@ -280,7 +299,7 @@ int32_t c4doc_insertRevision(C4Document *doc,
     auto idoc = internal(doc);
     if (!idoc->mustBeInTransaction(outError))
         return -1;
-    if (!idoc->loadRevisions(NULL))
+    if (!idoc->loadRevisions(outError))
         return -1;
     try {
         revidBuffer encodedRevID(revID);
@@ -322,8 +341,8 @@ int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
     auto idoc = internal(doc);
     if (!idoc->mustBeInTransaction(outError))
         return -1;
-    if (!idoc->loadRevisions(NULL))
-        return false;
+    if (!idoc->loadRevisions(outError))
+        return -1;
     int32_t commonAncestor = -1;
     try {
         std::vector<revidBuffer> revIDBuffers(historyCount);
@@ -350,6 +369,8 @@ int32_t c4doc_purgeRevision(C4Document *doc,
 {
     auto idoc = internal(doc);
     if (!idoc->mustBeInTransaction(outError))
+        return -1;
+    if (!idoc->loadRevisions(outError))
         return -1;
     try {
         int32_t total = idoc->_versionedDoc.purge(revidBuffer(revID));
