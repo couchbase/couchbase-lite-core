@@ -15,6 +15,13 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#define __has_extension
+#define __has_feature
+#define CBINLINE __forceinline
+#else
+#define CBINLINE inline
+#endif
 
 // Macros for defining typed enumerations and option flags.
 // To define an enumeration whose values won't be combined:
@@ -112,7 +119,7 @@ typedef struct {
 typedef C4Slice C4SliceResult;
 
 /** Creates a slice pointing to the contents of a C string. */
-static inline C4Slice c4str(const char *str) {
+static CBINLINE C4Slice c4str(const char *str) {
 	C4Slice foo = { str, str ? strlen(str) : 0 };
 	return foo;
 }

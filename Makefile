@@ -37,6 +37,7 @@ CPPFLAGS += $(USR_CPPFLAGS) \
 -DDOC_COMP \
 -D_DOC_COMP \
 -DHAVE_GCC_ATOMICS=1 \
+-D_CRYPTO_OPENSSL \
 -std=c++11 \
 -fexceptions \
 -fpermissive \
@@ -46,7 +47,7 @@ CPPFLAGS += $(USR_CPPFLAGS) \
 -include $(CBFOREST_PATH)/CBForest-Prefix.pch \
 -fPIC 
 
-LDFLAGS += $(USR_LDFLAGS) -lpthread -shared -Wl
+LDFLAGS += $(USR_LDFLAGS) -lpthread -lcrypto -shared -Wl
 
 SOURCES = $(SQLITE3_PATH)/fts3_unicode2.o \
 $(SQLITE3_PATH)/fts3_unicodesn.o \
@@ -101,6 +102,7 @@ $(FORESTDB_PATH)/src/btree_kv.o \
 $(FORESTDB_PATH)/src/btree_str_kv.o \
 $(FORESTDB_PATH)/src/btreeblock.o \
 $(FORESTDB_PATH)/src/checksum.o \
+$(FORESTDB_PATH)/src/staleblock.o \
 $(FORESTDB_PATH)/src/compactor.o \
 $(FORESTDB_PATH)/src/configuration.o \
 $(FORESTDB_PATH)/src/docio.o \
@@ -143,7 +145,9 @@ $(CBFOREST_PATH)/MapReduceIndex.o \
 $(CBFOREST_PATH)/Tokenizer.o \
 C/c4.o \
 C/c4Database.o \
-C/c4View.o
+C/c4View.o \
+C/c4Key.o \
+C/c4Document.o
 
 TARGET=libCBForest-Interop.so
 

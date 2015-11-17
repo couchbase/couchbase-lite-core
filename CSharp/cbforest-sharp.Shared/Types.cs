@@ -18,7 +18,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-#define FAKE_C4_ENCRYPTION
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -650,7 +649,7 @@ namespace CBForest
         #if FAKE_C4_ENCRYPTION
         public const C4EncryptionAlgorithm ENCRYPTION_MODE = (C4EncryptionAlgorithm)(-1);
         #else
-        public const C4EncryptionType ENCRYPTION_MODE = C4EncryptionType.AES256;
+        public const C4EncryptionAlgorithm ENCRYPTION_MODE = C4EncryptionAlgorithm.AES256;
         #endif
 
         /// <summary>

@@ -10,3 +10,5 @@
 
 #include "c4Database.h"
 #include "c4View.h"
+#include "c4Key.h"
+#include "c4Document.h"

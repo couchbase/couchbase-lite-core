@@ -1,6 +1,11 @@
 # File: Android.mk
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
+LOCAL_MODULE := libcrypto
+LOCAL_SRC_FILES := $(LOCAL_PATH)/../vendor/openssl/libs/android/$(TARGET_ARCH_ABI)/libcrypto.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
 
 LOCAL_MODULE	:=	CBForest-Interop
 
@@ -9,12 +14,13 @@ SNAPPY_PATH     :=  $(LOCAL_PATH)/../vendor/snappy
 SQLITE3_PATH   	:=  $(LOCAL_PATH)/../vendor/sqlite3-unicodesn
 SQLITE_INC_PATH :=  $(LOCAL_PATH)/../vendor/sqlite
 CBFOREST_PATH   :=  $(LOCAL_PATH)/../CBForest
-
+OPENSSL_PATH		:=  $(LOCAL_PATH)/../vendor/openssl/libs/include
 
 LOCAL_CFLAGS    :=  -I$(SQLITE3_PATH)/libstemmer_c/runtime/ \
 					-I$(SQLITE3_PATH)/libstemmer_c/src_c/ \
 					-I$(SQLITE3_PATH)/ \
-					-I$(SQLITE_INC_PATH)/
+					-I$(SQLITE_INC_PATH)/ \
+					-I$(OPENSSL_PATH)/
 
 # For sqlite3-unicodesn
 LOCAL_CFLAGS	+=	-DSQLITE_ENABLE_FTS4 \
@@ -31,7 +37,9 @@ LOCAL_CPPFLAGS	:= 	-I$(FORESTDB_PATH)/include/ \
 					-I$(FORESTDB_PATH)/option/ \
 					-I$(SNAPPY_PATH)/ \
 					-I$(CBFOREST_PATH)/ \
-					-I$(CBFOREST_PATH)/Encryption
+					-I$(CBFOREST_PATH)/Encryption \
+					-I$(OPENSSL_PATH)/ \
+					-D_CRYPTO_OPENSSL
 
 LOCAL_CPPFLAGS	+=	-std=c++11
 LOCAL_CPPFLAGS	+=	-fexceptions
@@ -111,6 +119,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(FORESTDB_PATH)/src/btree_str_kv.cc \
 					$(FORESTDB_PATH)/src/btreeblock.cc \
 					$(FORESTDB_PATH)/src/checksum.cc \
+					$(FORESTDB_PATH)/src/staleblock.cc \
 					$(FORESTDB_PATH)/src/compactor.cc \
 					$(FORESTDB_PATH)/src/configuration.cc \
 					$(FORESTDB_PATH)/src/docio.cc \
@@ -156,5 +165,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(LOCAL_PATH)/../C/c4View.cc \
 					$(LOCAL_PATH)/../C/c4Key.cc \
 					$(LOCAL_PATH)/../C/c4Document.cc
-					
+
+LOCAL_STATIC_LIBRARIES := libcrypto
+
 include $(BUILD_SHARED_LIBRARY)
