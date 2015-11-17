@@ -21,6 +21,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace CBForest
 {
@@ -37,8 +38,8 @@ namespace CBForest
         /// </summary>
         public readonly C4Document *Document;
         private readonly bool _owner;
-        private Lazy<string> _docID;
-        private Lazy<string> _revID;
+        private string _docID;
+        private string _revID;
 
         #endregion
 
@@ -47,12 +48,30 @@ namespace CBForest
         /// <summary>
         /// Gets the document ID of the current document
         /// </summary>
-        public string CurrentDocID { get { return _docID.Value;  } }
+        public string CurrentDocID 
+        { 
+            get { 
+                if (_docID == null) {
+                    _docID = (string)Document->docID;
+                }
+
+                return _docID;  
+            } 
+        }
 
         /// <summary>
         /// Gets the revision ID of the current document revision
         /// </summary>
-        public string CurrentRevID { get { return _revID.Value;  } }
+        public string CurrentRevID 
+        { 
+            get { 
+                if (_revID == null) {
+                    _revID = (string)Document->revID;
+                }
+
+                return _revID;  
+            } 
+        }
 
         /// <summary>
         /// Gets whether or not the current document revision has a body
@@ -96,9 +115,6 @@ namespace CBForest
             if (!_owner) {
                 GC.SuppressFinalize(this);
             }
-
-            _docID = new Lazy<string>(() => (string)Document->docID);
-            _revID = new Lazy<string>(() => (string)Document->revID);
         }
 
         ~CBForestDocStatus()

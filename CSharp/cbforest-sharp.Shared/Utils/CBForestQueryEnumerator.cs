@@ -32,9 +32,10 @@ namespace CBForest
 
         #region Variables
 
-        private readonly Lazy<string> _docID;
-        private readonly Lazy<string> _keyJSON;
-        private readonly Lazy<string> _valueJSON;
+        private C4Slice _docIDSlice;
+        private string _docID;
+        private string _keyJSON;
+        private string _valueJSON;
 
         /// <summary>
         /// The key of this entry
@@ -63,7 +64,11 @@ namespace CBForest
         public string DocID
         {
             get {
-                return _docID.Value;
+                if (_docID == null) {
+                    _docID = (string)_docIDSlice;
+                }
+
+                return _docID;
             }
         }
 
@@ -71,10 +76,15 @@ namespace CBForest
         /// Gets the key of this entry
         /// in JSON format
         /// </summary>
-        public string KeyJSON
+        public unsafe string KeyJSON
         {
             get {
-                return _keyJSON.Value;
+                var localKey = Key;
+                if (_keyJSON == null) {
+                    _keyJSON = Native.c4key_toJSON(&localKey);
+                }
+
+                return _keyJSON;
             }
         }
 
@@ -85,7 +95,11 @@ namespace CBForest
         public string ValueJSON
         {
             get {
-                return _valueJSON.Value;
+                if (_valueJSON == null) {
+                    _valueJSON = (string)Value;
+                }
+
+                return _valueJSON;
             }
         }
 
@@ -95,17 +109,9 @@ namespace CBForest
 
         internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4Slice value, long docSequence)
         {
-            _docID = new Lazy<string>(() => (string)docID);
             Key = key;
             Value = value;
             DocSequence = docSequence;
-            _keyJSON = new Lazy<string>(() =>
-            {
-                var localKey = key;
-                return Native.c4key_toJSON(&localKey);
-            });
-
-            _valueJSON = new Lazy<string>(() => (string)value);
         }
 
         #endregion
