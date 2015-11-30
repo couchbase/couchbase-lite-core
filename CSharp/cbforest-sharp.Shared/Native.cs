@@ -44,7 +44,7 @@ namespace CBForest
         private const string DLL_NAME = "CBForest-Interop";
 #endif
 
-        #if DEBUG
+        #if DEBUG && !NET_3_5
         private static string _Dummy;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string> _AllocatedObjects = new 
             System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string>();
@@ -67,7 +67,7 @@ namespace CBForest
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             foreach (var pair in _AllocatedObjects) {
                 Console.WriteLine("ERROR: {0}* at 0x{1} leaked", pair.Value, pair.Key.ToString("X"));
                 _GcAction[pair.Value](pair.Key); // To make sure the next test doesn't fail because of this one's mistakes
@@ -123,7 +123,7 @@ namespace CBForest
         public static C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
             C4EncryptionKey *encryptionKey, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4db_open(path, flags, encryptionKey, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Database");
@@ -166,7 +166,7 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         public static bool c4db_close(C4Database *db, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)db;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -193,7 +193,7 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         public static bool c4db_delete(C4Database *db, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)db;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -288,7 +288,7 @@ namespace CBForest
         /// <param name="rawDoc"></param>
         public static void c4raw_free(C4RawDocument *rawDoc)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)rawDoc;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -317,7 +317,7 @@ namespace CBForest
         /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
         public static C4RawDocument* c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4raw_get(db, storeName, docID, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4RawDocument");
@@ -394,7 +394,7 @@ namespace CBForest
         /// <param name="doc">The document to free</param>
         public static void c4doc_free(C4Document *doc)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)doc;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -426,7 +426,7 @@ namespace CBForest
         public static C4Document* c4doc_get(C4Database *db, C4Slice docID, bool mustExist, 
             C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4doc_get(db, docID, mustExist, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
@@ -616,7 +616,7 @@ namespace CBForest
         /// <param name="e">The doc enumerator to free</param>
         public static void c4enum_free(C4DocEnumerator *e)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)e;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -647,7 +647,7 @@ namespace CBForest
         public static C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options, 
             C4Error* outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4db_enumerateChanges(db, since, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
@@ -678,7 +678,7 @@ namespace CBForest
         public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
             C4EnumeratorOptions *options, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4db_enumerateAllDocs(db, startDocID, endDocID, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
@@ -735,7 +735,7 @@ namespace CBForest
             var retVal = default(C4DocEnumerator*);
             fixed(C4Slice* ptr = sliceArr) {
                 retVal = _c4db_enumerateSomeDocs(db, ptr, (UIntPtr)(uint)docIDs.Length, options, outError);
-                #if DEBUG
+                #if DEBUG && !NET_3_5
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
                 #if ENABLE_LOGGING
@@ -765,7 +765,7 @@ namespace CBForest
         /// <returns>A pointer to the document on success, otherwise null</returns>
         public static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4enum_nextDocument(e, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
@@ -950,7 +950,7 @@ namespace CBForest
         /// <returns>A pointer to a new empty C4Key</returns>
         public static C4Key* c4key_new()
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4key_new();
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
@@ -975,7 +975,7 @@ namespace CBForest
         /// <returns>A pointer to the created C4Key</returns>
         public static C4Key* c4key_withBytes(C4Slice slice)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4key_withBytes(slice);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
@@ -1013,7 +1013,7 @@ namespace CBForest
         /// <param name="key">The key to free</param>
         public static void c4key_free(C4Key *key)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)key;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -1220,7 +1220,7 @@ namespace CBForest
         public static C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
             C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4view_open(db, path, viewName, version, flags, encryptionKey, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4View");
@@ -1268,7 +1268,7 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         public static bool c4view_close(C4View *view, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)view;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -1305,7 +1305,7 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         public static bool c4view_delete(C4View *view, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)view;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -1369,7 +1369,7 @@ namespace CBForest
         public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, C4Error* outError)
         {
             fixed(C4View** viewPtr = views) {
-                #if DEBUG
+                #if DEBUG && !NET_3_5
                 var retVal = _c4indexer_begin(db, viewPtr, (UIntPtr)(uint)views.Length, outError);
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Indexer");
@@ -1396,7 +1396,7 @@ namespace CBForest
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static C4DocEnumerator *c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4indexer_enumerateDocuments(indexer, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
@@ -1490,7 +1490,7 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         public static bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)indexer;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
@@ -1518,7 +1518,7 @@ namespace CBForest
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
         public static C4QueryEnumerator *c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var retVal = _c4view_query(view, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
@@ -1553,7 +1553,7 @@ namespace CBForest
         /// <param name="e">The enumerator to free</param>
         public static void c4queryenum_free(C4QueryEnumerator *e)
         {
-            #if DEBUG
+            #if DEBUG && !NET_3_5
             var ptr = (IntPtr)e;
             #if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {

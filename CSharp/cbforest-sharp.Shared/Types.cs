@@ -23,6 +23,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#if NET_3_5
+using CBForest.Extensions;
+#endif
+
 namespace CBForest
 {
     /// <summary>

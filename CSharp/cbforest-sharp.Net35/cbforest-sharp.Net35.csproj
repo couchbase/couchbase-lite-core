@@ -1,34 +1,37 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <IsMac>false</IsMac>
     <IsMac Condition=" '$(OS)' == 'Unix' AND Exists('/Library/Frameworks') ">true</IsMac>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
+    <ReleaseVersion>1.1.1</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{20839831-948C-42BA-AAF1-75081209E6C5}</ProjectGuid>
+    <ProjectGuid>{7032FEC5-BFBB-440E-97B0-139A8E54D1C5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>forestdbsharp</RootNamespace>
-    <AssemblyName>cbforest-sharp</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>cbforestsharp.Net35</RootNamespace>
+    <AssemblyName>cbforest-sharp.Net35</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG;NET_3_5;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>5</LangVersion>
+    <CustomCommands>
+      <CustomCommands>
+        <Command type="Build" command="make" />
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
@@ -36,7 +39,12 @@
     <ConsolePause>false</ConsolePause>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>5</LangVersion>
-    <DebugSymbols>true</DebugSymbols>
+    <DefineConstants>NET_3_5</DefineConstants>
+    <CustomCommands>
+      <CustomCommands>
+        <Command type="Build" command="make release" />
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -54,5 +62,8 @@
       <Link>libCBForest-Interop.dylib</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Extensions.cs" />
   </ItemGroup>
 </Project>
