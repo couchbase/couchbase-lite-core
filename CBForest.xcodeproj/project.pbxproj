@@ -162,7 +162,6 @@
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276E74EE1956853C0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
-		27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
@@ -171,6 +170,11 @@
 		278EBFA41976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
 		278EBFA619763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
+		2797BCB11C10F6B400E5C991 /* C_API_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCB01C10F6B400E5C991 /* C_API_Test.mm */; };
+		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
+		2797BCB31C10F75000E5C991 /* libCBForest-Interop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */; };
+		2797BCB41C10F76100E5C991 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
+		2797BCB91C10F79100E5C991 /* libCBForest-Interop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA46E1BA909C4002B8416 /* libCBForest-Interop.a */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D181BBB72DF005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
@@ -502,6 +506,20 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
 		};
+		2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "CBForest-Interop";
+		};
+		2797BCB71C10F78C00E5C991 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA44C1BA909C4002B8416;
+			remoteInfo = "CBForest-Interop iOS";
+		};
 		27B7E0F718F8FB5700044EBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -737,6 +755,8 @@
 		278EBF94197631B1006362F8 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = vendor/forestdb/utils/debug.h; sourceTree = SOURCE_ROOT; };
 		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
 		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
+		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
+		2797BCB01C10F6B400E5C991 /* C_API_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = C_API_Test.mm; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
 		27A82D941BC48E38005CB742 /* sqlite_glue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite_glue.c; sourceTree = "<group>"; };
 		27A994E91BF2B6C100320AF2 /* staleblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = staleblock.cc; sourceTree = "<group>"; };
@@ -900,9 +920,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2797BCB41C10F76100E5C991 /* libCBForest.a in Frameworks */,
+				2797BCB31C10F75000E5C991 /* libCBForest-Interop.a in Frameworks */,
 				27766E161982DA8E00CAA464 /* Security.framework in Frameworks */,
 				27139B3218F8E9750021A9A3 /* Cocoa.framework in Frameworks */,
-				27766E1D1982DED300CAA464 /* libCBForest.a in Frameworks */,
 				27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -928,6 +949,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2797BCB91C10F79100E5C991 /* libCBForest-Interop.a in Frameworks */,
 				272230441A0812FF00BFF25C /* Security.framework in Frameworks */,
 				27139BA318F8EE3A0021A9A3 /* XCTest.framework in Frameworks */,
 				27139BA618F8EE3A0021A9A3 /* UIKit.framework in Frameworks */,
@@ -1066,6 +1088,7 @@
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
+				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
 			);
@@ -1251,6 +1274,7 @@
 		275072AD18E4A68E00A80C5A /* CBForest Tests */ = {
 			isa = PBXGroup;
 			children = (
+				2797BCB01C10F6B400E5C991 /* C_API_Test.mm */,
 				27E4873519254D45007D8940 /* Collatable_Test.mm */,
 				27E4871D19226508007D8940 /* Database_Test.mm */,
 				27DD14EF19328576009A367D /* Index_Test.mm */,
@@ -1672,6 +1696,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				2797BCB61C10F76F00E5C991 /* PBXTargetDependency */,
 				27766E1F1982DED300CAA464 /* PBXTargetDependency */,
 			);
 			name = "CBForest Tests";
@@ -1726,6 +1751,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				2797BCB81C10F78C00E5C991 /* PBXTargetDependency */,
 				27139BA818F8EE3A0021A9A3 /* PBXTargetDependency */,
 			);
 			name = "CBForest-iOS Tests";
@@ -1954,6 +1980,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
+				2797BCB11C10F6B400E5C991 /* C_API_Test.mm in Sources */,
 				27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */,
 				27E4873619254D45007D8940 /* Collatable_Test.mm in Sources */,
 				27DD14F019328576009A367D /* Index_Test.mm in Sources */,
@@ -2089,6 +2116,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
@@ -2347,6 +2375,16 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
 			targetProxy = 27766E1E1982DED300CAA464 /* PBXContainerItemProxy */;
+		};
+		2797BCB61C10F76F00E5C991 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
+			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
+		};
+		2797BCB81C10F78C00E5C991 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA44C1BA909C4002B8416 /* CBForest-Interop iOS */;
+			targetProxy = 2797BCB71C10F78C00E5C991 /* PBXContainerItemProxy */;
 		};
 		27B7E0F818F8FB5700044EBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

@@ -14,6 +14,7 @@
 #ifdef _MSC_VER
 #define random() rand()
 #endif
+
 class C4DatabaseTest : public C4Test {
     public:
 
@@ -228,6 +229,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             i++;
         }
+        c4enum_free(e);
 
         // Start and end ID:
         e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"), NULL, &error);
@@ -239,6 +241,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             i++;
         }
+        c4enum_free(e);
         AssertEqual(i, 91);
 
         // Some docs, by ID:
@@ -254,6 +257,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             i++;
         }
+        c4enum_free(e);
         AssertEqual(i, 4);
     }
 
@@ -280,6 +284,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             i++;
         }
+        c4enum_free(e);
         AssertEqual(i, 9);
     }
 
@@ -308,6 +313,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             seq++;
         }
+        c4enum_free(e);
 
         // Since 6:
         e = c4db_enumerateChanges(db, 6, &options, &error);
@@ -320,6 +326,7 @@ class C4DatabaseTest : public C4Test {
             c4doc_free(doc);
             seq++;
         }
+        c4enum_free(e);
         AssertEqual(seq, (C4SequenceNumber)100);
     }
 
