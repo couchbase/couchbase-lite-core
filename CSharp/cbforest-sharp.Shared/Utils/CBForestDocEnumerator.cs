@@ -37,6 +37,8 @@ namespace CBForest
         /// The current native document object
         /// </summary>
         public readonly C4Document *Document;
+
+        public readonly long Sequence;
         private readonly bool _owner;
         private string _docID;
         private string _revID;
@@ -112,6 +114,7 @@ namespace CBForest
         {
             Document = doc;
             _owner = owner;
+            Sequence = (long)doc->sequence;
             if (!_owner) {
                 GC.SuppressFinalize(this);
             }

@@ -51,6 +51,7 @@ _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions
 
 _c4key_new
+_c4key_withBytes
 _c4key_free
 _c4key_addNull
 _c4key_addBool
