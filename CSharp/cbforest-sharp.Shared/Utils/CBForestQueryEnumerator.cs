@@ -112,6 +112,7 @@ namespace CBForest
             Key = key;
             Value = value;
             DocSequence = docSequence;
+            _docIDSlice = docID;
         }
 
         #endregion
