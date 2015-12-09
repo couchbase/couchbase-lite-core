@@ -20,6 +20,7 @@
 
 
 namespace cbforest {
+    using namespace fleece;
 
     const slice Index::kSpecialValue("*", 1);
 

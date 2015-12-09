@@ -19,6 +19,7 @@
 #include <ostream>
 
 namespace cbforest {
+    using namespace fleece;
 
     /* VersionedDocument metadata has the following structure:
         1 byte  flags

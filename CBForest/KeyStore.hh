@@ -14,6 +14,7 @@
 #include "slice.hh"
 
 namespace cbforest {
+    using namespace fleece;
 
     class Database;
     class Document;

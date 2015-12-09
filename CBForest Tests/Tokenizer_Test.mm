@@ -10,6 +10,7 @@
 #import "Tokenizer.hh"
 
 using namespace cbforest;
+using namespace fleece;
 
 
 @interface Tokenizer_Test : XCTestCase

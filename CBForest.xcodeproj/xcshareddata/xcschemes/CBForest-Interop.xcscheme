@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-               BuildableName = "libCBForest-Interop.dylib"
+               BuildableName = "CBForest-Interop.dylib"
                BlueprintName = "CBForest-Interop"
                ReferencedContainer = "container:CBForest.xcodeproj">
             </BuildableReference>
@@ -46,7 +46,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-            BuildableName = "libCBForest-Interop.dylib"
+            BuildableName = "CBForest-Interop.dylib"
             BlueprintName = "CBForest-Interop"
             ReferencedContainer = "container:CBForest.xcodeproj">
          </BuildableReference>
@@ -64,7 +64,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-            BuildableName = "libCBForest-Interop.dylib"
+            BuildableName = "CBForest-Interop.dylib"
             BlueprintName = "CBForest-Interop"
             ReferencedContainer = "container:CBForest.xcodeproj">
          </BuildableReference>

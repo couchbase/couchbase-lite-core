@@ -40,4 +40,25 @@ using namespace cbforest;
     Assert(!s.hasPrefix(slice("abcd")));
 }
 
+- (void) testAllocSliceToNSData {
+    const void *blockStart;
+    @autoreleasepool {
+        NSData *adopter;
+        {
+            alloc_slice s(1024);
+            Assert(s.buf != NULL);
+            AssertEq(s.size, 1024);
+            memset((void*)s.buf, '!', 1024);
+            blockStart = s.buf;
+            adopter = s.convertToNSData();
+        }
+
+        AssertEq(adopter.bytes, blockStart);
+        AssertEq(adopter.length, 1024);
+        for (int i=0; i<1024; i++)
+            AssertEq(((char*)blockStart)[i], '!');
+    }
+    // By here the block should have been freed (but there's not a good way to test for that!)
+}
+
 @end

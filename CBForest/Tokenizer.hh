@@ -62,7 +62,7 @@ namespace cbforest {
             @param tokenizer  The tokenizer to use.
             @param text  The input text, as UTF-8 data.
             @param unique  If true, only unique tokens will be returned. */
-        TokenIterator(Tokenizer& tokenizer, slice text, bool unique =false);
+        TokenIterator(Tokenizer& tokenizer, fleece::slice text, bool unique =false);
         ~TokenIterator();
 
         /** True if the iterator has a token, false if it's reached the end. */

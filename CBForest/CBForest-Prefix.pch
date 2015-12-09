@@ -12,10 +12,19 @@
     #include <algorithm>
     #include <string>
     #include <vector>
+
+    #include "slice.hh"
+    namespace forestdb {
+        typedef fleece::slice slice;
+        typedef fleece::alloc_slice alloc_slice;
+    }
 #endif
 
 #ifdef __OBJC__
     #import <Foundation/Foundation.h>
+    namespace forestdb {
+        typedef fleece::nsstring_slice nsstring_slice;
+    }
 #endif
 
 // Enable encryption support

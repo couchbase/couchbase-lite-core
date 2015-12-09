@@ -122,6 +122,8 @@
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		277CB6311D0DF0B200702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
+		277CB6361D0DF0D900702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2783DFA01D2892A500F84E6E /* breakpad_dummy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */; };
@@ -166,10 +168,8 @@
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
 		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
-		27E4871B19218E5D007D8940 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		27E4871E19226508007D8940 /* Database_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871D19226508007D8940 /* Database_Test.mm */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
-		27E487271923B80E007D8940 /* slice.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E487261923B80E007D8940 /* slice.mm */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		27E4872F1924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		27E487331924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
@@ -252,7 +252,6 @@
 		27EF80B819142C9900A327B9 /* stem_UTF_8_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */; };
 		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
-		27EF81081917EEC600A327B9 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
 		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
@@ -277,8 +276,6 @@
 		720EA4181BA8D834002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
-		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
-		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
 		72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72C086951CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; };
 		72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
@@ -355,6 +352,41 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
 		};
+		277CB62B1D0DED5E00702E56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 270FA25C1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
+		277CB62D1D0DED5E00702E56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 272E5A4B1BF7FE5600848580;
+			remoteInfo = Test;
+		};
+		277CB62F1D0DED5E00702E56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 279AC5311C096872002C80DB;
+			remoteInfo = Tool;
+		};
+		277CB6321D0DF0BA00702E56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
+		277CB6341D0DF0D200702E56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
 		2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -423,7 +455,6 @@
 /* Begin PBXFileReference section */
 		2701993919F1972E00FDC239 /* Tokenizer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cc; sourceTree = "<group>"; };
 		2701993A19F1972E00FDC239 /* Tokenizer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Tokenizer.hh; sourceTree = "<group>"; };
-		2704A1E219049E2300138320 /* slice.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = slice.hh; sourceTree = "<group>"; };
 		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
 		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
@@ -572,6 +603,7 @@
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
+		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = vendor/fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
@@ -637,12 +669,10 @@
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
 		27E48712192171EA007D8940 /* Database.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Database.hh; path = ../CBForest/Database.hh; sourceTree = "<group>"; };
-		27E4871A19218E5D007D8940 /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slice.cc; sourceTree = "<group>"; };
 		27E4871D19226508007D8940 /* Database_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Database_Test.mm; sourceTree = "<group>"; };
 		27E4872019226699007D8940 /* testutil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = testutil.h; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
-		27E487261923B80E007D8940 /* slice.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = slice.mm; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* VersionedDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocument.cc; sourceTree = "<group>"; };
 		27E4872A1923F24D007D8940 /* VersionedDocument.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionedDocument.hh; sourceTree = "<group>"; };
 		27E4872D1924178B007D8940 /* Collatable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Collatable.cc; sourceTree = "<group>"; };
@@ -751,8 +781,6 @@
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
 		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
-		27FDFC0018EA58BF00AC4647 /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = varint.cc; sourceTree = "<group>"; };
-		27FDFC0218EA58DA00AC4647 /* varint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = varint.hh; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/cbforest/View.java; sourceTree = "<group>"; };
 		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
 		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/cbforest/QueryIterator.java; sourceTree = "<group>"; };
@@ -834,6 +862,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				277CB6311D0DF0B200702E56 /* libFleece.a in Frameworks */,
 				2701C22D1C4DA76B006D7A99 /* libforestdb.a in Frameworks */,
 				27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */,
 			);
@@ -843,6 +872,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				277CB6361D0DF0D900702E56 /* libFleece.a in Frameworks */,
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
 				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
 			);
@@ -1001,6 +1031,7 @@
 				27A6578C1CBC189800A7A1D7 /* Swift */,
 				275072AD18E4A68E00A80C5A /* CBForest Tests */,
 				274D04091BA75E1C00FF7C35 /* CppTests */,
+				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
 				273AD3D018F5E8B0007D8C23 /* snappy */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
@@ -1056,11 +1087,6 @@
 				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
-				27E4871A19218E5D007D8940 /* slice.cc */,
-				2704A1E219049E2300138320 /* slice.hh */,
-				27E487261923B80E007D8940 /* slice.mm */,
-				27FDFC0018EA58BF00AC4647 /* varint.cc */,
-				27FDFC0218EA58DA00AC4647 /* varint.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
@@ -1269,6 +1295,16 @@
 			);
 			name = "C API";
 			path = C;
+			sourceTree = "<group>";
+		};
+		277CB6261D0DED5E00702E56 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				277CB62C1D0DED5E00702E56 /* libFleece.a */,
+				277CB62E1D0DED5E00702E56 /* Test */,
+				277CB6301D0DED5E00702E56 /* fleece */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		27A6578C1CBC189800A7A1D7 /* Swift */ = {
@@ -1680,6 +1716,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				277CB6331D0DF0BA00702E56 /* PBXTargetDependency */,
 				27FA99E21917F10C00912F96 /* PBXTargetDependency */,
 				27EF81161917EF4000A327B9 /* PBXTargetDependency */,
 			);
@@ -1700,6 +1737,7 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
+				277CB6351D0DF0D200702E56 /* PBXTargetDependency */,
 				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
 				720EA4221BA8F386002B8416 /* PBXTargetDependency */,
 			);
@@ -1745,6 +1783,12 @@
 			mainGroup = 2750723218E3E52800A80C5A;
 			productRefGroup = 2750723C18E3E52800A80C5A /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 277CB6261D0DED5E00702E56 /* Products */;
+					ProjectRef = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				27EF80F91917EEC600A327B9 /* CBForest static */,
@@ -1760,6 +1804,30 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		277CB62C1D0DED5E00702E56 /* libFleece.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libFleece.a;
+			remoteRef = 277CB62B1D0DED5E00702E56 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		277CB62E1D0DED5E00702E56 /* Test */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = Test;
+			remoteRef = 277CB62D1D0DED5E00702E56 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		277CB6301D0DED5E00702E56 /* fleece */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = fleece;
+			remoteRef = 277CB62F1D0DED5E00702E56 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		27139B2E18F8E9750021A9A3 /* Resources */ = {
@@ -1976,7 +2044,6 @@
 			files = (
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
-				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
@@ -1988,7 +2055,6 @@
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
-				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */,
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
@@ -1996,7 +2062,6 @@
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
-				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
 				273E9F761C51612E003115A6 /* c4Key.cc in Sources */,
 				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
@@ -2017,13 +2082,11 @@
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
-				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
 				72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
 				27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
-				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
@@ -2067,6 +2130,16 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
 			targetProxy = 27766E1E1982DED300CAA464 /* PBXContainerItemProxy */;
+		};
+		277CB6331D0DF0BA00702E56 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 277CB6321D0DF0BA00702E56 /* PBXContainerItemProxy */;
+		};
+		277CB6351D0DF0D200702E56 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 277CB6341D0DF0D200702E56 /* PBXContainerItemProxy */;
 		};
 		2797BCB61C10F76F00E5C991 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

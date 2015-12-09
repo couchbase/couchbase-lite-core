@@ -22,6 +22,7 @@
 #include "Geohash.hh"
 
 namespace cbforest {
+    using namespace fleece;
 
     class CollatableTypes {
     public:

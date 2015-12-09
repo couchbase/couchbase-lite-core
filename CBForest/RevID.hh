@@ -19,8 +19,9 @@
 #include "slice.hh"
 
 namespace cbforest {
+    using namespace fleece;
 
-    /** A compressed revision ID. 
+    /** A compressed revision ID.
         Since this is based on slice, it doesn't own the memory it points to. */
     class revid : public slice {
     public:

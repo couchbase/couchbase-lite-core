@@ -33,6 +33,8 @@
 
 namespace cbforest {
 
+    using namespace fleece;
+
     // Layout of revision rev in encoded form. Tree is a sequence of these followed by a 32-bit zero.
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
     class RawRevision {

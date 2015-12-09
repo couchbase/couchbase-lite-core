@@ -8,6 +8,7 @@
 FRAMEWORK_SEARCH_PATHS       = $(DEVELOPER_FRAMEWORKS_DIR) $(inherited)
 GCC_PRECOMPILE_PREFIX_HEADER = YES
 GCC_PREFIX_HEADER            = CBForest/CBForest-Prefix.pch
+HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/vendor/fleece/Fleece
 INFOPLIST_FILE               = CBForest Tests/CBForest Tests-Info.plist
 PRODUCT_BUNDLE_IDENTIFIER    = org.couchbase.${PRODUCT_NAME:rfc1034identifier}
 WRAPPER_EXTENSION            = xctest

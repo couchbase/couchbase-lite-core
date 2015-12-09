@@ -7,3 +7,6 @@
 [submodule "vendor/openssl"]
 	path = vendor/openssl
 	url = https://github.com/couchbaselabs/couchbase-lite-libcrypto
+[submodule "vendor/fleece"]
+	path = vendor/fleece
+	url = git@github.com:couchbaselabs/fleece.git

@@ -123,7 +123,7 @@ namespace geohash {
         char string[kMaxLength+1];
 
         hash()                              {(string)[0] = '\0';}
-        explicit hash(cbforest::slice);
+        explicit hash(fleece::slice);
         explicit hash(const char *str);
         hash(coord, unsigned nChars);       /**< Geohash of the given coord */
 
