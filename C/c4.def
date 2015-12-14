@@ -1,5 +1,5 @@
 EXPORTS
-c4sliceEqual
+c4SliceEqual
 c4slice_free
 c4log_register
 c4db_open

@@ -190,6 +190,7 @@
     <ClCompile Include="..\CBForest\VersionedDocument.cc" />
     <ClCompile Include="..\C\c4.c" />
     <ClCompile Include="..\C\c4Database.cc" />
+    <ClCompile Include="..\C\c4DocEnumerator.cc" />
     <ClCompile Include="..\C\c4Document.cc" />
     <ClCompile Include="..\C\c4Key.cc" />
     <ClCompile Include="..\C\c4View.cc" />
