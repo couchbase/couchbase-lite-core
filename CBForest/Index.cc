@@ -34,7 +34,7 @@ namespace forestdb {
     IndexWriter::IndexWriter(Index* index, Transaction& t)
     :KeyStoreWriter(*index, t)
     {
-        CBFAssert(t.database()->contains(*index));
+        CBFDebugAssert(t.database()->contains(*index));
     }
 
 
@@ -71,7 +71,8 @@ namespace forestdb {
     }
 
     bool IndexWriter::update(slice docID, sequence docSequence,
-                             std::vector<Collatable> keys, std::vector<alloc_slice> values,
+                             const std::vector<Collatable> &keys,
+                             const std::vector<alloc_slice> &values,
                              uint64_t &rowCount)
     {
         Collatable collatableDocID;

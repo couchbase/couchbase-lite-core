@@ -83,7 +83,7 @@ namespace forestdb {
         bool operator< (const Collatable& c) const  {return _str < c._str;}
         bool operator== (const Collatable& c) const {return _str == c._str;}
 
-        std::string toJSON();
+        std::string toJSON() const;
 
     private:
         void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}

@@ -48,6 +48,20 @@ static revidBuffer stringToRev(NSString* str) {
 }
 
 
+- (void) test00_RevIDs {
+    revidBuffer rev(@"1-f0f0");
+    AssertEqual((NSString*)rev, @"1-f0f0");
+    static const uint8_t expectedBytes[] = {0x01, 0xf0, 0xf0};
+    Assert(rev == slice(expectedBytes, sizeof(expectedBytes)));
+
+    rev = stringToRev(@"1234-1234567890abcdef1234567890abcdef");
+    AssertEqual((NSString*)rev, @"1234-1234567890abcdef1234567890abcdef");
+    static const uint8_t expectedBytes2[18] = {0xd2, 0x09, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD,
+        0xEF, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF};
+    Assert(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
+}
+
+
 - (void) test01_Empty {
     VersionedDocument v(*db, @"foo");
     AssertEqual((NSString*)v.docID(), @"foo");

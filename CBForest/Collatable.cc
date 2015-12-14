@@ -111,7 +111,7 @@ namespace forestdb {
         return *this;
     }
 
-    std::string Collatable::toJSON() {
+    std::string Collatable::toJSON() const {
         return CollatableReader(*this).toJSON();
     }
 

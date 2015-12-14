@@ -71,6 +71,12 @@ namespace forestdb {
                                    : (void)0)
 #endif
 
+    // CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
+#ifdef NDEBUG
+#define CBFDebugAssert(e)   do{ }while(0)
+#else
+#define CBFDebugAssert(e)   CBFAssert(e)
+#endif
 
 }
 

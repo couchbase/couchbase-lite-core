@@ -68,8 +68,8 @@ namespace forestdb {
             Returns true if the index may have changed as a result. */
         bool update(slice docID,
                     sequence docSequence,
-                    std::vector<Collatable> keys,
-                    std::vector<alloc_slice> values,
+                    const std::vector<Collatable> &keys,
+                    const std::vector<alloc_slice> &values,
                     uint64_t &rowCount);
 
     private:

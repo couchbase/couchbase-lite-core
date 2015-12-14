@@ -23,6 +23,8 @@
 
 namespace forestdb {
 
+    class MapReduceIndexWriter;
+
     /** A document as passed to a map function. This is subclassable; subclasses can transform
         the document (e.g. parsing JSON) and provide additional methods to access the transformed
         version. (Look at MapReduce_Test.mm for an example.) */
@@ -100,9 +102,6 @@ namespace forestdb {
 
     private:
         void saveState(Transaction& t);
-        bool updateDocInIndex(Transaction&, const Mappable&);
-        bool emitForDocument(Transaction& t, slice docID, sequence docSequence,
-                             std::vector<Collatable> keys, std::vector<alloc_slice> values);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
 
         forestdb::KeyStore _sourceDatabase;
@@ -114,7 +113,7 @@ namespace forestdb {
         uint64_t _rowCount;
 
         friend class MapReduceIndexer;
-        friend class MapReduceDispatchIndexer;
+        friend class MapReduceIndexWriter;
     };
 
 
@@ -146,8 +145,8 @@ namespace forestdb {
         void emitDocIntoView(slice docID,
                              sequence docSequence,
                              unsigned viewNumber,
-                             std::vector<Collatable> keys,
-                             std::vector<slice> values);
+                             const std::vector<Collatable> &keys,
+                             const std::vector<slice> &values);
 
     protected:
         /** Transforms the Document to a Mappable and invokes addMappable.
@@ -157,19 +156,12 @@ namespace forestdb {
         virtual void addDocument(const Document&);
 
         /** Calls each index's map function on the Mappable, and updates the indexes. */
-        virtual void addMappable(const Mappable&);
+        void addMappable(const Mappable&);
 
-        size_t indexCount() { return _indexes.size(); }
+        size_t indexCount() { return _writers.size(); }
 
-        void updateDocInIndex(size_t i, const Mappable& mappable) {
-            if (mappable.document().sequence() > _lastSequences[i])
-                _indexes[i]->updateDocInIndex(*_transactions[i], mappable);
-        }
-
-    protected:
-        std::vector<MapReduceIndex*> _indexes;
-        std::vector<Transaction*> _transactions;
-        std::vector<sequence> _lastSequences;
+    private:
+        std::vector<MapReduceIndexWriter*> _writers;
         MapReduceIndex* _triggerIndex;
         sequence _latestDbSequence;
         bool _finished;

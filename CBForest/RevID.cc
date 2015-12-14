@@ -46,7 +46,7 @@ static int digittoint(char ch) {
 namespace forestdb {
 
     // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.
-    static uint32_t parseDigits(const char *str, const char *end)
+    static inline uint32_t parseDigits(const char *str, const char *end)
     {
         uint32_t result = 0;
         for (; str < end; ++str) {
@@ -57,6 +57,27 @@ namespace forestdb {
         return result;
     }
 
+    // Writes the decimal representation of n to str, returning the number of digits written (1-20).
+    static inline size_t writeDigits(char *str, uint64_t n) {
+        size_t len;
+        if (n < 10) {
+            str[0] = '0' + (char)n;
+            len = 1;
+        } else {
+            char temp[20]; // max length is 20 decimal digits
+            char *dst = &temp[20];
+            len = 0;
+            do {
+                *(--dst) = '0' + (n % 10);
+                n /= 10;
+                len++;
+            } while (n > 0);
+            memcpy(str, dst, len);
+        }
+        str[len] = '\0';
+        return len;
+    }
+    
     // Writes a byte to dst as two hex digits.
     static inline char* byteToHex(char *dst, uint8_t byte) {
         static const char hexchar[] = "0123456789abcdef";
@@ -90,7 +111,8 @@ namespace forestdb {
         uint64_t gen = getGenAndDigest(digest);
 
         char* dst = (char*)expanded_rev.buf;
-        dst += sprintf(dst, "%llu-", gen);
+        dst += writeDigits(dst, gen);
+        *dst++ = '-';
 
         const uint8_t* bytes = (const uint8_t*)digest.buf;
         for (size_t i = 0; i < digest.size; ++i)

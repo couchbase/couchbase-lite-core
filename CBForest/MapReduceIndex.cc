@@ -179,7 +179,7 @@ namespace forestdb {
     }
 
 
-#pragma mark - MAP-REDUCE INDEXER
+#pragma mark - EMITTER:
 
 
     // Implementation of EmitFn interface
@@ -278,6 +278,13 @@ namespace forestdb {
             return result;
         }
 
+        void reset() {
+            keys.clear();
+            values.clear();
+            _emitCount = 0;
+            // _tokenizer is stateless
+        }
+
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
 
@@ -287,29 +294,75 @@ namespace forestdb {
     };
 
 
-    bool MapReduceIndex::updateDocInIndex(Transaction& t, const Mappable& mappable) {
-        CBFAssert(t.database()->contains(*this));
-        CBFAssert(_map != NULL);
-        const Document& doc = mappable.document();
-        if (doc.sequence() <= _lastSequenceIndexed)
-            return false;
-        emitter emit;
-        if (!doc.deleted())
-            (*_map)(mappable, emit); // Call map function!
-        return emitForDocument(t, doc.key(), doc.sequence(), emit.keys, emit.values);
-    }
+#pragma mark - INDEX WRITER:
 
-    bool MapReduceIndex::emitForDocument(Transaction& t, slice docID, sequence docSequence,
-                                         std::vector<Collatable> keys,
-                                         std::vector<alloc_slice> values)
-    {
-        _lastSequenceIndexed = docSequence;
-        if (IndexWriter(this,t).update(docID, docSequence, keys, values, _rowCount)) {
-            _lastSequenceChangedAt = _lastSequenceIndexed;
-            return true;
+
+    class MapReduceIndexWriter: IndexWriter {
+    public:
+        MapReduceIndexWriter(MapReduceIndex *index, Transaction *t)
+        :IndexWriter(index, *t),
+         _index(index),
+         _transaction(t)
+        { }
+
+        ~MapReduceIndexWriter() {
+            delete _transaction;
         }
-        return false;
-    }
+
+        // Calls the index's map function on 'mappable' and writes the emitted rows to the index.
+        bool updateDocInIndex(const Mappable& mappable) {
+            const Document& doc = mappable.document();
+            if (doc.sequence() <= _index->_lastSequenceIndexed)
+                return false;
+            _emit.reset();
+            if (!doc.deleted())
+                (*_index->_map)(mappable, _emit); // Call map function!
+            return emitForDocument(doc.key(), doc.sequence(), _emit.keys, _emit.values);
+        }
+
+        // Writes the given rows to the index.
+        bool emitDocIntoView(slice docID,
+                             sequence docSequence,
+                             const std::vector<Collatable> &keys,
+                             const std::vector<slice> &values)
+        {
+            if (docSequence <= _index->_lastSequenceIndexed)
+                return false;
+            _emit.reset();
+            for (unsigned i = 0; i < keys.size(); ++i)
+                _emit.emit(keys[i], values[i]);
+            return emitForDocument(docID, docSequence, _emit.keys, _emit.values);
+        }
+
+        // subroutine of updateDocInIndex and emitDocIntoView
+        bool emitForDocument(slice docID,
+                             sequence docSequence,
+                             const std::vector<Collatable> &keys,
+                             const std::vector<alloc_slice> &values)
+        {
+            _index->_lastSequenceIndexed = docSequence;
+            if (update(docID, docSequence, keys, values, _index->_rowCount)) {
+                _index->_lastSequenceChangedAt = _index->_lastSequenceIndexed;
+                return true;
+            }
+            return false;
+        }
+
+        void saveState() {
+            _index->saveState(*_transaction);
+        }
+
+        void abort() {
+            _transaction->abort();
+        }
+
+        MapReduceIndex* _index;
+        emitter _emit;
+        Transaction *_transaction;
+    };
+
+    
+#pragma mark - MAP-REDUCE INDEXER
 
     
     MapReduceIndexer::MapReduceIndexer()
@@ -322,13 +375,12 @@ namespace forestdb {
     void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
         CBFAssert(index);
         CBFAssert(t);
-        _indexes.push_back(index);
-        _transactions.push_back(t);
+        _writers.push_back(new MapReduceIndexWriter(index, t));
     }
 
 
     KeyStore MapReduceIndexer::sourceStore() {
-        return _indexes[0]->sourceStore();
+        return _writers[0]->_index->sourceStore();
     }
 
 
@@ -337,14 +389,13 @@ namespace forestdb {
 
         // First find the minimum sequence that not all indexes have indexed yet.
         sequence startSequence = _latestDbSequence+1;
-        for (auto idx = _indexes.begin(); idx != _indexes.end(); ++idx) {
-            sequence lastSequence = (*idx)->lastSequenceIndexed();
+        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
+            sequence lastSequence = (*writer)->_index->lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
-            } else if (*idx == _triggerIndex) {
+            } else if ((*writer)->_index == _triggerIndex) {
                 return UINT64_MAX; // The trigger index doesn't need to be updated, so abort
             }
-            _lastSequences.push_back(lastSequence);
         }
         if (startSequence > _latestDbSequence)
             startSequence = UINT64_MAX; // no updating needed
@@ -367,13 +418,12 @@ namespace forestdb {
     }
 
     MapReduceIndexer::~MapReduceIndexer() {
-        unsigned i = 0;
-        for (auto t = _transactions.begin(); t != _transactions.end(); ++t, ++i) {
+        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
             if (_finished)
-                _indexes[i]->saveState(**t);
+                (*writer)->saveState();
             else
-                (*t)->abort();
-            delete *t;
+                (*writer)->abort();
+            delete *writer;
         }
     }
 
@@ -383,23 +433,17 @@ namespace forestdb {
     }
 
     void MapReduceIndexer::addMappable(const Mappable& mappable) {
-        const size_t n = indexCount();
-        for (size_t i = 0; i < n; ++i)
-            updateDocInIndex(i, mappable);
+        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer)
+            (*writer)->updateDocInIndex(mappable);
     }
 
     void MapReduceIndexer::emitDocIntoView(slice docID,
                                            sequence docSequence,
                                            unsigned viewNumber,
-                                           std::vector<Collatable> keys,
-                                           std::vector<slice> values)
+                                           const std::vector<Collatable> &keys,
+                                           const std::vector<slice> &values)
     {
-        emitter emit;
-        for (unsigned i = 0; i < keys.size(); ++i)
-            emit.emit(keys[i], values[i]);
-        _indexes[viewNumber]->emitForDocument(*_transactions[viewNumber],
-                                              docID, docSequence,
-                                              emit.keys, emit.values);
+        _writers[viewNumber]->emitDocIntoView(docID, docSequence, keys, values);
     }
 
 }
