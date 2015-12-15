@@ -23,7 +23,7 @@
 
 namespace forestdb {
 
-    Collatable& operator<< (Collatable&, const geohash::area&);
+    CollatableBuilder& operator<< (CollatableBuilder&, const geohash::area&);
     geohash::area readGeoArea(CollatableReader&);
 
 

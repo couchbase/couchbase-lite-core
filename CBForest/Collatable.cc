@@ -52,19 +52,53 @@ namespace forestdb {
 
 
 
-    Collatable::Collatable()
+    CollatableBuilder::CollatableBuilder()
+    :_buf(malloc(kDefaultSize), kDefaultSize),
+     _available(_buf)
     { }
 
-    Collatable::Collatable(slice s, bool)
-    :_str((std::string)s)
+    CollatableBuilder::CollatableBuilder(slice s, bool)
+    :_buf(s.copy())
     { }
 
-    Collatable& Collatable::addBool (bool b) {
+    CollatableBuilder::CollatableBuilder(Collatable c)
+    :_buf(c.copy())
+    { }
+
+    CollatableBuilder::~CollatableBuilder() {
+        ::free((void*)_buf.buf);
+    }
+
+    uint8_t* CollatableBuilder::reserve(size_t amt) {
+        if (_available.size < amt) {
+            CBFAssert(_buf.buf);
+            // grow:
+            size_t curSize = size();
+            size_t newSize = std::max(_buf.size, kMinSize/2);
+            do {
+                newSize *= 2;
+            } while (newSize < curSize + amt);
+            void* newBuf = ::realloc((void*)_buf.buf, newSize);
+            if (!newBuf)
+                throw std::bad_alloc();
+            _buf = _available = slice(newBuf, newSize);
+            _available.moveStart(curSize);
+        }
+        auto result = (uint8_t*)_available.buf;
+        _available.moveStart(amt);
+        return result;
+    }
+
+    void CollatableBuilder::add(slice s) {
+        ::memcpy(reserve(s.size), s.buf, s.size);
+    }
+
+    CollatableBuilder& CollatableBuilder::addBool (bool b) {
         addTag(b ? kTrue : kFalse);
         return *this;
     }
     
-    Collatable& Collatable::operator<< (double n) {
+    CollatableBuilder& CollatableBuilder::operator<< (double n) {
         addTag(n < 0.0 ? kNegative : kPositive);
         swappedDouble swapped = _encdouble(n);
         if (n < 0.0)
@@ -73,42 +107,29 @@ namespace forestdb {
         return *this;
     }
 
-    static inline void encodeChars(std::string &str, size_t first) {
+    void CollatableBuilder::addString(Tag t, slice s) {
         if (!sCharPriorityMapInitialized)
             initCharPriorityMap();
-        for (auto c=str.begin()+first; c != str.end(); ++c) {
-            *c = kCharPriority[(uint8_t)*c];
+        auto dst = reserve(2 + s.size);
+        *dst++ = t;
+        for (size_t i = 0; i < s.size; i++) {
+            *dst++ = kCharPriority[s[i]];
         }
-        str.push_back(0);
+        *dst = '\0';
     }
 
-    Collatable& Collatable::operator<< (std::string str) {
-        addTag(kString);
-        size_t first = _str.length();
-        _str += str;
-        encodeChars(_str, first);
+    CollatableBuilder& CollatableBuilder::operator<< (const CollatableBuilder& coll) {
+        add(coll);
         return *this;
     }
 
-    Collatable& Collatable::operator<< (slice s) {
-        addTag(kString);
-        size_t first = _str.length();
-        add(s);
-        encodeChars(_str, first);
+    CollatableBuilder& CollatableBuilder::operator<< (const Collatable& coll) {
+        add(coll);
         return *this;
     }
 
-    Collatable& Collatable::operator<< (const geohash::hash &h) {
-        addTag(kGeohash);
-        size_t first = _str.length();
-        add(slice(h));
-        encodeChars(_str, first);
-        return *this;
-    }
-
-    Collatable& Collatable::operator<< (const Collatable& coll) {
-        _str += coll._str;
-        return *this;
+    std::string CollatableBuilder::toJSON() const {
+        return CollatableReader(*this).toJSON();
     }
 
     std::string Collatable::toJSON() const {

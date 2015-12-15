@@ -51,7 +51,7 @@ namespace forestdb {
             CollatableReader reader(doc.body());
             hash = (uint32_t)reader.readInt();
             while (!reader.atEnd()) {
-                keys.push_back( Collatable(reader.read(), true) );
+                keys.push_back( Collatable::withData(reader.read()) );
             }
         } else {
             hash = kInitialHash;
@@ -60,7 +60,7 @@ namespace forestdb {
 
     void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash) {
         if (keys.size() > 0) {
-            Collatable writer;
+            CollatableBuilder writer;
             writer << hash;
             for (auto i=keys.begin(); i != keys.end(); ++i)
                 writer << *i;
@@ -75,7 +75,7 @@ namespace forestdb {
                              const std::vector<alloc_slice> &values,
                              uint64_t &rowCount)
     {
-        Collatable collatableDocID;
+        CollatableBuilder collatableDocID;
         collatableDocID << docID;
 
         // Metadata of emitted rows contains doc sequence as varint:
@@ -107,7 +107,7 @@ namespace forestdb {
         auto oldKey = oldStoredKeys.begin();
         for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
             // Create a key for the index db by combining the emitted key, doc ID, and emit#:
-            Collatable realKey;
+            CollatableBuilder realKey;
             realKey.beginArray() << *key << collatableDocID;
             if (emitIndex > 0)
                 realKey << emitIndex;
@@ -150,7 +150,7 @@ namespace forestdb {
 
         // If there are any old keys that weren't emitted this time, we need to delete those rows:
         for (; oldKey != oldStoredKeys.end(); ++oldKey) {
-            Collatable realKey;
+            CollatableBuilder realKey;
             realKey.beginArray() << *oldKey << collatableDocID;
             auto oldEmitIndex = oldKey - oldStoredKeys.begin();
             if (oldEmitIndex > 0)
@@ -178,11 +178,11 @@ namespace forestdb {
 
     alloc_slice Index::getEntry(slice docID, sequence docSequence,
                                 Collatable key, unsigned emitIndex) {
-        Collatable collatableDocID;
+        CollatableBuilder collatableDocID;
         collatableDocID << docID;
 
         // realKey matches the key generated in update(), above
-        Collatable realKey;
+        CollatableBuilder realKey;
         realKey.beginArray();
         realKey << key << collatableDocID;
         if (emitIndex > 0)
@@ -204,7 +204,7 @@ namespace forestdb {
         bool addEllipsis = (isEnd != descending);
         if (key.empty() && addEllipsis)
             return Collatable();
-        Collatable realKey;
+        CollatableBuilder realKey;
         realKey.beginArray();
         if (!key.empty()) {
             realKey << key;

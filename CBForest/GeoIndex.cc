@@ -24,7 +24,7 @@ namespace forestdb {
 
     static const unsigned kMaxKeyRanges = 50;
 
-    Collatable& operator<< (Collatable &coll, const geohash::area &a) {
+    CollatableBuilder& operator<< (CollatableBuilder &coll, const geohash::area &a) {
         coll << a.longitude.min << a.latitude.min << a.longitude.max << a.latitude.max;
         return coll;
     }
@@ -47,7 +47,7 @@ namespace forestdb {
             Log("GeoIndexEnumerator: query add '%s' ... '%s'",
                 (const char*)h->first(), (const char*)lastHash);
             strcat(lastHash.string, "Z"); // so the string range includes everything inside lastHash
-            ranges.push_back(KeyRange(Collatable(h->first()), Collatable(lastHash)));
+            ranges.push_back(KeyRange(CollatableBuilder(h->first()), CollatableBuilder(lastHash)));
 
             // Also need to look for all _exact_ parent hashes. For example, if the hashRange
             // is 9b1...9b7, we also want the exact keys "9b" and "9".
@@ -55,7 +55,7 @@ namespace forestdb {
             size_t len = strlen(parent.string);
             while (len > 1) {
                 parent.string[--len] = '\0';
-                Collatable key(parent);
+                CollatableBuilder key(parent);
                 KeyRange range(key, key);
                 if (std::find(ranges.begin(), ranges.end(), range) == ranges.end()) {
                     ranges.push_back(range);

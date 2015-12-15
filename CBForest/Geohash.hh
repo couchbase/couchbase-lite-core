@@ -123,8 +123,8 @@ namespace geohash {
         char string[kMaxLength+1];
 
         hash()                              {(string)[0] = '\0';}
-        hash(forestdb::slice);
-        hash(const char *str);
+        explicit hash(forestdb::slice);
+        explicit hash(const char *str);
         hash(coord, unsigned nChars);       /**< Geohash of the given coord */
 
         /** Returns the length of GeoHash string needed to get a specific accuracy

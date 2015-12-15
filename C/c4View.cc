@@ -259,9 +259,9 @@ C4QueryEnumerator* c4view_query(C4View *view,
         if (c4options->keysCount == 0 && c4options->keys == NULL) {
             Collatable noKey;
             return new C4QueryEnumInternal(view,
-                                           (c4options->startKey ? *c4options->startKey : noKey),
+                                           (c4options->startKey ? (Collatable)*c4options->startKey : noKey),
                                            c4options->startKeyDocID,
-                                           (c4options->endKey ? *c4options->endKey : noKey),
+                                           (c4options->endKey ? (Collatable)*c4options->endKey : noKey),
                                            c4options->endKeyDocID,
                                            options);
         } else {

@@ -20,7 +20,16 @@
 
 namespace forestdb {
 
-    Collatable& Collatable::operator<< (__unsafe_unretained id obj) {
+    CollatableBuilder::CollatableBuilder(__unsafe_unretained id obj)
+    :_buf(malloc(kDefaultSize), kDefaultSize),
+     _available(_buf)
+    {
+        if (obj)
+            *this << obj;
+    }
+
+
+    CollatableBuilder& CollatableBuilder::operator<< (__unsafe_unretained id obj) {
         if ([obj isKindOfClass: [NSString class]]) {
             *this << nsstring_slice(obj);
         } else if ([obj isKindOfClass: [NSNumber class]]) {

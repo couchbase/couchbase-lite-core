@@ -23,8 +23,8 @@ static inline id DataToJSON(NSData* data, NSError** outError) {
                                              error: NULL];
 }
 
-static Collatable StringToCollatable(NSString* str) {
-    Collatable c;
+static CollatableBuilder StringToCollatable(NSString* str) {
+    CollatableBuilder c;
     c << str;
     return c;
 }

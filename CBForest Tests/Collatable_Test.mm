@@ -23,14 +23,14 @@ static int sgn(T n) {return n<0 ? -1 : (n>0 ? 1 : 0);}
 
 template <typename T1, typename T2>
 static int compareCollated(T1 obj1, T2 obj2) {
-    Collatable c1, c2;
+    CollatableBuilder c1, c2;
     c1 << obj1;
     c2 << obj2;
     return sgn(forestdb::slice(c1).compare(forestdb::slice(c2)));
 }
 
 static NSData* collatableData(id obj) {
-    Collatable c(obj);
+    CollatableBuilder c(obj);
     return ((slice)c).copiedNSData();
 }
 
@@ -50,7 +50,7 @@ static double randf() {
 }
 
 static id roundTrip(id input) {
-    Collatable c;
+    CollatableBuilder c;
     c << input;
     alloc_slice encoded((forestdb::slice)c);
     CollatableReader reader(encoded);
@@ -135,7 +135,7 @@ static id roundTrip(id input) {
 - (void) testRoundTripInts {
     uint64_t n = 1;
     for (int bits = 0; bits < 64; ++bits, n<<=1) {
-        Collatable c;
+        CollatableBuilder c;
         c << n - 1;
         alloc_slice encoded((forestdb::slice)c);
         CollatableReader reader(encoded);
@@ -180,14 +180,14 @@ static id roundTrip(id input) {
 
 - (void) testIndexKey {
     std::string key = "OR";
-    Collatable collKey;
+    CollatableBuilder collKey;
     collKey << key;
 
     std::string docID = "foo";
-    Collatable collatableDocID;
+    CollatableBuilder collatableDocID;
     collatableDocID << docID;
 
-    Collatable indexKey;
+    CollatableBuilder indexKey;
     indexKey.beginArray();
     indexKey << collKey << collatableDocID << (int64_t)1234;
     indexKey.endArray();
@@ -211,36 +211,36 @@ static NSString* toJSON(Collatable c) {
 }
 
 - (void) testDump {
-    Collatable("howdy");
-    Collatable c;
+    CollatableBuilder("howdy");
+    CollatableBuilder c;
     c.addBool(false);
     AssertEqual(toJSON(c), @"false");
-    c = Collatable();
+    c = CollatableBuilder();
     c.addBool(true);
     AssertEqual(toJSON(c), @"true");
-    AssertEqual(toJSON(Collatable(66)), @"66");
+    AssertEqual(toJSON(CollatableBuilder(66)), @"66");
 
-    AssertEqual(toJSON(Collatable("howdy")), @"\"howdy\"");
-    AssertEqual(toJSON(Collatable("\"ironic\"")), @"\"\\\"ironic\\\"\"");
-    AssertEqual(toJSON(Collatable("an \"ironic\" twist")), @"\"an \\\"ironic\\\" twist\"");
-    AssertEqual(toJSON(Collatable("\\foo\\")), @"\"\\\\foo\\\\\"");
-    AssertEqual(toJSON(Collatable("\tline1\nline2\t")), @"\"\\tline1\\nline2\\t\"");
-    AssertEqual(toJSON(Collatable("line1\01\02line2")), @"\"line1\\u0001\\u0002line2\"");
+    AssertEqual(toJSON(CollatableBuilder("howdy")), @"\"howdy\"");
+    AssertEqual(toJSON(CollatableBuilder("\"ironic\"")), @"\"\\\"ironic\\\"\"");
+    AssertEqual(toJSON(CollatableBuilder("an \"ironic\" twist")), @"\"an \\\"ironic\\\" twist\"");
+    AssertEqual(toJSON(CollatableBuilder("\\foo\\")), @"\"\\\\foo\\\\\"");
+    AssertEqual(toJSON(CollatableBuilder("\tline1\nline2\t")), @"\"\\tline1\\nline2\\t\"");
+    AssertEqual(toJSON(CollatableBuilder("line1\01\02line2")), @"\"line1\\u0001\\u0002line2\"");
 
-    c = Collatable();
+    c = CollatableBuilder();
     c.beginArray();
     c << 1234;
     c.endArray();
     AssertEqual(toJSON(c), @"[1234]");
 
-    c = Collatable();
+    c = CollatableBuilder();
     c.beginArray();
     c << 1234;
     c << 5678;
     c.endArray();
     AssertEqual(toJSON(c), @"[1234,5678]");
 
-    c = Collatable();
+    c = CollatableBuilder();
     c.beginMap();
     c << "name";
     c << "Frank";

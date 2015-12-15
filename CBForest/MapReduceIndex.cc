@@ -36,7 +36,7 @@ namespace forestdb {
     void MapReduceIndex::readState() {
         sequence curIndexSeq = KeyStore::lastSequence();
         if (_stateReadAt != curIndexSeq) {
-            Collatable stateKey;
+            CollatableBuilder stateKey;
             stateKey.addNull();
             Document state = get(stateKey);
             CollatableReader reader(state.body());
@@ -65,10 +65,10 @@ namespace forestdb {
         CBFAssert(t.database()->contains(*this));
         _lastMapVersion = _mapVersion;
 
-        Collatable stateKey;
+        CollatableBuilder stateKey;
         stateKey.addNull();
 
-        Collatable state;
+        CollatableBuilder state;
         state.beginArray();
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
               << _rowCount << kCurFormatVersion;
@@ -134,7 +134,7 @@ namespace forestdb {
     alloc_slice MapReduceIndex::getSpecialEntry(slice docID, sequence seq, unsigned entryID)
     {
         // This data was written by emitter::emitTextTokens, below
-        Collatable key;
+        CollatableBuilder key;
         key.addNull();
         return getEntry(docID, seq, key, entryID);
     }
@@ -207,7 +207,7 @@ namespace forestdb {
         void emitTextTokens(slice text, slice value) {
             if (!_tokenizer)
                 _tokenizer = new Tokenizer();
-            std::unordered_map<std::string, Collatable> tokens;
+            std::unordered_map<std::string, CollatableBuilder> tokens;
             int specialKey = -1;
             for (TokenIterator i(*_tokenizer, slice(text), false); i; ++i) {
                 if (specialKey < 0) {
@@ -215,7 +215,7 @@ namespace forestdb {
                     specialKey = emitSpecial(text, value);
                 }
                 // Add the word position to the value array for this token:
-                Collatable& tokValue = tokens[i.token()];
+                CollatableBuilder& tokValue = tokens[i.token()];
                 if (tokValue.empty()) {
                     tokValue.beginArray();
                     tokValue << specialKey;
@@ -225,8 +225,8 @@ namespace forestdb {
 
             // Emit each token string and value array as a key:
             for (auto kv = tokens.begin(); kv != tokens.end(); ++kv) {
-                Collatable collKey(kv->first);
-                Collatable& collValue = kv->second;
+                CollatableBuilder collKey(kv->first);
+                CollatableBuilder& collValue = kv->second;
                 collValue.endArray();
                 emit(collKey, collValue);
             }
@@ -240,13 +240,13 @@ namespace forestdb {
                   boundingBox.longitude.min, boundingBox.longitude.max);
             // Emit the bbox, geoJSON, and value, under a special key:
             unsigned specialKey = emitSpecial(boundingBox, geoJSON, value);
-            Collatable collValue(specialKey);
+            CollatableBuilder collValue(specialKey);
 
             // Now emit a set of geohashes that cover the given area:
             auto hashes = boundingBox.coveringHashes();
             for (auto iHash = hashes.begin(); iHash != hashes.end(); ++iHash) {
                 Debug("    hash='%s'", (const char*)(*iHash));
-                Collatable collKey(*iHash);
+                CollatableBuilder collKey(*iHash);
                 emit(collKey, collValue);
             }
         }
@@ -256,10 +256,10 @@ namespace forestdb {
         // MapReduceIndex::getSpecialEntry
         template <typename KEY>
         unsigned emitSpecial(const KEY &key, slice value1, slice value2 = slice::null) {
-            Collatable collKey;
+            CollatableBuilder collKey;
             collKey.addNull();
 
-            Collatable collValue;
+            CollatableBuilder collValue;
             collValue.beginArray();
             collValue << key;
             // Write value1 (or a null placeholder) then value2

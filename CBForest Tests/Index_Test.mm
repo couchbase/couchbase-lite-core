@@ -91,7 +91,7 @@ static boolBlock scopedEnumerate() {
     std::vector<Collatable> keys;
     std::vector<alloc_slice> values;
     for (NSUInteger i = 1; i < body.count; i++) {
-        Collatable key;
+        CollatableBuilder key;
         key << [body[i] UTF8String];
         keys.push_back(key);
         values.push_back(alloc_slice(nsstring_slice(body[0])));
@@ -171,10 +171,10 @@ static boolBlock scopedEnumerate() {
     // Enumerate a vector of keys:
     NSLog(@"--- Enumerating a vector of keys");
     std::vector<KeyRange> keys;
-    keys.push_back(Collatable("Cambria"));
-    keys.push_back(Collatable("San Jose"));
-    keys.push_back(Collatable("Portland"));
-    keys.push_back(Collatable("Skookumchuk"));
+    keys.push_back((Collatable)CollatableBuilder("Cambria"));
+    keys.push_back((Collatable)CollatableBuilder("San Jose"));
+    keys.push_back((Collatable)CollatableBuilder("Portland"));
+    keys.push_back((Collatable)CollatableBuilder("Skookumchuk"));
     nRows = 0;
     for (IndexEnumerator e(index, keys, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
@@ -187,8 +187,8 @@ static boolBlock scopedEnumerate() {
     // Enumerate a vector of key ranges:
     NSLog(@"--- Enumerating a vector of key ranges");
     std::vector<KeyRange> ranges;
-    ranges.push_back(KeyRange(Collatable("Port"), Collatable("Port\uFFFE")));
-    ranges.push_back(KeyRange(Collatable("Vernon"), Collatable("Ypsilanti")));
+    ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder("Port\uFFFE")));
+    ranges.push_back(KeyRange(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti")));
     nRows = 0;
     for (IndexEnumerator e(index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
@@ -206,7 +206,7 @@ static boolBlock scopedEnumerate() {
         IndexWriter writer(index, trans);
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
-        Collatable key("Schlage");
+        CollatableBuilder key("Schlage");
         keys.push_back(key);
         values.push_back(alloc_slice("purple"));
         keys.push_back(key);
@@ -222,12 +222,12 @@ static boolBlock scopedEnumerate() {
         IndexWriter writer(index, trans);
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
-        Collatable key("Schlage");
+        CollatableBuilder key("Schlage");
         keys.push_back(key);
         values.push_back(alloc_slice("purple"));
         keys.push_back(key);
         values.push_back(alloc_slice("crimson"));
-        keys.push_back(Collatable("Master"));
+        keys.push_back(CollatableBuilder("Master"));
         values.push_back(alloc_slice("gray"));
         bool changed = writer.update(slice("doc1"), 2, keys, values, _rowCount);
         Assert(changed);

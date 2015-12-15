@@ -35,7 +35,7 @@ public:
     virtual void operator() (const Mappable& mappable, EmitFn& emit) {
         ++numMapCalls;
         auto area = ((TestGeoMappable&)mappable).area;
-        Collatable value(numMapCalls);
+        CollatableBuilder value(numMapCalls);
         emit(area, slice("{\"geo\":true}"), value);
     }
 };
@@ -105,7 +105,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 
         double lat0 = randomLat(), lon0 = randomLon();
         double lat1 = std::min(lat0 + 0.5, 90.0), lon1 = std::min(lon0 + 0.5, 180.0);
-        Collatable body;
+        CollatableBuilder body;
         body << lon0 << lat0 << lon1 << lat1;
         t.set(slice(docID), body);
         NSLog(@"Added %s --> (%+08.4f, %+09.4f)", docID, lat0, lon0);

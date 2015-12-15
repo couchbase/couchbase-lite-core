@@ -64,9 +64,9 @@ namespace c4Internal {
 using namespace c4Internal;
 
 
-struct c4Key : public Collatable {
-    c4Key()                 :Collatable() { }
-    c4Key(C4Slice bytes)    :Collatable(bytes, true) { }
+struct c4Key : public CollatableBuilder {
+    c4Key()                 :CollatableBuilder() { }
+    c4Key(C4Slice bytes)    :CollatableBuilder(bytes, true) { }
 };
 
 

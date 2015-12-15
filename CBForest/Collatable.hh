@@ -41,55 +41,115 @@ namespace forestdb {
         } Tag;
     };
 
-    /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics
-        using a dumb binary compare (like memcmp).
-        Data format spec: https://github.com/couchbaselabs/cbforest/wiki/Collatable-Data-Format
-        Collatable owns its data, in the form of a C++ string object. */
-    class Collatable : public CollatableTypes {
+    class CollatableBuilder;
+
+    class Collatable : public alloc_slice, public CollatableTypes {
     public:
-        Collatable();
-        Collatable(slice, bool);        // Imports data previously saved in collatable format
+        Collatable()                :alloc_slice()  { }
+        explicit inline Collatable(CollatableBuilder&& b);
 
-        template<typename T> explicit Collatable(const T &t)    {*this << t;}
+        static Collatable withData(slice s)         {return Collatable(s, true);}
+        static Collatable withData(alloc_slice s)   {return Collatable(s, true);}
 
-        Collatable& addNull()                       {addTag(kNull); return *this;}
-        Collatable& addBool (bool); // overriding <<(bool) is dangerous due to implicit conversion
+        slice data() const          {return (slice)*this;}
 
-        Collatable& operator<< (double);
-
-        Collatable& operator<< (const Collatable&);
-        Collatable& operator<< (std::string);
-        Collatable& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
-        Collatable& operator<< (slice);             // interpreted as a string
-
-        Collatable& operator<< (const geohash::hash&);
-
-        Collatable& beginArray()                    {addTag(kArray); return *this;}
-        Collatable& endArray()                      {addTag(kEndSequence); return *this;}
-
-        Collatable& beginMap()                      {addTag(kMap); return *this;}
-        Collatable& endMap()                        {addTag(kEndSequence); return *this;}
-
-#ifdef __OBJC__
-        Collatable(id obj)                          { if (obj) *this << obj;}
-        Collatable& operator<< (id);
-#endif
-
-        Collatable& addSpecial()                    {addTag(kSpecial); return *this;}
-
-        operator slice() const                      {return slice(_str);}
-        size_t size() const                         {return _str.size();}
-        bool empty() const                          {return _str.size() == 0;}
-        bool operator< (const Collatable& c) const  {return _str < c._str;}
-        bool operator== (const Collatable& c) const {return _str == c._str;}
+        bool empty() const          {return size == 0;}
 
         std::string toJSON() const;
 
     private:
-        void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
-        void add(slice s)                           {_str.append((char*)s.buf, s.size);}
+        Collatable(alloc_slice s, bool)     :alloc_slice(s) { }
+        Collatable(slice s, bool)           :alloc_slice(s) { }
+};
 
-        std::string _str;
+    
+    /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics
+        using a dumb binary compare (like memcmp).
+        Data format spec: https://github.com/couchbaselabs/cbforest/wiki/Collatable-Data-Format
+        Collatable owns its data, in the form of a C++ string object. */
+    class CollatableBuilder : public CollatableTypes {
+    public:
+        CollatableBuilder();
+        explicit CollatableBuilder(Collatable c); // Imports data previously saved in collatable format
+        CollatableBuilder(slice, bool);        // Imports data previously saved in collatable format
+        ~CollatableBuilder();
+
+        template<typename T> explicit CollatableBuilder(const T &t)
+        :_buf(malloc(kDefaultSize), kDefaultSize),
+         _available(_buf)
+        {
+            *this << t;
+        }
+
+        CollatableBuilder& addNull()                       {addTag(kNull); return *this;}
+        CollatableBuilder& addBool (bool); // overriding <<(bool) is dangerous due to implicit conversion
+
+        CollatableBuilder& operator<< (double);
+
+        CollatableBuilder& operator<< (const Collatable&);
+        CollatableBuilder& operator<< (const CollatableBuilder&);
+        CollatableBuilder& operator<< (std::string s)      {return operator<<(slice(s));}
+        CollatableBuilder& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
+        CollatableBuilder& operator<< (slice s)            {addString(kString, s); return *this;}
+
+        CollatableBuilder& operator<< (const geohash::hash& h) {addString(kGeohash, (slice)h);
+                                                                return *this;}
+
+        CollatableBuilder& beginArray()                    {addTag(kArray); return *this;}
+        CollatableBuilder& endArray()                      {addTag(kEndSequence); return *this;}
+
+        CollatableBuilder& beginMap()                      {addTag(kMap); return *this;}
+        CollatableBuilder& endMap()                        {addTag(kEndSequence); return *this;}
+
+#ifdef __OBJC__
+        CollatableBuilder(id obj);
+        CollatableBuilder& operator<< (id);
+#endif
+
+        CollatableBuilder& addSpecial()                    {addTag(kSpecial); return *this;}
+
+        size_t size() const                         {return _buf.size - _available.size;}
+        bool empty() const                          {return size() == 0;}
+
+        std::string toJSON() const;
+
+        slice data() const                          {return slice(_buf.buf, size());}
+        operator slice() const                      {return data();}
+
+        operator Collatable () const                {return Collatable::withData(data());}
+
+        alloc_slice extractOutput() {
+            auto result = data();
+            _buf = _available = slice::null;
+            return alloc_slice::adopt(result);
+        }
+
+        CollatableBuilder(CollatableBuilder&& c) {
+            _buf = c._buf;
+            _available = c._available;
+            c._buf.buf = NULL;
+        }
+        CollatableBuilder& operator= (CollatableBuilder &&c) {
+            _buf = c._buf;
+            _available = c._available;
+            c._buf.buf = NULL;
+            return *this;
+        }
+
+    private:
+        static const size_t kMinSize = 32;
+        static const size_t kDefaultSize = 128;
+
+        CollatableBuilder(const CollatableBuilder& c);
+        CollatableBuilder& operator= (const CollatableBuilder &c);
+
+        uint8_t* reserve(size_t amt);
+        void add(slice);
+        void addTag(Tag t)                          {uint8_t c = t; add(slice(&c,1));}
+        void addString(Tag, slice);
+
+        slice _buf;
+        slice _available;
     };
 
 
@@ -134,6 +194,10 @@ namespace forestdb {
 
         slice _data;
     };
+
+
+    Collatable::Collatable(CollatableBuilder&& b) :alloc_slice(b.extractOutput()) { }
+
 
 }
 
