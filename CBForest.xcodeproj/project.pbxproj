@@ -164,6 +164,10 @@
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
 		277D19C8194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
+		278270CD1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
+		278270CE1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
+		278270CF1C221E7E00F4786F /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278270CC1C221E7E00F4786F /* c4DocEnumerator.h */; };
+		278270D61C236ABD00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA31976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
@@ -749,6 +753,8 @@
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../CBForest/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
+		278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
+		278270CC1C221E7E00F4786F /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
 		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
 		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
 		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
@@ -1349,6 +1355,8 @@
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
+				278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */,
+				278270CC1C221E7E00F4786F /* c4DocEnumerator.h */,
 				274D04241BA8A58200FF7C35 /* c4View.cc */,
 				275607781BA21DAB00F58218 /* c4View.h */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
@@ -1679,6 +1687,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
+				278270CF1C221E7E00F4786F /* c4DocEnumerator.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2103,6 +2112,7 @@
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
 				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
 				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
+				278270D61C236ABD00F4786F /* c4DocEnumerator.cc in Sources */,
 				274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */,
 				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
@@ -2313,6 +2323,7 @@
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+				278270CD1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2340,6 +2351,7 @@
 				720EA4621BA909C4002B8416 /* Index.cc in Sources */,
 				274A69921BED3E0500D16D37 /* c4Key.cc in Sources */,
 				720EA4651BA909C4002B8416 /* varint.cc in Sources */,
+				278270CE1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

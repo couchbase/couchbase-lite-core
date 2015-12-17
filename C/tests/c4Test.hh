@@ -11,6 +11,7 @@
 
 #include "c4Database.h"
 #include "c4Document.h"
+#include "c4DocEnumerator.h"
 #include "c4View.h"
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>

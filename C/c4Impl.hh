@@ -1,5 +1,5 @@
 //
-//  c4Impl.h
+//  c4Impl.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 9/15/15.
@@ -33,6 +33,8 @@ typedef struct {
 
 
 #include "c4Database.h"
+
+struct C4Document;
 
 namespace c4Internal {
 

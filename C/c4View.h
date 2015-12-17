@@ -13,6 +13,7 @@
 
 #include "c4.h"
 #include "c4Database.h"
+#include "c4Document.h"
 #include "c4Key.h"
 
 #ifdef __cplusplus
@@ -84,7 +85,7 @@ extern "C" {
                                C4Error *outError);
 
     /** Creates an enumerator that will return all the documents that need to be (re)indexed. */
-    C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer,
+    struct C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer,
                                                   C4Error *outError);
 
     /** Adds index rows for the keys/values derived from one document, for one view.
@@ -104,7 +105,7 @@ extern "C" {
         @param outError  On failure, error info will be stored here.
         @return  True on success, false on failure. */
     bool c4indexer_emit(C4Indexer *indexer,
-                        struct C4Document *document,
+                        C4Document *document,
                         unsigned viewNumber,
                         unsigned emitCount,
                         C4Key* emittedKeys[],

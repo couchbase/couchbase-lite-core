@@ -24,7 +24,7 @@ std::ostream& operator<< (std::ostream& o, C4Slice s) {
         if (buf[i] < 32 || buf[i] > 126)
             return o << "binary, " << s.size << " bytes]";
     }
-    return o << std::string((char*)s.buf, s.size) << "\"]";
+    return o << '"' << std::string((char*)s.buf, s.size) << "\"]";
 }
 
 

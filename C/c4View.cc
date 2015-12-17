@@ -9,6 +9,7 @@
 #include "c4Impl.hh"
 #include "c4View.h"
 #include "c4Document.h"
+#include "c4DocEnumerator.h"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
 #include <math.h>
