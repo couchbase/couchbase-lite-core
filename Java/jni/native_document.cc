@@ -58,7 +58,15 @@ static void updateRevIDAndFlags
 static void updateSelection
 (JNIEnv *env, jobject self, C4Document *doc, bool withBody =false) {
     auto sel = &doc->selectedRev;
-    env->SetObjectField(self, kField_SelectedRevID,    toJString(env, sel->revID));
+
+    jobject jRevID;
+    if (c4SliceEqual(sel->revID, doc->revID)) {
+        // Optimization -- assumes Java revID field is up-to-date (updateRevIDAndFlags was called)
+        jRevID = env->GetObjectField(self, kField_RevID);
+    } else {
+        jRevID = toJString(env, sel->revID);
+    }
+    env->SetObjectField(self, kField_SelectedRevID,    jRevID);
     env->SetLongField  (self, kField_SelectedSequence, sel->sequence);
     env->SetIntField   (self, kField_SelectedRevFlags, sel->flags);
     if(withBody)
@@ -241,8 +249,8 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_insertRevision
         throwError(env, error);
         return false;
     }
-    updateSelection(env, self, doc, true);
     updateRevIDAndFlags(env, self, doc);
+    updateSelection(env, self, doc, true);
     return (inserted > 0);
 }
 
@@ -287,8 +295,8 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
 
     }
     if (inserted >= 0) {
-        updateSelection(env, self, doc);
         updateRevIDAndFlags(env, self, doc);
+        updateSelection(env, self, doc);
     }
     else
         throwError(env, error);

@@ -4,6 +4,7 @@
 #  Created by Jens Alfke on 9/15/15.
 #  Copyright © 2015 Couchbase. All rights reserved.
 
+_c4SliceEqual
 _c4slice_free
 _c4log_register
 

@@ -52,6 +52,11 @@ namespace c4Internal {
 }
 
 
+bool c4SliceEqual(C4Slice a, C4Slice b) {
+    return a == b;
+}
+
+
 void c4slice_free(C4Slice slice) {
     slice.free();
 }

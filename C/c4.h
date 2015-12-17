@@ -141,7 +141,10 @@ const C4Slice kC4SliceNull = { NULL, 0 };
 
 #endif // C4_IMPL
 
-/** Frees the memory of a heap-allocated slice by calling free(chars). */
+/** Returns true if two slices have equal contents. */
+bool c4SliceEqual(C4Slice a, C4Slice b);
+
+/** Frees the memory of a heap-allocated slice by calling free(buf). */
 void c4slice_free(C4Slice);
 
 
