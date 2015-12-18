@@ -29,6 +29,73 @@ using CBForest.Extensions;
 
 namespace CBForest
 {
+
+    /// <summary>
+    /// Metadata about a document (actually about its current revision.)
+    /// </summary>
+    public struct C4DocumentInfo
+    {
+        /// <summary>
+        /// Document Flags
+        /// </summary>
+        public C4DocumentFlags flags;
+
+        /// <summary>
+        /// Document ID
+        /// </summary>
+        public C4Slice docID;
+
+        /// <summary>
+        /// RevID of current revision
+        /// </summary>
+        public C4Slice revID;
+
+        /// <summary>
+        /// Sequence at which doc was last updated
+        /// </summary>
+        public ulong sequence;
+
+        /// <summary>
+        /// Gets whether or not the document is deleted
+        /// </summary>
+        public bool IsDeleted
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Deleted);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not the document is conflicted
+        /// </summary>
+        public bool IsConflicted
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Conflicted);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not the document has attachments
+        /// </summary>
+        public bool HasAttachments
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.HasAttachments);
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not this document has any revisions
+        /// </summary>
+        public bool Exists
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Exists);
+            }
+        }
+    }
+
     /// <summary>
     /// An error value. These are returned by reference from API calls whose last parameter is a
     /// C4Error*. A caller can pass null if it doesn't care about the error.
@@ -217,15 +284,13 @@ namespace CBForest
         
         private bool Equals(C4Slice other)
         {
-            return size == other.size && Native.memcmp(buf, other.buf, _size) == 0;
+            return Native.c4sliceEqual(this, other);
         }
         
         private bool Equals(string other)
         {
-            var bytes = Encoding.UTF8.GetBytes(other);
-            fixed(byte* ptr = bytes) {
-                return Native.memcmp(buf, ptr, _size) == 0;
-            }
+            var c4str = new C4String(other);
+            return Equals(c4str.AsC4Slice());
         }
 
         #pragma warning disable 1591

@@ -1,4 +1,5 @@
 EXPORTS
+c4sliceEqual
 c4slice_free
 c4log_register
 c4db_open
@@ -29,7 +30,10 @@ c4doc_selectNextLeafRevision
 c4db_enumerateChanges
 c4db_enumerateAllDocs
 c4db_enumerateSomeDocs
+c4enum_next
 c4enum_nextDocument
+c4enum_getDocumentInfo
+c4enum_getDocument
 c4enum_free
 c4doc_insertRevision
 c4doc_insertRevisionWithHistory

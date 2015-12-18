@@ -101,6 +101,17 @@ namespace CBForest
         [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
         public static extern int memcpy(void* dest, void* src, UIntPtr count);
 
+
+        /// <summary>
+        /// Returns true if two slices have equal contents.
+        /// </summary>
+        /// <returns>true if two slices have equal contents.</returns>
+        /// <param name="a">The first slice to compare</param>
+        /// <param name="b">The second slice to compare</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4sliceEqual(C4Slice a, C4Slice b);
+
         /// <summary>
         /// Frees the memory of a C4Slice.
         /// </summary>
@@ -752,13 +763,54 @@ namespace CBForest
             return retVal;
         }
 
+        /// <summary>
+        /// Advances the enumerator to the next document.
+        /// Returns false at the end, or on error; look at the C4Error to determine which occurred,
+        /// and don't forget to free the enumerator.
+        /// </summary>
+        /// <returns>true if advanced, or false otherwise</returns>
+        /// <param name="e">The enumerator to operate on</param>
+        /// <param name="outError">The error, if any</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4enum_next(C4DocEnumerator *e, C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *info);
+
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_getDocument")]
+        private static extern C4Document* _c4enum_getDocument(C4DocEnumerator *e, C4Error *outError);
+
+        /// <summary>
+        /// Returns the current document, if any, from an enumerator.
+        /// </summary>
+        /// <returns>The document, or NULL if there is none or if an error occurred reading its body.
+        /// Caller is responsible for calling c4document_free when done with it</returns>
+        /// <param name="e">The enumerator</param>
+        /// <param name="outError">Error will be stored here on failure</param>
+        public static C4Document *c4enum_getDocument(C4DocEnumerator *e, C4Error *outError)
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4enum_getDocument(e, outError);
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
+            #if ENABLE_LOGGING
+            Console.WriteLine("[c4enum_getDocument] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+            #endif
+            }
+
+            return retVal;
+            #else
+            return _c4enum_getDocument(e, outError);
+            #endif
+        }
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_nextDocument")]
         private static extern C4Document* _c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError);
 
         /// <summary>
-        /// Returns the next document from an enumerator, or NULL if there are no more.
-        /// The caller is responsible for freeing the C4Document.
-        /// Don't forget to free the enumerator itself when finished with it.
+        /// Convenience function that combines c4enum_next() and c4enum_getDocument()
         /// </summary>
         /// <param name="e">The enumerator to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>

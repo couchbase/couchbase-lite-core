@@ -71,7 +71,7 @@ namespace CBForest
         /// <param name="owner">If set to <c>true</c>, the enumerator will free the document
         /// when finished</param>
         public CBForestHistoryEnumerator(CBForestDocStatus docStatus, bool onlyLeaf, bool owner)
-            : this(docStatus.Document, onlyLeaf, owner)
+            : this(docStatus.GetDocument(), onlyLeaf, owner)
         {
 
         }

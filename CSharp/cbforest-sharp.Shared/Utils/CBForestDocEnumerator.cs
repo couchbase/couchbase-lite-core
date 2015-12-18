@@ -22,6 +22,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace CBForest
 {
@@ -36,12 +37,14 @@ namespace CBForest
         /// <summary>
         /// The current native document object
         /// </summary>
-        public readonly C4Document *Document;
+        public readonly C4DocumentInfo *DocumentInfo;
 
         public readonly long Sequence;
         private readonly bool _owner;
         private string _docID;
         private string _revID;
+        private C4DocEnumerator *_parent;
+        private C4Document *_document;
 
         #endregion
 
@@ -54,7 +57,7 @@ namespace CBForest
         { 
             get { 
                 if (_docID == null) {
-                    _docID = (string)Document->docID;
+                    _docID = (string)DocumentInfo->docID;
                 }
 
                 return _docID;  
@@ -68,7 +71,7 @@ namespace CBForest
         { 
             get { 
                 if (_revID == null) {
-                    _revID = (string)Document->revID;
+                    _revID = (string)DocumentInfo->revID;
                 }
 
                 return _revID;  
@@ -78,27 +81,27 @@ namespace CBForest
         /// <summary>
         /// Gets whether or not the current document revision has a body
         /// </summary>
-        public bool HasRevisionBody { get { return Native.c4doc_hasRevisionBody(Document);  } }
+        public bool HasRevisionBody { get { return Native.c4doc_hasRevisionBody(GetDocument());  } }
 
         /// <summary>
         /// Gets whether or not the current document has any revisions
         /// </summary>
-        public bool Exists { get { return Document->Exists; } }
+        public bool Exists { get { return DocumentInfo->Exists; } }
 
         /// <summary>
         /// Gets whether or not the current document is conflicted
         /// </summary>
-        public bool IsConflicted { get { return Document->IsConflicted; } }
+        public bool IsConflicted { get { return DocumentInfo->IsConflicted; } }
 
         /// <summary>
         /// Gets whether or not the current document is deleted
         /// </summary>
-        public bool IsDeleted { get { return Document->IsDeleted; } }
+        public bool IsDeleted { get { return DocumentInfo->IsDeleted; } }
 
         /// <summary>
         /// Gets the current document revision
         /// </summary>
-        public C4Revision SelectedRev { get { return Document->selectedRev; } }
+        public C4Revision SelectedRev { get { return GetDocument()->selectedRev; } }
 
         #endregion
 
@@ -110,14 +113,27 @@ namespace CBForest
         /// <param name="doc">The document to retrieve information form.</param>
         /// <param name="owner">Whether or not the instance should own the
         /// document (i.e. free it when it is finished)</param>
-        public CBForestDocStatus(C4Document *doc, bool owner)
+        public CBForestDocStatus(C4DocumentInfo *docInfo, C4DocEnumerator *e, bool owner)
         {
-            Document = doc;
+            _parent = e;
+            DocumentInfo = docInfo;
             _owner = owner;
-            Sequence = (long)doc->sequence;
+            Sequence = (long)docInfo->sequence;
             if (!_owner) {
                 GC.SuppressFinalize(this);
             }
+        }
+
+        public CBForestDocStatus(C4Document *doc, bool owner)
+        {
+            DocumentInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
+            DocumentInfo->docID = doc->docID;
+            DocumentInfo->revID = doc->revID;
+            DocumentInfo->flags = doc->flags;
+            DocumentInfo->sequence = doc->sequence;
+            _document = doc;
+            _owner = owner;
+            Sequence = (long)doc->sequence;
         }
 
         ~CBForestDocStatus()
@@ -127,11 +143,31 @@ namespace CBForest
 
         #endregion
 
+        #region Public Methods
+
+        public C4Document *GetDocument()
+        {
+            if (_document == null) {
+                _document = Native.c4enum_getDocument(_parent, null);
+            }
+
+            return _document;
+        }
+
+        #endregion
+
         #region Private Methods
 
         private void Dispose(bool disposing)
         {
-            Native.c4doc_free(Document);
+            if (_owner) {
+                Native.c4doc_free(_document);
+            }
+
+            if (_parent == null) {
+                Marshal.FreeHGlobal((IntPtr)DocumentInfo);
+            }
+
             GC.SuppressFinalize(this);
         }
 
@@ -142,10 +178,6 @@ namespace CBForest
 
         public void Dispose()
         {
-            if (!_owner) {
-                return;
-            }
-
             Dispose(false);
         }
 
@@ -165,7 +197,8 @@ namespace CBForest
 
         private readonly C4DocEnumerator *_e;
         private CBForestDocStatus _current;
-        private delegate bool DocValidationDelegate(C4Document *doc);
+        private C4DocumentInfo *_currentDocInfo;
+        private delegate bool DocValidationDelegate(C4DocumentInfo *doc);
         private DocValidationDelegate _validationLogic;
 
         #endregion
@@ -181,6 +214,7 @@ namespace CBForest
         public CBForestDocEnumerator(C4Database *db, string[] keys, C4EnumeratorOptions options)
         {
             var options_ = &options;
+            _currentDocInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateSomeDocs(db, keys, options_, err));
         }
 
@@ -194,6 +228,7 @@ namespace CBForest
         public CBForestDocEnumerator(C4Database *db, string startKey, string endKey, C4EnumeratorOptions options)
         {
             var options_ = &options;
+            _currentDocInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateAllDocs(db, startKey, endKey, options_, err));
         }
 
@@ -206,6 +241,7 @@ namespace CBForest
         {
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().AllowError(0, C4ErrorDomain.ForestDB)
                 .Execute(err => Native.c4indexer_enumerateDocuments(indexer, err));
+            _currentDocInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
             _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");
         }
 
@@ -218,6 +254,7 @@ namespace CBForest
         public CBForestDocEnumerator(C4Database *db, long lastSequence, C4EnumeratorOptions options)
         {
             var options_ = &options;
+            _currentDocInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateChanges(db, (ulong)lastSequence, options_, err));
         }
 
@@ -237,6 +274,7 @@ namespace CBForest
             }
 
             Native.c4enum_free(_e);
+            Marshal.FreeHGlobal((IntPtr)_currentDocInfo);
         }
 
         #endregion
@@ -254,17 +292,14 @@ namespace CBForest
             if(_e == null) {
                 return false;
             }
-
-            var docPtr = default(C4Document*);
+                
             do {
-                Native.c4doc_free(docPtr);
-                docPtr = Native.c4enum_nextDocument(_e, null);
-                if (docPtr == null) {
+                if(!Native.c4enum_next(_e, null) || !Native.c4enum_getDocumentInfo(_e, _currentDocInfo)) {
                     return false;
                 }
-            } while(_validationLogic != null && !_validationLogic(docPtr));
+            } while(_validationLogic != null && !_validationLogic(_currentDocInfo));
 
-            _current = new CBForestDocStatus(docPtr, true);
+            _current = new CBForestDocStatus(_currentDocInfo, _e, true);
             return true;
         }
 
