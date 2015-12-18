@@ -309,11 +309,13 @@ namespace forestdb {
             delete _transaction;
         }
 
+        bool shouldUpdateDocInIndex(const Document& doc) const {
+            return doc.sequence() > _index->_lastSequenceIndexed;
+        }
+
         // Calls the index's map function on 'mappable' and writes the emitted rows to the index.
         bool updateDocInIndex(const Mappable& mappable) {
             const Document& doc = mappable.document();
-            if (doc.sequence() <= _index->_lastSequenceIndexed)
-                return false;
             _emit.reset();
             if (!doc.deleted())
                 (*_index->_map)(mappable, _emit); // Call map function!
@@ -434,7 +436,12 @@ namespace forestdb {
 
     void MapReduceIndexer::addMappable(const Mappable& mappable) {
         for (auto writer = _writers.begin(); writer != _writers.end(); ++writer)
-            (*writer)->updateDocInIndex(mappable);
+            if ((*writer)->shouldUpdateDocInIndex(mappable.document()))
+                (*writer)->updateDocInIndex(mappable);
+    }
+
+    bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) {
+        return _writers[viewNumber]->shouldUpdateDocInIndex(doc);
     }
 
     void MapReduceIndexer::emitDocIntoView(slice docID,

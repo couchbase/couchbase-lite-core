@@ -168,6 +168,8 @@
 		278270CE1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
 		278270CF1C221E7E00F4786F /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 278270CC1C221E7E00F4786F /* c4DocEnumerator.h */; };
 		278270D61C236ABD00F4786F /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
+		278270DE1C249C0800F4786F /* Indexer.java in Sources */ = {isa = PBXBuildFile; fileRef = 278270DD1C249C0800F4786F /* Indexer.java */; };
+		278270E01C24A1D000F4786F /* native_indexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270DF1C24A1D000F4786F /* native_indexer.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA31976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
@@ -755,6 +757,8 @@
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Error.hh; path = ../CBForest/Error.hh; sourceTree = "<group>"; };
 		278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
 		278270CC1C221E7E00F4786F /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
+		278270DD1C249C0800F4786F /* Indexer.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Indexer.java; path = src/com/couchbase/cbforest/Indexer.java; sourceTree = "<group>"; };
+		278270DF1C24A1D000F4786F /* native_indexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_indexer.cc; sourceTree = "<group>"; };
 		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
 		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
 		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
@@ -1082,6 +1086,7 @@
 				274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */,
 				27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */,
 				27FF7E551BAB64BE004EB8D4 /* native_view.cc */,
+				278270DF1C24A1D000F4786F /* native_indexer.cc */,
 				274D03EC1BA734A300FF7C35 /* native_glue.cc */,
 				274D03ED1BA734A300FF7C35 /* native_glue.hh */,
 			);
@@ -1335,6 +1340,7 @@
 				274D03F41BA734C100FF7C35 /* Document.java */,
 				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
 				274D03F61BA734C100FF7C35 /* ForestException.java */,
+				278270DD1C249C0800F4786F /* Indexer.java */,
 				27A82D0D1BBB2727005CB742 /* Logger.java */,
 				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
 				27FF7E541BAB60E2004EB8D4 /* View.java */,
@@ -2099,9 +2105,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				278270E01C24A1D000F4786F /* native_indexer.cc in Sources */,
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
 				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
+				278270DE1C249C0800F4786F /* Indexer.java in Sources */,
 				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
 				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,

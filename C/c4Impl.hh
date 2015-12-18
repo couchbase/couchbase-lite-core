@@ -16,6 +16,10 @@
 
 using namespace forestdb;
 
+namespace forestdb {
+    class VersionedDocument;
+}
+
 
 // Predefine C4Slice as a typedef of slice so we can use the richer slice API:
 
@@ -60,6 +64,8 @@ namespace c4Internal {
     bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
 
     C4Document* newC4Document(C4Database*, const Document&);
+
+    const VersionedDocument& versionedDocument(C4Document*);
 
 }
 
