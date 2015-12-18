@@ -110,7 +110,7 @@ namespace CBForest
         /// <param name="b">The second slice to compare</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4sliceEqual(C4Slice a, C4Slice b);
+        public static extern bool c4SliceEqual(C4Slice a, C4Slice b);
 
         /// <summary>
         /// Frees the memory of a C4Slice.

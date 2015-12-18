@@ -284,7 +284,7 @@ namespace CBForest
         
         private bool Equals(C4Slice other)
         {
-            return Native.c4sliceEqual(this, other);
+            return Native.c4SliceEqual(this, other);
         }
         
         private bool Equals(string other)
