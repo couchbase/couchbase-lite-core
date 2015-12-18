@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4View.h"
+#include "c4DocEnumerator.h"
 #include <iostream>
 #ifndef _MSC_VER
 #include <unistd.h>

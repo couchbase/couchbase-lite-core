@@ -206,7 +206,6 @@ class C4DatabaseTest : public C4Test {
         setupAllDocs();
         C4Error error;
         C4DocEnumerator* e;
-        C4Document* doc;
 
         // No start or end ID:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -215,7 +214,9 @@ class C4DatabaseTest : public C4Test {
         Assert(e);
         char docID[20];
         int i = 1;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            Assert(doc);
             sprintf(docID, "doc-%03d", i);
             AssertEqual(doc->docID, c4str(docID));
             AssertEqual(doc->revID, kRevID);
@@ -230,12 +231,16 @@ class C4DatabaseTest : public C4Test {
             i++;
         }
         c4enum_free(e);
+        AssertEqual(i, 100);
 
         // Start and end ID:
         e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"), NULL, &error);
         Assert(e);
         i = 7;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            AssertEqual(error.code, 0);
+            Assert(doc);
             sprintf(docID, "doc-%03d", i);
             AssertEqual(doc->docID, c4str(docID));
             c4doc_free(doc);
@@ -251,7 +256,10 @@ class C4DatabaseTest : public C4Test {
         e = c4db_enumerateSomeDocs(db, docIDs, 4, &options, &error);
         Assert(e);
         i = 0;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            AssertEqual(error.code, 0);
+            Assert(doc);
             AssertEqual(doc->docID, docIDs[i]);
             AssertEqual(doc->sequence != 0, i != 2);
             c4doc_free(doc);
@@ -268,14 +276,15 @@ class C4DatabaseTest : public C4Test {
 
         C4Error error;
         C4DocEnumerator* e;
-        C4Document* doc;
 
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags |= kC4IncludeDeleted;
         e = c4db_enumerateAllDocs(db, c4str("doc-004"), c4str("doc-007"), &options, &error);
         Assert(e);
         int i = 4;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            Assert(doc);
             if (i == 6)
                 strcpy(docID, "doc-005DEL");
             else
@@ -286,6 +295,32 @@ class C4DatabaseTest : public C4Test {
         }
         c4enum_free(e);
         AssertEqual(i, 9);
+    }
+
+
+    void testAllDocsInfo() {
+        setupAllDocs();
+        C4Error error;
+        C4DocEnumerator* e;
+
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
+        Assert(e);
+        int i = 1;
+        while(c4enum_next(e, &error)) {
+            C4DocumentInfo doc;
+            Assert(c4enum_getDocumentInfo(e, &doc));
+            char docID[20];
+            sprintf(docID, "doc-%03d", i);
+            AssertEqual(doc.docID, c4str(docID));
+            AssertEqual(doc.revID, kRevID);
+            AssertEqual(doc.sequence, (uint64_t)i);
+            AssertEqual(doc.flags, (C4DocumentFlags)kExists);
+            i++;
+        }
+        c4enum_free(e);
+        AssertEqual(error.code, 0);
+        AssertEqual(i, 100);
     }
 
 
@@ -338,6 +373,8 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST( testCreateMultipleRevisions );
     CPPUNIT_TEST( testInsertRevisionWithHistory );
     CPPUNIT_TEST( testAllDocs );
+    CPPUNIT_TEST( testAllDocsInfo );
+    CPPUNIT_TEST( testAllDocsIncludeDeleted );
     CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST_SUITE_END();
 };
@@ -372,6 +409,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
     CPPUNIT_TEST( testAllDocs );
+    CPPUNIT_TEST( testAllDocsInfo );
     CPPUNIT_TEST( testAllDocsIncludeDeleted );
     CPPUNIT_TEST( testChanges );
     CPPUNIT_TEST( testRekey );

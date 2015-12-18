@@ -8,14 +8,14 @@
 
 #include "com_couchbase_cbforest_DocumentIterator.h"
 #include "native_glue.hh"
-#include "c4Database.h"
+#include "c4DocEnumerator.h"
 #include <errno.h>
 #include <vector>
 
 using namespace forestdb::jni;
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateAllDocs
-        (JNIEnv *env, jobject self, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
          jint skip, jint optionFlags)
 {
     jstringSlice startDocID(env, jStartDocID);
@@ -31,7 +31,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateSomeDocs
-        (JNIEnv *env, jobject self, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags)
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags)
 {
     // Convert jdocIDs, a Java String[], to a C array of C4Slice:
 
@@ -72,7 +72,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateChanges
-        (JNIEnv *env, jobject self, jlong dbHandle, jlong since, jint optionFlags)
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jlong since, jint optionFlags)
 {
     const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
     C4Error error;
@@ -84,23 +84,50 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
     return (jlong)e;
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_nextDocumentHandle
+JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_DocumentIterator_next
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     auto e = (C4DocEnumerator*)handle;
     if (!e)
         return 0;
     C4Error error;
-    auto doc = c4enum_nextDocument(e, &error);
+    if (c4enum_next(e, &error)) {
+        return true;
+    } else if (error.code == 0) {
+        c4enum_free(e);  // automatically free at end, to save a JNI call to free()
+    } else {
+        throwError(env, error);
+    }
+    return false;
+}
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocumentHandle
+(JNIEnv *env, jclass clazz, jlong handle)
+{
+    auto e = (C4DocEnumerator*)handle;
+    if (!e)
+        return 0;
+    C4Error error;
+    auto doc = c4enum_getDocument(e, &error);
     if (!doc) {
-        if (error.code == 0)
-            c4enum_free(e);  // automatically free at end, to save a JNI call to free()
-        else
-            throwError(env, error);
+        throwError(env, error);
     }
     return (jlong)doc;
 }
 
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocumentInfo
+(JNIEnv *env, jclass clazz, jlong handle, jobjectArray ids, jlongArray numbers)
+{
+    auto e = (C4DocEnumerator*)handle;
+    C4DocumentInfo info;
+    if (!e || !c4enum_getDocumentInfo(e, &info)) {
+        memset(&info, 0, sizeof(info));
+    }
+    env->SetObjectArrayElement(ids, 0, toJString(env, info.docID));
+    env->SetObjectArrayElement(ids, 1, toJString(env, info.revID));
+    jlong flagsAndSequence[2] = {info.flags, (jlong)info.sequence};
+    env->SetLongArrayRegion(numbers, 0, 2, flagsAndSequence);
+}
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_DocumentIterator_free
 (JNIEnv *env, jclass clazz, jlong handle)
