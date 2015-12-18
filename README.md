@@ -1,15 +1,18 @@
-**CBForest** is a C++ wrapper around [ForestDB][FDB], a new key-value storage engine based on a hierarchical B+-tree trie data structure. ForestDB is similar in functionality to the [CouchStore][COUCHSTORE] engine that currently underlies Couchbase Server, but it should be faster and more space-efficient, especially on solid-state disks (SSDs). CBForest adds an idiomatic object-oriented C++ API for ForestDB, and also some new functionality (see below.)
+**CBForest** is a higher-level C++ wrapper around [ForestDB][FDB], a new key-value storage engine based on a hierarchical B+-tree trie data structure. ForestDB is similar in functionality to the [CouchStore][COUCHSTORE] engine that currently underlies Couchbase Server, but it should be faster and more space-efficient, especially on solid-state disks (SSDs).
 
-The immediate purpose of CBForest is to serve as the storage engine of the next generation of [Couchbase Lite][CBL] (on all platforms), replacing SQLite. But it may find other uses too, perhaps for applications that want a fast minimalist data store but don't need any of the fancy features of Couchbase Lite like replication.
+CBForest adds an idiomatic object-oriented C++ API for ForestDB, and also some new functionality (see below.) Recently a C API with the same functionality has been added, and Java and C# bindings to that C API.
+
+The immediate purpose of CBForest is to serve as the storage engine of the next generation of [Couchbase Lite][CBL] (on all platforms), replacing SQLite. But it may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing, but don't need any of the fancy features of Couchbase Lite like replication.
 
 ## Features
 
-* ForestDB features, available via an idiomatic C++ API:
+* ForestDB features, available via idiomatic C++, Java and C# APIs:
     * Fast key-value storage, where keys and values are both opaque blobs.
-    * Extremely robust append-only file format with write-ahead log.
+    * Extremely robust append-only file format with write-ahead log and automatic compaction.
     * Reads are never blocked, even while writes or transactions are in progress.
     * Iteration by key order.
     * Iteration by _sequence_, reflecting the order in which changes were made to the database. (This is useful for tasks like updating indexes and replication.)
+    * Database encryption using AES-256.
 
 * New features implemented by CBForest:
     * Optional multi-version document format that keeps a revision tree of the history of each document (as in Couchbase Lite or CouchDB.)
@@ -19,14 +22,14 @@ The immediate purpose of CBForest is to serve as the storage engine of the next 
 
 ## Platform Support
 
-CBForest is intended to run on Mac OS, iOS, Android, various other flavors of Unix, and Windows.
+CBForest runs on Mac OS, iOS, Android, various other flavors of Unix, and Windows.
 
-However, it's currently [as of July 2014] only been used or tested on Mac OS and iOS, so there might be inadvertent platform dependencies. Please report any issues you find on other platforms.
+CBForest has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and will be used in the 1.2 release on all the above platforms.
 
 ## License
 
 Like all Couchbase source code, this is released under the Apache 2 license.
 
 [FDB]: https://github.com/couchbaselabs/forestdb
-[CBL]: https://github.com/couchbase/couchbase-lite-ios
+[CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
 [COUCHSTORE]: https://github.com/couchbaselabs/couchstore
