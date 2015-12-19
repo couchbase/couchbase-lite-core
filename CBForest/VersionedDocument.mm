@@ -16,7 +16,7 @@
 #include <Foundation/Foundation.h>
 #include "VersionedDocument.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     VersionedDocument::VersionedDocument(KeyStore db, NSString* docID)
     :_db(db), _doc(nsstring_slice(docID))

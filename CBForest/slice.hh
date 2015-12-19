@@ -29,7 +29,7 @@
 #endif
 
 
-namespace forestdb {
+namespace cbforest {
 
     /** Adds a byte offset to a pointer. */
     template <typename T>

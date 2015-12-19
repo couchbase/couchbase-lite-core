@@ -11,7 +11,7 @@
 #import "Database.hh"
 #import "DocEnumerator.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 
 #define ENCRYPT_DATABASES 1
@@ -152,7 +152,7 @@ Database::config TestDBConfig() {
     Transaction t(db);
     for (int i = 1; i <= 100; i++) {
         NSString* docID = [NSString stringWithFormat: @"doc-%03d", i];
-        sequence seq = t.set(nsstring_slice(docID), forestdb::slice::null, nsstring_slice(docID));
+        sequence seq = t.set(nsstring_slice(docID), cbforest::slice::null, nsstring_slice(docID));
         AssertEq(seq, (sequence)i);
         AssertEqual((NSString*)t.get(nsstring_slice(docID)).body(),
                     docID,

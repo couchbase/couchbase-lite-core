@@ -18,7 +18,7 @@
 #include "slice.hh"
 
 
-namespace forestdb {
+namespace cbforest {
 
 size_t SizeOfVarInt(uint64_t n) {
     size_t size = 1;

@@ -24,7 +24,7 @@
 
 #undef check
 
-namespace forestdb {
+namespace cbforest {
 
     /** Most API calls can throw this. */
     struct error {
@@ -64,10 +64,10 @@ namespace forestdb {
     // Like C assert() but throws an exception instead of aborting
 #ifdef _MSC_VER
 	#define CBFAssert(e) \
-		if(!(e)) forestdb::error::assertionFailed(__FUNCTION__, __FILE__, __LINE__, #e)
+		if(!(e)) cbforest::error::assertionFailed(__FUNCTION__, __FILE__, __LINE__, #e)
 #else
     #define	CBFAssert(e) \
-        (__builtin_expect(!(e), 0) ? forestdb::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+        (__builtin_expect(!(e), 0) ? cbforest::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
                                    : (void)0)
 #endif
 

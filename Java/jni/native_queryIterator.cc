@@ -12,14 +12,14 @@
 #include "c4View.h"
 
 
-using namespace forestdb;
-using namespace forestdb::jni;
+using namespace cbforest;
+using namespace cbforest::jni;
 
 
 static jfieldID kHandleField;
 
 
-bool forestdb::jni::initQueryIterator(JNIEnv *env) {
+bool cbforest::jni::initQueryIterator(JNIEnv *env) {
     jclass queryIterClass = env->FindClass("com/couchbase/cbforest/QueryIterator");
     if (!queryIterClass)
         return false;

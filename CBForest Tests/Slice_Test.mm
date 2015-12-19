@@ -10,7 +10,7 @@
 #import "testutil.h"
 #import "slice.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 @interface Slice_Test : XCTestCase
 @end

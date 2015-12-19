@@ -21,7 +21,7 @@
 #include <set>
 
 
-namespace forestdb {
+namespace cbforest {
 
     CollatableBuilder& operator<< (CollatableBuilder&, const geohash::area&);
     geohash::area readGeoArea(CollatableReader&);
@@ -46,7 +46,7 @@ namespace forestdb {
         virtual bool approve(slice key); // override
 
     private:
-        typedef std::pair<std::string, forestdb::sequence> ItemID;
+        typedef std::pair<std::string, cbforest::sequence> ItemID;
 
         const geohash::area _searchArea;
         geohash::area _keyBBox;

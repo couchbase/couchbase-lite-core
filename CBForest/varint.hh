@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include "slice.hh"
 
-namespace forestdb {
+namespace cbforest {
 
 // Based on varint implementation from the Go language (src/pkg/encoding/binary/varint.go)
 // This file implements "varint" encoding of 64-bit integers.

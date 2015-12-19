@@ -10,7 +10,7 @@
 #include "native_glue.hh"
 #include "c4Database.h"
 
-using namespace forestdb::jni;
+using namespace cbforest::jni;
 
 
 #pragma mark - DATABASE:
@@ -23,7 +23,7 @@ static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
     return (C4Database*)env->GetLongField(self, kHandleField);
 }
 
-bool forestdb::jni::initDatabase(JNIEnv *env) {
+bool cbforest::jni::initDatabase(JNIEnv *env) {
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;

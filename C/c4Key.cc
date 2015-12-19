@@ -12,7 +12,7 @@
 #include "Collatable.hh"
 #include <math.h>
 #include <limits.h>
-using namespace forestdb;
+using namespace cbforest;
 
 
 C4Key* c4key_new()                              {return new c4Key();}

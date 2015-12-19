@@ -20,7 +20,7 @@
 #include <sstream>
 #include <iomanip> // std::setprecision
 
-namespace forestdb {
+namespace cbforest {
 
     static uint8_t kCharPriority[256];
     static uint8_t kCharInversePriority[256];

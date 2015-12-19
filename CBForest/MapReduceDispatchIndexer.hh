@@ -20,7 +20,7 @@
 #import <dispatch/dispatch.h>
 
 
-namespace forestdb {
+namespace cbforest {
 
     /** MapReduceIndexer that uses dispatch queues (GCD) to parallelize running map functions. */
     class MapReduceDispatchIndexer : public MapReduceIndexer {

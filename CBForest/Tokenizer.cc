@@ -30,7 +30,7 @@ extern "C" {
     #include "fts3_unicodesn.h"
 }
 
-namespace forestdb {
+namespace cbforest {
 
     static const struct sqlite3_tokenizer_module* sModule;
     static std::unordered_map<std::string, word_set> sStemmerToStopwords;

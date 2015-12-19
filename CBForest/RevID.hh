@@ -18,7 +18,7 @@
 
 #include "slice.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     /** A compressed revision ID. 
         Since this is based on slice, it doesn't own the memory it points to. */

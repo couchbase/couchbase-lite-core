@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <stdlib.h>
 
-namespace forestdb {
+namespace cbforest {
 
     int slice::compare(slice b) const {
         // Optimized for speed

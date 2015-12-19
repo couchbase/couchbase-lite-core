@@ -23,7 +23,7 @@
 #undef check
 #endif
 
-namespace forestdb {
+namespace cbforest {
 
     class Transaction;
 

@@ -16,7 +16,7 @@
 #include "slice.hh"
 #import <Foundation/Foundation.h>
 
-namespace forestdb {
+namespace cbforest {
 
     nsstring_slice::nsstring_slice(__unsafe_unretained NSString* str)
     :_needsFree(false)

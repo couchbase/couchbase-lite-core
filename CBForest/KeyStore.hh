@@ -13,7 +13,7 @@
 #include "forestdb.h"
 #include "slice.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     class Database;
     class Document;

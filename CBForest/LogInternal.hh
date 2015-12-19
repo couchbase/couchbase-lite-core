@@ -19,7 +19,7 @@
 
 #include "Database.hh"
 
-namespace forestdb {
+namespace cbforest {
 
 void _Log(logLevel, const char *message, ...);
 

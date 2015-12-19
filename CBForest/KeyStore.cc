@@ -10,7 +10,7 @@
 #include "Document.hh"
 #include "LogInternal.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     KeyStore::KeyStore(const Database* db, std::string name)
     :_handle(db->openKVS(name))
@@ -124,11 +124,11 @@ namespace forestdb {
         return doc.seqnum;
     }
 
-    bool KeyStoreWriter::del(forestdb::Document &doc) {
+    bool KeyStoreWriter::del(cbforest::Document &doc) {
         return checkGet(fdb_del(_handle, doc));
     }
 
-    bool KeyStoreWriter::del(forestdb::slice key) {
+    bool KeyStoreWriter::del(cbforest::slice key) {
         if ((size_t)key.buf & 0x03) {
             // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
             void* keybuf = alloca(key.size);

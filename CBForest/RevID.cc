@@ -43,7 +43,7 @@ static int digittoint(char ch) {
 #endif // defined(__ANDROID__) || defined(__GLIBC__)
 
 
-namespace forestdb {
+namespace cbforest {
 
     // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.
     static inline uint32_t parseDigits(const char *str, const char *end)

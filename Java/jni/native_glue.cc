@@ -11,7 +11,7 @@
 #include "fdb_errors.h"
 #include <assert.h>
 
-using namespace forestdb::jni;
+using namespace cbforest::jni;
 
 
 // Will be called by JNI when the library is loaded
@@ -33,7 +33,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
 }
 
 
-namespace forestdb {
+namespace cbforest {
     namespace jni {
 
         JavaVM *gJVM;
@@ -128,7 +128,7 @@ namespace forestdb {
             outKey->algorithm = (C4EncryptionAlgorithm)keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
-                forestdb::slice keySlice = keyBytes;
+                cbforest::slice keySlice = keyBytes;
                 if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
                     throwError(env, C4Error{ForestDBDomain, FDB_RESULT_CRYPTO_ERROR});
                     return false;

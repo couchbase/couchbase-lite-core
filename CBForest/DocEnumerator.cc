@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-namespace forestdb {
+namespace cbforest {
 
 #pragma mark - ENUMERATION:
 

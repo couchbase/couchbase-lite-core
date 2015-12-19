@@ -292,7 +292,7 @@ std::vector<hashRange> area::coveringHashRangesOfLength(unsigned nChars) const {
 #pragma mark - HASH, HASHRANGE:
 
 
-hash::hash(forestdb::slice bytes) {
+hash::hash(cbforest::slice bytes) {
     size_t n = std::min(bytes.size, sizeof(string) - 1);
     memcpy(string, bytes.buf, n);
     string[n] = '\0';

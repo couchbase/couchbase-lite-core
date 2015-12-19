@@ -19,7 +19,7 @@
 #include "LogInternal.hh"
 
 
-namespace forestdb {
+namespace cbforest {
 
     const slice Index::kSpecialValue("*", 1);
 
@@ -325,7 +325,7 @@ namespace forestdb {
 
             // Return it as the next row:
             Debug("IndexEnumerator: found key=%s",
-                    forestdb::CollatableReader(_key).toJSON().c_str());
+                    cbforest::CollatableReader(_key).toJSON().c_str());
             return true;
         }
     }

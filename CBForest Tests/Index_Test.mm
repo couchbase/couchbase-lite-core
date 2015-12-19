@@ -11,7 +11,7 @@
 #import "Index.hh"
 #import "Collatable.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 
 class Scoped {
@@ -103,8 +103,8 @@ static boolBlock scopedEnumerate() {
 
 - (int) doQuery {
     unsigned nRows = 0;
-    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
-                           Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+                           Collatable(), cbforest::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
@@ -157,8 +157,8 @@ static boolBlock scopedEnumerate() {
     unsigned nRows = 0;
     auto options = DocEnumerator::Options::kDefault;
     options.descending = true;
-    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
-                           Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+                           Collatable(), cbforest::slice::null,
                            options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();

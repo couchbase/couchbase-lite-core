@@ -11,8 +11,8 @@
 #include "c4Document.h"
 #include <vector>
 
-using namespace forestdb;
-using namespace forestdb::jni;
+using namespace cbforest;
+using namespace cbforest::jni;
 
 
 static jfieldID kField_Flags;
@@ -25,7 +25,7 @@ static jfieldID kField_SelectedSequence;
 static jfieldID kField_SelectedBody;
 
 
-bool forestdb::jni::initDocument(JNIEnv *env) {
+bool cbforest::jni::initDocument(JNIEnv *env) {
     jclass documentClass = env->FindClass("com/couchbase/cbforest/Document");
     if (!documentClass)
         return false;

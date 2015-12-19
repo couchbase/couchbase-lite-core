@@ -14,7 +14,7 @@
 #include "slice.hh"
 #include <vector>
 
-namespace forestdb {
+namespace cbforest {
     namespace jni {
 
 extern JavaVM *gJVM;

@@ -15,7 +15,7 @@
 
 #include "Document.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     const size_t Document::kMaxKeyLength  = FDB_MAX_KEYLEN;
     const size_t Document::kMaxMetaLength = FDB_MAX_METALEN;

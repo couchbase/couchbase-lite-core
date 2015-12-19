@@ -15,7 +15,7 @@
 #include "VersionedDocument.hh"
 #include <math.h>
 #include <limits.h>
-using namespace forestdb;
+using namespace cbforest;
 
 
 // ForestDB Write-Ahead Log size (# of records)

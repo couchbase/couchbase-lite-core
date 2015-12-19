@@ -19,7 +19,7 @@
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
 
-namespace forestdb {
+namespace cbforest {
     
     class Index;
 
@@ -100,7 +100,7 @@ namespace forestdb {
         CollatableReader key() const            {return CollatableReader(_key);}
         slice value() const                     {return _value;}
         slice docID() const                     {return _docID;}
-        forestdb::sequence sequence() const     {return _sequence;}
+        cbforest::sequence sequence() const     {return _sequence;}
 
         std::string textToken()                 {return (std::string)key().readString();}
 
@@ -133,7 +133,7 @@ namespace forestdb {
         slice _key;
         slice _value;
         alloc_slice _docID;
-        ::forestdb::sequence _sequence;
+        ::cbforest::sequence _sequence;
     };
 
 }

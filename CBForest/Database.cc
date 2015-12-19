@@ -28,7 +28,7 @@
 #endif
 
 
-namespace forestdb {
+namespace cbforest {
 
     static void defaultLogCallback(logLevel level, const char *message) {
         static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
@@ -282,7 +282,7 @@ namespace forestdb {
     void Transaction::check(fdb_status status) {
         if (status != FDB_RESULT_SUCCESS) {
             _state = kAbort;
-            forestdb::check(status); // throw exception
+            cbforest::check(status); // throw exception
         }
     }
 

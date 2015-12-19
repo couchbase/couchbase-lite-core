@@ -18,7 +18,7 @@
 
 #include "Document.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     /** KeyStore enumerator/iterator that returns a range of Documents.
         Usage:

@@ -18,7 +18,7 @@
 #include "RevTree.hh"
 #include "Document.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     /** Manages storage of a serialized RevTree in a Document. */
     class VersionedDocument : public RevTree {
@@ -54,7 +54,7 @@ namespace forestdb {
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
 
         bool exists() const         {return _doc.exists();}
-        forestdb::sequence sequence() const {return _doc.sequence();}
+        cbforest::sequence sequence() const {return _doc.sequence();}
 
         const Document& document() const    {return _doc;}
 

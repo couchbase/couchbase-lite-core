@@ -16,7 +16,7 @@
 #include "VersionedDocument.hh"
 #include <assert.h>
 
-using namespace forestdb;
+using namespace cbforest;
 
 
 // Size of ForestDB buffer cache allocated for a database
@@ -141,7 +141,7 @@ private:
 
 namespace c4Internal {
 
-    forestdb::Database* asDatabase(C4Database *db) {
+    cbforest::Database* asDatabase(C4Database *db) {
         return db;
     }
 
@@ -260,7 +260,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
         opts.contentOptions = Database::kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(*database, forestdb::slice::null, forestdb::slice::null, opts);
+        for (DocEnumerator e(*database, cbforest::slice::null, cbforest::slice::null, opts);
                 e.next(); ) {
             VersionedDocument vdoc(*database, *e);
             if (!vdoc.isDeleted())

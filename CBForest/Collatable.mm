@@ -18,7 +18,7 @@
 #import "error.hh"
 
 
-namespace forestdb {
+namespace cbforest {
 
     CollatableBuilder::CollatableBuilder(__unsafe_unretained id obj)
     :_buf(malloc(kDefaultSize), kDefaultSize),

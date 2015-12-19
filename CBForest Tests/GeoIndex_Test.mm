@@ -10,7 +10,7 @@
 #import "testutil.h"
 #import "GeoIndex.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 using namespace geohash;
 
 

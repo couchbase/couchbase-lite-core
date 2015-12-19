@@ -13,7 +13,7 @@
 #include <vector>
 
 
-using namespace forestdb::jni;
+using namespace cbforest::jni;
 
 
 #pragma mark - DATABASE:
@@ -25,7 +25,7 @@ static inline C4View* getViewHandle(JNIEnv *env, jobject self) {
     return (C4View*)env->GetLongField(self, kHandleField);
 }
 
-bool forestdb::jni::initView(JNIEnv *env) {
+bool cbforest::jni::initView(JNIEnv *env) {
     jclass viewClass = env->FindClass("com/couchbase/cbforest/View");
     if (!viewClass)
         return false;

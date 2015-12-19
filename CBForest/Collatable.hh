@@ -21,7 +21,7 @@
 #include "slice.hh"
 #include "Geohash.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     class CollatableTypes {
     public:

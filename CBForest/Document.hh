@@ -18,7 +18,7 @@
 
 #include "Database.hh"
 
-namespace forestdb {
+namespace cbforest {
 
     class DocEnumerator;
 
@@ -44,7 +44,7 @@ namespace forestdb {
 
         void clearMetaAndBody();
 
-        forestdb::sequence sequence() const {return _doc.seqnum;}
+        cbforest::sequence sequence() const {return _doc.seqnum;}
         uint64_t offset() const     {return _doc.offset;}
         size_t sizeOnDisk() const   {return _doc.size_ondisk;}
         bool deleted() const        {return _doc.deleted;}
@@ -52,7 +52,7 @@ namespace forestdb {
                                                     && (_doc.size_ondisk > 0 || _doc.offset > 0);}
         bool valid() const;
 
-        void updateSequence(forestdb::sequence s)                 {_doc.seqnum = s;}
+        void updateSequence(cbforest::sequence s)                 {_doc.seqnum = s;}
 
         typedef DocEnumerator enumerator;
 

@@ -21,7 +21,7 @@
 #include <vector>
 
 
-namespace forestdb {
+namespace cbforest {
 
     class MapReduceIndexWriter;
 
@@ -104,7 +104,7 @@ namespace forestdb {
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
 
-        forestdb::KeyStore _sourceDatabase;
+        cbforest::KeyStore _sourceDatabase;
         MapFn* _map;
         std::string _mapVersion, _lastMapVersion;
         int _indexType;

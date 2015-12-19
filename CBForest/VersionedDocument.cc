@@ -18,7 +18,7 @@
 #include "varint.hh"
 #include <ostream>
 
-namespace forestdb {
+namespace cbforest {
 
     /* VersionedDocument metadata has the following structure:
         1 byte  flags

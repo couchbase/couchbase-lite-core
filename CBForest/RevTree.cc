@@ -31,7 +31,7 @@
 #include <sstream>
 
 
-namespace forestdb {
+namespace cbforest {
 
     // Layout of revision rev in encoded form. Tree is a sequence of these followed by a 32-bit zero.
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
@@ -87,7 +87,7 @@ namespace forestdb {
     RevTree::~RevTree() {
     }
 
-    void RevTree::decode(forestdb::slice raw_tree, sequence seq, uint64_t docOffset) {
+    void RevTree::decode(cbforest::slice raw_tree, sequence seq, uint64_t docOffset) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)

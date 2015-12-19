@@ -17,11 +17,11 @@
 #include "RevID.hh"
 #include "Error.hh"
 
-namespace forestdb {
+namespace cbforest {
 
      revid::operator NSString*() const {
         char expandedBuf[256];
-        forestdb::slice expanded(expandedBuf, sizeof(expandedBuf));
+        cbforest::slice expanded(expandedBuf, sizeof(expandedBuf));
         this->expandInto(expanded);
         return (NSString*)expanded;
     }

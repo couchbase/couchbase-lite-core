@@ -11,7 +11,7 @@
 #import "testutil.h"
 #import <Security/Security.h>
 
-using namespace forestdb;
+using namespace cbforest;
 
 @interface Collatable_Test : XCTestCase
 @end
@@ -26,7 +26,7 @@ static int compareCollated(T1 obj1, T2 obj2) {
     CollatableBuilder c1, c2;
     c1 << obj1;
     c2 << obj2;
-    return sgn(forestdb::slice(c1).compare(forestdb::slice(c2)));
+    return sgn(cbforest::slice(c1).compare(cbforest::slice(c2)));
 }
 
 static NSData* collatableData(id obj) {
@@ -52,7 +52,7 @@ static double randf() {
 static id roundTrip(id input) {
     CollatableBuilder c;
     c << input;
-    alloc_slice encoded((forestdb::slice)c);
+    alloc_slice encoded((cbforest::slice)c);
     CollatableReader reader(encoded);
     return reader.readNSObject();
 }
@@ -137,7 +137,7 @@ static id roundTrip(id input) {
     for (int bits = 0; bits < 64; ++bits, n<<=1) {
         CollatableBuilder c;
         c << n - 1;
-        alloc_slice encoded((forestdb::slice)c);
+        alloc_slice encoded((cbforest::slice)c);
         CollatableReader reader(encoded);
         uint64_t result = [reader.readNSObject() unsignedLongLongValue];
         NSLog(@"2^%2d - 1: %llx --> %llx", bits, n-1, result);
@@ -192,14 +192,14 @@ static id roundTrip(id input) {
     indexKey << collKey << collatableDocID << (int64_t)1234;
     indexKey.endArray();
 
-    alloc_slice encoded((forestdb::slice)indexKey);
+    alloc_slice encoded((cbforest::slice)indexKey);
 
     CollatableReader reader(encoded);
     reader.beginArray();
-    forestdb::slice readKey = reader.read();
-    Assert(readKey == (forestdb::slice)collKey);
+    cbforest::slice readKey = reader.read();
+    Assert(readKey == (cbforest::slice)collKey);
     alloc_slice readDocID = reader.readString();
-    Assert(readDocID == (forestdb::slice)docID);
+    Assert(readDocID == (cbforest::slice)docID);
     int64_t readSequence = reader.readInt();
     AssertEq(readSequence, 1234);
 }

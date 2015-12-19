@@ -9,7 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "Tokenizer.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 
 @interface Tokenizer_Test : XCTestCase

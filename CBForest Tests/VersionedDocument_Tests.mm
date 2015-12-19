@@ -10,7 +10,7 @@
 #import "VersionedDocument.hh"
 #import "testutil.h"
 
-using namespace forestdb;
+using namespace cbforest;
 
 @interface VersionedDocument_Tests : XCTestCase
 @end
@@ -74,8 +74,8 @@ static revidBuffer stringToRev(NSString* str) {
 - (void) test02_RevTreeInsert {
     RevTree tree;
     const Revision* rev;
-    revidBuffer rev1ID(forestdb::slice("1-aaaa"));
-    forestdb::slice rev1Data("body of revision");
+    revidBuffer rev1ID(cbforest::slice("1-aaaa"));
+    cbforest::slice rev1Data("body of revision");
     int httpStatus;
     rev = tree.insert(rev1ID, rev1Data, false, false,
                       revid(), false, httpStatus);
@@ -86,8 +86,8 @@ static revidBuffer stringToRev(NSString* str) {
     AssertEq(rev->parent(), (Revision*)NULL);
     Assert(!rev->isDeleted());
 
-    revidBuffer rev2ID(forestdb::slice("2-bbbb"));
-    forestdb::slice rev2Data("second revision");
+    revidBuffer rev2ID(cbforest::slice("2-bbbb"));
+    cbforest::slice rev2Data("second revision");
     auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
     Assert(rev2);
     AssertEq(httpStatus, 201);
@@ -136,11 +136,11 @@ static revidBuffer stringToRev(NSString* str) {
 }
 
 - (void) test04_DocType {
-    revidBuffer rev1ID(forestdb::slice("1-aaaa"));
+    revidBuffer rev1ID(cbforest::slice("1-aaaa"));
     {
         VersionedDocument v(*db, @"foo");
 
-        forestdb::slice rev1Data("body of revision");
+        cbforest::slice rev1Data("body of revision");
         int httpStatus;
         v.insert(rev1ID, rev1Data, true /*deleted*/, false,
                  revid(), false, httpStatus);

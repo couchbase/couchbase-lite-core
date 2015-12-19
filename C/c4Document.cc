@@ -16,7 +16,7 @@
 #include "VersionedDocument.hh"
 #include <assert.h>
 
-using namespace forestdb;
+using namespace cbforest;
 
 
 struct C4DocumentInternal : public C4Document {

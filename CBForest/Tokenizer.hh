@@ -15,7 +15,7 @@
 struct sqlite3_tokenizer;
 struct sqlite3_tokenizer_cursor;
 
-namespace forestdb {
+namespace cbforest {
 
     class TokenIterator;
     typedef std::unordered_map<std::string, bool> word_set;

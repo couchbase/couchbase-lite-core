@@ -20,7 +20,7 @@
 #include <algorithm>
 
 
-namespace forestdb {
+namespace cbforest {
 
     static const unsigned kMaxKeyRanges = 50;
 

@@ -17,7 +17,7 @@
 #include <dispatch/dispatch.h>
 
 
-namespace forestdb {
+namespace cbforest {
 
     MapReduceDispatchIndexer::MapReduceDispatchIndexer(std::vector<MapReduceIndex*> indexes,
                                                        Transaction& transaction,

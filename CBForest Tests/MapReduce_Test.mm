@@ -11,7 +11,7 @@
 #import "MapReduceIndex.hh"
 #import "Collatable.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 static NSData* JSONToData(id obj, NSError** outError) {
     return [NSJSONSerialization dataWithJSONObject: obj options: 0 error: outError];
@@ -113,8 +113,8 @@ public:
     XCTAssertTrue(TestIndexer::updateIndex(db, index));
 
     unsigned nRows = 0;
-    for (IndexEnumerator e(index, Collatable(), forestdb::slice::null,
-                           Collatable(), forestdb::slice::null,
+    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+                           Collatable(), cbforest::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {
         CollatableReader keyReader(e.key());
         alloc_slice keyStr = keyReader.readString();
@@ -140,7 +140,7 @@ public:
                         @"cities": @[@"Portland", @"Eugene"]}};
         Transaction trans(db);
         for (NSString* docID in data) {
-            trans.set(nsstring_slice(docID), forestdb::slice::null, JSONToData(data[docID],NULL));
+            trans.set(nsstring_slice(docID), cbforest::slice::null, JSONToData(data[docID],NULL));
         }
     }
 
@@ -164,7 +164,7 @@ public:
         Transaction trans(db);
         NSDictionary* body = @{@"name": @"Oregon",
                                @"cities": @[@"Portland", @"Walla Walla", @"Salem"]};
-        trans.set(nsstring_slice(@"OR"), forestdb::slice::null, JSONToData(body,NULL));
+        trans.set(nsstring_slice(@"OR"), cbforest::slice::null, JSONToData(body,NULL));
     }
     [self queryExpectingKeys: @[@"Cambria", @"Port Townsend", @"Portland", @"Salem",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk",

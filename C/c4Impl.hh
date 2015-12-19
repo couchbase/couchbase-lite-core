@@ -14,7 +14,7 @@
 #include "Collatable.hh"
 #include "Error.hh"
 
-using namespace forestdb;
+using namespace cbforest;
 
 namespace forestdb {
     class VersionedDocument;

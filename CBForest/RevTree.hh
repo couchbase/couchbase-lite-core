@@ -22,7 +22,7 @@
 #include <vector>
 
 
-namespace forestdb {
+namespace cbforest {
 
     class RevTree;
     class RawRevision;

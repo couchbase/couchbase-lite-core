@@ -20,7 +20,7 @@
 #include "LogInternal.hh"
 #include <algorithm>
 
-namespace forestdb {
+namespace cbforest {
 
     static int64_t kMinFormatVersion = 4;
     static int64_t kCurFormatVersion = 4;
@@ -166,7 +166,7 @@ namespace forestdb {
         alloc_slice entry = getSpecialEntry(docID, seq, geoID);
         CollatableReader reader(entry);
         reader.beginArray();
-        outArea = ::forestdb::readGeoArea(reader);
+        outArea = ::cbforest::readGeoArea(reader);
         outGeoJSON = outValue = slice::null;
         if (reader.peekTag() != CollatableReader::kEndSequence) {
             if (reader.peekTag() == CollatableReader::kString)

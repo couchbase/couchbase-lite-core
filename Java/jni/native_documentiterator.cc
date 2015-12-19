@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <vector>
 
-using namespace forestdb::jni;
+using namespace cbforest::jni;
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateAllDocs
         (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
