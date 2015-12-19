@@ -12,6 +12,7 @@
 #include <jni.h>
 #include "c4Database.h"
 #include "slice.hh"
+#include <vector>
 
 namespace forestdb {
     namespace jni {
@@ -67,17 +68,33 @@ private:
     bool _critical;
 };
 
-// Copies an encryption key to a C4EncryptionKey. Returns false on exception.
-bool getEncryptionKey(JNIEnv *env,
-                      jint keyAlg,
-                      jbyteArray jKeyBytes,
-                      C4EncryptionKey *outKey);
-
 jstring toJString(JNIEnv*, C4Slice);
 
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 
 void throwError(JNIEnv*, C4Error);
+
+// Copies an array of handles from a Java long[] to a C++ vector.
+template <typename T>
+std::vector<T> handlesToVector(JNIEnv *env, jlongArray jhandles) {
+    jsize count = env->GetArrayLength(jhandles);
+    std::vector<T> objects(count);
+    if (count > 0) {
+        jboolean isCopy;
+        auto handles = env->GetLongArrayElements(jhandles, &isCopy);
+        for(jsize i = 0; i < count; i++) {
+            objects[i] = (T)handles[i];
+        }
+        env->ReleaseLongArrayElements(jhandles, handles, JNI_ABORT);
+    }
+    return objects;
+}
+
+// Copies an encryption key to a C4EncryptionKey. Returns false on exception.
+bool getEncryptionKey(JNIEnv *env,
+                      jint keyAlg,
+                      jbyteArray jKeyBytes,
+                      C4EncryptionKey *outKey);
 
     }
 }

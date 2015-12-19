@@ -119,69 +119,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getLastSequenceChangedA
     return c4view_getLastSequenceChangedAt(getViewHandle(env, self));
 }
 
-//////// INDEXING:
-
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_beginIndex
-        (JNIEnv *env, jobject self, jlong dbHandle, jlong viewHandle)
-{
-    C4View* view = (C4View*)viewHandle;
-    C4Error error;
-    C4Indexer* indexer = c4indexer_begin((C4Database*)dbHandle, &view, 1, &error);
-    if (!indexer)
-        throwError(env, error);
-    return (jlong)indexer;
-}
-
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_enumerateDocuments
-        (JNIEnv *env, jobject self, jlong indexerHandle){
-    C4Error error;
-    C4DocEnumerator* e = c4indexer_enumerateDocuments((C4Indexer*)indexerHandle, &error);
-    if(!e)
-        throwError(env, error);
-    return (jlong)e;
-}
-
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_emit(JNIEnv *env, jobject self, jlong indexerHandle, jlong documentHandler, jlongArray jkeys, jobjectArray jvalues)
-{
-    C4Indexer* indexer = (C4Indexer*)indexerHandle;
-    C4Document* doc = (C4Document*)documentHandler;
-    size_t count = env->GetArrayLength(jkeys);
-    jlong *keys   = env->GetLongArrayElements(jkeys, NULL);
-    std::vector<C4Key*> c4keys(count);
-    std::vector<C4Slice> c4values(count);
-    std::vector<jbyteArraySlice> valueBufs;
-    for(int i = 0; i < count; i++) {
-        c4keys[i] = (C4Key*)keys[i];
-        jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
-        if (jvalue) {
-            valueBufs.push_back(jbyteArraySlice(env, jvalue));
-            c4values[i] = valueBufs.back();
-        } else {
-            c4values[i] = kC4SliceNull;
-        }
-    }
-
-    C4Error error;
-    bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
-                                 c4keys.data(), c4values.data(), &error);
-
-    for(int i = 0; i < count; i++)
-        c4key_free(c4keys[i]);
-    env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
-
-    if(!result)
-        throwError(env, error);
-}
-
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_endIndex
-        (JNIEnv *env, jobject self, jlong indexerHandle, jboolean commit)
-{
-    C4Error error;
-    if(!c4indexer_end((C4Indexer *)indexerHandle, commit, &error))
-        throwError(env, error);
-}
-
 //////// QUERYING:
+
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__J
         (JNIEnv *env, jclass clazz, jlong viewHandle)
 {
@@ -224,13 +163,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
  jboolean descending, jboolean inclusiveStart, jboolean inclusiveEnd,
  jlongArray jkeys)
 {
-    size_t keyCount = env->GetArrayLength(jkeys);
-    jboolean isCopy;
-    auto keys = env->GetLongArrayElements(jkeys, &isCopy);
-    std::vector<C4Key*> c4keys(keyCount);
-    for(int i = 0; i < keyCount; i++){
-        c4keys[i]   = (C4Key *)keys[i];
-    }
+    auto c4keys = handlesToVector<C4Key*>(env, jkeys);
+    size_t keyCount = c4keys.size();
+
     C4QueryOptions options = {
         (uint64_t)std::max((long long)skip, 0ll),
         (uint64_t)std::max((long long)limit, 0ll),
@@ -241,12 +176,11 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         NULL,
         kC4SliceNull,
         kC4SliceNull,
-        (const C4Key **)c4keys.data(),
+        const_cast<const C4Key**>(c4keys.data()),
         keyCount
     };
     C4Error error;
     C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, &options, &error);
-    env->ReleaseLongArrayElements(jkeys, keys, JNI_ABORT);
     if (!e)
         throwError(env, error);
     return (jlong)e;

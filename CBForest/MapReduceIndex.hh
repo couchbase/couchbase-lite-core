@@ -130,18 +130,28 @@ namespace forestdb {
 
         KeyStore sourceStore();
 
+        /** Updates all of the indexes by enumerating the new documents and calling addDocument()
+            on each one. (That method needs to be overridden for this to do anything.) */
         bool run();
 
+        /** Returns true if indexing completed successfully. */
         void finished()                             {_finished = true;}
 
         sequence latestDbSequence() const           {return _latestDbSequence;}
 
-        // Incremental mode:
+        //// Incremental mode:
 
         /** Determines at which sequence indexing should start.
             Returns UINT64_MAX if no re-indexing is necessary. */
         sequence startingSequence();
 
+        /** Returns true if the given document should be indexed by the given view,
+            i.e. if the view has not yet indexed this doc's sequence. */
+        bool shouldMapDocIntoView(const Document &doc, unsigned viewNumber);
+
+        /** Writes a set of key/value pairs into a view's index, associated with a doc/sequence.
+            This must be called even if there are no pairs to index, so that obsolete index rows
+            can be removed. */
         void emitDocIntoView(slice docID,
                              sequence docSequence,
                              unsigned viewNumber,

@@ -156,6 +156,10 @@ namespace c4Internal {
     C4Document* newC4Document(C4Database *db, const Document &doc) {
         return new C4DocumentInternal(db, doc);
     }
+
+    const VersionedDocument& versionedDocument(C4Document* doc) {
+        return internal(doc)->_versionedDoc;
+    }
 }
 
 

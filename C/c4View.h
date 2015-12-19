@@ -84,9 +84,26 @@ extern "C" {
                                size_t viewCount,
                                C4Error *outError);
 
-    /** Creates an enumerator that will return all the documents that need to be (re)indexed. */
+    /** Instructs the indexer not to do any indexing if the given view is up-to-date.
+        Typically this is used when the indexing occurs because this view is being queried. */
+    void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view);
+
+    /** Creates an enumerator that will return all the documents that need to be (re)indexed.
+        Returns NULL if no indexing is needed; you can distinguish this from an error by looking
+        at the C4Error. */
     struct C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer,
-                                                  C4Error *outError);
+                                                         C4Error *outError);
+
+    /** Returns true if a view being indexed should index the given document.
+        (This checks whether the document's current revision's sequence is greater than
+        the view's last-indexed sequence.)
+        If only one view is being indexed, you don't need to call this (assume it returns true.)
+        If this function returns true, the caller should proceed to compute the key/value pairs,
+        then call c4indexer_emit() to add them to this view's index.
+        If this function returns false, the caller should skip to the next view.*/
+    bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
+                                       unsigned viewNumber,
+                                       C4Document *doc);
 
     /** Adds index rows for the keys/values derived from one document, for one view.
         This function needs to be called *exactly once* for each (document, view) pair during

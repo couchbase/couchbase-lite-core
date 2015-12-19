@@ -12,6 +12,7 @@
 #include "c4DocEnumerator.h"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
+#include "VersionedDocument.hh"
 #include <math.h>
 #include <limits.h>
 using namespace forestdb;
@@ -162,6 +163,12 @@ C4Indexer* c4indexer_begin(C4Database *db,
 }
 
 
+void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) {
+    indexer->triggerOnIndex(&view->_index);
+}
+
+
+
 C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
     try {
         sequence startSequence = indexer->startingSequence();
@@ -176,9 +183,18 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
     return NULL;
 }
 
+
+bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
+                                   unsigned viewNumber,
+                                   C4Document *doc)
+{
+    return indexer->shouldMapDocIntoView(versionedDocument(doc).document(), viewNumber);
+}
+
+
 bool c4indexer_emit(C4Indexer *indexer,
                     C4Document *doc,
-                    unsigned viewIndex,
+                    unsigned viewNumber,
                     unsigned emitCount,
                     C4Key* emittedKeys[],
                     C4Slice emittedValues[],
@@ -193,7 +209,7 @@ bool c4indexer_emit(C4Indexer *indexer,
                 values.push_back(emittedValues[i]);
             }
         }
-        indexer->emitDocIntoView(doc->docID, doc->sequence, viewIndex, keys, values);
+        indexer->emitDocIntoView(doc->docID, doc->sequence, viewNumber, keys, values);
         return true;
     } catchError(outError)
     return false;

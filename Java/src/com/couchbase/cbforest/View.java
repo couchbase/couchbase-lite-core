@@ -14,7 +14,6 @@ public class View {
         _dbHandle = sourceDB._handle;
         _handle = _open(sourceDB._handle, viewDbPath, viewDbFlags, encryptionAlgorithm,
                         encryptionKey, viewName, version);
-        _indexerHandle = 0;
     }
 
     protected void finalize() {
@@ -22,12 +21,6 @@ public class View {
     }
 
     public void closeView(){
-        if(_indexerHandle != 0) {
-            try {
-                endIndex(false);
-            } catch (ForestException e) {}
-        }
-
         close();
         _handle = 0;
         _dbHandle = 0;
@@ -48,41 +41,6 @@ public class View {
     protected long _handle;    // handle to native C4View*
     protected long _dbHandle; // handle to native C4Database*
 
-    //////// INDEXING:
-
-    public void beginIndex() throws ForestException {
-        _indexerHandle = beginIndex(_dbHandle, _handle);
-    }
-
-    public DocumentIterator enumerator() throws ForestException {
-        return new DocumentIterator(enumerateDocuments(_indexerHandle), false);
-    }
-
-    public void emit(Document doc, Object[] keys, byte[][] values) throws ForestException {
-
-        // initialize C4Key
-        long keyHandles[] = new long[keys.length];
-        for (int i = 0; i < keys.length; i++) {
-            keyHandles[i] = objectToKey(keys[i]);
-        }
-
-        emit(_indexerHandle, doc._handle, keyHandles, values);
-        // C4Keys in keyHandles are freed by the native method
-    }
-
-    public void endIndex(boolean commit) throws ForestException {
-        endIndex(_indexerHandle, commit);
-        _indexerHandle = 0;
-    }
-
-    // native methods for indexer
-    private native long beginIndex(long dbHandle, long viewHandle) throws ForestException;
-    private native long enumerateDocuments(long indexerHandler) throws ForestException;
-    private native void emit(long indexerHandler, long docHandler, long[] keys, byte[][] values) throws ForestException;
-    private native void endIndex(long indexerHandler, boolean commit) throws ForestException;
-    // NOTE: endIndex also frees Indexer
-
-    protected long _indexerHandle; // handle to native C4View*
 
     //////// QUERYING:
     public QueryIterator query() throws ForestException {

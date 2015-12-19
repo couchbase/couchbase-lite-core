@@ -56,6 +56,8 @@ namespace forestdb {
         bool exists() const         {return _doc.exists();}
         forestdb::sequence sequence() const {return _doc.sequence();}
 
+        const Document& document() const    {return _doc;}
+
         slice docType() const       {return _docType;}
         void setDocType(slice type) {_docType = type;}
 
