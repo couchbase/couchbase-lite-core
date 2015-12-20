@@ -123,7 +123,7 @@ public class View {
             try {
                 keyAdd(key, o);
                 return key;
-            } catch (Throwable t) {
+            } catch (Error t) {
                 freeKey(key);
                 throw t; //? Is this correct?
             }
