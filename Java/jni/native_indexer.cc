@@ -78,7 +78,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
     C4Indexer* indexer = (C4Indexer*)indexerHandle;
     C4Document* doc = (C4Document*)documentHandler;
     C4Error error;
-    bool result = c4indexer_emit(indexer, doc, 0, (unsigned)count,
+    bool result = c4indexer_emit(indexer, doc, viewNumber, (unsigned)count,
                                  c4keys.data(), c4values.data(), &error);
 
     for(int i = 0; i < count; i++)
