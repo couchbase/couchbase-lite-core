@@ -654,6 +654,8 @@
 		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
 		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		273A96501C31E51B0056532E /* SecureRandomize.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
+		273A96511C334AE40056532E /* SecureDigest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -1415,6 +1417,8 @@
 				27E487261923B80E007D8940 /* slice.mm */,
 				27FDFC0018EA58BF00AC4647 /* varint.cc */,
 				27FDFC0218EA58DA00AC4647 /* varint.hh */,
+				273A96501C31E51B0056532E /* SecureRandomize.hh */,
+				273A96511C334AE40056532E /* SecureDigest.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
 				2750724318E3E52800A80C5A /* Supporting Files */,

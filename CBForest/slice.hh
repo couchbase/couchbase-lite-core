@@ -155,8 +155,8 @@ namespace cbforest {
 
         /** Prevents the memory from being freed after the last alloc_slice goes away.
             Use this is something else (like an NSData) takes ownership of the heap block. */
-        void dontFree()             {if (buf) std::get_deleter<freer>(*this)->detach();}
-
+        slice dontFree()             {if (buf) std::get_deleter<freer>(*this)->detach();
+                                      return *this;}
 #ifdef __OBJC__
         NSData* convertToNSData()   {dontFree(); return slice::convertToNSData();}
 #endif

@@ -151,6 +151,88 @@ class C4DatabaseTest : public C4Test {
     }
 
 
+    void testGetForPut() {
+        C4Error error;
+        TransactionHelper t(db);
+
+        // Creating doc given ID:
+        auto doc = c4doc_getForPut(db, kDocID, kC4SliceNull, false, false, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->revID, kC4SliceNull);
+        AssertEqual(doc->flags, (C4DocumentFlags)0);
+        AssertEqual(doc->selectedRev.revID, kC4SliceNull);
+        c4doc_free(doc);
+
+        // Creating doc, no ID:
+        doc = c4doc_getForPut(db, kC4SliceNull, kC4SliceNull, false, false, &error);
+        Assert(doc != NULL);
+        Assert(doc->docID.size >= 20);  // Verify it got a random doc ID
+        AssertEqual(doc->revID, kC4SliceNull);
+        AssertEqual(doc->flags, (C4DocumentFlags)0);
+        AssertEqual(doc->selectedRev.revID, kC4SliceNull);
+        c4doc_free(doc);
+
+        // Delete with no revID given
+        doc = c4doc_getForPut(db, kDocID, kC4SliceNull, true/*deleting*/, false, &error);
+        Assert(doc == NULL);
+        AssertEqual(error.code, 404);
+
+        // Adding new rev of nonexistent doc:
+        doc = c4doc_getForPut(db, kDocID, kRevID, false, false, &error);
+        Assert(doc == NULL);
+        AssertEqual(error.code, 404);
+
+        // Adding new rev of existing doc:
+        createRev(kDocID, kRevID, kBody);
+        doc = c4doc_getForPut(db, kDocID, kRevID, false, false, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->revID, kRevID);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
+        AssertEqual(doc->selectedRev.revID, kRevID);
+        c4doc_free(doc);
+
+        // Adding new rev, with nonexistent parent:
+        doc = c4doc_getForPut(db, kDocID, kRev2ID, false, false, &error);
+        Assert(doc == NULL);
+        AssertEqual(error.code, 404);
+
+        // Conflict -- try & fail to update non-current rev:
+        const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
+        createRev(kDocID, kRev2ID, kBody2);
+        doc = c4doc_getForPut(db, kDocID, kRevID, false, false, &error);
+        Assert(doc == NULL);
+        AssertEqual(error.code, 409);
+
+        // Conflict -- force an update of non-current rev:
+        doc = c4doc_getForPut(db, kDocID, kRevID, false, true/*allowConflicts*/, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->selectedRev.revID, kRevID);
+        c4doc_free(doc);
+
+        // Deleting the doc:
+        doc = c4doc_getForPut(db, kDocID, kRev2ID, true/*deleted*/, false, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->selectedRev.revID, kRev2ID);
+        c4doc_free(doc);
+        // Actually delete it:
+        static const C4Slice kRev3ID= C4STR("3-deadbeef");
+        createRev(kDocID, kRev3ID, kC4SliceNull);
+
+        // Re-creating the doc (no revID given):
+        doc = c4doc_getForPut(db, kDocID, kC4SliceNull, false, false, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        AssertEqual(doc->revID, kRev3ID);
+        AssertEqual(doc->flags, (C4DocumentFlags)(kExists | kDeleted));
+        AssertEqual(doc->selectedRev.revID, kRev3ID);
+        c4doc_free(doc);
+    }
+
+
     void testInsertRevisionWithHistory() {
         const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
         createRev(kDocID, kRevID, kBody);
@@ -188,6 +270,50 @@ class C4DatabaseTest : public C4Test {
         if (n < 0)
             std::cerr << "Error(" << error.domain << "," << error.code << ")\n";
         AssertEqual(n, (int)(kHistoryCount-2));
+    }
+
+
+    void testPut() {
+        C4Error error;
+        TransactionHelper t(db);
+
+        // Creating doc given ID:
+        C4DocPutRequest rq = {};
+        rq.docID = kDocID;
+        rq.body = kBody;
+        auto doc = c4doc_put(db, &rq, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->docID, kDocID);
+        auto kExpectedRevID = C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab");
+        AssertEqual(doc->revID, kExpectedRevID);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
+        AssertEqual(doc->selectedRev.revID, kExpectedRevID);
+        c4doc_free(doc);
+
+        // Update doc:
+        rq.body = C4STR("{\"ok\":\"go\"}");
+        rq.history = &kExpectedRevID;
+        rq.historyCount = 1;
+        doc = c4doc_put(db, &rq, &error);
+        Assert(doc != NULL);
+        auto kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
+        AssertEqual(doc->revID, kExpectedRev2ID);
+        AssertEqual(doc->flags, (C4DocumentFlags)kExists);
+        AssertEqual(doc->selectedRev.revID, kExpectedRev2ID);
+        c4doc_free(doc);
+
+        // Insert existing rev:
+        rq.body = C4STR("{\"from\":\"elsewhere\"}");
+        rq.existingRevision = true;
+        C4Slice history[2] = {kRev2ID, kExpectedRevID};
+        rq.history = history;
+        rq.historyCount = 2;
+        doc = c4doc_put(db, &rq, &error);
+        Assert(doc != NULL);
+        AssertEqual(doc->revID, kRev2ID);
+        AssertEqual(doc->flags, (C4DocumentFlags)(kExists | kConflicted));
+        AssertEqual(doc->selectedRev.revID, kRev2ID);
+        c4doc_free(doc);
     }
 
 
@@ -408,6 +534,8 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
+    CPPUNIT_TEST( testGetForPut );
+    CPPUNIT_TEST( testPut );
     CPPUNIT_TEST( testAllDocs );
     CPPUNIT_TEST( testAllDocsInfo );
     CPPUNIT_TEST( testAllDocsIncludeDeleted );

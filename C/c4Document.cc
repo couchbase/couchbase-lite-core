@@ -14,8 +14,13 @@
 #include "Document.hh"
 #include "LogInternal.hh"
 #include "VersionedDocument.hh"
+#include "SecureRandomize.hh"
+#include "SecureDigest.hh"
 
 using namespace cbforest;
+
+
+static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
 struct C4DocumentInternal : public C4Document {
@@ -77,7 +82,7 @@ struct C4DocumentInternal : public C4Document {
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
             selectedRev.body = slice::null;
-            recordHTTPError(404, outError);
+            recordHTTPError(kC4HTTPNotFound, outError);
             return false;
         }
     }
@@ -133,7 +138,7 @@ struct C4DocumentInternal : public C4Document {
             selectedRev.body = _loadedBody;
             if (_loadedBody.buf)
                 return true;
-            recordHTTPError(410, outError); // 410 Gone to denote body that's been compacted away
+            recordHTTPError(kC4HTTPGone, outError); // 410 Gone to denote body that's been compacted away
         } catchError(outError);
         return false;
     }
@@ -314,25 +319,20 @@ unsigned c4rev_getGeneration(C4Slice revID) {
 #pragma mark - INSERTING REVISIONS
 
 
-int32_t c4doc_insertRevision(C4Document *doc,
-                             C4Slice revID,
-                             C4Slice body,
-                             bool deleted,
-                             bool hasAttachments,
-                             bool allowConflict,
-                             C4Error *outError)
+// Internal form of c4doc_insertRevision that takes compressed revID and doesn't check preconditions
+static int32_t insertRevision(C4DocumentInternal *idoc,
+                              revid encodedRevID,
+                              C4Slice body,
+                              bool deletion,
+                              bool hasAttachments,
+                              bool allowConflict,
+                              C4Error *outError)
 {
-    auto idoc = internal(doc);
-    if (!idoc->mustBeInTransaction(outError))
-        return -1;
-    if (!idoc->loadRevisions(outError))
-        return -1;
     try {
-        revidBuffer encodedRevID(revID);
         int httpStatus;
         auto newRev = idoc->_versionedDoc.insert(encodedRevID,
                                                  body,
-                                                 deleted,
+                                                 deletion,
                                                  hasAttachments,
                                                  idoc->_selectedRev,
                                                  allowConflict,
@@ -345,10 +345,32 @@ int32_t c4doc_insertRevision(C4Document *doc,
             return 1;
         } else if (httpStatus == 200) {
             // Revision already exists, so nothing was added. Not an error.
-            c4doc_selectRevision(doc, revID, true, outError);
+            c4doc_selectRevision(idoc, encodedRevID.expanded(), true, outError);
             return 0;
         }
         recordHTTPError(httpStatus, outError);
+    } catchError(outError)
+    return -1;
+}
+
+
+int32_t c4doc_insertRevision(C4Document *doc,
+                             C4Slice revID,
+                             C4Slice body,
+                             bool deletion,
+                             bool hasAttachments,
+                             bool allowConflict,
+                             C4Error *outError)
+{
+    auto idoc = internal(doc);
+    if (!idoc->mustBeInTransaction(outError))
+        return -1;
+    if (!idoc->loadRevisions(outError))
+        return -1;
+    try {
+        revidBuffer encodedRevID(revID);  // this can throw!
+        return insertRevision(idoc, encodedRevID, body, deletion, hasAttachments, allowConflict,
+                              outError);
     } catchError(outError)
     return -1;
 }
@@ -358,7 +380,7 @@ int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
                                         C4Slice body,
                                         bool deleted,
                                         bool hasAttachments,
-                                        C4Slice history[],
+                                        const C4Slice history[],
                                         size_t historyCount,
                                         C4Error *outError)
 {
@@ -382,7 +404,7 @@ int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
             idoc->updateMeta();
             idoc->selectRevision(idoc->_versionedDoc[revidBuffer(history[0])]);
         } else {
-            recordHTTPError(400, outError); // must be invalid revision IDs
+            recordHTTPError(kC4HTTPBadRequest, outError); // must be invalid revision IDs
         }
     } catchError(outError)
     return commonAncestor;
@@ -433,8 +455,160 @@ bool c4doc_save(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
-        idoc->save(maxRevTreeDepth);
+        idoc->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
         return true;
     } catchError(outError)
     return false;
+}
+
+
+static alloc_slice createDocUUID() {
+    static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                    "0123456789-_";
+    static unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
+    uint8_t r[kLength];
+    SecureRandomize({r, sizeof(r)});
+
+    alloc_slice docIDSlice(1+kLength);
+    char *docID = (char*)docIDSlice.buf;
+    docID[0] = '-';
+    for (unsigned i = 0; i < kLength; ++i)
+        docID[i+1] = kBase64[r[i] % 64];
+    return docIDSlice;
+}
+
+
+static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+    // Get SHA-1 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
+    sha1Context ctx;
+    sha1_begin(&ctx);
+    uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+    sha1_add(&ctx, &revLen, 1);
+    sha1_add(&ctx, parentRevID.buf, revLen);
+    uint8_t delByte = deleted;
+    sha1_add(&ctx, &delByte, 1);
+    sha1_add(&ctx, body.buf, body.size);
+    uint8_t digest[20];
+    sha1_end(&ctx, digest);
+
+    // Derive new rev's generation #:
+    unsigned generation = 1;
+    if (parentRevID.buf) {
+        revidBuffer parentID(parentRevID);
+        generation = parentID.generation() + 1;
+    }
+    return revidBuffer(generation, slice(digest, sizeof(digest)));
+}
+
+C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+    slice result = generateDocRevID(body, parentRevID, deleted).expanded().dontFree();
+    return {result.buf, result.size};
+}
+
+
+C4Document* c4doc_getForPut(C4Database *database,
+                            C4Slice docID,
+                            C4Slice parentRevID,
+                            bool deleting,
+                            bool allowConflict,
+                            C4Error *outError)
+{
+    if (!mustBeInTransaction(database, outError))
+        return NULL;
+    try {
+        alloc_slice newDocID;
+        bool isNewDoc = (!docID.buf);
+        if (isNewDoc) {
+            newDocID = createDocUUID();
+            docID = newDocID;
+        }
+
+        C4DocumentInternal *idoc = new C4DocumentInternal(database, docID);
+
+        if (!isNewDoc && !idoc->loadRevisions(outError))
+            return NULL;
+
+        if (parentRevID.buf) {
+            // Updating an existing revision; make sure it exists and is a leaf:
+            const Revision *rev = idoc->_versionedDoc[revidBuffer(parentRevID)];
+            if (!idoc->selectRevision(rev, outError))
+                return NULL;
+            else if (!allowConflict && !rev->isLeaf()) {
+                recordHTTPError(kC4HTTPConflict, outError);
+                return NULL;
+            }
+        } else {
+            // No parent revision given:
+            if (deleting) {
+                // Didn't specify a revision to delete: NotFound or a Conflict, depending
+                recordHTTPError(idoc->_versionedDoc.exists() ? kC4HTTPConflict : kC4HTTPNotFound,
+                                outError );
+                return NULL;
+            }
+            // If doc exists, current rev must be in a deleted state or there will be a conflict:
+            const Revision *rev = idoc->_versionedDoc.currentRevision();
+            if (rev) {
+                if (!rev->isDeleted()) {
+                    recordHTTPError(kC4HTTPConflict, outError);
+                    return NULL;
+                }
+                // New rev will be child of the tombstone:
+                // (T0D0: Write a horror novel called "Child Of The Tombstone"!)
+                if (!idoc->selectRevision(rev, outError))
+                    return NULL;
+            }
+        }
+        return idoc;
+
+    } catchError(outError)
+    return NULL;
+}
+
+
+C4Document* c4doc_put(C4Database *database,
+                      const C4DocPutRequest *rq,
+                      C4Error *outError)
+{
+    if (!mustBeInTransaction(database, outError))
+        return NULL;
+    int inserted;
+    C4Document *doc;
+    if (rq->existingRevision) {
+        // Existing revision:
+        if (rq->docID.size == 0 || rq->historyCount == 0) {
+            recordHTTPError(kC4HTTPBadRequest, outError);
+            return NULL;
+        }
+        doc = c4doc_get(database, rq->docID, false, outError);
+        if (!doc)
+            return NULL;
+
+        inserted = c4doc_insertRevisionWithHistory(doc, rq->body, rq->deletion, rq->hasAttachments,
+                                                   rq->history, rq->historyCount, outError);
+    } else {
+        // New revision:
+        C4Slice parentRevID;
+        if (rq->historyCount == 1) {
+            parentRevID = rq->history[0];
+        } else if (rq->historyCount > 1) {
+            recordHTTPError(kC4HTTPBadRequest, outError);
+            return NULL;
+        }
+        doc = c4doc_getForPut(database, rq->docID, parentRevID, rq->deletion, rq->allowConflict,
+                              outError);
+        if (!doc)
+            return NULL;
+
+        revidBuffer revID = generateDocRevID(rq->body, doc->selectedRev.revID, rq->deletion);
+
+        inserted = insertRevision(internal(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
+                                  rq->allowConflict, outError);
+    }
+
+    // Save:
+    if (inserted < 0 || (inserted > 0 && !c4doc_save(doc, rq->maxRevTreeDepth, outError))) {
+        c4doc_free(doc);
+        doc = NULL;
+    }
+    return doc;
 }

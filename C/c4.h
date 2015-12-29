@@ -78,6 +78,15 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
 };
 
 
+// HTTPDomain error codes:
+enum {
+    kC4HTTPBadRequest   = 400,          // Invalid parameters
+    kC4HTTPNotFound     = 404,          // Doc/revision not found
+    kC4HTTPConflict     = 409,          // Doc update conflict (parent rev no longer current)
+    kC4HTTPGone         = 410,          // Rev body has been compacted away
+};
+
+
 // C4Domain error codes:
 enum {
     kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception

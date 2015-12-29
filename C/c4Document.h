@@ -148,12 +148,11 @@ extern "C" {
         @param historyCount  The number of items in the history array.
         @param outError  Error information is stored here.
         @return The number of revisions added to the document, or -1 on error. */
-
         int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
                                                 C4Slice body,
                                                 bool deleted,
                                                 bool hasAttachments,
-                                                C4Slice history[],
+                                                const C4Slice history[],
                                                 size_t historyCount,
                                                 C4Error *outError);
 
@@ -181,6 +180,57 @@ extern "C" {
     bool c4doc_save(C4Document *doc,
                     uint32_t maxRevTreeDepth,
                     C4Error *outError);
+
+    //////// HIGH-LEVEL:
+
+    /** Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
+        After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
+        @param database  The database.
+        @param docID  The document's ID, or NULL to create a new document with a random UUID.
+        @param parentRevID  The ID of the revision being replaced, or NULL if this is a first
+                            generation revision. In the latter case, if the document exists but
+                            was deleted, the returned doc's deletion revision will be considered
+                            the parent ID and will be selected in the returned C4Document.
+        @param deleting  True if the document is being deleted.
+        @param allowConflict  If true, prevRevID may be a non-leaf; otherwise it's an error.
+        @param outError  Error information is stored here.
+        @return  The document, with the previous revision selected, or NULL on error. */
+    C4Document* c4doc_getForPut(C4Database *database,
+                                C4Slice docID,
+                                C4Slice parentRevID,
+                                bool deleting,
+                                bool allowConflict,
+                                C4Error *outError);
+
+    /** Generates the revision ID for a new document revision.
+        @param body  The (JSON) body of the revision, exactly as it'll be stored.
+        @param parentRevID  The revID of the parent revision, or null if there's none.
+        @param deletion  True if this revision is a deletion.
+        @result  The new revID. Caller is responsible for freeing its buf. */
+    C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion);
+
+    /** Parameters for adding a revision using c4doc_put. */
+    typedef struct {
+        C4Slice body;               ///< Revision's body
+        C4Slice docID;              ///< Document ID
+        bool deletion;              ///< Is this revision a deletion?
+        bool hasAttachments;        ///< Does this revision have attachments?
+        bool existingRevision;      ///< Is this an already-existing rev coming from replication?
+        bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?
+        const C4Slice *history;     ///< Array of ancestor revision IDs
+        size_t historyCount;        ///< Size of history[] array
+        uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+    } C4DocPutRequest;
+
+    /** A high-level Put operation, to insert a new or downloaded revision.
+        * If request->existingRevision is true, then request->history must contain the revision's
+          history, with the revision's ID as the first item.
+        * Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
+          if any, should be given as the single item of request->history.
+        Either way, on success the document is returned with the inserted revision selected. */
+    C4Document* c4doc_put(C4Database *database,
+                          const C4DocPutRequest *request,
+                          C4Error *outError);
 
 #ifdef __cplusplus
 }

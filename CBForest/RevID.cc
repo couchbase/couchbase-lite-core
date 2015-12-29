@@ -171,6 +171,17 @@ namespace cbforest {
     }
 
 
+    revidBuffer::revidBuffer(unsigned generation, slice digest)
+    :revid(&_buffer, 0)
+    {
+        auto genSize = PutUVarInt((void*)buf, generation);
+        size = genSize + digest.size;
+        if (size > sizeof(_buffer))
+            throw error(error::CorruptRevisionData); // digest too long!
+        memcpy(&_buffer[genSize], digest.buf, digest.size);
+    }
+
+
     void revidBuffer::parse(slice raw) {
         size = 0;
 

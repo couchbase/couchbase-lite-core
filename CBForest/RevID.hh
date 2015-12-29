@@ -53,6 +53,7 @@ namespace cbforest {
     public:
         revidBuffer()                               :revid(&_buffer, 0) {}
         explicit revidBuffer(slice s)               :revid(&_buffer, 0) {parse(s);}
+        revidBuffer(unsigned generation, slice digest);
         revidBuffer(const revidBuffer&);
 
         /** Parses a regular (uncompressed) revID and compresses it.
