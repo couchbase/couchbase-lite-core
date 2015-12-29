@@ -13,7 +13,7 @@
 #include <vector>
 
 
-using namespace forestdb::jni;
+using namespace cbforest::jni;
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_beginIndex

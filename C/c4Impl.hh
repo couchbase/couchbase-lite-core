@@ -16,7 +16,7 @@
 
 using namespace cbforest;
 
-namespace forestdb {
+namespace cbforest {
     class VersionedDocument;
 }
 
