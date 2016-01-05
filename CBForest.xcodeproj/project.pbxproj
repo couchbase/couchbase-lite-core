@@ -95,6 +95,7 @@
 		273A96561C34696E0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
 		273A96571C34696F0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
 		273A96591C3C29350056532E /* c4GeoTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96581C3C29350056532E /* c4GeoTest.cc */; };
+		273A965A1C3C563B0056532E /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -2135,6 +2136,7 @@
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
 				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
 				274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */,
+				273A965A1C3C563B0056532E /* sqlite_glue.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

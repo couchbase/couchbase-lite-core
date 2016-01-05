@@ -71,11 +71,55 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
 {
     return toJString(env, ((C4QueryEnumerator*)handle)->docID);
 }
+
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
         (JNIEnv *env, jobject self, jlong handle)
 {
     return ((C4QueryEnumerator*)handle)->docSequence;
 }
+
+JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTerms
+  (JNIEnv *env, jobject self, jlong handle)
+{
+    auto e = (C4QueryEnumerator*)handle;
+    jintArray jterms = env->NewIntArray(3 * e->fullTextTermCount);
+    if (!jterms)
+        return NULL;
+    jboolean isCopy;
+    jint *term = env->GetIntArrayElements(jterms, &isCopy);
+    for (uint32_t i = 0; i < e->fullTextTermCount; i++) {
+        auto &src = e->fullTextTerms[i];
+        term[0] = src.termIndex;
+        term[1] = src.start;
+        term[2] = src.length;
+        term += 3;
+    }
+    return jterms;
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoBoundingBox
+  (JNIEnv *env, jobject self, jlong handle)
+{
+    auto e = (C4QueryEnumerator*)handle;
+    jdoubleArray jbox = env->NewDoubleArray(4);
+    if (!jbox)
+        return NULL;
+    jboolean isCopy;
+    jdouble *bp = env->GetDoubleArrayElements(jbox, &isCopy);
+    bp[0] = e->geoBBox.xmin;
+    bp[1] = e->geoBBox.ymin;
+    bp[2] = e->geoBBox.xmax;
+    bp[3] = e->geoBBox.ymax;
+    return jbox;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoJSON
+  (JNIEnv *env, jobject self, jlong handle)
+{
+    auto e = (C4QueryEnumerator*)handle;
+    return toJByteArray(env, e->geoJSON);
+}
+
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
 (JNIEnv *env, jobject self, jlong handle)
 {

@@ -86,6 +86,17 @@ public class View {
                                        inclusiveStart, inclusiveEnd, keyHandles));
     }
 
+    public QueryIterator fullTextQuery(String queryString,
+                                       String languageCode,
+                                       boolean ranked) throws ForestException
+    {
+        return new QueryIterator(query(_handle, queryString, languageCode, ranked));
+    }
+
+    public QueryIterator geoQuery(double xmin, double ymin, double xmax, double ymax) throws ForestException {
+        return new QueryIterator(query(_handle, xmin, ymin, xmax, ymax));
+    }
+
     // native methods for query
 
     private static native long query(long viewHandle) throws ForestException;
@@ -110,6 +121,15 @@ public class View {
                                      long keys[])  // array of C4Key*
             throws ForestException;
 
+    private static native long query(long viewHandle,   // C4View*
+                                     String queryString,
+                                     String languageCode,
+                                     boolean ranked) throws ForestException;
+
+    private static native long query(long viewHandle,   // C4View*
+                                     double xmin, double ymin,
+                                     double xmax, double ymax) throws ForestException;
+
 
     //////// KEY:
 
@@ -118,6 +138,12 @@ public class View {
     static long objectToKey(Object o) {
         if (o == null) {
             return 0;
+        } else if (o instanceof TextKey) {
+            TextKey ft = (TextKey)o;
+            return newFullTextKey(ft.text, ft.languageCode);
+        } else if (o instanceof GeoJSONKey) {
+            GeoJSONKey g = (GeoJSONKey)o;
+            return newGeoKey(g.geoJSON, g.xmin, g.ymin, g.xmax, g.ymax);
         } else {
             long key = newKey();
             try {
@@ -164,8 +190,43 @@ public class View {
         }
     }
 
+    /** A key to emit during indexing, representing a natural-language string for full-text search. */
+    public static class TextKey {
+        TextKey(String text, String languageCode) {
+            this.text = text;
+            this.languageCode = languageCode;
+        }
+
+        TextKey(String text) {
+            this(text, null);
+        }
+
+        public final String text, languageCode;
+
+        public static native void setDefaultLanguageCode(String languageCode,
+                                                         boolean ignoreDiacriticals);
+    }
+
+    /** A key to emit during indexing, representing a shape in GeoJSON format together with its bounding box. */
+    public static class GeoJSONKey {
+        GeoJSONKey(byte[] geoJSON, double xmin, double ymin, double xmax, double ymax) {
+            this.geoJSON = geoJSON;
+            this.xmin = xmin;   this.ymin = ymin;
+            this.xmax = xmax;   this.ymax = ymax;
+        }
+
+        GeoJSONKey(double xmin, double ymin, double xmax, double ymax) {
+            this(null, xmin, ymin, xmax, ymax);
+        }
+
+        public final byte[] geoJSON;
+        public final double xmin, ymin, xmax, ymax;
+    }
+    
     // native methods for Key
     static native long   newKey();
+    static native long   newFullTextKey(String text, String languageCode);
+    static native long   newGeoKey(byte[] geoJSON, double xmin, double ymin, double xmax, double ymax);
     static native void   freeKey(long key);
     static native void   keyAddNull(long key);
     static native void   keyAdd(long key, boolean b);

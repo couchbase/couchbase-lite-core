@@ -7,6 +7,7 @@
 //
 
 #include "com_couchbase_cbforest_View.h"
+#include "com_couchbase_cbforest_View_TextKey.h"
 #include "native_glue.hh"
 #include "c4View.h"
 #include <algorithm>
@@ -189,6 +190,38 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
 }
 
 
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JLjava_lang_String_2Ljava_lang_String_2Z
+  (JNIEnv *env, jclass clazz, jlong viewHandle,
+   jstring jqueryString, jstring jlanguageCode, jboolean ranked)
+{
+    jstringSlice queryString(env, jqueryString);
+    jstringSlice languageCode(env, jlanguageCode);
+    C4QueryOptions options = kC4DefaultQueryOptions;
+    options.rankFullText = ranked;
+
+    C4Error error;
+    C4QueryEnumerator *e = c4view_fullTextQuery((C4View*)viewHandle, queryString, languageCode,
+                                                &options, &error);
+    if (!e)
+        throwError(env, error);
+    return (jlong)e;
+}
+
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JDDDD
+  (JNIEnv *env, jclass clazz, jlong viewHandle,
+   jdouble xmin, jdouble ymin, jdouble xmax, jdouble ymax)
+{
+    C4GeoArea area = {xmin, ymin, xmax, ymax};
+    C4Error error;
+    C4QueryEnumerator *e = c4view_geoQuery((C4View*)viewHandle, area, &error);
+    if (!e)
+        throwError(env, error);
+    return (jlong)e;
+}
+
+
+
 #pragma mark - KEYS:
 
 
@@ -196,6 +229,23 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newKey
   (JNIEnv *env, jclass clazz)
 {
     return (jlong)c4key_new();
+}
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newFullTextKey
+  (JNIEnv *env, jclass clazz, jstring jtext, jstring jlanguageCode)
+{
+    jstringSlice text(env, jtext);
+    jstringSlice languageCode(env, jlanguageCode);
+    return (jlong)c4key_newFullTextString(text, languageCode);
+}
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newGeoKey
+  (JNIEnv *env, jclass clazz, jbyteArray jgeoJSON,
+   jdouble xmin, jdouble ymin, jdouble xmax, jdouble ymax)
+{
+    jbyteArraySlice geoJSON(env, jgeoJSON);
+    C4GeoArea bbox = {xmin, ymin, xmax, ymax};
+    return (jlong)c4key_newGeoJSON(geoJSON, bbox);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeKey
@@ -296,4 +346,11 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyReadString(JNIEnv 
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeKeyReader(JNIEnv *env, jclass clazz, jlong jreader){
     if(jreader != 0) c4key_freeReader((C4KeyReader*)jreader);
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_00024TextKey_setDefaultLanguageCode
+  (JNIEnv *env, jclass clazz, jstring jlanguageCode, jboolean ignoreDiacriticals)
+{
+    jstringSlice languageCode(env, jlanguageCode);
+    c4key_setDefaultFullTextLanguage(languageCode, ignoreDiacriticals);
 }
