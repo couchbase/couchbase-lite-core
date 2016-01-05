@@ -143,17 +143,22 @@ C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) {
 #pragma mark - INDEXING:
 
 
+static void initTokenizer() {
+    static bool sInitializedTokenizer = false;
+    if (!sInitializedTokenizer) {
+        Tokenizer::defaultStemmer = "english";
+        Tokenizer::defaultRemoveDiacritics = true;
+        sInitializedTokenizer = true;
+    }
+}
+
+
 struct c4Indexer : public MapReduceIndexer {
     c4Indexer(C4Database *db)
     :MapReduceIndexer(),
      _db(db)
     {
-        static bool sInitializedTokenizer = false;
-        if (!sInitializedTokenizer) {
-            Tokenizer::defaultStemmer = "english";
-            Tokenizer::defaultRemoveDiacritics = true;
-            sInitializedTokenizer = true;
-        }
+        initTokenizer();
     }
 
     virtual ~c4Indexer() { }
@@ -431,6 +436,7 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
 
 
 bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) {
+    initTokenizer();
     Tokenizer::defaultStemmer = std::string(languageName);
     Tokenizer::defaultRemoveDiacritics = stripDiacriticals;
     return true;
