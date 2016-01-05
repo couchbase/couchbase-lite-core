@@ -26,13 +26,32 @@ extern "C" {
     /** Creates a C4Key by copying the data, which must be in the C4Key binary format. */
     C4Key* c4key_withBytes(C4Slice);
 
+    /** Creates a C4Key containing a string of text to be full-text-indexed by a view.
+        @param text  The text to be indexed.
+        @param language  An ISO-639 language code like "en" or "de", or kC4SliceNull to use the
+                         default language (see c4key_setDefaultFullTextLanguage.)
+        @return  A new C4Key representing this key. */
+    C4Key* c4key_newFullTextString(C4Slice text, C4Slice language);
+
+    /** Creates a C4Key containing a 2D shape to be geo-indexed.
+        Caller must provide the bounding box of the shape.
+        @param geoJSON  GeoJSON describing the shape.
+        @param minX  Minimum X (longitude) coord of the shape.
+        @param minY  Minimum Y (latitude) coord of the shape.
+        @param maxX  Maximum X (longitude) coord of the shape.
+        @param maxY  Maximum Y (latitude) coord of the shape.
+        @return  A new C4Key for the shape. */
+    C4Key* c4key_newGeoJSON(C4Slice geoJSON,
+                            double minX, double minY,
+                            double maxX, double maxY);
+
     /** Frees a C4Key. */
     void c4key_free(C4Key*);
 
     void c4key_addNull(C4Key*);             /**< Adds a JSON null value to a C4Key. */
     void c4key_addBool(C4Key*, bool);       /**< Adds a boolean value to a C4Key. */
     void c4key_addNumber(C4Key*, double);   /**< Adds a number to a C4Key. */
-    void c4key_addString(C4Key*, C4Slice);  /**< Adds a string to a C4Key. */
+    void c4key_addString(C4Key*, C4Slice);  /**< Adds a UTF-8 string to a C4Key. */
 
     /** Adds an array to a C4Key.
         Subsequent values added will go into the array, until c4key_endArray is called. */
@@ -51,6 +70,15 @@ extern "C" {
     /** Adds a map key, before the next value. When adding to a map, every value must be
         preceded by a key. */
     void c4key_addMapKey(C4Key*, C4Slice);
+
+
+    /** Sets the process-wide default (human) language for full-text keys. This affects how
+        words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
+        @param languageName  An ISO language name like 'english'.
+        @param stripDiacriticals  True if accents and other diacriticals should be stripped from
+                                  letters. Appropriate for English but not for most other languages.
+        @return  True if the languageName was recognized, false if not. */
+    bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals);
 
 
     //////// KEY READERS:

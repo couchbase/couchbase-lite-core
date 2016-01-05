@@ -141,6 +141,101 @@ public:
         AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)0);
     }
 
+    void createFullTextIndex(unsigned docCount) {
+        char docID[20];
+        for (unsigned i = 1; i <= docCount; i++) {
+            sprintf(docID, "doc-%03d", i);
+            const char *body = nullptr;
+            switch (i % 3) {
+                case 0: body = "The cat sat on the mat."; break;
+                case 1: body = "Outside SomeWhere a cät was barking"; break;
+                case 2: body = "The bark of a tree is rough?"; break;
+            }
+            createRev(c4str(docID), kRevID, c4str(body));
+        }
+
+        C4Error error;
+        C4Indexer* ind = c4indexer_begin(db, &view, 1, &error);
+        Assert(ind);
+
+        C4DocEnumerator* e = c4indexer_enumerateDocuments(ind, &error);
+        Assert(e);
+
+        C4Document *doc;
+        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+            // Index 'doc':
+            C4Key *keys[1];
+            C4Slice values[1];
+            keys[0] = c4key_newFullTextString(doc->selectedRev.body, c4str("en"));
+            values[0] = c4str("1234");
+            Assert(c4indexer_emit(ind, doc, 0, 1, keys, values, &error));
+            c4key_free(keys[0]);
+        }
+        AssertEqual(error.code, 0);
+        Assert(c4indexer_end(ind, true, &error));
+    }
+
+    void testCreateFullTextIndex() {
+        createFullTextIndex(100);
+    }
+
+    void testQueryFullTextIndex() {
+        createFullTextIndex(3);
+
+        // Search for "somewhere":
+        C4Error error;
+        C4QueryEnumerator* e = c4view_fullTextQuery(view, c4str("somewhere"), kC4SliceNull,
+                                                    NULL, &error);
+        Assert(e);
+        Assert(c4queryenum_next(e, &error));
+        AssertEqual(e->docID, c4str("doc-001"));
+        AssertEqual(e->docSequence, 1uLL);
+        AssertEqual(e->fullTextTermCount, 1u);
+        AssertEqual(e->fullTextTerms[0].termIndex, 0u);
+        AssertEqual(e->fullTextTerms[0].start, 8u);
+        AssertEqual(e->fullTextTerms[0].length, 9u);
+
+        Assert(!c4queryenum_next(e, &error));
+        AssertEqual(error.code, 0);
+        c4queryenum_free(e);
+
+        // Search for "cat":
+        e = c4view_fullTextQuery(view, c4str("cat"), kC4SliceNull,  NULL, &error);
+        Assert(e);
+        int i = 0;
+        while (c4queryenum_next(e, &error)) {
+            ++i;
+            AssertEqual(e->fullTextTermCount, 1u);
+            AssertEqual(e->fullTextTerms[0].termIndex, 0u);
+            if (e->docSequence == 1) {
+                AssertEqual(e->fullTextTerms[0].start, 20u);
+                AssertEqual(e->fullTextTerms[0].length, 4u);
+            } else {
+                AssertEqual(e->docSequence, 3uLL);
+                AssertEqual(e->fullTextTerms[0].start, 4u);
+                AssertEqual(e->fullTextTerms[0].length, 3u);
+            }
+        }
+        AssertEqual(error.code, 0);
+        AssertEqual(i, 2);
+
+        // Search for "cat bark":
+        e = c4view_fullTextQuery(view, c4str("cat bark"), kC4SliceNull,  NULL, &error);
+        Assert(c4queryenum_next(e, &error));
+        AssertEqual(e->docID, c4str("doc-001"));
+        AssertEqual(e->docSequence, 1uLL);
+        AssertEqual(e->fullTextTermCount, 2u);
+        AssertEqual(e->fullTextTerms[0].termIndex, 0u);
+        AssertEqual(e->fullTextTerms[0].start, 20u);
+        AssertEqual(e->fullTextTerms[0].length, 4u);
+        AssertEqual(e->fullTextTerms[1].termIndex, 1u);
+        AssertEqual(e->fullTextTerms[1].start, 29u);
+        AssertEqual(e->fullTextTerms[1].length, 7u);
+
+        Assert(!c4queryenum_next(e, &error));
+        AssertEqual(error.code, 0);
+        c4queryenum_free(e);
+    }
 
 
     CPPUNIT_TEST_SUITE( C4ViewTest );
@@ -148,6 +243,8 @@ public:
     CPPUNIT_TEST( testCreateIndex );
     CPPUNIT_TEST( testQueryIndex );
     CPPUNIT_TEST( testIndexVersion );
+    CPPUNIT_TEST( testCreateFullTextIndex );
+    CPPUNIT_TEST( testQueryFullTextIndex );
     CPPUNIT_TEST_SUITE_END();
 };
 

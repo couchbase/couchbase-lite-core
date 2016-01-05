@@ -37,6 +37,8 @@ namespace cbforest {
             kMap,
             kGeohash,           // Geohash string
             kSpecial,           // Placeholder for doc (Only used in values, not keys)
+            kFullTextKey,       // String to be full-text-indexed (Only used in emit() calls)
+            kGeoJSONKey,        // GeoJSON to be indexed (only used in emit() calls)
             kError = 255        // Something went wrong. (Never stored, only returned from peekTag)
         } Tag;
     };
@@ -94,6 +96,9 @@ namespace cbforest {
 
         CollatableBuilder& operator<< (const geohash::hash& h) {addString(kGeohash, (slice)h);
                                                                 return *this;}
+
+        CollatableBuilder& addFullTextKey(slice text, slice languageCode = slice::null);
+        CollatableBuilder& addGeoKey(slice geoJSON, geohash::area bbox);
 
         CollatableBuilder& beginArray()                    {addTag(kArray); return *this;}
         CollatableBuilder& endArray()                      {addTag(kEndSequence); return *this;}
@@ -166,8 +171,11 @@ namespace cbforest {
 
         int64_t readInt();
         double readDouble();
-        alloc_slice readString();
+        alloc_slice readString()            {return readString(kString);}
         geohash::hash readGeohash();
+        
+        std::pair<alloc_slice, alloc_slice> readFullTextKey();  // pair is <text, langCode>
+        alloc_slice readGeoKey(geohash::area &outBBox);
 
 #ifdef __OBJC__
         id readNSObject();

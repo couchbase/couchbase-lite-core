@@ -33,7 +33,8 @@ namespace cbforest {
             BadRevisionID = -1000,
             CorruptRevisionData = -1001,
             CorruptIndexData = -1002,
-            AssertionFailed = -1003
+            AssertionFailed = -1003,
+            TokenizerError = -1004, // can't create tokenizer
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */

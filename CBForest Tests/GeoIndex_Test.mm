@@ -35,8 +35,10 @@ public:
     virtual void operator() (const Mappable& mappable, EmitFn& emit) {
         ++numMapCalls;
         auto area = ((TestGeoMappable&)mappable).area;
+        CollatableBuilder key;
+        key.addGeoKey(slice("{\"geo\":true}"), area);
         CollatableBuilder value(numMapCalls);
-        emit(area, slice("{\"geo\":true}"), value);
+        emit(key, value);
     }
 };
 

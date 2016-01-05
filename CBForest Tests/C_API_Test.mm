@@ -10,6 +10,7 @@
 #import "testutil.h"
 #import "c4Database.h"
 #import "c4Document.h"
+#import "c4DocEnumerator.h"
 
 
 @interface C_API_Test : XCTestCase

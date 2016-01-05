@@ -46,7 +46,7 @@ namespace cbforest {
 
         alloc_slice getEntry(slice docID, sequence docSequence,
                              Collatable key,
-                             unsigned emitIndex);
+                             unsigned emitIndex) const;
 
         /** Used as a placeholder for an index value that's stored out of line, i.e. that
             represents the entire document being indexed. */
@@ -109,16 +109,18 @@ namespace cbforest {
             fullTextID will be set to the ID of the string these tokens came from. */
         std::vector<size_t> getTextTokenInfo(unsigned &fullTextID);
 
+        int currentKeyRangeIndex()              {return _currentKeyIndex;}
+
         bool next();
 
     protected:
+        virtual void nextKeyRange();
         virtual bool approve(slice key)         {return true;}
         bool read();
         void setValue(slice value)              {_value = value;}
 
     private:
         friend class Index;
-        void nextKeyRange();
 
         Index* _index;
         DocEnumerator::Options _options;

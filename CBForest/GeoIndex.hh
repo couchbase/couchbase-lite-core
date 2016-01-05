@@ -30,10 +30,6 @@ namespace cbforest {
     class GeoIndexEnumerator : public IndexEnumerator {
     public:
         GeoIndexEnumerator(Index*, geohash::area);
-        GeoIndexEnumerator(Index*,
-                           geohash::area,
-                           slice startKeyDocID, slice endKeyDocID,
-                           const DocEnumerator::Options&);
 
         geohash::area keyBoundingBox() const    {return _keyBBox;}
         slice keyGeoJSON() const                {return _geoKey;}

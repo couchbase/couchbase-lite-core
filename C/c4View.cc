@@ -12,7 +12,10 @@
 #include "c4DocEnumerator.h"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
+#include "FullTextIndex.hh"
+#include "GeoIndex.hh"
 #include "VersionedDocument.hh"
+#include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
 using namespace cbforest;
@@ -144,7 +147,14 @@ struct c4Indexer : public MapReduceIndexer {
     c4Indexer(C4Database *db)
     :MapReduceIndexer(),
      _db(db)
-    { }
+    {
+        static bool sInitializedTokenizer = false;
+        if (!sInitializedTokenizer) {
+            Tokenizer::defaultStemmer = "english";
+            Tokenizer::defaultRemoveDiacritics = true;
+            sInitializedTokenizer = true;
+        }
+    }
 
     virtual ~c4Indexer() { }
 
@@ -205,14 +215,16 @@ bool c4indexer_emit(C4Indexer *indexer,
                     C4Document *doc,
                     unsigned viewNumber,
                     unsigned emitCount,
-                    C4Key* emittedKeys[],
-                    C4Slice emittedValues[],
+                    C4Key* const emittedKeys[],
+                    C4Slice const emittedValues[],
                     C4Error *outError)
 {
     try {
         std::vector<Collatable> keys;
         std::vector<slice> values;
         if (!(doc->flags & kDeleted)) {
+            keys.reserve(emitCount);
+            values.reserve(emitCount);
             for (unsigned i = 0; i < emitCount; ++i) {
                 keys.push_back(*emittedKeys[i]);
                 values.push_back(emittedValues[i]);
@@ -239,32 +251,90 @@ bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) {
 #pragma mark - QUERIES:
 
 
+CBFOREST_API const C4QueryOptions kC4DefaultQueryOptions = {
+    0,
+    UINT_MAX,
+    false,
+    true,
+    true,
+    true
+};
+
+static DocEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
+    if (!c4options)
+        c4options = &kC4DefaultQueryOptions;
+    DocEnumerator::Options options = DocEnumerator::Options::kDefault;
+    options.skip = (unsigned)c4options->skip;
+    options.limit = (unsigned)c4options->limit;
+    options.descending = c4options->descending;
+    options.inclusiveStart = c4options->inclusiveStart;
+    options.inclusiveEnd = c4options->inclusiveEnd;
+    return options;
+}
+
+
 struct C4QueryEnumInternal : public C4QueryEnumerator {
-    C4QueryEnumInternal(C4View *view,
+    C4QueryEnumInternal() {
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // zero public fields
+    }
+
+    virtual ~C4QueryEnumInternal()  { }
+
+    virtual bool next() {
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // zero public fields
+        return false;
+    }
+};
+
+static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
+
+
+bool c4queryenum_next(C4QueryEnumerator *e,
+                      C4Error *outError)
+{
+    try {
+        if (asInternal(e)->next())
+            return true;
+        recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+    } catchError(outError);
+    return false;
+}
+
+
+void c4queryenum_free(C4QueryEnumerator *e) {
+    delete asInternal(e);
+}
+
+
+#pragma mark MAP/REDUCE QUERIES:
+
+
+struct C4MapReduceEnumerator : public C4QueryEnumInternal {
+    C4MapReduceEnumerator(C4View *view,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
                         const DocEnumerator::Options &options)
     :_enum(&view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
 
-    C4QueryEnumInternal(C4View *view,
+    C4MapReduceEnumerator(C4View *view,
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options &options)
     :_enum(&view->_index, keyRanges, options)
     { }
 
+    virtual bool next() {
+        if (!_enum.next())
+            return C4QueryEnumInternal::next();
+        key = asKeyReader(_enum.key());
+        value = _enum.value();
+        docID = _enum.docID();
+        docSequence = _enum.sequence();
+        return true;
+    }
+
+private:
     IndexEnumerator _enum;
-};
-
-static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
-
-
-CBFOREST_API const C4QueryOptions kC4DefaultQueryOptions = {
-	0,
-    UINT_MAX,
-	false,
-    true,
-    true
 };
 
 
@@ -275,19 +345,16 @@ C4QueryEnumerator* c4view_query(C4View *view,
     try {
         if (!c4options)
             c4options = &kC4DefaultQueryOptions;
-        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
-        options.skip = (unsigned)c4options->skip;
-        options.limit = (unsigned)c4options->limit;
-        options.descending = c4options->descending;
-        options.inclusiveStart = c4options->inclusiveStart;
-        options.inclusiveEnd = c4options->inclusiveEnd;
+        DocEnumerator::Options options = convertOptions(c4options);
 
         if (c4options->keysCount == 0 && c4options->keys == NULL) {
             Collatable noKey;
-            return new C4QueryEnumInternal(view,
-                                           (c4options->startKey ? (Collatable)*c4options->startKey : noKey),
+            return new C4MapReduceEnumerator(view,
+                                           (c4options->startKey ? (Collatable)*c4options->startKey
+                                                                : noKey),
                                            c4options->startKeyDocID,
-                                           (c4options->endKey ? (Collatable)*c4options->endKey : noKey),
+                                           (c4options->endKey ? (Collatable)*c4options->endKey
+                                                              : noKey),
                                            c4options->endKeyDocID,
                                            options);
         } else {
@@ -297,37 +364,115 @@ C4QueryEnumerator* c4view_query(C4View *view,
                 if (key)
                     keyRanges.push_back(KeyRange(*key));
             }
-            return new C4QueryEnumInternal(view, keyRanges, options);
+            return new C4MapReduceEnumerator(view, keyRanges, options);
         }
     } catchError(outError);
     return NULL;
 }
 
 
-bool c4queryenum_next(C4QueryEnumerator *e,
-                      C4Error *outError)
+#pragma mark FULL-TEXT QUERIES:
+
+
+struct C4FullTextEnumerator : public C4QueryEnumInternal {
+    C4FullTextEnumerator(C4View *view,
+                         slice queryString,
+                         slice queryStringLanguage,
+                         bool ranked,
+                         const DocEnumerator::Options &options)
+    :_enum(&view->_index, queryString, queryStringLanguage, ranked, options)
+    { }
+
+    virtual bool next() {
+        if (!_enum.next())
+            return C4QueryEnumInternal::next();
+        auto match = _enum.match();
+        docID = match->docID;
+        docSequence = match->sequence;
+        _allocatedValue = match->value();
+        value = _allocatedValue;
+        fullTextTermCount = (uint32_t)match->textMatches.size();
+        fullTextTerms = (const C4FullTextTerm*)match->textMatches.data();
+        return true;
+    }
+
+    alloc_slice fullTextMatched() {
+        return _enum.match()->matchedText();
+    }
+
+private:
+    FullTextIndexEnumerator _enum;
+    alloc_slice _allocatedValue;
+};
+
+
+C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
+                                        C4Slice queryString,
+                                        C4Slice queryStringLanguage,
+                                        const C4QueryOptions *c4options,
+                                        C4Error *outError)
 {
     try {
-        auto ei = asInternal(e);
-        if (ei->_enum.next()) {
-            ei->key = asKeyReader(ei->_enum.key());
-            ei->value = ei->_enum.value();
-            ei->docID = ei->_enum.docID();
-            ei->docSequence = ei->_enum.sequence();
-            return true;
-        } else {
-            ei->key = {NULL, 0};
-            ei->value = slice::null;
-            ei->docID = slice::null;
-            ei->docSequence = 0;
-            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
-            return false;
-        }
+        return new C4FullTextEnumerator(view, queryString, queryStringLanguage,
+                                        (c4options ? c4options->rankFullText : true),
+                                        convertOptions(c4options));
     } catchError(outError);
-    return false;
+    return NULL;
 }
 
 
-void c4queryenum_free(C4QueryEnumerator *e) {
-    delete asInternal(e);
+C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
+    try {
+        slice result = ((C4FullTextEnumerator*)e)->fullTextMatched().dontFree();
+        return {result.buf, result.size};
+    } catchError(NULL);
+    return {NULL, 0};
+}
+
+
+bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) {
+    Tokenizer::defaultStemmer = std::string(languageName);
+    Tokenizer::defaultRemoveDiacritics = stripDiacriticals;
+    return true;
+}
+
+
+#pragma mark GEO-QUERIES:
+
+
+struct C4GeoEnumerator : public C4QueryEnumInternal {
+    C4GeoEnumerator(C4View *view, const geohash::area &bbox)
+    :_enum(&view->_index, bbox)
+    { }
+
+    virtual bool next() {
+        if (!_enum.next())
+            return C4QueryEnumInternal::next();
+        docID = _enum.docID();
+        docSequence = _enum.sequence();
+        value = _enum.value();
+        auto bbox = _enum.keyBoundingBox();
+        geoBBox.xmin = bbox.min().longitude;
+        geoBBox.ymin = bbox.min().latitude;
+        geoBBox.xmax = bbox.max().longitude;
+        geoBBox.ymax = bbox.max().latitude;
+        geoJSON = _enum.keyGeoJSON();
+        return true;
+    }
+
+private:
+    GeoIndexEnumerator _enum;
+};
+
+
+C4QueryEnumerator* c4view_geoQuery(C4View *view,
+                                   C4GeoArea area,
+                                   C4Error *outError)
+{
+    try {
+        geohash::area ga(geohash::coord(area.xmin, area.ymin),
+                         geohash::coord(area.xmax, area.ymax));
+        return new C4GeoEnumerator(view, ga);
+    } catchError(outError);
+    return NULL;
 }

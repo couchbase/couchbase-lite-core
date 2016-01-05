@@ -131,7 +131,7 @@ namespace cbforest {
         _stateReadAt = 0;
     }
 
-    alloc_slice MapReduceIndex::getSpecialEntry(slice docID, sequence seq, unsigned entryID)
+    alloc_slice MapReduceIndex::getSpecialEntry(slice docID, sequence seq, unsigned entryID) const
     {
         // This data was written by emitter::emitTextTokens, below
         CollatableBuilder key;
@@ -139,14 +139,14 @@ namespace cbforest {
         return getEntry(docID, seq, key, entryID);
     }
 
-    alloc_slice MapReduceIndex::readFullText(slice docID, sequence seq, unsigned fullTextID) {
+    alloc_slice MapReduceIndex::readFullText(slice docID, sequence seq, unsigned fullTextID) const {
         alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
         CollatableReader reader(entry);
         reader.beginArray();
         return reader.readString();
     }
 
-    alloc_slice MapReduceIndex::readFullTextValue(slice docID, sequence seq, unsigned fullTextID) {
+    alloc_slice MapReduceIndex::readFullTextValue(slice docID, sequence seq, unsigned fullTextID) const {
         // This data was written by emitter::emitTextTokens, below
         alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
         CollatableReader reader(entry);
@@ -194,19 +194,45 @@ namespace cbforest {
             delete _tokenizer;
         }
 
-        inline void emit(Collatable key, slice value) {
+        void _emit(Collatable key, alloc_slice value) {
             keys.push_back(key);
-            values.push_back(alloc_slice(value));
+            values.push_back(value);
             ++_emitCount;
         }
 
-        virtual void operator() (Collatable key, Collatable value) {
-            emit(key, value);
+        virtual void emit(Collatable key, slice value) {
+            emit(key, alloc_slice(value));
         }
 
-        void emitTextTokens(slice text, slice value) {
-            if (!_tokenizer)
-                _tokenizer = new Tokenizer();
+        void emit(Collatable key, CollatableBuilder &value) {
+            emit(key, value.extractOutput());
+        }
+
+        void emit(Collatable key, alloc_slice value) {
+            CollatableReader keyReader(key);
+            switch (keyReader.peekTag()) {
+                case CollatableTypes::kFullTextKey: {
+                    auto textAndLang = keyReader.readFullTextKey();
+                    emitTextTokens(textAndLang.first, std::string(textAndLang.second), value);
+                    break;
+                }
+                case CollatableTypes::kGeoJSONKey: {
+                    geohash::area bbox;
+                    alloc_slice geoJSON = keyReader.readGeoKey(bbox);
+                    emit(bbox, geoJSON, value);
+                    break;
+                }
+                default:
+                    _emit(key, value);
+                    break;
+            }
+        }
+
+        virtual void emitTextTokens(slice text, std::string languageCode, slice value) {
+            if (!_tokenizer || _tokenizer->stemmer() != languageCode) {
+                delete _tokenizer;
+                _tokenizer = new Tokenizer(languageCode, (languageCode == "en"));
+            }
             std::unordered_map<std::string, CollatableBuilder> tokens;
             int specialKey = -1;
             for (TokenIterator i(*_tokenizer, slice(text), false); i; ++i) {
@@ -228,7 +254,7 @@ namespace cbforest {
                 CollatableBuilder collKey(kv->first);
                 CollatableBuilder& collValue = kv->second;
                 collValue.endArray();
-                emit(collKey, collValue);
+                _emit(collKey, collValue);
             }
         }
 
@@ -247,7 +273,7 @@ namespace cbforest {
             for (auto iHash = hashes.begin(); iHash != hashes.end(); ++iHash) {
                 Debug("    hash='%s'", (const char*)(*iHash));
                 CollatableBuilder collKey(*iHash);
-                emit(collKey, collValue);
+                _emit(collKey, collValue);
             }
         }
 
@@ -319,7 +345,7 @@ namespace cbforest {
             _emit.reset();
             if (!doc.deleted())
                 (*_index->_map)(mappable, _emit); // Call map function!
-            return emitForDocument(doc.key(), doc.sequence(), _emit.keys, _emit.values);
+            return emitForDocument(doc.key(), doc.sequence());
         }
 
         // Writes the given rows to the index.
@@ -333,17 +359,14 @@ namespace cbforest {
             _emit.reset();
             for (unsigned i = 0; i < keys.size(); ++i)
                 _emit.emit(keys[i], values[i]);
-            return emitForDocument(docID, docSequence, _emit.keys, _emit.values);
+            return emitForDocument(docID, docSequence);
         }
 
         // subroutine of updateDocInIndex and emitDocIntoView
-        bool emitForDocument(slice docID,
-                             sequence docSequence,
-                             const std::vector<Collatable> &keys,
-                             const std::vector<alloc_slice> &values)
+        bool emitForDocument(slice docID, sequence docSequence)
         {
             _index->_lastSequenceIndexed = docSequence;
-            if (update(docID, docSequence, keys, values, _index->_rowCount)) {
+            if (update(docID, docSequence, _emit.keys, _emit.values, _index->_rowCount)) {
                 _index->_lastSequenceChangedAt = _index->_lastSequenceIndexed;
                 return true;
             }

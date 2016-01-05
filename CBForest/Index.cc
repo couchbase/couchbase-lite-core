@@ -177,7 +177,7 @@ namespace cbforest {
 
 
     alloc_slice Index::getEntry(slice docID, sequence docSequence,
-                                Collatable key, unsigned emitIndex) {
+                                Collatable key, unsigned emitIndex) const {
         CollatableBuilder collatableDocID;
         collatableDocID << docID;
 

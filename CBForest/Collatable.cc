@@ -119,6 +119,21 @@ namespace cbforest {
         *dst = '\0';
     }
 
+    CollatableBuilder& CollatableBuilder::addFullTextKey(slice text, slice languageCode) {
+        addString(kFullTextKey, languageCode);
+        addString(kString, text);
+        return *this;
+    }
+
+
+    CollatableBuilder& CollatableBuilder::addGeoKey(slice geoJSON, geohash::area bbox) {
+        addTag(kGeoJSONKey);
+        *this << geoJSON << bbox.min().longitude << bbox.min().latitude
+                         << bbox.max().longitude << bbox.max().latitude;
+        return *this;
+    }
+
+
     CollatableBuilder& CollatableBuilder::operator<< (const CollatableBuilder& coll) {
         add(coll);
         return *this;
@@ -181,10 +196,6 @@ namespace cbforest {
         return _decdouble(swapped);
     }
 
-    alloc_slice CollatableReader::readString() {
-        return readString(kString);
-    }
-
     geohash::hash CollatableReader::readGeohash() {
         return geohash::hash(readString(kGeohash));
     }
@@ -202,6 +213,21 @@ namespace cbforest {
             (uint8_t&)result[i] = kCharInversePriority[_data[i]];
         _data.moveStart(nBytes+1);
         return result;
+    }
+
+    std::pair<alloc_slice, alloc_slice> CollatableReader::readFullTextKey() {
+        auto langCode = readString(kFullTextKey);
+        return {readString(kString), langCode};
+    }
+
+    alloc_slice CollatableReader::readGeoKey(geohash::area &outBBox) {
+        expectTag(kGeoJSONKey);
+        alloc_slice geoJSON = readString();
+        outBBox.longitude.min = readDouble();
+        outBBox.latitude.min  = readDouble();
+        outBBox.longitude.max = readDouble();
+        outBBox.latitude.max  = readDouble();
+        return geoJSON;
     }
     
     slice CollatableReader::read() {

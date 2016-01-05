@@ -37,6 +37,8 @@ namespace cbforest {
 
         ~Tokenizer();
 
+        const std::string& stemmer()        {return _stemmer;}
+
         /** Defines extra characters that should be considered part of a token. */
         void setTokenChars(std::string s)   {_tokenChars = s;}
         std::string tokenChars() const      {return _tokenChars;}

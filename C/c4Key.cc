@@ -10,6 +10,7 @@
 #include "c4Key.h"
 #include "c4Document.h"
 #include "Collatable.hh"
+#include "Geohash.hh"
 #include <math.h>
 #include <limits.h>
 using namespace cbforest;
@@ -27,6 +28,20 @@ void c4key_beginArray(C4Key *key)               {key->beginArray();}
 void c4key_endArray(C4Key *key)                 {key->endArray();}
 void c4key_beginMap(C4Key *key)                 {key->beginMap();}
 void c4key_endMap(C4Key *key)                   {key->endMap();}
+
+C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) {
+    auto key = new c4Key();
+    key->addFullTextKey(text, language);
+    return key;
+}
+
+C4Key* c4key_newGeoJSON(C4Slice geoJSON, double minX, double minY, double maxX, double maxY) {
+    auto key = new c4Key();
+    key->addGeoKey(geoJSON, geohash::area(geohash::coord(minX, minY),
+                                          geohash::coord(maxX, maxY)));
+    return key;
+}
+
 
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
 // a slice. So these functions use pointer-casting to reinterpret C4KeyReader as CollatableReader.

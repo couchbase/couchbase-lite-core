@@ -15,6 +15,7 @@
 
 #include "Tokenizer.hh"
 #include "english_stopwords.h"
+#include "LogInternal.hh"
 #include "Error.hh"
 
 #ifndef __unused
@@ -85,7 +86,11 @@ namespace cbforest {
         }
         sqlite3_tokenizer* tokenizer;
         int err = sModule->xCreate(argc, argv, &tokenizer);
-        return err ? NULL : tokenizer;
+        if (err) {
+            Warn("Couldn't create tokenizer: err=%d", err);
+            tokenizer = NULL;
+        }
+        return tokenizer;
     }
 
     sqlite3_tokenizer* Tokenizer::getTokenizer() {
@@ -117,11 +122,12 @@ namespace cbforest {
             text = _text;
         }
 
-        __unused int err = sModule->xOpen(tokenizer.getTokenizer(),
-                                          (const char*)text.buf, (int)text.size,
-                                          &_cursor);
+        auto tok = tokenizer.getTokenizer();
+        if (!tok)
+            throw error(error::TokenizerError);
+        __unused int err = sModule->xOpen(tok, (const char*)text.buf, (int)text.size, &_cursor);
         CBFAssert(!err);
-        _cursor->pTokenizer = tokenizer.getTokenizer(); // module expects sqlite3 to have initialized this
+        _cursor->pTokenizer = tok; // module expects sqlite3 to have initialized this
         next(); // advance to 1st token
     }
 

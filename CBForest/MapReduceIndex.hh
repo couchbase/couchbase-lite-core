@@ -46,7 +46,7 @@ namespace cbforest {
 
         /** Emits the text for full-text indexing. Each word in the text will be emitted separately
             as a string key. When querying, use IndexEnumerator::getTextToken to read the info. */
-        virtual void emitTextTokens(slice text, slice value) =0;
+        virtual void emitTextTokens(slice text, std::string languageCode, slice value) =0;
 
         inline void operator() (Collatable key, slice value) {emit(key, value);}
         inline void operator() (const geohash::area& bbox, slice geoJSON, slice value)
@@ -87,10 +87,10 @@ namespace cbforest {
 
         /** Reads the full text passed to the call to emitTextTokens(), given some info about the
             document and the fullTextID available from IndexEnumerator::getTextToken(). */
-        alloc_slice readFullText(slice docID, sequence seq, unsigned fullTextID);
+        alloc_slice readFullText(slice docID, sequence seq, unsigned fullTextID) const;
 
         /** Reads the value that was emitted along with a full-text key. */
-        alloc_slice readFullTextValue(slice docID, sequence seq, unsigned fullTextID);
+        alloc_slice readFullTextValue(slice docID, sequence seq, unsigned fullTextID) const;
 
         void readGeoArea(slice docID, sequence seq, unsigned geoID,
                          geohash::area &outArea,
@@ -102,7 +102,7 @@ namespace cbforest {
 
     private:
         void saveState(Transaction& t);
-        alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID);
+        alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
         cbforest::KeyStore _sourceDatabase;
         MapFn* _map;

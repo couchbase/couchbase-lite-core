@@ -90,6 +90,10 @@
 		272230501A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		2733A7531BD6C7A400F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
 		2733A7541BD6C7A500F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
+		273A96541C3467600056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
+		273A96551C3467600056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
+		273A96561C34696E0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
+		273A96571C34696F0056532E /* FullTextIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273A96521C3467600056532E /* FullTextIndex.cc */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -656,6 +660,8 @@
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		273A96501C31E51B0056532E /* SecureRandomize.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
 		273A96511C334AE40056532E /* SecureDigest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
+		273A96521C3467600056532E /* FullTextIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FullTextIndex.cc; sourceTree = "<group>"; };
+		273A96531C3467600056532E /* FullTextIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FullTextIndex.hh; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -829,7 +835,7 @@
 		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
-		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
+		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; tabWidth = 8; };
 		27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_unicodesn.h; sourceTree = "<group>"; };
 		27EF7FA91914296D00A327B9 /* fts3Int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3Int.h; sourceTree = "<group>"; };
 		27EF7FAA1914296D00A327B9 /* libstemmer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libstemmer.h; sourceTree = "<group>"; };
@@ -1406,6 +1412,8 @@
 				2722304E1A0858A100BFF25C /* GeoIndex.hh */,
 				272230461A0815E700BFF25C /* Geohash.cc */,
 				272230471A0815E700BFF25C /* Geohash.hh */,
+				273A96521C3467600056532E /* FullTextIndex.cc */,
+				273A96531C3467600056532E /* FullTextIndex.hh */,
 				2701993919F1972E00FDC239 /* Tokenizer.cc */,
 				2701993A19F1972E00FDC239 /* Tokenizer.hh */,
 				27E4872D1924178B007D8940 /* Collatable.cc */,
@@ -2078,6 +2086,7 @@
 				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27E487301924178B007D8940 /* Collatable.cc in Sources */,
 				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
+				273A96551C3467600056532E /* FullTextIndex.cc in Sources */,
 				2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27DD1514193CD005009A367D /* RevID.cc in Sources */,
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
@@ -2257,6 +2266,7 @@
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
+				273A96541C3467600056532E /* FullTextIndex.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
@@ -2323,6 +2333,7 @@
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
+				273A96561C34696E0056532E /* FullTextIndex.cc in Sources */,
 				720EA41B1BA8D834002B8416 /* slice.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
@@ -2351,6 +2362,7 @@
 				720EA4561BA909C4002B8416 /* Document.cc in Sources */,
 				720EA4571BA909C4002B8416 /* Geohash.cc in Sources */,
 				720EA4581BA909C4002B8416 /* VersionedDocument.cc in Sources */,
+				273A96571C34696F0056532E /* FullTextIndex.cc in Sources */,
 				720EA4591BA909C4002B8416 /* DocEnumerator.cc in Sources */,
 				720EA45A1BA909C4002B8416 /* MapReduceIndex.cc in Sources */,
 				720EA4711BA90A18002B8416 /* c4Database.cc in Sources */,
