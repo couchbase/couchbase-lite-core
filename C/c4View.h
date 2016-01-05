@@ -175,12 +175,6 @@ extern "C" {
         uint32_t start, length;             ///< *Byte* range of word in query string
     } C4FullTextTerm;
 
-    /** A 2D bounding box used for geo queries */
-    typedef struct {
-        double xmin, ymin, xmax, ymax;
-    } C4GeoArea;
-
-
     /** A view query result enumerator. Created by c4view_query, c4view_fullTextQuery, or
         c4view_geoQuery. Must be freed with c4queryenum_free.
         The fields of this struct represent the current matched index row, and are replaced by the

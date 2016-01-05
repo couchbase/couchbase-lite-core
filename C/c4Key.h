@@ -13,6 +13,12 @@
 extern "C" {
 #endif
 
+    /** A 2D bounding box used for geo queries */
+    typedef struct {
+        double xmin, ymin, xmax, ymax;
+    } C4GeoArea;
+
+
     //////// KEYS:
 
 
@@ -34,16 +40,11 @@ extern "C" {
     C4Key* c4key_newFullTextString(C4Slice text, C4Slice language);
 
     /** Creates a C4Key containing a 2D shape to be geo-indexed.
-        Caller must provide the bounding box of the shape.
+        Caller must provide a bounding box (which is what's actually used for searching.)
         @param geoJSON  GeoJSON describing the shape.
-        @param minX  Minimum X (longitude) coord of the shape.
-        @param minY  Minimum Y (latitude) coord of the shape.
-        @param maxX  Maximum X (longitude) coord of the shape.
-        @param maxY  Maximum Y (latitude) coord of the shape.
+        @param boundingBox  A conservative bounding box of the shape.
         @return  A new C4Key for the shape. */
-    C4Key* c4key_newGeoJSON(C4Slice geoJSON,
-                            double minX, double minY,
-                            double maxX, double maxY);
+    C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox);
 
     /** Frees a C4Key. */
     void c4key_free(C4Key*);

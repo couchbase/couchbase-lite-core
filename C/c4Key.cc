@@ -35,10 +35,10 @@ C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) {
     return key;
 }
 
-C4Key* c4key_newGeoJSON(C4Slice geoJSON, double minX, double minY, double maxX, double maxY) {
+C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea bb) {
     auto key = new c4Key();
-    key->addGeoKey(geoJSON, geohash::area(geohash::coord(minX, minY),
-                                          geohash::coord(maxX, maxY)));
+    key->addGeoKey(geoJSON, geohash::area(geohash::coord(bb.ymin, bb.xmin),
+                                          geohash::coord(bb.ymax, bb.xmax)));
     return key;
 }
 
