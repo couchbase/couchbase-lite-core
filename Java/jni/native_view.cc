@@ -144,6 +144,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZJJLjava_la
         (bool)descending,
         (bool)inclusiveStart,
         (bool)inclusiveEnd,
+        true, // rankFullText
         (C4Key*)startKey,
         (C4Key*)endKey,
         startKeyDocID,
@@ -172,6 +173,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
         (bool)descending,
         (bool)inclusiveStart,
         (bool)inclusiveEnd,
+        true, // rankFullText
         NULL,
         NULL,
         kC4SliceNull,
