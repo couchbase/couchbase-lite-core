@@ -19,6 +19,7 @@
 #include "Error.hh"
 #include <sstream>
 #include <iomanip> // std::setprecision
+#include <algorithm> // std::max for MSVC
 
 namespace forestdb {
 
