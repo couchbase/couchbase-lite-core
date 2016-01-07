@@ -14,7 +14,6 @@
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
 #include "VersionedDocument.hh"
-#include <assert.h>
 
 using namespace cbforest;
 
@@ -100,7 +99,7 @@ struct c4Database : public Database {
     }
 
     Transaction* transaction() {
-        assert(_transaction);
+        CBFAssert(_transaction);
         return _transaction;
     }
 

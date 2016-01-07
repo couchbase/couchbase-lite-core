@@ -14,7 +14,6 @@
 #include "Document.hh"
 #include "LogInternal.hh"
 #include "VersionedDocument.hh"
-#include <assert.h>
 
 using namespace cbforest;
 
