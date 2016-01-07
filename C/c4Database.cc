@@ -85,68 +85,65 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 #pragma mark - DATABASES:
 
 
-struct c4Database : public Database {
+c4Database::c4Database(std::string path, const config& cfg)
+:Database(path, cfg),
+ _transaction(NULL),
+ _transactionLevel(0)
+{ }
 
-    c4Database(std::string path, const config& cfg)
-    :Database(path, cfg),
-     _transaction(NULL),
-     _transactionLevel(0)
-    { }
-
-    void beginTransaction() {
-        if (++_transactionLevel == 1)
-            _transaction = new Transaction(this);
+void c4Database::beginTransaction() {
+#if C4DB_THREADSAFE
+    _transactionMutex.lock(); // this is a recursive mutex
+#endif
+    if (++_transactionLevel == 1) {
+        WITH_LOCK(this);
+        _transaction = new Transaction(this);
     }
+}
 
-    Transaction* transaction() {
-        CBFAssert(_transaction);
-        return _transaction;
-    }
+bool c4Database::inTransaction() {
+#if C4DB_THREADSAFE
+    std::lock_guard<std::recursive_mutex> lock(_transactionMutex);
+#endif
+    return _transactionLevel > 0;
+}
 
-    bool inTransaction() { return _transactionLevel > 0; }
-
-    bool mustBeInTransaction(C4Error *outError) {
-        if (inTransaction())
-            return true;
-        recordError(C4Domain, kC4ErrorNotInTransaction, outError);
-        return false;
-    }
-
-    bool mustNotBeInTransaction(C4Error *outError) {
-        if (!inTransaction())
-            return true;
-        recordError(C4Domain, kC4ErrorTransactionNotClosed, outError);
-        return false;
-    }
-
-    bool endTransaction(bool commit, C4Error *outError) {
-        if (!mustBeInTransaction(outError))
-            return false;
-        if (--_transactionLevel == 0) {
-            auto t = _transaction;
-            _transaction = NULL;
-            if (!commit)
-                t->abort();
-            delete t; // this commits/aborts the transaction
-        }
+bool c4Database::mustBeInTransaction(C4Error *outError) {
+    if (inTransaction())
         return true;
-    }
+    recordError(C4Domain, kC4ErrorNotInTransaction, outError);
+    return false;
+}
 
-private:
-    Transaction* _transaction;
-    int _transactionLevel;
-};
+bool c4Database::mustNotBeInTransaction(C4Error *outError) {
+    if (!inTransaction())
+        return true;
+    recordError(C4Domain, kC4ErrorTransactionNotClosed, outError);
+    return false;
+}
+
+bool c4Database::endTransaction(bool commit) {
+#if C4DB_THREADSAFE
+    std::lock_guard<std::recursive_mutex> lock(_transactionMutex);
+#endif
+    if (_transactionLevel == 0)
+        return false;
+    if (--_transactionLevel == 0) {
+        WITH_LOCK(this);
+        auto t = _transaction;
+        _transaction = NULL;
+        if (!commit)
+            t->abort();
+        delete t; // this commits/aborts the transaction
+    }
+#if C4DB_THREADSAFE
+    _transactionMutex.unlock(); // undoes lock in beginTransaction()
+#endif
+    return true;
+}
 
 
 namespace c4Internal {
-
-    cbforest::Database* asDatabase(C4Database *db) {
-        return db;
-    }
-
-    bool mustBeInTransaction(C4Database *db, C4Error *outError) {
-        return db->mustBeInTransaction(outError);
-    }
 
     Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
         auto config = Database::defaultConfig();
@@ -174,13 +171,6 @@ namespace c4Internal {
         return config;
     }
 
-    Document dbGetDoc(C4Database *db, sequence seq) {
-        return db->get(seq);
-    }
-
-    Transaction* dbGetTransaction(C4Database *db) {
-        return db->transaction();
-    }
 }
 
 
@@ -201,6 +191,7 @@ bool c4db_close(C4Database* database, C4Error *outError) {
         return true;
     if (!database->mustNotBeInTransaction(outError))
         return false;
+    WITH_LOCK(database);
     try {
         delete database;
         return true;
@@ -212,6 +203,7 @@ bool c4db_close(C4Database* database, C4Error *outError) {
 bool c4db_delete(C4Database* database, C4Error *outError) {
     if (!database->mustNotBeInTransaction(outError))
         return false;
+    WITH_LOCK(database);
     try {
         database->deleteDatabase();
         delete database;
@@ -224,6 +216,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 bool c4db_compact(C4Database* database, C4Error *outError) {
     if (!database->mustNotBeInTransaction(outError))
         return false;
+    WITH_LOCK(database);
     try {
         database->compact();
         return true;
@@ -233,8 +226,10 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) {
-    return database->mustNotBeInTransaction(outError)
-        && rekey(database, newKey, outError);
+    if (!database->mustNotBeInTransaction(outError))
+        return false;
+    WITH_LOCK(database);
+    return rekey(database, newKey, outError);
 }
 
 
@@ -255,6 +250,7 @@ bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
 
 uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
+        WITH_LOCK(database);
         auto opts = DocEnumerator::Options::kDefault;
         opts.contentOptions = Database::kMetaOnly;
 
@@ -272,11 +268,13 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
 
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) {
+    WITH_LOCK(database);
     return database->lastSequence();
 }
 
 
 bool c4db_isInTransaction(C4Database* database) {
+    WITH_LOCK(database);
     return database->inTransaction();
 }
 
@@ -296,17 +294,21 @@ bool c4db_endTransaction(C4Database* database,
                          C4Error *outError)
 {
     try {
-        return database->endTransaction(commit, outError);
+        bool ok = database->endTransaction(commit);
+        if (!ok)
+            recordError(C4Domain, kC4ErrorNotInTransaction, outError);
+        return ok;
     } catchError(outError);
     return false;
 }
 
 
-bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError) {
-    if (!db->mustBeInTransaction(outError))
+bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
+    WITH_LOCK(database);
+    if (!database->mustBeInTransaction(outError))
         return false;
     try {
-        db->transaction()->del(docID);
+        database->transaction()->del(docID);
         return true;
     } catchError(outError)
     return false;
@@ -331,6 +333,7 @@ C4RawDocument* c4raw_get(C4Database* database,
                          C4Slice key,
                          C4Error *outError)
 {
+    WITH_LOCK(database);
     try {
         KeyStore localDocs(database, (std::string)storeName);
         Document doc = localDocs.get(key);
@@ -355,20 +358,19 @@ bool c4raw_put(C4Database* database,
                C4Slice body,
                C4Error *outError)
 {
-    bool abort = false;
+    if (!c4db_beginTransaction(database, outError))
+        return false;
+    bool commit = false;
     try {
-        database->beginTransaction();
-        abort = true;
+        WITH_LOCK(database);
         KeyStore localDocs(database, (std::string)storeName);
         KeyStoreWriter localWriter = (*database->transaction())(localDocs);
         if (body.buf || meta.buf)
             localWriter.set(key, meta, body);
         else
             localWriter.del(key);
-        abort = false;
-        return database->endTransaction(true, outError);
+        commit = true;
     } catchError(outError);
-    if (abort)
-        database->endTransaction(false, NULL);
-    return false;
+    c4db_endTransaction(database, commit, outError);
+    return commit;
 }

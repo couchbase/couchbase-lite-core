@@ -40,7 +40,7 @@ struct c4View {
            C4Slice version)
     :_sourceDB(sourceDB),
      _viewDB((std::string)path, config),
-     _index(&_viewDB, (std::string)name, asDatabase(sourceDB)->defaultKeyStore())
+     _index(&_viewDB, (std::string)name, sourceDB->defaultKeyStore())
     {
         Transaction t(&_viewDB);
         _index.setup(t, -1, NULL, (std::string)version);
@@ -49,6 +49,9 @@ struct c4View {
     C4Database *_sourceDB;
     Database _viewDB;
     MapReduceIndex _index;
+#if C4DB_THREADSAFE
+    std::mutex _mutex;
+#endif
 };
 
 
@@ -80,11 +83,13 @@ bool c4view_close(C4View* view, C4Error *outError) {
 }
 
 bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) {
+    WITH_LOCK(view);
     return rekey(&view->_viewDB, newKey, outError);
 }
 
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
     try {
+        WITH_LOCK(view);
         Transaction t(&view->_viewDB);
         view->_index.erase(t);
         return true;
@@ -98,6 +103,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 			return true;
 		}
 
+        WITH_LOCK(view);
         view->_viewDB.deleteDatabase();
         delete view;
         return true;
@@ -108,6 +114,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 
 uint64_t c4view_getTotalRows(C4View *view) {
     try {
+        WITH_LOCK(view);
         return view->_index.rowCount();
     } catchError(NULL);
     return 0;
@@ -115,6 +122,7 @@ uint64_t c4view_getTotalRows(C4View *view) {
 
 C4SequenceNumber c4view_getLastSequenceIndexed(C4View *view) {
     try {
+        WITH_LOCK(view);
         return view->_index.lastSequenceIndexed();
     } catchError(NULL);
     return 0;
@@ -122,6 +130,7 @@ C4SequenceNumber c4view_getLastSequenceIndexed(C4View *view) {
 
 C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) {
     try {
+        WITH_LOCK(view);
         return view->_index.lastSequenceChangedAt();
     } catchError(NULL);
     return 0;

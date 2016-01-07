@@ -27,19 +27,12 @@ CBFOREST_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 
 
 struct C4DocEnumerator {
-    C4Database *_database;
-    DocEnumerator _e;
-    C4EnumeratorOptions _options;
-    C4DocumentFlags _docFlags;
-    revid _docRevID;
-    alloc_slice _docRevIDExpanded;
-
     C4DocEnumerator(C4Database *database,
                     sequence start,
                     sequence end,
                     const C4EnumeratorOptions &options)
     :_database(database),
-     _e(*asDatabase(database), start, end, allDocOptions(options)),
+     _e(*database, start, end, allDocOptions(options)),
      _options(options)
     { }
 
@@ -48,7 +41,7 @@ struct C4DocEnumerator {
                     C4Slice endDocID,
                     const C4EnumeratorOptions &options)
     :_database(database),
-     _e(*asDatabase(database), startDocID, endDocID, allDocOptions(options)),
+     _e(*database, startDocID, endDocID, allDocOptions(options)),
      _options(options)
     { }
 
@@ -56,7 +49,7 @@ struct C4DocEnumerator {
                     std::vector<std::string>docIDs,
                     const C4EnumeratorOptions &options)
     :_database(database),
-     _e(*asDatabase(database), docIDs, allDocOptions(options)),
+     _e(*database, docIDs, allDocOptions(options)),
      _options(options)
     { }
 
@@ -70,6 +63,8 @@ struct C4DocEnumerator {
             options.contentOptions = KeyStore::kMetaOnly;
         return options;
     }
+
+    C4Database* database() const {return _database;}
 
     bool next() {
         do {
@@ -112,6 +107,13 @@ private:
         return (optFlags & kC4IncludeDeleted       || !(_docFlags & VersionedDocument::kDeleted))
             && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & VersionedDocument::kConflicted));
     }
+
+    C4Database *_database;
+    DocEnumerator _e;
+    C4EnumeratorOptions _options;
+    C4DocumentFlags _docFlags;
+    revid _docRevID;
+    alloc_slice _docRevIDExpanded;
 };
 
 
@@ -126,6 +128,7 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError)
 {
     try {
+        WITH_LOCK(database);
         return new C4DocEnumerator(database, since+1, UINT64_MAX,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
@@ -140,6 +143,7 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Error *outError)
 {
     try {
+        WITH_LOCK(database);
         return new C4DocEnumerator(database, startDocID, endDocID,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
@@ -157,6 +161,7 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
         std::vector<std::string> docIDStrings;
         for (size_t i = 0; i < docIDsCount; ++i)
             docIDStrings.push_back((std::string)docIDs[i]);
+        WITH_LOCK(database);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);

@@ -28,7 +28,7 @@ struct C4DocumentInternal : public C4Document {
 
     C4DocumentInternal(C4Database* database, C4Slice docID)
     :_db(database),
-     _versionedDoc(*asDatabase(_db), docID),
+     _versionedDoc(*_db, docID),
      _selectedRev(NULL)
     {
         init();
@@ -36,7 +36,7 @@ struct C4DocumentInternal : public C4Document {
 
     C4DocumentInternal(C4Database *database, const Document &doc)
     :_db(database),
-     _versionedDoc(*asDatabase(_db), doc),
+     _versionedDoc(*_db, doc),
      _selectedRev(NULL)
     {
         init();
@@ -112,6 +112,7 @@ struct C4DocumentInternal : public C4Document {
         if (_versionedDoc.revsAvailable())
             return true;
         try {
+            WITH_LOCK(_db);
             _versionedDoc.read();
             _selectedRev = _versionedDoc.currentRevision();
             return true;
@@ -127,6 +128,7 @@ struct C4DocumentInternal : public C4Document {
         if (selectedRev.body.buf)
             return true;  // already loaded
         try {
+            WITH_LOCK(_db);
             _loadedBody = _selectedRev->readBody();
             selectedRev.body = _loadedBody;
             if (_loadedBody.buf)
@@ -143,8 +145,18 @@ struct C4DocumentInternal : public C4Document {
     }
 
     bool mustBeInTransaction(C4Error *outError) {
-        return ::mustBeInTransaction(_db, outError);
+        return _db->mustBeInTransaction(outError);
     }
+
+    void save(unsigned maxRevTreeDepth) {
+        _versionedDoc.prune(maxRevTreeDepth);
+        {
+            WITH_LOCK(_db);
+            _versionedDoc.save(*_db->transaction());
+        }
+        sequence = _versionedDoc.sequence();
+    }
+
 };
 
 static inline C4DocumentInternal *internal(C4Document *doc) {
@@ -153,6 +165,7 @@ static inline C4DocumentInternal *internal(C4Document *doc) {
 
 namespace c4Internal {
     C4Document* newC4Document(C4Database *db, const Document &doc) {
+        // Doesn't need to lock since Document is already in memory
         return new C4DocumentInternal(db, doc);
     }
 
@@ -174,6 +187,7 @@ C4Document* c4doc_get(C4Database *database,
                       C4Error *outError)
 {
     try {
+        WITH_LOCK(database);
         auto doc = new C4DocumentInternal(database, docID);
         if (mustExist && !doc->_versionedDoc.exists()) {
             delete doc;
@@ -191,7 +205,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4Error *outError)
 {
     try {
-        auto doc = new C4DocumentInternal(database, dbGetDoc(database, sequence));
+        WITH_LOCK(database);
+        auto doc = new C4DocumentInternal(database, database->get(sequence));
         if (!doc->_versionedDoc.exists()) {
             delete doc;
             doc = NULL;
@@ -410,9 +425,7 @@ bool c4doc_save(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
-        idoc->_versionedDoc.prune(maxRevTreeDepth);
-        idoc->_versionedDoc.save(*dbGetTransaction(idoc->_db));
-        idoc->sequence = idoc->_versionedDoc.sequence();
+        idoc->save(maxRevTreeDepth);
         return true;
     } catchError(outError)
     return false;
