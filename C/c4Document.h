@@ -109,6 +109,9 @@ extern "C" {
                                       bool withBody,
                                       C4Error *outError);
 
+    /** Given a revision ID, returns its generation number (the decimal number before
+        the hyphen), or zero if it's unparseable. */
+    unsigned c4rev_getGeneration(C4Slice revID);
 
     //////// INSERTING REVISIONS:
 

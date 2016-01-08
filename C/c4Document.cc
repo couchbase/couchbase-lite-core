@@ -303,6 +303,14 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 }
 
 
+unsigned c4rev_getGeneration(C4Slice revID) {
+    try {
+        return revidBuffer(revID).generation();
+    }catchError(NULL)
+    return 0;
+}
+
+
 #pragma mark - INSERTING REVISIONS
 
 
