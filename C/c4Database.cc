@@ -179,9 +179,26 @@ C4Database* c4db_open(C4Slice path,
                       const C4EncryptionKey *encryptionKey,
                       C4Error *outError)
 {
+    auto pathStr = (std::string)path;
+    auto config = c4DbConfig(flags, encryptionKey);
     try {
-        return new c4Database((std::string)path, c4DbConfig(flags, encryptionKey));
-    } catchError(outError);
+        try {
+            return new c4Database(pathStr, config);
+        } catch (cbforest::error error) {
+            if (error.status == FDB_RESULT_INVALID_COMPACTION_MODE
+                        && config.compaction_mode == FDB_COMPACTION_AUTO) {
+                // Databases created by earlier builds of CBL (pre-1.2) didn't have auto-compact.
+                // Opening them with auto-compact causes this error. Upgrade such a database by
+                // switching its compaction mode:
+                config.compaction_mode = FDB_COMPACTION_MANUAL;
+                auto db = new c4Database(pathStr, config);
+                db->setCompactionMode(FDB_COMPACTION_AUTO);
+                return db;
+            } else {
+                throw error;
+            }
+        }
+    }catchError(outError);
     return NULL;
 }
 
