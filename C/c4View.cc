@@ -438,12 +438,13 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
 C4SliceResult c4view_fullTextMatched(C4View *view,
                                      C4Slice docID,
                                      C4SequenceNumber seq,
-                                     unsigned fullTextID)
+                                     unsigned fullTextID,
+                                     C4Error *outError)
 {
     try {
-        slice result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
+        auto result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
         return {result.buf, result.size};
-    } catchError(NULL);
+    } catchError(outError);
     return {NULL, 0};
 }
 

@@ -249,7 +249,8 @@ extern "C" {
     C4SliceResult c4view_fullTextMatched(C4View *view,
                                          C4Slice docID,
                                          C4SequenceNumber seq,
-                                         unsigned fullTextID);
+                                         unsigned fullTextID,
+                                         C4Error *outError);
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */
