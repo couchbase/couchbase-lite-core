@@ -7,6 +7,7 @@
 //
 
 #include "com_couchbase_cbforest_QueryIterator.h"
+#include "com_couchbase_cbforest_FullTextResult.h"
 #include "native_glue.hh"
 #include "Collatable.hh"
 #include "c4View.h"
@@ -78,6 +79,12 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
     return ((C4QueryEnumerator*)handle)->docSequence;
 }
 
+JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextID
+  (JNIEnv *env, jobject self, jlong handle)
+{
+    return ((C4QueryEnumerator*)handle)->fullTextID;
+}
+
 JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTerms
   (JNIEnv *env, jobject self, jlong handle)
 {
@@ -126,4 +133,21 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
     C4QueryEnumerator *e = (C4QueryEnumerator*)handle;
     env->SetLongField(self, kHandleField, 0);
     c4queryenum_free(e);
+}
+
+
+JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_FullTextResult_getFullText
+  (JNIEnv *env, jclass clazz, jlong viewHandle, jstring jdocID, jlong sequence, jint fullTextID)
+{
+    jstringSlice docID(env, jdocID);
+    C4Error err;
+    C4SliceResult text = c4view_fullTextMatched((C4View*)viewHandle, docID, sequence, fullTextID,
+                                                &err);
+    if (!text.buf) {
+        throwError(env, err);
+        return NULL;
+    }
+    jstring result = toJString(env, text);
+    free((void*)text.buf);
+    return result;
 }

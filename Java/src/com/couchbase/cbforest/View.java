@@ -44,7 +44,7 @@ public class View {
 
     //////// QUERYING:
     public QueryIterator query() throws ForestException {
-        return new QueryIterator(query(_handle));
+        return new QueryIterator(this, query(_handle));
     }
 
     public QueryIterator query(long skip,
@@ -57,7 +57,7 @@ public class View {
                                String startKeyDocID,
                                String endKeyDocID) throws ForestException
     {
-        return new QueryIterator(query(_handle,
+        return new QueryIterator(this, query(_handle,
                 skip,
                 limit,
                 descending,
@@ -82,19 +82,19 @@ public class View {
         for (Object key : keys) {
             keyHandles[i++] = objectToKey(key);
         }
-        return new QueryIterator(query(_handle, skip, limit, descending,
-                                       inclusiveStart, inclusiveEnd, keyHandles));
+        return new QueryIterator(this, query(_handle, skip, limit, descending,
+                                             inclusiveStart, inclusiveEnd, keyHandles));
     }
 
     public QueryIterator fullTextQuery(String queryString,
                                        String languageCode,
                                        boolean ranked) throws ForestException
     {
-        return new QueryIterator(query(_handle, queryString, languageCode, ranked));
+        return new QueryIterator(this, query(_handle, queryString, languageCode, ranked));
     }
 
     public QueryIterator geoQuery(double xmin, double ymin, double xmax, double ymax) throws ForestException {
-        return new QueryIterator(query(_handle, xmin, ymin, xmax, ymax));
+        return new QueryIterator(this, query(_handle, xmin, ymin, xmax, ymax));
     }
 
     // native methods for query

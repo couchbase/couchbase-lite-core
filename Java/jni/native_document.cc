@@ -149,9 +149,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 (JNIEnv *env, jclass clazz, jlong docHandle, jstring jtype)
 {
     jstringSlice type(env, jtype);
-    C4Error error;
-    if (!c4doc_setType((C4Document*)docHandle, type, &error))
-        throwError(env, error);
+    c4doc_setType((C4Document*)docHandle, type);
 }
 
 

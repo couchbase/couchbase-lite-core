@@ -2,7 +2,8 @@ package com.couchbase.cbforest;
 
 public class QueryIterator {
 
-    QueryIterator(long handle) {
+    QueryIterator(View view, long handle) {
+        _view = view;
         _handle = handle;
     }
 
@@ -13,10 +14,10 @@ public class QueryIterator {
     public String docID()                           {return docID(_handle);}
     public long   sequence()                        {return sequence(_handle);}
 
-    /** Returns information about a full-text match. The returned array elements come in groups of
-        three, where the first is the index of the term the query string, the second is the byte
-        offset of the match in the UTF-8 key string, and the third is the byte length of the match. */
-    public int[] fullTextTerms()                    {return fullTextTerms(_handle);}
+    public FullTextResult fullTextResult() {
+        return new FullTextResult(_view, docID(), sequence(),
+                                  fullTextID(_handle), fullTextTerms(_handle));
+    }
 
     /** Returns the bounding box of a geo-query match as an array of coordinates,
         in the order (xmin, ymin, xmax, ymax). */
@@ -38,10 +39,12 @@ public class QueryIterator {
     private native byte[] valueJSON(long handle);
     private native String docID(long handle);
     private native long sequence(long handle);
+    private native int fullTextID(long handle);
     private native int[] fullTextTerms(long handle);
     private native double[] geoBoundingBox(long handle);
     private native byte[] geoJSON(long handle);
     private native void free(long handle);
 
+    private View _view;
     private long _handle;  // Handle to native C4QueryEnumerator*
 }

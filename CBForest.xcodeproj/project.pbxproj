@@ -119,6 +119,7 @@
 		273E9FE11C4583E4004D7058 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
 		273E9FE21C4583E4004D7058 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		273E9FE31C4583E4004D7058 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
+		273E9FE51C45B5D2004D7058 /* FullTextResult.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9FE41C45B5D2004D7058 /* FullTextResult.java */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
@@ -691,6 +692,7 @@
 		273AD3DB18F5E8D8007D8C23 /* snappy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snappy.h; sourceTree = "<group>"; };
 		273AD3E718F5EB15007D8C23 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
+		273E9FE41C45B5D2004D7058 /* FullTextResult.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = FullTextResult.java; path = src/com/couchbase/cbforest/FullTextResult.java; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
@@ -1357,6 +1359,7 @@
 				278270DD1C249C0800F4786F /* Indexer.java */,
 				27A82D0D1BBB2727005CB742 /* Logger.java */,
 				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
+				273E9FE41C45B5D2004D7058 /* FullTextResult.java */,
 				27FF7E541BAB60E2004EB8D4 /* View.java */,
 				274D03E81BA734A300FF7C35 /* jni */,
 				274D03FA1BA7414100FF7C35 /* jni.h */,
@@ -2131,6 +2134,7 @@
 			files = (
 				278270E01C24A1D000F4786F /* native_indexer.cc in Sources */,
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
+				273E9FE51C45B5D2004D7058 /* FullTextResult.java in Sources */,
 				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
 				278270DE1C249C0800F4786F /* Indexer.java in Sources */,
