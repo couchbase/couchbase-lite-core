@@ -30,7 +30,7 @@ extern "C" {
         @param database  The database the view is associated with.
         @param path  The filesystem path to the view index file.
         @param viewName  The name of the view.
-        @param version  The version of the views map function.
+        @param version  The version of the view's map function.
         @param outError  On failure, error info will be stored here.
         @return  The new C4View, or NULL on failure. */
     C4View* c4view_open(C4Database *database,
@@ -129,6 +129,13 @@ extern "C" {
                         C4Slice const emittedValues[],
                         C4Error *outError);
 
+    /** Alternate form of c4indexer_emit that takes a C4KeyValueList instead of C arrays. */
+    bool c4indexer_emitList(C4Indexer *indexer,
+                            C4Document *doc,
+                            unsigned viewNumber,
+                            C4KeyValueList *kv,
+                            C4Error *outError);
+
     /** Finishes an indexing task and frees the indexer reference.
         @param indexer  The indexer.
         @param commit  True to commit changes to the indexes, false to abort.
@@ -190,6 +197,7 @@ extern "C" {
         C4KeyReader key;                            ///< Encoded emitted key
 
         // Full-text only:
+        unsigned fullTextID;                        ///< cookie for getting the full text string
         uint32_t fullTextTermCount;                 ///< The number of terms that were matched
         const C4FullTextTerm *fullTextTerms;        ///< Array of terms that were matched
 
@@ -202,7 +210,7 @@ extern "C" {
     /** Runs a regular map/reduce query and returns an enumerator for the results.
         The enumerator's fields are not valid until you call c4queryenum_next(), though.
         @param view  The view to query.
-        @param c4options  Query options, or NULL for the default options.
+        @param options  Query options, or NULL for the default options.
         @param outError  On failure, error info will be stored here.
         @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */
     C4QueryEnumerator* c4view_query(C4View *view,
@@ -235,6 +243,13 @@ extern "C" {
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */
     C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e);
+
+    /** Given a document and the fullTextID from the enumerator, returns the text that was emitted
+        during indexing. */
+    C4SliceResult c4view_fullTextMatched(C4View *view,
+                                         C4Slice docID,
+                                         C4SequenceNumber seq,
+                                         unsigned fullTextID);
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */

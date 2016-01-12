@@ -281,7 +281,8 @@ class C4DatabaseTest : public C4Test {
         C4DocPutRequest rq = {};
         rq.docID = kDocID;
         rq.body = kBody;
-        auto doc = c4doc_put(db, &rq, &error);
+        rq.save = true;
+        auto doc = c4doc_put(db, &rq, NULL, &error);
         Assert(doc != NULL);
         AssertEqual(doc->docID, kDocID);
         auto kExpectedRevID = C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab");
@@ -294,8 +295,10 @@ class C4DatabaseTest : public C4Test {
         rq.body = C4STR("{\"ok\":\"go\"}");
         rq.history = &kExpectedRevID;
         rq.historyCount = 1;
-        doc = c4doc_put(db, &rq, &error);
+        size_t commonAncestorIndex;
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         Assert(doc != NULL);
+        AssertEqual(commonAncestorIndex, 0ul);
         auto kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
         AssertEqual(doc->revID, kExpectedRev2ID);
         AssertEqual(doc->flags, (C4DocumentFlags)kExists);
@@ -308,8 +311,9 @@ class C4DatabaseTest : public C4Test {
         C4Slice history[2] = {kRev2ID, kExpectedRevID};
         rq.history = history;
         rq.historyCount = 2;
-        doc = c4doc_put(db, &rq, &error);
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         Assert(doc != NULL);
+        AssertEqual(commonAncestorIndex, 1ul);
         AssertEqual(doc->revID, kRev2ID);
         AssertEqual(doc->flags, (C4DocumentFlags)(kExists | kConflicted));
         AssertEqual(doc->selectedRev.revID, kRev2ID);

@@ -438,12 +438,8 @@ C4SliceResult c4doc_getType(C4Document *doc) {
     return {result.buf, result.size};
 }
 
-bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError) {
-    auto idoc = internal(doc);
-    if (!idoc->mustBeInTransaction(outError))
-        return false;
-    idoc->_versionedDoc.setDocType(docType);
-    return true;
+void c4doc_setType(C4Document *doc, C4Slice docType) {
+    internal(doc)->_versionedDoc.setDocType(docType);
 }
 
 
@@ -513,7 +509,7 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool allowConflict,
                             C4Error *outError)
 {
-    if (!mustBeInTransaction(database, outError))
+    if (!database->mustBeInTransaction(outError))
         return NULL;
     try {
         alloc_slice newDocID;
@@ -567,9 +563,10 @@ C4Document* c4doc_getForPut(C4Database *database,
 
 C4Document* c4doc_put(C4Database *database,
                       const C4DocPutRequest *rq,
+                      size_t *outCommonAncestorIndex,
                       C4Error *outError)
 {
-    if (!mustBeInTransaction(database, outError))
+    if (!database->mustBeInTransaction(outError))
         return NULL;
     int inserted;
     C4Document *doc;
@@ -585,6 +582,8 @@ C4Document* c4doc_put(C4Database *database,
 
         inserted = c4doc_insertRevisionWithHistory(doc, rq->body, rq->deletion, rq->hasAttachments,
                                                    rq->history, rq->historyCount, outError);
+        if (outCommonAncestorIndex)
+            *outCommonAncestorIndex = inserted;
     } else {
         // New revision:
         C4Slice parentRevID;
@@ -603,10 +602,13 @@ C4Document* c4doc_put(C4Database *database,
 
         inserted = insertRevision(internal(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
                                   rq->allowConflict, outError);
+        if (outCommonAncestorIndex)
+            *outCommonAncestorIndex = 0;
     }
 
     // Save:
-    if (inserted < 0 || (inserted > 0 && !c4doc_save(doc, rq->maxRevTreeDepth, outError))) {
+    if (inserted < 0 || (inserted > 0 && rq->save && !c4doc_save(doc, rq->maxRevTreeDepth,
+                                                                 outError))) {
         c4doc_free(doc);
         doc = NULL;
     }

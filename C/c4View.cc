@@ -224,18 +224,26 @@ bool c4indexer_emit(C4Indexer *indexer,
                     C4Slice const emittedValues[],
                     C4Error *outError)
 {
+    C4KeyValueList kv;
+    kv.keys.reserve(emitCount);
+    kv.values.reserve(emitCount);
+    for (unsigned i = 0; i < emitCount; ++i) {
+        c4kv_add(&kv, emittedKeys[i], emittedValues[i]);
+    }
+    return c4indexer_emitList(indexer, doc, viewNumber, &kv, outError);
+}
+
+
+bool c4indexer_emitList(C4Indexer *indexer,
+                    C4Document *doc,
+                    unsigned viewNumber,
+                    C4KeyValueList *kv,
+                    C4Error *outError)
+{
     try {
-        std::vector<Collatable> keys;
-        std::vector<slice> values;
-        if (!(doc->flags & kDeleted)) {
-            keys.reserve(emitCount);
-            values.reserve(emitCount);
-            for (unsigned i = 0; i < emitCount; ++i) {
-                keys.push_back(*emittedKeys[i]);
-                values.push_back(emittedValues[i]);
-            }
-        }
-        indexer->emitDocIntoView(doc->docID, doc->sequence, viewNumber, keys, values);
+        if (doc->flags & kDeleted)
+            c4kv_reset(kv);
+        indexer->emitDocIntoView(doc->docID, doc->sequence, viewNumber, kv->keys, kv->values);
         return true;
     } catchError(outError)
     return false;
@@ -396,6 +404,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
         docSequence = match->sequence;
         _allocatedValue = match->value();
         value = _allocatedValue;
+        fullTextID = match->fullTextID();
         fullTextTermCount = (uint32_t)match->textMatches.size();
         fullTextTerms = (const C4FullTextTerm*)match->textMatches.data();
         return true;
@@ -423,6 +432,19 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
                                         convertOptions(c4options));
     } catchError(outError);
     return NULL;
+}
+
+
+C4SliceResult c4view_fullTextMatched(C4View *view,
+                                     C4Slice docID,
+                                     C4SequenceNumber seq,
+                                     unsigned fullTextID)
+{
+    try {
+        slice result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
+        return {result.buf, result.size};
+    } catchError(NULL);
+    return {NULL, 0};
 }
 
 

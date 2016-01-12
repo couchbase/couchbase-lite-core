@@ -112,3 +112,24 @@ C4SliceResult c4key_toJSON(const C4KeyReader* r) {
     auto s = ((slice)str).copy();
     return {s.buf, s.size};
 }
+
+
+C4KeyValueList* c4kv_new() {
+    return new c4KeyValueList;
+}
+
+void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) {
+    kv->keys.push_back(*key);
+    kv->values.push_back(value);
+}
+
+void c4kv_free(C4KeyValueList *kv) {
+    delete kv;
+}
+
+void c4kv_reset(C4KeyValueList *kv) {
+    kv->keys.clear();
+    kv->values.clear();
+}
+
+

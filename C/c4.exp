@@ -13,6 +13,7 @@ _c4db_close
 _c4db_delete
 _c4db_compact
 _c4db_rekey
+_c4db_getPath
 _c4db_getDocumentCount
 _c4db_getLastSequence
 _c4db_beginTransaction
@@ -91,12 +92,17 @@ _c4view_getLastSequenceChangedAt
 _c4view_rekey
 
 _c4indexer_begin
+_c4indexer_triggerOnView
 _c4indexer_enumerateDocuments
+_c4indexer_shouldIndexDocument
 _c4indexer_emit
+_c4indexer_emitList
 _c4indexer_end
 
 _c4view_query
 _c4view_fullTextQuery
 _c4view_geoQuery
+_c4view_fullTextMatched
 _c4queryenum_next
+_c4queryenum_fullTextMatched
 _c4queryenum_free

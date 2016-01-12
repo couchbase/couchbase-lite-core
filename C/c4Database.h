@@ -62,6 +62,9 @@ extern "C" {
                     const C4EncryptionKey *newKey,
                     C4Error *outError);
 
+    /** Returns the path of the database. */
+    C4SliceResult c4db_getPath(C4Database*);
+
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);
 

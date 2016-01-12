@@ -109,6 +109,16 @@
 		273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3DB18F5E8D8007D8C23 /* snappy.h */; };
 		273AD3E918F5EB15007D8C23 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E718F5EB15007D8C23 /* config.h */; };
 		273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
+		273E9FDA1C4583E3004D7058 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		273E9FDB1C4583E3004D7058 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		273E9FDC1C4583E3004D7058 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
+		273E9FDD1C4583E3004D7058 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
+		273E9FDE1C4583E3004D7058 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
+		273E9FDF1C4583E4004D7058 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
+		273E9FE01C4583E4004D7058 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		273E9FE11C4583E4004D7058 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278270CB1C221E7E00F4786F /* c4DocEnumerator.cc */; };
+		273E9FE21C4583E4004D7058 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
+		273E9FE31C4583E4004D7058 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415201900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
@@ -2073,6 +2083,7 @@
 				272230501A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487281923B80E007D8940 /* slice.mm in Sources */,
 				27E48714192171EA007D8940 /* Database.cc in Sources */,
+				273E9FDF1C4583E4004D7058 /* c4Database.cc in Sources */,
 				27C319EF1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				27DF46C51A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230491A0815E700BFF25C /* Geohash.cc in Sources */,
@@ -2080,16 +2091,20 @@
 				27E609A31951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873B19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008419492BD7001BF7F3 /* Collatable.mm in Sources */,
+				273E9FE01C4583E4004D7058 /* c4Document.cc in Sources */,
 				27E487301924178B007D8940 /* Collatable.cc in Sources */,
 				27E487241922A64F007D8940 /* RevTree.cc in Sources */,
 				273A96551C3467600056532E /* FullTextIndex.cc in Sources */,
 				2701993C19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27DD1514193CD005009A367D /* RevID.cc in Sources */,
+				273E9FE11C4583E4004D7058 /* c4DocEnumerator.cc in Sources */,
 				277D19C8194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871C19218E5D007D8940 /* slice.cc in Sources */,
 				27E487341924242C007D8940 /* Index.cc in Sources */,
+				273E9FE31C4583E4004D7058 /* c4Key.cc in Sources */,
 				275F1446195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27139BC218F8EEBE0021A9A3 /* varint.cc in Sources */,
+				273E9FE21C4583E4004D7058 /* c4View.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2255,6 +2270,7 @@
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
+				273E9FDA1C4583E3004D7058 /* c4Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
@@ -2262,16 +2278,20 @@
 				27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */,
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
+				273E9FDB1C4583E3004D7058 /* c4Document.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				27EF81081917EEC600A327B9 /* varint.cc in Sources */,
 				273A96541C3467600056532E /* FullTextIndex.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
+				273E9FDC1C4583E3004D7058 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				27E4871B19218E5D007D8940 /* slice.cc in Sources */,
+				273E9FDE1C4583E3004D7058 /* c4Key.cc in Sources */,
 				275F1445195CC588009DADB2 /* VersionedDocument.mm in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
+				273E9FDD1C4583E3004D7058 /* c4View.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2326,7 +2346,6 @@
 				720EA4101BA8D834002B8416 /* Document.cc in Sources */,
 				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
 				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
-				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
@@ -2340,11 +2359,12 @@
 				720EA41C1BA8D834002B8416 /* varint.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
-				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
-				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				278270CD1C221E7E00F4786F /* c4DocEnumerator.cc in Sources */,
+				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
+				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

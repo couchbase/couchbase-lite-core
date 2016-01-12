@@ -31,6 +31,8 @@ static const uint64_t kAutoCompactInterval = (5*60);
 namespace c4Internal {
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
         if (outError) {
+            if (domain == ForestDBDomain && code <= -1000)   // custom CBForest errors (Error.hh)
+                domain = C4Domain;
             outError->domain = domain;
             outError->code = code;
         }
@@ -262,6 +264,13 @@ bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
         return true;
     } catchError(outError);
     return false;
+}
+
+
+C4SliceResult c4db_getPath(C4Database *database) {
+    slice path(database->getInfo().filename);
+    path = path.copy();  // C4SliceResult must be malloced & adopted by caller
+    return {path.buf, path.size};
 }
 
 

@@ -30,8 +30,17 @@ namespace cbforest {
 
         alloc_slice value() const;          ///< The emitted value
 
+        unsigned fullTextID() const         {return _fullTextID;}
         alloc_slice matchedText() const;    ///< The emitted string that was matched
+
+        static alloc_slice matchedText(MapReduceIndex *index,
+                                       slice docID,
+                                       cbforest::sequence seq,
+                                       unsigned fullTextID) {
+            return index->readFullText(docID, seq, fullTextID);
+        }
         
+
     private:
         unsigned readTermMatches(slice indexValue, unsigned termIndex);
 

@@ -92,6 +92,14 @@ enum {
     kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception
     kC4ErrorNotInTransaction,           // Function must be called while in a transaction
     kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
+
+    // These come from CBForest (error.hh)
+    kC4ErrorBadRevisionID = -1000,
+    kC4ErrorCorruptRevisionData = -1001,
+    kC4ErrorCorruptIndexData = -1002,
+    kC4ErrorAssertionFailed = -1003,
+    kC4ErrorTokenizerError = -1004,     // can't create FTS tokenizer
+
 };
 
 

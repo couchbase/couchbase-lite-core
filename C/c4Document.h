@@ -172,7 +172,7 @@ extern "C" {
 
     /** Sets a document's docType. (By convention this is the value of the "type" property of the current revision's JSON; this value can be used as optimization when indexing a view.)
         The change will not be persisted until the document is saved. */
-    bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
+    void c4doc_setType(C4Document *doc, C4Slice docType);
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
@@ -219,6 +219,7 @@ extern "C" {
         bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?
         const C4Slice *history;     ///< Array of ancestor revision IDs
         size_t historyCount;        ///< Size of history[] array
+        bool save;                  ///< Save the document after inserting the revision?
         uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
     } C4DocPutRequest;
 
@@ -230,6 +231,7 @@ extern "C" {
         Either way, on success the document is returned with the inserted revision selected. */
     C4Document* c4doc_put(C4Database *database,
                           const C4DocPutRequest *request,
+                          size_t *outCommonAncestorIndex,
                           C4Error *outError);
 
 #ifdef __cplusplus

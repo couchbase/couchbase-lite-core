@@ -27,7 +27,7 @@ extern "C" {
     typedef struct c4Key C4Key;
 
     /** Creates a new empty C4Key. */
-    C4Key* c4key_new();
+    C4Key* c4key_new(void);
 
     /** Creates a C4Key by copying the data, which must be in the C4Key binary format. */
     C4Key* c4key_withBytes(C4Slice);
@@ -131,6 +131,17 @@ extern "C" {
 
     /** Converts a C4KeyReader to JSON. Remember to free the result. */
     C4SliceResult c4key_toJSON(const C4KeyReader*);
+
+
+    //////// KEY/VALUE LISTS:
+
+
+    typedef struct c4KeyValueList C4KeyValueList;
+
+    C4KeyValueList* c4kv_new(void);
+    void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value);
+    void c4kv_reset(C4KeyValueList *kv);
+    void c4kv_free(C4KeyValueList *kv);
 
 #ifdef __cplusplus
     }

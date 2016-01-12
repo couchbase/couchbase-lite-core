@@ -63,8 +63,9 @@ public:
             C4DocPutRequest rq = {};
             rq.docID = c4str(docID);
             rq.body = c4str(body);
+            rq.save = true;
             C4Error error;
-            Assert(c4doc_put(db, &rq, &error));
+            Assert(c4doc_put(db, &rq, NULL, &error));
             if (verbose)
                 fprintf(stderr, "Added %s --> %s\n", docID, body);
         }
