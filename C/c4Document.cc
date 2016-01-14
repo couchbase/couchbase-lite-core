@@ -403,7 +403,7 @@ int32_t c4doc_purgeRevision(C4Document *doc,
         if (total > 0) {
             idoc->updateMeta();
             if (idoc->_selectedRevIDBuf == revID)
-                idoc->selectRevision(idoc->_versionedDoc[0]);
+                idoc->selectRevision(idoc->_versionedDoc.currentRevision());
         }
         return total;
     } catchError(outError)
