@@ -232,6 +232,16 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 }
 
 
+bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError) {
+    try {
+        auto config = c4DbConfig(flags, NULL);
+        Database::deleteDatabase((std::string)dbPath, config);
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
 bool c4db_compact(C4Database* database, C4Error *outError) {
     if (!database->mustNotBeInTransaction(outError))
         return false;

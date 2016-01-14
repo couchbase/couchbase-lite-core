@@ -52,8 +52,12 @@ extern "C" {
     /** Erases the view index, but doesn't delete the database file. */
     bool c4view_eraseIndex(C4View*, C4Error *outError);
 
-    /** Deletes the database file and closes/frees the C4View. */
+    /** Deletes the view's file(s) and closes/frees the C4View. */
     bool c4view_delete(C4View*, C4Error *outError);
+
+    /** Deletes the file(s) for the view at the given path.
+        All C4Databases at that path should be closed first. */
+    bool c4view_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError);
 
 
     /** Returns the total number of rows in the view index. */

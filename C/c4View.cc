@@ -114,6 +114,10 @@ bool c4view_delete(C4View *view, C4Error *outError) {
     return false;
 }
 
+bool c4view_deleteAtPath(C4Slice viewPath, C4DatabaseFlags flags, C4Error *outError) {
+    return c4db_deleteAtPath(viewPath, flags, outError);
+}
+
 
 uint64_t c4view_getTotalRows(C4View *view) {
     try {

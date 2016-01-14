@@ -54,6 +54,10 @@ extern "C" {
     /** Closes the database, deletes the file, and frees the object. */
     bool c4db_delete(C4Database* database, C4Error *outError);
 
+    /** Deletes the file(s) for the database at the given path.
+        All C4Databases at that path should be closed first. */
+    bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError);
+
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database, C4Error *outError);
 
