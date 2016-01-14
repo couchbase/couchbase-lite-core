@@ -16,6 +16,19 @@
     #include <CommonCrypto/CommonDigest.h>
     #include <assert.h>
 
+    typedef CC_MD5_CTX md5Context;
+
+    static inline void md5_begin(md5Context *ctx) {
+        CC_MD5_Init(ctx);
+    }
+    static inline void md5_add(md5Context *ctx, const void *bytes, size_t length) {
+        CC_MD5_Update(ctx, bytes, (CC_LONG)length);
+    }
+    static inline void md5_end(md5Context *ctx, void *outDigest) {
+        CC_MD5_Final((uint8_t*)outDigest, ctx);
+    }
+
+
     typedef CC_SHA1_CTX sha1Context;
 
     static inline void sha1_begin(sha1Context *ctx) {

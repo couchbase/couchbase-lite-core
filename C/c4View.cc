@@ -197,7 +197,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
     try {
         sequence startSequence = indexer->startingSequence();
         if (startSequence == UINT64_MAX) {
-            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+            clearError(outError);      // end of iteration is not an error
             return NULL;
         }
         auto options = kC4DefaultEnumeratorOptions;
@@ -308,7 +308,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
     try {
         if (asInternal(e)->next())
             return true;
-        recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+        clearError(outError);      // end of iteration is not an error
     } catchError(outError);
     return false;
 }

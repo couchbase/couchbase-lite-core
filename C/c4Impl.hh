@@ -54,6 +54,7 @@ namespace c4Internal {
     void recordHTTPError(int httpStatus, C4Error* outError);
     void recordError(error e, C4Error* outError);
     void recordUnknownException(C4Error* outError);
+    static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
 
     #define catchError(OUTERR) \
         catch (error err) { \

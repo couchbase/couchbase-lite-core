@@ -209,6 +209,10 @@ extern "C" {
         @result  The new revID. Caller is responsible for freeing its buf. */
     C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion);
 
+    /** Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that
+        are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
+    extern bool C4GenerateOldStyleRevIDs;
+
     /** Parameters for adding a revision using c4doc_put. */
     typedef struct {
         C4Slice body;               ///< Revision's body

@@ -173,7 +173,7 @@ bool c4enum_next(C4DocEnumerator *e, C4Error *outError) {
     try {
         if (e->next())
             return true;
-        recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+        clearError(outError);      // end of iteration is not an error
     } catchError(outError)
     return false;
 }
@@ -188,7 +188,7 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) {
     try {
         auto c4doc = e->getDoc();
         if (!c4doc)
-            recordError(FDB_RESULT_SUCCESS, outError);      // end of iteration is not an error
+            clearError(outError);      // end of iteration is not an error
         return c4doc;
     } catchError(outError)
     return NULL;

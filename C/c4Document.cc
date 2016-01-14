@@ -304,7 +304,11 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
             rev = rev->next();
         } while (rev && (!rev->isLeaf() || (!includeDeleted && rev->isDeleted())));
     }
-    return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
+    if (!idoc->selectRevision(rev, NULL)) {
+        clearError(outError);  // Normal termination, not error
+        return false;
+    }
+    return (!withBody || idoc->loadSelectedRevBody(outError));
 }
 
 
@@ -474,18 +478,38 @@ static alloc_slice createDocUUID() {
 }
 
 
+bool C4GenerateOldStyleRevIDs = false;
+
+
 static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-    // Get SHA-1 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
-    sha1Context ctx;
-    sha1_begin(&ctx);
-    uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
-    sha1_add(&ctx, &revLen, 1);
-    sha1_add(&ctx, parentRevID.buf, revLen);
-    uint8_t delByte = deleted;
-    sha1_add(&ctx, &delByte, 1);
-    sha1_add(&ctx, body.buf, body.size);
-    uint8_t digest[20];
-    sha1_end(&ctx, digest);
+    uint8_t digestBuf[20];
+    slice digest;
+    if (C4GenerateOldStyleRevIDs) {
+        // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
+        md5Context ctx;
+        md5_begin(&ctx);
+        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
+            md5_add(&ctx, &revLen, 1);
+        md5_add(&ctx, parentRevID.buf, revLen);
+        uint8_t delByte = deleted;
+        md5_add(&ctx, &delByte, 1);
+        md5_add(&ctx, body.buf, body.size);
+        md5_end(&ctx, digestBuf);
+        digest = slice(digestBuf, 16);
+    } else {
+        // SHA-1 digest:
+        sha1Context ctx;
+        sha1_begin(&ctx);
+        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        sha1_add(&ctx, &revLen, 1);
+        sha1_add(&ctx, parentRevID.buf, revLen);
+        uint8_t delByte = deleted;
+        sha1_add(&ctx, &delByte, 1);
+        sha1_add(&ctx, body.buf, body.size);
+        sha1_end(&ctx, digestBuf);
+        digest = slice(digestBuf, 20);
+    }
 
     // Derive new rev's generation #:
     unsigned generation = 1;
@@ -493,7 +517,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         revidBuffer parentID(parentRevID);
         generation = parentID.generation() + 1;
     }
-    return revidBuffer(generation, slice(digest, sizeof(digest)));
+    return revidBuffer(generation, digest);
 }
 
 C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
@@ -582,8 +606,6 @@ C4Document* c4doc_put(C4Database *database,
 
         inserted = c4doc_insertRevisionWithHistory(doc, rq->body, rq->deletion, rq->hasAttachments,
                                                    rq->history, rq->historyCount, outError);
-        if (outCommonAncestorIndex)
-            *outCommonAncestorIndex = inserted;
     } else {
         // New revision:
         C4Slice parentRevID;
@@ -602,15 +624,16 @@ C4Document* c4doc_put(C4Database *database,
 
         inserted = insertRevision(internal(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
                                   rq->allowConflict, outError);
-        if (outCommonAncestorIndex)
-            *outCommonAncestorIndex = 0;
     }
 
     // Save:
     if (inserted < 0 || (inserted > 0 && rq->save && !c4doc_save(doc, rq->maxRevTreeDepth,
                                                                  outError))) {
         c4doc_free(doc);
-        doc = NULL;
+        return NULL;
     }
+    
+    if (outCommonAncestorIndex)
+        *outCommonAncestorIndex = inserted;
     return doc;
 }
