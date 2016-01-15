@@ -11,6 +11,7 @@
 #include "c4Document.h"
 #include "Collatable.hh"
 #include "Geohash.hh"
+#include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
 using namespace cbforest;
@@ -30,6 +31,8 @@ void c4key_beginMap(C4Key *key)                 {key->beginMap();}
 void c4key_endMap(C4Key *key)                   {key->endMap();}
 
 C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) {
+    if (language == kC4LanguageDefault)
+        language = Tokenizer::defaultStemmer;
     auto key = new c4Key();
     key->addFullTextKey(text, language);
     return key;

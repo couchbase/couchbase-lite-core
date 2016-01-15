@@ -61,7 +61,8 @@ namespace cbforest {
     {
         if (!sModule) { //FIX: Make this thread-safe
             sqlite3Fts3UnicodeSnTokenizer(&sModule);
-            sStemmerToStopwords["english"] = readWordList(kEnglishStopWords);
+            sStemmerToStopwords["en"] = sStemmerToStopwords["english"] =
+                                                                readWordList(kEnglishStopWords);
         }
     }
 

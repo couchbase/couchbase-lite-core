@@ -82,22 +82,25 @@ namespace cbforest {
         // Now collect the rows that appeared for every query term:
         unsigned maxTermIndex = (unsigned)_tokens.size() - 1;
         for (auto i = rows.begin(); i != rows.end(); ++i) {
-            if (i->second->_lastTermIndex == maxTermIndex)
-                _results.push_back(i->second);
-            else
-                delete i->second;
+            auto row = i->second;
+            if (row->_lastTermIndex == maxTermIndex) {
+                auto &matches = row->textMatches;
+                std::sort(matches.begin(), matches.end());
+                if (_ranked) {
+                    double rank = 0.0;
+                    for (auto m = matches.begin(); m != matches.end(); ++m)
+                        rank += 1.0 / termTotalCounts[m->termIndex];
+                    row->_rank = (float)rank;
+                }
+                _results.push_back(row);
+            } else {
+                delete row;   // skip it
+            }
         }
 
         if (_ranked) {
-            for (auto i = _results.begin(); i != _results.end(); ++i) {
-                double rank = 0.0;
-                auto &matches = (*i)->textMatches;
-                for (auto m = matches.begin(); m != matches.end(); ++m)
-                    rank += 1.0 / termTotalCounts[m->termIndex];
-                (*i)->_rank = (float)rank;
-            }
             std::sort(_results.begin(), _results.end(), [](FullTextMatch *a, FullTextMatch *b) {
-                return a->_rank > b->_rank;  // sort by descending rank
+                return a->_rank > b->_rank;  // sort by _descending_ rank
             });
         }
     }

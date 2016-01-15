@@ -224,8 +224,10 @@ extern "C" {
     /** Runs a full-text query and returns an enumerator for the results.
         @param view  The view to query.
         @param queryString  A string containing the words to search for, separated by whitespace.
-        @param queryStringLanguage  The human language of the query string, or a null slice to
-                        fall back to the default. Should be an ISO-639 code like "en".
+        @param queryStringLanguage  The human language of the query string as an ISO-639 code like
+                    "en"; or kC4LanguageNone to disable language-specific transformations like
+                    stemming; or kC4LanguageDefault to fall back to the default language (as set by
+                    c4key_setDefaultFullTextLanguage.)
         @param c4options  Query options. Only skip, limit, descending, rankFullText are used.
         @param outError  On failure, error info will be stored here.
         @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */

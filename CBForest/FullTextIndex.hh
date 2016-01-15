@@ -18,6 +18,8 @@ namespace cbforest {
     struct TermMatch {
         uint32_t termIndex;                 ///< Index of the search term in the tokenized query
         uint32_t start, length;             ///< *Byte* range of word in query string
+
+        bool operator < (const TermMatch &other) const  {return start < other.start;}
     };
 
 

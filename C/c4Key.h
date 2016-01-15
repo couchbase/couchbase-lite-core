@@ -8,10 +8,17 @@
 
 #ifndef c4Key_h
 #define c4Key_h
+#include "c4.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+    // Language code denoting "the default language"
+    #define kC4LanguageDefault  kC4SliceNull
+
+    // Language code denoting "no language"
+    #define kC4LanguageNone     C4STR("")
 
     /** A 2D bounding box used for geo queries */
     typedef struct {
@@ -34,8 +41,10 @@ extern "C" {
 
     /** Creates a C4Key containing a string of text to be full-text-indexed by a view.
         @param text  The text to be indexed.
-        @param language  An ISO-639 language code like "en" or "de", or kC4SliceNull to use the
-                         default language (see c4key_setDefaultFullTextLanguage.)
+        @param language  The human language of the string as an ISO-639 code like "en";
+                    or kC4LanguageNone to disable language-specific transformations such as
+                    stemming; or kC4LanguageDefault to fall back to the default language
+                    (as set by c4key_setDefaultFullTextLanguage.)
         @return  A new C4Key representing this key. */
     C4Key* c4key_newFullTextString(C4Slice text, C4Slice language);
 

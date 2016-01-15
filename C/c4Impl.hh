@@ -40,6 +40,8 @@ typedef struct {
 
 #define C4_IMPL // This tells c4.h to skip its declaration of C4Slice
 
+#define kC4SliceNull slice::null
+
 
 // INTERNAL APIs:
 

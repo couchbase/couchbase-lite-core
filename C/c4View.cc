@@ -431,6 +431,8 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
                                         C4Error *outError)
 {
     try {
+        if (queryStringLanguage == kC4LanguageDefault)
+            queryStringLanguage = Tokenizer::defaultStemmer;
         return new C4FullTextEnumerator(view, queryString, queryStringLanguage,
                                         (c4options ? c4options->rankFullText : true),
                                         convertOptions(c4options));
