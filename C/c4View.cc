@@ -503,8 +503,8 @@ C4QueryEnumerator* c4view_geoQuery(C4View *view,
                                    C4Error *outError)
 {
     try {
-        geohash::area ga(geohash::coord(area.xmin, area.ymin),
-                         geohash::coord(area.xmax, area.ymax));
+        geohash::area ga(geohash::coord(area.ymin, area.xmin),
+                         geohash::coord(area.ymax, area.xmax));
         return new C4GeoEnumerator(view, ga);
     } catchError(outError);
     return NULL;
