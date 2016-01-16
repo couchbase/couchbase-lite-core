@@ -144,6 +144,12 @@ C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) {
 }
 
 
+void c4view_setDocumentType(C4View *view, C4Slice docType) {
+    WITH_LOCK(view);
+    view->_index.setDocumentType(docType);
+}
+
+
 #pragma mark - INDEXING:
 
 
@@ -167,6 +173,11 @@ struct c4Indexer : public MapReduceIndexer {
 
     virtual ~c4Indexer() { }
 
+    void addView(C4View *view) {
+        auto t = new Transaction(&view->_viewDB);
+        addIndex(&view->_index, t);
+    }
+
     C4Database* _db;
 };
 
@@ -179,10 +190,8 @@ C4Indexer* c4indexer_begin(C4Database *db,
     c4Indexer *indexer = NULL;
     try {
         indexer = new c4Indexer(db);
-        for (size_t i = 0; i < viewCount; ++i) {
-            auto t = new Transaction(&views[i]->_viewDB);
-            indexer->addIndex(&views[i]->_index, t);
-        }
+        for (size_t i = 0; i < viewCount; ++i)
+            indexer->addView(views[i]);
         return indexer;
     } catchError(outError);
     if (indexer)
@@ -196,7 +205,6 @@ void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) {
 }
 
 
-
 C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
     try {
         sequence startSequence = indexer->startingSequence();
@@ -206,7 +214,21 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         }
         auto options = kC4DefaultEnumeratorOptions;
         options.flags |= kC4IncludeDeleted;
-        return c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
+        auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
+        if (!e)
+            return NULL;
+
+        auto docTypes = indexer->documentTypes();
+        if (docTypes) {
+            setEnumFilter(e, [docTypes,indexer](slice docID, sequence sequence, slice docType) {
+                if (docTypes->count(docType) > 0)
+                    return true;
+                // We're skipping this doc, but we do have to update the index to _remove_ it
+                indexer->skipDoc(docID, sequence);
+                return false;
+            });
+        }
+        return e;
     } catchError(outError);
     return NULL;
 }
@@ -216,7 +238,16 @@ bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                    unsigned viewNumber,
                                    C4Document *doc)
 {
-    return indexer->shouldMapDocIntoView(versionedDocument(doc).document(), viewNumber);
+    auto &vDoc = versionedDocument(doc);
+    if (!indexer->shouldMapDocIntoView(vDoc.document(), viewNumber))
+        return false;
+    else if (indexer->shouldMapDocTypeIntoView(vDoc.docType(), viewNumber))
+        return true;
+    else {
+        // We're skipping this doc, but we do have to update the index to _remove_ it
+        indexer->skipDocInView(vDoc.document().key(), vDoc.sequence(), viewNumber);
+        return false;
+    }
 }
 
 

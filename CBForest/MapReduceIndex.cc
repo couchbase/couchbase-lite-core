@@ -328,6 +328,7 @@ namespace cbforest {
         MapReduceIndexWriter(MapReduceIndex *index, Transaction *t)
         :IndexWriter(index, *t),
          _index(index),
+         _documentType(index->documentType()),
          _transaction(t)
         { }
 
@@ -382,6 +383,7 @@ namespace cbforest {
         }
 
         MapReduceIndex* _index;
+        alloc_slice _documentType;
         emitter _emit;
         Transaction *_transaction;
     };
@@ -393,14 +395,20 @@ namespace cbforest {
     MapReduceIndexer::MapReduceIndexer()
     :_triggerIndex(NULL),
      _latestDbSequence(0),
-     _finished(false)
+     _finished(false),
+     _allDocTypes(false)
     { }
 
 
     void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
         CBFAssert(index);
         CBFAssert(t);
-        _writers.push_back(new MapReduceIndexWriter(index, t));
+        auto writer = new MapReduceIndexWriter(index, t);
+        _writers.push_back(writer);
+        if (writer->_documentType.buf)
+            _docTypes.insert(writer->_documentType);
+        else
+            _allDocTypes = true;
     }
 
 
@@ -426,6 +434,11 @@ namespace cbforest {
             startSequence = UINT64_MAX; // no updating needed
         return startSequence;
     }
+
+    std::set<slice>* MapReduceIndexer::documentTypes() {
+        return _allDocTypes ? NULL : &_docTypes;
+    }
+
 
     bool MapReduceIndexer::run() {
         sequence startSequence = startingSequence();
@@ -467,6 +480,11 @@ namespace cbforest {
         return _writers[viewNumber]->shouldUpdateDocInIndex(doc);
     }
 
+    bool MapReduceIndexer::shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) {
+        slice viewDocType = _writers[viewNumber]->_documentType;
+        return viewDocType.buf == NULL || viewDocType == docType;
+    }
+
     void MapReduceIndexer::emitDocIntoView(slice docID,
                                            sequence docSequence,
                                            unsigned viewNumber,
@@ -474,6 +492,15 @@ namespace cbforest {
                                            const std::vector<slice> &values)
     {
         _writers[viewNumber]->emitDocIntoView(docID, docSequence, keys, values);
+    }
+
+    void MapReduceIndexer::skipDoc(slice docID, sequence docSequence) {
+        for (auto i = _writers.begin(); i != _writers.end(); ++i)
+            (*i)->emitDocIntoView(docID, docSequence, _noKeys, _noValues);
+    }
+
+    void MapReduceIndexer::skipDocInView(slice docID, sequence docSequence, unsigned viewNumber) {
+        _writers[viewNumber]->emitDocIntoView(docID, docSequence, _noKeys, _noValues);
     }
 
 }

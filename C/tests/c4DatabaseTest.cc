@@ -298,7 +298,7 @@ class C4DatabaseTest : public C4Test {
         size_t commonAncestorIndex;
         doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         Assert(doc != NULL);
-        AssertEqual(commonAncestorIndex, 0ul);
+        AssertEqual(commonAncestorIndex, 1ul);
         auto kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
         AssertEqual(doc->revID, kExpectedRev2ID);
         AssertEqual(doc->flags, (C4DocumentFlags)kExists);

@@ -71,6 +71,11 @@ extern "C" {
     C4SequenceNumber c4view_getLastSequenceChangedAt(C4View*);
 
 
+    /** Sets a documentType filter on the view. If non-null, only documents whose
+        documentType matches will be indexed by this view. */
+    void c4view_setDocumentType(C4View*, C4Slice docType);
+
+
     //////// INDEXING:
 
 

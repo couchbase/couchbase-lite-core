@@ -13,6 +13,7 @@
 #include "Database.hh"
 #include "Collatable.hh"
 #include "Error.hh"
+#include <functional>
 
 // Defining C4DB_THREADSAFE as 1 will make C4Database thread-safe: the same handle can be called
 // simultaneously from multiple threads. Transactions will be single-threaded: once a thread has
@@ -49,6 +50,7 @@ typedef struct {
 #include "c4Database.h"
 
 struct C4Document;
+struct C4DocEnumerator;
 
 namespace c4Internal {
 
@@ -72,6 +74,9 @@ namespace c4Internal {
     C4Document* newC4Document(C4Database*, const Document&);
 
     const VersionedDocument& versionedDocument(C4Document*);
+
+    void setEnumFilter(C4DocEnumerator*,
+                       std::function<bool(slice docID, sequence sequence, slice docType)> filter);
 }
 
 using namespace c4Internal;
