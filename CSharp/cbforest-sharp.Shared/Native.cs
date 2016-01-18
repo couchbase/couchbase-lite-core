@@ -616,7 +616,28 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_selectNextLeafRevision(C4Document *doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted, 
             [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error *outError);
-        
+
+        /// <summary>
+        /// Given a revision ID, returns its generation number (the decimal number before
+        /// the hyphen), or zero if it's unparseable.
+        /// </summary>
+        /// <returns>The generation of the revision ID</returns>
+        /// <param name="revID">The revision ID to inspect</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern int c4rev_getGeneration(C4Slice revID);
+
+        /// <summary>
+        /// Given a revision ID, returns its generation number (the decimal number before
+        /// the hyphen), or zero if it's unparseable.
+        /// </summary>
+        /// <returns>The generation of the revision ID</returns>
+        /// <param name="revID">The revision ID to inspect</param>
+        public static int c4rev_getGeneration(string revID)
+        {
+            using (var c4str = new C4String(revID)) {
+                return c4rev_getGeneration(c4str.AsC4Slice());
+            }
+        }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_free")]
         private static extern void _c4enum_free(C4DocEnumerator *e);

@@ -40,6 +40,7 @@ c4doc_insertRevisionWithHistory
 c4doc_purgeRevision
 c4doc_setType
 c4doc_save
+c4rev_getGeneration
 c4key_new
 c4key_withBytes
 c4key_free
