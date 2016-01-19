@@ -61,19 +61,11 @@ namespace CBForest
             }
         }
 
-        /// <summary>
-        /// Creates a CBForestHistoryEnumerator that iterates over the document retrieved
-        /// from a given CBForestDocStatus
-        /// </summary>
-        /// <param name="docStatus">The doc status class to retrieve the document from</param>
-        /// <param name="onlyLeaf">If set to <c>true</c> only leaf revisions (i.e. revisions
-        /// with no children) will be processed</param>
-        /// <param name="owner">If set to <c>true</c>, the enumerator will free the document
-        /// when finished</param>
-        public CBForestHistoryEnumerator(CBForestDocStatus docStatus, bool onlyLeaf, bool owner)
-            : this(docStatus.GetDocument(), onlyLeaf, owner)
+        public CBForestHistoryEnumerator(C4Database *db, long startingSequence, bool onlyLeaf)
         {
-
+            _doc = Native.c4doc_getBySequence(db, (ulong)startingSequence, null);
+            _onlyLeaf = onlyLeaf;
+            _owner = true;
         }
 
         /// <summary>
