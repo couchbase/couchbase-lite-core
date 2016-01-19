@@ -164,7 +164,8 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(LOCAL_PATH)/../C/c4Database.cc \
 					$(LOCAL_PATH)/../C/c4View.cc \
 					$(LOCAL_PATH)/../C/c4Key.cc \
-					$(LOCAL_PATH)/../C/c4Document.cc
+					$(LOCAL_PATH)/../C/c4Document.cc \
+                    $(LOCAL_PATH)/../C/c4DocEnumerator.cc
 
 LOCAL_STATIC_LIBRARIES := libcrypto
 
