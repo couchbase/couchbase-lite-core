@@ -59,6 +59,9 @@ extern "C" {
         All C4Databases at that path should be closed first. */
     bool c4view_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError);
 
+    /** Sets the persistent version string associated with the map function. If the new value is
+        different from the one previously stored, the index is invalidated. */
+    void c4view_setMapVersion(C4View *view, C4Slice version);
 
     /** Returns the total number of rows in the view index. */
     uint64_t c4view_getTotalRows(C4View*);

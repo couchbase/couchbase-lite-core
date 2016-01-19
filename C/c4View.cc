@@ -45,6 +45,10 @@ struct c4View {
      _viewDB((std::string)path, config),
      _index(&_viewDB, (std::string)name, sourceDB->defaultKeyStore())
     {
+        setVersion(version);
+    }
+
+    void setVersion(C4Slice version) {
         Transaction t(&_viewDB);
         _index.setup(t, -1, NULL, (std::string)version);
     }
@@ -116,6 +120,14 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 
 bool c4view_deleteAtPath(C4Slice viewPath, C4DatabaseFlags flags, C4Error *outError) {
     return c4db_deleteAtPath(viewPath, flags, outError);
+}
+
+
+void c4view_setMapVersion(C4View *view, C4Slice version) {
+    try {
+        WITH_LOCK(view);
+        view->setVersion(version);
+    } catchError(NULL);
 }
 
 
