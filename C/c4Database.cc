@@ -89,6 +89,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 
 c4Database::c4Database(std::string path, const config& cfg)
 :Database(path, cfg),
+ _onCompactCallback(NULL),
  _transaction(NULL),
  _transactionLevel(0)
 { }
@@ -144,6 +145,17 @@ bool c4Database::endTransaction(bool commit) {
     return true;
 }
 
+bool c4Database::onCompact(fdb_compaction_status status,
+                           const char *kv_store_name,
+                           fdb_doc *doc,
+                           uint64_t lastOldFileOffset,
+                           uint64_t lastNewFileOffset)
+{
+    Database::onCompact(status, kv_store_name, doc, lastOldFileOffset, lastNewFileOffset);
+    if (_onCompactCallback)
+        _onCompactCallback(this, isCompacting());
+    return true;
+}
 
 namespace c4Internal {
 
@@ -251,6 +263,16 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
         return true;
     } catchError(outError);
     return false;
+}
+
+
+bool c4db_isCompacting(C4Database *database) {
+    return database ? database->isCompacting() : Database::isAnyCompacting();
+}
+
+void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb) {
+    WITH_LOCK(database);
+    database->_onCompactCallback = cb;
 }
 
 
