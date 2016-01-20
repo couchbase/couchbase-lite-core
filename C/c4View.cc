@@ -225,18 +225,21 @@ void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) {
 
 C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
     try {
+        auto docTypes = indexer->documentTypes();
         sequence startSequence = indexer->startingSequence();
         if (startSequence == UINT64_MAX) {
             clearError(outError);      // end of iteration is not an error
             return NULL;
         }
+
         auto options = kC4DefaultEnumeratorOptions;
         options.flags |= kC4IncludeDeleted;
+        if (docTypes)
+            options.flags &= ~kC4IncludeBodies;
         auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
         if (!e)
             return NULL;
 
-        auto docTypes = indexer->documentTypes();
         if (docTypes) {
             setEnumFilter(e, [docTypes,indexer](slice docID, sequence sequence, slice docType) {
                 if (docTypes->count(docType) > 0)
