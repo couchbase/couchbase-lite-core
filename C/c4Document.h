@@ -113,6 +113,7 @@ extern "C" {
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4Slice revID);
 
+
     //////// INSERTING REVISIONS:
 
 
@@ -181,37 +182,9 @@ extern "C" {
                     uint32_t maxRevTreeDepth,
                     C4Error *outError);
 
+
     //////// HIGH-LEVEL:
 
-    /** Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
-        After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
-        @param database  The database.
-        @param docID  The document's ID, or NULL to create a new document with a random UUID.
-        @param parentRevID  The ID of the revision being replaced, or NULL if this is a first
-                            generation revision. In the latter case, if the document exists but
-                            was deleted, the returned doc's deletion revision will be considered
-                            the parent ID and will be selected in the returned C4Document.
-        @param deleting  True if the document is being deleted.
-        @param allowConflict  If true, prevRevID may be a non-leaf; otherwise it's an error.
-        @param outError  Error information is stored here.
-        @return  The document, with the previous revision selected, or NULL on error. */
-    C4Document* c4doc_getForPut(C4Database *database,
-                                C4Slice docID,
-                                C4Slice parentRevID,
-                                bool deleting,
-                                bool allowConflict,
-                                C4Error *outError);
-
-    /** Generates the revision ID for a new document revision.
-        @param body  The (JSON) body of the revision, exactly as it'll be stored.
-        @param parentRevID  The revID of the parent revision, or null if there's none.
-        @param deletion  True if this revision is a deletion.
-        @result  The new revID. Caller is responsible for freeing its buf. */
-    C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion);
-
-    /** Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that
-        are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
-    extern bool C4GenerateOldStyleRevIDs;
 
     /** Parameters for adding a revision using c4doc_put. */
     typedef struct {
@@ -232,11 +205,25 @@ extern "C" {
           history, with the revision's ID as the first item.
         * Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
           if any, should be given as the single item of request->history.
-        Either way, on success the document is returned with the inserted revision selected. */
+        Either way, on success the document is returned with the inserted revision selected.
+        Note that actually saving the document back to the database is optional -- it only happens
+        if request->save is true. You can set this to false if you want to review the changes
+        before saving, e.g. to run them through a validation function. */
     C4Document* c4doc_put(C4Database *database,
                           const C4DocPutRequest *request,
                           size_t *outCommonAncestorIndex,
                           C4Error *outError);
+
+    /** Generates the revision ID for a new document revision.
+        @param body  The (JSON) body of the revision, exactly as it'll be stored.
+        @param parentRevID  The revID of the parent revision, or null if there's none.
+        @param deletion  True if this revision is a deletion.
+        @result  The new revID. Caller is responsible for freeing its buf. */
+    C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion);
+
+    /** Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that
+        are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
+    extern bool C4GenerateOldStyleRevIDs;
 
 #ifdef __cplusplus
 }

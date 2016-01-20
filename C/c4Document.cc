@@ -526,12 +526,14 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
 }
 
 
-C4Document* c4doc_getForPut(C4Database *database,
-                            C4Slice docID,
-                            C4Slice parentRevID,
-                            bool deleting,
-                            bool allowConflict,
-                            C4Error *outError)
+// Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
+// After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
+static C4Document* c4doc_getForPut(C4Database *database,
+                                   C4Slice docID,
+                                   C4Slice parentRevID,
+                                   bool deleting,
+                                   bool allowConflict,
+                                   C4Error *outError)
 {
     if (!database->mustBeInTransaction(outError))
         return NULL;
