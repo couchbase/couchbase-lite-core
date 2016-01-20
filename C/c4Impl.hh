@@ -96,14 +96,6 @@ struct c4Database : public Database {
     bool mustNotBeInTransaction(C4Error *outError);
     bool endTransaction(bool commit);
 
-    virtual bool onCompact(fdb_compaction_status status,
-                           const char *kv_store_name,
-                           fdb_doc *doc,
-                           uint64_t lastOldFileOffset,
-                           uint64_t lastNewFileOffset); // override
-
-    C4OnCompactCallback _onCompactCallback;
-
 #if C4DB_THREADSAFE
     // Mutex for synchronizing Database calls. Non-recursive!
     std::mutex _mutex;

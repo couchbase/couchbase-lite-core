@@ -162,6 +162,12 @@ void c4view_setDocumentType(C4View *view, C4Slice docType) {
 }
 
 
+void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *context) {
+    WITH_LOCK(view);
+    view->_viewDB.setOnCompact(cb, context);
+}
+
+
 #pragma mark - INDEXING:
 
 

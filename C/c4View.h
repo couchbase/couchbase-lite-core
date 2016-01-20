@@ -78,6 +78,11 @@ extern "C" {
         documentType matches will be indexed by this view. */
     void c4view_setDocumentType(C4View*, C4Slice docType);
 
+    /** Registers a callback to be invoked when the view's index db starts or finishes compacting.
+        The callback is likely to be called on a background thread owned by ForestDB, so be
+        careful of thread safety. */
+    void c4view_setOnCompactCallback(C4View*, C4OnCompactCallback, void *context);
+
 
     //////// INDEXING:
 

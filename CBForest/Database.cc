@@ -129,7 +129,8 @@ namespace cbforest {
      _file(File::forPath(path)),
      _config(cfg),
      _fileHandle(NULL),
-     _isCompacting(false)
+     _isCompacting(false),
+     _onCompactCallback(NULL)
     {
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
@@ -290,13 +291,11 @@ namespace cbforest {
 
     static atomic_uint32_t sCompactCount;
 
-    void (*Database::onCompactCallback)(Database* db, bool compacting);
-
-
     void Database::compact() {
         check(fdb_compact(_fileHandle, NULL));
     }
 
+    // static
     fdb_compact_decision Database::compactionCallback(fdb_file_handle *fhandle,
                                                       fdb_compaction_status status,
                                                       const char *kv_store_name,
@@ -332,8 +331,8 @@ namespace cbforest {
             default:
                 return true; // skip the onCompactCallback
         }
-        if (onCompactCallback)
-            onCompactCallback(this, _isCompacting);
+        if (_onCompactCallback)
+            _onCompactCallback(_onCompactContext, _isCompacting);
         return true;
     }
 

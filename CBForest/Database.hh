@@ -71,7 +71,12 @@ namespace cbforest {
         static bool isAnyCompacting();
         void setCompactionMode(fdb_compaction_mode_t);
 
-        static void (*onCompactCallback)(Database* db, bool compacting);
+        typedef void (*OnCompactCallback)(void *context, bool compacting);
+
+        void setOnCompact(OnCompactCallback callback, void *context) {
+            _onCompactCallback = callback;
+            _onCompactContext = context;
+        }
 
         void rekey(const fdb_encryption_key&);
 
@@ -89,12 +94,6 @@ namespace cbforest {
 
     protected:
         virtual void deleted();
-
-        virtual bool onCompact(fdb_compaction_status status,
-                               const char *kv_store_name,
-                               fdb_doc *doc,
-                               uint64_t lastOldFileOffset,
-                               uint64_t lastNewFileOffset);
 
     private:
         class File;
@@ -116,11 +115,19 @@ namespace cbforest {
                                                        uint64_t last_oldfile_offset,
                                                        uint64_t last_newfile_offset,
                                                        void *ctx);
+        bool onCompact(fdb_compaction_status status,
+                       const char *kv_store_name,
+                       fdb_doc *doc,
+                       uint64_t lastOldFileOffset,
+                       uint64_t lastNewFileOffset);
+
         File* _file;
         config _config;
         fdb_file_handle* _fileHandle;
         std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
         bool _isCompacting;
+        OnCompactCallback _onCompactCallback;
+        void  *_onCompactContext;
     };
 
 

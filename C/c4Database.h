@@ -65,12 +65,12 @@ extern "C" {
         If NULL is passed, returns true if _any_ database is compacting. */
     bool c4db_isCompacting(C4Database*);
 
-    typedef void (*C4OnCompactCallback)(C4Database*, bool compacting);
+    typedef void (*C4OnCompactCallback)(void *context, bool compacting);
 
     /** Registers a callback to be invoked when the database starts or finishes compacting.
         The callback is likely to be called on a background thread owned by ForestDB, so be
         careful of thread safety. */
-    void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb);
+    void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context);
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */
     bool c4db_rekey(C4Database* database,

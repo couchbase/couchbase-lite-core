@@ -498,12 +498,11 @@ Database::config TestDBConfig() {
 
 
 static Database_Test *sCurrentTest;
-static Database* sExpectedCompactingDB;
 static int sNumCompactCalls;
 
-static void onCompact(Database* db, bool compacting) {
-    id self = sCurrentTest;
-    AssertEq(db, sExpectedCompactingDB);
+static void onCompact(void *context, bool compacting) {
+    Database_Test *self = (__bridge id)context;
+    AssertEq(self, sCurrentTest);
     Assert(sNumCompactCalls < 2);
     if (sNumCompactCalls == 0)
         Assert(compacting);
@@ -524,14 +523,13 @@ static void onCompact(Database* db, bool compacting) {
         }
     }
 
-    Database::onCompactCallback = onCompact;
     sCurrentTest = self;
-    sExpectedCompactingDB = db;
+    db->setOnCompact(onCompact, (__bridge void*)self);
     sNumCompactCalls = 0;
 
     db->compact();
 
-    Database::onCompactCallback = NULL;
+    db->setOnCompact(NULL, NULL);
     AssertEq(sNumCompactCalls, 2);
 }
 
