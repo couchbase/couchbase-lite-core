@@ -535,52 +535,56 @@ C4Document* c4doc_getForPut(C4Database *database,
 {
     if (!database->mustBeInTransaction(outError))
         return NULL;
+    C4DocumentInternal *idoc = NULL;
     try {
-        alloc_slice newDocID;
-        bool isNewDoc = (!docID.buf);
-        if (isNewDoc) {
-            newDocID = createDocUUID();
-            docID = newDocID;
-        }
-
-        C4DocumentInternal *idoc = new C4DocumentInternal(database, docID);
-
-        if (!isNewDoc && !idoc->loadRevisions(outError))
-            return NULL;
-
-        if (parentRevID.buf) {
-            // Updating an existing revision; make sure it exists and is a leaf:
-            const Revision *rev = idoc->_versionedDoc[revidBuffer(parentRevID)];
-            if (!idoc->selectRevision(rev, outError))
-                return NULL;
-            else if (!allowConflict && !rev->isLeaf()) {
-                recordHTTPError(kC4HTTPConflict, outError);
-                return NULL;
+        do {
+            alloc_slice newDocID;
+            bool isNewDoc = (!docID.buf);
+            if (isNewDoc) {
+                newDocID = createDocUUID();
+                docID = newDocID;
             }
-        } else {
-            // No parent revision given:
-            if (deleting) {
-                // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                recordHTTPError(idoc->_versionedDoc.exists() ? kC4HTTPConflict : kC4HTTPNotFound,
-                                outError );
-                return NULL;
-            }
-            // If doc exists, current rev must be in a deleted state or there will be a conflict:
-            const Revision *rev = idoc->_versionedDoc.currentRevision();
-            if (rev) {
-                if (!rev->isDeleted()) {
-                    recordHTTPError(kC4HTTPConflict, outError);
-                    return NULL;
-                }
-                // New rev will be child of the tombstone:
-                // (T0D0: Write a horror novel called "Child Of The Tombstone"!)
+
+            idoc = new C4DocumentInternal(database, docID);
+
+            if (!isNewDoc && !idoc->loadRevisions(outError))
+                break;
+
+            if (parentRevID.buf) {
+                // Updating an existing revision; make sure it exists and is a leaf:
+                const Revision *rev = idoc->_versionedDoc[revidBuffer(parentRevID)];
                 if (!idoc->selectRevision(rev, outError))
-                    return NULL;
+                    break;
+                else if (!allowConflict && !rev->isLeaf()) {
+                    recordHTTPError(kC4HTTPConflict, outError);
+                    break;
+                }
+            } else {
+                // No parent revision given:
+                if (deleting) {
+                    // Didn't specify a revision to delete: NotFound or a Conflict, depending
+                    recordHTTPError(idoc->_versionedDoc.exists() ?kC4HTTPConflict :kC4HTTPNotFound,
+                                    outError );
+                    break;
+                }
+                // If doc exists, current rev must be in a deleted state or there will be a conflict:
+                const Revision *rev = idoc->_versionedDoc.currentRevision();
+                if (rev) {
+                    if (!rev->isDeleted()) {
+                        recordHTTPError(kC4HTTPConflict, outError);
+                        break;
+                    }
+                    // New rev will be child of the tombstone:
+                    // (T0D0: Write a horror novel called "Child Of The Tombstone"!)
+                    if (!idoc->selectRevision(rev, outError))
+                        break;
+                }
             }
-        }
-        return idoc;
+            return idoc;
+        } while (false); // not a real loop; it's just to allow 'break' statements to exit
 
     } catchError(outError)
+    delete idoc;
     return NULL;
 }
 
