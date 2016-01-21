@@ -106,3 +106,6 @@ _c4view_fullTextMatched
 _c4queryenum_next
 _c4queryenum_fullTextMatched
 _c4queryenum_free
+
+# Private API, only exposed for testing:
+_c4doc_getForPut

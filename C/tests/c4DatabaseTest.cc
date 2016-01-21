@@ -11,6 +11,7 @@
 
 #include "c4Test.hh"
 #include "forestdb.h"
+#include "c4Private.h"
 #ifdef _MSC_VER
 #define random() rand()
 #endif
