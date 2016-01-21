@@ -1,4 +1,4 @@
-**CBForest** is a higher-level C++ wrapper around [ForestDB][FDB], a new key-value storage engine based on a hierarchical B+-tree trie data structure. ForestDB is similar in functionality to the [CouchStore][COUCHSTORE] engine that currently underlies Couchbase Server, but it should be faster and more space-efficient, especially on solid-state disks (SSDs).
+**CBForest** is a higher-level C and C++ wrapper around [ForestDB][FDB], a new key-value storage engine based on a hierarchical B+-tree trie data structure. ForestDB is similar in functionality to the [CouchStore][COUCHSTORE] engine that currently underlies Couchbase Server, but it should be faster and more space-efficient, especially on solid-state disks (SSDs).
 
 CBForest adds an idiomatic object-oriented C++ API for ForestDB, and also some new functionality (see below.) Recently a C API with the same functionality has been added, and Java and C# bindings to that C API.
 
@@ -18,13 +18,15 @@ The immediate purpose of CBForest is to serve as the storage engine of the next 
     * Optional multi-version document format that keeps a revision tree of the history of each document (as in Couchbase Lite or CouchDB.)
     * Index API that uses a database as an index of an external data set.
     * Map-reduce indexes that update incrementally as documents are changed in the source DB (as in Couchbase Lite or CouchDB.)
+    * Limited full-text indexing.
+    * Limited geo-indexing.
     * Support for JSON-compatible structured keys in indexes, sorted according to CouchDB's JSON collation spec.
 
 ## Platform Support
 
-CBForest runs on Mac OS, iOS, Android, various other flavors of Unix, and Windows.
+CBForest runs on Mac OS, iOS, tvOS, Android, various other flavors of Unix, and Windows.
 
-CBForest has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and will be used in the 1.2 release on all the above platforms.
+CBForest has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and since early 2016 in the 1.2 release on all the above platforms.
 
 ## License
 

@@ -93,7 +93,6 @@ namespace cbforest {
         void deleteKeyStore(std::string name);
 
     protected:
-        virtual void deleted();
 
     private:
         class File;

@@ -157,11 +157,6 @@ namespace cbforest {
         return (_config.flags & FDB_OPEN_FLAG_RDONLY) != 0;
     }
 
-    void Database::deleted() {
-        _fileHandle = NULL;
-        _handle = NULL;
-    }
-
     fdb_kvs_handle* Database::openKVS(std::string name) const {
         auto i = _kvHandles.find(name);
         if (i != _kvHandles.end()) {
@@ -206,7 +201,8 @@ namespace cbforest {
         Transaction t(this, false);
         std::string path = filename();
         check(::fdb_close(_fileHandle));
-        deleted();
+        _fileHandle = NULL;
+        _handle = NULL;
 
         deleteDatabase(path, _config);
         if (andReopen)
