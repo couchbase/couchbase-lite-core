@@ -8,7 +8,7 @@
 
 #ifndef c4Key_h
 #define c4Key_h
-#include "c4.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {

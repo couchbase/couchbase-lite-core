@@ -11,7 +11,7 @@
 #ifndef c4View_h
 #define c4View_h
 
-#include "c4.h"
+#include "c4Base.h"
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4Key.h"

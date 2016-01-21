@@ -11,7 +11,7 @@
 #ifndef c4Database_h
 #define c4Database_h
 
-#include "c4.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {
