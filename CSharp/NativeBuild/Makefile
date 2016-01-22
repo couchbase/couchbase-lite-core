@@ -1,7 +1,7 @@
-FORESTDB_PATH   =  vendor/forestdb
-SNAPPY_PATH =  vendor/snappy
-SQLITE3_PATH=  vendor/sqlite3-unicodesn
-CBFOREST_PATH   =  CBForest
+FORESTDB_PATH   =  ../../vendor/forestdb
+SNAPPY_PATH =  ../../vendor/snappy
+SQLITE3_PATH=  ../../vendor/sqlite3-unicodesn
+CBFOREST_PATH   =  ../../CBForest
 
 CC := clang++
 
@@ -143,11 +143,12 @@ $(CBFOREST_PATH)/RevTree.o \
 $(CBFOREST_PATH)/VersionedDocument.o \
 $(CBFOREST_PATH)/MapReduceIndex.o \
 $(CBFOREST_PATH)/Tokenizer.o \
-C/c4.o \
-C/c4Database.o \
-C/c4View.o \
-C/c4Key.o \
-C/c4Document.o
+../../C/c4.o \
+../../C/c4Database.o \
+../../C/c4View.o \
+../../C/c4Key.o \
+../../C/c4Document.o \
+../../C/c4DocEnumerator.o
 
 TARGET=libCBForest-Interop.so
 
@@ -155,6 +156,7 @@ all: $(TARGET)
 
 $(TARGET): $(SOURCES)
 	$(CC) $(LDFLAGS) -o $@ $^
+	bash gen_linux_symbol_list.sh
 	strip @stripopts
 
 %.o: %.c 
@@ -164,7 +166,7 @@ $(TARGET): $(SOURCES)
 	$(CC) $(CPPFLAGS) -o $@ -x c++ $<
 
 clean:
-	rm -f $(TARGET) `find . -name *.o`
+	rm -f $(TARGET) `find ../.. -name *.o`
 
 install:
-	install -vD -m755 $(TARGET) CSharp/prebuilt/$(TARGET)
+	install -vD -m755 $(TARGET) ../prebuilt/$(TARGET)

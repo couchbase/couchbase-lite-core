@@ -111,6 +111,10 @@ namespace CBForest
 
         public bool MoveNext()
         {
+            if (_doc == null) {
+                return false;
+            }
+
             if (_current == null) {
                 _current = new CBForestDocStatus(_doc, false);
                 return true;

@@ -2,10 +2,11 @@
 
 set -e
 
-OUTPUT_DIR="`pwd`/CSharp/prebuilt"
+OUTPUT_DIR="`pwd`/prebuilt"
 
 rm -f $OUTPUT_DIR/libCBForest-Interop.a
 
+pushd ../../
 rm -rf build
 xcodebuild -scheme "CBForest-Interop iOS" -configuration Release -derivedDataPath build
 xcodebuild -scheme "CBForest-Interop iOS" -configuration Release -derivedDataPath build -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 6,OS=latest'
@@ -13,3 +14,4 @@ xcodebuild -scheme "CBForest-Interop iOS" -configuration Release -derivedDataPat
 lipo -create -output $OUTPUT_DIR/libCBForest-Interop.a build/Build/Products/Release-iphoneos/libCBForest-Interop.a build/Build/Products/Release-iphonesimulator/libCBForest-Interop.a
 
 rm -rf build
+popd

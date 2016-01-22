@@ -163,6 +163,10 @@ namespace CBForest
 
         public bool MoveNext()
         {
+            if (_e == null) {
+                return false;
+            }
+
             var retVal = Native.c4queryenum_next(_e, null);
             if (retVal) {
                 _current = new CBForestQueryStatus(_e->docID, _e->key, _e->value, (long)_e->docSequence);
