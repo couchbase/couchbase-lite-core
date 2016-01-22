@@ -226,16 +226,19 @@ bool c4doc_selectRevision(C4Document* doc,
                           bool withBody,
                           C4Error *outError)
 {
-    auto idoc = internal(doc);
-    if (revID.buf) {
-        if (!idoc->loadRevisions(outError))
-            return false;
-        const Revision *rev = idoc->_versionedDoc[revidBuffer(revID)];
-        return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
-    } else {
-        idoc->selectRevision(NULL);
-        return true;
-    }
+    try {
+        auto idoc = internal(doc);
+        if (revID.buf) {
+            if (!idoc->loadRevisions(outError))
+                return false;
+            const Revision *rev = idoc->_versionedDoc[revidBuffer(revID)];
+            return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
+        } else {
+            idoc->selectRevision(NULL);
+            return true;
+        }
+    } catchError(outError);
+    return false;
 }
 
 
