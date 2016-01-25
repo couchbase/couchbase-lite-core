@@ -72,7 +72,7 @@ namespace cbforest {
         void readState();
         int indexType() const                   {return _indexType;}
         
-        void setup(Transaction&, int indexType, MapFn *map, std::string mapVersion);
+        void setup(int indexType, MapFn *map, std::string mapVersion);
 
         void setDocumentType(slice docType)     {_documentType = docType;}
         alloc_slice documentType() const        {return _documentType;}
@@ -87,7 +87,7 @@ namespace cbforest {
         uint64_t rowCount() const;
 
         /** Removes all the data in the index. */
-        void erase(Transaction&);
+        void erase();
 
         /** Reads the full text passed to the call to emitTextTokens(), given some info about the
             document and the fullTextID available from IndexEnumerator::getTextToken(). */

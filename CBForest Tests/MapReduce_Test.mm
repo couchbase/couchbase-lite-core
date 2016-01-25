@@ -144,10 +144,7 @@ public:
         }
     }
 
-    {
-        Transaction trans(db);
-        index->setup(trans, 0, new TestMapFn, "1");
-    }
+    index->setup(0, new TestMapFn, "1");
 }
 
 
@@ -181,10 +178,7 @@ public:
     AssertEq(TestMapFn::numMapCalls, 0);
 
     NSLog(@"--- Updating version");
-    {
-        Transaction trans(db);
-        index->setup(trans, 0, new TestMapFn, "2");
-    }
+    index->setup(0, new TestMapFn, "2");
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
     AssertEq(TestMapFn::numMapCalls, 2);
@@ -204,10 +198,7 @@ public:
     index = new MapReduceIndex(db, "index", source);
     Assert(index, @"Couldn't reopen index");
 
-    {
-        Transaction trans(db);
-        index->setup(trans, 0, new TestMapFn, "1");
-    }
+    index->setup(0, new TestMapFn, "1");
     AssertEq(index->lastSequenceIndexed(), lastIndexed);
     AssertEq(index->lastSequenceChangedAt(), lastChangedAt);
 }

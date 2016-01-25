@@ -78,12 +78,13 @@ namespace cbforest {
         return doc;
     }
 
-    void KeyStore::deleteKeyStore(Transaction& trans, bool recreate) {
-        std::string name = this->name();
-        trans.database()->deleteKeyStore(name);
+    void KeyStore::erase() {
+        check(fdb_rollback(&_handle, 0));
+    }
+
+    void KeyStore::deleteKeyStore(Transaction& trans) {
+        trans.database()->deleteKeyStore(name());
         _handle = NULL;
-        if (recreate)
-            _handle = trans.database()->openKVS(name);
     }
 
 

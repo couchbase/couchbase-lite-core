@@ -422,10 +422,7 @@ Database::config TestDBConfig() {
 //        Transaction t(db);
 //        t(s).set(key, nsstring_slice(@"value"));
 //    }
-    {
-        Transaction t(db);
-        s.erase(t);
-    }
+    s.erase();
     AssertEq(s.lastSequence(), 0u);
     Document doc = s.get(key);
     Assert(!doc.exists());

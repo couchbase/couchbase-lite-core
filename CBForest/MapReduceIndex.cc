@@ -103,10 +103,9 @@ namespace cbforest {
     }
 
 
-    void MapReduceIndex::setup(Transaction &t, int indexType, MapFn *map, std::string mapVersion) {
+    void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
         Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
               this, indexType, map, mapVersion.c_str());
-        CBFAssert(t.database()->contains(*this));
         readState();
         _map = map;
         _mapVersion = mapVersion;
@@ -114,7 +113,7 @@ namespace cbforest {
             _indexType = indexType;
             if (_lastSequenceIndexed > 0) {
                 Debug("MapReduceIndex: Version or indexType changed; erasing");
-                KeyStore::erase(t);
+                KeyStore::erase();
             }
             _lastSequenceIndexed = _lastSequenceChangedAt = 0;
             _rowCount = 0;
@@ -122,10 +121,9 @@ namespace cbforest {
         }
     }
 
-    void MapReduceIndex::erase(Transaction& t) {
+    void MapReduceIndex::erase() {
         Debug("MapReduceIndex: Erasing");
-        CBFAssert(t.database()->contains(*this));
-        KeyStore::erase(t);
+        KeyStore::erase();
         _lastSequenceIndexed = _lastSequenceChangedAt = 0;
         _rowCount = 0;
         _stateReadAt = 0;

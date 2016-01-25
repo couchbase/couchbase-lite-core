@@ -56,8 +56,7 @@ struct c4View {
     }
 
     void setVersion(C4Slice version) {
-        Transaction t(&_viewDB);
-        _index.setup(t, -1, NULL, (std::string)version);
+        _index.setup(-1, NULL, (std::string)version);
     }
 
     C4Database *_sourceDB;
@@ -80,7 +79,9 @@ C4View* c4view_open(C4Database* db,
     try {
         auto config = c4DbConfig(flags, key);
         config.wal_threshold = kViewDBWALThreshold;
-        config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
+
+        //FIX: Temporary enable sequences so we can call fdb_rollback to erase the index
+        //config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
 
         return new c4View(db, path, viewName, config, version);
     } catchError(outError);
@@ -104,8 +105,7 @@ bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
     try {
         WITH_LOCK(view);
-        Transaction t(&view->_viewDB);
-        view->_index.erase(t);
+        view->_index.erase();
         return true;
     } catchError(outError);
     return false;

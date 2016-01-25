@@ -48,8 +48,8 @@ namespace cbforest {
 
         Document getByOffset(uint64_t offset, sequence) const;
 
-        void deleteKeyStore(Transaction& t)                   {deleteKeyStore(t, false);}
-        void erase(Transaction& t)                            {deleteKeyStore(t, true);}
+        void deleteKeyStore(Transaction& t);
+        void erase();
 
     protected:
         KeyStore(fdb_kvs_handle* handle)                    :_handle(handle) { }
@@ -58,7 +58,6 @@ namespace cbforest {
         fdb_kvs_handle* _handle;
 
     private:
-        void deleteKeyStore(Transaction&, bool recreate);
         friend class Database;
         friend class DocEnumerator;
         friend class KeyStoreWriter;

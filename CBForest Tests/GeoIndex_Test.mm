@@ -115,10 +115,7 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 }
 
 - (void) indexIt {
-    {
-        Transaction trans(db);
-        index->setup(trans, 0, new TestGeoMapFn, "1");
-    }
+    index->setup(0, new TestGeoMapFn, "1");
     NSLog(@"==== Indexing...");
     XCTAssertTrue(TestGeoIndexer::updateIndex(db, index));
 }
