@@ -447,7 +447,16 @@ namespace cbforest {
         DocEnumerator::Options options = DocEnumerator::Options::kDefault;
         options.includeDeleted = true;
         for (DocEnumerator e(sourceStore(), startSequence, UINT64_MAX, options); e.next(); ) {
-            addDocument(*e);
+            try {
+                addDocument(*e);
+            } catch (error x) {
+                WarnError("CBForest error %d indexing doc %s ; aborting",
+                          x.status, ((std::string)e->key()).c_str());
+                throw;
+            } catch (...) {
+                WarnError("Unexpected exception thrown (by map fn?) indexing doc %s ; continuing",
+                          ((std::string)e->key()).c_str());
+            }
         }
         finished();
         return true;
