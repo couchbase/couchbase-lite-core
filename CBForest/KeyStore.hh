@@ -31,6 +31,8 @@ namespace cbforest {
         KeyStore()                                          :_handle(NULL) { }
         KeyStore(const Database*, std::string name);
 
+        void enableErrorLogs(bool enable);                  // defaults to true
+        
         kvinfo getInfo() const;
         sequence lastSequence() const;
         std::string name() const;
@@ -47,6 +49,7 @@ namespace cbforest {
         bool read(Document&, contentOptions = kDefaultContent) const; // key must already be set
 
         Document getByOffset(uint64_t offset, sequence) const;
+        Document getByOffsetNoErrors(uint64_t offset, sequence) const;  // doesn't throw or log
 
         void deleteKeyStore(Transaction& t);
         void erase();

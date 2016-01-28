@@ -143,7 +143,7 @@ namespace cbforest {
             return RevTree::readBodyOfRevision(rev, atOffset);
         if (atOffset == 0 || atOffset >= _doc.offset())
             return alloc_slice();
-        VersionedDocument oldVersDoc(_db, _db.getByOffset(atOffset, rev->sequence));
+        VersionedDocument oldVersDoc(_db, _db.getByOffsetNoErrors(atOffset, rev->sequence));
         if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
             return alloc_slice();
         const Revision* oldRev = oldVersDoc.get(rev->revID);

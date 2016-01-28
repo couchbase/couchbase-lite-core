@@ -98,14 +98,6 @@ namespace cbforest {
 #pragma mark - DATABASE:
 
 
-    static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
-        // don't warn about read errors: VersionedDocument can trigger them when it looks for a
-        // revision that's been compacted away.
-        if (err_code == FDB_RESULT_READ_FAIL)
-            return;
-        WarnError("ForestDB error %d: %s (handle=%p)", err_code, err_msg, ctx_data);
-    }
-
     static Database::config sDefaultConfig;
     static bool sDefaultConfigInitialized = false;
 
@@ -194,7 +186,7 @@ namespace cbforest {
     void Database::reopen(std::string path) {
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
-        fdb_set_log_callback(_handle, logCallback, _handle);
+        enableErrorLogs(true);
     }
 
     void Database::deleteDatabase(bool andReopen) {

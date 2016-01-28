@@ -21,7 +21,20 @@ namespace cbforest {
 
     KeyStore::KeyStore(const Database* db, std::string name)
     :_handle(db->openKVS(name))
-    { }
+    {
+        enableErrorLogs(true);
+    }
+
+    static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
+        WarnError("ForestDB error %d: %s (fdb_kvs_handle=%p)", err_code, err_msg, ctx_data);
+    }
+
+    void KeyStore::enableErrorLogs(bool enable) {
+        if (enable)
+            fdb_set_log_callback(_handle, logCallback, _handle);
+        else
+            fdb_set_log_callback(_handle, NULL, NULL);
+    }
 
     KeyStore::kvinfo KeyStore::getInfo() const {
         kvinfo i;
@@ -75,6 +88,18 @@ namespace cbforest {
         doc._doc.offset = offset;
         doc._doc.seqnum = seq;
         checkGet(fdb_get_byoffset(_handle, doc));
+        return doc;
+    }
+
+    Document KeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+        Document doc;
+        doc._doc.offset = offset;
+        doc._doc.seqnum = seq;
+
+        const_cast<KeyStore*>(this)->enableErrorLogs(false);     // Don't log ForestDB errors caused by reading invalid offset
+        (void) fdb_get_byoffset(_handle, doc);
+        const_cast<KeyStore*>(this)->enableErrorLogs(true);
+
         return doc;
     }
 
