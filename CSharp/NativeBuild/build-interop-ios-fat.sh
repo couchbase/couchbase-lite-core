@@ -2,7 +2,7 @@
 
 set -e
 
-OUTPUT_DIR="`pwd`/prebuilt"
+OUTPUT_DIR="`pwd`/../prebuilt"
 
 rm -f $OUTPUT_DIR/libCBForest-Interop.a
 
