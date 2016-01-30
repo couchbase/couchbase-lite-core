@@ -39,8 +39,11 @@ namespace cbforest {
 
     static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::Options& options) {
         fdb_iterator_opt_t fdbOptions = 0;
-        if (!options.includeDeleted)
-            fdbOptions |= FDB_ITR_NO_DELETES;
+        if (!options.includeDeleted) {
+            // WORKAROUND for a ForestDB bug with reverse iteration [CBL#1082]
+            if (!options.descending)
+                fdbOptions |= FDB_ITR_NO_DELETES;
+        }
         if (!options.inclusiveEnd)
             fdbOptions |= (options.descending ? FDB_ITR_SKIP_MIN_KEY : FDB_ITR_SKIP_MAX_KEY);
         if (!options.inclusiveStart)
@@ -191,6 +194,7 @@ namespace cbforest {
             close();
             return false;
         }
+        bool ignoreDeleted;
         do {
             if (_skipStep) {
                 // The first time next() is called, don't advance the iterator
@@ -206,7 +210,19 @@ namespace cbforest {
                 }
                 check(status);
             }
-        } while (_options.skip > 0 && _options.skip-- > 0);
+            
+            // WORKAROUND for a ForestDB bug with reverse iteration [CBL#1082]
+            ignoreDeleted = false;
+            if (_options.descending && !_options.includeDeleted) {
+                Document checkDoc;
+                fdb_doc* docP = (fdb_doc*)checkDoc;
+                check(fdb_iterator_get_metaonly(_iterator, &docP));
+                if (checkDoc.deleted()) {
+                    Debug("enum: ignoring deleted doc");
+                    ignoreDeleted = true;
+                }
+            }
+        } while (ignoreDeleted || (_options.skip > 0 && _options.skip-- > 0));
         return getDoc();
     }
 
