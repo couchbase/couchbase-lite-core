@@ -5,6 +5,8 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "static_lib.xcconfig"
+
 EXECUTABLE_PREFIX                         = lib
 
 CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO

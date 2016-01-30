@@ -1,0 +1,18 @@
+//
+//  static_lib.xcconfig
+//  CBForest
+//
+//  Created by Jens Alfke on 1/30/16.
+//  Copyright © 2016 Couchbase. All rights reserved.
+//
+
+// Build settings for static libraries that will be distributed.
+// These avoid problems like embedded filesystem paths that cause link warnings when they can't
+// be found on the computer doing the linking.
+
+CLANG_ENABLE_MODULES            = NO;
+CLANG_ENABLE_MODULE_DEBUGGING   = NO;
+
+DEBUG_INFORMATION_FORMAT        = dwarf;
+
+GENERATE_MASTER_OBJECT_FILE     = NO;

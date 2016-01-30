@@ -5,6 +5,8 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "static_lib.xcconfig"
+
 DSTROOT                      = /tmp/CBForest_iOS.dst
 GCC_PRECOMPILE_PREFIX_HEADER = YES
 GCC_PREFIX_HEADER            = CBForest/CBForest-Prefix.pch
