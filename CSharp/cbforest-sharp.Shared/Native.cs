@@ -25,7 +25,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-#if __IOS__
+#if __IOS__ && !FAKE
 [assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
     ObjCRuntime.LinkTarget.Arm64 | ObjCRuntime.LinkTarget.ArmV7 | ObjCRuntime.LinkTarget.ArmV7s, ForceLoad=true,
     LinkerFlags="-lsqlite3 -lc++", Frameworks="Security", IsCxx=true)]
@@ -38,11 +38,7 @@ namespace CBForest
     /// </summary>
     public static unsafe class Native
     {
-#if __IOS__
-        private const string DLL_NAME = "__Internal";
-#else
         private const string DLL_NAME = "CBForest-Interop";
-#endif
 
         #if DEBUG && !NET_3_5
         private static string _Dummy;
