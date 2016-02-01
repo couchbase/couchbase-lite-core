@@ -216,8 +216,8 @@ namespace cbforest {
             if (_options.descending && !_options.includeDeleted) {
                 Document checkDoc;
                 fdb_doc* docP = (fdb_doc*)checkDoc;
-                check(fdb_iterator_get_metaonly(_iterator, &docP));
-                if (checkDoc.deleted()) {
+                if (fdb_iterator_get_metaonly(_iterator, &docP) == FDB_RESULT_SUCCESS
+                        && checkDoc.deleted()) {
                     Debug("enum: ignoring deleted doc");
                     ignoreDeleted = true;
                 }
