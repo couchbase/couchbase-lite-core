@@ -11,7 +11,7 @@
     <ProjectGuid>{7032FEC5-BFBB-440E-97B0-139A8E54D1C5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>cbforestsharp.Net35</RootNamespace>
-    <AssemblyName>cbforest-sharp.Net35</AssemblyName>
+    <AssemblyName>cbforest-sharp</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
