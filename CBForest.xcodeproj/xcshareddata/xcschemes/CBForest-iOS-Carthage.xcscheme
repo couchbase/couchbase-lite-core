@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "27139B9418F8EE3A0021A9A3"
-               BuildableName = "libCBForest-iOS.a"
-               BlueprintName = "CBForest-iOS"
+               BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+               BuildableName = "libCBForest.a"
+               BlueprintName = "CBForest static"
                ReferencedContainer = "container:CBForest.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -32,9 +32,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "27139BA118F8EE3A0021A9A3"
-               BuildableName = "CBForest-iOS Tests.xctest"
-               BlueprintName = "CBForest-iOS Tests"
+               BlueprintIdentifier = "27139B2F18F8E9750021A9A3"
+               BuildableName = "CBForest Tests.xctest"
+               BlueprintName = "CBForest Tests"
                ReferencedContainer = "container:CBForest.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -42,9 +42,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27139B9418F8EE3A0021A9A3"
-            BuildableName = "libCBForest-iOS.a"
-            BlueprintName = "CBForest-iOS"
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBForest.a"
+            BlueprintName = "CBForest static"
             ReferencedContainer = "container:CBForest.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -64,9 +64,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27139B9418F8EE3A0021A9A3"
-            BuildableName = "libCBForest-iOS.a"
-            BlueprintName = "CBForest-iOS"
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBForest.a"
+            BlueprintName = "CBForest static"
             ReferencedContainer = "container:CBForest.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -82,9 +82,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27139B9418F8EE3A0021A9A3"
-            BuildableName = "libCBForest-iOS.a"
-            BlueprintName = "CBForest-iOS"
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBForest.a"
+            BlueprintName = "CBForest static"
             ReferencedContainer = "container:CBForest.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
