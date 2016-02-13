@@ -43,22 +43,28 @@ namespace cbforest {
     class Index : protected KeyStore {
     public:
         Index(Database*, std::string name);
+        ~Index();
 
         alloc_slice getEntry(slice docID, sequence docSequence,
                              Collatable key,
                              unsigned emitIndex) const;
 
-        Database* database() const      {return _indexDB;}
+        Database* database() const              {return _indexDB;}
+        bool isBusy() const                     {return _userCount > 0;}
 
         /** Used as a placeholder for an index value that's stored out of line, i.e. that
             represents the entire document being indexed. */
         static const slice kSpecialValue;
 
     private:
-        Database* const _indexDB;
-
         friend class IndexWriter;
         friend class IndexEnumerator;
+
+        void addUser()                          {++_userCount;}
+        void removeUser()                       {--_userCount;}
+
+        Database* const _indexDB;
+        unsigned _userCount;
     };
 
 
@@ -66,6 +72,7 @@ namespace cbforest {
     class IndexWriter : protected KeyStoreWriter {
     public:
         IndexWriter(Index* index, Transaction& t);
+        ~IndexWriter();
 
         /** Updates the index entry for a document with the given keys and values.
             Adjusts the value of rowCount by the number of rows added or removed.
@@ -82,6 +89,8 @@ namespace cbforest {
 
         friend class Index;
         friend class MapReduceIndex;
+
+        Index *_index;
     };
 
 
@@ -97,7 +106,7 @@ namespace cbforest {
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options&);
 
-        virtual ~IndexEnumerator()              { }
+        virtual ~IndexEnumerator()              {_index->removeUser();}
 
         const Index* index() const              {return _index;}
 

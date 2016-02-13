@@ -29,13 +29,24 @@ namespace cbforest {
 
     Index::Index(Database* db, std::string name)
     :KeyStore(db, name),
-     _indexDB(db)
+     _indexDB(db),
+     _userCount(0)
     { }
 
+    Index::~Index() {
+        CBFAssert(!isBusy());
+    }
+
     IndexWriter::IndexWriter(Index* index, Transaction& t)
-    :KeyStoreWriter(*index, t)
+    :KeyStoreWriter(*index, t),
+     _index(index)
     {
         CBFDebugAssert(t.database()->contains(*index));
+        index->addUser();
+    }
+
+    IndexWriter::~IndexWriter() {
+        _index->removeUser();
     }
 
 
@@ -242,6 +253,7 @@ namespace cbforest {
              docOptions(options))
     {
         Debug("IndexEnumerator(%p)", this);
+        index->addUser();
         if (!_inclusiveStart)
             _startKey = (slice)startKey;
         if (!_inclusiveEnd)
@@ -259,6 +271,7 @@ namespace cbforest {
      _dbEnum(*_index, slice::null, slice::null, docOptions(options))
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
+        index->addUser();
         for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
             Debug("    key range: %s -- %s (%d)", i->start.toJSON().c_str(), i->end.toJSON().c_str(), i->inclusiveEnd);
         nextKeyRange();
