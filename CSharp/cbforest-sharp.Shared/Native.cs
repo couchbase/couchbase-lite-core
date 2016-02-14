@@ -36,9 +36,16 @@ namespace CBForest
     /// <summary>
     /// Bridge into CBForest-Interop.dll
     /// </summary>
+    #if __IOS__
+    [Foundation.Preserve(AllMembers = true)]
+    #endif
     public static unsafe class Native
     {
+        #if __IOS__
+        private const string DLL_NAME = "__Internal";
+        #else
         private const string DLL_NAME = "CBForest-Interop";
+        #endif
 
         #if DEBUG && !NET_3_5
         private static string _Dummy;
