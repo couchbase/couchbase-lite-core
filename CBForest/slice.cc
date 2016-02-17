@@ -60,7 +60,7 @@ namespace cbforest {
     slice slice::copy() const {
         if (buf == NULL)
             return *this;
-        void* copied = ::malloc(size);
+        void* copied = newBytes(size);
         ::memcpy(copied, buf, size);
         return slice(copied, size);
     }
@@ -82,7 +82,7 @@ namespace cbforest {
     const slice slice::null;
 
     void* alloc_slice::alloc(const void* src, size_t s) {
-        void* buf = ::malloc(s);
+        void* buf = newBytes(s);
         ::memcpy((void*)buf, src, s);
         return buf;
     }

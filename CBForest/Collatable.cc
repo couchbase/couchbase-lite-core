@@ -54,7 +54,7 @@ namespace cbforest {
 
 
     CollatableBuilder::CollatableBuilder()
-    :_buf(malloc(kDefaultSize), kDefaultSize),
+    :_buf(slice::newBytes(kDefaultSize), kDefaultSize),
      _available(_buf)
     { }
 
@@ -79,9 +79,7 @@ namespace cbforest {
             do {
                 newSize *= 2;
             } while (newSize < curSize + amt);
-            void* newBuf = ::realloc((void*)_buf.buf, newSize);
-            if (!newBuf)
-                throw std::bad_alloc();
+            void* newBuf = slice::reallocBytes((void*)_buf.buf, newSize);
             _buf = _available = slice(newBuf, newSize);
             _available.moveStart(curSize);
         }

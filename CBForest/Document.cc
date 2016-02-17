@@ -79,10 +79,7 @@ namespace cbforest {
 
     slice Document::resizeMeta(size_t newSize) {
         if (newSize != _doc.metalen) {
-            void* newMeta = realloc(_doc.meta, newSize);
-            if (!newMeta)
-                throw std::bad_alloc();
-            _doc.meta = newMeta;
+            _doc.meta = slice::reallocBytes(_doc.meta, newSize);
             _doc.metalen = newSize;
         }
         return meta();

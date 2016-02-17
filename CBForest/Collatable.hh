@@ -77,7 +77,7 @@ namespace cbforest {
         ~CollatableBuilder();
 
         template<typename T> explicit CollatableBuilder(const T &t)
-        :_buf(malloc(kDefaultSize), kDefaultSize),
+        :_buf(slice::newBytes(kDefaultSize), kDefaultSize),
          _available(_buf)
         {
             *this << t;

@@ -21,7 +21,7 @@
 namespace cbforest {
 
     CollatableBuilder::CollatableBuilder(__unsafe_unretained id obj)
-    :_buf(malloc(kDefaultSize), kDefaultSize),
+    :_buf(slice::newBytes(kDefaultSize), kDefaultSize),
      _available(_buf)
     {
         if (obj)

@@ -84,7 +84,21 @@ namespace cbforest {
 
         slice copy() const;
         void free();
-        
+
+        /** Raw memory allocation. Just like malloc but throws on failure. */
+        static void* newBytes(size_t sz) {
+            void* result = ::malloc(sz);
+            if (!result) throw std::bad_alloc();
+            return result;
+        }
+
+        template <typename T>
+        static T* reallocBytes(T* bytes, size_t newSz) {
+            void* newBytes = (T*)::realloc(bytes, newSz);
+            if (!newBytes) throw std::bad_alloc();
+            return newBytes;
+        }
+
         bool hasPrefix(slice) const;
         
         explicit operator std::string() const;
@@ -139,7 +153,7 @@ namespace cbforest {
         alloc_slice()
             :std::shared_ptr<char>(NULL), slice() {}
         explicit alloc_slice(size_t s)
-            :std::shared_ptr<char>((char*)malloc(s), freer()), slice(get(),s) {}
+            :std::shared_ptr<char>((char*)newBytes(s), freer()), slice(get(),s) {}
         explicit alloc_slice(slice s)
             :std::shared_ptr<char>((char*)s.copy().buf, freer()), slice(get(),s.size) {}
         alloc_slice(const void* b, size_t s)
