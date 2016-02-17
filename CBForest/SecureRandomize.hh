@@ -20,23 +20,23 @@
         CCRandomGenerateBytes((void*)s.buf, s.size);
     }
 
-    #define SECURE_RANDOM_AVAILABLE 1
+    #define SECURE_RANDOMIZE_AVAILABLE 1
 
 #elif defined(_CRYPTO_LIBTOMCRYPT)
 
     #include <tomcrypt.h>
     // TODO
-    #define SECURE_RANDOM_AVAILABLE 0
+    #define SECURE_RANDOMIZE_AVAILABLE 0
 
 #elif defined(_CRYPTO_OPENSSL)
 
     #include <openssl/aes.h>
     // TODO
-    #define SECURE_RANDOM_AVAILABLE 0
+    #define SECURE_RANDOMIZE_AVAILABLE 0
 
 #else
 
-    #define SECURE_RANDOM_AVAILABLE 0
+    #define SECURE_RANDOMIZE_AVAILABLE 0
 
 #endif
 

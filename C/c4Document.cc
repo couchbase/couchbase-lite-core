@@ -474,6 +474,7 @@ bool c4doc_save(C4Document *doc,
 
 
 static alloc_slice createDocUUID() {
+#if SECURE_RANDOMIZE_AVAILABLE
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
                                     "0123456789-_";
     static unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
@@ -486,6 +487,9 @@ static alloc_slice createDocUUID() {
     for (unsigned i = 0; i < kLength; ++i)
         docID[i+1] = kBase64[r[i] % 64];
     return docIDSlice;
+#else
+    error::_throw(FDB_RESULT_CRYPTO_ERROR);
+#endif
 }
 
 
@@ -493,6 +497,7 @@ bool C4GenerateOldStyleRevIDs = false;
 
 
 static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+#if SECURE_DIGEST_AVAILABLE
     uint8_t digestBuf[20];
     slice digest;
     if (C4GenerateOldStyleRevIDs) {
@@ -529,6 +534,9 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         generation = parentID.generation() + 1;
     }
     return revidBuffer(generation, digest);
+#else
+    error::_throw(FDB_RESULT_CRYPTO_ERROR);
+#endif
 }
 
 C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
