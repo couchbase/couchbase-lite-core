@@ -46,21 +46,35 @@ namespace cbforest {
         JavaVM *gJVM;
         
         jstringSlice::jstringSlice(JNIEnv *env, jstring js)
-        :_env(env),
-         _jstr(js)
+        :_env(NULL)
         {
-            if(js == NULL){
-                _cstr = NULL;
-            }else{
+            assert(env != NULL);
+            if (js != NULL) {
                 jboolean isCopy;
-                _cstr = env->GetStringUTFChars(js, &isCopy);
+                const char *cstr = env->GetStringUTFChars(js, &isCopy);
+                if (!cstr)
+                    return; // Would it be better to throw an exception?
+                _slice = slice(cstr);
+                _jstr = js;
+                _env = env;
             }
-            _slice = slice(_cstr);
         }
 
         jstringSlice::~jstringSlice() {
-            if (_cstr)
-                _env->ReleaseStringUTFChars(_jstr, _cstr);
+            if (_env)
+                _env->ReleaseStringUTFChars(_jstr, (const char*)_slice.buf);
+            else if (_slice.buf)
+                free((void*)_slice.buf);        // detached
+        }
+
+        void jstringSlice::copyAndReleaseRef() {
+            if (_env) {
+                auto cstr = (const char*)_slice.buf;
+                _slice = _slice.copy();
+                _env->ReleaseStringUTFChars(_jstr, cstr);
+                _env->DeleteLocalRef(_jstr);
+                _env = NULL;
+            }
         }
 
 

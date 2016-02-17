@@ -16,6 +16,7 @@
 #include "com_couchbase_cbforest_Document.h"
 #include "native_glue.hh"
 #include "c4Document.h"
+#include <algorithm>
 #include <vector>
 
 using namespace cbforest;
@@ -272,22 +273,24 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
     {
         // Convert jhistory, a Java String[], to a C array of C4Slice:
         jsize n = env->GetArrayLength(jhistory);
+        if (env->EnsureLocalCapacity(std::min(n+1, MaxLocalRefsToUse)) < 0)
+            return -1;
         std::vector<C4Slice> history(n);
         std::vector<jstringSlice*> historyAlloc;
         for (jsize i = 0; i < n; i++) {
             jstring js = (jstring)env->GetObjectArrayElement(jhistory, i);
             jstringSlice *item = new jstringSlice(env, js);
+            if (i >= MaxLocalRefsToUse)
+                item->copyAndReleaseRef();
             historyAlloc.push_back(item); // so its memory won't be freed
             history[i] = *item;
         }
 
-        // Make sure the body will be released before releasing keeper.
-        // Android ARM device caused memory access error when release jstringSlices (historyAlloc).
-        // It seems the error is caused by `GetPrimitiveArrayCritical` and order of releasing memories
-        // which are allocated through JNI methods.
-        // https://github.com/couchbase/couchbase-lite-java-core/issues/793
         {
-            jbyteArraySlice body(env, jbody, true); // critical
+            // `body` is a "critical" JNI ref. This is the fastest way to access its bytes, but
+            // it's illegal to make any more JNI calls until the critical ref is released.
+            // We declare it in a nested block, so it'll be released immediately. (java-core#793)
+            jbyteArraySlice body(env, jbody, true);
             inserted = c4doc_insertRevisionWithHistory(doc, body, deleted, hasAtt,
                                                        history.data(), n,
                                                        &error);
@@ -296,8 +299,6 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_insertRevisionWithHi
         // release memory
         for (jsize i = 0; i < n; i++)
             delete historyAlloc.at(i);
-        historyAlloc.clear();
-
     }
     if (inserted >= 0) {
         updateRevIDAndFlags(env, self, doc);
