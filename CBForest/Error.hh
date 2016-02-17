@@ -18,10 +18,6 @@
 
 #include "forestdb.h"
 
-#ifndef __attribute
-#define __attribute(x)
-#endif
-
 #undef check
 
 namespace cbforest {
@@ -45,10 +41,10 @@ namespace cbforest {
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
 
-        static void _throw(fdb_status) __attribute((noreturn));
+        [[noreturn]] static void _throw(fdb_status);
 
-        static void assertionFailed(const char *func, const char *file, unsigned line,
-                                    const char *expr)   __attribute((noreturn));
+        [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
+                                                 const char *expr);
     };
 
     static inline void check(fdb_status status) {
