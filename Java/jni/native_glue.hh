@@ -17,6 +17,11 @@
 namespace cbforest {
     namespace jni {
 
+// Soft limit of number of local JNI refs to use. Even using PushLocalFrame(), you may not get as
+// many refs as you asked for. At least, that's what happens on Android: the new frame won't have
+// more than 512 refs available. So 200 is being conservative.
+static const jsize MaxLocalRefsToUse = 200;
+
 extern JavaVM *gJVM;
 
 bool initDatabase(JNIEnv*);     // Implemented in native_database.cc
@@ -31,23 +36,27 @@ public:
     ~jstringSlice();
 
     jstringSlice(jstringSlice&& s) // move constructor
-    :_slice(s._slice), _env(s._env), _jstr(s._jstr), _cstr(s._cstr)
-    { s._slice = slice::null; }
+    :_slice(s._slice), _env(s._env), _jstr(s._jstr)
+    { s._env = NULL; s._slice.buf = NULL; }
 
     operator slice()    {return _slice;}
     operator C4Slice()  {return {_slice.buf, _slice.size};}
+
+    // Copies the string data and releases the JNI local ref.
+    void copyAndReleaseRef();
 
 private:
     slice _slice;
     JNIEnv *_env;
     jstring _jstr;
-    const char *_cstr;
 };
 
 
 // Creates a temporary slice value from a Java byte[], attempting to avoid copying
 class jbyteArraySlice {
 public:
+    // Warning: If `critical` is true, you cannot make any further JNI calls (except other
+    // critical accesses) until this object goes out of scope or is deleted.
     jbyteArraySlice(JNIEnv *env, jbyteArray jbytes, bool critical =false);
     ~jbyteArraySlice();
 
