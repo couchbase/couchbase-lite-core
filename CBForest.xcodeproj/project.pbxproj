@@ -52,7 +52,6 @@
 		273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3DB18F5E8D8007D8C23 /* snappy.h */; };
 		273AD3E918F5EB15007D8C23 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E718F5EB15007D8C23 /* config.h */; };
 		273AD3EA18F5EB15007D8C23 /* snappy-stubs-public.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */; };
-		273E9EC21C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
 		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
 		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
@@ -74,13 +73,10 @@
 		273E9F781C5165FA003115A6 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
-		274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
-		274A69901BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		274A69911BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		274A69931BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
 		274A69941BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
-		274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
 		274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
@@ -244,7 +240,6 @@
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
 		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
-		27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
@@ -728,11 +723,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */,
 				274D03E71BA7333800FF7C35 /* Security.framework in Frameworks */,
 				274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */,
-				274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */,
-				274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */,
 				274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */,
+				274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1627,28 +1622,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
-				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
-				273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */,
 				273E9F781C5165FA003115A6 /* sqlite_glue.c in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
-				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
-				273E9ECE1C506D76003115A6 /* Indexer.java in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
-				27FF7E5A1BAB8B0B004EB8D4 /* c4View.cc in Sources */,
-				274A69901BED3E0500D16D37 /* c4Key.cc in Sources */,
 				273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */,
-				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
-				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
-				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
-				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
-				273E9EC21C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
-				274D03E01BA732E400FF7C35 /* c4Database.cc in Sources */,
-				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
+				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
+				273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */,
+				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
+				273E9ECE1C506D76003115A6 /* Indexer.java in Sources */,
+				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
+				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
+				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
+				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
+				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
-				274A698B1BED28BE00D16D37 /* c4Document.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
