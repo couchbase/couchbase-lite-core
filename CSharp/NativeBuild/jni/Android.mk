@@ -1,5 +1,5 @@
 # File: Android.mk
-LOCAL_PATH := $(call my-dir)
+LOCAL_PATH := $(call my-dir)/../..
 include $(CLEAR_VARS)
 LOCAL_MODULE := libcrypto
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../vendor/openssl/libs/android/$(TARGET_ARCH_ABI)/libcrypto.a

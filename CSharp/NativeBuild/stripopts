@@ -1,4 +1,5 @@
 -s
+-K c4SliceEqual
 -K c4slice_free
 -K c4log_register
 -K c4db_open
@@ -29,16 +30,21 @@
 -K c4db_enumerateChanges
 -K c4db_enumerateAllDocs
 -K c4db_enumerateSomeDocs
+-K c4enum_next
 -K c4enum_nextDocument
+-K c4enum_getDocumentInfo
+-K c4enum_getDocument
 -K c4enum_free
 -K c4doc_insertRevision
 -K c4doc_insertRevisionWithHistory
 -K c4doc_purgeRevision
 -K c4doc_setType
 -K c4doc_save
+-K c4rev_getGeneration
 -K kC4DefaultEnumeratorOptions
 -K kC4DefaultQueryOptions
 -K c4key_new
+-K c4key_withBytes
 -K c4key_free
 -K c4key_addNull
 -K c4key_addBool

@@ -9,6 +9,8 @@
     <RootNamespace>CBForest.iOS</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <AssemblyName>cbforest-sharp</AssemblyName>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,10 +51,5 @@
     <ManifestResourceWithNoCulture Include="..\prebuilt\libCBForest-Interop.a">
       <Link>libCBForest-Interop.a</Link>
     </ManifestResourceWithNoCulture>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cbforest-sharp.dll.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>
