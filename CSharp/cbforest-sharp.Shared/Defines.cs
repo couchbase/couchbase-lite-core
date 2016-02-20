@@ -96,6 +96,17 @@ namespace CBForest
         /// </summary>
         InvalidKey
     }
+
+    /// <summary>
+    /// Error codes for the HTTP domain
+    /// </summary>
+    public enum HttpErrorCode
+    {
+        BadRequest = 400,
+        NotFound = 404,
+        Conflict = 409,
+        Gone = 410
+    }
     
     /// <summary>
     /// Boolean options specified when opening a database or view
@@ -475,6 +486,23 @@ namespace CBForest
         /// the program, an exception is thrown)
         /// </summary>
         AssertionFailed = -1003
+    }
+    
+    /// <summary>
+    /// Some predefined values for full text search languages
+    /// </summary>
+    public struct C4Language
+    {
+        /// <summary>
+        /// Language code denoting "the default language"
+        /// </summary>
+        public static readonly string Default = null;
+        
+        /// <summary>
+        /// Language code denoting "no language"
+        /// </summary>
+        public static readonly string None = String.Empty;
+        
     }
 }
 

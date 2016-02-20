@@ -1017,6 +1017,80 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError);
 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        internal static extern C4Document* c4doc_put(C4Database *database, C4DocPutRequest_Internal *request,
+            UIntPtr *outCommonAncestorIndex, C4Error *outError);
+
+        internal static C4Document* c4doc_put(C4Database *database, C4DocPutRequest request,
+            UIntPtr *outCommonAncestorIndex, C4Error *outError)
+        {
+            C4Document* retVal = null;
+            request.AsInternalObject(internalObject =>
+            {
+                retVal = c4doc_put(database, &internalObject, outCommonAncestorIndex, outError);
+                #if DEBUG && !NET_3_5
+                if(retVal != null) {
+                    _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
+                    #if ENABLE_LOGGING
+                    Console.WriteLine("[c4enum_nextDocument] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                    #endif
+                }
+                #endif
+            });
+
+            return retVal;
+        }
+
+        public static C4Document* c4doc_put(C4Database *database, C4DocPutRequest request,
+            ulong *outCommonAncestorIndex, C4Error *outError)
+        {
+            UIntPtr outValue;
+            var retVal = c4doc_put(database, request, &outValue, outError);
+            if(outCommonAncestorIndex != null) {
+                *outCommonAncestorIndex = outValue.ToUInt64();
+            }
+            
+            return retVal;
+        }
+
+        /// <summary>
+        /// Generates the revision ID for a new document revision.
+        /// </summary>
+        /// <returns>The new revID. Caller is responsible for freeing its buf.</returns>
+        /// <param name="body">The (JSON) body of the revision, exactly as it'll be stored.</param>
+        /// <param name="parentRevID">The revID of the parent revision, or null if there's none.</param>
+        /// <param name="deletion"><c>true</c> if this revision is a deletion.</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_generateRevID")]
+        public static extern C4Slice _c4doc_generateRevID(C4Slice body, C4Slice parentRevID, 
+            [MarshalAs(UnmanagedType.U1)]bool deletion);
+
+        /// <summary>
+        /// Generates the revision ID for a new document revision.
+        /// </summary>
+        /// <returns>The new revID.</returns>
+        /// <param name="body">The (JSON) body of the revision, exactly as it'll be stored.</param>
+        /// <param name="parentRevID">The revID of the parent revision, or null if there's none.</param>
+        /// <param name="deletion"><c>true</c> if this revision is a deletion.</param>
+        public static string c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion)
+        {
+            return BridgeSlice(() => _c4doc_generateRevID(body, parentRevID, deletion));
+        }
+
+        /// <summary>
+        /// Generates the revision ID for a new document revision.
+        /// </summary>
+        /// <returns>The new revID.</returns>
+        /// <param name="body">The (JSON) body of the revision, exactly as it'll be stored.</param>
+        /// <param name="parentRevID">The revID of the parent revision, or null if there's none.</param>
+        /// <param name="deletion"><c>true</c> if this revision is a deletion.</param>
+        public static string c4doc_generateRevID(string body, string parentRevID, bool deletion)
+        {
+            using (var body_ = new C4String(body))
+            using (var parentRevID_ = new C4String(parentRevID)) {
+                return c4doc_generateRevID(body_.AsC4Slice(), parentRevID_.AsC4Slice(), deletion);
+            }
+        }
+
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_new")]
         private static extern C4Key* _c4key_new();
 
@@ -1079,6 +1153,93 @@ namespace CBForest
                 return c4key_withBytes(slice);
             }
         }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_newFullTextString")]
+        private static extern C4Key* _c4key_newFullTextString(C4Slice text, C4Slice language);
+        
+        /// <summary>
+        /// Creates a C4Key containing a string of text to be full-text-indexed by a view.
+        /// </summary>
+        /// <returns>A new C4Key representing this key.</returns>
+        /// <param name="language">The human language of the string as an ISO-639 code like "en";
+        /// or kC4LanguageNone to disable language-specific transformations such as
+        /// stemming; or kC4LanguageDefault to fall back to the default language
+        /// (as set by c4key_setDefaultFullTextLanguage.)</param>
+        /// <param name="text">The text to be indexed.</param>
+        public static C4Key* c4key_newFullTextString(C4Slice text, C4Slice language)
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4key_newFullTextString(text, language);
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
+                #if ENABLE_LOGGING
+                Console.WriteLine("[c4key_withBytes] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+            }
+
+            return retVal;
+            #else
+            return _c4key_newFullTextString(text, language);
+            #endif
+        }
+        
+        /// <summary>
+        /// Creates a C4Key containing a string of text to be full-text-indexed by a view.
+        /// </summary>
+        /// <returns>A new C4Key representing this key.</returns>
+        /// <param name="language">The human language of the string as an ISO-639 code like "en";
+        /// or C4Language.None to disable language-specific transformations such as
+        /// stemming; or C4Languaage.Default to fall back to the default language
+        /// (as set by c4key_setDefaultFullTextLanguage.)</param>
+        /// <param name="text">The text to be indexed.</param>
+        public static C4Key* c4key_newFullTextString(string text, string language)
+        {
+            using(var text_ = new C4String(text))
+            using(var language_ = new C4String(language)) {
+                return c4key_newFullTextString(text_.AsC4Slice(), language_.AsC4Slice());   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_newGeoJSON")]
+        private static extern C4Key* _c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox);
+        
+        /// <summary>
+        /// Creates a C4Key containing a 2D shape to be geo-indexed.
+        /// Caller must provide the bounding box of the shape.
+        /// </summary>
+        /// <returns>A new C4Key for the shape.</returns>
+        /// <param name="geoJSON">GeoJSON describing the shape.</param>
+        /// <param name="boundingBox">A conservative bounding box of the shape.</param>
+        public static C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox)
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4key_newGeoJSON(geoJSON, boundingBox);
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
+                #if ENABLE_LOGGING
+                Console.WriteLine("[c4key_withBytes] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+            }
+
+            return retVal;
+            #else
+            return _c4key_newGeoJSON(geoJSON, boundingBox);
+            #endif
+        }
+        
+        /// <summary>
+        /// Creates a C4Key containing a 2D shape to be geo-indexed.
+        /// Caller must provide the bounding box of the shape.
+        /// </summary>
+        /// <returns>A new C4Key for the shape.</returns>
+        /// <param name="geoJSON">GeoJSON describing the shape.</param>
+        /// <param name="boundingBox">A conservative bounding box of the shape.</param>
+        public static C4Key* c4key_newGeoJSON(string geoJSON, C4GeoArea boundingBox)
+        {
+            using(var geoJSON_ = new C4String(geoJSON)) {
+                return c4key_newGeoJSON(geoJSON_.AsC4Slice(), boundingBox);   
+            }
+        }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_free")]
         private static extern void _c4key_free(C4Key *key);
@@ -1128,7 +1289,7 @@ namespace CBForest
         public static extern void c4key_addNumber(C4Key *key, double d);
 
         /// <summary>
-        /// Adds a string to a C4Key.
+        /// Adds a UTF-8 string to a C4Key.
         /// </summary>
         /// <param name="key"The key to operate on></param>
         /// <param name="s">The value to store</param>
@@ -1136,7 +1297,7 @@ namespace CBForest
         public static extern void c4key_addString(C4Key *key, C4Slice s);
 
         /// <summary>
-        /// Adds a string to a C4Key.
+        /// Adds a UTF-8 string to a C4Key.
         /// </summary>
         /// <param name="key"The key to operate on></param>
         /// <param name="s">The value to store</param>
@@ -1198,6 +1359,35 @@ namespace CBForest
         /// <param name="key">The key to operate on</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4key_endMap(C4Key *key);
+        
+        
+        /// <summary>
+        /// Sets the process-wide default (human) language for full-text keys. This affects how
+        /// words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
+        /// </summary>
+        /// <returns><c>true</c>, if the languageName was recognized, <c>false</c> if not.</returns>
+        /// <param name="languageName">An ISO language name like 'english'</param>
+        /// <param name="stripDiacriticals"></param><c>true</c> if accents and other diacriticals should be stripped from
+        /// letters. Appropriate for English but not for most other languages.</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4key_setDefaultFullTextLanguage(C4Slice languageName, 
+            [MarshalAs(UnmanagedType.U1)]bool stripDiacriticals);
+        
+        /// <summary>
+        /// Sets the process-wide default (human) language for full-text keys. This affects how
+        /// words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
+        /// </summary>
+        /// <returns><c>true</c>, if the languageName was recognized, <c>false</c> if not.</returns>
+        /// <param name="languageName">An ISO language name like 'english'</param>
+        /// <param name="stripDiacriticals"></param><c>true</c> if accents and other diacriticals should be stripped from
+        /// letters. Appropriate for English but not for most other languages.</param>
+        public static bool c4key_setDefaultFullTextLanguage(string languageName, bool stripDiacriticals)
+        {
+            using(var languageName_ = new C4String(languageName)) {
+                return c4key_setDefaultFullTextLanguage(languageName_.AsC4Slice(), stripDiacriticals);   
+            }
+        }
 
         /// <summary>
         /// Returns a C4KeyReader that can parse the contents of a C4Key.
@@ -1607,6 +1797,128 @@ namespace CBForest
             #else
             return _c4view_query(view, options, outError);
             #endif
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_fullTextQuery")]
+        private static extern C4QueryEnumerator *_c4view_fullTextQuery(C4View *view, C4Slice queryString,
+            C4Slice queryStringLanguage, C4QueryOptions *options, C4Error *outError);
+        
+        /// <summary>
+        /// Runs a full-text query and returns an enumerator for the results.
+        /// </summary>
+        /// <returns>A new query enumerator. Fields are invalid until c4queryenum_next is called.</returns>
+        /// <param name="view">The view to query.</param>
+        /// <param name="queryString">A string containing the words to search for, separated by whitespace.</param>
+        /// <param name="queryStringLanguage">The human language of the query string as an ISO-639 code like
+        /// "en"; or C4Language.None to disable language-specific transformations like
+        /// stemming; or C4Language.Default to fall back to the default language (as set by
+        /// c4key_setDefaultFullTextLanguage.)</param>
+        /// <param name="options">Query options. Only skip, limit, descending, rankFullText are used.</param>
+        /// <param name="outError">On failure, error info will be stored here.</param>
+        public static C4QueryEnumerator *c4view_fullTextQuery(C4View *view, C4Slice queryString,
+            C4Slice queryStringLanguage, C4QueryOptions *options, C4Error *outError)
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4view_fullTextQuery(view, queryString, queryStringLanguage, options, outError);
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
+                #if ENABLE_LOGGING
+                Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+            }
+
+            return retVal;
+            #else
+            return _c4view_fullTextQuery(view, queryString, queryStringLanguage, options, outError);
+            #endif
+        }
+        
+        /// <summary>
+        /// Runs a full-text query and returns an enumerator for the results.
+        /// </summary>
+        /// <returns>A new query enumerator. Fields are invalid until c4queryenum_next is called.</returns>
+        /// <param name="view">The view to query.</param>
+        /// <param name="queryString">A string containing the words to search for, separated by whitespace.</param>
+        /// <param name="queryStringLanguage">The human language of the query string as an ISO-639 code like
+        /// "en"; or C4Language.None to disable language-specific transformations like
+        /// stemming; or C4Language.Default to fall back to the default language (as set by
+        /// c4key_setDefaultFullTextLanguage.)</param>
+        /// <param name="options">Query options. Only skip, limit, descending, rankFullText are used.</param>
+        /// <param name="outError">On failure, error info will be stored here.</param>
+        public static C4QueryEnumerator *c4view_fullTextQuery(C4View *view, string queryString,
+            string queryStringLanguage, C4QueryOptions *options, C4Error *outError)
+        {
+            using(var queryString_ = new C4String(queryString))
+            using(var queryStringLanguage_ = new C4String(queryStringLanguage)) {
+                return c4view_fullTextQuery(view, queryString_.AsC4Slice(), queryStringLanguage_.AsC4Slice(), 
+                    options, outError);
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_geoQuery")]
+        private static extern C4QueryEnumerator* _c4view_geoQuery(C4View *view, C4GeoArea area, C4Error *outError);
+        
+        /// <summary>
+        /// Runs a geo-query and returns an enumerator for the results.
+        /// </summary>
+        /// <returns> A new query enumerator. Fields are invalid until c4queryenum_next is called.</returns>
+        /// <param name="view">The view to query.</param>
+        /// <param name="area">The bounding box to search for. Rows intersecting this will be returned.</param>
+        /// <param name="outError">On failure, error info will be stored here.</param>
+        public static C4QueryEnumerator* c4view_geoQuery(C4View *view, C4GeoArea area, C4Error *outError)
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4view_geoQuery(view, area, outError);
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
+                #if ENABLE_LOGGING
+                Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+            }
+
+            return retVal;
+            #else
+            return _c4view_geoQuery(view, area, outError);
+            #endif
+        }
+        
+        /// <summary>
+        /// In a full-text query enumerator, returns the string that was emitted during indexing that
+        /// contained the search term(s).
+        /// </summary>
+        /// <returns>The string that was emitted during indexing</returns>
+        /// <param name="e">The enumerator to operate on</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern C4Slice _c4queryenum_fullTextMatched(C4QueryEnumerator *e);
+        
+        /// <summary>
+        /// In a full-text query enumerator, returns the string that was emitted during indexing that
+        /// contained the search term(s).
+        /// </summary>
+        /// <returns>The string that was emitted during indexing</returns>
+        /// <param name="e">The enumerator to operate on</param>
+        public static string c4queryenum_fullTextMatched(C4QueryEnumerator *e)
+        {
+            return BridgeSlice(() => _c4queryenum_fullTextMatched(e));   
+        }
+        
+        /// <summary>
+        /// Given a document and the fullTextID from the enumerator, returns the text that was emitted
+        /// during indexing.
+        /// </summary>
+        public static extern C4Slice c4view_fullTextMatched(C4View *view, C4Slice docID, long seq, uint fullTextID,
+            C4Error *outError);
+        
+        /// <summary>
+        /// Given a document and the fullTextID from the enumerator, returns the text that was emitted
+        /// during indexing.
+        /// </summary>
+        public static string c4view_fullTextMatched(C4View *view, string docID, long seq, uint fullTextID,
+            C4Error *outError)
+        {
+            using(var docID_ = new C4String(docID)) {
+                return BridgeSlice(() => c4view_fullTextMatched(view, docID_.AsC4Slice(), seq, fullTextID, outError));  
+            }
         }
 
         /// <summary>

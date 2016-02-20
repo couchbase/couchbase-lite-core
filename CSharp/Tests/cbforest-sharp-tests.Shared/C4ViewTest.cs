@@ -119,6 +119,115 @@ namespace CBForest.Tests
             Assert.AreEqual(0UL, Native.c4view_getLastSequenceChangedAt(_view));
         }
         
+        [Test]
+        public void TestCreateFullTextIndex()
+        {
+            CreateFullTextIndex(100);
+        }
+        
+        [Test]
+        public void TestQueryFullTextIndex()
+        {
+            CreateFullTextIndex(3);
+            
+            // Search for "somewhere":
+            C4Error error;
+            C4QueryEnumerator* e = Native.c4view_fullTextQuery(_view, "somewhere", C4Language.Default, null, &error);
+            
+            Assert.IsTrue(e != null);
+            Assert.IsTrue(Native.c4queryenum_next(e, &error));
+            Assert.IsTrue(e->docID.Equals("doc-001"));
+            Assert.AreEqual(1UL, e->docSequence);
+            Assert.AreEqual(1U, e->fullTextTermCount);
+            Assert.AreEqual(0U, e->fullTextTerms[0].termIndex);
+            Assert.AreEqual(8U, e->fullTextTerms[0].start);
+            Assert.AreEqual(9U, e->fullTextTerms[0].length);
+            
+            Assert.IsFalse(Native.c4queryenum_next(e, &error));
+            Assert.AreEqual(0, error.code);
+            Native.c4queryenum_free(e);
+            
+            // Search for "cat":
+            e = Native.c4view_fullTextQuery(_view, "cat", C4Language.Default, null, &error);
+            Assert.IsTrue(e != null);
+            int i = 0;
+            foreach(var doc in new CBForestQueryEnumerator(e)) {
+                ++i;
+                Assert.AreEqual(1U, doc.FullTextTermCount);
+                Assert.AreEqual(0U, doc.GetFullTextTerm(0).termIndex);
+                if(doc.DocSequence == 1) {
+                    Assert.AreEqual(20U, doc.GetFullTextTerm(0).start);
+                    Assert.AreEqual(4U, doc.GetFullTextTerm(0).length);
+                } else {
+                    Assert.AreEqual(3L, doc.DocSequence);
+                    Assert.AreEqual(4U, doc.GetFullTextTerm(0).start);
+                    Assert.AreEqual(3U, doc.GetFullTextTerm(0).length);
+                }
+            }
+            
+            Assert.AreEqual(0, error.code);
+            Assert.AreEqual(2, i);
+            
+            // Search for "cat bark":
+            e = Native.c4view_fullTextQuery(_view, "cat bark", C4Language.Default, null, &error);
+            Assert.IsTrue(e != null);
+            Assert.IsTrue(Native.c4queryenum_next(e, &error));
+            Assert.IsTrue(e->docID.Equals("doc-001"));
+            Assert.AreEqual(1UL, e->docSequence);
+            Assert.AreEqual(2U, e->fullTextTermCount);
+            Assert.AreEqual(0U, e->fullTextTerms[0].termIndex);
+            Assert.AreEqual(20U, e->fullTextTerms[0].start);
+            Assert.AreEqual(4U, e->fullTextTerms[0].length);
+            Assert.AreEqual(1U, e->fullTextTerms[1].termIndex);
+            Assert.AreEqual(29U, e->fullTextTerms[1].start);
+            Assert.AreEqual(7U, e->fullTextTerms[1].length);
+
+            Assert.IsFalse(Native.c4queryenum_next(e, &error));
+            Assert.AreEqual(0, error.code);
+            Native.c4queryenum_free(e);
+        }
+        
+        private void CreateFullTextIndex(uint docCount)
+        {
+            var docID = default(string);
+            for(uint i = 1; i <= docCount; i++) {
+                docID = String.Format("doc-{0}", i.ToString("D3"));
+                var body = default(string);
+                switch(i % 3) {
+                case 0:
+                    body = "The cat sat on the mat.";
+                    break;
+                case 1:
+                    body = "Outside SomeWhere a cät was barking";
+                    break;
+                case 2:
+                    body = "The bark of a tree is rough?";
+                    break;
+                }
+                
+                CreateRev(docID, REV_ID, body);
+            }
+            
+            C4Error error;
+            C4Indexer* ind = Native.c4indexer_begin(_db, new C4View*[] { _view }, &error);
+            Assert.IsTrue(ind != null);
+            
+            
+            foreach(var doc in new CBForestDocEnumerator(ind)) {
+                // Index 'doc':
+                C4Key*[] keys;
+                using(var languageStr = new C4String("en")) {
+                    keys = new C4Key*[] { Native.c4key_newFullTextString(doc.SelectedRev.body, languageStr.AsC4Slice())};
+                 }
+                
+                Assert.IsTrue(Native.c4indexer_emit(ind, doc.GetDocument(), 0, keys, new[] { "1234" }, &error));
+                Native.c4key_free(keys[0]);
+            }
+            
+            Assert.AreEqual(0, error.code);
+            Assert.IsTrue(Native.c4indexer_end(ind, true, &error));
+        }
+        
         private void CreateIndex()
         {
             for(int i = 1; i <= 100; i++) {
