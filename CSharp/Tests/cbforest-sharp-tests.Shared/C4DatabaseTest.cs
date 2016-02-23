@@ -18,7 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-#define FAKE_ENCRYPTION
+//#define FAKE_ENCRYPTION
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -347,6 +347,51 @@ namespace CBForest.Tests
             Assert.AreEqual(9, i);
         }
         
+        [Test]
+        public void TestPut()
+        {
+            C4Error error;
+            using(var t = new TransactionHelper(_db)) {
+                C4DocPutRequest rq = new C4DocPutRequest();
+                rq.docID = DOC_ID;
+                rq.body = BODY;
+                rq.save = true;
+                var doc = Native.c4doc_put(_db, rq, null, &error);
+                Assert.IsTrue(doc != null);
+                Assert.IsTrue(doc->docID.Equals(DOC_ID));
+                const string expectedRevID = "1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab";
+                Assert.IsTrue(doc->revID.Equals(expectedRevID));
+                Assert.AreEqual(C4DocumentFlags.Exists, doc->flags);
+                Assert.IsTrue(doc->selectedRev.revID.Equals(expectedRevID));
+                Native.c4doc_free(doc);
+                
+                // Update doc:
+                rq.body = "{\"ok\":\"go\"}";
+                rq.history = new[] { expectedRevID };
+                ulong commonAncestorIndex;
+                doc = Native.c4doc_put(_db, rq, &commonAncestorIndex, &error);
+                Assert.IsTrue(doc != null);
+                Assert.AreEqual(1UL, commonAncestorIndex);
+                const string expectedRev2ID = "2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b";
+                Assert.IsTrue(doc->revID.Equals(expectedRev2ID));
+                Assert.AreEqual(C4DocumentFlags.Exists, doc->flags);
+                Assert.IsTrue(doc->selectedRev.revID.Equals(expectedRev2ID));
+                Native.c4doc_free(doc);
+                
+                // Insert existing rev:
+                rq.body = "{\"from\":\"elsewhere\"}";
+                rq.existingRevision = true;
+                rq.history = new[] { REV_2_ID, expectedRevID };
+                doc = Native.c4doc_put(_db, rq, &commonAncestorIndex, &error);
+                Assert.IsTrue(doc != null);
+                Assert.AreEqual(1UL, commonAncestorIndex);
+                Assert.IsTrue(doc->revID.Equals(REV_2_ID));
+                Assert.AreEqual(C4DocumentFlags.Exists | C4DocumentFlags.Conflicted, doc->flags);
+                Assert.IsTrue(doc->selectedRev.revID.Equals(REV_2_ID));
+                Native.c4doc_free(doc);
+            }
+        }
+        
         private void SetupAllDocs()
         {
             for(int i = 1; i < 100; i++) {
@@ -377,7 +422,7 @@ namespace CBForest.Tests
 #if FAKE_ENCRYPTION
             _EncryptionKey.algorithm = (C4EncryptionAlgorithm)(-1);
 #else
-            _EncryptionKey.algorithm = C4EncryptionType.AES256;
+            _EncryptionKey.algorithm = C4EncryptionAlgorithm.AES256;
 #endif
             var bytes = Encoding.UTF8.GetBytes("this is not a random key at all.");
             fixed(byte* src = bytes)

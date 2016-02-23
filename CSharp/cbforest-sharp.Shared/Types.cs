@@ -611,6 +611,7 @@ namespace CBForest
         private byte _descending;
         private byte _inclusiveStart;
         private byte _inclusiveEnd;
+        private byte _rankFullText;
 
         /// <summary>
         /// The key to start enumerating at
@@ -666,6 +667,12 @@ namespace CBForest
             get { return Convert.ToBoolean(_inclusiveEnd); }
             set { _inclusiveEnd = Convert.ToByte(value); }
         }
+        
+        public bool rankFullText
+        { 
+            get { return Convert.ToBoolean(_rankFullText); }
+            set { _rankFullText = Convert.ToByte(value); }
+        }
 
         /// <summary>
         /// Gets or sets wthe number of keys in the keys array
@@ -682,29 +689,60 @@ namespace CBForest
     /// The fields of the object are invalidated by the next call to c4queryenum_next or
     /// c4queryenum_free.
     /// </summary>
-    public struct C4QueryEnumerator
+    public unsafe struct C4QueryEnumerator
     {
+        // All query types:
+        
         /// <summary>
-        /// The current key in the index
+        /// ID of doc that emitted this row
         /// </summary>
-        public C4KeyReader key;   
+        public C4Slice docID;
+        
+        /// <summary>
+        /// Sequence number of doc that emitted row
+        /// </summary>
+        public ulong docSequence;
 
         /// <summary>
-        /// The current value in the index
+        /// Emitted value
         /// </summary>
         public C4Slice value;
 
+        // Map/reduce only:
+        
         /// <summary>
-        /// The document ID of the document this index
-        /// entry came from
+        /// Encoded emitted key
         /// </summary>
-        public C4Slice docID;
-
+        public C4KeyReader key;  
+        
+        // Full-text only:
+        
         /// <summary>
-        /// The sequence number of the document this index
-        /// entry came from
+        /// cookie for getting the full text string
         /// </summary>
-        public ulong docSequence;
+        public uint fullTextID;
+        
+        /// <summary>
+        /// The number of terms that were matched
+        /// </summary>
+        public uint fullTextTermCount;
+        
+        /// <summary>
+        /// Array of terms that were matched
+        /// </summary>
+        public C4FullTextTerm *fullTextTerms;
+        
+        // Geo-query only:
+        
+        /// <summary>
+        /// Bounding box of emitted geoJSON shape
+        /// </summary>
+        public C4GeoArea geoBBox;
+        
+        /// <summary>
+        /// GeoJSON description of the shape
+        /// </summary>
+        public C4Slice geoJSON;
     }
 
     /// <summary>
@@ -753,6 +791,150 @@ namespace CBForest
         {
 
         }
+    }
+
+    /// <summary>
+    /// Parameters for adding a revision using c4doc_put.
+    /// </summary>
+    public struct C4DocPutRequest
+    {
+        /// <summary>
+        /// Revision's body
+        /// </summary>
+        public string body;
+
+        /// <summary>
+        /// Document ID
+        /// </summary>
+        public string docID;
+
+        /// <summary>
+        /// Is this revision a deletion?
+        /// </summary>
+        public bool deletion;
+
+        /// <summary>
+        /// Does this revision have attachments?
+        /// </summary>
+        public bool hasAttachments;
+
+        /// <summary>
+        /// Is this an already-existing rev coming from replication?
+        /// </summary>
+        public bool existingRevision;
+
+        /// <summary>
+        /// OK to create a conflict, i.e. can parent be non-leaf?
+        /// </summary>
+        public bool allowConflict;
+
+        /// <summary>
+        /// Array of ancestor revision IDs
+        /// </summary>
+        public string[] history;
+        
+        /// <summary>
+        /// Save the document after inserting the revision?
+        /// </summary>
+        public bool save;
+
+        /// <summary>
+        /// Max depth of revision tree to save (or 0 for default)
+        /// </summary>
+        public uint maxRevTreeDepth;
+
+        internal unsafe void AsInternalObject(Action<C4DocPutRequest_Internal> logic)
+        {
+            if (logic == null) {
+                return;
+            }
+
+            var internalObject = new C4DocPutRequest_Internal();
+            internalObject.deletion = Convert.ToByte(deletion);
+            internalObject.hasAttachments = Convert.ToByte(hasAttachments);
+            internalObject.existingRevision = Convert.ToByte(existingRevision);
+            internalObject.allowConflict = Convert.ToByte(allowConflict);
+            var length = history == null ? 0 : history.LongLength;
+            internalObject.historyCount = (UIntPtr)length;
+            internalObject.save = Convert.ToByte(save);
+            using (var body_ = new C4String(body))
+            using (var docID_ = new C4String(docID)) {
+                internalObject.body = body_.AsC4Slice();
+                internalObject.docID = docID_.AsC4Slice();
+                var c4StringArray = new C4String[length];
+                var nativeArray = new C4Slice[length];
+                for(int i = 0; i < length; i++) {
+                    c4StringArray[i] = new C4String(history[i]);
+                    nativeArray[i] = c4StringArray[i].AsC4Slice();
+                }
+                fixed(C4Slice* history_ = nativeArray) {
+                    internalObject.history = history_;
+                    try {
+                        logic(internalObject);
+                    } finally {
+                        foreach (var c4str in c4StringArray) {
+                            c4str.Dispose();
+                        }
+                    }
+                }
+            }
+        }
+    }
+        
+    internal unsafe struct C4DocPutRequest_Internal
+    {
+        public C4Slice body;
+        public C4Slice docID;  
+        public byte deletion;  
+        public byte hasAttachments;
+        public byte existingRevision;
+        public byte allowConflict;
+        public C4Slice *history;
+        public UIntPtr historyCount;
+        public byte save;
+        public uint maxRevTreeDepth;   
+    }
+    
+    public struct C4GeoArea
+    {
+        public double xmin; 
+        public double ymin;
+        public double xmax;
+        public double ymax;
+        
+        public C4GeoArea(double xmin, double ymin, double xmax, double ymax)
+        {
+            this.xmin = xmin;
+            this.xmax = xmax;
+            this.ymin = ymin;
+            this.ymax = ymax;
+        }
+    }
+    
+    /// <summary>
+    /// Info about a match of a full-text query term
+    /// </summary>
+    public struct C4FullTextTerm
+    {
+        /// <summary>
+        /// Index of the search term in the tokenized query
+        /// </summary>
+        public uint termIndex;
+        
+        /// <summary>
+        /// Start of *Byte* range of word in query string
+        /// </summary>
+        public uint start;
+        
+        /// <summary>
+        /// Length of *Byte* range of word in query string
+        /// </summary>
+        public uint length;
+    }
+    
+    public struct C4KeyValueList
+    {
+        
     }
 }
 

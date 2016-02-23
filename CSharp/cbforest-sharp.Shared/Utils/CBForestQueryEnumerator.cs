@@ -27,7 +27,7 @@ namespace CBForest
     /// This class provides information about the current entry in a
     /// CBForestQueryEnumerator
     /// </summary>
-    public sealed class CBForestQueryStatus
+    public unsafe sealed class CBForestQueryStatus
     {
 
         #region Variables
@@ -36,6 +36,8 @@ namespace CBForest
         private string _docID;
         private string _keyJSON;
         private string _valueJSON;
+        private string _geoJSON;
+        private C4FullTextTerm *_fullTextTerms;
 
         /// <summary>
         /// The key of this entry
@@ -46,6 +48,8 @@ namespace CBForest
         /// The value of this entry
         /// </summary>
         public readonly C4Slice Value;
+        
+        public readonly C4Slice GeoJSONRaw;
 
         /// <summary>
         /// The sequence number of the document that
@@ -102,19 +106,47 @@ namespace CBForest
                 return _valueJSON;
             }
         }
+        
+        public string GeoJSON
+        {
+            get { 
+                if(_geoJSON == null) {
+                    _geoJSON = (string)GeoJSONRaw;  
+                }
+                
+                return _geoJSON;
+            }
+        }
+        
+        public uint FullTextTermCount { get; private set; }
+        
+        public C4GeoArea BoundingBox { get; private set; }
 
         #endregion
 
         #region Constructors
 
-        internal unsafe CBForestQueryStatus(C4Slice docID, C4KeyReader key, C4Slice value, long docSequence)
+        internal unsafe CBForestQueryStatus(C4QueryEnumerator *e)
         {
-            Key = key;
-            Value = value;
-            DocSequence = docSequence;
-            _docIDSlice = docID;
+            Key = e->key;
+            Value = e->value;
+            DocSequence = (long)e->docSequence;
+            _docIDSlice = e->docID;
+            _fullTextTerms = e->fullTextTerms;
+            FullTextTermCount = e->fullTextTermCount;
+            BoundingBox = e->geoBBox;
+            GeoJSONRaw = e->geoJSON;
         }
 
+        #endregion
+        
+        #region Public Methods
+        
+        public C4FullTextTerm GetFullTextTerm(int index)
+        {
+            return _fullTextTerms[index]; 
+        }
+        
         #endregion
     }
 
@@ -170,7 +202,7 @@ namespace CBForest
             var err = new C4Error();
             var retVal = Native.c4queryenum_next(_e, &err);
             if (retVal) {
-                _current = new CBForestQueryStatus(_e->docID, _e->key, _e->value, (long)_e->docSequence);
+                _current = new CBForestQueryStatus(_e);
             } else {
                 if (err.code != (int)ForestDBStatus.Success) {
                     throw new CBForestException(err);

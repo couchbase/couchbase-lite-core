@@ -13,5 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)C4Test.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)C4ViewTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)C4KeyTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)C4GeoTest.cs" />
   </ItemGroup>
 </Project>
