@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <IsMac>false</IsMac>
@@ -91,11 +91,16 @@
     <None Condition=" !$(IsMac) AND '$(OS)' == 'Unix' " Include="..\prebuilt\libCBForest-Interop.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Condition=" !$(IsMac) AND '$(OS)' == 'Windows_NT' " Include="..\prebuilt\CBForest-Interop.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="..\prebuilt\libCBForest-Interop.dylib" Condition=" $(IsMac) ">
       <Link>libCBForest-Interop.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\prebuilt\x86\CBForest-Interop.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+      <Link>x86\CBForest-Interop.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\prebuilt\x86_64\CBForest-Interop.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+      <Link>x64\CBForest-Interop.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

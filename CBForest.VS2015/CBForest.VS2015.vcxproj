@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -176,6 +176,7 @@
     <ClCompile Include="..\CBForest\Database.cc" />
     <ClCompile Include="..\CBForest\DocEnumerator.cc" />
     <ClCompile Include="..\CBForest\Document.cc" />
+    <ClCompile Include="..\CBForest\FullTextIndex.cc" />
     <ClCompile Include="..\CBForest\Geohash.cc" />
     <ClCompile Include="..\CBForest\GeoIndex.cc" />
     <ClCompile Include="..\CBForest\Index.cc" />
