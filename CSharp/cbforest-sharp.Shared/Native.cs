@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.IO;
 
 #if __IOS__ && !FAKE
 [assembly: ObjCRuntime.LinkWith("libCBForest-Interop.a", 
@@ -68,6 +69,32 @@ namespace CBForest
         private static Action<C4LogLevel, string> _LogCallback;
         private static C4LogCallback _NativeLogCallback;
 
+        static Native()
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                var dllName = string.Format("{0}.dll", DLL_NAME);
+                var directory = AppDomain.CurrentDomain.BaseDirectory;
+                if(directory == null) {
+                    var codeBase = typeof(Native).Assembly.CodeBase;
+                    UriBuilder uri = new UriBuilder(codeBase);
+                    directory = Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+                }
+
+                Debug.Assert(Path.IsPathRooted(directory), "directory is not rooted.");
+                var architecture = IntPtr.Size == 4
+                    ? "x86"
+                    : "x64";
+
+                var dllPath = Path.Combine(Path.Combine(directory, architecture), dllName);
+                if (!File.Exists(dllPath)) {
+                    return;
+                }
+
+                const uint LOAD_WITH_ALTERED_SEARCH_PATH = 8;
+                var ptr = LoadLibraryEx(dllPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
+            }
+        }
+
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
         {
@@ -104,6 +131,9 @@ namespace CBForest
 
         [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
         public static extern int memcpy(void* dest, void* src, UIntPtr count);
+
+        [DllImport("kernel32")]
+        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
 
 
         /// <summary>
