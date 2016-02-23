@@ -285,5 +285,8 @@
     <ClCompile Include="..\C\c4DocEnumerator.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\CBForest\FullTextIndex.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

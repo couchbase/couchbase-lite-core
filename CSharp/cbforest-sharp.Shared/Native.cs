@@ -1681,7 +1681,7 @@ namespace CBForest
         public static bool c4view_deleteAtPath(string path, C4DatabaseFlags flags, C4Error *outError)
         {
             using(var path_ = new C4String(path)) {
-                return c4view_deleteAtPath(path_.AsC4Slice());   
+                return c4view_deleteAtPath(path_.AsC4Slice(), flags, outError);   
             }
         }
         
@@ -2025,19 +2025,20 @@ namespace CBForest
         {
             return BridgeSlice(() => _c4queryenum_fullTextMatched(e));   
         }
-        
+
         /// <summary>
         /// Given a document and the fullTextID from the enumerator, returns the text that was emitted
         /// during indexing.
         /// </summary>
-        public static extern C4Slice c4view_fullTextMatched(C4View *view, C4Slice docID, long seq, uint fullTextID,
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern C4Slice c4view_fullTextMatched(C4View *view, C4Slice docID, ulong seq, uint fullTextID,
             C4Error *outError);
         
         /// <summary>
         /// Given a document and the fullTextID from the enumerator, returns the text that was emitted
         /// during indexing.
         /// </summary>
-        public static string c4view_fullTextMatched(C4View *view, string docID, long seq, uint fullTextID,
+        public static string c4view_fullTextMatched(C4View *view, string docID, ulong seq, uint fullTextID,
             C4Error *outError)
         {
             using(var docID_ = new C4String(docID)) {

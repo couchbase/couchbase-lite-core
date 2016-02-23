@@ -16,6 +16,7 @@
 #include "FullTextIndex.hh"
 #include "MapReduceIndex.hh"
 #include "Tokenizer.hh"
+#include <algorithm>
 
 namespace cbforest {
 
