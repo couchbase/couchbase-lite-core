@@ -931,5 +931,10 @@ namespace CBForest
         /// </summary>
         public uint length;
     }
+    
+    public struct C4KeyValueList
+    {
+        
+    }
 }
 

@@ -60,7 +60,8 @@ namespace CBForest
             { "C4Key", p => _c4key_free((C4Key*)p.ToPointer()) },
             { "C4View", p => _c4view_close((C4View*)p.ToPointer(), null) },
             { "C4Indexer", p => _c4indexer_end((C4Indexer*)p.ToPointer(), false, null) },
-            { "C4QueryEnumerator", p => _c4queryenum_free((C4QueryEnumerator*)p.ToPointer()) }
+            { "C4QueryEnumerator", p => _c4queryenum_free((C4QueryEnumerator*)p.ToPointer()) },
+            { "C4KeyValueList", p => _c4kv_free((C4KeyValueList*)p.ToPointer()) }
         };
         #endif
 
@@ -221,7 +222,33 @@ namespace CBForest
             #endif
             return _c4db_delete(db, outError);
         }
+        
+        /// <summary>
+        /// Deletes the file(s) for the database at the given path.
+        /// All C4Databases at that path should be closed first.
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="path">The path to delete files at</param>
+        /// <param name="flags">The flags to use during deletion</param>
+        /// <param name="outError">Any errors that occurred will be recorded here</param> 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
 
+        /// <summary>
+        /// Deletes the file(s) for the database at the given path.
+        /// All C4Databases at that path should be closed first.
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="path">The path to delete files at</param>
+        /// <param name="flags">The flags to use during deletion</param>
+        /// <param name="outError">Any errors that occurred will be recorded here</param> 
+        public static bool c4db_deleteAtPath(string path, C4DatabaseFlags flags, C4Error *outError)
+        {
+            using(var path_ = new C4String(path)) {
+                return c4db_deleteAtPath(path_.AsC4Slice(), flags, outError);   
+            }
+        }
 
         /// <summary>
         /// Triggers a manual compaction of the database
@@ -232,6 +259,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_compact(C4Database *db, C4Error *outError);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_isCompacting(C4Database *db);
 
         /// <summary>
         /// Changes the encryption key of a given database
@@ -243,6 +274,26 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_rekey(C4Database *db, C4EncryptionKey *newKey, C4Error *outError);
+        
+        //TODO: setOnCompactCallback
+        
+        /// <summary>
+        /// Returns the path of the database. 
+        /// </summary>
+        /// <returns>The path of the database</returns>
+        /// <param name="db">The database to operate on</param>
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_getPath")]
+        public static extern C4Slice _c4db_getPath(C4Database *db);
+        
+        /// <summary>
+        /// Returns the path of the database. 
+        /// </summary>
+        /// <returns>The path of the database</returns>
+        /// <param name="db">The database to operate on</param>
+        public static string c4db_getPath(C4Database *db)
+        {
+            return BridgeSlice(() => _c4db_getPath(db));   
+        }
 
         /// <summary>
         /// Returns the number of (undeleted) documents in the database.
@@ -957,8 +1008,7 @@ namespace CBForest
         /// <param name="docType">The type to set.</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_setType(C4Document *doc, C4Slice docType, C4Error *outError);
+        public static extern void c4doc_setType(C4Document *doc, C4Slice docType);
 
         /// <summary>
         /// Sets a document's docType. (By convention this is the value of the "type" property of the 
@@ -969,10 +1019,10 @@ namespace CBForest
         /// <param name="docType">The document type to set</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_setType(C4Document *doc, string docType, C4Error *outError)
+        public static void c4doc_setType(C4Document *doc, string docType)
         {
             using(var docType_ = new C4String(docType)) {
-                return c4doc_setType(doc, docType_.AsC4Slice(), outError);   
+                c4doc_setType(doc, docType_.AsC4Slice());   
             }
         }
 
@@ -1564,7 +1614,7 @@ namespace CBForest
         private static extern bool _c4view_delete(C4View *view, C4Error *outError);
 
         /// <summary>
-        /// Deletes the database file and closes/frees the C4View.
+        /// Deletes the view file and closes/frees the C4View.
         /// </summary>
         /// <param name="view">The view to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
@@ -1584,6 +1634,35 @@ namespace CBForest
             #endif
             #endif
             return _c4view_delete(view, outError);
+        }
+        
+        /// <summary>
+        /// Deletes the file(s) for the view at the given path.
+        /// All C4Views at that path should be closed first.
+        /// </summary>
+        /// <returns><c>true</c>, if delete at path was c4viewed, <c>false</c> otherwise.</returns>
+        /// <param name="path">The path to delete files at</param>
+        /// <param name="flags">The flags to use during deletion</param>
+        /// <param name="outError">Any errors that occurred will be recorded here</param> 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4view_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
+        
+        public static bool c4view_deleteAtPath(string path, C4DatabaseFlags flags, C4Error *outError)
+        {
+            using(var path_ = new C4String(path)) {
+                return c4view_deleteAtPath(path_.AsC4Slice());   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4view_setMapVersion(C4View *view, C4Slice version);
+        
+        public static void c4view_setMapVersion(C4View *view, string version)
+        {
+            using(var version_ = new C4String(version)) {
+                c4view_setMapVersion(view, version_.AsC4Slice());   
+            }
         }
 
         /// <summary>
@@ -1610,6 +1689,16 @@ namespace CBForest
         /// <returns>The last database sequence number that changed the view index</returns>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4view_setDocumentType(C4View *view, C4Slice docType);
+        
+        public static void c4view_setDocumentType(C4View *view, string docType)
+        {
+            using(var docType_ = new C4String(docType)) {
+                c4view_setDocumentType(view, docType_.AsC4Slice());   
+            }
+        }
 
         /// <summary>
         /// Changes the encryption key on a given view
@@ -1742,6 +1831,11 @@ namespace CBForest
     
             return retVal;
         }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4indexer_emitList(C4Indexer *indexer, C4Document *document, uint viewNumber,
+            C4KeyValueList *kv, C4Error *outError);
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_end")]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -1979,6 +2073,59 @@ namespace CBForest
             // This is needed to ensure that the delegate object itself doesn't get garbage collected
             _NativeLogCallback = _LogCallback == null ? null : new C4LogCallback(c4log_wedge);
             c4log_register(level, _NativeLogCallback);
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4kv_new")]
+        private static extern C4KeyValueList* _c4kv_new();
+        
+        public static C4KeyValueList* c4kv_new()
+        {
+            #if DEBUG && !NET_3_5
+            var retVal = _c4kv_new();
+            if(retVal != null) {
+                _AllocatedObjects.TryAdd((IntPtr)retVal, "C4KeyValueList");
+                #if ENABLE_LOGGING
+                Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
+                #endif
+            }
+
+            return retVal;
+            #else
+            return _c4kv_new();
+            #endif
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value);
+        
+        public static void c4kv_add(C4KeyValueList *kv, C4Key *key, string value)
+        {
+            using(var value_ = new C4String(value)) {
+                c4kv_add(kv, key, value_.AsC4Slice());   
+            }
+        }
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern void c4kv_reset(C4KeyValueList *kv);
+        
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        private static extern void _c4kv_free(C4KeyValueList *kv);
+        
+        public static void c4kv_free(C4KeyValueList *kv)
+        {
+            #if DEBUG && !NET_3_5
+            var ptr = (IntPtr)kv;
+                #if ENABLE_LOGGING
+            if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
+                Console.WriteLine("WARNING: [c4queryenum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
+            } else {
+            #endif
+                _AllocatedObjects.TryRemove(ptr, out _Dummy);
+            #if ENABLE_LOGGING
+            }
+            #endif
+            #endif
+            _c4kv_free(kv);
         }
         
         private static string BridgeSlice(Func<C4Slice> nativeFunc)
