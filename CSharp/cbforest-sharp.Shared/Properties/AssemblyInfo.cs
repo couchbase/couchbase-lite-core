@@ -18,6 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
+#if !CUSTOM_ASSEMBLY_INFO
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -40,4 +41,4 @@ using System.Runtime.CompilerServices;
 
 //[assembly: AssemblyDelaySign(false)]
 //[assembly: AssemblyKeyFile("")]
-
+#endif
