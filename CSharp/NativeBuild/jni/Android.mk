@@ -154,6 +154,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(CBFOREST_PATH)/Geohash.cc \
 					$(CBFOREST_PATH)/GeoIndex.cc \
 					$(CBFOREST_PATH)/Index.cc \
+					$(CBFOREST_PATH)/FullTextIndex.cc \
 					$(CBFOREST_PATH)/KeyStore.cc \
 					$(CBFOREST_PATH)/RevID.cc \
 					$(CBFOREST_PATH)/RevTree.cc \
