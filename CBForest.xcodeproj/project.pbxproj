@@ -1931,7 +1931,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
 			buildSettings = {
-				ENABLE_BITCODE = NO;
 			};
 			name = Debug;
 		};
@@ -1939,8 +1938,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */;
 			buildSettings = {
-				ENABLE_BITCODE = NO;
-				OTHER_CFLAGS = "-fembed-bitcode";
 			};
 			name = Release;
 		};
