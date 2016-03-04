@@ -82,9 +82,9 @@ namespace cbforest {
     /** A serializable tree of Revisions. */
     class RevTree {
     public:
-        RevTree();
+        RevTree() { }
         RevTree(slice raw_tree, sequence seq, uint64_t docOffset);
-        virtual ~RevTree();
+        virtual ~RevTree() { }
 
         void decode(slice raw_tree, sequence seq, uint64_t docOffset);
 
@@ -144,15 +144,15 @@ namespace cbforest {
                                 bool deleted, bool hasAttachments);
         bool confirmLeaf(Revision* testRev);
         void compact();
-        RevTree(const RevTree&); // forbidden
+        RevTree(const RevTree&) = delete;
 
-        uint64_t    _bodyOffset;     // File offset of body this tree was read from
-        bool        _sorted;         // Are the revs currently sorted?
+        uint64_t    _bodyOffset {0};     // File offset of body this tree was read from
+        bool        _sorted {true};         // Are the revs currently sorted?
         std::vector<Revision> _revs;
         std::vector<alloc_slice> _insertedData;
     protected:
-        bool _changed;
-        bool _unknown;
+        bool _changed {false};
+        bool _unknown {false};
     };
 
 

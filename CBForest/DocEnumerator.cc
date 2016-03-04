@@ -52,14 +52,17 @@ namespace cbforest {
     }
 
 
+    DocEnumerator::DocEnumerator(KeyStore store, const Options& options)
+    :_store(store),
+     _options(options)
+    { }
+
+
     // Key-range constructor
     DocEnumerator::DocEnumerator(KeyStore store,
                                  slice startKey, slice endKey,
                                  const Options& options)
-    :_store(store),
-     _iterator(NULL),
-     _options(options),
-     _skipStep(true)
+    :DocEnumerator(store, options)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
               store.handle(),
@@ -88,10 +91,7 @@ namespace cbforest {
     DocEnumerator::DocEnumerator(KeyStore store,
                                  sequence start, sequence end,
                                  const Options& options)
-    :_store(store),
-     _iterator(NULL),
-     _options(options),
-     _skipStep(true)
+    :DocEnumerator(store, options)
     {
         Debug("enum: DocEnumerator(%p, #%llu -- #%llu) --> %p",
                 store.handle(), start, end, this);
@@ -114,17 +114,14 @@ namespace cbforest {
     }
 
     // Key-array constructor
-    DocEnumerator::DocEnumerator(KeyStore handle,
+    DocEnumerator::DocEnumerator(KeyStore store,
                                  std::vector<std::string> docIDs,
                                  const Options& options)
-    :_store(handle),
-     _iterator(NULL),
-     _options(options),
-     _docIDs(docIDs),
-     _curDocIndex(0)
+    :DocEnumerator(store, options)
     {
+        _docIDs = docIDs;
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
-                handle, docIDs.size(), this);
+                store, docIDs.size(), this);
         if (_options.skip > 0)
             _docIDs.erase(_docIDs.begin(), _docIDs.begin() + _options.skip);
         if (_options.limit < _docIDs.size())
@@ -135,23 +132,8 @@ namespace cbforest {
     }
 
     // Empty constructor
-    DocEnumerator::DocEnumerator()
-    :_iterator(NULL)
-    {
+    DocEnumerator::DocEnumerator() {
         Debug("enum: DocEnumerator() --> %p", this);
-    }
-
-    // Move constructor
-    DocEnumerator::DocEnumerator(DocEnumerator&& e)
-    :_store(e._store),
-     _iterator(e._iterator),
-     _options(e._options),
-     _docIDs(e._docIDs),
-     _curDocIndex(e._curDocIndex),
-     _skipStep(e._skipStep)
-    {
-        Debug("enum: move ctor (from %p) --> %p", &e, this);
-        e._iterator = NULL; // so e's destructor won't close the fdb_iterator
     }
 
     DocEnumerator::~DocEnumerator() {

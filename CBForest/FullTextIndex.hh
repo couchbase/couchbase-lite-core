@@ -44,12 +44,13 @@ namespace cbforest {
         
 
     private:
+        FullTextMatch(const IndexEnumerator&);
         unsigned readTermMatches(slice indexValue, unsigned termIndex);
 
         const MapReduceIndex *_index;
         unsigned _fullTextID;
         int _lastTermIndex;
-        float _rank;
+        float _rank {0.0};
 
         friend class FullTextIndexEnumerator;
     };

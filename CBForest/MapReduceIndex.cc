@@ -27,8 +27,7 @@ namespace cbforest {
 
     MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
     :Index(db, name),
-     _sourceDatabase(sourceStore), _map(NULL), _indexType(0),
-     _lastSequenceIndexed(0), _lastSequenceChangedAt(0), _stateReadAt(0), _rowCount(0)
+     _sourceDatabase(sourceStore)
     {
         readState();
     }
@@ -183,10 +182,6 @@ namespace cbforest {
     // Implementation of EmitFn interface
     class emitter : public EmitFn {
     public:
-        emitter()
-        :_tokenizer(NULL),
-         _emitCount(0)
-        { }
 
         virtual ~emitter() {
             delete _tokenizer;
@@ -313,8 +308,8 @@ namespace cbforest {
         std::vector<alloc_slice> values;
 
     private:
-        Tokenizer* _tokenizer;
-        unsigned _emitCount;
+        Tokenizer* _tokenizer {nullptr};
+        unsigned _emitCount {0};
     };
 
 
@@ -380,24 +375,16 @@ namespace cbforest {
             _transaction->abort();
         }
 
-        MapReduceIndex* _index;
+        MapReduceIndex* const _index;
         alloc_slice _documentType;
         emitter _emit;
-        Transaction *_transaction;
+        Transaction* const _transaction;
     };
 
     
 #pragma mark - MAP-REDUCE INDEXER
 
     
-    MapReduceIndexer::MapReduceIndexer()
-    :_triggerIndex(NULL),
-     _latestDbSequence(0),
-     _finished(false),
-     _allDocTypes(false)
-    { }
-
-
     void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
         CBFAssert(index);
         CBFAssert(t);
@@ -449,9 +436,13 @@ namespace cbforest {
         for (DocEnumerator e(sourceStore(), startSequence, UINT64_MAX, options); e.next(); ) {
             try {
                 addDocument(*e);
-            } catch (error x) {
-                WarnError("CBForest error %d indexing doc %s ; aborting",
-                          x.status, ((std::string)e->key()).c_str());
+            } catch (const error &x) {
+                WarnError("CBForest error %d ('%s') indexing doc %s ; aborting",
+                          x.status, x.what(), ((std::string)e->key()).c_str());
+                throw;
+            } catch (const std::exception &x) {
+                WarnError("Unexpected exception '%s' indexing doc %s ; aborting",
+                          x.what(), ((std::string)e->key()).c_str());
                 throw;
             } catch (...) {
                 WarnError("Unexpected exception thrown (by map fn?) indexing doc %s ; continuing",

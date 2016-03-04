@@ -72,8 +72,7 @@ namespace cbforest {
     :IndexEnumerator(index,
                      keyRangesFor(searchArea),
                      DocEnumerator::Options::kDefault),
-     _searchArea(searchArea),
-     _hits(0), _misses(0), _dups(0)
+     _searchArea(searchArea)
     { }
 
 

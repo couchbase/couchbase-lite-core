@@ -49,19 +49,6 @@ namespace cbforest {
         }
     }
 
-    void error::_throw(fdb_status status) {
-        WarnError("%s (%d)\n", fdb_error_msg(status), status);
-        throw error{status};
-    }
-
-
-    void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
-        if (LogLevel > kError || LogCallback == NULL)
-            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
-        WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
-        throw error(error::AssertionFailed);
-    }
-
 
 #pragma mark - FILE:
 
@@ -119,10 +106,7 @@ namespace cbforest {
     Database::Database(std::string path, const config& cfg)
     :KeyStore(NULL),
      _file(File::forPath(path)),
-     _config(cfg),
-     _fileHandle(NULL),
-     _isCompacting(false),
-     _onCompactCallback(NULL)
+     _config(cfg)
     {
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
@@ -264,12 +248,8 @@ namespace cbforest {
         _db.beginTransaction(this);
     }
 
-    Transaction::~Transaction() {
-        _db.endTransaction(this);
-    }
-
     void Transaction::check(fdb_status status) {
-        if (status != FDB_RESULT_SUCCESS) {
+        if (expected(status != FDB_RESULT_SUCCESS, false)) {
             _state = kAbort;
             cbforest::check(status); // throw exception
         }

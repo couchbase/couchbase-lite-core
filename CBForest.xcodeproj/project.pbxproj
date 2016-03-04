@@ -39,6 +39,8 @@
 		2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
 		2733A7531BD6C7A400F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
+		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
+		27393A881C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273AD3BF18EF263B007D8C23 /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
 		273AD3C018EF263B007D8C23 /* configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = 273AD3BE18EF263B007D8C23 /* configuration.h */; };
 		273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
@@ -418,6 +420,7 @@
 		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
 		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
 		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
@@ -572,8 +575,6 @@
 		27DF46C21A12CF46007BB4A4 /* Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Document.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Document.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/cbforest/Constants.java; sourceTree = "<group>"; };
-		27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceDispatchIndexer.cc; sourceTree = "<group>"; };
-		27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceDispatchIndexer.hh; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
@@ -820,8 +821,6 @@
 				27E487321924242C007D8940 /* Index.hh */,
 				27E4873819255EA8007D8940 /* MapReduceIndex.cc */,
 				27E4873919255EA8007D8940 /* MapReduceIndex.hh */,
-				27E3FF001986EFD3005FF6D9 /* MapReduceDispatchIndexer.cc */,
-				27E3FF011986EFD3005FF6D9 /* MapReduceDispatchIndexer.hh */,
 				2722304D1A0858A100BFF25C /* GeoIndex.cc */,
 				2722304E1A0858A100BFF25C /* GeoIndex.hh */,
 				272230461A0815E700BFF25C /* Geohash.cc */,
@@ -970,6 +969,7 @@
 				27E4872E1924178B007D8940 /* Collatable.hh */,
 				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				277D19C9194E295B008E91EB /* Error.hh */,
+				27393A861C8A353A00829C9B /* Error.cc */,
 				27E4871A19218E5D007D8940 /* slice.cc */,
 				2704A1E219049E2300138320 /* slice.hh */,
 				27E487261923B80E007D8940 /* slice.mm */,
@@ -1756,6 +1756,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E487271923B80E007D8940 /* slice.mm in Sources */,
 				27E48713192171EA007D8940 /* Database.cc in Sources */,
@@ -1810,6 +1811,7 @@
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
+				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

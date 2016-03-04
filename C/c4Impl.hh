@@ -56,13 +56,16 @@ namespace c4Internal {
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError);
     void recordHTTPError(int httpStatus, C4Error* outError);
-    void recordError(error e, C4Error* outError);
+    void recordError(const error &e, C4Error* outError);
+    void recordException(const std::exception &e, C4Error* outError);
     void recordUnknownException(C4Error* outError);
     static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
 
     #define catchError(OUTERR) \
-        catch (error err) { \
+        catch (const error &err) { \
             recordError(err, OUTERR); \
+        } catch (const std::exception &x) { \
+            recordException(x, OUTERR); \
         } catch (...) { \
             recordUnknownException(OUTERR); \
         }

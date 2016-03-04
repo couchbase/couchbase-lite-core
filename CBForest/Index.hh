@@ -129,7 +129,7 @@ namespace cbforest {
         bool _inclusiveStart;
         bool _inclusiveEnd;
         std::vector<KeyRange> _keyRanges;
-        int _currentKeyIndex;
+        int _currentKeyIndex {-1};
 
         DocEnumerator _dbEnum;
         slice _key;

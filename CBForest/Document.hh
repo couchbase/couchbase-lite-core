@@ -65,9 +65,9 @@ namespace cbforest {
         friend class KeyStoreWriter;
         friend class Transaction;
 
-        Document& operator= (const Document&);
+        Document& operator= (const Document&) = delete;
 
-        fdb_doc _doc;
+        fdb_doc _doc = {};
     };
 
 }

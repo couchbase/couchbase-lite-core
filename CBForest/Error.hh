@@ -17,13 +17,20 @@
 #define CBForest_Error_h
 
 #include "forestdb.h"
+#include <exception>
 
 #undef check
 
 namespace cbforest {
 
+#ifdef _MSC_VER
+#define expected(EXPR, VALUE)   (EXPR)
+#else
+#define expected __builtin_expect
+#endif
+
     /** Most API calls can throw this. */
-    struct error {
+    struct error : public std::exception {
         // Extra status codes not defined by fdb_errors.h
         enum CBForestError {
             BadRevisionID = -1000,
@@ -34,12 +41,12 @@ namespace cbforest {
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
-        int status;
-
-        const char *message() const {return fdb_error_msg((fdb_status)status);}
+        int const status;
 
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
+
+        virtual const char *what() const noexcept;
 
         [[noreturn]] static void _throw(fdb_status);
 
@@ -48,27 +55,17 @@ namespace cbforest {
     };
 
     static inline void check(fdb_status status) {
-#ifdef _MSC_VER
-        if (status != FDB_RESULT_SUCCESS)
+        if (expected(status != FDB_RESULT_SUCCESS, false))
             error::_throw(status);
-#else
-        if (__builtin_expect(status != FDB_RESULT_SUCCESS, 0))
-            error::_throw(status);
-#endif
     }
 
 
-    // Like C assert() but throws an exception instead of aborting
-#ifdef _MSC_VER
-	#define CBFAssert(e) \
-		if(!(e)) cbforest::error::assertionFailed(__FUNCTION__, __FILE__, __LINE__, #e)
-#else
-    #define	CBFAssert(e) \
-        (__builtin_expect(!(e), 0) ? cbforest::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
-                                   : (void)0)
-#endif
+// Like C assert() but throws an exception instead of aborting
+#define	CBFAssert(e) \
+    (expected(!(e), 0) ? cbforest::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+                               : (void)0)
 
-    // CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
+// CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifdef NDEBUG
 #define CBFDebugAssert(e)   do{ }while(0)
 #else

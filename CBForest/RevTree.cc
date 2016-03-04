@@ -74,17 +74,10 @@ namespace cbforest {
     };
 
 
-    RevTree::RevTree()
-    :_bodyOffset(0), _sorted(true), _changed(false), _unknown(false)
-    {}
-
     RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
-    :_bodyOffset(docOffset), _sorted(true), _changed(false), _unknown(false)
+    :_bodyOffset(docOffset)
     {
         decode(raw_tree, seq, docOffset);
-    }
-
-    RevTree::~RevTree() {
     }
 
     void RevTree::decode(cbforest::slice raw_tree, sequence seq, uint64_t docOffset) {

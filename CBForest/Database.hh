@@ -104,8 +104,8 @@ namespace cbforest {
         void deleteDatabase(bool andReopen);
         void reopen(std::string path);
 
-        Database(const Database&);              // forbidden
-        Database& operator=(const Database&);   // forbidden
+        Database(const Database&) = delete;
+        Database& operator=(const Database&) = delete;
 
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
                                                        fdb_compaction_status status,
@@ -122,11 +122,11 @@ namespace cbforest {
 
         File* _file;
         config _config;
-        fdb_file_handle* _fileHandle;
+        fdb_file_handle* _fileHandle {nullptr};
         std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
-        bool _isCompacting;
-        OnCompactCallback _onCompactCallback;
-        void  *_onCompactContext;
+        bool _isCompacting {false};
+        OnCompactCallback _onCompactCallback {nullptr};
+        void  *_onCompactContext {nullptr};
     };
 
 
@@ -143,7 +143,7 @@ namespace cbforest {
         };
 
         Transaction(Database*);
-        ~Transaction();
+        ~Transaction()                          {_db.endTransaction(this);}
 
         /** Converts a KeyStore to a KeyStoreWriter to allow write access. */
         KeyStoreWriter operator() (KeyStore s)  {return KeyStoreWriter(s, *this);}
@@ -160,7 +160,7 @@ namespace cbforest {
     private:
         friend class Database;
         Transaction(Database*, bool begin);
-        Transaction(const Transaction&); // forbidden
+        Transaction(const Transaction&) = delete;
 
         Database& _db;
         enum state _state;

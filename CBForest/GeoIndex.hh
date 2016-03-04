@@ -50,7 +50,7 @@ namespace cbforest {
         alloc_slice _geoValue;
         std::set<ItemID> _alreadySeen;
 
-        unsigned _hits, _misses, _dups;     // Only used for test/profiling purposes
+        unsigned _hits {0}, _misses {0}, _dups {0};   // Only used for test/profiling purposes
     };
 
 }

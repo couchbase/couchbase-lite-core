@@ -108,13 +108,13 @@ namespace cbforest {
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
-        cbforest::KeyStore _sourceDatabase;
-        MapFn* _map;
+        cbforest::KeyStore const _sourceDatabase;
+        MapFn* _map {NULL};
         std::string _mapVersion, _lastMapVersion;
-        int _indexType;
-        sequence _lastSequenceIndexed, _lastSequenceChangedAt;
-        sequence _stateReadAt; // index sequence # at which state was last valid
-        uint64_t _rowCount;
+        int _indexType {0};
+        sequence _lastSequenceIndexed {0}, _lastSequenceChangedAt {0};
+        sequence _stateReadAt {0}; // index sequence # at which state was last valid
+        uint64_t _rowCount {0};
         alloc_slice _documentType;
 
         friend class MapReduceIndexer;
@@ -125,7 +125,7 @@ namespace cbforest {
     /** An activity that updates one or more map-reduce indexes. */
     class MapReduceIndexer {
     public:
-        MapReduceIndexer();
+        MapReduceIndexer() { }
         virtual ~MapReduceIndexer();
 
         void addIndex(MapReduceIndex*, Transaction*);
@@ -191,10 +191,10 @@ namespace cbforest {
 
     private:
         std::vector<MapReduceIndexWriter*> _writers;
-        MapReduceIndex* _triggerIndex;
-        sequence _latestDbSequence;
-        bool _finished;
-        bool _allDocTypes;
+        MapReduceIndex* _triggerIndex {nullptr};
+        sequence _latestDbSequence {0};
+        bool _finished {false};
+        bool _allDocTypes {false};
         std::set<slice> _docTypes;
 
         const std::vector<Collatable> _noKeys;

@@ -74,10 +74,7 @@ namespace cbforest {
                 }
             } else if (termIndex == 0) {
                 // Only add new results during scan of first term, since results have to match all terms
-                row = new FullTextMatch;
-                row->_index = (const MapReduceIndex*)_e.index();
-                row->docID = _e.docID();
-                row->sequence = _e.sequence();
+                row = new FullTextMatch(_e);
                 rows[rowID] = row;
             }
 
@@ -126,6 +123,14 @@ namespace cbforest {
 
 
 #pragma mark - FULLTEXTMATCH:
+
+
+    FullTextMatch::FullTextMatch(const IndexEnumerator &e)
+    :docID {e.docID()},
+     sequence {e.sequence()},
+     _index {(const MapReduceIndex*)e.index()}
+     // _lastTermIndex, _fullTextID will be initialized later in readTermMatches
+    { }
 
 
     alloc_slice FullTextMatch::matchedText() const {

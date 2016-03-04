@@ -86,7 +86,7 @@ Database::config TestDBConfig() {
     try{
         [super invokeTest];
     } catch (error e) {
-        XCTFail(@"Exception: %s (%d)", e.message(), e.status);
+        XCTFail(@"Exception: %s (%d)", e.what(), e.status);
     }
 }
 

@@ -235,7 +235,6 @@ namespace cbforest {
      _options(options),
      _inclusiveStart(options.inclusiveStart),
      _inclusiveEnd(options.inclusiveEnd),
-     _currentKeyIndex(-1),
      _dbEnum(*_index,
              (slice)makeRealKey(startKey, startKeyDocID, false, options.descending),
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
@@ -256,7 +255,6 @@ namespace cbforest {
      _inclusiveStart(true),
      _inclusiveEnd(true),
      _keyRanges(keyRanges),
-     _currentKeyIndex(-1),
      _dbEnum(*_index, slice::null, slice::null, docOptions(options))
     {
         Debug("IndexEnumerator(%p), key ranges:", this);

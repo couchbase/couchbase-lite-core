@@ -81,7 +81,7 @@ namespace cbforest {
 
     private:
         void decode();
-        VersionedDocument(const VersionedDocument&); // forbidden
+        VersionedDocument(const VersionedDocument&) = delete;
 
         KeyStore    _db;
         Document    _doc;

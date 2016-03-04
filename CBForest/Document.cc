@@ -26,7 +26,6 @@ namespace cbforest {
     }
 
     Document::Document(const Document& doc) {
-        memset(&_doc, 0, sizeof(_doc));
         setKey(doc.key());
         setMeta(doc.meta());
         setBody(doc.body());
@@ -36,13 +35,13 @@ namespace cbforest {
         _doc.deleted = doc.deleted();
     }
 
-    Document::Document(Document&& doc) {
-        memcpy(&_doc, &doc._doc, sizeof(_doc));
+    Document::Document(Document&& doc)
+    :_doc(doc._doc)
+    {
         doc._doc.key = doc._doc.body = doc._doc.meta = NULL; // to prevent double-free
     }
 
     Document::Document(slice key) {
-        memset(&_doc, 0, sizeof(_doc));
         setKey(key);
     }
 

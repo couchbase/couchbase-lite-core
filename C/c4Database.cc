@@ -49,8 +49,13 @@ namespace c4Internal {
         recordError(HTTPDomain, httpStatus, outError);
     }
 
-    void recordError(error e, C4Error* outError) {
+    void recordError(const error &e, C4Error* outError) {
         recordError(ForestDBDomain, e.status, outError);
+    }
+
+    void recordException(const std::exception &e, C4Error* outError) {
+        Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
+        recordError(C4Domain, kC4ErrorInternalException, outError);
     }
 
     void recordUnknownException(C4Error* outError) {
