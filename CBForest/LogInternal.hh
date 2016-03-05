@@ -25,15 +25,25 @@ void _Log(logLevel, const char *message, ...);
 
 #ifdef _MSC_VER
     // Apparently vararg macro syntax is slightly different in MSVC than in Clang/GCC
-    #define Debug(MESSAGE, ...)      if(LogLevel > kDebug) ; else _Log(kDebug, MESSAGE, __VA_ARGS__)
-    #define Log(MESSAGE, ...)        if(LogLevel > kInfo) ; else _Log(kInfo, MESSAGE, __VA_ARGS__)
-    #define Warn(MESSAGE, ...)       if(LogLevel > kWarning) ; else _Log(kWarning, MESSAGE, __VA_ARGS__)
-    #define WarnError(MESSAGE, ...)  if(LogLevel > kError) ; else _Log(kError, MESSAGE, __VA_ARGS__)
+    #define LogAt(LEVEL, MESSAGE, ...) \
+                ({if (LogLevel <= LEVEL) _Log(LEVEL, MESSAGE, __VA_ARGS__);})
+    #define Debug(MESSAGE, ...)      LogAt(kDebug,   MESSAGE, __VA_ARGS)
+    #define Log(MESSAGE, ...)        LogAt(kInfo,    MESSAGE, __VA_ARGS)
+    #define Warn(MESSAGE, ...)       LogAt(kWarning, MESSAGE, __VA_ARGS)
+    #define WarnError(MESSAGE, ...)  LogAt(kError,   MESSAGE, __VA_ARGS)
 #else
-    #define Debug(MESSAGE...)      if(LogLevel > kDebug) ; else _Log(kDebug, MESSAGE)
-    #define Log(MESSAGE...)        if(LogLevel > kInfo) ; else _Log(kInfo, MESSAGE)
-    #define Warn(MESSAGE...)       if(LogLevel > kWarning) ; else _Log(kWarning, MESSAGE)
-    #define WarnError(MESSAGE...)  if(LogLevel > kError) ; else _Log(kError, MESSAGE)
+    #define LogAt(LEVEL, MESSAGE...) \
+                ({if (__builtin_expect(LogLevel <= LEVEL, false)) _Log(LEVEL, MESSAGE);})
+    #define Debug(MESSAGE...)      LogAt(kDebug,   MESSAGE)
+    #define Log(MESSAGE...)        LogAt(kInfo,    MESSAGE)
+    #define Warn(MESSAGE...)       LogAt(kWarning, MESSAGE)
+    #define WarnError(MESSAGE...)  LogAt(kError,   MESSAGE)
+#endif
+
+// Debug(...) is stripped out of release builds
+#if !DEBUG
+    #undef Debug
+    #define Debug(MESSAGE...)      ({ })
 #endif
 
 }
