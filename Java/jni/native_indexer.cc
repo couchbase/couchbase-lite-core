@@ -69,30 +69,22 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
  jlong indexerHandle, jlong documentHandler, jint viewNumber, jlongArray jkeys, jobjectArray jvalues)
 {
     auto c4keys = handlesToVector<C4Key*>(env, jkeys);
-    size_t count = c4keys.size();
-    std::vector<C4Slice> c4values(count);
-    std::vector<jbyteArraySlice> valueBufs;
-    for(int i = 0; i < count; i++) {
+    C4KeyValueList* kv = c4kv_new();
+    int i = 0;
+    for (auto key = c4keys.begin(); key != c4keys.end(); ++key, ++i) {
         jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
-        if (jvalue) {
-            valueBufs.push_back(jbyteArraySlice(env, jvalue));
-            c4values[i] = valueBufs.back();
-        } else {
-            c4values[i] = kC4SliceNull;
-        }
+        jbyteArraySlice value(env, jvalue);
+        c4kv_add(kv, *key, value);
+        c4key_free(*key);
     }
 
     C4Indexer* indexer = (C4Indexer*)indexerHandle;
     C4Document* doc = (C4Document*)documentHandler;
     C4Error error;
-    bool result = c4indexer_emit(indexer, doc, viewNumber, (unsigned)count,
-                                 c4keys.data(), c4values.data(), &error);
-
-    for(int i = 0; i < count; i++)
-        c4key_free(c4keys[i]);
-
-    if(!result)
+    if (!c4indexer_emitList(indexer, doc, viewNumber, kv, &error))
         throwError(env, error);
+
+    c4kv_free(kv);
 }
 
 
