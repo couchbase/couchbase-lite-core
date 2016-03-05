@@ -26,41 +26,6 @@ namespace cbforest {
 
     class MapReduceIndexWriter;
 
-    /** A document as passed to a map function. This is subclassable; subclasses can transform
-        the document (e.g. parsing JSON) and provide additional methods to access the transformed
-        version. (Look at MapReduce_Test.mm for an example.) */
-    class Mappable {
-    public:
-        explicit Mappable(const Document& doc)      :_doc(doc) { }
-        virtual ~Mappable()                         { }
-
-        const Document& document() const            {return _doc;}
-
-    private:
-        const Document& _doc;
-    };
-
-    class EmitFn {
-    public:
-        virtual void emit(Collatable key, slice value) =0;
-        virtual void emit(const geohash::area& boundingBox, slice geoJSON, slice value) =0;
-
-        /** Emits the text for full-text indexing. Each word in the text will be emitted separately
-            as a string key. When querying, use IndexEnumerator::getTextToken to read the info. */
-        virtual void emitTextTokens(slice text, std::string languageCode, slice value) =0;
-
-        inline void operator() (Collatable key, slice value) {emit(key, value);}
-        inline void operator() (const geohash::area& bbox, slice geoJSON, slice value)
-                                                            {emit(bbox, geoJSON, value);}
-        virtual ~EmitFn() { }
-    };
-
-    class MapFn {
-    public:
-        virtual void operator() (const Mappable&, EmitFn& emit) =0;
-        virtual ~MapFn() { }
-    };
-
     /** An Index that uses a MapFn to index the documents of another KeyStore. */
     class MapReduceIndex : public Index {
     public:
@@ -72,7 +37,7 @@ namespace cbforest {
         void readState();
         int indexType() const                   {return _indexType;}
         
-        void setup(int indexType, MapFn *map, std::string mapVersion);
+        void setup(int indexType, std::string mapVersion);
 
         void setDocumentType(slice docType)     {_documentType = docType;}
         alloc_slice documentType() const        {return _documentType;}
@@ -101,15 +66,12 @@ namespace cbforest {
                          alloc_slice& outGeoJSON,
                          alloc_slice& outValue);
 
-    protected:
-        void deleted(); // called by Transaction::deleteDatabase()
-
     private:
+        void deleted();
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
         cbforest::KeyStore const _sourceDatabase;
-        MapFn* _map {NULL};
         std::string _mapVersion, _lastMapVersion;
         int _indexType {0};
         sequence _lastSequenceIndexed {0}, _lastSequenceChangedAt {0};
@@ -125,26 +87,15 @@ namespace cbforest {
     /** An activity that updates one or more map-reduce indexes. */
     class MapReduceIndexer {
     public:
-        MapReduceIndexer() { }
-        virtual ~MapReduceIndexer();
+        ~MapReduceIndexer();
 
         void addIndex(MapReduceIndex*, Transaction*);
 
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}
 
-        KeyStore sourceStore();
-
-        /** Updates all of the indexes by enumerating the new documents and calling addDocument()
-            on each one. (That method needs to be overridden for this to do anything.) */
-        bool run();
-
         /** Returns true if indexing completed successfully. */
         void finished()                             {_finished = true;}
-
-        sequence latestDbSequence() const           {return _latestDbSequence;}
-
-        //// Incremental mode:
 
         /** Determines at which sequence indexing should start.
             Returns UINT64_MAX if no re-indexing is necessary. */
@@ -167,7 +118,7 @@ namespace cbforest {
                              sequence docSequence,
                              unsigned viewNumber,
                              const std::vector<Collatable> &keys,
-                             const std::vector<slice> &values);
+                             const std::vector<alloc_slice> &values);
 
         /** Removes the document from all views' indexes. Same as emitting an empty set of
             key/value pairs for each view. */
@@ -176,18 +127,6 @@ namespace cbforest {
         /** Removes the document from the given view's index. Same as emitting an empty set of
             key/value pairs. */
         void skipDocInView(slice docID, sequence docSequence, unsigned viewNumber);
-
-    protected:
-        /** Transforms the Document to a Mappable and invokes addMappable.
-            The default implementation just uses the Mappable base class, i.e. doesn't do any work.
-            Subclasses can override this to do arbitrary parsing or transformation of the doc.
-            The override probably shouldn't call the inherited method, just addMappable(). */
-        virtual void addDocument(const Document&);
-
-        /** Calls each index's map function on the Mappable, and updates the indexes. */
-        void addMappable(const Mappable&);
-
-        size_t indexCount() { return _writers.size(); }
 
     private:
         std::vector<MapReduceIndexWriter*> _writers;
@@ -198,7 +137,7 @@ namespace cbforest {
         std::set<slice> _docTypes;
 
         const std::vector<Collatable> _noKeys;
-        const std::vector<slice> _noValues;
+        const std::vector<alloc_slice> _noValues;
 };
 }
 

@@ -145,11 +145,19 @@ extern "C" {
     //////// KEY/VALUE LISTS:
 
 
+    /** An opaque list of key/value pairs, used when indexing a view. */
     typedef struct c4KeyValueList C4KeyValueList;
 
+    /** Creates a new empty list. */
     C4KeyValueList* c4kv_new(void);
+
+    /** Adds a key/value pair to a list. The key and value are copied. */
     void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value);
+
+    /** Removes all keys and values from a list. */
     void c4kv_reset(C4KeyValueList *kv);
+
+    /** Frees all storage used by a list (including its copied keys and values.) */
     void c4kv_free(C4KeyValueList *kv);
 
 #ifdef __cplusplus

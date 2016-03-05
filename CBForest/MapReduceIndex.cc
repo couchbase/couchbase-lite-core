@@ -102,11 +102,10 @@ namespace cbforest {
     }
 
 
-    void MapReduceIndex::setup(int indexType, MapFn *map, std::string mapVersion) {
-        Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapFn=%p, mapVersion='%s')",
-              this, indexType, map, mapVersion.c_str());
+    void MapReduceIndex::setup(int indexType, std::string mapVersion) {
+        Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapVersion='%s')",
+              this, indexType, mapVersion.c_str());
         readState();
-        _map = map;
         _mapVersion = mapVersion;
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
             _indexType = indexType;
@@ -179,27 +178,12 @@ namespace cbforest {
 #pragma mark - EMITTER:
 
 
-    // Implementation of EmitFn interface
-    class emitter : public EmitFn {
+    // Collects key/value pairs being emitted
+    class Emitter {
     public:
 
-        virtual ~emitter() {
-            delete _tokenizer;
-        }
-
-        void _emit(Collatable key, alloc_slice value) {
-            keys.push_back(key);
-            values.push_back(value);
-            ++_emitCount;
-        }
-
-        virtual void emit(Collatable key, slice value) {
-            emit(key, alloc_slice(value));
-        }
-
-        void emit(Collatable key, CollatableBuilder &value) {
-            emit(key, value.extractOutput());
-        }
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
 
         void emit(Collatable key, alloc_slice value) {
             CollatableReader keyReader(key);
@@ -221,10 +205,23 @@ namespace cbforest {
             }
         }
 
-        virtual void emitTextTokens(slice text, std::string languageCode, slice value) {
+        void reset() {
+            keys.clear();
+            values.clear();
+            // _tokenizer is stateless
+        }
+
+    private:
+
+        void _emit(Collatable key, alloc_slice value) {
+            keys.push_back(key);
+            values.push_back(value);
+        }
+
+        void emitTextTokens(slice text, std::string languageCode, slice value) {
             if (!_tokenizer || _tokenizer->stemmer() != languageCode) {
-                delete _tokenizer;
-                _tokenizer = new Tokenizer(languageCode, (languageCode == "en"));
+                _tokenizer = std::unique_ptr<Tokenizer> {
+                    new Tokenizer(languageCode, (languageCode == "en")) };
             }
             std::unordered_map<std::string, CollatableBuilder> tokens;
             int specialKey = -1;
@@ -253,7 +250,7 @@ namespace cbforest {
 
         static const unsigned kMaxCoveringHashes = 4;
 
-        virtual void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
+        void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
             Debug("emit {%g ... %g, %g ... %g}",
                   boundingBox.latitude.min, boundingBox.latitude.max,
                   boundingBox.longitude.min, boundingBox.longitude.max);
@@ -292,93 +289,69 @@ namespace cbforest {
             }
             collValue.endArray();
 
-            unsigned result = _emitCount;
-            emit(collKey, collValue);
-            return result;
+            auto result = keys.size();
+            emit(collKey, collValue.extractOutput());
+            return (unsigned)result;
         }
 
-        void reset() {
-            keys.clear();
-            values.clear();
-            _emitCount = 0;
-            // _tokenizer is stateless
-        }
-
-        std::vector<Collatable> keys;
-        std::vector<alloc_slice> values;
-
-    private:
-        Tokenizer* _tokenizer {nullptr};
-        unsigned _emitCount {0};
+        std::unique_ptr<Tokenizer> _tokenizer;
     };
 
 
 #pragma mark - INDEX WRITER:
 
 
+    // In charge of updating one view's index. Owned by a MapReduceIndexer.
     class MapReduceIndexWriter: IndexWriter {
     public:
-        MapReduceIndexWriter(MapReduceIndex *index, Transaction *t)
-        :IndexWriter(index, *t),
-         _index(index),
+        MapReduceIndexWriter(MapReduceIndex *idx, Transaction *t)
+        :IndexWriter(idx, *t),
+         index(idx),
          _documentType(index->documentType()),
          _transaction(t)
         { }
 
-        ~MapReduceIndexWriter() {
-            delete _transaction;
+        MapReduceIndex* const index;
+
+        bool shouldIndexDocument(const Document& doc) const {
+            return doc.sequence() > index->_lastSequenceIndexed;
         }
 
-        bool shouldUpdateDocInIndex(const Document& doc) const {
-            return doc.sequence() > _index->_lastSequenceIndexed;
+        bool shouldIndexDocumentType(slice docType) {
+            return _documentType.buf == NULL || _documentType == docType;
         }
-
-        // Calls the index's map function on 'mappable' and writes the emitted rows to the index.
-        bool updateDocInIndex(const Mappable& mappable) {
-            const Document& doc = mappable.document();
-            _emit.reset();
-            if (!doc.deleted())
-                (*_index->_map)(mappable, _emit); // Call map function!
-            return emitForDocument(doc.key(), doc.sequence());
-        }
-
+        
         // Writes the given rows to the index.
-        bool emitDocIntoView(slice docID,
-                             sequence docSequence,
-                             const std::vector<Collatable> &keys,
-                             const std::vector<slice> &values)
+        bool indexDocument(slice docID,
+                           sequence docSequence,
+                           const std::vector<Collatable> &keys,
+                           const std::vector<alloc_slice> &values)
         {
-            if (docSequence <= _index->_lastSequenceIndexed)
+            if (docSequence <= index->_lastSequenceIndexed)
                 return false;
-            _emit.reset();
+            _emitter.reset();
             for (unsigned i = 0; i < keys.size(); ++i)
-                _emit.emit(keys[i], values[i]);
-            return emitForDocument(docID, docSequence);
-        }
+                _emitter.emit(keys[i], values[i]);
 
-        // subroutine of updateDocInIndex and emitDocIntoView
-        bool emitForDocument(slice docID, sequence docSequence)
-        {
-            _index->_lastSequenceIndexed = docSequence;
-            if (update(docID, docSequence, _emit.keys, _emit.values, _index->_rowCount)) {
-                _index->_lastSequenceChangedAt = _index->_lastSequenceIndexed;
+            index->_lastSequenceIndexed = docSequence;
+            if (update(docID, docSequence, _emitter.keys, _emitter.values, index->_rowCount)) {
+                index->_lastSequenceChangedAt = index->_lastSequenceIndexed;
                 return true;
             }
             return false;
         }
 
-        void saveState() {
-            _index->saveState(*_transaction);
+        void finish(bool success) {
+            if (success)
+                index->saveState(*_transaction);
+            else
+                _transaction->abort();
         }
 
-        void abort() {
-            _transaction->abort();
-        }
-
-        MapReduceIndex* const _index;
-        alloc_slice _documentType;
-        emitter _emit;
-        Transaction* const _transaction;
+    private:
+        alloc_slice const _documentType;
+        Emitter _emitter;
+        std::unique_ptr<Transaction> _transaction;
     };
 
     
@@ -390,28 +363,23 @@ namespace cbforest {
         CBFAssert(t);
         auto writer = new MapReduceIndexWriter(index, t);
         _writers.push_back(writer);
-        if (writer->_documentType.buf)
-            _docTypes.insert(writer->_documentType);
+        if (index->documentType().buf)
+            _docTypes.insert(index->documentType());
         else
             _allDocTypes = true;
     }
 
 
-    KeyStore MapReduceIndexer::sourceStore() {
-        return _writers[0]->_index->sourceStore();
-    }
-
-
     sequence MapReduceIndexer::startingSequence() {
-        _latestDbSequence = sourceStore().lastSequence();
+        _latestDbSequence = _writers[0]->index->sourceStore().lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
         sequence startSequence = _latestDbSequence+1;
         for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
-            sequence lastSequence = (*writer)->_index->lastSequenceIndexed();
+            sequence lastSequence = (*writer)->index->lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
-            } else if ((*writer)->_index == _triggerIndex) {
+            } else if ((*writer)->index == _triggerIndex) {
                 return UINT64_MAX; // The trigger index doesn't need to be updated, so abort
             }
         }
@@ -425,80 +393,37 @@ namespace cbforest {
     }
 
 
-    bool MapReduceIndexer::run() {
-        sequence startSequence = startingSequence();
-        if (startSequence > _latestDbSequence)
-            return false; // no updating needed
-
-        // Enumerate all the documents:
-        DocEnumerator::Options options = DocEnumerator::Options::kDefault;
-        options.includeDeleted = true;
-        for (DocEnumerator e(sourceStore(), startSequence, UINT64_MAX, options); e.next(); ) {
-            try {
-                addDocument(*e);
-            } catch (const error &x) {
-                WarnError("CBForest error %d ('%s') indexing doc %s ; aborting",
-                          x.status, x.what(), ((std::string)e->key()).c_str());
-                throw;
-            } catch (const std::exception &x) {
-                WarnError("Unexpected exception '%s' indexing doc %s ; aborting",
-                          x.what(), ((std::string)e->key()).c_str());
-                throw;
-            } catch (...) {
-                WarnError("Unexpected exception thrown (by map fn?) indexing doc %s ; continuing",
-                          ((std::string)e->key()).c_str());
-            }
-        }
-        finished();
-        return true;
-    }
-
     MapReduceIndexer::~MapReduceIndexer() {
         for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
-            if (_finished)
-                (*writer)->saveState();
-            else
-                (*writer)->abort();
+            (*writer)->finish(_finished);
             delete *writer;
         }
     }
 
-    void MapReduceIndexer::addDocument(const Document& doc) {
-        Mappable mappable(doc);
-        addMappable(mappable);
-    }
-
-    void MapReduceIndexer::addMappable(const Mappable& mappable) {
-        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer)
-            if ((*writer)->shouldUpdateDocInIndex(mappable.document()))
-                (*writer)->updateDocInIndex(mappable);
-    }
-
     bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) {
-        return _writers[viewNumber]->shouldUpdateDocInIndex(doc);
+        return _writers[viewNumber]->shouldIndexDocument(doc);
     }
 
     bool MapReduceIndexer::shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) {
-        slice viewDocType = _writers[viewNumber]->_documentType;
-        return viewDocType.buf == NULL || viewDocType == docType;
+        return _writers[viewNumber]->shouldIndexDocumentType(docType);
     }
 
     void MapReduceIndexer::emitDocIntoView(slice docID,
                                            sequence docSequence,
                                            unsigned viewNumber,
                                            const std::vector<Collatable> &keys,
-                                           const std::vector<slice> &values)
+                                           const std::vector<alloc_slice> &values)
     {
-        _writers[viewNumber]->emitDocIntoView(docID, docSequence, keys, values);
+        _writers[viewNumber]->indexDocument(docID, docSequence, keys, values);
     }
 
     void MapReduceIndexer::skipDoc(slice docID, sequence docSequence) {
         for (auto i = _writers.begin(); i != _writers.end(); ++i)
-            (*i)->emitDocIntoView(docID, docSequence, _noKeys, _noValues);
+            (*i)->indexDocument(docID, docSequence, _noKeys, _noValues);
     }
 
     void MapReduceIndexer::skipDocInView(slice docID, sequence docSequence, unsigned viewNumber) {
-        _writers[viewNumber]->emitDocIntoView(docID, docSequence, _noKeys, _noValues);
+        _writers[viewNumber]->indexDocument(docID, docSequence, _noKeys, _noValues);
     }
 
 }

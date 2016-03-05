@@ -130,7 +130,7 @@ struct c4Key : public CollatableBuilder {
 
 struct c4KeyValueList {
     std::vector<Collatable> keys;
-    std::vector<slice> values;
+    std::vector<alloc_slice> values;
 };
 
 #endif /* c4Impl_h */

@@ -56,7 +56,7 @@ struct c4View {
     }
 
     void setVersion(C4Slice version) {
-        _index.setup(-1, NULL, (std::string)version);
+        _index.setup(-1, (std::string)version);
     }
 
     C4Database *_sourceDB;
