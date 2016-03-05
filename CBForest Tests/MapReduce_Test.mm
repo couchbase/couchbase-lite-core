@@ -9,6 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "testutil.h"
 #import "MapReduceIndex.hh"
+#import "DocEnumerator.hh"
 #import "Collatable.hh"
 
 using namespace cbforest;
@@ -30,47 +31,35 @@ static CollatableBuilder StringToCollatable(NSString* str) {
 }
 
 
-class TestJSONMappable : public Mappable {
-public:
-    TestJSONMappable(const Document& doc)
-    :Mappable(doc)
-    {
-        if (doc.deleted())
-            body = nil;
-        else
-            body = DataToJSON(doc.body().copiedNSData(), NULL);
-    }
-    __strong NSDictionary* body;
-};
+static int numMapCalls;
 
-class TestMapFn : public MapFn {
-public:
-    static int numMapCalls;
-    virtual void operator() (const Mappable& mappable, EmitFn& emit) {
-        ++numMapCalls;
-        NSDictionary* body = ((TestJSONMappable&)mappable).body;
-        if (body) {
-            for (NSString* city in body[@"cities"])
-                emit(StringToCollatable(city), StringToCollatable(body[@"name"]));
+static void updateIndex(Database *indexDB, MapReduceIndex* index) {
+    MapReduceIndexer indexer;
+    indexer.addIndex(index, new Transaction(indexDB));
+    auto seq = indexer.startingSequence();
+    numMapCalls = 0;
+
+    auto options = DocEnumerator::Options::kDefault;
+    options.includeDeleted = true;
+    DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
+    while (e.next()) {
+        auto doc = e.doc();
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
+        if (!doc.deleted()) {
+            // Here's the pseudo map function:
+            ++numMapCalls;
+            NSDictionary* body = DataToJSON(doc.body().copiedNSData(), NULL);
+            for (NSString* city in body[@"cities"]) {
+                keys.push_back(StringToCollatable(city));
+                values.push_back(StringToCollatable(body[@"name"]));
+            }
         }
+        indexer.emitDocIntoView(doc.key(), doc.sequence(), 0, keys, values);
     }
-};
+    indexer.finished();
+}
 
-int TestMapFn::numMapCalls;
-
-class TestIndexer : public MapReduceIndexer {
-public:
-    static bool updateIndex(Database* database, MapReduceIndex* index) {
-        TestIndexer indexer;
-        indexer.addIndex(index, new Transaction(database));
-        return indexer.run();
-    }
-
-    virtual void addDocument(const Document& doc) {
-        TestJSONMappable mappable(doc);
-        addMappable(mappable);
-    }
-};
 
 
 @interface MapReduce_Test : XCTestCase
@@ -109,8 +98,7 @@ public:
 
 
 - (void) queryExpectingKeys: (NSArray*)expectedKeys {
-    TestMapFn::numMapCalls = 0;
-    XCTAssertTrue(TestIndexer::updateIndex(db, index));
+    updateIndex(db, index);
 
     unsigned nRows = 0;
     for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
@@ -144,7 +132,7 @@ public:
         }
     }
 
-    index->setup(0, new TestMapFn, "1");
+    index->setup(0, "1");
 }
 
 
@@ -154,7 +142,7 @@ public:
     NSLog(@"--- First query");
     [self queryExpectingKeys: @[@"Cambria", @"Eugene", @"Port Townsend", @"Portland",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk"]];
-    AssertEq(TestMapFn::numMapCalls, 3);
+    AssertEq(numMapCalls, 3);
 
     NSLog(@"--- Updating OR");
     {
@@ -166,7 +154,7 @@ public:
     [self queryExpectingKeys: @[@"Cambria", @"Port Townsend", @"Portland", @"Salem",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk",
                                 @"Walla Walla"]];
-    AssertEq(TestMapFn::numMapCalls, 1);
+    AssertEq(numMapCalls, 1);
 
     NSLog(@"--- Deleting CA");
     {
@@ -175,18 +163,18 @@ public:
     }
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
-    AssertEq(TestMapFn::numMapCalls, 0);
+    AssertEq(numMapCalls, 0);
 
     NSLog(@"--- Updating version");
-    index->setup(0, new TestMapFn, "2");
+    index->setup(0, "2");
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
-    AssertEq(TestMapFn::numMapCalls, 2);
+    AssertEq(numMapCalls, 2);
 }
 
 - (void) testReopen {
     [self createDocsAndIndex];
-    XCTAssertTrue(TestIndexer::updateIndex(db, index));
+    updateIndex(db, index);
     sequence lastIndexed = index->lastSequenceIndexed();
     sequence lastChangedAt = index->lastSequenceChangedAt();
     Assert(lastChangedAt > 0);
@@ -198,7 +186,7 @@ public:
     index = new MapReduceIndex(db, "index", source);
     Assert(index, @"Couldn't reopen index");
 
-    index->setup(0, new TestMapFn, "1");
+    index->setup(0, "1");
     AssertEq(index->lastSequenceIndexed(), lastIndexed);
     AssertEq(index->lastSequenceChangedAt(), lastChangedAt);
 }

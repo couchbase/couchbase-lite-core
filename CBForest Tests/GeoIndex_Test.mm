@@ -9,55 +9,47 @@
 #import <XCTest/XCTest.h>
 #import "testutil.h"
 #import "GeoIndex.hh"
+#import "DocEnumerator.hh"
 
 using namespace cbforest;
 using namespace geohash;
 
 
-class TestGeoMappable : public Mappable {
-public:
-    TestGeoMappable(const Document& doc)
-    :Mappable(doc)
-    {
-        CollatableReader r(doc.body());
-        area.longitude.min = r.readDouble();
-        area.latitude.min = r.readDouble();
-        area.longitude.max = r.readDouble();
-        area.latitude.max = r.readDouble();
+static int numMapCalls;
+
+static void updateIndex(Database *indexDB, MapReduceIndex* index) {
+    MapReduceIndexer indexer;
+    indexer.addIndex(index, new Transaction(indexDB));
+    auto seq = indexer.startingSequence();
+    numMapCalls = 0;
+
+    auto options = DocEnumerator::Options::kDefault;
+    options.includeDeleted = true;
+    DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
+    while (e.next()) {
+        auto doc = e.doc();
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
+        if (!doc.deleted()) {
+            // Here's the pseudo map function:
+            ++numMapCalls;
+            CollatableReader r(doc.body());
+            geohash::area area;
+            area.longitude.min = r.readDouble();
+            area.latitude.min = r.readDouble();
+            area.longitude.max = r.readDouble();
+            area.latitude.max = r.readDouble();
+
+            CollatableBuilder key;
+            key.addGeoKey(slice("{\"geo\":true}"), area);
+            CollatableBuilder value(numMapCalls);
+            keys.push_back(key);
+            values.push_back(value);
+}
+        indexer.emitDocIntoView(doc.key(), doc.sequence(), 0, keys, values);
     }
-
-    geohash::area area;
-};
-
-class TestGeoMapFn : public MapFn {
-public:
-    static int numMapCalls;
-    virtual void operator() (const Mappable& mappable, EmitFn& emit) {
-        ++numMapCalls;
-        auto area = ((TestGeoMappable&)mappable).area;
-        CollatableBuilder key;
-        key.addGeoKey(slice("{\"geo\":true}"), area);
-        CollatableBuilder value(numMapCalls);
-        emit(key, value);
-    }
-};
-
-int TestGeoMapFn::numMapCalls;
-
-
-class TestGeoIndexer : public MapReduceIndexer {
-public:
-    static bool updateIndex(Database* database, MapReduceIndex* index) {
-        TestGeoIndexer indexer;
-        indexer.addIndex(index, new Transaction(database));
-        return indexer.run();
-    }
-
-    virtual void addDocument(const Document& doc) {
-        TestGeoMappable mappable(doc);
-        addMappable(mappable);
-    }
-};
+    indexer.finished();
+}
 
 
 @interface GeoIndex_Test : XCTestCase
@@ -115,9 +107,9 @@ static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 }
 
 - (void) indexIt {
-    index->setup(0, new TestGeoMapFn, "1");
+    index->setup(0, "1");
     NSLog(@"==== Indexing...");
-    XCTAssertTrue(TestGeoIndexer::updateIndex(db, index));
+    updateIndex(db, index);
 }
 
 - (void) testGeoIndex {
