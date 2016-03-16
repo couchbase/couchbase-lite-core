@@ -19,7 +19,7 @@ static int numMapCalls;
 
 static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     MapReduceIndexer indexer;
-    indexer.addIndex(index, new Transaction(indexDB));
+    indexer.addIndex(index);
     auto seq = indexer.startingSequence();
     numMapCalls = 0;
 
@@ -59,7 +59,6 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
 {
     std::string dbPath;
     Database *db;
-    KeyStore source;
     MapReduceIndex *index;
 }
 
@@ -75,8 +74,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     CreateTestDir();
     dbPath = PathForDatabaseNamed(@"geo_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
-    source = (KeyStore)*db;
-    index = new MapReduceIndex(db, "geo", source);
+    index = new MapReduceIndex(db, "geo", db);
 }
 
 - (void) tearDown {

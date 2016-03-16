@@ -23,11 +23,11 @@
 namespace cbforest {
 
     static int64_t kMinFormatVersion = 4;
-    static int64_t kCurFormatVersion = 4;
+    static int64_t kCurFormatVersion = 5;
 
-    MapReduceIndex::MapReduceIndex(Database* db, std::string name, KeyStore sourceStore)
+    MapReduceIndex::MapReduceIndex(Database* db, std::string name, Database *sourceDatabase)
     :Index(db, name),
-     _sourceDatabase(sourceStore)
+     _sourceDatabase(sourceDatabase)
     {
         readState();
     }
@@ -53,10 +53,12 @@ namespace cbforest {
                     deleted();
                     _indexType = 0;
                 }
+                if (reader.peekTag() != CollatableTypes::kEndSequence)
+                    _lastPurgeCount = (uint64_t)reader.readInt();
             }
             _stateReadAt = curIndexSeq;
-            Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d)",
-                  this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount);
+            Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
+                  this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
         }
     }
 
@@ -70,18 +72,19 @@ namespace cbforest {
         CollatableBuilder state;
         state.beginArray();
         state << _lastSequenceIndexed << _lastSequenceChangedAt << _lastMapVersion << _indexType
-              << _rowCount << kCurFormatVersion;
+              << _rowCount << kCurFormatVersion << _lastPurgeCount;
         state.endArray();
 
         _stateReadAt = t(this).set(stateKey, state);
-        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d)",
-              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount);
+        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
+              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
     void MapReduceIndex::deleted() {
         _lastSequenceIndexed = 0;
         _lastSequenceChangedAt = 0;
         _lastMapVersion = "";
+        _lastPurgeCount = 0;
         _stateReadAt = 0;
         _rowCount = 0;
     }
@@ -102,6 +105,19 @@ namespace cbforest {
     }
 
 
+    // Checks the index's saved purgeCount against the db's current purgeCount;
+    // if they don't match, the index is invalidated (erased).
+    bool MapReduceIndex::checkForPurge() {
+        readState();
+        auto dbPurgeCount = _sourceDatabase->purgeCount();
+        if (dbPurgeCount == _lastPurgeCount)
+            return false;
+        invalidate();
+        _lastPurgeCount = dbPurgeCount;
+        return true;
+    }
+
+
     void MapReduceIndex::setup(int indexType, std::string mapVersion) {
         Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapVersion='%s')",
               this, indexType, mapVersion.c_str());
@@ -109,20 +125,24 @@ namespace cbforest {
         _mapVersion = mapVersion;
         if (indexType != _indexType || mapVersion != _lastMapVersion) {
             _indexType = indexType;
-            if (_lastSequenceIndexed > 0) {
-                Debug("MapReduceIndex: Version or indexType changed; erasing");
-                KeyStore::erase();
-            }
-            _lastSequenceIndexed = _lastSequenceChangedAt = 0;
-            _rowCount = 0;
-            _stateReadAt = 0;
+            invalidate();
         }
+    }
+
+    void MapReduceIndex::invalidate() {
+        if (_lastSequenceIndexed > 0) {
+            Debug("MapReduceIndex: Erasing invalidated index");
+            KeyStore::erase();
+        }
+        _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
+        _rowCount = 0;
+        _stateReadAt = 0;
     }
 
     void MapReduceIndex::erase() {
         Debug("MapReduceIndex: Erasing");
         KeyStore::erase();
-        _lastSequenceIndexed = _lastSequenceChangedAt = 0;
+        _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
         _rowCount = 0;
         _stateReadAt = 0;
     }
@@ -358,10 +378,10 @@ namespace cbforest {
 #pragma mark - MAP-REDUCE INDEXER
 
     
-    void MapReduceIndexer::addIndex(MapReduceIndex* index, Transaction* t) {
+    void MapReduceIndexer::addIndex(MapReduceIndex* index) {
         CBFAssert(index);
-        CBFAssert(t);
-        auto writer = new MapReduceIndexWriter(index, t);
+        index->checkForPurge(); // has to be called before creating the transaction
+        auto writer = new MapReduceIndexWriter(index, new Transaction(index->database()));
         _writers.push_back(writer);
         if (index->documentType().buf)
             _docTypes.insert(index->documentType());

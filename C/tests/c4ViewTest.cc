@@ -55,7 +55,10 @@ public:
             sprintf(docID, "doc-%03d", i);
             createRev(c4str(docID), kRevID, kBody);
         }
+        updateIndex();
+    }
 
+    void updateIndex() {
         C4Error error;
         C4Indexer* ind = c4indexer_begin(db, &view, 1, &error);
         Assert(ind);
@@ -139,6 +142,44 @@ public:
         AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)0);
         AssertEqual(c4view_getLastSequenceIndexed(view), (C4SequenceNumber)0);
         AssertEqual(c4view_getLastSequenceChangedAt(view), (C4SequenceNumber)0);
+    }
+
+    void testDocPurge()             {testDocPurge(false);}
+    void testDocPurgeWithCompact()  {testDocPurge(true);}
+
+    void testDocPurge(bool compactAfterPurge) {
+        createIndex();
+        auto lastIndexed = c4view_getLastSequenceIndexed(view);
+        auto lastSeq = c4db_getLastSequence(db);
+        AssertEqual(lastIndexed, lastSeq);
+
+        // Purge one of the indexed docs:
+        C4Error err;
+        {
+            TransactionHelper t(db);
+            Assert(c4db_purgeDoc(db, c4str("doc-023"), &err));
+        }
+
+        if (compactAfterPurge)
+            Assert(c4db_compact(db, &err));
+
+        // ForestDB assigns sequences to deletions, so the purge bumped the db's sequence,
+        // invalidating the view index:
+        lastIndexed = c4view_getLastSequenceIndexed(view);
+        lastSeq = c4db_getLastSequence(db);
+        Assert(lastIndexed < lastSeq);
+
+        updateIndex();
+
+        // Verify that the purged doc is no longer in the index:
+        C4Error error;
+        auto e = c4view_query(view, NULL, &error);
+        Assert(e);
+        int i = 0;
+        while (c4queryenum_next(e, &error)) {
+            ++i;
+        }
+        AssertEqual(i, 198); // 2 rows of doc-023 are gone
     }
 
     void createFullTextIndex(unsigned docCount) {
@@ -243,6 +284,8 @@ public:
     CPPUNIT_TEST( testCreateIndex );
     CPPUNIT_TEST( testQueryIndex );
     CPPUNIT_TEST( testIndexVersion );
+    CPPUNIT_TEST( testDocPurge );
+    CPPUNIT_TEST( testDocPurgeWithCompact );
     CPPUNIT_TEST( testCreateFullTextIndex );
     CPPUNIT_TEST( testQueryFullTextIndex );
     CPPUNIT_TEST_SUITE_END();

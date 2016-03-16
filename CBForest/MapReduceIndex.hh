@@ -31,9 +31,9 @@ namespace cbforest {
     public:
         MapReduceIndex(Database*,
                        std::string name,
-                       KeyStore sourceStore);
+                       Database *sourceDatabase);
 
-        KeyStore sourceStore() const            {return _sourceDatabase;}
+        KeyStore sourceStore() const            {return _sourceDatabase->defaultKeyStore();}
         void readState();
         int indexType() const                   {return _indexType;}
         
@@ -67,15 +67,18 @@ namespace cbforest {
                          alloc_slice& outValue);
 
     private:
+        bool checkForPurge();
+        void invalidate();
         void deleted();
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
-        cbforest::KeyStore const _sourceDatabase;
+        Database* const _sourceDatabase;
         std::string _mapVersion, _lastMapVersion;
         int _indexType {0};
         sequence _lastSequenceIndexed {0}, _lastSequenceChangedAt {0};
         sequence _stateReadAt {0}; // index sequence # at which state was last valid
+        uint64_t _lastPurgeCount {0};   // db lastPurgeCount when index was last built
         uint64_t _rowCount {0};
         alloc_slice _documentType;
 
@@ -89,7 +92,7 @@ namespace cbforest {
     public:
         ~MapReduceIndexer();
 
-        void addIndex(MapReduceIndex*, Transaction*);
+        void addIndex(MapReduceIndex*);
 
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}

@@ -28,7 +28,8 @@ namespace cbforest {
     }
 
     Index::Index(Database* db, std::string name)
-    :KeyStore(db, name)
+    :KeyStore(db, name),
+     _indexDB(db)
     { }
 
     IndexWriter::IndexWriter(Index* index, Transaction& t)

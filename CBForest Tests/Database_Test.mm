@@ -97,6 +97,7 @@ Database::config TestDBConfig() {
     Assert(info.file_size > 0);
 
     AssertEq(db->lastSequence(), 0u);
+    AssertEq(db->purgeCount(), 0u);
 }
 
 - (void)test02_CreateDoc
@@ -366,10 +367,15 @@ Database::config TestDBConfig() {
 - (void) test07_DeleteKey {
     slice key("a");
     Transaction(db).set(key, nsstring_slice(@"A"));
+    AssertEq(db->lastSequence(), 1u);
+    AssertEq(db->purgeCount(), 0u);
     Transaction(db).del(key);
     Document doc = db->get(key);
-//    Assert(doc.deleted());
     Assert(!doc.exists());
+    AssertEq(db->lastSequence(), 2u);
+    AssertEq(db->purgeCount(), 0u); // doesn't increment until after compaction
+    db->compact();
+    AssertEq(db->purgeCount(), 1u);
 }
 
 - (void) test07_DeleteDoc {
@@ -383,8 +389,37 @@ Database::config TestDBConfig() {
     }
 
     Document doc = db->get(key);
-//    Assert(doc.deleted());
+    //    Assert(doc.deleted());
     Assert(!doc.exists());
+    
+    AssertEq(db->purgeCount(), 0u); // doesn't increment until after compaction
+    db->compact();
+    AssertEq(db->purgeCount(), 1u);
+}
+
+// Tests workaround for ForestDB bug MB-18753
+- (void) test07_DeleteDocAndReopen {
+    slice key("a");
+    Transaction(db).set(key, nsstring_slice(@"A"));
+
+    {
+        Transaction t(db);
+        Document doc = db->get(key);
+        t.del(doc);
+    }
+
+    Document doc = db->get(key);
+    //    Assert(doc.deleted());
+    Assert(!doc.exists());
+
+    auto config = db->getConfig();
+    delete db;
+    db = NULL;
+    db = new Database(dbPath, config);
+
+    Document doc2 = db->get(key);
+    //    Assert(doc2.deleted());
+    Assert(!doc2.exists());
 }
 
 - (void) test08_KeyStoreInfo {

@@ -87,6 +87,7 @@ namespace cbforest {
     private:
         KeyStoreWriter(KeyStore store)                      :KeyStore(store._handle) { }
         friend class Transaction;
+        friend class Database;
     };
 
 }

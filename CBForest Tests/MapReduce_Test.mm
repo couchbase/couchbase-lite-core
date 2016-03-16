@@ -35,15 +35,18 @@ static int numMapCalls;
 
 static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     MapReduceIndexer indexer;
-    indexer.addIndex(index, new Transaction(indexDB));
+    indexer.addIndex(index);
     auto seq = indexer.startingSequence();
     numMapCalls = 0;
+    NSLog(@"Updating index from sequence=%llu...", seq);
 
     auto options = DocEnumerator::Options::kDefault;
     options.includeDeleted = true;
     DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
         auto doc = e.doc();
+        NSLog(@"    enumerating seq %llu: '%.*s' (del=%d)",
+              doc.sequence(), (int)doc.key().size, doc.key().buf, doc.deleted());
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         if (!doc.deleted()) {
@@ -58,6 +61,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
         indexer.emitDocIntoView(doc.key(), doc.sequence(), 0, keys, values);
     }
     indexer.finished();
+    NSLog(@"...done updating index (%d map calls)", numMapCalls);
 }
 
 
@@ -69,7 +73,6 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
 {
     std::string dbPath;
     Database* db;
-    KeyStore source;
     MapReduceIndex* index;
 }
 
@@ -84,8 +87,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     CreateTestDir();
     dbPath = PathForDatabaseNamed(@"forest_temp.fdb");
     db = new Database(dbPath, TestDBConfig());
-    source = (KeyStore)*db;
-    index = new MapReduceIndex(db, "index", source);
+    index = new MapReduceIndex(db, "index", db);
     Assert(index, @"Couldn't open index");
 }
 
@@ -145,22 +147,18 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     AssertEq(numMapCalls, 3);
 
     NSLog(@"--- Updating OR");
-    {
-        Transaction trans(db);
-        NSDictionary* body = @{@"name": @"Oregon",
-                               @"cities": @[@"Portland", @"Walla Walla", @"Salem"]};
-        trans.set(nsstring_slice(@"OR"), cbforest::slice::null, JSONToData(body,NULL));
-    }
+    NSDictionary* body = @{@"name": @"Oregon",
+                           @"cities": @[@"Portland", @"Walla Walla", @"Salem"]};
+    Transaction(db).set(nsstring_slice(@"OR"), cbforest::slice::null, JSONToData(body,NULL));
     [self queryExpectingKeys: @[@"Cambria", @"Port Townsend", @"Portland", @"Salem",
                                 @"San Francisco", @"San Jose", @"Seattle", @"Skookumchuk",
                                 @"Walla Walla"]];
     AssertEq(numMapCalls, 1);
 
+    // After deleting a doc, updating the index can be done incrementally because the deleted doc
+    // will appear in the by-sequence iteration, so the indexer can remove its rows.
     NSLog(@"--- Deleting CA");
-    {
-        Transaction trans(db);
-        trans.del(nsstring_slice(@"CA"));
-    }
+    Transaction(db).del(nsstring_slice(@"CA"));
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
     AssertEq(numMapCalls, 0);
@@ -170,6 +168,16 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     [self queryExpectingKeys: @[@"Port Townsend", @"Portland", @"Salem",
                                 @"Seattle", @"Skookumchuk", @"Walla Walla"]];
     AssertEq(numMapCalls, 2);
+
+    // Deletion followed by compaction will purge the deleted docs, so incremental indexing no
+    // longer works. The indexer should detect this and rebuild from scratch.
+    NSLog(@"--- Deleting OR");
+    Transaction(db).del(nsstring_slice(@"OR"));
+    NSLog(@"--- Compacting db");
+    db->compact();
+
+    [self queryExpectingKeys: @[@"Port Townsend", @"Seattle", @"Skookumchuk"]];
+    AssertEq(numMapCalls, 1);
 }
 
 - (void) testReopen {
@@ -183,7 +191,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     delete index;
     index = NULL;
 
-    index = new MapReduceIndex(db, "index", source);
+    index = new MapReduceIndex(db, "index", db);
     Assert(index, @"Couldn't reopen index");
 
     index->setup(0, "1");

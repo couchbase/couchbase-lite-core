@@ -12,6 +12,7 @@
 #include "slice.hh"
 #include "Database.hh"
 #include "Collatable.hh"
+#include "VersionedDocument.hh"
 #include "Error.hh"
 #include <functional>
 
@@ -78,8 +79,11 @@ namespace c4Internal {
 
     const VersionedDocument& versionedDocument(C4Document*);
 
-    void setEnumFilter(C4DocEnumerator*,
-                       std::function<bool(slice docID, sequence sequence, slice docType)> filter);
+    typedef std::function<bool(const Document&,
+                               uint32_t documentFlags,  // C4DocumentFlags
+                               slice docType)> EnumFilter;
+
+    void setEnumFilter(C4DocEnumerator*, EnumFilter);
 }
 
 using namespace c4Internal;
@@ -132,5 +136,11 @@ struct c4KeyValueList {
     std::vector<Collatable> keys;
     std::vector<alloc_slice> values;
 };
+
+
+// Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted').
+// Should only need to be used for the view indexer's enumerator.
+static const uint16_t kC4IncludePurged = 0x8000;
+
 
 #endif /* c4Impl_h */

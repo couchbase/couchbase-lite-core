@@ -366,8 +366,10 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
     if (!database->mustBeInTransaction(outError))
         return false;
     try {
-        database->transaction()->del(docID);
-        return true;
+        if (database->transaction()->del(docID))
+            return true;
+        else
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
     } catchError(outError)
     return false;
 }

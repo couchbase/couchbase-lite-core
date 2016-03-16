@@ -58,6 +58,9 @@ namespace cbforest {
         info getInfo() const;
         config getConfig()                      {return _config;}
 
+        /** The number of deletions that have been purged via compaction. (Used by the indexer) */
+        uint64_t purgeCount() const;
+
         bool isReadOnly() const;
 
         void deleteDatabase()                   {deleteDatabase(false);}
@@ -108,6 +111,8 @@ namespace cbforest {
         Database& operator=(const Database&) = delete;
 
         void close();
+        void incrementDeletionCount(Transaction *t);
+        void updatePurgeCount();
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
                                                        fdb_compaction_status status,
                                                        const char *kv_store_name,
@@ -158,6 +163,10 @@ namespace cbforest {
         void abort()                        {if (_state != kNoOp) _state = kAbort;}
 
         void check(fdb_status status);
+
+        /** Deletes the doc, and increments the database's purgeCount */
+        bool del(slice key);
+        bool del(Document &doc);
 
     private:
         friend class Database;

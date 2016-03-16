@@ -50,7 +50,7 @@ struct c4View {
            C4Slice version)
     :_sourceDB(sourceDB),
      _viewDB((std::string)path, config),
-     _index(&_viewDB, (std::string)name, sourceDB->defaultKeyStore())
+     _index(&_viewDB, (std::string)name, sourceDB)
     {
         setVersion(version);
     }
@@ -199,8 +199,7 @@ struct c4Indexer : public MapReduceIndexer {
     virtual ~c4Indexer() { }
 
     void addView(C4View *view) {
-        auto t = new Transaction(&view->_viewDB);
-        addIndex(&view->_index, t);
+        addIndex(&view->_index);
     }
 
     C4Database* _db;
@@ -240,22 +239,24 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         }
 
         auto options = kC4DefaultEnumeratorOptions;
-        options.flags |= kC4IncludeDeleted;
+        options.flags |= kC4IncludeDeleted | kC4IncludePurged;
         if (docTypes)
             options.flags &= ~kC4IncludeBodies;
         auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
         if (!e)
             return NULL;
 
-        if (docTypes) {
-            setEnumFilter(e, [docTypes,indexer](slice docID, sequence sequence, slice docType) {
-                if (docTypes->count(docType) > 0)
-                    return true;
-                // We're skipping this doc, but we do have to update the index to _remove_ it
-                indexer->skipDoc(docID, sequence);
-                return false;
-            });
-        }
+        setEnumFilter(e, [docTypes,indexer](const Document &doc,
+                                            C4DocumentFlags flags,
+                                            slice docType) {
+            if ((flags & kExists) && !(flags & kDeleted)
+                                  && (!docTypes || docTypes->count(docType) > 0))
+                return true;
+            // We're skipping this doc because it's either purged or deleted, or its docType
+            // doesn't match. But we do have to update the index to _remove_ it
+            indexer->skipDoc(doc.key(), doc.sequence());
+            return false;
+        });
         return e;
     } catchError(outError);
     return NULL;

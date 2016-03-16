@@ -48,11 +48,15 @@ namespace cbforest {
                              Collatable key,
                              unsigned emitIndex) const;
 
+        Database* database() const      {return _indexDB;}
+
         /** Used as a placeholder for an index value that's stored out of line, i.e. that
             represents the entire document being indexed. */
         static const slice kSpecialValue;
 
     private:
+        Database* const _indexDB;
+
         friend class IndexWriter;
         friend class IndexEnumerator;
     };

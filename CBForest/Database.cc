@@ -173,6 +173,45 @@ namespace cbforest {
     }
 
 
+#pragma mark PURGE/DELETION COUNT:
+
+
+    static const char* const kInfoStoreName = "info";
+    static const char* const kDeletionCountKey = "deletionCount";
+    static const char* const kPurgeCountKey = "purgeCount";
+
+    static uint64_t readCount(const Document &doc) {
+        uint64_t count;
+        if (doc.body().size < sizeof(count))
+            return 0;
+        memcpy(&count, doc.body().buf, sizeof(count));
+        return _endian_decode(count);
+    }
+
+    void Database::incrementDeletionCount(Transaction *t) {
+        KeyStore infoStore(this, kInfoStoreName);
+        Document doc = infoStore.get(slice(kDeletionCountKey));
+        uint64_t purgeCount = readCount(doc) + 1;
+        uint64_t newBody = _endian_encode(purgeCount);
+        doc.setBody(slice(&newBody, sizeof(newBody)));
+        KeyStoreWriter(infoStore, *t).write(doc);
+    }
+
+    uint64_t Database::purgeCount() const {
+        KeyStore infoStore(this, kInfoStoreName);
+        return readCount( infoStore.get(slice(kPurgeCountKey)) );
+    }
+
+    void Database::updatePurgeCount() {
+        KeyStore infoStore(this, kInfoStoreName);
+        Document purgeCount = infoStore.get(slice(kDeletionCountKey));
+        if (purgeCount.exists()) {
+            KeyStoreWriter infoWriter(infoStore);
+            infoWriter.set(slice(kPurgeCountKey), purgeCount.body());
+        }
+    }
+
+
 #pragma mark - MUTATING OPERATIONS:
 
 
@@ -284,6 +323,18 @@ namespace cbforest {
         }
     }
 
+
+    bool Transaction::del(slice key) {
+        if (!KeyStoreWriter::del(key))
+            return false; 
+        _db.incrementDeletionCount(this);
+        return true;
+    }
+
+    bool Transaction::del(Document &doc) {
+        return del(doc.key());
+    }
+
 #pragma mark - COMPACTION:
 
     static atomic_uint32_t sCompactCount;
@@ -321,6 +372,7 @@ namespace cbforest {
                 Log("Database %p COMPACTING...", this);
                 break;
             case FDB_CS_COMPLETE:
+                updatePurgeCount();
                 _isCompacting = false;
                 atomic_decr_uint32_t(&sCompactCount);
                 Log("Database %p END COMPACTING", this);

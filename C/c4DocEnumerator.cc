@@ -67,14 +67,14 @@ struct C4DocEnumerator {
         options.descending = (c4options.flags & kC4Descending) != 0;
         options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
         options.inclusiveEnd = (c4options.flags & kC4InclusiveEnd) != 0;
+        options.includeDeleted = (c4options.flags & kC4IncludePurged) != 0;
+        // (Remember, ForestDB's 'deleted' is what CBL calls 'purged')
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOptions = KeyStore::kMetaOnly;
         return options;
     }
 
-    typedef std::function<bool(slice docID, sequence sequence, slice docType)> filter;
-
-    void setFilter(const filter &f)  {_filter = f;}
+    void setFilter(const EnumFilter &f)  {_filter = f;}
 
     C4Database* database() const {return _database;}
 
@@ -109,7 +109,7 @@ private:
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
             _docRevID = revid();
-            return true;
+            return (!_filter || _filter(_e.doc(), 0, slice::null));
         }
         VersionedDocument::Flags flags;
         if (!VersionedDocument::readMeta(_e.doc(), flags, _docRevID, docType))
@@ -118,13 +118,13 @@ private:
         auto optFlags = _options.flags;
         return (optFlags & kC4IncludeDeleted       || !(_docFlags & VersionedDocument::kDeleted))
             && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & VersionedDocument::kConflicted))
-            && (!_filter || _filter(_e.doc().key(), _e.doc().sequence(), docType));
+            && (!_filter || _filter(_e.doc(), _docFlags, docType));
     }
 
     C4Database *_database;
     DocEnumerator _e;
     C4EnumeratorOptions _options;
-    filter _filter;
+    EnumFilter _filter;
 
     C4DocumentFlags _docFlags;
     revid _docRevID;
@@ -184,7 +184,7 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
 }
 
 namespace c4Internal {
-    void setEnumFilter(C4DocEnumerator *e, C4DocEnumerator::filter f) {
+    void setEnumFilter(C4DocEnumerator *e, EnumFilter f) {
         e->setFilter(f);
     }
 }
