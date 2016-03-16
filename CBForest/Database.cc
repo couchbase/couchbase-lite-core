@@ -91,7 +91,13 @@ namespace cbforest {
     Database::config Database::defaultConfig() {
         if (!sDefaultConfigInitialized) {
             *(fdb_config*)&sDefaultConfig = fdb_get_default_config();
-            sDefaultConfig.purging_interval = 1; // WORKAROUND for ForestDB bug MB-16384
+            // Why a nonzero purging_interval? We want deleted ForestDB docs to stick around
+            // for a little while so the MapReduceIndexer can see them next time it updates its
+            // index, and clean out rows emitted by those docs. If purging_interval is 0,
+            // deleted docs vanish pretty much instantly (_not_ "at the next replication" as
+            // the ForestDB header says.) A value of >0 makes them stick around until the next
+            // compaction.
+            sDefaultConfig.purging_interval = 1;
             sDefaultConfig.compaction_cb_mask = FDB_CS_BEGIN | FDB_CS_COMPLETE;
             sDefaultConfigInitialized = true;
         }
@@ -114,9 +120,10 @@ namespace cbforest {
     }
 
     Database::~Database() {
-        // fdb_close will automatically close _handle as well.
+        Debug("Database: deleting (~Database)");
+        CBFAssert(!_inTransaction);
         if (_fileHandle)
-            fdb_close(_fileHandle);
+            close();
     }
 
     Database::info Database::getInfo() const {
@@ -138,6 +145,7 @@ namespace cbforest {
         if (i != _kvHandles.end()) {
             return i->second;
         } else {
+            Debug("Database: open KVS '%s'", name.c_str());
             fdb_kvs_handle* handle;
             check(fdb_kvs_open(_fileHandle, &handle, name.c_str(),  NULL));
             const_cast<Database*>(this)->_kvHandles[name] = handle;
@@ -149,6 +157,7 @@ namespace cbforest {
         fdb_kvs_handle* handle = _kvHandles[name];
         if (!handle)
             return;
+        Debug("Database: close KVS '%s'", name.c_str());
         check(fdb_kvs_close(handle));
         _kvHandles.erase(name);
     }
@@ -167,7 +176,21 @@ namespace cbforest {
 #pragma mark - MUTATING OPERATIONS:
 
 
+    void Database::close() {
+        if (!isReadOnly()) {
+            // Work around data loss from bug MB-18753: recently-deleted docs still stored in
+            // the WAL may be restored to undeleted state during WAL scan on database open.
+            // Flushing the WAL will prevent this. --jpa 3/2016
+            check(fdb_commit(_fileHandle, FDB_COMMIT_MANUAL_WAL_FLUSH));
+        }
+        check(::fdb_close(_fileHandle));
+        // FYI: fdb_close will automatically close _handle as well.
+        _fileHandle = NULL;
+        _handle = NULL;
+    }
+
     void Database::reopen(std::string path) {
+        Debug("Database: open %s", path.c_str());
         check(::fdb_open(&_fileHandle, path.c_str(), &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
         enableErrorLogs(true);
@@ -176,9 +199,7 @@ namespace cbforest {
     void Database::deleteDatabase(bool andReopen) {
         Transaction t(this, false);
         std::string path = filename();
-        check(::fdb_close(_fileHandle));
-        _fileHandle = NULL;
-        _handle = NULL;
+        close();
 
         deleteDatabase(path, _config);
         if (andReopen)
@@ -201,25 +222,32 @@ namespace cbforest {
 #pragma mark - TRANSACTION:
 
     void Database::beginTransaction(Transaction* t) {
+        CBFAssert(!_inTransaction);
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
 
-        if (t->state() == Transaction::kCommit)
+        if (t->state() == Transaction::kCommit) {
+            Log("Database: beginTransaction");
             check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED));
+        }
         _file->_transaction = t;
+        _inTransaction = true;
     }
 
     void Database::endTransaction(Transaction* t) {
         fdb_status status = FDB_RESULT_SUCCESS;
         switch (t->state()) {
             case Transaction::kCommit:
+                Log("Database: commit transaction");
                 status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
                 break;
             case Transaction::kAbort:
+                Log("Database: abort transaction");
                 (void)fdb_abort_transaction(_fileHandle);
                 break;
             case Transaction::kNoOp:
+                Log("Database: end noop transaction");
                 break;
         }
 
@@ -227,6 +255,7 @@ namespace cbforest {
         CBFAssert(_file->_transaction == t);
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
+        _inTransaction = false;
 
         check(status);
     }

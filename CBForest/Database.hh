@@ -107,6 +107,7 @@ namespace cbforest {
         Database(const Database&) = delete;
         Database& operator=(const Database&) = delete;
 
+        void close();
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
                                                        fdb_compaction_status status,
                                                        const char *kv_store_name,
@@ -124,6 +125,7 @@ namespace cbforest {
         config _config;
         fdb_file_handle* _fileHandle {nullptr};
         std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
+        bool _inTransaction {false};
         bool _isCompacting {false};
         OnCompactCallback _onCompactCallback {nullptr};
         void  *_onCompactContext {nullptr};
