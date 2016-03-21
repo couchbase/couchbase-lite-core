@@ -176,7 +176,7 @@ namespace c4Internal {
             config.flags |= FDB_OPEN_FLAG_CREATE;
         config.wal_threshold = kDBWALThreshold;
         config.wal_flush_before_commit = true;
-        config.seqtree_opt = true;
+        config.seqtree_opt = FDB_SEQTREE_USE;
         config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
         if (key) {
             config.encryption_key.algorithm = key->algorithm;

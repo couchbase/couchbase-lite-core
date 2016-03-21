@@ -87,9 +87,8 @@ C4View* c4view_open(C4Database* db,
     try {
         auto config = c4DbConfig(flags, key);
         config.wal_threshold = kViewDBWALThreshold;
-
-        //FIX: Temporary enable sequences so we can call fdb_rollback to erase the index
-        //config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
+        config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
+        config.purging_interval = 0;              // nor have any use for keeping deleted docs
 
         return new c4View(db, path, viewName, config, version);
     } catchError(outError);

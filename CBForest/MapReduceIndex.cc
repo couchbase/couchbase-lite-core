@@ -33,33 +33,29 @@ namespace cbforest {
     }
 
     void MapReduceIndex::readState() {
-        sequence curIndexSeq = KeyStore::lastSequence();
-        if (_stateReadAt != curIndexSeq) {
-            CollatableBuilder stateKey;
-            stateKey.addNull();
-            Document state = get(stateKey);
-            CollatableReader reader(state.body());
-            if (reader.peekTag() == CollatableReader::kArray) {
-                reader.beginArray();
-                _lastSequenceIndexed = reader.readInt();
-                _lastSequenceChangedAt = reader.readInt();
-                _lastMapVersion = std::string(reader.readString());
-                _indexType = (int)reader.readInt();
-                _rowCount = (uint64_t)reader.readInt();
+        CollatableBuilder stateKey;
+        stateKey.addNull();
+        Document state = get(stateKey);
+        CollatableReader reader(state.body());
+        if (reader.peekTag() == CollatableReader::kArray) {
+            reader.beginArray();
+            _lastSequenceIndexed = reader.readInt();
+            _lastSequenceChangedAt = reader.readInt();
+            _lastMapVersion = std::string(reader.readString());
+            _indexType = (int)reader.readInt();
+            _rowCount = (uint64_t)reader.readInt();
 
-                if (reader.peekTag() == CollatableTypes::kEndSequence
-                        || reader.readInt() < kMinFormatVersion) {
-                    // Obsolete index version
-                    deleted();
-                    _indexType = 0;
-                }
-                if (reader.peekTag() != CollatableTypes::kEndSequence)
-                    _lastPurgeCount = (uint64_t)reader.readInt();
+            if (reader.peekTag() == CollatableTypes::kEndSequence
+                    || reader.readInt() < kMinFormatVersion) {
+                // Obsolete index version
+                deleted();
+                _indexType = 0;
             }
-            _stateReadAt = curIndexSeq;
-            Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
-                  this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
+            if (reader.peekTag() != CollatableTypes::kEndSequence)
+                _lastPurgeCount = (uint64_t)reader.readInt();
         }
+        Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
+              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
