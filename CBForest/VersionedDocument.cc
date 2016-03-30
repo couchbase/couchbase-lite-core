@@ -59,8 +59,10 @@ namespace cbforest {
             _unknown = true;        // i.e. doc was read as meta-only
 
         if (_doc.exists()) {
-            if (!readMeta(_doc, _flags, _revID, _docType))
+            slice docType;
+            if (!readMeta(_doc, _flags, _revID, docType))
                 throw error(error::CorruptRevisionData);
+            _docType = docType; // allocate buf for it
         } else {
             _flags = 0;
         }
