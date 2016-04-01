@@ -17,6 +17,7 @@
 #include "Document.hh"
 #include "LogInternal.hh"
 #include "atomic.h"           // forestdb internal
+#include "time_utils.h"       // forestdb internal
 #include <errno.h>
 #include <stdarg.h>           // va_start, va_end
 #include <stdio.h>
@@ -340,7 +341,14 @@ namespace cbforest {
     static atomic_uint32_t sCompactCount;
 
     void Database::compact() {
-        check(fdb_compact(_fileHandle, NULL));
+        auto status = fdb_compact(_fileHandle, NULL);
+        if (status == FDB_RESULT_FILE_IS_BUSY) {
+            // This result means there is already a background auto-compact in progress.
+            while (isCompacting())
+                ::usleep(100 * 1000);
+        } else {
+            check(status);
+        }
     }
 
     // static
