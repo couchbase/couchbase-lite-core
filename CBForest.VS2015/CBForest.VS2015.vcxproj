@@ -176,6 +176,7 @@
     <ClCompile Include="..\CBForest\Database.cc" />
     <ClCompile Include="..\CBForest\DocEnumerator.cc" />
     <ClCompile Include="..\CBForest\Document.cc" />
+    <ClCompile Include="..\CBForest\Error.cc" />
     <ClCompile Include="..\CBForest\FullTextIndex.cc" />
     <ClCompile Include="..\CBForest\Geohash.cc" />
     <ClCompile Include="..\CBForest\GeoIndex.cc" />
