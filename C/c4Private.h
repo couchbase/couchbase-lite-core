@@ -8,7 +8,7 @@
 
 #ifndef c4Private_h
 #define c4Private_h
-#include "C4Document.h"
+#include "c4Document.h"
 
 #ifdef __cplusplus
 extern "C" {
