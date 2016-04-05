@@ -327,7 +327,10 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) {
     WITH_LOCK(database);
-    return database->lastSequence();
+    try {
+        return database->lastSequence();
+    } catchError(NULL);
+    return 0;
 }
 
 
