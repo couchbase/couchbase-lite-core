@@ -162,6 +162,7 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(CBFOREST_PATH)/MapReduceIndex.cc \
 					$(CBFOREST_PATH)/Tokenizer.cc \
 					$(CBFOREST_PATH)/sqlite_glue.c \
+					$(CBFOREST_PATH)/Error.cc \
 					$(LOCAL_PATH)/../C/c4Database.cc \
 					$(LOCAL_PATH)/../C/c4View.cc \
 					$(LOCAL_PATH)/../C/c4Key.cc \
