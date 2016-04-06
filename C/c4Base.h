@@ -92,6 +92,7 @@ enum {
     kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception
     kC4ErrorNotInTransaction,           // Function must be called while in a transaction
     kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
+    kC4ErrorIndexBusy,                  // View can't be closed while index is enumerating
 
     // These come from CBForest (error.hh)
     kC4ErrorBadRevisionID = -1000,

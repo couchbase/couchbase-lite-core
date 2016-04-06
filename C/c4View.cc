@@ -59,6 +59,14 @@ struct c4View {
         _index.setup(-1, (std::string)version);
     }
 
+    bool checkNotBusy(C4Error *outError) {
+        if (_index.isBusy()) {
+            recordError(C4Domain, kC4ErrorIndexBusy, outError);
+            return false;
+        }
+        return true;
+    }
+
     C4Database *_sourceDB;
     Database _viewDB;
     MapReduceIndex _index;
@@ -91,6 +99,8 @@ C4View* c4view_open(C4Database* db,
 /** Closes the view and frees the object. */
 bool c4view_close(C4View* view, C4Error *outError) {
     try {
+        if (!view->checkNotBusy(outError))
+            return false;
         delete view;
         return true;
     } catchError(outError);
@@ -99,6 +109,8 @@ bool c4view_close(C4View* view, C4Error *outError) {
 
 bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) {
     WITH_LOCK(view);
+    if (!view->checkNotBusy(outError))
+        return false;
     return rekey(&view->_viewDB, newKey, outError);
 }
 
@@ -118,6 +130,8 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 		}
 
         WITH_LOCK(view);
+        if (!view->checkNotBusy(outError))
+            return false;
         view->_viewDB.deleteDatabase();
         delete view;
         return true;
