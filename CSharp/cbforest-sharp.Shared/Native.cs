@@ -2012,7 +2012,7 @@ namespace CBForest
         /// </summary>
         /// <returns>The string that was emitted during indexing</returns>
         /// <param name="e">The enumerator to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4queryenum_fullTextMatched")]
         public static extern C4Slice _c4queryenum_fullTextMatched(C4QueryEnumerator *e);
         
         /// <summary>
@@ -2139,7 +2139,7 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4kv_reset(C4KeyValueList *kv);
         
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4kv_free")]
         private static extern void _c4kv_free(C4KeyValueList *kv);
         
         public static void c4kv_free(C4KeyValueList *kv)
