@@ -11,6 +11,8 @@ EXECUTABLE_PREFIX                         = lib
 
 CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO
 
+GCC_PREPROCESSOR_DEFINITIONS              = $(inherited) FORESTDB_VERSION=\"internal\"
+
 GCC_WARN_64_TO_32_BIT_CONVERSION          = NO
 GCC_WARN_ABOUT_MISSING_PROTOTYPES         = NO
 GCC_WARN_SHADOW                           = NO

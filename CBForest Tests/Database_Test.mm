@@ -53,6 +53,7 @@ static void randomAESKey(fdb_encryption_key &key) {
 
 Database::config TestDBConfig() {
     auto config = Database::defaultConfig();
+    config.seqtree_opt = FDB_SEQTREE_USE;
 #if ENCRYPT_DATABASES
     randomAESKey(config.encryption_key);
 #endif
