@@ -99,7 +99,7 @@ C4View* c4view_open(C4Database* db,
 /** Closes the view and frees the object. */
 bool c4view_close(C4View* view, C4Error *outError) {
     try {
-        if (!view->checkNotBusy(outError))
+        if (view && !view->checkNotBusy(outError))
             return false;
         delete view;
         return true;
