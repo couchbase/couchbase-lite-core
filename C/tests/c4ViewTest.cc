@@ -37,8 +37,10 @@ public:
 
     virtual void tearDown() {
         C4Error error;
-        if (view)
-            Assert(c4view_delete(view, &error));
+        if (view && !c4view_delete(view, &error)) {
+            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
+            Assert(false);
+        }
         C4Test::tearDown();
     }
 
@@ -115,6 +117,7 @@ public:
             AssertEqual(e->value, c4str("1234"));
 
         }
+        c4queryenum_free(e);
         AssertEqual(error.code, 0);
         AssertEqual(i, 200);
     }
@@ -179,6 +182,7 @@ public:
         while (c4queryenum_next(e, &error)) {
             ++i;
         }
+        c4queryenum_free(e);
         AssertEqual(i, 198); // 2 rows of doc-023 are gone
     }
 
@@ -257,6 +261,7 @@ public:
                 AssertEqual(e->fullTextTerms[0].length, 3u);
             }
         }
+        c4queryenum_free(e);
         AssertEqual(error.code, 0);
         AssertEqual(i, 2);
 

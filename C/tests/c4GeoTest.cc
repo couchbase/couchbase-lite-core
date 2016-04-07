@@ -41,8 +41,10 @@ public:
 
     virtual void tearDown() {
         C4Error error;
-        if (view)
-            Assert(c4view_delete(view, &error));
+        if (view && !c4view_delete(view, &error)) {
+            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
+            Assert(false);
+        }
         C4Test::tearDown();
     }
 
@@ -127,6 +129,7 @@ public:
             Assert(a.xmin <= 40 && a.xmax >= 10 && a.ymin <= 40 && a.ymax >= 10);
             AssertEqual(e->geoJSON, C4STR("{\"geo\":true}"));
         }
+        c4queryenum_free(e);
         AssertEqual(error.code, 0);
         AssertEqual(found, 2u);
     }
