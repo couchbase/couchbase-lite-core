@@ -209,13 +209,25 @@ struct c4Indexer : public MapReduceIndexer {
         initTokenizer();
     }
 
-    virtual ~c4Indexer() { }
+    virtual ~c4Indexer() {
+#if C4DB_THREADSAFE
+        for (auto view = _views.begin(); view != _views.end(); ++view)
+            (*view)->_mutex.unlock();
+#endif
+    }
 
     void addView(C4View *view) {
         addIndex(&view->_index);
+#if C4DB_THREADSAFE
+        view->_mutex.lock();
+        _views.push_back(view);
+#endif
     }
 
     C4Database* _db;
+#if C4DB_THREADSAFE
+    std::vector<C4View*> _views;
+#endif
 };
 
 
@@ -364,16 +376,24 @@ static DocEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator {
-    C4QueryEnumInternal() {
-        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // zero public fields
+    C4QueryEnumInternal(C4View *view)
+#if C4DB_THREADSAFE
+    :_mutex(view->_mutex)
+#endif
+    {
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
     }
 
     virtual ~C4QueryEnumInternal()  { }
 
     virtual bool next() {
-        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // zero public fields
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // clear public fields
         return false;
     }
+
+#if C4DB_THREADSAFE
+    std::mutex &_mutex;
+#endif
 };
 
 static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
@@ -383,6 +403,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
                       C4Error *outError)
 {
     try {
+        WITH_LOCK(asInternal(e));
         if (asInternal(e)->next())
             return true;
         clearError(outError);      // end of iteration is not an error
@@ -404,13 +425,15 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
                         const DocEnumerator::Options &options)
-    :_enum(&view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
+    :C4QueryEnumInternal(view),
+     _enum(&view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
 
     C4MapReduceEnumerator(C4View *view,
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options &options)
-    :_enum(&view->_index, keyRanges, options)
+    :C4QueryEnumInternal(view),
+     _enum(&view->_index, keyRanges, options)
     { }
 
     virtual bool next() {
@@ -433,6 +456,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
                                 C4Error *outError)
 {
     try {
+        WITH_LOCK(view);
         if (!c4options)
             c4options = &kC4DefaultQueryOptions;
         DocEnumerator::Options options = convertOptions(c4options);
@@ -470,7 +494,8 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
                          slice queryStringLanguage,
                          bool ranked,
                          const DocEnumerator::Options &options)
-    :_enum(&view->_index, queryString, queryStringLanguage, ranked, options)
+    :C4QueryEnumInternal(view),
+     _enum(&view->_index, queryString, queryStringLanguage, ranked, options)
     { }
 
     virtual bool next() {
@@ -504,6 +529,7 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
                                         C4Error *outError)
 {
     try {
+        WITH_LOCK(view);
         if (queryStringLanguage == kC4LanguageDefault)
             queryStringLanguage = Tokenizer::defaultStemmer;
         return new C4FullTextEnumerator(view, queryString, queryStringLanguage,
@@ -521,6 +547,7 @@ C4SliceResult c4view_fullTextMatched(C4View *view,
                                      C4Error *outError)
 {
     try {
+        WITH_LOCK(view);
         auto result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
         return {result.buf, result.size};
     } catchError(outError);
@@ -550,7 +577,8 @@ bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacritica
 
 struct C4GeoEnumerator : public C4QueryEnumInternal {
     C4GeoEnumerator(C4View *view, const geohash::area &bbox)
-    :_enum(&view->_index, bbox)
+    :C4QueryEnumInternal(view),
+     _enum(&view->_index, bbox)
     { }
 
     virtual bool next() {
@@ -578,6 +606,7 @@ C4QueryEnumerator* c4view_geoQuery(C4View *view,
                                    C4Error *outError)
 {
     try {
+        WITH_LOCK(view);
         geohash::area ga(geohash::coord(area.ymin, area.xmin),
                          geohash::coord(area.ymax, area.xmax));
         return new C4GeoEnumerator(view, ga);
