@@ -213,7 +213,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
     auto doc = (C4Document*)docHandle;
     C4Error error;
     bool ok = c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &error);
-    if (ok || error.domain == HTTPDomain)  // 404 or 410 don't trigger exceptions
+    if (ok || error.code == 0 || error.domain == HTTPDomain)  // 404 or 410 don't trigger exceptions
         updateSelection(env, self, doc, withBody);
     else
         throwError(env, error);
