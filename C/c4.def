@@ -5,6 +5,7 @@ c4log_register
 c4db_open
 c4db_close
 c4db_delete
+c4db_deleteAtPath
 c4db_compact
 c4db_rekey
 c4db_getPath
