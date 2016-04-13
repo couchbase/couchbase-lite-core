@@ -88,6 +88,8 @@ namespace CBForest
         /// </summary>
         public bool Exists { get { return DocumentInfo->Exists; } }
 
+        public bool Expired { get { return DocumentInfo->Expired; } }
+
         /// <summary>
         /// Gets whether or not the current document is conflicted
         /// </summary>

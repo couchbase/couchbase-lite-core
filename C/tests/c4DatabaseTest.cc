@@ -12,6 +12,10 @@
 #include "c4Test.hh"
 #include "forestdb.h"
 #include "c4Private.h"
+#include "c4DocEnumerator.h"
+#include "c4ExpiryEnumerator.h"
+
+#include "unistd.h"
 #ifdef _MSC_VER
 #define random() rand()
 #endif
@@ -526,6 +530,98 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(seq, (C4SequenceNumber)100);
     }
 
+    void testExpired() {
+        C4Slice docID = C4STR("expire_me");
+        createRev(docID, kRevID, kBody);
+        time_t expire = time(NULL) + 1;
+        C4Error err;
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        
+        expire = time(NULL) + 2;
+        // Make sure setting it to the same is also true
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        
+        C4Slice docID2 = C4STR("expire_me_too");
+        createRev(docID2, kRevID, kBody);
+        Assert(c4doc_setExpiration(db, docID2, expire, &err));
+    
+        C4Slice docID3 = C4STR("dont_expire_me");
+        createRev(docID3, kRevID, kBody);
+        sleep(2u);
+        
+        auto e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        int expiredCount = 0;
+        C4DocumentInfo info;
+        while(c4exp_next(e)) {
+            c4exp_getInfo(e, &info);
+            Assert(!c4SliceEqual(info.docID, docID3));
+            expiredCount++;
+        }
+        
+        c4exp_free(e, false);
+        AssertEqual(expiredCount, 2);
+        
+        C4Document *doc = c4doc_get(db, docID, true, &err);
+        Assert(doc != NULL);
+        Assert(doc->flags == kExpired);
+        
+        doc = c4doc_get(db, docID2, true, &err);
+        Assert(doc != NULL);
+        Assert(doc->flags == kExpired);
+        
+        doc = c4doc_get(db, docID3, true, &err);
+        Assert(doc != NULL);
+        Assert((doc->flags & kExpired) == 0);
+        
+        e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        expiredCount = 0;
+        while(c4exp_next(e)) {
+            c4exp_getInfo(e, &info);
+            Assert(!c4SliceEqual(info.docID, docID3));
+            expiredCount++;
+        }
+        
+        c4exp_free(e, true);
+        AssertEqual(expiredCount, 2);
+        
+        e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        expiredCount = 0;
+        while(c4exp_next(e)) {
+            expiredCount++;
+        }
+        
+        c4exp_free(e, true);
+        AssertEqual(expiredCount, 0);
+    }
+    
+    void testCancelExpire()
+    {
+        C4Slice docID = C4STR("expire_me");
+        createRev(docID, kRevID, kBody);
+        time_t expire = time(NULL) + 2;
+        C4Error err;
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        c4doc_cancelExpiration(db, docID);
+        
+        sleep(2u);
+        auto e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        int expiredCount = 0;
+        while(c4exp_next(e)) {
+            expiredCount++;
+        }
+        
+        c4exp_free(e, true);
+        AssertEqual(expiredCount, 0);
+    }
 
     CPPUNIT_TEST_SUITE( C4DatabaseTest );
     CPPUNIT_TEST( testErrorMessages );
@@ -538,6 +634,8 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST( testAllDocsInfo );
     CPPUNIT_TEST( testAllDocsIncludeDeleted );
     CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST( testExpired );
+    CPPUNIT_TEST( testCancelExpire );
     CPPUNIT_TEST_SUITE_END();
 };
 

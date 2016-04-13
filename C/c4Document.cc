@@ -24,6 +24,7 @@
 #include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+#include "varint.hh"
 
 using namespace cbforest;
 
@@ -61,9 +62,14 @@ struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
 
     void init() {
         docID = _versionedDoc.docID();
-        flags = (C4DocumentFlags)_versionedDoc.flags();
-        if (_versionedDoc.exists())
-            flags = (C4DocumentFlags)(flags | kExists);
+        if(c4doc_isExpired(_db, docID)) {
+            flags = kExpired;
+        } else {
+            flags = (C4DocumentFlags)_versionedDoc.flags();
+            if (_versionedDoc.exists())
+                flags = (C4DocumentFlags)(flags | kExists);
+        }
+        
         initRevID();
         selectCurrentRevision();
     }
@@ -176,6 +182,17 @@ struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
 
 };
 
+static void removeDocId(CollatableBuilder &builder, slice existing, slice toRemove)
+{
+    CollatableReader reader(existing);
+    while(!reader.atEnd()) {
+        alloc_slice next = reader.readString();
+        if(next.size > 0 && next.compare(toRemove) != 0) {
+            builder << next;
+        }
+    }
+}
+
 static inline C4DocumentInternal *internal(C4Document *doc) {
     return (C4DocumentInternal*)doc;
 }
@@ -211,6 +228,8 @@ C4Document* c4doc_get(C4Database *database,
             doc = NULL;
             recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
         }
+        
+        
         return doc;
     } catchError(outError);
     return NULL;
@@ -476,6 +495,90 @@ bool c4doc_save(C4Document *doc,
     return false;
 }
 
+bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
+{
+    C4Document *doc = c4doc_get(db, docId, true, outError);
+    if(doc == NULL) {
+        return false;
+    }
+    c4doc_free(doc);
+    
+    time_t now = time(NULL);
+    if(timestamp <= now) {
+        recordError(C4Domain, kC4ErrorInvalidParameter, outError);
+        return false;
+    }
+    
+    CollatableBuilder tsBuilder;
+    tsBuilder << timestamp;
+    slice tsSlice = tsBuilder.data();
+    
+    Transaction t(db);
+    KeyStore expiryKvs(db, "expiry");
+    KeyStoreWriter writer = t(expiryKvs);
+    
+    Document existingDoc = writer.get(docId);
+    if(existingDoc.exists()) {
+        // Previous entry found
+        if(existingDoc.body().compare(tsSlice) == 0) {
+            // No change
+            return true;
+        }
+        
+        // Remove old entry
+        Document existingTs = writer.get(existingDoc.body());
+        CollatableBuilder builder;
+        removeDocId(builder, existingTs.body(), docId);
+        writer.set(existingDoc.body(), builder.data());
+    }
+    
+    Document existingTs = writer.get(tsSlice);
+    slice docIDs;
+    if(existingTs.exists()) {
+        docIDs = existingTs.body();
+    }
+    
+    CollatableBuilder builder = docIDs.size == 0 ? CollatableBuilder() : CollatableBuilder(Collatable::withData(docIDs));
+    builder << docId;
+    writer.set(tsSlice, builder.data());
+    writer.set(docId, tsSlice);
+    
+    return true;
+}
+
+void c4doc_cancelExpiration(C4Database *db, C4Slice docId)
+{
+    KeyStore expiryKvs(db, "expiry");
+    Transaction t(db);
+    KeyStoreWriter writer = t(expiryKvs);
+    Document existing = writer.get(docId);
+    if(!existing.exists()) {
+        return;
+    }
+    
+    Document existingTs = writer.get(existing.body());
+    if(!existingTs.exists()) {
+        throw error::CorruptRevisionData;
+    }
+    
+    CollatableBuilder builder;
+    removeDocId(builder, existingTs.body(), docId);
+    writer.set(existing.body(), builder.data());
+    writer.del(docId);
+}
+
+bool c4doc_isExpired(C4Database *db, C4Slice docID)
+{
+    KeyStore expiryKvs(db, "expiry");
+    Document existing = expiryKvs.get(docID);
+    if(!existing.exists()) {
+        return false;
+    }
+    
+    CollatableReader reader(existing.body());
+    uint64_t timestamp = (uint64_t)reader.readDouble();
+    return timestamp <= time(NULL);
+}
 
 static alloc_slice createDocUUID() {
 #if SECURE_RANDOMIZE_AVAILABLE

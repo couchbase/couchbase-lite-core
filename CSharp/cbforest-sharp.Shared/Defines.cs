@@ -96,7 +96,11 @@ namespace CBForest
         /// <summary>
         /// Object in key is not JSON-compatible
         /// </summary>
-        InvalidKey
+        InvalidKey,
+        /// <summary>
+        /// An invalid parameter was passed to an API call
+        /// </summary>
+        InvalidParameter
     }
 
     /// <summary>
@@ -148,6 +152,8 @@ namespace CBForest
         /// The document's current revision has attachments.
         /// </summary>
         HasAttachments = 0x04,
+
+        Expired = 0x08,
         /// <summary>
         /// The document exists (i.e. has revisions.)
         /// </summary>

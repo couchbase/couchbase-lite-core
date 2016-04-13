@@ -94,6 +94,13 @@ namespace CBForest
                 return flags.HasFlag(C4DocumentFlags.Exists);
             }
         }
+
+        public bool Expired
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Expired);
+            }
+        }
     }
 
     /// <summary>
@@ -503,6 +510,13 @@ namespace CBForest
                 return flags.HasFlag(C4DocumentFlags.Exists);
             }
         }
+
+        public bool Expired
+        {
+            get {
+                return flags.HasFlag(C4DocumentFlags.Expired);
+            }
+        }
     }
 
     /// <summary>
@@ -564,6 +578,13 @@ namespace CBForest
     /// Opaque handle to a document enumerator.
     /// </summary>
     public struct C4DocEnumerator
+    {
+    }
+
+    /// <summary>
+    /// Opaque handle to an enumerator that iterates through expired documents.
+    /// </summary>
+    public struct C4ExpiryEnumerator
     {
     }
 
