@@ -133,3 +133,10 @@ public class Document {
 
     var doc: UnsafeMutablePointer<C4Document>
 }
+
+
+extension Document : CustomStringConvertible {
+    public var description: String {
+        return "{\"\(docID)\"}"
+    }
+}

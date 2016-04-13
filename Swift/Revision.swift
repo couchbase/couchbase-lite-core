@@ -71,6 +71,6 @@ public class Revision {
 
 extension Revision : CustomStringConvertible {
     public var description: String {
-        return "{\(docID) / \(revID)}"
+        return "{\"\(docID)\" \(revID)}"
     }
 }

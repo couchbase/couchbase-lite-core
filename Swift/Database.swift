@@ -131,9 +131,22 @@ public class Database {
         return Revision(database: self, doc: doc, rawBody: body)
     }
 
-    public func newDoc(docID: String?, rawBody: NSData, hasAttachments: Bool = false, allowConflict: Bool = false) throws -> Revision {
+    public func getRev(sequence: Sequence, withBody: Bool = true) throws -> Revision? {
+        guard let doc = try getDoc(sequence) else {
+            return nil
+        }
+        let body: NSData? = withBody ? try doc.selectedRevBody() : nil
+        return Revision(database: self, doc: doc, rawBody: body)
+    }
+
+    public func newRev(docID: String?, rawBody: NSData, hasAttachments: Bool = false, allowConflict: Bool = false) throws -> Revision {
         let doc = try putDoc(docID, parentRev: nil, body: rawBody, hasAttachments: hasAttachments, allowConflict: allowConflict)
         return Revision(database: self, doc: doc, rawBody: rawBody)
+    }
+
+    public func newRev(docID: String?, body: JSONDict, hasAttachments: Bool = false, allowConflict: Bool = false) throws -> Revision {
+        let rawBody = try NSJSONSerialization.dataWithJSONObject(body, options: [])
+        return try newRev(docID, rawBody: rawBody, hasAttachments: hasAttachments, allowConflict: allowConflict)
     }
 
     func putDoc(docID: String?, parentRev: String?, body: NSData,
@@ -160,50 +173,29 @@ public class Database {
         }
     }
 
-
-    // MARK:- ENUMERATION:
-
-    // common subroutine for creating enumerators; provides C4EnumeratorOptions and checks errors
-    private func mkEnumerator(options: EnumeratorOptions?, @noescape block: (UnsafePointer<C4EnumeratorOptions>, inout C4Error)->COpaquePointer) throws -> DocEnumerator {
-        var result: COpaquePointer = nil
-        var err = C4Error()
-        if options != nil {
-            var c4opt = options!.asC4Options
-            withUnsafePointer(&c4opt) { c4optPtr in
-                result = block(c4optPtr, &err)
-            }
-        } else {
-            result = block(nil, &err)
+    public func documents(start start: String? = nil, end: String? = nil, skip: UInt64 = 0, limit: UInt64 = UInt64.max, descending: Bool = false) -> DocumentRange {
+        var r = DocumentRange(database: self)
+        r.start = start
+        r.end = end
+        r.skip = skip
+        r.limit = limit
+        if descending {
+            r.flags.unionInPlace([.Descending])
         }
-        guard result != nil else {
-            throw err
-        }
-        return DocEnumerator(c4enum: result)
+        return r
     }
 
-    public func enumerateDocs(startDocID: String? = nil, endDocID: String? = nil, options: EnumeratorOptions? = nil) throws -> DocEnumerator
-    {
-        return try mkEnumerator(options) { (c4opts, inout err: C4Error) in
-            c4db_enumerateAllDocs(dbHandle, C4Slice(startDocID), C4Slice(endDocID), c4opts, &err)
-        }
+    public func documents(docIDs: [String]) -> DocumentRange {
+        return DocumentRange(database: self, docIDs: docIDs)
     }
-    
-    public func enumerateDocs(docIDs: [String], options: EnumeratorOptions? = nil) throws -> DocEnumerator
-    {
-        var docIDSlices = docIDs.map {C4Slice($0)}
 
-        return try mkEnumerator(options) { (c4opts, inout err: C4Error) in
-            c4db_enumerateSomeDocs(dbHandle, &docIDSlices, docIDSlices.count, c4opts, &err)
-        }
-    }
-    
-    public func enumerateChanges(since: Sequence, options: EnumeratorOptions? = nil) throws -> DocEnumerator
-    {
-        return try mkEnumerator(options) { (c4opts, inout err: C4Error) in
-            c4db_enumerateChanges(dbHandle, since, c4opts, &err)
-        }
-    }
-    
+//    public func enumerateChanges(since: Sequence, options: EnumeratorOptions? = nil) throws -> DocEnumerator
+//    {
+//        return try mkEnumerator(options) { (c4opts, inout err: C4Error) in
+//            c4db_enumerateChanges(dbHandle, since, c4opts, &err)
+//        }
+//    }
+
 
     var dbHandle: COpaquePointer
 }
