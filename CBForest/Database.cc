@@ -217,12 +217,6 @@ namespace cbforest {
 
 
     void Database::close() {
-        if (!isReadOnly()) {
-            // Work around data loss from bug MB-18753: recently-deleted docs still stored in
-            // the WAL may be restored to undeleted state during WAL scan on database open.
-            // Flushing the WAL will prevent this. --jpa 3/2016
-            check(fdb_commit(_fileHandle, FDB_COMMIT_MANUAL_WAL_FLUSH));
-        }
         check(::fdb_close(_fileHandle));
         // FYI: fdb_close will automatically close _handle as well.
         _fileHandle = NULL;
