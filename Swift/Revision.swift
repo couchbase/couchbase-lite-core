@@ -66,6 +66,10 @@ public class Revision {
         return properties[name] as? T
     }
 
+    func property<T>(name: String, default: T) -> T {
+        return (properties[name] as? T) ?? `default`
+    }
+
 }
 
 

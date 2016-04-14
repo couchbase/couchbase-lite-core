@@ -143,6 +143,9 @@
 		27A657BF1CBC1A3D00A7A1D7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27A657C01CBC1A5500A7A1D7 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27A657C81CBDD38A00A7A1D7 /* AssertHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657C71CBDD38A00A7A1D7 /* AssertHelper.swift */; };
+		27A657CA1CBED68700A7A1D7 /* SwiftForestTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657C91CBED68700A7A1D7 /* SwiftForestTestCase.swift */; };
+		27A657CC1CBED8E200A7A1D7 /* ViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657CB1CBED8E200A7A1D7 /* ViewTests.swift */; };
+		27A657CE1CBEF62D00A7A1D7 /* KeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657CD1CBEF62D00A7A1D7 /* KeyTests.swift */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
 		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
@@ -597,6 +600,9 @@
 		27A657C51CBC390700A7A1D7 /* SwiftForestTests_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SwiftForestTests_Release.xcconfig; sourceTree = "<group>"; };
 		27A657C61CBC390700A7A1D7 /* SwiftForestTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SwiftForestTests.xcconfig; sourceTree = "<group>"; };
 		27A657C71CBDD38A00A7A1D7 /* AssertHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssertHelper.swift; sourceTree = "<group>"; };
+		27A657C91CBED68700A7A1D7 /* SwiftForestTestCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftForestTestCase.swift; sourceTree = "<group>"; };
+		27A657CB1CBED8E200A7A1D7 /* ViewTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewTests.swift; sourceTree = "<group>"; };
+		27A657CD1CBEF62D00A7A1D7 /* KeyTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyTests.swift; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/cbforest/Logger.java; sourceTree = "<group>"; };
 		27A82D941BC48E38005CB742 /* sqlite_glue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite_glue.c; sourceTree = "<group>"; };
 		27A994E91BF2B6C100320AF2 /* staleblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = staleblock.cc; sourceTree = "<group>"; };
@@ -1273,6 +1279,9 @@
 			isa = PBXGroup;
 			children = (
 				27A657AA1CBC190B00A7A1D7 /* DatabaseTests.swift */,
+				27A657CD1CBEF62D00A7A1D7 /* KeyTests.swift */,
+				27A657CB1CBED8E200A7A1D7 /* ViewTests.swift */,
+				27A657C91CBED68700A7A1D7 /* SwiftForestTestCase.swift */,
 				27A657C71CBDD38A00A7A1D7 /* AssertHelper.swift */,
 				27A657AC1CBC190B00A7A1D7 /* Info.plist */,
 			);
@@ -1893,7 +1902,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27A657CC1CBED8E200A7A1D7 /* ViewTests.swift in Sources */,
+				27A657CE1CBEF62D00A7A1D7 /* KeyTests.swift in Sources */,
 				27A657AB1CBC190B00A7A1D7 /* DatabaseTests.swift in Sources */,
+				27A657CA1CBED68700A7A1D7 /* SwiftForestTestCase.swift in Sources */,
 				27A657C81CBDD38A00A7A1D7 /* AssertHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

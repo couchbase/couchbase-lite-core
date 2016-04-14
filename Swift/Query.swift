@@ -9,9 +9,11 @@
 import Foundation
 
 
-public class Query {
+public class Query: LazySequenceType {
 
-    init(view: View) {
+    public typealias Generator = QueryEnumerator
+
+    init(_ view: View) {
         self.view = view
     }
 
@@ -44,14 +46,14 @@ public class Query {
 
     public var startKey: AnyObject? {
         didSet {
-            encodedStartKey = try! Key(obj: startKey)
+            encodedStartKey = try! Key(startKey)
             options.startKey = encodedStartKey!.handle
         }
     }
 
     public var endKey: AnyObject? {
         didSet {
-            encodedEndKey = try! Key(obj: endKey)
+            encodedEndKey = try! Key(endKey)
             options.endKey = encodedEndKey!.handle
         }
     }
@@ -61,7 +63,7 @@ public class Query {
 
     public var keys: [AnyObject]? {
         didSet {
-            encodedKeys = keys?.map {try! Key(obj: $0)}
+            encodedKeys = keys?.map {try! Key($0)}
             options.keysCount = keys?.count ?? 0
         }
     }
@@ -87,6 +89,10 @@ public class Query {
         return QueryEnumerator(enumHandle)
     }
 
+    public func generate() -> QueryEnumerator {
+        return try! run()
+    }
+
     private var options = kC4DefaultQueryOptions
 
     // These properties hold references to the Key objects whose handles are stored in `options`
@@ -109,6 +115,17 @@ public class QueryEnumerator: GeneratorType {
     }
 
     public func next() -> QueryRow? {
+        return try! nextRow()
+    }
+
+    public func nextRow() throws -> QueryRow? {
+        var err = C4Error()
+        guard c4queryenum_next(handle, &err) else {
+            if err.code == 0 {
+                return nil
+            }
+            throw err
+        }
         return QueryRow(handle.memory)
     }
 

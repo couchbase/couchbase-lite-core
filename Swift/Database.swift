@@ -19,6 +19,7 @@ public class Database {
         guard dbHandle != nil else {
             throw err
         }
+        self.path = path
     }
 
     deinit {
@@ -48,6 +49,8 @@ public class Database {
             throw err
         }
     }
+
+    public let path: String
 
     public var documentCount: UInt64 {
         return c4db_getDocumentCount(dbHandle)
@@ -198,6 +201,13 @@ public class Database {
 
 
     var dbHandle: COpaquePointer
+}
+
+
+extension Database : CustomStringConvertible {
+    public var description: String {
+        return "Database{\(path)}"
+    }
 }
 
 

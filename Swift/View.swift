@@ -9,8 +9,8 @@
 import Foundation
 
 
-public typealias EmitFunction = (AnyObject, AnyObject?) throws -> ()
-public typealias MapFunction = (NSData, EmitFunction) throws -> ()
+public typealias EmitFunction = (Any, Any?) -> ()
+public typealias MapFunction = (JSONDict, EmitFunction) throws -> ()
 
 
 public class View {
@@ -19,6 +19,7 @@ public class View {
         let flags: C4DatabaseFlags = create ? C4DatabaseFlags.DB_Create : C4DatabaseFlags()
         var err = C4Error()
         self.database = database
+        self.name = name
         self.map = map
         self.handle = c4view_open(database.dbHandle, C4Slice(path), C4Slice(name), C4Slice(version), flags, nil, &err)
         guard handle != nil else {
@@ -27,10 +28,15 @@ public class View {
     }
 
     deinit {
-        c4view_close(handle, nil)
+        print("DEINIT view")//TEMP
+        guard c4view_close(handle, nil) else {
+            print("WARNING: \(self) is busy, couldn't be closed")
+            return
+        }
     }
 
     public let database: Database
+    public let name: String
 
     public func eraseIndex() throws {
         var err = C4Error()
@@ -39,12 +45,19 @@ public class View {
         }
     }
 
-    public func deleteView() throws {
+    public func delete() throws {
         var err = C4Error()
         guard c4view_delete(handle, &err) else {
             throw err
         }
         handle = nil
+    }
+
+    public class func delete(path: String) throws {
+        var err = C4Error()
+        guard c4view_deleteAtPath(C4Slice(path), C4DatabaseFlags(), &err) else {
+            throw err
+        }
     }
 
     public var totalRows: UInt64                {return c4view_getTotalRows(handle)}
@@ -59,6 +72,15 @@ public class View {
 }
 
 
+extension View : CustomStringConvertible {
+    public var description: String {
+        return "View{\(name)}"
+    }
+}
+
+
+
+
 public class ViewIndexer {
 
     public init(views: [View]) throws {
@@ -71,19 +93,30 @@ public class ViewIndexer {
         }
     }
 
+    deinit {
+        if indexer != nil {
+            c4indexer_end(indexer, false, nil)  // run must have failed, or was never called
+        }
+    }
+
     public func run() throws {
         // Define the emit function that will be passed to the map function:
         var keys = [Key]()
         var values = [NSData?]()
-        func emit(keyObj: AnyObject, valueObj: AnyObject?) throws {
-            let key = try Key(obj: keyObj)
-            var value: NSData?
-            if valueObj != nil {
-                value = try NSJSONSerialization.dataWithJSONObject(valueObj!, options: [])
-                //FIX: Allow fragments
+        func emit(keyObj: Any, valueObj: Any?) {
+            do {
+                print("    emit(\(keyObj), \(valueObj))")
+                let key = try Key(keyObj)
+                var value: NSData?
+                if valueObj != nil {
+                    value = try NSJSONSerialization.dataWithJSONObject(valueObj! as! AnyObject, options: [])
+                    //FIX: Allow fragments
+                }
+                keys.append(key)
+                values.append(value)
+            } catch let x {
+                print("WARNING: invalid key or value passed to view emit() function: \(x)")
             }
-            keys.append(key)
-            values.append(value)
         }
 
         // Enumerate the new revisions:
@@ -93,6 +126,8 @@ public class ViewIndexer {
             guard let body = try doc.selectedRevBody() else {
                 continue
             }
+            let props = try NSJSONSerialization.JSONObjectWithData(body, options: []) as! JSONDict
+
             var viewNumber: UInt32 = 0
             for view in views {
                 keys.removeAll(keepCapacity: true)
@@ -100,7 +135,7 @@ public class ViewIndexer {
 
                 // Call the map function!
                 do {
-                    try view.map(body, emit)
+                    try view.map(props, emit)
                 } catch let x {
                     print("WARNING: View map function failed with error \(x)")
                 }
@@ -119,6 +154,10 @@ public class ViewIndexer {
                 viewNumber += 1
             }
         }
+
+        let ok = c4indexer_end(indexer, true, &err)
+        indexer = nil
+        guard ok else { throw err }
     }
 
     private func enumerator() throws -> DocEnumerator {
@@ -131,5 +170,5 @@ public class ViewIndexer {
     }
 
     private let views: [View]
-    private let indexer: COpaquePointer
+    private var indexer: COpaquePointer
 }
