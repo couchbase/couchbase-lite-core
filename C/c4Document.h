@@ -21,7 +21,6 @@ extern "C" {
         kDeleted        = 0x01,     /**< The document's current revision is deleted. */
         kConflicted     = 0x02,     /**< The document is in conflict. */
         kHasAttachments = 0x04,     /**< The document's current revision has attachments. */
-        kExpired        = 0x08,     /**< The document has expired but not yet been purged */
 
         kExists         = 0x1000    /**< The document exists (i.e. has revisions.) */
     }; // Note: Superset of VersionedDocument::Flags
@@ -189,7 +188,8 @@ extern "C" {
      @param db The database to set the expiration date in
      @param docId The ID of the document to set the expiration date for
      @param timestamp The UNIX timestamp of the expiration date (must
-     be in the future, i.e. after the current value of time())
+     be in the future, i.e. after the current value of time()).  A value
+     of UINT64_MAX indicates that the expiration should be cancelled.
      @param outError Information about any error that occurred
      @return true on sucess, false on failure
      */
@@ -198,12 +198,7 @@ extern "C" {
                              uint64_t timestamp,
                              C4Error *outError);
         
-    /** Cancels a pending expiration on a document.
-     @param db The database the cancel the expiration date in
-     @param docId The ID of the document to cancel the expiration date for
-     */
-    void c4doc_cancelExpiration(C4Database *db,
-                                C4Slice docId);
+    bool c4doc_isExpired(C4Database *db, C4Slice docId);
 
 
     //////// HIGH-LEVEL:

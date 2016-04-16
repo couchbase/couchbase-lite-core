@@ -66,7 +66,7 @@ namespace CBForest
         };
 #endif
 
-        private static Action<C4LogLevel, string> _LogCallback;
+        internal static Action<C4LogLevel, string> _LogCallback;
         private static C4LogCallback _NativeLogCallback;
 
         static Native()
@@ -935,6 +935,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *info);
 
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
+
         /// <summary>
         /// Frees a C4DocEnumerator handle, and optionally purges the processed entries
         /// from the expiration key value store.
@@ -942,7 +946,7 @@ namespace CBForest
         /// <param name="e">The enumerator</param>
         /// <param name="cleanupKvs">If set to <c>true</c> cleanup the old entries from the expiration store</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4exp_free(C4ExpiryEnumerator *e, [MarshalAs(UnmanagedType.U1)]bool cleanupKvs);
+        public static extern void c4exp_free(C4ExpiryEnumerator *e);
 
         /// <summary>
         /// Advances the enumerator to the next document.
@@ -1239,23 +1243,14 @@ namespace CBForest
             }
         }
 
-        /// <summary>
-        /// Cancels a pending expiration on a document.
-        /// </summary>
-        /// <param name="db">The database the cancel the expiration date in</param>
-        /// <param name="docID">The ID of the document to cancel the expiration date for</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4doc_cancelExpiration(C4Database *db, C4Slice docID);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_isExpired(C4Database *db, C4Slice docID);
 
-        /// <summary>
-        /// Cancels a pending expiration on a document.
-        /// </summary>
-        /// <param name="db">The database the cancel the expiration date in</param>
-        /// <param name="docID">The ID of the document to cancel the expiration date for</param>
-        public static void c4doc_cancelExpiration(C4Database *db, string docID)
+        public static bool c4doc_isExpired(C4Database *db, string docID)
         {
             using (var docID_ = new C4String(docID)) {
-                c4doc_cancelExpiration(db, docID_.AsC4Slice());
+                return c4doc_isExpired(db, docID_.AsC4Slice());
             }
         }
 

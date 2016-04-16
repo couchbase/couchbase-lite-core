@@ -555,49 +555,42 @@ class C4DatabaseTest : public C4Test {
         
         int expiredCount = 0;
         C4DocumentInfo info;
-        while(c4exp_next(e)) {
+        while(c4exp_next(e, NULL)) {
             c4exp_getInfo(e, &info);
             Assert(!c4SliceEqual(info.docID, docID3));
             expiredCount++;
         }
         
-        c4exp_free(e, false);
+        c4exp_free(e);
         AssertEqual(expiredCount, 2);
-        
-        C4Document *doc = c4doc_get(db, docID, true, &err);
-        Assert(doc != NULL);
-        Assert(doc->flags == kExpired);
-        
-        doc = c4doc_get(db, docID2, true, &err);
-        Assert(doc != NULL);
-        Assert(doc->flags == kExpired);
-        
-        doc = c4doc_get(db, docID3, true, &err);
-        Assert(doc != NULL);
-        Assert((doc->flags & kExpired) == 0);
+        Assert(c4doc_isExpired(db, docID));
+        Assert(c4doc_isExpired(db, docID2));
+        Assert(!c4doc_isExpired(db, docID3));
         
         e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);
         
         expiredCount = 0;
-        while(c4exp_next(e)) {
+        while(c4exp_next(e, NULL)) {
             c4exp_getInfo(e, &info);
             Assert(!c4SliceEqual(info.docID, docID3));
             expiredCount++;
         }
         
-        c4exp_free(e, true);
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
         AssertEqual(expiredCount, 2);
         
         e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);
         
         expiredCount = 0;
-        while(c4exp_next(e)) {
+        while(c4exp_next(e, NULL)) {
             expiredCount++;
         }
         
-        c4exp_free(e, true);
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
         AssertEqual(expiredCount, 0);
     }
     
@@ -608,18 +601,19 @@ class C4DatabaseTest : public C4Test {
         time_t expire = time(NULL) + 2;
         C4Error err;
         Assert(c4doc_setExpiration(db, docID, expire, &err));
-        c4doc_cancelExpiration(db, docID);
+        Assert(c4doc_setExpiration(db, docID, UINT64_MAX, &err));
         
         sleep(2u);
         auto e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);
         
         int expiredCount = 0;
-        while(c4exp_next(e)) {
+        while(c4exp_next(e, NULL)) {
             expiredCount++;
         }
         
-        c4exp_free(e, true);
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
         AssertEqual(expiredCount, 0);
     }
 

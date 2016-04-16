@@ -62,13 +62,9 @@ struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
 
     void init() {
         docID = _versionedDoc.docID();
-        if(c4doc_isExpired(_db, docID)) {
-            flags = kExpired;
-        } else {
-            flags = (C4DocumentFlags)_versionedDoc.flags();
-            if (_versionedDoc.exists())
-                flags = (C4DocumentFlags)(flags | kExists);
-        }
+        flags = (C4DocumentFlags)_versionedDoc.flags();
+        if (_versionedDoc.exists())
+            flags = (C4DocumentFlags)(flags | kExists);
         
         initRevID();
         selectCurrentRevision();
@@ -181,17 +177,6 @@ struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
     }
 
 };
-
-static void removeDocId(CollatableBuilder &builder, slice existing, slice toRemove)
-{
-    CollatableReader reader(existing);
-    while(!reader.atEnd()) {
-        alloc_slice next = reader.readString();
-        if(next.size > 0 && next.compare(toRemove) != 0) {
-            builder << next;
-        }
-    }
-}
 
 static inline C4DocumentInternal *internal(C4Document *doc) {
     return (C4DocumentInternal*)doc;
@@ -497,11 +482,11 @@ bool c4doc_save(C4Document *doc,
 
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
-    C4Document *doc = c4doc_get(db, docId, true, outError);
-    if(doc == NULL) {
+    Transaction t(db); // To avoid race conditions
+    if(!db->get(docId, KeyStore::kMetaOnly).exists()) {
+        recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
         return false;
     }
-    c4doc_free(doc);
     
     time_t now = time(NULL);
     if(timestamp <= now) {
@@ -509,62 +494,46 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
         return false;
     }
     
-    CollatableBuilder tsBuilder;
-    tsBuilder << timestamp;
-    slice tsSlice = tsBuilder.data();
+    CollatableBuilder tsKeyBuilder;
+    tsKeyBuilder.beginArray();
+    tsKeyBuilder << timestamp;
+    tsKeyBuilder << docId;
+    tsKeyBuilder.endArray();
+    slice tsKey = tsKeyBuilder.data();
     
-    Transaction t(db);
+    alloc_slice tsValue(SizeOfVarInt(timestamp));
+    PutUVarInt((void *)tsValue.buf, timestamp);
+    
     KeyStore expiryKvs(db, "expiry");
     KeyStoreWriter writer = t(expiryKvs);
-    
     Document existingDoc = writer.get(docId);
     if(existingDoc.exists()) {
         // Previous entry found
-        if(existingDoc.body().compare(tsSlice) == 0) {
+        if(existingDoc.body().compare(tsValue) == 0) {
             // No change
             return true;
         }
         
         // Remove old entry
-        Document existingTs = writer.get(existingDoc.body());
-        CollatableBuilder builder;
-        removeDocId(builder, existingTs.body(), docId);
-        writer.set(existingDoc.body(), builder.data());
+        uint64_t oldTimestamp;
+        CollatableBuilder oldTsKey;
+        GetUVarInt(existingDoc.body(), &oldTimestamp);
+        oldTsKey.beginArray();
+        oldTsKey << oldTimestamp;
+        oldTsKey << docId;
+        oldTsKey.endArray();
+        writer.del(oldTsKey);
     }
     
-    Document existingTs = writer.get(tsSlice);
-    slice docIDs;
-    if(existingTs.exists()) {
-        docIDs = existingTs.body();
+    if(timestamp == UINT64_MAX) {
+        writer.del(tsKey);
+        writer.del(docId);
+    } else {
+        writer.set(tsKey, slice::null);
+        writer.set(docId, tsValue);
     }
-    
-    CollatableBuilder builder = docIDs.size == 0 ? CollatableBuilder() : CollatableBuilder(Collatable::withData(docIDs));
-    builder << docId;
-    writer.set(tsSlice, builder.data());
-    writer.set(docId, tsSlice);
-    
-    return true;
-}
 
-void c4doc_cancelExpiration(C4Database *db, C4Slice docId)
-{
-    KeyStore expiryKvs(db, "expiry");
-    Transaction t(db);
-    KeyStoreWriter writer = t(expiryKvs);
-    Document existing = writer.get(docId);
-    if(!existing.exists()) {
-        return;
-    }
-    
-    Document existingTs = writer.get(existing.body());
-    if(!existingTs.exists()) {
-        throw error::CorruptRevisionData;
-    }
-    
-    CollatableBuilder builder;
-    removeDocId(builder, existingTs.body(), docId);
-    writer.set(existing.body(), builder.data());
-    writer.del(docId);
+    return true;
 }
 
 bool c4doc_isExpired(C4Database *db, C4Slice docID)
@@ -574,9 +543,9 @@ bool c4doc_isExpired(C4Database *db, C4Slice docID)
     if(!existing.exists()) {
         return false;
     }
-    
-    CollatableReader reader(existing.body());
-    uint64_t timestamp = (uint64_t)reader.readDouble();
+
+    uint64_t timestamp;
+    GetUVarInt(existing.body(), &timestamp);
     return timestamp <= time(NULL);
 }
 

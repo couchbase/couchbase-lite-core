@@ -94,13 +94,6 @@ namespace CBForest
                 return flags.HasFlag(C4DocumentFlags.Exists);
             }
         }
-
-        public bool Expired
-        {
-            get {
-                return flags.HasFlag(C4DocumentFlags.Expired);
-            }
-        }
     }
 
     /// <summary>
@@ -508,13 +501,6 @@ namespace CBForest
         {
             get {
                 return flags.HasFlag(C4DocumentFlags.Exists);
-            }
-        }
-
-        public bool Expired
-        {
-            get {
-                return flags.HasFlag(C4DocumentFlags.Expired);
             }
         }
     }

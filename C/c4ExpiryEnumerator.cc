@@ -26,23 +26,15 @@ public:
         reset();
     }
     
-    bool next(bool skipEmpty) {
-        while(_reader.atEnd()) {
-            if(!_e.next()) {
-                return false;
-            }
-            
-            _reader = CollatableReader(_e.doc().body());
-            if(!skipEmpty) {
-                break;
-            }
+    bool next() {
+        if(!_e.next()) {
+            return false;
         }
         
-        if(!_reader.atEnd()) {
-            _current = _reader.readString();
-        } else {
-            _current = slice::null;
-        }
+        _reader = CollatableReader(_e.doc().key());
+        _reader.skipTag();
+        _reader.readInt();
+        _current = _reader.readString();
         
         return true;
     }
@@ -60,7 +52,11 @@ public:
     void reset()
     {
         CollatableBuilder c;
+        c.beginArray();
         c << _endTimestamp;
+        c.beginMap();
+        c.endMap();
+        c.endArray();
         _e = DocEnumerator(KeyStore((const Database*)_db, "expiry"), slice::null, c.data());
         _reader = CollatableReader(slice::null);
     }
@@ -87,7 +83,7 @@ C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outErro
 bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
 {
     try {
-        return e->next(true);
+        return e->next();
     } catchError(outError);
     
     return false;
@@ -102,23 +98,25 @@ void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *docInfo)
     docInfo->flags = 0;
 }
 
-void c4exp_free(C4ExpiryEnumerator *e, bool cleanupKvs)
+bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
 {
-    if(cleanupKvs) {
+    try {
         e->reset();
-        auto db = e->getDatabase();
-        KeyStore kvs((const Database*)db, "expiry");
-        Transaction t((Database *)db);
-        KeyStoreWriter writer = t(kvs);
-        while(e->next(false)) {
-            slice docID = e->docID();
-            if(docID != slice::null) {
-                writer.del(e->docID());
-            }
-            
+        Transaction t(e->getDatabase());
+        KeyStore expiry(e->getDatabase(), "expiry");
+        KeyStoreWriter writer = t(expiry);
+        while(e->next()) {
             writer.del(e->key());
+            writer.del(e->docID());
         }
-    }
+        
+        return true;
+    } catchError(outError);
     
+    return false;
+}
+
+void c4exp_free(C4ExpiryEnumerator *e)
+{
     delete e;
 }

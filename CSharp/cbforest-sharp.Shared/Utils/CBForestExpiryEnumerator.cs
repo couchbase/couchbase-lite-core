@@ -70,7 +70,14 @@ namespace CBForest
 
         private void Dispose(bool finalizing)
         {
-            Native.c4exp_free(_e, _dispose);
+            if (_dispose) {
+                C4Error err;
+                if (!Native.c4exp_purgeExpired(_e, &err)) {
+                    Native._LogCallback(C4LogLevel.Error, String.Format("c4exp_purgeExpired failed: {0}", err));
+                }
+            }
+
+            Native.c4exp_free(_e);
             Marshal.FreeHGlobal((IntPtr)_currentInfo);
         }
 
@@ -82,7 +89,7 @@ namespace CBForest
                 return false;
             }
 
-            var retVal = Native.c4exp_next(_e);
+            var retVal = Native.c4exp_next(_e, null);
             if (retVal) {
                 Native.c4exp_getInfo(_e, _currentInfo);
             }

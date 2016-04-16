@@ -21,8 +21,6 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool allowConflict,
                             C4Error *outError);
     
-bool c4doc_isExpired(C4Database *db, C4Slice docId);
-
 #ifdef __cplusplus
 }
 #endif

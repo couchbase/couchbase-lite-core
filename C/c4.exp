@@ -48,7 +48,7 @@ _c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save
 _c4doc_setExpiration
-_c4doc_cancelExpiration
+_c4doc_isExpired
 
 _c4rev_getGeneration
 
@@ -65,6 +65,7 @@ _c4enum_free
 _c4exp_free
 _c4exp_getInfo
 _c4exp_next
+_c4exp_purgeExpired
 
 _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions

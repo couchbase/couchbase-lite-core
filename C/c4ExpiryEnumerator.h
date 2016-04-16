@@ -39,9 +39,11 @@ extern "C" {
      is found.  Only the document ID is valid and other values will be zeroed. */
     void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *docInfo);
     
-    /** Frees a C4DocEnumerator handle, and optionally purges the processed entries
-     from the expiration key value store. */
-    void c4exp_free(C4ExpiryEnumerator *e, bool cleanupKvs);
+    /** Purges the processed entries from the expiration key value store */
+    bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
+    
+    /** Frees a C4DocEnumerator handle */
+    void c4exp_free(C4ExpiryEnumerator *e);
 
         
 #ifdef __cplusplus
