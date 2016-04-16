@@ -239,7 +239,7 @@ namespace CBForest
         /// <param name="indexer">The indexer to use for enumeration.</param>
         public CBForestDocEnumerator(C4Indexer *indexer)
         {
-            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().AllowError(0, C4ErrorDomain.ForestDB)
+            _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().AllowError(0, C4ErrorDomain.Any)
                 .Execute(err => Native.c4indexer_enumerateDocuments(indexer, err));
             _currentDocInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
             _validationLogic = doc => !((string)doc->docID).StartsWith("_design/");

@@ -71,7 +71,9 @@ namespace CBForest
         /// <summary>
         /// code is C4-specific code (TBD)
         /// </summary>
-        C4
+        C4,
+
+        Any = UInt32.MaxValue
     }
 
     /// <summary>

@@ -264,8 +264,11 @@ namespace CBForest
 
         private void ThrowOrHandle()
         {
-            if (_allowedErrors.Contains(Exception.Error)) {
-                return;
+            foreach (var error in _allowedErrors) {
+                if(error.Equals(Exception.Error) || (error.domain == C4ErrorDomain.Any &&
+                    error.code.Equals(Exception.Error.code))) {
+                    return;
+                }
             }
 
             if (_exceptionHandler != null) {
