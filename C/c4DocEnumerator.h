@@ -56,7 +56,11 @@ extern "C" {
     /** Opaque handle to a document enumerator. */
     typedef struct C4DocEnumerator C4DocEnumerator;
 
-        
+
+    /** Closes an enumeration. This is optional, but can be used to free up resources if the
+        enumeration has not reached its end, but will not be freed for a while. */
+    void c4enum_close(C4DocEnumerator *e);
+
     /** Frees a C4DocEnumerator handle. */
     void c4enum_free(C4DocEnumerator *e);
 
@@ -124,7 +128,11 @@ extern "C" {
         @return  True if the info was stored, false if there is no current document. */
     bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo);
 
-    /** Convenience function that combines c4enum_next() and c4enum_getDocument(). */
+    /** Convenience function that combines c4enum_next() and c4enum_getDocument().
+        @param e  The enumerator.
+        @param outError  Error will be stored here on failure.
+        @return  The next document, or NULL at the end of the enumeration (or an error occurred.)
+                 Caller is responsible for calling c4document_free when done with it. */
     struct C4Document* c4enum_nextDocument(C4DocEnumerator *e,
                                            C4Error *outError);
 

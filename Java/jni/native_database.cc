@@ -71,34 +71,36 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_rekey
         return;
 
     auto db = getDbHandle(env, self);
-    if (db) {
-        C4Error error;
-        if(!c4db_rekey(db, &key, &error))
-            throwError(env, error);
-    }
+    C4Error error;
+    if(!c4db_rekey(db, &key, &error))
+        throwError(env, error);
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_close
+(JNIEnv *env, jobject self)
+{
+    auto db = getDbHandle(env, self);
+    C4Error error;
+    if (!c4db_close(db, &error))
+        throwError(env, error);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
-    if (db) {
-        env->SetLongField(self, kHandleField, 0);
-        C4Error error;
-        if (!c4db_close(db, &error))
-            throwError(env, error);
-    }
+    env->SetLongField(self, kHandleField, 0);
+    c4db_free(db);
+    // Note: This is called only by the finalizer, so no further calls are possible.
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_compact
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
-    if (db) {
-        C4Error error;
-        if (!c4db_compact(db, &error))
-            throwError(env, error);
-    }
+    C4Error error;
+    if (!c4db_compact(db, &error))
+        throwError(env, error);
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_getDocumentCount

@@ -84,12 +84,52 @@ namespace c4Internal {
                                slice docType)> EnumFilter;
 
     void setEnumFilter(C4DocEnumerator*, EnumFilter);
+
+    class InstanceCounted {
+    public:
+        static std::atomic_int gObjectCount;
+        InstanceCounted()   {++gObjectCount;}
+        ~InstanceCounted()  {--gObjectCount;}
+    };
+
+    template <typename SELF>
+    struct RefCounted : InstanceCounted {
+
+        int refCount() const { return _refCount; }
+
+        SELF* retain() {
+            int newref = ++_refCount;
+            CBFAssert(newref > 1);
+            return (SELF*)this;
+        }
+
+        void release() {
+            int newref = --_refCount;
+            CBFAssert(newref >= 0);
+            if (newref == 0) {
+                delete this;
+            }
+        }
+    protected:
+        virtual ~RefCounted() {
+            CBFAssert(_refCount == 0);
+        }
+    private:
+        std::atomic_int _refCount {1};
+    };
+
+
+    // Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted').
+    // Should only need to be used for the view indexer's enumerator.
+    static const uint16_t kC4IncludePurged = 0x8000;
 }
 
 using namespace c4Internal;
 
 
-struct c4Database : public Database {
+// Structs below must be in the global namespace because they are forward-declared in the C API.
+
+struct c4Database : public Database, RefCounted<c4Database> {
     c4Database(std::string path, const config& cfg);
     Transaction* transaction() {
         CBFAssert(_transaction);
@@ -109,13 +149,14 @@ struct c4Database : public Database {
 #endif
 
 private:
+    virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
 #if C4DB_THREADSAFE
     // Recursive mutex for accessing _transaction and _transactionLevel.
     // Must be acquired BEFORE _mutex, or deadlock may occur!
     std::recursive_mutex _transactionMutex;
 #endif
-    Transaction* _transaction;
-    int _transactionLevel;
+    Transaction* _transaction {NULL};
+    int _transactionLevel {0};
 };
 
 
@@ -126,7 +167,7 @@ private:
 #endif
 
 
-struct c4Key : public CollatableBuilder {
+struct c4Key : public CollatableBuilder, c4Internal::InstanceCounted {
     c4Key()                 :CollatableBuilder() { }
     c4Key(C4Slice bytes)    :CollatableBuilder(bytes, true) { }
 };
@@ -136,11 +177,6 @@ struct c4KeyValueList {
     std::vector<Collatable> keys;
     std::vector<alloc_slice> values;
 };
-
-
-// Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted').
-// Should only need to be used for the view indexer's enumerator.
-static const uint16_t kC4IncludePurged = 0x8000;
 
 
 #endif /* c4Impl_h */

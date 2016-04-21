@@ -15,6 +15,7 @@
 
 #include "c4Impl.hh"
 #include "c4Database.h"
+#include "c4Private.h"
 
 #include "Database.hh"
 #include "Document.hh"
@@ -36,6 +37,8 @@ static const uint64_t kAutoCompactInterval = (5*60);
 
 
 namespace c4Internal {
+    std::atomic_int InstanceCounted::gObjectCount;
+
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
         if (outError) {
             if (domain == ForestDBDomain && code <= -1000)   // custom CBForest errors (Error.hh)
@@ -62,6 +65,11 @@ namespace c4Internal {
         Warn("Unexpected C++ exception thrown from CBForest");
         recordError(C4Domain, kC4ErrorInternalException, outError);
     }
+}
+
+
+int c4_getObjectCount() {
+    return InstanceCounted::gObjectCount;
 }
 
 
@@ -100,9 +108,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 
 
 c4Database::c4Database(std::string path, const config& cfg)
-:Database(path, cfg),
- _transaction(NULL),
- _transactionLevel(0)
+:Database(path, cfg)
 { }
 
 void c4Database::beginTransaction() {
@@ -224,9 +230,23 @@ bool c4db_close(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     try {
-        delete database;
+        database->close();
         return true;
     } catchError(outError);
+    return false;
+}
+
+
+bool c4db_free(C4Database* database) {
+    if (database == NULL)
+        return true;
+    if (!database->mustNotBeInTransaction(NULL))
+        return false;
+    WITH_LOCK(database);
+    try {
+        database->release();
+        return true;
+    } catchError(NULL);
     return false;
 }
 
@@ -236,8 +256,10 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     try {
+        if (database->refCount() > 1) {
+            recordError(ForestDBDomain, FDB_RESULT_FILE_IS_BUSY, outError);
+        }
         database->deleteDatabase();
-        delete database;
         return true;
     } catchError(outError);
     return false;
@@ -398,7 +420,7 @@ C4RawDocument* c4raw_get(C4Database* database,
 {
     WITH_LOCK(database);
     try {
-        KeyStore localDocs(database, (std::string)storeName);
+        KeyStore& localDocs = database->getKeyStore((std::string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
             recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -426,7 +448,7 @@ bool c4raw_put(C4Database* database,
     bool commit = false;
     try {
         WITH_LOCK(database);
-        KeyStore localDocs(database, (std::string)storeName);
+        KeyStore &localDocs = database->getKeyStore((std::string)storeName);
         KeyStoreWriter localWriter = (*database->transaction())(localDocs);
         if (body.buf || meta.buf)
             localWriter.set(key, meta, body);

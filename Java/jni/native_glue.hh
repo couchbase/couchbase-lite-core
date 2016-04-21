@@ -77,10 +77,13 @@ private:
     bool _critical;
 };
 
+// Creates a Java String from the contents of a C4Slice.
 jstring toJString(JNIEnv*, C4Slice);
 
+// Creates a Java byte[] from the contents of a C4Slice.
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 
+// Sets a Java exception based on the CBForest error.
 void throwError(JNIEnv*, C4Error);
 
 // Copies an array of handles from a Java long[] to a C++ vector.

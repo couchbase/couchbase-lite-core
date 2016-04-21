@@ -33,7 +33,7 @@ namespace cbforest {
                        std::string name,
                        Database *sourceDatabase);
 
-        KeyStore sourceStore() const            {return _sourceDatabase->defaultKeyStore();}
+        KeyStore& sourceStore() const           {return _sourceDatabase->defaultKeyStore();}
         void readState();
         int indexType() const                   {return _indexType;}
         

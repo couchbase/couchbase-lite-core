@@ -36,10 +36,14 @@ public:
     }
 
     virtual void tearDown() {
-        C4Error error;
-        if (view && !c4view_delete(view, &error)) {
-            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
-            Assert(false);
+        if (view) {
+            C4Error error;
+            bool ok = c4view_delete(view, &error);
+            c4view_free(view);
+            if (!ok) {
+                fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
+                Assert(false);
+            }
         }
         C4Test::tearDown();
     }
@@ -81,8 +85,10 @@ public:
             Assert(c4indexer_emit(ind, doc, 0, 2, keys, values, &error));
             c4key_free(keys[0]);
             c4key_free(keys[1]);
+            c4doc_free(doc);
         }
         AssertEqual(error.code, 0);
+        c4enum_free(e);
         Assert(c4indexer_end(ind, true, &error));
     }
 
@@ -128,6 +134,8 @@ public:
         // Reopen view with same version string:
         C4Error error;
         Assert(c4view_close(view, &error));
+        c4view_free(view);
+
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
                            kC4DB_Create, encryptionKey(), &error);
         Assert(view != NULL);
@@ -138,6 +146,8 @@ public:
 
         // Reopen view with different version string:
         Assert(c4view_close(view, &error));
+        c4view_free(view);
+
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("2"),
                            kC4DB_Create, encryptionKey(), &error);
         Assert(view != NULL);
@@ -215,8 +225,10 @@ public:
             values[0] = c4str("1234");
             Assert(c4indexer_emit(ind, doc, 0, 1, keys, values, &error));
             c4key_free(keys[0]);
+            c4doc_free(doc);
         }
         AssertEqual(error.code, 0);
+        c4enum_free(e);
         Assert(c4indexer_end(ind, true, &error));
     }
 

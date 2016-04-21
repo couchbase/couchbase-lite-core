@@ -31,7 +31,7 @@ using namespace cbforest;
 static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
-struct C4DocumentInternal : public C4Document {
+struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
     C4Database* _db;
     VersionedDocument _versionedDoc;
     const Revision *_selectedRev;
@@ -40,7 +40,7 @@ struct C4DocumentInternal : public C4Document {
     alloc_slice _loadedBody;
 
     C4DocumentInternal(C4Database* database, C4Slice docID)
-    :_db(database),
+    :_db(database->retain()),
      _versionedDoc(*_db, docID),
      _selectedRev(NULL)
     {
@@ -48,11 +48,15 @@ struct C4DocumentInternal : public C4Document {
     }
 
     C4DocumentInternal(C4Database *database, const Document &doc)
-    :_db(database),
+    :_db(database->retain()),
      _versionedDoc(*_db, doc),
      _selectedRev(NULL)
     {
         init();
+    }
+
+    ~C4DocumentInternal() {
+        _db->release();
     }
 
     void init() {

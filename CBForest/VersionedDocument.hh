@@ -32,12 +32,12 @@ namespace cbforest {
             kHasAttachments = 0x04
         };
 
-        VersionedDocument(KeyStore, slice docID);
-        VersionedDocument(KeyStore, const Document&);
-        VersionedDocument(KeyStore, Document&&);
+        VersionedDocument(KeyStore&, slice docID);
+        VersionedDocument(KeyStore&, const Document&);
+        VersionedDocument(KeyStore&, Document&&);
 
 #ifdef __OBJC__
-        VersionedDocument(KeyStore, NSString* docID);
+        VersionedDocument(KeyStore&, NSString* docID);
 #endif
 
         /** Reads and parses the body of the document. Useful if doc was read as meta-only. */
@@ -83,7 +83,7 @@ namespace cbforest {
         void decode();
         VersionedDocument(const VersionedDocument&) = delete;
 
-        KeyStore    _db;
+        KeyStore&   _db;
         Document    _doc;
         Flags       _flags;
         revid       _revID;

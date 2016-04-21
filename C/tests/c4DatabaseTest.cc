@@ -59,6 +59,7 @@ class C4DatabaseTest : public C4Test {
         Assert(!doc);
         AssertEqual(error.domain, ForestDBDomain);
         AssertEqual(error.code, (int)FDB_RESULT_KEY_NOT_FOUND);
+        c4doc_free(doc);
 
         // Now get the doc with mustExist=false, which returns an empty doc:
         doc = c4doc_get(db, kDocID, false, &error);
@@ -90,6 +91,7 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
         AssertEqual(doc->selectedRev.body, kBody);
+        c4doc_free(doc);
 
         // Get the doc by its sequence:
         doc = c4doc_getBySequence(db, 1, &error);
@@ -100,6 +102,7 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
         AssertEqual(doc->selectedRev.body, kBody);
+        c4doc_free(doc);
     }
 
 
@@ -129,6 +132,7 @@ class C4DatabaseTest : public C4Test {
         Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         AssertEqual(doc->selectedRev.body, kBody);
         Assert(!c4doc_selectParentRevision(doc));
+        c4doc_free(doc);
 
         // Compact database:
         Assert(c4db_compact(db, &error));
@@ -149,6 +153,7 @@ class C4DatabaseTest : public C4Test {
             AssertEqual(nPurged, 2);
             Assert(c4doc_save(doc, 20, &error));
         }
+        c4doc_free(doc);
     }
 
 
@@ -271,6 +276,7 @@ class C4DatabaseTest : public C4Test {
         if (n < 0)
             std::cerr << "Error(" << error.domain << "," << error.code << ")\n";
         AssertEqual(n, (int)(kHistoryCount-2));
+        c4doc_free(doc);
     }
 
 

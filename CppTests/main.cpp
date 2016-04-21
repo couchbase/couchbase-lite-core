@@ -7,12 +7,13 @@
 //
 
 #include <cppunit/extensions/TestFactoryRegistry.h>
-#include <cppunit/ui/text/TestRunner.h>
+#include <cppunit/ui/text/TextTestRunner.h>
 
+using namespace CppUnit;
 
 int main( int argc, char **argv) {
-    CppUnit::TextUi::TestRunner runner;
-    CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
+    TextTestRunner runner;
+    TestFactoryRegistry &registry = TestFactoryRegistry::getRegistry();
     runner.addTest( registry.makeTest() );
     return runner.run( "", false ) ? 0 : -1;
 }

@@ -66,6 +66,7 @@ namespace cbforest {
                                 const DocEnumerator::Options&);
 
         bool next();
+        void close()                                        {_e.close();}
         const FullTextMatch *match();
 
         const std::vector<FullTextMatch*>& allMatches()     {return _results;}

@@ -43,21 +43,20 @@ namespace cbforest {
             static const Options kDefault;
         };
 
-        DocEnumerator(); // empty enumerator
-        DocEnumerator(KeyStore,
+        DocEnumerator(KeyStore&,
                       slice startKey = slice::null,
                       slice endKey = slice::null,
                       const Options& options = Options::kDefault);
-        DocEnumerator(KeyStore,
+        DocEnumerator(KeyStore&,
                       sequence start,
                       sequence end = UINT64_MAX,
                       const Options& options = Options::kDefault);
-        DocEnumerator(KeyStore,
+        DocEnumerator(KeyStore&,
                       std::vector<std::string> docIDs,
                       const Options& options = Options::kDefault);
         ~DocEnumerator();
 
-        DocEnumerator(DocEnumerator&& e)    {*this = std::move(e);}
+        DocEnumerator(DocEnumerator&& e)    :_store(e._store) {*this = std::move(e);}
         DocEnumerator& operator=(DocEnumerator&& e); // move assignment
 
         /** Advances to the next key/document, returning false when it hits the end.
@@ -77,7 +76,7 @@ namespace cbforest {
         const Document* operator->() const  {return _doc.key().buf ? &_doc : NULL;}
 
     protected:
-        KeyStore _store;
+        KeyStore *_store;
         fdb_iterator *_iterator {nullptr};
         Options _options;
         std::vector<std::string> _docIDs;
@@ -91,7 +90,7 @@ namespace cbforest {
         void freeDoc();
 
     private:
-        DocEnumerator(KeyStore store, const Options& options);
+        DocEnumerator(KeyStore &store, const Options& options);
         DocEnumerator(const DocEnumerator&) = delete; // no copying allowed
         void initialPosition();
         bool nextFromArray();

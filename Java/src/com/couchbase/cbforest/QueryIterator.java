@@ -17,7 +17,12 @@ public class QueryIterator {
         _handle = handle;
     }
 
-    public boolean next() throws ForestException    {return next(_handle);}
+    public boolean next() throws ForestException {
+        boolean ok = next(_handle);
+        if (!ok)
+            _handle = 0;
+        return ok;
+    }
 
     public byte[] keyJSON()                         {return keyJSON(_handle);}
     public byte[] valueJSON()                       {return valueJSON(_handle);}
@@ -36,24 +41,21 @@ public class QueryIterator {
     /** Returns the GeoJSON of a geo-query match, exactly as it was emitted from the map function. */
     public byte[] geoJSON()                         {return geoJSON(_handle);}
 
-    public void free() {
-        free(_handle);
-    }
-
     protected void finalize() {
-        free();
+        if (_handle != 0)
+            free(_handle);
     }
 
-    private native boolean next(long handle) throws ForestException;
-    private native byte[] keyJSON(long handle);
-    private native byte[] valueJSON(long handle);
-    private native String docID(long handle);
-    private native long sequence(long handle);
-    private native int fullTextID(long handle);
-    private native int[] fullTextTerms(long handle);
-    private native double[] geoBoundingBox(long handle);
-    private native byte[] geoJSON(long handle);
-    private native void free(long handle);
+    private static native boolean next(long handle) throws ForestException;
+    private static native byte[] keyJSON(long handle);
+    private static native byte[] valueJSON(long handle);
+    private static native String docID(long handle);
+    private static native long sequence(long handle);
+    private static native int fullTextID(long handle);
+    private static native int[] fullTextTerms(long handle);
+    private static native double[] geoBoundingBox(long handle);
+    private static native byte[] geoJSON(long handle);
+    private static native void free(long handle);
 
     private View _view;
     private long _handle;  // Handle to native C4QueryEnumerator*

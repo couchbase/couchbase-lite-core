@@ -41,7 +41,10 @@ extern "C" {
                         const C4EncryptionKey *encryptionKey,
                         C4Error *outError);
 
-    /** Closes the view and frees the object. */
+    /** Frees a view handle, closing it if necessary. */
+    void c4view_free(C4View* view);
+
+    /** Closes the view. Does not free the handle, but calls to it will return errors. */
     bool c4view_close(C4View* view, C4Error*);
 
     /** Changes a view's encryption key (removing encryption if it's NULL.) */
@@ -275,6 +278,10 @@ extern "C" {
         Returns true on success, false at the end of enumeration or on error. */
     bool c4queryenum_next(C4QueryEnumerator *e,
                           C4Error *outError);
+
+    /** Closes an enumerator without freeing it. This is optional, but can be used to free up
+        resources if the enumeration has not reached its end, but will not be freed for a while. */
+    void c4queryenum_close(C4QueryEnumerator *e);
 
     /** Frees a query enumerator. */
     void c4queryenum_free(C4QueryEnumerator *e);

@@ -45,6 +45,7 @@ public:
             fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
             Assert(false);
         }
+        c4view_free(view);
         C4Test::tearDown();
     }
 
@@ -67,9 +68,11 @@ public:
             rq.body = c4str(body);
             rq.save = true;
             C4Error error;
-            Assert(c4doc_put(db, &rq, NULL, &error));
+            C4Document *doc = c4doc_put(db, &rq, NULL, &error);
+            Assert(doc != NULL);
             if (verbose)
                 fprintf(stderr, "Added %s --> %s\n", docID, body);
+            c4doc_free(doc);
         }
     }
 
@@ -98,7 +101,9 @@ public:
             values[0] = c4str("1234");
             Assert(c4indexer_emit(ind, doc, 0, 1, keys, values, &error));
             c4key_free(keys[0]);
+            c4doc_free(doc);
         }
+        c4enum_free(e);
         AssertEqual(error.code, 0);
         Assert(c4indexer_end(ind, true, &error));
     }

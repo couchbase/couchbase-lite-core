@@ -35,7 +35,7 @@ namespace cbforest {
     void MapReduceIndex::readState() {
         CollatableBuilder stateKey;
         stateKey.addNull();
-        Document state = get(stateKey);
+        Document state = _store.get(stateKey);
         CollatableReader reader(state.body());
         if (reader.peekTag() == CollatableReader::kArray) {
             reader.beginArray();
@@ -59,7 +59,7 @@ namespace cbforest {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
-        CBFAssert(t.database()->contains(*this));
+        CBFAssert(t.database()->contains(_store));
         _lastMapVersion = _mapVersion;
 
         CollatableBuilder stateKey;
@@ -71,7 +71,7 @@ namespace cbforest {
               << _rowCount << kCurFormatVersion << _lastPurgeCount;
         state.endArray();
 
-        _stateReadAt = t(this).set(stateKey, state);
+        _stateReadAt = t(_store).set(stateKey, state);
         Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
@@ -128,7 +128,7 @@ namespace cbforest {
     void MapReduceIndex::invalidate() {
         if (_lastSequenceIndexed > 0) {
             Debug("MapReduceIndex: Erasing invalidated index");
-            KeyStore::erase();
+            _store.erase();
         }
         _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
         _rowCount = 0;
@@ -137,7 +137,7 @@ namespace cbforest {
 
     void MapReduceIndex::erase() {
         Debug("MapReduceIndex: Erasing");
-        KeyStore::erase();
+        _store.erase();
         _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
         _rowCount = 0;
         _stateReadAt = 0;

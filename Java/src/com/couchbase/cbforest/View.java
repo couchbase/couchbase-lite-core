@@ -21,26 +21,17 @@ public class View {
     public View(Database sourceDB, String viewDbPath,
                 int viewDbFlags, int encryptionAlgorithm, byte[] encryptionKey,
                 String viewName, String version) throws ForestException {
-        _dbHandle = sourceDB._handle;
+        _database = sourceDB;
         _handle = _open(sourceDB._handle, viewDbPath, viewDbFlags, encryptionAlgorithm,
                         encryptionKey, viewName, version);
     }
 
-    protected void finalize() {
-        closeView();
-    }
-
-    public void closeView(){
-        close();
-        _handle = 0;
-        _dbHandle = 0;
+    public Database database() {
+        return _database;
     }
 
     // native methods for view
-    private native long _open(long sourceDbHandle, String viewDbPath, int viewDbFlags,
-                              int encryptionAlgorithm, byte[] encryptionKey,
-                              String viewName, String version) throws ForestException;
-    public native void close();
+    public native void close() throws ForestException;
     public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
     public native void eraseIndex() throws ForestException;
     public native void delete() throws ForestException;
@@ -48,11 +39,20 @@ public class View {
     public native long getLastSequenceIndexed();
     public native long getLastSequenceChangedAt();
 
-    protected long _handle;    // handle to native C4View*
-    protected long _dbHandle; // handle to native C4Database*
+    protected void finalize() {
+        freeHandle(_handle);
+    }
 
+    private native long _open(long sourceDbHandle, String viewDbPath, int viewDbFlags,
+                              int encryptionAlgorithm, byte[] encryptionKey,
+                              String viewName, String version) throws ForestException;
+    private static native void freeHandle(long handle);
+
+    private final Database _database;
+    protected long _handle;    // handle to native C4View*
 
     //////// QUERYING:
+    
     public QueryIterator query() throws ForestException {
         return new QueryIterator(this, query(_handle));
     }

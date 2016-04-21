@@ -37,7 +37,7 @@ bool cbforest::jni::initQueryIterator(JNIEnv *env) {
 
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_QueryIterator_next
-  (JNIEnv *env, jobject self, jlong handle)
+  (JNIEnv *env, jclass clazz, jlong handle)
 {
     auto e = (C4QueryEnumerator*)handle;
     if (!e)
@@ -46,7 +46,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_QueryIterator_next
     jboolean result = c4queryenum_next(e, &error);
     if (!result) {
         // At end of iteration, proactively free the enumerator:
-        Java_com_couchbase_cbforest_QueryIterator_free(env, self, handle);
+        c4queryenum_free(e);
         if (error.code != 0)
             throwError(env, error);
     }
@@ -63,38 +63,50 @@ static jbyteArray toJByteArray(JNIEnv *env, const C4KeyReader &r) {
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_keyJSON
-(JNIEnv *env, jobject self, jlong handle)
+(JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->key);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_valueJSON
-(JNIEnv *env, jobject self, jlong handle)
+(JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->value);
 }
 
 JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
-(JNIEnv *env, jobject self, jlong handle)
+(JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     return toJString(env, ((C4QueryEnumerator*)handle)->docID);
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
-        (JNIEnv *env, jobject self, jlong handle)
+        (JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return 0;
     return ((C4QueryEnumerator*)handle)->docSequence;
 }
 
 JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextID
-  (JNIEnv *env, jobject self, jlong handle)
+  (JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return 0;
     return ((C4QueryEnumerator*)handle)->fullTextID;
 }
 
 JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTerms
-  (JNIEnv *env, jobject self, jlong handle)
+  (JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     auto e = (C4QueryEnumerator*)handle;
     jintArray jterms = env->NewIntArray(3 * e->fullTextTermCount);
     if (!jterms)
@@ -112,8 +124,10 @@ JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTe
 }
 
 JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoBoundingBox
-  (JNIEnv *env, jobject self, jlong handle)
+  (JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     auto e = (C4QueryEnumerator*)handle;
     jdoubleArray jbox = env->NewDoubleArray(4);
     if (!jbox)
@@ -128,17 +142,18 @@ JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoBoun
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoJSON
-  (JNIEnv *env, jobject self, jlong handle)
+  (JNIEnv *env, jclass clazz, jlong handle)
 {
+    if (!handle)
+        return NULL;
     auto e = (C4QueryEnumerator*)handle;
     return toJByteArray(env, e->geoJSON);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
-(JNIEnv *env, jobject self, jlong handle)
+(JNIEnv *env, jclass clazz, jlong handle)
 {
     C4QueryEnumerator *e = (C4QueryEnumerator*)handle;
-    env->SetLongField(self, kHandleField, 0);
     c4queryenum_free(e);
 }
 
@@ -146,6 +161,8 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
 JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_FullTextResult_getFullText
   (JNIEnv *env, jclass clazz, jlong viewHandle, jstring jdocID, jlong sequence, jint fullTextID)
 {
+    if (!viewHandle)
+        return NULL;
     jstringSlice docID(env, jdocID);
     C4Error err;
     C4SliceResult text = c4view_fullTextMatched((C4View*)viewHandle, docID, sequence, fullTextID,

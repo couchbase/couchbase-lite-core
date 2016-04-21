@@ -28,19 +28,19 @@ namespace cbforest {
         bytes   type
     */
 
-    VersionedDocument::VersionedDocument(KeyStore db, slice docID)
+    VersionedDocument::VersionedDocument(KeyStore& db, slice docID)
     :_db(db), _doc(docID)
     {
         read();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore db, const Document& doc)
+    VersionedDocument::VersionedDocument(KeyStore& db, const Document& doc)
     :_db(db), _doc(doc)
     {
         decode();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore db, Document&& doc)
+    VersionedDocument::VersionedDocument(KeyStore& db, Document&& doc)
     :_db(db), _doc(std::move(doc))
     {
         decode();
