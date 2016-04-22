@@ -31,6 +31,7 @@ CPPFLAGS += $(USR_CPPFLAGS) \
 -I$(SNAPPY_PATH)/ \
 -I$(CBFOREST_PATH)/ \
 -I$(CBFOREST_PATH)/Encryption \
+-DFORESTDB_VERSION=\"Internal\" \
 -DSQLITE_ENABLE_FTS4 \
 -DSQLITE_ENABLE_FTS4_UNICODE61 \
 -DWITH_STEMMER_english \
@@ -134,6 +135,7 @@ $(CBFOREST_PATH)/Collatable.o \
 $(CBFOREST_PATH)/Database.o \
 $(CBFOREST_PATH)/DocEnumerator.o \
 $(CBFOREST_PATH)/Document.o \
+$(CBFOREST_PATH)/Error.o \
 $(CBFOREST_PATH)/Geohash.o \
 $(CBFOREST_PATH)/GeoIndex.o \
 $(CBFOREST_PATH)/Index.o \
