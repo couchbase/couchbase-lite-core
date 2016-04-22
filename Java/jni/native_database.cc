@@ -17,6 +17,13 @@
 #include "native_glue.hh"
 #include "c4Database.h"
 
+#undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
+#ifdef DEBUG_TERMINATION
+#include <execinfo.h>   // Not available in Linux or Windows?
+#include <unistd.h>
+#endif
+
+
 using namespace cbforest::jni;
 
 
@@ -30,7 +37,22 @@ static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
     return (C4Database*)env->GetLongField(self, kHandleField);
 }
 
+#ifdef DEBUG_TERMINATION
+static void jniCBForestTerminateHandler() {
+    fprintf(stderr, "***** CBFOREST UNCAUGHT C++ EXCEPTION *****\n");
+    void* addrs[50];
+    int n = backtrace(addrs, 50);
+    backtrace_symbols_fd(addrs, n, STDERR_FILENO);
+    fprintf(stderr, "***** CBFOREST NOW ABORTING *****\n");
+    abort();
+}
+#endif
+
 bool cbforest::jni::initDatabase(JNIEnv *env) {
+#ifdef DEBUG_TERMINATION
+    std::set_terminate(jniCBForestTerminateHandler);    // TODO: Take this out after debugging
+#endif
+
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;
