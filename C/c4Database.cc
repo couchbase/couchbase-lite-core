@@ -68,6 +68,58 @@ namespace c4Internal {
 }
 
 
+C4SliceResult c4error_getMessage(C4Error error) {
+    if (error.code == 0)
+        return {NULL, 0};
+    
+    const char *msg = NULL;
+    switch (error.domain) {
+        case ForestDBDomain:
+            msg = fdb_error_msg((fdb_status)error.code);
+            if (strcmp(msg, "unknown error") == 0)
+                msg = NULL;
+            break;
+        case POSIXDomain:
+            msg = strerror(error.code);
+            break;
+        case HTTPDomain:
+            switch (error.code) {
+                case kC4HTTPBadRequest: msg = "invalid parameter"; break;
+                case kC4HTTPNotFound:   msg = "not found"; break;
+                case kC4HTTPConflict:   msg = "conflict"; break;
+                case kC4HTTPGone:       msg = "gone"; break;
+                default: break;
+            }
+        case C4Domain:
+            switch (error.code) {
+                case kC4ErrorInternalException:     msg = "internal exception"; break;
+                case kC4ErrorNotInTransaction:      msg = "no transaction is open"; break;
+                case kC4ErrorTransactionNotClosed:  msg = "a transaction is still open"; break;
+                case kC4ErrorIndexBusy:             msg = "index busy; can't close view"; break;
+                case kC4ErrorBadRevisionID:         msg = "invalid revision ID"; break;
+                case kC4ErrorCorruptRevisionData:   msg = "corrupt revision data"; break;
+                case kC4ErrorCorruptIndexData:      msg = "corrupt view-index data"; break;
+                case kC4ErrorAssertionFailed:       msg = "internal assertion failure"; break;
+                case kC4ErrorTokenizerError:        msg = "full-text tokenizer error"; break;
+                default: break;
+            }
+    }
+
+    char buf[100];
+    if (!msg) {
+        const char* const kDomainNames[4] = {"HTTP", "POSIX", "ForestDB", "CBForest"};
+        if (error.domain <= C4Domain)
+            sprintf(buf, "unknown %s error %d", kDomainNames[error.domain], error.code);
+        else
+            sprintf(buf, "bogus C4Error (%d, %d)", error.domain, error.code);
+        msg = buf;
+    }
+
+    slice result = alloc_slice(msg, strlen(msg)).dontFree();
+    return {result.buf, result.size};
+}
+
+
 int c4_getObjectCount() {
     return InstanceCounted::gObjectCount;
 }

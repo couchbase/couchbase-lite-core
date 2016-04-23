@@ -121,9 +121,15 @@ namespace cbforest {
                 return;
             jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
-            jmethodID m = env->GetStaticMethodID(xclass, "throwException", "(II)V");
+            jmethodID m = env->GetStaticMethodID(xclass, "throwException",
+                                                 "(IILjava/lang/String;)V");
             assert(m);
-            env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code);
+
+            C4SliceResult msgSlice = c4error_getMessage(error);
+            jstring msg = toJString(env, msgSlice);
+            c4slice_free(msgSlice);
+
+            env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code, msg);
         }
 
 

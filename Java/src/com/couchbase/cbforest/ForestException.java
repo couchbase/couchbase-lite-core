@@ -11,21 +11,16 @@
 package com.couchbase.cbforest;
 
 public class ForestException extends Exception {
-    public int domain; // TODO: Should be an enum
-    public int code;
+    public final int domain; // TODO: Should be an enum
+    public final int code;
 
-    public static void throwException(int domain, int code) throws ForestException {
-        ForestException x = new ForestException();
-        x.domain = domain;
-        x.code = code;
-        throw x;
+    public ForestException(int domain, int code, String message) {
+        super(message);
+        this.domain = domain;
+        this.code = code;
     }
 
-    @Override
-    public String toString() {
-        return "ForestException{" +
-                "domain=" + domain +
-                ", code=" + code +
-                '}';
+    public static void throwException(int domain, int code, String msg) throws ForestException {
+        throw new ForestException(domain, code, msg);
     }
 }

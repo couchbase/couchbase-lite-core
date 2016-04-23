@@ -19,6 +19,25 @@
 class C4DatabaseTest : public C4Test {
     public:
 
+    void assertMessage(C4ErrorDomain domain, int code, const char *expectedMsg) {
+        C4SliceResult msg = c4error_getMessage({domain, code});
+        AssertEqual(std::string((char*)msg.buf, msg.size), std::string(expectedMsg));
+        c4slice_free(msg);
+    }
+
+    void testErrorMessages() {
+        C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
+        AssertEqual(msg.buf, (const void*)nullptr);
+        AssertEqual(msg.size, 0ul);
+
+        assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
+        assertMessage(HTTPDomain, kC4HTTPBadRequest, "invalid parameter");
+        assertMessage(POSIXDomain, ENOENT, "No such file or directory");
+        assertMessage(C4Domain, kC4ErrorIndexBusy, "index busy; can't close view");
+        assertMessage(ForestDBDomain, -1234, "unknown ForestDB error -1234");
+        assertMessage((C4ErrorDomain)666, -1234, "bogus C4Error (666, -1234)");
+    }
+
     void testTransaction() {
         AssertEqual(c4db_getDocumentCount(db), (C4SequenceNumber)0);
         Assert(!c4db_isInTransaction(db));
@@ -504,6 +523,7 @@ class C4DatabaseTest : public C4Test {
 
 
     CPPUNIT_TEST_SUITE( C4DatabaseTest );
+    CPPUNIT_TEST( testErrorMessages );
     CPPUNIT_TEST( testTransaction );
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
