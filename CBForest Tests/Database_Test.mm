@@ -424,7 +424,7 @@ Database::config TestDBConfig() {
 }
 
 - (void) test08_KeyStoreInfo {
-    KeyStore s(db, "store");
+    KeyStore &s = db->getKeyStore("store");
     AssertEq(s.lastSequence(), 0u);
     Assert(s.name() == "store");
 
@@ -436,7 +436,7 @@ Database::config TestDBConfig() {
 }
 
 - (void) test09_KeyStoreWrite {
-    KeyStore s(db, "store");
+    KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     {
         Transaction t(db);
@@ -452,7 +452,7 @@ Database::config TestDBConfig() {
 }
 
 - (void) test10_KeyStoreDelete {
-    KeyStore s(db, "store");
+    KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
 //    {
 //        Transaction t(db);
@@ -462,6 +462,20 @@ Database::config TestDBConfig() {
     AssertEq(s.lastSequence(), 0u);
     Document doc = s.get(key);
     Assert(!doc.exists());
+}
+
+- (void) test10_KeyStoreAfterClose {
+    KeyStore &s = db->getKeyStore("store");
+    alloc_slice key("key");
+    db->close();
+    Assert(!s.isOpen());
+    try {
+        Document doc = s.get(key);
+    } catch (error e) {
+        AssertEq(e.status, FDB_RESULT_INVALID_ARGS);
+        return;
+    }
+    Assert(false); // should not reach here
 }
 
 - (void) test11_ReadOnly {

@@ -18,7 +18,7 @@
 #include "KeyStore.hh"
 #include <vector>
 #include <unordered_map>
-
+#include <atomic> // for std::atomic_uint
 #ifdef check
 #undef check
 #endif
@@ -54,7 +54,7 @@ namespace cbforest {
         Database(Database* original, sequence snapshotSequence);
         virtual ~Database();
 
-        std::string filename() const;
+        const std::string& filename() const;
         info getInfo() const;
         config getConfig()                      {return _config;}
 
@@ -63,8 +63,17 @@ namespace cbforest {
 
         bool isReadOnly() const;
 
-        void deleteDatabase()                   {deleteDatabase(false);}
-        void erase()                            {deleteDatabase(true);}
+        bool isOpen()                           {return _fileHandle != NULL;}
+
+        /** Closes the database. Do not call any methods on this object afterwards,
+            except isOpen() or mustBeOpen(), before deleting it. */
+        void close();
+
+        /** Closes the database and deletes its file. */
+        void deleteDatabase();
+
+        /** Reopens database after it's been closed. */
+        void reopen();
 
         /** Deletes a database that isn't open. */
         static void deleteDatabase(std::string path, const config&);
@@ -83,19 +92,17 @@ namespace cbforest {
 
         void rekey(const fdb_encryption_key&);
 
-        /** Records a commit before the transaction exits scope. Not normally needed. */
-        void commit();
-
         /** The Database's default key-value store. (You can also just use the Database
             instance directly as a KeyStore since it inherits from it.) */
-        KeyStore defaultKeyStore() const        {return *this;}
+        const KeyStore& defaultKeyStore() const {return *this;}
+        KeyStore& defaultKeyStore()             {return *this;}
+
+        KeyStore& getKeyStore(std::string name) const;
 
         bool contains(KeyStore&) const;
 
         void closeKeyStore(std::string name);
         void deleteKeyStore(std::string name);
-
-    protected:
 
     private:
         class File;
@@ -104,13 +111,10 @@ namespace cbforest {
         fdb_kvs_handle* openKVS(std::string name) const;
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
-        void deleteDatabase(bool andReopen);
-        void reopen(std::string path);
 
         Database(const Database&) = delete;
         Database& operator=(const Database&) = delete;
 
-        void close();
         void incrementDeletionCount(Transaction *t);
         void updatePurgeCount();
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
@@ -129,7 +133,7 @@ namespace cbforest {
         File* _file;
         config _config;
         fdb_file_handle* _fileHandle {nullptr};
-        std::unordered_map<std::string, fdb_kvs_handle*> _kvHandles;
+        std::unordered_map<std::string, std::unique_ptr<KeyStore> > _keyStores;
         bool _inTransaction {false};
         bool _isCompacting {false};
         OnCompactCallback _onCompactCallback {nullptr};
@@ -153,7 +157,7 @@ namespace cbforest {
         ~Transaction()                          {_db.endTransaction(this);}
 
         /** Converts a KeyStore to a KeyStoreWriter to allow write access. */
-        KeyStoreWriter operator() (KeyStore s)  {return KeyStoreWriter(s, *this);}
+        KeyStoreWriter operator() (KeyStore& s)  {return KeyStoreWriter(s, *this);}
         KeyStoreWriter operator() (KeyStore* s) {return KeyStoreWriter(*s, *this);}
 
         Database* database() const          {return &_db;}

@@ -3,6 +3,7 @@ c4SliceEqual
 c4slice_free
 c4log_register
 c4db_open
+c4db_free
 c4db_close
 c4db_delete
 c4db_deleteAtPath
@@ -44,6 +45,7 @@ c4enum_next
 c4enum_nextDocument
 c4enum_getDocumentInfo
 c4enum_getDocument
+c4enum_close
 c4enum_free
 kC4DefaultEnumeratorOptions
 kC4DefaultQueryOptions
@@ -69,6 +71,7 @@ c4key_readNumber
 c4key_readString
 c4key_toJSON
 c4view_open
+c4view_free
 c4view_close
 c4view_eraseIndex
 c4view_delete
@@ -89,5 +92,7 @@ c4view_geoQuery
 c4view_fullTextMatched
 c4queryenum_next
 c4queryenum_fullTextMatched
+c4queryenum_close
 c4queryenum_free
 c4doc_getForPut
+c4_getObjectCount

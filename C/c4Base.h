@@ -185,6 +185,10 @@ typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
 void c4log_register(C4LogLevel level, C4LogCallback callback);
 
 
+/** Returns the number of objects that have been created but not yet freed. */
+int c4_getObjectCount(void);
+
+
 #ifdef __cplusplus
 }
 #endif

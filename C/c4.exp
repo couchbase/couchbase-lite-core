@@ -9,6 +9,7 @@ _c4slice_free
 _c4log_register
 
 _c4db_open
+_c4db_free
 _c4db_close
 _c4db_delete
 _c4db_deleteAtPath
@@ -55,6 +56,7 @@ _c4enum_next
 _c4enum_nextDocument
 _c4enum_getDocumentInfo
 _c4enum_getDocument
+_c4enum_close
 _c4enum_free
 
 _kC4DefaultEnumeratorOptions
@@ -84,6 +86,7 @@ _c4key_readString
 _c4key_toJSON
 
 _c4view_open
+_c4view_free
 _c4view_close
 _c4view_eraseIndex
 _c4view_delete
@@ -106,7 +109,9 @@ _c4view_geoQuery
 _c4view_fullTextMatched
 _c4queryenum_next
 _c4queryenum_fullTextMatched
+_c4queryenum_close
 _c4queryenum_free
 
 # Private API, only exposed for testing:
 _c4doc_getForPut
+_c4_getObjectCount

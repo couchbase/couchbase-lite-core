@@ -117,12 +117,15 @@ namespace cbforest {
 
 
         void throwError(JNIEnv *env, C4Error error) {
+            if (env->ExceptionOccurred())
+                return;
             jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
             jmethodID m = env->GetStaticMethodID(xclass, "throwException", "(II)V");
             assert(m);
             env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code);
         }
+
 
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == NULL)

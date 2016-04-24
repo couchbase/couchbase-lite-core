@@ -14,10 +14,15 @@ package com.couchbase.cbforest;
 public class Indexer {
 
     public Indexer(View[] views) throws ForestException {
+        assert(views.length > 0);
+        _views = views;
+        Database database = views[0].database();
         long viewHandles[] = new long[views.length];
-        for (int i = 0; i < views.length; i++)
+        for (int i = 0; i < views.length; i++) {
+            assert(views[i].database() == database);
             viewHandles[i] = views[i]._handle;
-        _handle = beginIndex(views[0]._dbHandle, viewHandles);
+        }
+        _handle = beginIndex(database._handle, viewHandles);
     }
 
     public void triggerOnView(View v) {
@@ -70,6 +75,7 @@ public class Indexer {
     private static native void emit(long handle, long docHandle, int viewNumber, long[] keys, byte[][] values) throws ForestException;
     private static native void endIndex(long handle, boolean commit) throws ForestException;
 
-    private long _handle; // handle to native C4Indexer*
+    private long _handle;   // handle to native C4Indexer*
+    private View[] _views;  // Must keep the View objects from being GC'd
 
 }

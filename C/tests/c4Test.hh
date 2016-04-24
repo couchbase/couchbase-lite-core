@@ -74,6 +74,9 @@ protected:
     static const C4Slice kRevID;    // "1-abcdef"
     static const C4Slice kRev2ID;   // "2-d00d3333"
     static const C4Slice kBody;     // "{\"name\":007}"
+
+private:
+    int objectCount;
 };
 
 

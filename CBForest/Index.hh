@@ -18,6 +18,7 @@
 
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
+#include <atomic>
 
 namespace cbforest {
     
@@ -40,7 +41,7 @@ namespace cbforest {
 
     
     /** A key-value store used as an index. */
-    class Index : protected KeyStore {
+    class Index {
     public:
         Index(Database*, std::string name);
         ~Index();
@@ -56,6 +57,9 @@ namespace cbforest {
             represents the entire document being indexed. */
         static const slice kSpecialValue;
 
+    protected:
+        KeyStore &_store;
+
     private:
         friend class IndexWriter;
         friend class IndexEnumerator;
@@ -64,7 +68,7 @@ namespace cbforest {
         void removeUser()                       {--_userCount;}
 
         Database* const _indexDB;
-        unsigned _userCount;
+        std::atomic_uint _userCount {0};
     };
 
 
@@ -125,6 +129,8 @@ namespace cbforest {
         int currentKeyRangeIndex()              {return _currentKeyIndex;}
 
         bool next();
+
+        void close()                            {_dbEnum.close();}
 
     protected:
         virtual void nextKeyRange();

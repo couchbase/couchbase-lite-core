@@ -28,14 +28,13 @@ namespace cbforest {
     public:
         typedef fdb_kvs_info kvinfo;
 
-        KeyStore()                                          :_handle(NULL) { }
-        KeyStore(const Database*, std::string name);
-
         void enableErrorLogs(bool enable);                  // defaults to true
         
         kvinfo getInfo() const;
         sequence lastSequence() const;
         std::string name() const;
+
+        bool isOpen()                                       {return _handle != NULL;}
 
         // Keys/values:
 
@@ -51,16 +50,20 @@ namespace cbforest {
         Document getByOffset(uint64_t offset, sequence) const;
         Document getByOffsetNoErrors(uint64_t offset, sequence) const;  // doesn't throw or log
 
+        void close();
         void deleteKeyStore(Transaction& t);
         void erase();
 
     protected:
-        KeyStore(fdb_kvs_handle* handle)                    :_handle(handle) { }
+        KeyStore(fdb_kvs_handle* handle);
         fdb_kvs_handle* handle() const                      {return _handle;}
 
         fdb_kvs_handle* _handle;
 
     private:
+        KeyStore(const KeyStore&) = delete;
+        KeyStore& operator=(const KeyStore&) = delete;
+
         friend class Database;
         friend class DocEnumerator;
         friend class KeyStoreWriter;
@@ -70,7 +73,7 @@ namespace cbforest {
     /** Adds write access to a KeyStore. */
     class KeyStoreWriter : public KeyStore {
     public:
-        KeyStoreWriter(KeyStore store, Transaction&)       :KeyStore(store._handle) { }
+        KeyStoreWriter(const KeyStore &store, Transaction&) :KeyStore(store._handle) { }
 
         sequence set(slice key, slice meta, slice value);
         sequence set(slice key, slice value)                {return set(key, slice::null, value);}
@@ -84,8 +87,11 @@ namespace cbforest {
 
         friend class KeyStore;
 
+        KeyStoreWriter(const KeyStoreWriter& k)            :KeyStore(k._handle) { }
+        KeyStoreWriter& operator=(const KeyStoreWriter &k) {_handle = k._handle; return *this;}
+
     private:
-        KeyStoreWriter(KeyStore store)                      :KeyStore(store._handle) { }
+        KeyStoreWriter(KeyStore& store)                      :KeyStore(store._handle) { }
         friend class Transaction;
         friend class Database;
     };

@@ -58,9 +58,7 @@ public class DocumentIterator {
         return next() ? getDocument() : null;
     }
 
-    public synchronized void free() { if (_handle != 0) {free(_handle); _handle = 0;} }
-
-    protected void finalize()       { free(); }
+    protected void finalize()       { if (_handle != 0) free(_handle); }
 
     private void getCurrentInfo() {
         if (!_hasCurrentInfo) {

@@ -52,14 +52,14 @@ namespace cbforest {
     }
 
 
-    DocEnumerator::DocEnumerator(KeyStore store, const Options& options)
-    :_store(store),
+    DocEnumerator::DocEnumerator(KeyStore &store, const Options& options)
+    :_store(&store),
      _options(options)
     { }
 
 
     // Key-range constructor
-    DocEnumerator::DocEnumerator(KeyStore store,
+    DocEnumerator::DocEnumerator(KeyStore &store,
                                  slice startKey, slice endKey,
                                  const Options& options)
     :DocEnumerator(store, options)
@@ -79,7 +79,7 @@ namespace cbforest {
         if (options.descending)
             std::swap(minKey, maxKey);
 
-        fdb_status status = fdb_iterator_init(_store.handle(), &_iterator,
+        fdb_status status = fdb_iterator_init(_store->handle(), &_iterator,
                                               minKey.buf, minKey.size,
                                               maxKey.buf, maxKey.size,
                                               iteratorOptions(options));
@@ -88,7 +88,7 @@ namespace cbforest {
     }
 
     // Sequence-range constructor
-    DocEnumerator::DocEnumerator(KeyStore store,
+    DocEnumerator::DocEnumerator(KeyStore &store,
                                  sequence start, sequence end,
                                  const Options& options)
     :DocEnumerator(store, options)
@@ -114,14 +114,14 @@ namespace cbforest {
     }
 
     // Key-array constructor
-    DocEnumerator::DocEnumerator(KeyStore store,
+    DocEnumerator::DocEnumerator(KeyStore &store,
                                  std::vector<std::string> docIDs,
                                  const Options& options)
     :DocEnumerator(store, options)
     {
         _docIDs = docIDs;
         Debug("enum: DocEnumerator(%p, %zu keys) --> %p",
-                store, docIDs.size(), this);
+                store.handle(), docIDs.size(), this);
         if (_options.skip > 0)
             _docIDs.erase(_docIDs.begin(), _docIDs.begin() + _options.skip);
         if (_options.limit < _docIDs.size())
@@ -129,11 +129,6 @@ namespace cbforest {
         if (_options.descending)
             std::reverse(_docIDs.begin(), _docIDs.end());
         // (this mode doesn't actually create an fdb_iterator)
-    }
-
-    // Empty constructor
-    DocEnumerator::DocEnumerator() {
-        Debug("enum: DocEnumerator() --> %p", this);
     }
 
     DocEnumerator::~DocEnumerator() {
@@ -219,9 +214,9 @@ namespace cbforest {
         _doc.setKey(_docIDs[_curDocIndex++]);
         fdb_status status;
         if (_options.contentOptions & KeyStore::kMetaOnly)
-            status = fdb_get_metaonly(_store._handle, _doc);
+            status = fdb_get_metaonly(_store->_handle, _doc);
         else
-            status = fdb_get(_store._handle, _doc);
+            status = fdb_get(_store->_handle, _doc);
         if (status != FDB_RESULT_KEY_NOT_FOUND)
             check(status);
         Debug("enum:     fdb_get --> [%s]", _doc.key().hexString().c_str());

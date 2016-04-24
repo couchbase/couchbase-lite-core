@@ -17,6 +17,13 @@
 #include "native_glue.hh"
 #include "c4Database.h"
 
+#undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
+#ifdef DEBUG_TERMINATION
+#include <execinfo.h>   // Not available in Linux or Windows?
+#include <unistd.h>
+#endif
+
+
 using namespace cbforest::jni;
 
 
@@ -30,7 +37,22 @@ static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
     return (C4Database*)env->GetLongField(self, kHandleField);
 }
 
+#ifdef DEBUG_TERMINATION
+static void jniCBForestTerminateHandler() {
+    fprintf(stderr, "***** CBFOREST UNCAUGHT C++ EXCEPTION *****\n");
+    void* addrs[50];
+    int n = backtrace(addrs, 50);
+    backtrace_symbols_fd(addrs, n, STDERR_FILENO);
+    fprintf(stderr, "***** CBFOREST NOW ABORTING *****\n");
+    abort();
+}
+#endif
+
 bool cbforest::jni::initDatabase(JNIEnv *env) {
+#ifdef DEBUG_TERMINATION
+    std::set_terminate(jniCBForestTerminateHandler);    // TODO: Take this out after debugging
+#endif
+
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
     if (!dbClass)
         return false;
@@ -71,34 +93,36 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_rekey
         return;
 
     auto db = getDbHandle(env, self);
-    if (db) {
-        C4Error error;
-        if(!c4db_rekey(db, &key, &error))
-            throwError(env, error);
-    }
+    C4Error error;
+    if(!c4db_rekey(db, &key, &error))
+        throwError(env, error);
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_close
+(JNIEnv *env, jobject self)
+{
+    auto db = getDbHandle(env, self);
+    C4Error error;
+    if (!c4db_close(db, &error))
+        throwError(env, error);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
-    if (db) {
-        env->SetLongField(self, kHandleField, 0);
-        C4Error error;
-        if (!c4db_close(db, &error))
-            throwError(env, error);
-    }
+    env->SetLongField(self, kHandleField, 0);
+    c4db_free(db);
+    // Note: This is called only by the finalizer, so no further calls are possible.
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_compact
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
-    if (db) {
-        C4Error error;
-        if (!c4db_compact(db, &error))
-            throwError(env, error);
-    }
+    C4Error error;
+    if (!c4db_compact(db, &error))
+        throwError(env, error);
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_getDocumentCount

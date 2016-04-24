@@ -56,10 +56,11 @@ namespace cbforest {
     class Database::File {
     public:
         static File* forPath(std::string path);
-        File();
+        File(std::string path)      :_path(path) { }
+        const std::string _path;
         std::mutex _transactionMutex;
         std::condition_variable _transactionCond;
-        Transaction* _transaction;
+        Transaction* _transaction {NULL};
 
         static std::unordered_map<std::string, File*> sFileMap;
         static std::mutex sMutex;
@@ -72,15 +73,11 @@ namespace cbforest {
         std::unique_lock<std::mutex> lock(sMutex);
         File* file = sFileMap[path];
         if (!file) {
-            file = new File();
+            file = new File(path);
             sFileMap[path] = file;
         }
         return file;
     }
-
-    Database::File::File()
-    :_transaction(NULL)
-    { }
 
 
 #pragma mark - DATABASE:
@@ -117,14 +114,16 @@ namespace cbforest {
     {
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
-        reopen(path);
+        reopen();
     }
 
     Database::~Database() {
         Debug("Database: deleting (~Database)");
         CBFAssert(!_inTransaction);
-        if (_fileHandle)
-            close();
+        if (_fileHandle) {
+            ::fdb_close(_fileHandle);
+            // FYI: fdb_close will automatically close _handle as well.
+        }
     }
 
     Database::info Database::getInfo() const {
@@ -133,34 +132,45 @@ namespace cbforest {
         return i;
     }
 
-    std::string Database::filename() const {
-        return std::string(this->getInfo().filename);
+    const std::string& Database::filename() const {
+        return _file->_path;
     }
 
     bool Database::isReadOnly() const {
         return (_config.flags & FDB_OPEN_FLAG_RDONLY) != 0;
     }
 
-    fdb_kvs_handle* Database::openKVS(std::string name) const {
-        auto i = _kvHandles.find(name);
-        if (i != _kvHandles.end()) {
-            return i->second;
+#pragma mark KEY-STORES:
+
+    KeyStore& Database::getKeyStore(std::string name) const {
+        if (name.empty())
+            return *const_cast<Database*>(this);
+        auto i = _keyStores.find(name);
+        if (i != _keyStores.end() && i->second) {
+            return *i->second;
         } else {
             Debug("Database: open KVS '%s'", name.c_str());
             fdb_kvs_handle* handle;
             check(fdb_kvs_open(_fileHandle, &handle, name.c_str(),  NULL));
-            const_cast<Database*>(this)->_kvHandles[name] = handle;
-            return handle;
+            if (i != _keyStores.end()) {
+                // Reopening
+                i->second->_handle = handle;
+                return *i->second;
+            } else {
+                auto store = new KeyStore(handle);
+                const_cast<Database*>(this)->_keyStores[name].reset(store);
+                return *store;
+            }
         }
     }
 
     void Database::closeKeyStore(std::string name) {
-        fdb_kvs_handle* handle = _kvHandles[name];
-        if (!handle)
-            return;
         Debug("Database: close KVS '%s'", name.c_str());
-        check(fdb_kvs_close(handle));
-        _kvHandles.erase(name);
+        auto i = _keyStores.find(name);
+        if (i != _keyStores.end()) {
+            // Never remove a KeyStore from _keyStores: there may be objects pointing to it 
+            i->second->close();
+        }
     }
 
     void Database::deleteKeyStore(std::string name) {
@@ -169,8 +179,10 @@ namespace cbforest {
     }
 
     bool Database::contains(KeyStore& store) const {
-        auto i = _kvHandles.find(store.name());
-        return i != _kvHandles.end() && i->second == store.handle();
+        if (store.handle() == _handle)
+            return true;
+        auto i = _keyStores.find(store.name());
+        return i != _keyStores.end() && i->second->handle() == store.handle();
     }
 
 
@@ -190,7 +202,7 @@ namespace cbforest {
     }
 
     void Database::incrementDeletionCount(Transaction *t) {
-        KeyStore infoStore(this, kInfoStoreName);
+        KeyStore &infoStore = getKeyStore(kInfoStoreName);
         Document doc = infoStore.get(slice(kDeletionCountKey));
         uint64_t purgeCount = readCount(doc) + 1;
         uint64_t newBody = _endian_encode(purgeCount);
@@ -199,12 +211,12 @@ namespace cbforest {
     }
 
     uint64_t Database::purgeCount() const {
-        KeyStore infoStore(this, kInfoStoreName);
+        KeyStore &infoStore = getKeyStore(kInfoStoreName);
         return readCount( infoStore.get(slice(kPurgeCountKey)) );
     }
 
     void Database::updatePurgeCount() {
-        KeyStore infoStore(this, kInfoStoreName);
+        KeyStore& infoStore = getKeyStore(kInfoStoreName);
         Document purgeCount = infoStore.get(slice(kDeletionCountKey));
         if (purgeCount.exists()) {
             KeyStoreWriter infoWriter(infoStore);
@@ -217,39 +229,41 @@ namespace cbforest {
 
 
     void Database::close() {
-        check(::fdb_close(_fileHandle));
-        // FYI: fdb_close will automatically close _handle as well.
+        if (_fileHandle)
+            check(::fdb_close(_fileHandle));
         _fileHandle = NULL;
+        // fdb_close implicitly closes all the kv handles, so null them out:
         _handle = NULL;
+        for (auto i = _keyStores.begin(); i != _keyStores.end(); ++i)
+            i->second->_handle = NULL;
     }
 
-    void Database::reopen(std::string path) {
-        Debug("Database: open %s", path.c_str());
-        check(::fdb_open(&_fileHandle, path.c_str(), &_config));
+    void Database::reopen() {
+        CBFAssert(!isOpen());
+        const char *cpath = _file->_path.c_str();
+        Debug("Database: open %s", cpath);
+        check(::fdb_open(&_fileHandle, cpath, &_config));
         check(::fdb_kvs_open_default(_fileHandle, &_handle, NULL));
         enableErrorLogs(true);
     }
 
-    void Database::deleteDatabase(bool andReopen) {
-        Transaction t(this, false);
-        std::string path = filename();
-        close();
-
-        deleteDatabase(path, _config);
-        if (andReopen)
-            reopen(path);
+    void Database::deleteDatabase() {
+        if (isOpen()) {
+            Transaction t(this, false);
+            close();
+            deleteDatabase(_file->_path, _config);
+        } else {
+            deleteDatabase(_file->_path, _config);
+        }
     }
 
-    void Database::deleteDatabase(std::string path, const config &cfg) {
+    /*static*/ void Database::deleteDatabase(std::string path, const config &cfg) {
         check(fdb_destroy(path.c_str(), (config*)&cfg));
-    }
-
-    void Database::commit() {
-        check(fdb_commit(_fileHandle, FDB_COMMIT_NORMAL));
     }
 
     void Database::rekey(const fdb_encryption_key &encryptionKey) {
         check(fdb_rekey(_fileHandle, encryptionKey));
+        _config.encryption_key = encryptionKey;
     }
 
 
@@ -257,6 +271,8 @@ namespace cbforest {
 
     void Database::beginTransaction(Transaction* t) {
         CBFAssert(!_inTransaction);
+        if (!isOpen())
+            error::_throw(FDB_RESULT_INVALID_HANDLE);
         std::unique_lock<std::mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);

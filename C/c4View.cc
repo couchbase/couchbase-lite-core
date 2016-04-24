@@ -42,13 +42,13 @@ static inline C4KeyReader asKeyReader(const CollatableReader &r) {
 #pragma mark - VIEWS:
 
 
-struct c4View {
+struct c4View : public c4Internal::RefCounted<c4View> {
     c4View(C4Database *sourceDB,
            C4Slice path,
            C4Slice name,
            const Database::config &config,
            C4Slice version)
-    :_sourceDB(sourceDB),
+    :_sourceDB(sourceDB->retain()),
      _viewDB((std::string)path, config),
      _index(&_viewDB, (std::string)name, sourceDB)
     {
@@ -67,12 +67,21 @@ struct c4View {
         return true;
     }
 
+    void close() {
+        _viewDB.close();
+    }
+
     C4Database *_sourceDB;
     Database _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
     std::mutex _mutex;
 #endif
+
+private:
+    ~c4View() {
+        _sourceDB->release();
+    }
 };
 
 
@@ -97,14 +106,27 @@ C4View* c4view_open(C4Database* db,
 
 /** Closes the view and frees the object. */
 bool c4view_close(C4View* view, C4Error *outError) {
+    if (!view)
+        return true;
     try {
-        if (view && !view->checkNotBusy(outError))
+        WITH_LOCK(view);
+        if (!view->checkNotBusy(outError))
             return false;
-        delete view;
+        view->close();
         return true;
     } catchError(outError);
     return false;
 }
+
+void c4view_free(C4View* view) {
+    if (view) {
+        c4view_close(view, NULL);
+        try {
+            view->release();
+        } catchError(NULL);
+    }
+}
+
 
 bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) {
     WITH_LOCK(view);
@@ -132,7 +154,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
         if (!view->checkNotBusy(outError))
             return false;
         view->_viewDB.deleteDatabase();
-        delete view;
+        view->close();
         return true;
     } catchError(outError)
     return false;
@@ -201,7 +223,7 @@ static void initTokenizer() {
 }
 
 
-struct c4Indexer : public MapReduceIndexer {
+struct c4Indexer : public MapReduceIndexer, c4Internal::InstanceCounted {
     c4Indexer(C4Database *db)
     :MapReduceIndexer(),
      _db(db)
@@ -375,22 +397,28 @@ static DocEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
 }
 
 
-struct C4QueryEnumInternal : public C4QueryEnumerator {
+struct C4QueryEnumInternal : public C4QueryEnumerator, c4Internal::InstanceCounted {
     C4QueryEnumInternal(C4View *view)
+    :_view(view->retain())
 #if C4DB_THREADSAFE
-    :_mutex(view->_mutex)
+     ,_mutex(view->_mutex)
 #endif
     {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
     }
 
-    virtual ~C4QueryEnumInternal()  { }
+    virtual ~C4QueryEnumInternal() {
+        _view->release();
+    }
 
     virtual bool next() {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // clear public fields
         return false;
     }
 
+    virtual void close() { }
+
+    C4View* _view;
 #if C4DB_THREADSAFE
     std::mutex &_mutex;
 #endif
@@ -412,8 +440,20 @@ bool c4queryenum_next(C4QueryEnumerator *e,
 }
 
 
+void c4queryenum_close(C4QueryEnumerator *e) {
+    if (e) {
+        try {
+            WITH_LOCK(asInternal(e));
+            asInternal(e)->close();
+        } catchError(NULL);
+    }
+}
+
 void c4queryenum_free(C4QueryEnumerator *e) {
-    delete asInternal(e);
+    try {
+        c4queryenum_close(e);
+        delete asInternal(e);
+    } catchError(NULL);
 }
 
 
@@ -444,6 +484,10 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
         docID = _enum.docID();
         docSequence = _enum.sequence();
         return true;
+    }
+
+    virtual void close() {
+        _enum.close();
     }
 
 private:
@@ -514,6 +558,10 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
 
     alloc_slice fullTextMatched() {
         return _enum.match()->matchedText();
+    }
+
+    virtual void close() {
+        _enum.close();
     }
 
 private:
@@ -594,6 +642,10 @@ struct C4GeoEnumerator : public C4QueryEnumInternal {
         geoBBox.ymax = bbox.max().latitude;
         geoJSON = _enum.keyGeoJSON();
         return true;
+    }
+
+    virtual void close() {
+        _enum.close();
     }
 
 private:

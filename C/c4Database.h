@@ -48,7 +48,11 @@ extern "C" {
                           const C4EncryptionKey *encryptionKey,
                           C4Error *outError);
 
-    /** Closes the database and frees the object. */
+    /** Frees a database handle, closing the database first if it's still open. */
+    bool c4db_free(C4Database* database);
+
+    /** Closes the database. Does not free the handle, although any operation other than
+        c4db_free() will fail with an error. */
     bool c4db_close(C4Database* database, C4Error *outError);
 
     /** Closes the database, deletes the file, and frees the object. */

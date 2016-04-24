@@ -28,20 +28,20 @@ namespace cbforest {
     }
 
     Index::Index(Database* db, std::string name)
-    :KeyStore(db, name),
+    :_store(db->getKeyStore(name)),
      _indexDB(db),
      _userCount(0)
     { }
 
     Index::~Index() {
-        CBFAssert(!isBusy());
+        if (isBusy()) Warn("Index %p being destructed during enumeration", this);
     }
 
     IndexWriter::IndexWriter(Index* index, Transaction& t)
-    :KeyStoreWriter(*index, t),
+    :KeyStoreWriter(index->_store, t),
      _index(index)
     {
-        CBFDebugAssert(t.database()->contains(*index));
+        CBFDebugAssert(t.database()->contains(index->_store));
         index->addUser();
     }
 
@@ -202,7 +202,7 @@ namespace cbforest {
         realKey.endArray();
 
         Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
-        Document doc = get(realKey);
+        Document doc = _store.get(realKey);
         CBFAssert(doc.exists());
         return alloc_slice(doc.body());
     }
@@ -247,7 +247,7 @@ namespace cbforest {
      _options(options),
      _inclusiveStart(options.inclusiveStart),
      _inclusiveEnd(options.inclusiveEnd),
-     _dbEnum(*_index,
+     _dbEnum(_index->_store,
              (slice)makeRealKey(startKey, startKeyDocID, false, options.descending),
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
              docOptions(options))
@@ -268,7 +268,7 @@ namespace cbforest {
      _inclusiveStart(true),
      _inclusiveEnd(true),
      _keyRanges(keyRanges),
-     _dbEnum(*_index, slice::null, slice::null, docOptions(options))
+     _dbEnum(_index->_store, slice::null, slice::null, docOptions(options))
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
         index->addUser();
@@ -364,7 +364,7 @@ namespace cbforest {
         Collatable& startKey = _keyRanges[_currentKeyIndex].start;
         Debug("IndexEnumerator: Advance to key '%s'", startKey.toJSON().c_str());
         if (!_dbEnum)
-            _dbEnum = DocEnumerator(*_index, slice::null, slice::null, docOptions(_options));
+            _dbEnum = DocEnumerator(_index->_store, slice::null, slice::null, docOptions(_options));
         _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));
     }
 

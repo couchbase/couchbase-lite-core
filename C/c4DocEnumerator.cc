@@ -34,12 +34,12 @@ CBFOREST_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 };
 
 
-struct C4DocEnumerator {
+struct C4DocEnumerator: c4Internal::InstanceCounted {
     C4DocEnumerator(C4Database *database,
                     sequence start,
                     sequence end,
                     const C4EnumeratorOptions &options)
-    :_database(database),
+    :_database(database->retain()),
      _e(*database, start, end, allDocOptions(options)),
      _options(options)
     { }
@@ -48,7 +48,7 @@ struct C4DocEnumerator {
                     C4Slice startDocID,
                     C4Slice endDocID,
                     const C4EnumeratorOptions &options)
-    :_database(database),
+    :_database(database->retain()),
      _e(*database, startDocID, endDocID, allDocOptions(options)),
      _options(options)
     { }
@@ -56,10 +56,18 @@ struct C4DocEnumerator {
     C4DocEnumerator(C4Database *database,
                     std::vector<std::string>docIDs,
                     const C4EnumeratorOptions &options)
-    :_database(database),
+    :_database(database->retain()),
      _e(*database, docIDs, allDocOptions(options)),
      _options(options)
     { }
+
+    ~C4DocEnumerator() {
+        _database->release();
+    }
+
+    void close() {
+        _e.close();
+    }
 
     static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         auto options = DocEnumerator::Options::kDefault;
@@ -131,6 +139,11 @@ private:
     alloc_slice _docRevIDExpanded;
 };
 
+
+void c4enum_close(C4DocEnumerator *e) {
+    if (e)
+        e->close();
+}
 
 void c4enum_free(C4DocEnumerator *e) {
     delete e;

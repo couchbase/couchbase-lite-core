@@ -65,10 +65,16 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_close
   (JNIEnv *env, jobject self)
 {
     C4View* view = getViewHandle(env, self);
-    env->SetLongField(self, kHandleField, 0);
     C4Error error;
     if (!c4view_close(view, &error))
         throwError(env, error);
+}
+
+
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeHandle
+  (JNIEnv *env, jclass clazz, jlong handle)
+{
+    c4view_free((C4View*)handle);
 }
 
 

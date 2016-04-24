@@ -26,9 +26,9 @@ public class Database {
         _handle = _open(path, flags, encryptionAlgorithm, encryptionKey);
     }
 
-    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
+    public native void close() throws ForestException;
 
-    public native void free();
+    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
 
     public native void compact() throws ForestException;
 
@@ -69,6 +69,8 @@ public class Database {
     protected void finalize() {
         free();
     }
+
+    private native void free();
 
     /** Sets (or clears) a logging callback for CBForest. */
     public native static void setLogger(Logger logger, int level);

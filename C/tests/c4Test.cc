@@ -35,6 +35,7 @@ static void log(C4LogLevel level, C4Slice message) {
 
 
 void C4Test::setUp() {
+    objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
 #ifdef _MSC_VER
     const char *dbPath = "C:\\tmp\\forest_temp.fdb";
@@ -58,8 +59,11 @@ void C4Test::setUp() {
 
 void C4Test::tearDown() {
     C4Error error;
-    if (db)
-        c4db_delete(db, &error);
+    c4db_delete(db, &error);
+    c4db_free(db);
+
+    // Check for leaks:
+    AssertEqual(c4_getObjectCount() - objectCount, 0);
 }
 
 
