@@ -364,6 +364,11 @@ class C4DatabaseTest : public C4Test {
             Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
             AssertEqual(doc->selectedRev.body, kBody);
 
+            C4DocumentInfo info;
+            Assert(c4enum_getDocumentInfo(e, &info));
+            AssertEqual(info.docID, c4str(docID));
+            AssertEqual(doc->revID, kRevID);
+
             c4doc_free(doc);
             i++;
         }

@@ -27,7 +27,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     options.includeDeleted = true;
     DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
-        auto doc = e.doc();
+        auto &doc = e.doc();
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         if (!doc.deleted()) {

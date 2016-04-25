@@ -25,20 +25,14 @@ namespace cbforest {
         memset(&_doc, 0, sizeof(_doc));
     }
 
-    Document::Document(const Document& doc) {
-        setKey(doc.key());
-        setMeta(doc.meta());
-        setBody(doc.body());
-        _doc.size_ondisk = doc.sizeOnDisk();
-        _doc.seqnum = doc.sequence();
-        _doc.offset = doc.offset();
-        _doc.deleted = doc.deleted();
-    }
-
-    Document::Document(Document&& doc)
-    :_doc(doc._doc)
+    Document::Document(Document&& srcDoc)
+    :_doc(srcDoc._doc)
     {
-        doc._doc.key = doc._doc.body = doc._doc.meta = NULL; // to prevent double-free
+        // Copy key and meta so srcDoc remains minimally useful, but move body
+        _doc.key = (void*)key().copy().buf;
+        _doc.meta = (void*)meta().copy().buf;
+        srcDoc._doc.body = NULL; // to prevent double-free
+        srcDoc._doc.bodylen = 0;
     }
 
     Document::Document(slice key) {

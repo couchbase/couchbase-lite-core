@@ -65,11 +65,8 @@ namespace cbforest {
     :DocEnumerator(store, options)
     {
         Debug("enum: DocEnumerator(%p, [%s] -- [%s]%s) --> %p",
-              store.handle(),
-              startKey.hexString().c_str(),
-              endKey.hexString().c_str(),
-              (options.descending ? " desc" : ""),
-              this);
+              store.handle(), startKey.hexCString(), endKey.hexCString(),
+              (options.descending ? " desc" : ""), this);
         if (startKey.size == 0)
             startKey.buf = NULL;
         if (endKey.size == 0)
@@ -219,12 +216,12 @@ namespace cbforest {
             status = fdb_get(_store->_handle, _doc);
         if (status != FDB_RESULT_KEY_NOT_FOUND)
             check(status);
-        Debug("enum:     fdb_get --> [%s]", _doc.key().hexString().c_str());
+        Debug("enum:     fdb_get --> [%s]", _doc.key().hexCString());
         return true;
     }
 
     void DocEnumerator::seek(slice key) {
-        Debug("enum: seek([%s])", key.hexString().c_str());
+        Debug("enum: seek([%s])", key.hexCString());
         if (!_iterator)
             return;
 
@@ -254,7 +251,7 @@ namespace cbforest {
             return false;
         }
         check(status);
-        Debug("enum:     fdb_iterator_get --> [%s]", _doc.key().hexString().c_str());
+        Debug("enum:     fdb_iterator_get --> [%s]", _doc.key().hexCString());
         return true;
     }
 

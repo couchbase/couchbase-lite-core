@@ -33,7 +33,6 @@ namespace cbforest {
         };
 
         VersionedDocument(KeyStore&, slice docID);
-        VersionedDocument(KeyStore&, const Document&);
         VersionedDocument(KeyStore&, Document&&);
 
 #ifdef __OBJC__

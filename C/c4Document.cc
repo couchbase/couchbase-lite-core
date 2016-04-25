@@ -47,10 +47,10 @@ struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
         init();
     }
 
-    C4DocumentInternal(C4Database *database, const Document &doc)
+    C4DocumentInternal(C4Database *database, Document &&doc)
     :_db(database->retain()),
-     _versionedDoc(*_db, doc),
-     _selectedRev(NULL)
+    _versionedDoc(*_db, std::move(doc)),
+    _selectedRev(NULL)
     {
         init();
     }
@@ -181,9 +181,9 @@ static inline C4DocumentInternal *internal(C4Document *doc) {
 }
 
 namespace c4Internal {
-    C4Document* newC4Document(C4Database *db, const Document &doc) {
+    C4Document* newC4Document(C4Database *db, Document &&doc) {
         // Doesn't need to lock since Document is already in memory
-        return new C4DocumentInternal(db, doc);
+        return new C4DocumentInternal(db, std::move(doc));
     }
 
     const VersionedDocument& versionedDocument(C4Document* doc) {

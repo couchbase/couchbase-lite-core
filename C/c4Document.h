@@ -20,7 +20,7 @@ extern "C" {
     typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
         kDeleted        = 0x01,     /**< The document's current revision is deleted. */
         kConflicted     = 0x02,     /**< The document is in conflict. */
-        kHasAttachments = 0x04,     /**< The document's current revision has attachments. */
+        kHasAttachments = 0x04,     /**< One or more revisions have attachments. */
 
         kExists         = 0x1000    /**< The document exists (i.e. has revisions.) */
     }; // Note: Superset of VersionedDocument::Flags

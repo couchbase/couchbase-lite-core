@@ -34,12 +34,6 @@ namespace cbforest {
         read();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore& db, const Document& doc)
-    :_db(db), _doc(doc)
-    {
-        decode();
-    }
-
     VersionedDocument::VersionedDocument(KeyStore& db, Document&& doc)
     :_db(db), _doc(std::move(doc))
     {

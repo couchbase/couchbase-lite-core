@@ -44,7 +44,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
     options.includeDeleted = true;
     DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
-        auto doc = e.doc();
+        auto &doc = e.doc();
         NSLog(@"    enumerating seq %llu: '%.*s' (del=%d)",
               doc.sequence(), (int)doc.key().size, doc.key().buf, doc.deleted());
         std::vector<Collatable> keys;

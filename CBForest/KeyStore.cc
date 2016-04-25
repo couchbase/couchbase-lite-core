@@ -148,20 +148,8 @@ namespace cbforest {
         doc.bodylen = body.size;
 
         check(fdb_set(_handle, &doc));
-        if (meta.buf) {
-            Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
-                    _handle,
-                    key.hexString().c_str(),
-                    body.hexString().c_str(),
-                    meta.hexString().c_str(),
-                    doc.seqnum);
-        } else {
-            Log("DB %p: added %s --> %s (seq %llu)\n",
-                    _handle,
-                    key.hexString().c_str(),
-                    body.hexString().c_str(),
-                    doc.seqnum);
-        }
+        Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
+            _handle, key.hexCString(), body.hexCString(), meta.hexCString(), doc.seqnum);
         return doc.seqnum;
     }
 

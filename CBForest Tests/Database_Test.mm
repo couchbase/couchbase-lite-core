@@ -472,7 +472,7 @@ Database::config TestDBConfig() {
     try {
         Document doc = s.get(key);
     } catch (error e) {
-        AssertEq(e.status, FDB_RESULT_INVALID_ARGS);
+        AssertEq(e.status, FDB_RESULT_INVALID_HANDLE);
         return;
     }
     Assert(false); // should not reach here

@@ -209,7 +209,7 @@ public interface Constants {
     interface C4DocumentFlags {
         int kDeleted = 0x01;        // The document's current revision is deleted.
         int kConflicted = 0x02;     // The document is in conflict.
-        int kHasAttachments = 0x04; // The document's current revision has attachments.
+        int kHasAttachments = 0x04; // One or more revisions have attachments.
         int kExists = 0x1000;       // The document exists (i.e. has revisions.)
     }
 

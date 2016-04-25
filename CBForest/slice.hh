@@ -104,6 +104,8 @@ namespace cbforest {
         explicit operator std::string() const;
         std::string hexString() const;
 
+        #define hexCString() hexString().c_str()    // has to be a macro else dtor called too early
+
         /** djb2 hash algorithm */
         uint32_t hash() const {
             uint32_t h = 5381;

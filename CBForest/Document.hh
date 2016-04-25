@@ -28,7 +28,6 @@ namespace cbforest {
     public:
         Document();
         Document(slice key);
-        Document(const Document&); // this copies the key/meta/value
         Document(Document&&);
         ~Document();
 
@@ -65,6 +64,7 @@ namespace cbforest {
         friend class KeyStoreWriter;
         friend class Transaction;
 
+        Document(const Document&) = delete;
         Document& operator= (const Document&) = delete;
 
         fdb_doc _doc = {};
