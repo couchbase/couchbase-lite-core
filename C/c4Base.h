@@ -166,6 +166,10 @@ bool c4SliceEqual(C4Slice a, C4Slice b);
 void c4slice_free(C4Slice);
 
 
+/** Returns an error message describing a C4Error. Remember to free the result. */
+C4SliceResult c4error_getMessage(C4Error error);
+
+
 /** Logging levels. */
 typedef C4_ENUM(uint8_t, C4LogLevel) {
     kC4LogDebug,
