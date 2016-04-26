@@ -254,6 +254,13 @@ public interface Constants {
         int kC4ErrorInternalException = 1;    // CBForest threw an unexpected C++ exception
         int kC4ErrorNotInTransaction = 2;     // Function must be called while in a transaction
         int kC4ErrorTransactionNotClosed = 3; // Database can't be closed while a transaction is open
+
+        // These come from CBForest (error.hh)
+        int kC4ErrorBadRevisionID = -1000;
+        int kC4ErrorCorruptRevisionData = -1001;
+        int kC4ErrorCorruptIndexData = -1002;
+        int kC4ErrorAssertionFailed = -1003;
+        int kC4ErrorTokenizerError = -1004;     // can't create FTS tokenizer
     }
 
     // The types of tokens in a key.
