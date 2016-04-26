@@ -92,8 +92,13 @@ public class View {
         for (Object key : keys) {
             keyHandles[i++] = objectToKey(key);
         }
-        return new QueryIterator(this, query(_handle, skip, limit, descending,
-                                             inclusiveStart, inclusiveEnd, keyHandles));
+        QueryIterator itr = new QueryIterator(this, query(_handle, skip, limit, descending,
+                inclusiveStart, inclusiveEnd, keyHandles));
+        // Clean up allocated keys on the way out:
+        for (long handle : keyHandles) {
+            freeKey(handle);
+        }
+        return itr;
     }
 
     public QueryIterator fullTextQuery(String queryString,
