@@ -21,20 +21,25 @@
 namespace cbforest {
     using namespace fleece;
 
-    /** A compressed revision ID.
-        Since this is based on slice, it doesn't own the memory it points to. */
+    enum revidType {
+        kDigestType,
+        kClockType
+    };
+
+    /** A compressed revision ID. 
+        Since this is based on slice, it doesn't own the memory it points to.
+        The data format is the generation as a varint, followed by the digest as raw binary. */
     class revid : public slice {
     public:
         revid()                                     :slice() {}
         revid(const void* b, size_t s)              :slice(b,s) {}
         explicit revid(slice s)                     :slice(s) {}
 
-        bool isCompressed() const                   {return !isdigit((*this)[0]);}
-
         alloc_slice expanded() const;
         size_t expandedSize() const;
         bool expandInto(slice &dst) const;
 
+        bool isClock() const                        {return (*this)[0] == 0;}
         unsigned generation() const;
         slice digest() const;
         bool operator< (const revid&) const;
@@ -45,6 +50,7 @@ namespace cbforest {
 #endif
 
     private:
+        slice skipFlag() const;
         uint64_t getGenAndDigest(slice &digest) const;
         void _expandInto(slice &dst) const;
     };
@@ -54,13 +60,19 @@ namespace cbforest {
     public:
         revidBuffer()                               :revid(&_buffer, 0) {}
         explicit revidBuffer(slice s)               :revid(&_buffer, 0) {parse(s);}
-        revidBuffer(unsigned generation, slice digest);
+        revidBuffer(unsigned generation, slice digest, revidType);
         revidBuffer(const revidBuffer&);
+        revidBuffer& operator= (const revidBuffer&);
 
         /** Parses a regular (uncompressed) revID and compresses it.
             Throws BadRevisionID if the revID isn't in the proper format.*/
-        void parse(slice);
-        
+        void parse(slice, bool allowClock);
+
+        void parse(slice s);
+        void parseNew(slice s);
+
+        bool tryParse(slice ascii, bool allowClock);
+
 #ifdef __OBJC__
         explicit revidBuffer(NSString* str);
 #endif

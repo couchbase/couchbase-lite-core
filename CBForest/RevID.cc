@@ -92,8 +92,16 @@ namespace cbforest {
 #pragma mark - API:
 
 
+    slice revid::skipFlag() const {
+        slice skipped = *this;
+        if (skipped.size > 0 && skipped[0] == 0)
+            skipped.moveStart(1);
+        return skipped;
+    }
+
+
     uint64_t revid::getGenAndDigest(slice &digest) const {
-        digest = *this;
+        digest = skipFlag();
         uint64_t gen;
         if (!ReadUVarInt(&digest, &gen))
             throw error(error::CorruptRevisionData); // buffer too short!
@@ -104,8 +112,12 @@ namespace cbforest {
     size_t revid::expandedSize() const {
         slice digest;
         uint64_t gen = getGenAndDigest(digest);
-        size_t genDigits = 1 + size_t(::floor(::log10(gen)));
-        return genDigits + 1 + 2*digest.size;
+        size_t size = 2 + size_t(::floor(::log10(gen)));    // digits and separator
+        if (isClock())
+            size += digest.size;
+        else
+            size += 2*digest.size;
+        return size;
     }
 
     void revid::_expandInto(slice &expanded_rev) const {
@@ -114,11 +126,17 @@ namespace cbforest {
 
         char* dst = (char*)expanded_rev.buf;
         dst += writeDigits(dst, gen);
-        *dst++ = '-';
 
-        const uint8_t* bytes = (const uint8_t*)digest.buf;
-        for (size_t i = 0; i < digest.size; ++i)
-            dst = byteToHex(dst, bytes[i]);
+        if (isClock()) {
+            *dst++ = '@';
+            memcpy(dst, digest.buf, digest.size);
+            dst += digest.size;
+        } else {
+            *dst++ = '-';
+            const uint8_t* bytes = (const uint8_t*)digest.buf;
+            for (size_t i = 0; i < digest.size; ++i)
+                dst = byteToHex(dst, bytes[i]);
+        }
         expanded_rev.size = dst - (char*)expanded_rev.buf;
     }
 
@@ -139,14 +157,14 @@ namespace cbforest {
 
     unsigned revid::generation() const {
         uint64_t gen;
-        if (GetUVarInt(*this, &gen) == 0)
+        if (GetUVarInt(skipFlag(), &gen) == 0)
             throw error(error::CorruptRevisionData); // buffer too short!
         return (unsigned) gen;
     }
 
     slice revid::digest() const {
         uint64_t gen;
-        slice digest = *this;
+        slice digest = skipFlag();
         if (!ReadUVarInt(&digest, &gen))
             throw error(error::CorruptRevisionData); // buffer too short!
         return digest;
@@ -165,54 +183,92 @@ namespace cbforest {
     }
 
 
+#pragma mark - RevIDBuffer:
+
 
     revidBuffer::revidBuffer(const revidBuffer& other) {
+        *this = other;
+    }
+
+    revidBuffer& revidBuffer::operator= (const revidBuffer& other) {
         memcpy(_buffer, other._buffer, sizeof(_buffer));
         buf = &_buffer;
         size = other.size;
+        return *this;
     }
 
 
-    revidBuffer::revidBuffer(unsigned generation, slice digest)
+    revidBuffer::revidBuffer(unsigned generation, slice digest, revidType type)
     :revid(&_buffer, 0)
     {
-        auto genSize = PutUVarInt((void*)buf, generation);
-        size = genSize + digest.size;
+        uint8_t* dst = _buffer;
+        if (type == kClockType)
+            *(dst++) = 0;
+        dst += PutUVarInt(dst, generation);
+        size = dst + digest.size - _buffer;
         if (size > sizeof(_buffer))
             throw error(error::CorruptRevisionData); // digest too long!
-        memcpy(&_buffer[genSize], digest.buf, digest.size);
+        memcpy(dst, digest.buf, digest.size);
     }
 
 
-    void revidBuffer::parse(slice raw) {
+    void revidBuffer::parse(slice s) {
+        if (!tryParse(s, false))
+            throw error(error::BadRevisionID);
+    }
+
+    void revidBuffer::parseNew(slice s) {
+        if (!tryParse(s, true))
+            throw error(error::BadRevisionID);
+    }
+
+    bool revidBuffer::tryParse(slice ascii, bool allowClock) {
+        uint8_t* start = _buffer, *dst = start;
+        buf = start;
         size = 0;
 
-        const char *dash = (const char*)::memchr(raw.buf, '-', raw.size);
-        if (dash == NULL || dash == raw.buf)
-            throw error(error::BadRevisionID); // '-' is missing or at start of string
-        ssize_t dashPos = dash - (const char*)raw.buf;
-        if (dashPos > 8 || dashPos >= raw.size - 1)
-            throw error(error::BadRevisionID); // generation too large
-        unsigned gen = parseDigits((const char*)raw.buf, dash);
+        // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
+        const char *sep = (const char*)::memchr(ascii.buf, '@', ascii.size);
+        bool isClock = (sep != NULL);
+        if (isClock) {
+            if (!allowClock)
+                return false;
+            *dst++ = 0; // leading zero byte denotes clock-style revid
+        } else {
+            sep = (const char*)::memchr(ascii.buf, '-', ascii.size);
+            if (sep == NULL)
+                return false; // separator is missing
+        }
+
+        ssize_t sepPos = sep - (const char*)ascii.buf;
+        if (sepPos == 0 || sepPos > 8 || sepPos >= ascii.size-1)
+            return false; // generation too large, or separator at end
+
+        unsigned gen = parseDigits((const char*)ascii.buf, sep);
         if (gen == 0)
-            throw error(error::BadRevisionID); // unparseable generation
-
-        uint8_t* start = (uint8_t*) buf, *dst = start;
+            return false; // unparseable generation
         size_t genSize = PutUVarInt(dst, gen);
-
-        slice hexDigest = raw;
-        hexDigest.moveStart(dashPos + 1);
-
-        if (genSize + hexDigest.size/2 > sizeof(_buffer))
-            throw error(error::BadRevisionID); // rev ID is too long to fit in my buffer
         dst += genSize;
-        for (unsigned i=0; i<hexDigest.size; i+=2) {
-            if (!isxdigit(hexDigest[i]) || !isxdigit(hexDigest[i+1])) {
-                throw error(error::BadRevisionID); // digest is not hex
+
+        slice suffix = ascii;
+        suffix.moveStart(sepPos + 1);
+
+        if (isClock) {
+            if (1 + genSize + suffix.size > sizeof(_buffer))
+                return false; // rev ID is too long to fit in my buffer
+            memcpy(dst, suffix.buf, suffix.size);
+            dst += suffix.size;
+        } else {
+            if (genSize + suffix.size/2 > sizeof(_buffer) || (suffix.size & 1))
+                return false; // rev ID is too long to fit in my buffer
+            for (unsigned i=0; i<suffix.size; i+=2) {
+                if (!isxdigit(suffix[i]) || !isxdigit(suffix[i+1]))
+                    return false; // digest is not hex
+                *dst++ = (uint8_t)(16*digittoint(suffix[i]) + digittoint(suffix[i+1]));
             }
-            *dst++ = (uint8_t)(16*digittoint(hexDigest[i]) + digittoint(hexDigest[i+1]));
         }
         size = dst - start;
+        return true;
     }
 
 }

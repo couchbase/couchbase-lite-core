@@ -629,7 +629,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         revidBuffer parentID(parentRevID);
         generation = parentID.generation() + 1;
     }
-    return revidBuffer(generation, digest);
+    return revidBuffer(generation, digest, kDigestType);
 #else
     error::_throw(FDB_RESULT_CRYPTO_ERROR);
 #endif

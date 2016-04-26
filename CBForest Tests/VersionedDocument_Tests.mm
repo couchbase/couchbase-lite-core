@@ -59,6 +59,46 @@ static revidBuffer stringToRev(NSString* str) {
     static const uint8_t expectedBytes2[18] = {0xd2, 0x09, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD,
         0xEF, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF};
     Assert(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
+
+    // New-style ('clock') revID:
+    rev.parseNew(slice("17@snej"));
+    Assert(rev.isClock());
+    AssertEq(rev.generation(), 17);
+    AssertEq(rev.digest(), slice("snej"));
+    static const uint8_t expectedBytes3[] = {0x00, 0x11, 's', 'n', 'e', 'j'};
+    Assert(rev == slice(expectedBytes3, sizeof(expectedBytes3)));
+}
+
+- (void) test00_BadRevIDs {
+    // Check a bunch of invalid revIDs to make sure they all correctly fail to parse:
+    static const char* kBadStrings[] = {
+        "",
+        "@",
+        "1@",
+        "@snej",
+        "snej@x",
+        "0@snej"
+        "1234567890@snej",
+        "1234@abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+        "-",
+        "1-",
+        "-ff",
+        "1-snej",
+        "1-abc",
+        "0-cafe",
+        "1-123",
+        "1234567890-cafe",
+        "123-f@bb",
+    };
+    for (int i = 0; i < sizeof(kBadStrings)/sizeof(char*); i++) {
+        revidBuffer rev;
+        Assert(!rev.tryParse(slice(kBadStrings[i]), true),
+               @"Mistakenly parsed '%s'", kBadStrings[i]);
+    }
+
+    // Make sure we don't parse new-style IDs with the old parser:
+    revidBuffer rev;
+    Assert(!rev.tryParse(slice("17@snej"), false));
 }
 
 
