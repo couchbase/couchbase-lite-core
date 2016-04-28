@@ -198,7 +198,7 @@ extern "C" {
                              uint64_t timestamp,
                              C4Error *outError);
         
-    bool c4doc_isExpired(C4Database *db, C4Slice docId);
+	uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId);
 
 
     //////// HIGH-LEVEL:

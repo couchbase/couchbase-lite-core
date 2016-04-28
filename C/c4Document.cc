@@ -536,17 +536,17 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
     return true;
 }
 
-bool c4doc_isExpired(C4Database *db, C4Slice docID)
+uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)
 {
-    KeyStore expiryKvs(db, "expiry");
-    Document existing = expiryKvs.get(docID);
-    if(!existing.exists()) {
-        return false;
-    }
+	KeyStore expiryKvs(db, "expiry");
+	Document existing = expiryKvs.get(docID);
+	if (!existing.exists()) {
+		return 0;
+	}
 
-    uint64_t timestamp;
-    GetUVarInt(existing.body(), &timestamp);
-    return timestamp <= time(NULL);
+	uint64_t timestamp;
+	GetUVarInt(existing.body(), &timestamp);
+	return timestamp;
 }
 
 static alloc_slice createDocUUID() {

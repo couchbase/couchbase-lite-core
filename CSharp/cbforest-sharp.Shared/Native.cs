@@ -100,7 +100,7 @@ namespace CBForest
         {
 #if DEBUG && !NET_3_5
             foreach (var pair in _AllocatedObjects) {
-                Trace.WriteLine("ERROR: {0}* at 0x{1} leaked", pair.Value, pair.Key.ToString("X"));
+                Trace.WriteLine(String.Format("ERROR: {0}* at 0x{1} leaked", pair.Value, pair.Key.ToString("X")));
                 _GcAction[pair.Value](pair.Key); // To make sure the next test doesn't fail because of this one's mistakes
             }
 
