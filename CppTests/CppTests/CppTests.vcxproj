@@ -164,7 +164,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\C\tests\c4AllDocsPerformanceTest.cc" />
     <ClCompile Include="..\..\C\tests\c4DatabaseTest.cc" />
+    <ClCompile Include="..\..\C\tests\c4GeoTest.cc" />
     <ClCompile Include="..\..\C\tests\c4KeyTest.cc" />
     <ClCompile Include="..\..\C\tests\c4Test.cc" />
     <ClCompile Include="..\..\C\tests\c4ViewTest.cc" />

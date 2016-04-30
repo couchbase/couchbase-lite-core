@@ -39,7 +39,8 @@ c4doc_purgeRevision
 c4doc_setType
 c4doc_save
 c4doc_setExpiration
-c4doc_isExpired
+c4doc_getExpiration
+c4db_nextDocExpiration
 c4rev_getGeneration
 c4db_enumerateChanges
 c4db_enumerateAllDocs

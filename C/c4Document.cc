@@ -26,6 +26,10 @@
 #include "SecureDigest.hh"
 #include "varint.hh"
 
+#ifdef _MSC_VER
+#include <ctime>
+#endif
+
 using namespace cbforest;
 
 
@@ -482,58 +486,60 @@ bool c4doc_save(C4Document *doc,
 
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
-    Transaction t(db); // To avoid race conditions
-    if(!db->get(docId, KeyStore::kMetaOnly).exists()) {
-        recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
-        return false;
-    }
-    
-    time_t now = time(NULL);
-    if(timestamp <= now) {
-        recordError(C4Domain, kC4ErrorInvalidParameter, outError);
-        return false;
-    }
-    
-    CollatableBuilder tsKeyBuilder;
-    tsKeyBuilder.beginArray();
-    tsKeyBuilder << timestamp;
-    tsKeyBuilder << docId;
-    tsKeyBuilder.endArray();
-    slice tsKey = tsKeyBuilder.data();
-    
-    alloc_slice tsValue(SizeOfVarInt(timestamp));
-    PutUVarInt((void *)tsValue.buf, timestamp);
-    
-    KeyStore expiryKvs(db, "expiry");
-    KeyStoreWriter writer = t(expiryKvs);
-    Document existingDoc = writer.get(docId);
-    if(existingDoc.exists()) {
-        // Previous entry found
-        if(existingDoc.body().compare(tsValue) == 0) {
-            // No change
-            return true;
-        }
-        
-        // Remove old entry
-        uint64_t oldTimestamp;
-        CollatableBuilder oldTsKey;
-        GetUVarInt(existingDoc.body(), &oldTimestamp);
-        oldTsKey.beginArray();
-        oldTsKey << oldTimestamp;
-        oldTsKey << docId;
-        oldTsKey.endArray();
-        writer.del(oldTsKey);
-    }
-    
-    if(timestamp == UINT64_MAX) {
-        writer.del(tsKey);
-        writer.del(docId);
-    } else {
-        writer.set(tsKey, slice::null);
-        writer.set(docId, tsValue);
-    }
+	try {
+		if (!db->mustBeInTransaction(outError)) {
+			return false;
+		}
 
-    return true;
+		if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
+			recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+			return false;
+		}
+
+		CollatableBuilder tsKeyBuilder;
+		tsKeyBuilder.beginArray();
+		tsKeyBuilder << (double)timestamp;
+		tsKeyBuilder << docId;
+		tsKeyBuilder.endArray();
+		slice tsKey = tsKeyBuilder.data();
+
+		alloc_slice tsValue(SizeOfVarInt(timestamp));
+		PutUVarInt((void *)tsValue.buf, timestamp);
+
+		KeyStore expiryKvs(db, "expiry");
+		KeyStoreWriter writer = KeyStoreWriter(expiryKvs, *(db->transaction()));
+		Document existingDoc = writer.get(docId);
+		if (existingDoc.exists()) {
+			// Previous entry found
+			if (existingDoc.body().compare(tsValue) == 0) {
+				// No change
+				return true;
+			}
+
+			// Remove old entry
+			uint64_t oldTimestamp;
+			CollatableBuilder oldTsKey;
+			GetUVarInt(existingDoc.body(), &oldTimestamp);
+			oldTsKey.beginArray();
+			oldTsKey << (double)oldTimestamp;
+			oldTsKey << docId;
+			oldTsKey.endArray();
+			writer.del(oldTsKey);
+		}
+
+		if (timestamp == UINT64_MAX) {
+			writer.del(tsKey);
+			writer.del(docId);
+		}
+		else {
+			writer.set(tsKey, slice::null);
+			writer.set(docId, tsValue);
+		}
+
+		return true;
+	} catchError(outError);
+
+	return false;
 }
 
 uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)

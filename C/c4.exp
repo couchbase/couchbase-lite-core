@@ -48,7 +48,8 @@ _c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save
 _c4doc_setExpiration
-_c4doc_isExpired
+_c4doc_getExpiration
+_c4db_nextDocExpiration
 
 _c4rev_getGeneration
 

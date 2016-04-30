@@ -149,6 +149,12 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutputPath)CBForest-Interop.dll $(SolutionDir)..\CSharp\prebuilt\$(PlatformTarget)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copies the compiled DLL to the CSharp prebuilt directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -170,6 +176,12 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutputPath)CBForest-Interop.dll $(SolutionDir)..\CSharp\prebuilt\$(PlatformTarget)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copies the compiled DLL to the CSharp prebuilt directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\CBForest\Collatable.cc" />
@@ -194,6 +206,7 @@
     <ClCompile Include="..\C\c4Database.cc" />
     <ClCompile Include="..\C\c4DocEnumerator.cc" />
     <ClCompile Include="..\C\c4Document.cc" />
+    <ClCompile Include="..\C\c4ExpiryEnumerator.cc" />
     <ClCompile Include="..\C\c4Key.cc" />
     <ClCompile Include="..\C\c4View.cc" />
     <ClCompile Include="..\vendor\forestdb\src\api_wrapper.cc" />

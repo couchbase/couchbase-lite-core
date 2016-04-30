@@ -568,9 +568,9 @@ class C4DatabaseTest : public C4Test {
         
         c4exp_free(e);
         AssertEqual(expiredCount, 2);
-        Assert(c4doc_isExpired(db, docID));
-        Assert(c4doc_isExpired(db, docID2));
-        Assert(!c4doc_isExpired(db, docID3));
+		AssertEqual(c4doc_getExpiration(db, docID), (uint64_t)expire);
+		AssertEqual(c4doc_getExpiration(db, docID2), (uint64_t)expire);
+		AssertEqual(c4db_nextDocExpiration(db), (uint64_t)expire);
         
         e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);

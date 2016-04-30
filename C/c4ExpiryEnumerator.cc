@@ -13,6 +13,10 @@
 #include "KeyStore.hh"
 #include "varint.hh"
 #include "stdint.h"
+
+#ifdef _MSC_VER
+#include <ctime>
+#endif
 using namespace cbforest;
 
 struct C4ExpiryEnumerator
@@ -53,7 +57,7 @@ public:
     {
         CollatableBuilder c;
         c.beginArray();
-        c << _endTimestamp;
+        c << (double)_endTimestamp;
         c.beginMap();
         c.endMap();
         c.endArray();
@@ -76,8 +80,12 @@ private:
 
 C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError)
 {
-    WITH_LOCK(database);
-    return new C4ExpiryEnumerator(database);
+	try {
+		WITH_LOCK(database);
+		return new C4ExpiryEnumerator(database);
+	} catchError(outError);
+
+	return NULL;
 }
 
 bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)

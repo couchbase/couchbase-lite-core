@@ -1244,15 +1244,17 @@ namespace CBForest
         }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_isExpired(C4Database *db, C4Slice docID);
+        public static extern ulong c4doc_getExpiration(C4Database *db, C4Slice docID);
 
-        public static bool c4doc_isExpired(C4Database *db, string docID)
+        public static ulong c4doc_getExpiration(C4Database* db, string docID)
         {
             using (var docID_ = new C4String(docID)) {
-                return c4doc_isExpired(db, docID_.AsC4Slice());
+                return c4doc_getExpiration(db, docID_.AsC4Slice());
             }
         }
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4db_nextDocExpiration(C4Database* db);
 
         /// <summary>
         /// Generates the revision ID for a new document revision.
