@@ -46,22 +46,22 @@ public:
     void testReadKey() {
         populateKey();
         C4KeyReader r = c4key_read(key);
-        AssertEqual(c4key_peek(&r), kC4Array);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4Array);
         c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), kC4Null);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4Null);
         c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), kC4Bool);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4Bool);
         AssertEqual(c4key_readBool(&r), false);
         AssertEqual(c4key_readBool(&r), true);
         AssertEqual(c4key_readNumber(&r), 0.0);
         AssertEqual(c4key_readNumber(&r), 12345.0);
         AssertEqual(c4key_readNumber(&r), -2468.0);
         AssertEqual(c4key_readString(&r), c4str("foo"));
-        AssertEqual(c4key_peek(&r), kC4Array);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4Array);
         c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), kC4EndSequence);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4EndSequence);
         c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), kC4EndSequence);
+        AssertEqual(c4key_peek(&r), (uint8_t)kC4EndSequence);
         c4key_skipToken(&r);
     }
 

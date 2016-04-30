@@ -12,6 +12,10 @@
 #include <iostream>
 #ifndef _MSC_VER
 #include <unistd.h>
+#else
+#define random() rand()
+#define srandom(seed) srand(seed)
+#include <algorithm>
 #endif
 
 #ifdef _MSC_VER
@@ -127,12 +131,17 @@ public:
         while (c4queryenum_next(e, &error)) {
             ++found;
             C4GeoArea a = e->geoBBox;
-            if (verbose)
-                fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
-                        (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
-            AssertEqual(e->value, C4STR("1234"));
+			if (verbose) {
+				fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
+					(int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
+			}
+
+			C4Slice expected = C4STR("1234");
+            AssertEqual(e->value, expected);
             Assert(a.xmin <= 40 && a.xmax >= 10 && a.ymin <= 40 && a.ymax >= 10);
-            AssertEqual(e->geoJSON, C4STR("{\"geo\":true}"));
+
+			expected = C4STR("{\"geo\":true}");
+            AssertEqual(e->geoJSON, expected);
         }
         c4queryenum_free(e);
         AssertEqual(error.code, 0);
