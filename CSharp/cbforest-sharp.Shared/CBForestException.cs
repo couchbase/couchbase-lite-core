@@ -80,7 +80,7 @@ namespace CBForest
         /// </summary>
         /// <param name="error">The error that is the source of the exception.</param>
         public CBForestException(C4Error error)
-            : base(String.Format("CBForest exception ({0})", error))
+            : base(String.Format("{0} (Code: {1})", Native.c4error_getMessage(error), error))
         {
             Error = error;
         }

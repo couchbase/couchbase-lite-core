@@ -37,18 +37,18 @@ namespace CBForest
     /// <summary>
     /// Bridge into CBForest-Interop.dll
     /// </summary>
-    #if __IOS__
+#if __IOS__
     [Foundation.Preserve(AllMembers = true)]
-    #endif
+#endif
     public static unsafe class Native
     {
-        #if __IOS__
+#if __IOS__
         private const string DLL_NAME = "__Internal";
-        #else
+#else
         private const string DLL_NAME = "CBForest-Interop";
-        #endif
+#endif
 
-        #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
         private static string _Dummy;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string> _AllocatedObjects = new 
             System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string>();
@@ -64,14 +64,14 @@ namespace CBForest
             { "C4QueryEnumerator", p => _c4queryenum_free((C4QueryEnumerator*)p.ToPointer()) },
             { "C4KeyValueList", p => _c4kv_free((C4KeyValueList*)p.ToPointer()) }
         };
-        #endif
+#endif
 
         private static Action<C4LogLevel, string> _LogCallback;
         private static C4LogCallback _NativeLogCallback;
 
         static Native()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 var dllName = string.Format("{0}.dll", DLL_NAME);
                 var directory = AppDomain.CurrentDomain.BaseDirectory;
                 if(directory == null) {
@@ -86,7 +86,7 @@ namespace CBForest
                     : "x64";
 
                 var dllPath = Path.Combine(Path.Combine(directory, architecture), dllName);
-                if (!File.Exists(dllPath)) {
+                if(!File.Exists(dllPath)) {
                     return;
                 }
 
@@ -98,18 +98,25 @@ namespace CBForest
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             foreach (var pair in _AllocatedObjects) {
                 Console.WriteLine("ERROR: {0}* at 0x{1} leaked", pair.Value, pair.Key.ToString("X"));
                 _GcAction[pair.Value](pair.Key); // To make sure the next test doesn't fail because of this one's mistakes
+            }
+
+            if(_AllocatedObjects.Count != c4_getObjectCount()) {
+                throw new ApplicationException("Mismatch between allocated object map and object count");
             }
 
             if (_AllocatedObjects.Any()) {
                 _AllocatedObjects.Clear();
                 throw new ApplicationException("Memory leaks detected");
             }
-            #endif
+#endif
         }
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int c4_getObjectCount();
 
         /// <summary>
         /// Compares the first count bytes of the block of memory pointed by b1 to the
@@ -126,10 +133,10 @@ namespace CBForest
         /// 0	            |   the contents of both memory blocks are equal
         /// &gt;0	        |   the first byte that does not match in both memory blocks has a greater value in b1 than in b2
         ///                     (if evaluated as unsigned char values)</returns>
-        [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int memcmp(void* b1, void* b2, UIntPtr count);
 
-        [DllImport("msvcrt.dll", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int memcpy(void* dest, void* src, UIntPtr count);
 
         [DllImport("kernel32")]
@@ -142,7 +149,7 @@ namespace CBForest
         /// <returns>true if two slices have equal contents.</returns>
         /// <param name="a">The first slice to compare</param>
         /// <param name="b">The second slice to compare</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4SliceEqual(C4Slice a, C4Slice b);
 
@@ -150,12 +157,12 @@ namespace CBForest
         /// Frees the memory of a C4Slice.
         /// </summary>
         /// <param name="slice">The slice that will have its memory freed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4slice_free(C4Slice slice);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_open")]
-        private static extern C4Database* _c4db_open(C4Slice path, C4DatabaseFlags flags, 
-            C4EncryptionKey *encryptionKey, C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_open")]
+        private static extern C4Database* _c4db_open(C4Slice path, C4DatabaseFlags flags,
+            C4EncryptionKey* encryptionKey, C4Error* outError);
 
         /// <summary>
         /// Opens a database.
@@ -165,22 +172,22 @@ namespace CBForest
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
-        public static C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags, 
-            C4EncryptionKey *encryptionKey, C4Error *outError)
+        public static C4Database* c4db_open(C4Slice path, C4DatabaseFlags flags,
+            C4EncryptionKey* encryptionKey, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4db_open(path, flags, encryptionKey, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Database");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4db_open] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4db_open(path, flags, encryptionKey, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -191,17 +198,21 @@ namespace CBForest
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
-        public static C4Database *c4db_open(string path, C4DatabaseFlags flags,
-            C4EncryptionKey *encryptionKey, C4Error *outError)
+        public static C4Database* c4db_open(string path, C4DatabaseFlags flags,
+            C4EncryptionKey* encryptionKey, C4Error* outError)
         {
             using(var path_ = new C4String(path)) {
                 return c4db_open(path_.AsC4Slice(), flags, encryptionKey, outError);
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_close")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool _c4db_close(C4Database *db, C4Error *outError);
+        public static extern bool c4db_close(C4Database* db, C4Error* outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_free")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool _c4db_free(C4Database* db);
 
         /// <summary>
         /// Closes the database and frees the object.
@@ -209,26 +220,26 @@ namespace CBForest
         /// <param name="db">The DB object to close</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_close(C4Database *db, C4Error *outError)
+        public static bool c4db_free(C4Database* db)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)db;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
-                Console.WriteLine("WARNING: [c4db_close] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
+                Console.WriteLine("WARNING: [c4db_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
-            return _c4db_close(db, outError);
+#endif
+#endif
+            return _c4db_free(db);
         }
-            
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_delete")]
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_delete")]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool _c4db_delete(C4Database *db, C4Error *outError);
+        private static extern bool _c4db_delete(C4Database* db, C4Error* outError);
 
         /// <summary>
         /// Closes the database, deletes the file, and frees the object
@@ -236,34 +247,22 @@ namespace CBForest
         /// <param name="db">The DB object to delete</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4db_delete(C4Database *db, C4Error *outError)
+        public static bool c4db_delete(C4Database* db, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)db;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4db_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             return _c4db_delete(db, outError);
         }
-        
-        /// <summary>
-        /// Deletes the file(s) for the database at the given path.
-        /// All C4Databases at that path should be closed first.
-        /// </summary>
-        /// <returns>Whether or not the operation succeeded</returns>
-        /// <param name="path">The path to delete files at</param>
-        /// <param name="flags">The flags to use during deletion</param>
-        /// <param name="outError">Any errors that occurred will be recorded here</param> 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
 
         /// <summary>
         /// Deletes the file(s) for the database at the given path.
@@ -273,10 +272,22 @@ namespace CBForest
         /// <param name="path">The path to delete files at</param>
         /// <param name="flags">The flags to use during deletion</param>
         /// <param name="outError">Any errors that occurred will be recorded here</param> 
-        public static bool c4db_deleteAtPath(string path, C4DatabaseFlags flags, C4Error *outError)
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error* outError);
+
+        /// <summary>
+        /// Deletes the file(s) for the database at the given path.
+        /// All C4Databases at that path should be closed first.
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="path">The path to delete files at</param>
+        /// <param name="flags">The flags to use during deletion</param>
+        /// <param name="outError">Any errors that occurred will be recorded here</param> 
+        public static bool c4db_deleteAtPath(string path, C4DatabaseFlags flags, C4Error* outError)
         {
             using(var path_ = new C4String(path)) {
-                return c4db_deleteAtPath(path_.AsC4Slice(), flags, outError);   
+                return c4db_deleteAtPath(path_.AsC4Slice(), flags, outError);
             }
         }
 
@@ -286,13 +297,13 @@ namespace CBForest
         /// <returns>true on success, false otherwise</returns>
         /// <param name="db">The database to compact.</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_compact(C4Database *db, C4Error *outError);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        public static extern bool c4db_compact(C4Database* db, C4Error* outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_isCompacting(C4Database *db);
+        public static extern bool c4db_isCompacting(C4Database* db);
 
         /// <summary>
         /// Changes the encryption key of a given database
@@ -301,28 +312,28 @@ namespace CBForest
         /// <param name="db">The database to change the encryption key of</param>
         /// <param name="newKey">The new encryption key to use</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_rekey(C4Database *db, C4EncryptionKey *newKey, C4Error *outError);
-        
+        public static extern bool c4db_rekey(C4Database* db, C4EncryptionKey* newKey, C4Error* outError);
+
         //TODO: setOnCompactCallback
-        
+
         /// <summary>
         /// Returns the path of the database. 
         /// </summary>
         /// <returns>The path of the database</returns>
         /// <param name="db">The database to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_getPath")]
-        public static extern C4Slice _c4db_getPath(C4Database *db);
-        
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_getPath")]
+        public static extern C4Slice _c4db_getPath(C4Database* db);
+
         /// <summary>
         /// Returns the path of the database. 
         /// </summary>
         /// <returns>The path of the database</returns>
         /// <param name="db">The database to operate on</param>
-        public static string c4db_getPath(C4Database *db)
+        public static string c4db_getPath(C4Database* db)
         {
-            return BridgeSlice(() => _c4db_getPath(db));   
+            return BridgeSlice(() => _c4db_getPath(db));
         }
 
         /// <summary>
@@ -330,16 +341,16 @@ namespace CBForest
         /// </summary>
         /// <param name="db">The database object to examine</param>
         /// <returns>The number of (undeleted) documents in the database.</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern ulong c4db_getDocumentCount(C4Database *db);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4db_getDocumentCount(C4Database* db);
 
         /// <summary>
         /// Returns the latest sequence number allocated to a revision.
         /// </summary>
         /// <param name="db">The database object to examine</param>
         /// <returns>The latest sequence number allocated to a revision.</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern ulong c4db_getLastSequence(C4Database *db);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4db_getLastSequence(C4Database* db);
 
         /// <summary>
         /// Begins a transaction.
@@ -348,9 +359,9 @@ namespace CBForest
         /// <param name="db">The database object to start a transaction on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_beginTransaction(C4Database *db, C4Error *outError);
+        public static extern bool c4db_beginTransaction(C4Database* db, C4Error* outError);
 
         /// <summary>
         /// Commits or aborts a transaction. If there have been multiple calls to beginTransaction, 
@@ -361,45 +372,45 @@ namespace CBForest
         /// <param name="commit">If true, commit the results, otherwise abort</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_endTransaction(C4Database *db, [MarshalAs(UnmanagedType.U1)]bool commit, C4Error *outError);
+        public static extern bool c4db_endTransaction(C4Database* db, [MarshalAs(UnmanagedType.U1)]bool commit, C4Error* outError);
 
         /// <summary>
         /// Is a transaction active?
         /// </summary>
         /// <param name="db">The database to check</param>
         /// <returns>Whether or not a transaction is active</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_isInTransaction(C4Database *db);
+        public static extern bool c4db_isInTransaction(C4Database* db);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4raw_free")]
-        private static extern void _c4raw_free(C4RawDocument *rawDoc);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4raw_free")]
+        private static extern void _c4raw_free(C4RawDocument* rawDoc);
 
         /// <summary>
         /// Frees the storage occupied by a raw document.
         /// </summary>
         /// <param name="rawDoc"></param>
-        public static void c4raw_free(C4RawDocument *rawDoc)
+        public static void c4raw_free(C4RawDocument* rawDoc)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)rawDoc;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4db_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4raw_free(rawDoc);
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4raw_get")]
-        private static extern C4RawDocument* _c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4raw_get")]
+        private static extern C4RawDocument* _c4raw_get(C4Database* db, C4Slice storeName, C4Slice docID, C4Error* outError);
 
         /// <summary>
         /// Reads a raw document from the database. In Couchbase Lite the store named "info" is used for 
@@ -410,21 +421,21 @@ namespace CBForest
         /// <param name="docID">The ID of the document to retrieve</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
-        public static C4RawDocument* c4raw_get(C4Database *db, C4Slice storeName, C4Slice docID, C4Error *outError)
+        public static C4RawDocument* c4raw_get(C4Database* db, C4Slice storeName, C4Slice docID, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4raw_get(db, storeName, docID, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4RawDocument");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4raw_get] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4raw_get(db, storeName, docID, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -436,7 +447,7 @@ namespace CBForest
         /// <param name="docID">The ID of the document to retrieve</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
-        public static C4RawDocument* c4raw_get(C4Database *db, string storeName, string docID, C4Error *outError)
+        public static C4RawDocument* c4raw_get(C4Database* db, string storeName, string docID, C4Error* outError)
         {
             using(var storeName_ = new C4String(storeName))
             using(var docID_ = new C4String(docID)) {
@@ -454,10 +465,10 @@ namespace CBForest
         /// <param name="body">The body to store</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4raw_put(C4Database *db, C4Slice storeName, C4Slice key, C4Slice meta,
-            C4Slice body, C4Error *outError);
+        public static extern bool c4raw_put(C4Database* db, C4Slice storeName, C4Slice key, C4Slice meta,
+            C4Slice body, C4Error* outError);
 
         /// <summary>
         /// Writes a raw document to the database, or deletes it if both meta and body are NULL.
@@ -469,44 +480,44 @@ namespace CBForest
         /// <param name="body">The body to store</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4raw_put(C4Database *db, string storeName, string key, string meta, string body, C4Error *outError)
+        public static bool c4raw_put(C4Database* db, string storeName, string key, string meta, string body, C4Error* outError)
         {
             using(var storeName_ = new C4String(storeName))
             using(var key_ = new C4String(key))
             using(var meta_ = new C4String(meta))
             using(var body_ = new C4String(body)) {
-                return c4raw_put(db, storeName_.AsC4Slice(), key_.AsC4Slice(), meta_.AsC4Slice(), 
-                                body_.AsC4Slice(), outError);  
+                return c4raw_put(db, storeName_.AsC4Slice(), key_.AsC4Slice(), meta_.AsC4Slice(),
+                                body_.AsC4Slice(), outError);
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_free")]
-        private static extern void _c4doc_free(C4Document *doc);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4doc_free")]
+        private static extern void _c4doc_free(C4Document* doc);
 
         /// <summary>
         /// Frees a C4Document.
         /// </summary>
         /// <param name="doc">The document to free</param>
-        public static void c4doc_free(C4Document *doc)
+        public static void c4doc_free(C4Document* doc)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)doc;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4doc_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4doc_free(doc);
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_get")]
-        private static extern C4Document* _c4doc_get(C4Database *db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, 
-            C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4doc_get")]
+        private static extern C4Document* _c4doc_get(C4Database* db, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist,
+            C4Error* outError);
 
         /// <summary>
         /// Gets a document from the database. If there's no such document, the behavior depends on
@@ -518,22 +529,22 @@ namespace CBForest
         /// <param name="mustExist">Whether or not to create the document on demand</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
-        public static C4Document* c4doc_get(C4Database *db, C4Slice docID, bool mustExist, 
-            C4Error *outError)
+        public static C4Document* c4doc_get(C4Database* db, C4Slice docID, bool mustExist,
+            C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4doc_get(db, docID, mustExist, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4doc_get] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4doc_get(db, docID, mustExist, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -546,10 +557,10 @@ namespace CBForest
         /// <param name="mustExist">Whether or not to create the document on demand</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the retrieved document on success, or null on failure</returns>
-        public static C4Document* c4doc_get(C4Database *db, string docID, bool mustExist, C4Error *outError)
+        public static C4Document* c4doc_get(C4Database* db, string docID, bool mustExist, C4Error* outError)
         {
             using(var docID_ = new C4String(docID)) {
-                return c4doc_get(db, docID_.AsC4Slice(), mustExist, outError);   
+                return c4doc_get(db, docID_.AsC4Slice(), mustExist, outError);
             }
         }
 
@@ -560,8 +571,8 @@ namespace CBForest
         /// <param name="db">The database to search in</param>
         /// <param name="sequence">The sequence number to search for</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4Document* c4doc_getBySequence(C4Database *db, ulong sequence, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern C4Document* c4doc_getBySequence(C4Database* db, ulong sequence, C4Error* outError);
 
         /// <summary>
         /// Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention 
@@ -570,8 +581,8 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>The document type of the document in question</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_getType")]
-        public static extern C4Slice _c4doc_getType(C4Document *doc);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4doc_getType")]
+        public static extern C4Slice _c4doc_getType(C4Document* doc);
 
         /// <summary>
         /// Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention 
@@ -580,7 +591,7 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>The document type of the document in question</returns>
-        public static string c4doc_getType(C4Document *doc)
+        public static string c4doc_getType(C4Document* doc)
         {
             return BridgeSlice(() => _c4doc_getType(doc));
         }
@@ -593,9 +604,9 @@ namespace CBForest
         /// <param name="db">The database to purge the document from</param>
         /// <param name="docId">The ID of the document to purge</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_purgeDoc(C4Database *db, C4Slice docId, C4Error *outError);
+        public static extern bool c4db_purgeDoc(C4Database* db, C4Slice docId, C4Error* outError);
 
         /// <summary>
         /// Purges a document from the database.  When a purge occurs a document is immediately
@@ -605,9 +616,9 @@ namespace CBForest
         /// <param name="db">The database to purge the document from</param>
         /// <param name="docId">The ID of the document to purge</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        public static bool c4db_purgeDoc(C4Database *db, string docId, C4Error *outError)
+        public static bool c4db_purgeDoc(C4Database* db, string docId, C4Error* outError)
         {
-            using (var docId_ = new C4String(docId)) {
+            using(var docId_ = new C4String(docId)) {
                 return c4db_purgeDoc(db, docId_.AsC4Slice(), outError);
             }
         }
@@ -620,10 +631,10 @@ namespace CBForest
         /// <param name="withBody">Whether or not to load the body of the revision</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_selectRevision(C4Document *doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody, 
-            C4Error *outError);
+        public static extern bool c4doc_selectRevision(C4Document* doc, C4Slice revID, [MarshalAs(UnmanagedType.U1)]bool withBody,
+            C4Error* outError);
 
         /// <summary>
         /// Selects a specific revision of a document (or no revision, if revID is NULL.)
@@ -633,7 +644,7 @@ namespace CBForest
         /// <param name="withBody">Whether or not to load the body of the revision</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4doc_selectRevision(C4Document *doc, string revID, bool withBody, C4Error *outError)
+        public static bool c4doc_selectRevision(C4Document* doc, string revID, bool withBody, C4Error* outError)
         {
             using(var revID_ = new C4String(revID)) {
                 return c4doc_selectRevision(doc, revID_.AsC4Slice(), withBody, outError);
@@ -645,9 +656,9 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_selectCurrentRevision(C4Document *doc);
+        public static extern bool c4doc_selectCurrentRevision(C4Document* doc);
 
         /// <summary>
         /// Populates the body field of a doc's selected revision,
@@ -656,27 +667,27 @@ namespace CBForest
         /// <param name="doc">The document to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_loadRevisionBody(C4Document *doc, C4Error *outError);
+        public static extern bool c4doc_loadRevisionBody(C4Document* doc, C4Error* outError);
 
         /// <summary>
         /// Checks to see if a given document has a revision body
         /// </summary>
         /// <returns><c>true</c>, if a revision body is available, <c>false</c> otherwise.</returns>
         /// <param name="doc">The document to check.</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_hasRevisionBody(C4Document *doc);
+        public static extern bool c4doc_hasRevisionBody(C4Document* doc);
 
         /// <summary>
         /// Selects the parent of the selected revision, if it's known, else inserts null.
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_selectParentRevision(C4Document *doc);
+        public static extern bool c4doc_selectParentRevision(C4Document* doc);
 
         /// <summary>
         /// Selects the next revision in priority order.
@@ -684,9 +695,9 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_selectNextRevision(C4Document *doc);
+        public static extern bool c4doc_selectNextRevision(C4Document* doc);
 
         /// <summary>
         /// Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
@@ -696,10 +707,10 @@ namespace CBForest
         /// <param name="withBody">Whether or not to automatically load the body of the revision</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_selectNextLeafRevision(C4Document *doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted, 
-            [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error *outError);
+        public static extern bool c4doc_selectNextLeafRevision(C4Document* doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted,
+            [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error* outError);
 
         /// <summary>
         /// Given a revision ID, returns its generation number (the decimal number before
@@ -707,7 +718,7 @@ namespace CBForest
         /// </summary>
         /// <returns>The generation of the revision ID</returns>
         /// <param name="revID">The revision ID to inspect</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern int c4rev_getGeneration(C4Slice revID);
 
         /// <summary>
@@ -718,37 +729,40 @@ namespace CBForest
         /// <param name="revID">The revision ID to inspect</param>
         public static int c4rev_getGeneration(string revID)
         {
-            using (var c4str = new C4String(revID)) {
+            using(var c4str = new C4String(revID)) {
                 return c4rev_getGeneration(c4str.AsC4Slice());
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_free")]
-        private static extern void _c4enum_free(C4DocEnumerator *e);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4enum_close(C4DocEnumerator* e);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4enum_free")]
+        private static extern void _c4enum_free(C4DocEnumerator* e);
 
         /// <summary>
         /// Frees the resources used by a C4DocEnumerator
         /// </summary>
         /// <param name="e">The doc enumerator to free</param>
-        public static void c4enum_free(C4DocEnumerator *e)
+        public static void c4enum_free(C4DocEnumerator* e)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)e;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4enum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4enum_free(e);
         }
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint="c4db_enumerateChanges")]
-        private static extern C4DocEnumerator* _c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options, 
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_enumerateChanges")]
+        private static extern C4DocEnumerator* _c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options,
             C4Error* outError);
 
         /// <summary>
@@ -760,27 +774,27 @@ namespace CBForest
         /// <param name="options">Enumeration options (NULL for defaults).</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumeator on success, otherwise null</returns>
-        public static C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options, 
+        public static C4DocEnumerator* c4db_enumerateChanges(C4Database* db, ulong since, C4EnumeratorOptions* options,
             C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4db_enumerateChanges(db, since, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4db_enumerateChanges] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4db_enumerateChanges(db, since, options, outError);
-            #endif
+#endif
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateAllDocs")]
-        private static extern C4DocEnumerator* _c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
-            C4EnumeratorOptions *options, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_enumerateAllDocs")]
+        private static extern C4DocEnumerator* _c4db_enumerateAllDocs(C4Database* db, C4Slice startDocID, C4Slice endDocID,
+            C4EnumeratorOptions* options, C4Error* outError);
 
         /// <summary>
         /// Creates an enumerator which will iterate over all documents in the database
@@ -791,22 +805,22 @@ namespace CBForest
         /// <param name="endDocID">The document ID to finish enumerating at</param>
         /// <param name="options">The enumeration options (null for defaults).</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, C4Slice startDocID, C4Slice endDocID, 
-            C4EnumeratorOptions *options, C4Error *outError)
+        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database* db, C4Slice startDocID, C4Slice endDocID,
+            C4EnumeratorOptions* options, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4db_enumerateAllDocs(db, startDocID, endDocID, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4db_enumerateAllDocs] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4db_enumerateAllDocs(db, startDocID, endDocID, options, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -821,8 +835,8 @@ namespace CBForest
         /// <param name="options">Enumeration options (NULL for defaults)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
-        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *db, string startDocID, string endDocID, C4EnumeratorOptions *options,
-            C4Error *outError)
+        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database* db, string startDocID, string endDocID, C4EnumeratorOptions* options,
+            C4Error* outError)
         {
             using(var startDocID_ = new C4String(startDocID))
             using(var endDocID_ = new C4String(endDocID)) {
@@ -830,9 +844,9 @@ namespace CBForest
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4db_enumerateSomeDocs")]
-        private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database *db, C4Slice* docIDs, UIntPtr docIDsCount, 
-            C4EnumeratorOptions *options, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4db_enumerateSomeDocs")]
+        private static extern C4DocEnumerator* _c4db_enumerateSomeDocs(C4Database* db, C4Slice* docIDs, UIntPtr docIDsCount,
+            C4EnumeratorOptions* options, C4Error* outError);
 
         /// <summary>
         /// Enumerate a set of document IDs.  For each ID in the list, the enumerator
@@ -843,25 +857,26 @@ namespace CBForest
         /// <param name="docIDs">The document IDs to enumerate</param>
         /// <param name="options">The enumeration options (null for defaults).</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *db, string[] docIDs, C4EnumeratorOptions *options,
-            C4Error *outError)
+        public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database* db, string[] docIDs, C4EnumeratorOptions* options,
+            C4Error* outError)
         {
             var c4StringArr = docIDs.Select(x => new C4String(x)).ToArray();
             var sliceArr = c4StringArr.Select(x => x.AsC4Slice()).ToArray();
             var retVal = default(C4DocEnumerator*);
-            fixed(C4Slice* ptr = sliceArr) {
+            fixed (C4Slice* ptr = sliceArr)
+            {
                 retVal = _c4db_enumerateSomeDocs(db, ptr, (UIntPtr)(uint)docIDs.Length, options, outError);
-                #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                     Console.WriteLine("[c4db_enumerateSomeDocs] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
                 }
-                #endif
+#endif
             }
 
-            foreach (var c4str in c4StringArr) {
+            foreach(var c4str in c4StringArr) {
                 c4str.Dispose();
             }
 
@@ -876,16 +891,16 @@ namespace CBForest
         /// <returns>true if advanced, or false otherwise</returns>
         /// <param name="e">The enumerator to operate on</param>
         /// <param name="outError">The error, if any</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4enum_next(C4DocEnumerator *e, C4Error *outError);
+        public static extern bool c4enum_next(C4DocEnumerator* e, C4Error* outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *info);
+        public static extern bool c4enum_getDocumentInfo(C4DocEnumerator* e, C4DocumentInfo* info);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_getDocument")]
-        private static extern C4Document* _c4enum_getDocument(C4DocEnumerator *e, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4enum_getDocument")]
+        private static extern C4Document* _c4enum_getDocument(C4DocEnumerator* e, C4Error* outError);
 
         /// <summary>
         /// Returns the current document, if any, from an enumerator.
@@ -894,25 +909,25 @@ namespace CBForest
         /// Caller is responsible for calling c4document_free when done with it</returns>
         /// <param name="e">The enumerator</param>
         /// <param name="outError">Error will be stored here on failure</param>
-        public static C4Document *c4enum_getDocument(C4DocEnumerator *e, C4Error *outError)
+        public static C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4enum_getDocument(e, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             Console.WriteLine("[c4enum_getDocument] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-            #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4enum_getDocument(e, outError);
-            #endif
+#endif
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4enum_nextDocument")]
-        private static extern C4Document* _c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4enum_nextDocument")]
+        private static extern C4Document* _c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError);
 
         /// <summary>
         /// Convenience function that combines c4enum_next() and c4enum_getDocument()
@@ -920,21 +935,21 @@ namespace CBForest
         /// <param name="e">The enumerator to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the document on success, otherwise null</returns>
-        public static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError)
+        public static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4enum_nextDocument(e, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4enum_nextDocument] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4enum_nextDocument(e, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -951,11 +966,11 @@ namespace CBForest
         /// <param name="allowConflict">If false, and the parent is not a leaf, a 409 error is returned</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions inserted (0, 1, or -1 on error)</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern int c4doc_insertRevision(C4Document *doc, C4Slice revID, C4Slice body, 
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int c4doc_insertRevision(C4Document* doc, C4Slice revID, C4Slice body,
             [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments,
-            [MarshalAs(UnmanagedType.U1)]bool allowConflict, C4Error *outError);
-        
+            [MarshalAs(UnmanagedType.U1)]bool allowConflict, C4Error* outError);
+
         /// <summary>
         /// Adds a revision to a document, as a child of the currently selected revision
         /// (or as a root revision if there is no selected revision.)
@@ -970,12 +985,12 @@ namespace CBForest
         /// <param name="allowConflict">If false, and the parent is not a leaf, a 409 error is returned</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions inserted (0, 1, or -1 on error)</returns>
-        public static int c4doc_insertRevision(C4Document *doc, string revID, string body, bool deleted, bool hasAttachments,
-            bool allowConflict, C4Error *outError)
+        public static int c4doc_insertRevision(C4Document* doc, string revID, string body, bool deleted, bool hasAttachments,
+            bool allowConflict, C4Error* outError)
         {
             using(var revID_ = new C4String(revID))
             using(var body_ = new C4String(body)) {
-                return c4doc_insertRevision(doc, revID_.AsC4Slice(), body_.AsC4Slice(), deleted, 
+                return c4doc_insertRevision(doc, revID_.AsC4Slice(), body_.AsC4Slice(), deleted,
                     hasAttachments, allowConflict, outError);
             }
         }
@@ -991,10 +1006,10 @@ namespace CBForest
         /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions added to the document, or -1 on error.</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern int c4doc_insertRevisionWithHistory(C4Document *doc, C4Slice body, 
-            [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history, 
-            uint historyCount, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int c4doc_insertRevisionWithHistory(C4Document* doc, C4Slice body,
+            [MarshalAs(UnmanagedType.U1)]bool deleted, [MarshalAs(UnmanagedType.U1)]bool hasAttachments, C4Slice* history,
+            uint historyCount, C4Error* outError);
 
         /// <summary>
         ///  Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
@@ -1007,26 +1022,27 @@ namespace CBForest
         /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions added to the document, or -1 on error.</returns>
-        public static int c4doc_insertRevisionWithHistory(C4Document *doc, string body, bool deleted, 
-            bool hasAttachments, string[] history, C4Error *outError)
+        public static int c4doc_insertRevisionWithHistory(C4Document* doc, string body, bool deleted,
+            bool hasAttachments, string[] history, C4Error* outError)
         {
             var flattenedStringArray = new C4String[history.Length + 1];
             flattenedStringArray[0] = new C4String(body);
             for(int i = 0; i < history.Length; i++) {
                 flattenedStringArray[i + 1] = new C4String(history[i]);
             }
-            
-            var sliceArray = flattenedStringArray.Skip(1).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray(); 
+
+            var sliceArray = flattenedStringArray.Skip(1).Select<C4String, C4Slice>(x => x.AsC4Slice()).ToArray();
             var retVal = default(int);
-            fixed(C4Slice *a = sliceArray) {
-                retVal = c4doc_insertRevisionWithHistory(doc, 
+            fixed (C4Slice* a = sliceArray)
+            {
+                retVal = c4doc_insertRevisionWithHistory(doc,
                     flattenedStringArray[0].AsC4Slice(), deleted, hasAttachments, a, (uint)history.Length, outError);
             }
-            
+
             foreach(var s in flattenedStringArray) {
-                s.Dispose();   
+                s.Dispose();
             }
-            
+
             return retVal;
         }
 
@@ -1037,8 +1053,8 @@ namespace CBForest
         /// <param name="doc">The document to modify.</param>
         /// <param name="docType">The type to set.</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4doc_setType(C4Document *doc, C4Slice docType);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4doc_setType(C4Document* doc, C4Slice docType);
 
         /// <summary>
         /// Sets a document's docType. (By convention this is the value of the "type" property of the 
@@ -1049,10 +1065,10 @@ namespace CBForest
         /// <param name="docType">The document type to set</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static void c4doc_setType(C4Document *doc, string docType)
+        public static void c4doc_setType(C4Document* doc, string docType)
         {
             using(var docType_ = new C4String(docType)) {
-                c4doc_setType(doc, docType_.AsC4Slice());   
+                c4doc_setType(doc, docType_.AsC4Slice());
             }
         }
 
@@ -1065,8 +1081,8 @@ namespace CBForest
         /// <param name="doc">The document to modify.</param>
         /// <param name="revId">The ID of the revision to purge</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern int c4doc_purgeRevision(C4Document *doc, C4Slice revId, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int c4doc_purgeRevision(C4Document* doc, C4Slice revId, C4Error* outError);
 
         /// <summary>
         /// Purges a revision from a document.  As with purgeDoc, this operation
@@ -1077,13 +1093,13 @@ namespace CBForest
         /// <param name="doc">The document to modify.</param>
         /// <param name="revId">The ID of the revision to purge</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        public static int c4doc_purgeRevision(C4Document *doc, string revId, C4Error *outError)
+        public static int c4doc_purgeRevision(C4Document* doc, string revId, C4Error* outError)
         {
             using(var revId_ = new C4String(revId)) {
-                return c4doc_purgeRevision(doc, revId_.AsC4Slice(), outError);   
+                return c4doc_purgeRevision(doc, revId_.AsC4Slice(), outError);
             }
         }
-            
+
         /// <summary>
         /// Saves changes to a C4Document.
         /// Must be called within a transaction.
@@ -1093,43 +1109,43 @@ namespace CBForest
         /// <param name="maxRevTreeDepth">The maximum number of revision history to save</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_save(C4Document *doc, uint maxRevTreeDepth, C4Error *outError);
+        public static extern bool c4doc_save(C4Document* doc, uint maxRevTreeDepth, C4Error* outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        internal static extern C4Document* c4doc_put(C4Database *database, C4DocPutRequest_Internal *request,
-            UIntPtr *outCommonAncestorIndex, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        internal static extern C4Document* c4doc_put(C4Database* database, C4DocPutRequest_Internal* request,
+            UIntPtr* outCommonAncestorIndex, C4Error* outError);
 
-        internal static C4Document* c4doc_put(C4Database *database, C4DocPutRequest request,
-            UIntPtr *outCommonAncestorIndex, C4Error *outError)
+        internal static C4Document* c4doc_put(C4Database* database, C4DocPutRequest request,
+            UIntPtr* outCommonAncestorIndex, C4Error* outError)
         {
             C4Document* retVal = null;
             request.AsInternalObject(internalObject =>
             {
                 retVal = c4doc_put(database, &internalObject, outCommonAncestorIndex, outError);
-                #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Document");
-                    #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                     Console.WriteLine("[c4enum_nextDocument] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                    #endif
+#endif
                 }
-                #endif
+#endif
             });
 
             return retVal;
         }
 
-        public static C4Document* c4doc_put(C4Database *database, C4DocPutRequest request,
-            ulong *outCommonAncestorIndex, C4Error *outError)
+        public static C4Document* c4doc_put(C4Database* database, C4DocPutRequest request,
+            ulong* outCommonAncestorIndex, C4Error* outError)
         {
             UIntPtr outValue;
             var retVal = c4doc_put(database, request, &outValue, outError);
             if(outCommonAncestorIndex != null) {
                 *outCommonAncestorIndex = outValue.ToUInt64();
             }
-            
+
             return retVal;
         }
 
@@ -1140,8 +1156,8 @@ namespace CBForest
         /// <param name="body">The (JSON) body of the revision, exactly as it'll be stored.</param>
         /// <param name="parentRevID">The revID of the parent revision, or null if there's none.</param>
         /// <param name="deletion"><c>true</c> if this revision is a deletion.</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4doc_generateRevID")]
-        public static extern C4Slice _c4doc_generateRevID(C4Slice body, C4Slice parentRevID, 
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4doc_generateRevID")]
+        public static extern C4Slice _c4doc_generateRevID(C4Slice body, C4Slice parentRevID,
             [MarshalAs(UnmanagedType.U1)]bool deletion);
 
         /// <summary>
@@ -1165,13 +1181,13 @@ namespace CBForest
         /// <param name="deletion"><c>true</c> if this revision is a deletion.</param>
         public static string c4doc_generateRevID(string body, string parentRevID, bool deletion)
         {
-            using (var body_ = new C4String(body))
-            using (var parentRevID_ = new C4String(parentRevID)) {
+            using(var body_ = new C4String(body))
+            using(var parentRevID_ = new C4String(parentRevID)) {
                 return c4doc_generateRevID(body_.AsC4Slice(), parentRevID_.AsC4Slice(), deletion);
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_new")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_new")]
         private static extern C4Key* _c4key_new();
 
         /// <summary>
@@ -1180,22 +1196,22 @@ namespace CBForest
         /// <returns>A pointer to a new empty C4Key</returns>
         public static C4Key* c4key_new()
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4key_new();
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4key_new] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4key_new();
-            #endif
+#endif
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_withBytes")]
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_withBytes")]
         private static extern C4Key* _c4key_withBytes(C4Slice slice);
 
         /// <summary>
@@ -1205,19 +1221,19 @@ namespace CBForest
         /// <returns>A pointer to the created C4Key</returns>
         public static C4Key* c4key_withBytes(C4Slice slice)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4key_withBytes(slice);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4key_withBytes] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4key_withBytes(slice);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -1228,15 +1244,16 @@ namespace CBForest
         public static C4Key* c4key_withBytes(IEnumerable<byte> bytes)
         {
             var realized = bytes.ToArray();
-            fixed(byte* ptr = realized) {
+            fixed (byte* ptr = realized)
+            {
                 var slice = new C4Slice(ptr, (uint)realized.Length);
                 return c4key_withBytes(slice);
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_newFullTextString")]
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_newFullTextString")]
         private static extern C4Key* _c4key_newFullTextString(C4Slice text, C4Slice language);
-        
+
         /// <summary>
         /// Creates a C4Key containing a string of text to be full-text-indexed by a view.
         /// </summary>
@@ -1248,21 +1265,21 @@ namespace CBForest
         /// <param name="text">The text to be indexed.</param>
         public static C4Key* c4key_newFullTextString(C4Slice text, C4Slice language)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4key_newFullTextString(text, language);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4key_withBytes] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4key_newFullTextString(text, language);
-            #endif
+#endif
         }
-        
+
         /// <summary>
         /// Creates a C4Key containing a string of text to be full-text-indexed by a view.
         /// </summary>
@@ -1276,13 +1293,13 @@ namespace CBForest
         {
             using(var text_ = new C4String(text))
             using(var language_ = new C4String(language)) {
-                return c4key_newFullTextString(text_.AsC4Slice(), language_.AsC4Slice());   
+                return c4key_newFullTextString(text_.AsC4Slice(), language_.AsC4Slice());
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_newGeoJSON")]
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_newGeoJSON")]
         private static extern C4Key* _c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox);
-        
+
         /// <summary>
         /// Creates a C4Key containing a 2D shape to be geo-indexed.
         /// Caller must provide the bounding box of the shape.
@@ -1292,21 +1309,21 @@ namespace CBForest
         /// <param name="boundingBox">A conservative bounding box of the shape.</param>
         public static C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4key_newGeoJSON(geoJSON, boundingBox);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Key");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4key_withBytes] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4key_newGeoJSON(geoJSON, boundingBox);
-            #endif
+#endif
         }
-        
+
         /// <summary>
         /// Creates a C4Key containing a 2D shape to be geo-indexed.
         /// Caller must provide the bounding box of the shape.
@@ -1317,31 +1334,31 @@ namespace CBForest
         public static C4Key* c4key_newGeoJSON(string geoJSON, C4GeoArea boundingBox)
         {
             using(var geoJSON_ = new C4String(geoJSON)) {
-                return c4key_newGeoJSON(geoJSON_.AsC4Slice(), boundingBox);   
+                return c4key_newGeoJSON(geoJSON_.AsC4Slice(), boundingBox);
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_free")]
-        private static extern void _c4key_free(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_free")]
+        private static extern void _c4key_free(C4Key* key);
 
         /// <summary>
         /// Frees a C4Key.
         /// </summary>
         /// <param name="key">The key to free</param>
-        public static void c4key_free(C4Key *key)
+        public static void c4key_free(C4Key* key)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)key;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4key_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4key_free(key);
         }
 
@@ -1349,42 +1366,42 @@ namespace CBForest
         /// Adds a JSON null value to a C4Key.
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_addNull(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_addNull(C4Key* key);
 
         /// <summary>
         /// Adds a boolean value to a C4Key.
         /// </summary>
         /// <param name="key">he key to operate on</param>
         /// <param name="b">The value to store</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_addBool(C4Key *key, [MarshalAs(UnmanagedType.U1)]bool b);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_addBool(C4Key* key, [MarshalAs(UnmanagedType.U1)]bool b);
 
         /// <summary>
         /// Adds a number to a C4Key.
         /// </summary>
         /// <param name="key">The key to operate on</param>
         /// <param name="d">The value to store</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_addNumber(C4Key *key, double d);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_addNumber(C4Key* key, double d);
 
         /// <summary>
         /// Adds a UTF-8 string to a C4Key.
         /// </summary>
         /// <param name="key"The key to operate on></param>
         /// <param name="s">The value to store</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_addString(C4Key *key, C4Slice s);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_addString(C4Key* key, C4Slice s);
 
         /// <summary>
         /// Adds a UTF-8 string to a C4Key.
         /// </summary>
         /// <param name="key"The key to operate on></param>
         /// <param name="s">The value to store</param>
-        public static void c4key_addString(C4Key *key, string s)
+        public static void c4key_addString(C4Key* key, string s)
         {
             using(var s_ = new C4String(s)) {
-                c4key_addString(key, s_.AsC4Slice());   
+                c4key_addString(key, s_.AsC4Slice());
             }
         }
 
@@ -1394,8 +1411,8 @@ namespace CBForest
         /// </summary>
         /// <param name="key">The key to operate on</param>
         /// <param name="s">The value to store</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_addMapKey(C4Key *key, C4Slice s);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_addMapKey(C4Key* key, C4Slice s);
 
         /// <summary>
         /// Adds a map key, before the next value. When adding to a map, every value must be
@@ -1403,10 +1420,10 @@ namespace CBForest
         /// </summary>
         /// <param name="key">The key to operate on</param>
         /// <param name="s">The value to store</param>
-        public static void c4key_addMapKey(C4Key *key, string s)
+        public static void c4key_addMapKey(C4Key* key, string s)
         {
             using(var s_ = new C4String(s)) {
-                c4key_addMapKey(key, s_.AsC4Slice());   
+                c4key_addMapKey(key, s_.AsC4Slice());
             }
         }
 
@@ -1415,32 +1432,32 @@ namespace CBForest
         /// Subsequent values added will go into the array, until c4key_endArray is called.
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_beginArray(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_beginArray(C4Key* key);
 
         /// <summary>
         /// Closes an array opened by c4key_beginArray. (Every array must be closed.)
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_endArray(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_endArray(C4Key* key);
 
         /// <summary>
         /// Adds a map/dictionary/object to a C4Key.
         /// Subsequent keys and values added will go into the map, until c4key_endMap is called.
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_beginMap(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_beginMap(C4Key* key);
 
         /// <summary>
         /// Closes a map opened by c4key_beginMap. (Every map must be closed.)
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_endMap(C4Key *key);
-        
-        
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_endMap(C4Key* key);
+
+
         /// <summary>
         /// Sets the process-wide default (human) language for full-text keys. This affects how
         /// words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
@@ -1449,11 +1466,11 @@ namespace CBForest
         /// <param name="languageName">An ISO language name like 'english'</param>
         /// <param name="stripDiacriticals"></param><c>true</c> if accents and other diacriticals should be stripped from
         /// letters. Appropriate for English but not for most other languages.</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4key_setDefaultFullTextLanguage(C4Slice languageName, 
+        public static extern bool c4key_setDefaultFullTextLanguage(C4Slice languageName,
             [MarshalAs(UnmanagedType.U1)]bool stripDiacriticals);
-        
+
         /// <summary>
         /// Sets the process-wide default (human) language for full-text keys. This affects how
         /// words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
@@ -1465,7 +1482,7 @@ namespace CBForest
         public static bool c4key_setDefaultFullTextLanguage(string languageName, bool stripDiacriticals)
         {
             using(var languageName_ = new C4String(languageName)) {
-                return c4key_setDefaultFullTextLanguage(languageName_.AsC4Slice(), stripDiacriticals);   
+                return c4key_setDefaultFullTextLanguage(languageName_.AsC4Slice(), stripDiacriticals);
             }
         }
 
@@ -1474,8 +1491,8 @@ namespace CBForest
         /// Warning: Adding to the C4Key will invalidate the reader.
         /// </summary>
         /// <param name="key">The key to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4KeyReader c4key_read(C4Key *key);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern C4KeyReader c4key_read(C4Key* key);
 
         /// <summary>
         /// Returns the type of the next item in the key, or kC4Error at the end of the key or if the
@@ -1484,48 +1501,48 @@ namespace CBForest
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The type of the next item in the key</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4KeyToken c4key_peek(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern C4KeyToken c4key_peek(C4KeyReader* reader);
 
         /// <summary>
         /// Skips the current token in the key. If it was kC4Array or kC4Map, the reader will
         /// now be positioned at the first item of the collection.
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4key_skipToken(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4key_skipToken(C4KeyReader* reader);
 
         /// <summary>
         /// Reads a boolean value.
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The boolean value of the next token of the key</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4key_readBool(C4KeyReader *reader);
+        public static extern bool c4key_readBool(C4KeyReader* reader);
 
         /// <summary>
         /// Reads a number value
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The numerical value of the next token of the key</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern double c4key_readNumber(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern double c4key_readNumber(C4KeyReader* reader);
 
         /// <summary>
         /// Reads a string value
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The string value of the next token of the key</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_readString")]
-        public static extern C4Slice _c4key_readString(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_readString")]
+        public static extern C4Slice _c4key_readString(C4KeyReader* reader);
 
         /// <summary>
         /// Reads a string value
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The string value of the next token of the key</returns>
-        public static string c4key_readString(C4KeyReader *reader)
+        public static string c4key_readString(C4KeyReader* reader)
         {
             return BridgeSlice(() => _c4key_readString(reader));
         }
@@ -1535,22 +1552,22 @@ namespace CBForest
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The JSON string result</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4key_toJSON")]
-        public static extern C4Slice _c4key_toJSON(C4KeyReader *reader);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_toJSON")]
+        public static extern C4Slice _c4key_toJSON(C4KeyReader* reader);
 
         /// <summary>
         /// Converts a C4KeyReader to JSON.
         /// </summary>
         /// <param name="reader">The reader to operate on</param>
         /// <returns>The JSON string result</returns>
-        public static string c4key_toJSON(C4KeyReader *reader)
+        public static string c4key_toJSON(C4KeyReader* reader)
         {
             return BridgeSlice(() => _c4key_toJSON(reader));
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_open")]
-        private static extern C4View* _c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
-            C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_open")]
+        private static extern C4View* _c4view_open(C4Database* db, C4Slice path, C4Slice viewName, C4Slice version,
+            C4DatabaseFlags flags, C4EncryptionKey* encryptionKey, C4Error* outError);
 
         /// <summary>
         /// Opens a view, or creates it if the file doesn't already exist.
@@ -1563,22 +1580,22 @@ namespace CBForest
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the view on success, otherwise null</returns>
-        public static C4View* c4view_open(C4Database *db, C4Slice path, C4Slice viewName, C4Slice version, 
-            C4DatabaseFlags flags, C4EncryptionKey *encryptionKey, C4Error *outError)
+        public static C4View* c4view_open(C4Database* db, C4Slice path, C4Slice viewName, C4Slice version,
+            C4DatabaseFlags flags, C4EncryptionKey* encryptionKey, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4view_open(db, path, viewName, version, flags, encryptionKey, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4View");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4view_open] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4view_open(db, path, viewName, version, flags, encryptionKey, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -1592,19 +1609,22 @@ namespace CBForest
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the view on success, otherwise null</returns>
-        public static C4View* c4view_open(C4Database *db, string path, string viewName, string version, C4DatabaseFlags flags,
-            C4EncryptionKey *encryptionKey, C4Error *outError)
+        public static C4View* c4view_open(C4Database* db, string path, string viewName, string version, C4DatabaseFlags flags,
+            C4EncryptionKey* encryptionKey, C4Error* outError)
         {
             using(var path_ = new C4String(path))
             using(var viewName_ = new C4String(viewName))
             using(var version_ = new C4String(version)) {
-                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), flags, encryptionKey, outError);   
+                return c4view_open(db, path_.AsC4Slice(), viewName_.AsC4Slice(), version_.AsC4Slice(), flags, encryptionKey, outError);
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_close")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool _c4view_close(C4View *view, C4Error *outError);
+        public static extern bool c4view_close(C4View* view, C4Error* outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_free")]
+        public static extern void _c4view_free(C4View* view);
 
         /// <summary>
         /// Closes the view and frees the object.
@@ -1612,21 +1632,21 @@ namespace CBForest
         /// <param name="view">The view to close</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4view_close(C4View *view, C4Error *outError)
+        public static void c4view_free(C4View* view)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)view;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4view_close] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
-            return _c4view_close(view, outError);
+#endif
+#endif
+            _c4view_free(view);
         }
 
         /// <summary>
@@ -1635,13 +1655,13 @@ namespace CBForest
         /// <param name="view">The view that will have its index erased</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4view_eraseIndex(C4View *view, C4Error *outError);
+        public static extern bool c4view_eraseIndex(C4View* view, C4Error* outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_delete")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_delete")]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool _c4view_delete(C4View *view, C4Error *outError);
+        private static extern bool _c4view_delete(C4View* view, C4Error* outError);
 
         /// <summary>
         /// Deletes the view file and closes/frees the C4View.
@@ -1649,23 +1669,23 @@ namespace CBForest
         /// <param name="view">The view to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4view_delete(C4View *view, C4Error *outError)
+        public static bool c4view_delete(C4View* view, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)view;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4view_delete] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             return _c4view_delete(view, outError);
         }
-        
+
         /// <summary>
         /// Deletes the file(s) for the view at the given path.
         /// All C4Views at that path should be closed first.
@@ -1674,24 +1694,24 @@ namespace CBForest
         /// <param name="path">The path to delete files at</param>
         /// <param name="flags">The flags to use during deletion</param>
         /// <param name="outError">Any errors that occurred will be recorded here</param> 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4view_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error *outError);
-        
-        public static bool c4view_deleteAtPath(string path, C4DatabaseFlags flags, C4Error *outError)
+        public static extern bool c4view_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error* outError);
+
+        public static bool c4view_deleteAtPath(string path, C4DatabaseFlags flags, C4Error* outError)
         {
             using(var path_ = new C4String(path)) {
-                return c4view_deleteAtPath(path_.AsC4Slice(), flags, outError);   
+                return c4view_deleteAtPath(path_.AsC4Slice(), flags, outError);
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4view_setMapVersion(C4View *view, C4Slice version);
-        
-        public static void c4view_setMapVersion(C4View *view, string version)
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4view_setMapVersion(C4View* view, C4Slice version);
+
+        public static void c4view_setMapVersion(C4View* view, string version)
         {
             using(var version_ = new C4String(version)) {
-                c4view_setMapVersion(view, version_.AsC4Slice());   
+                c4view_setMapVersion(view, version_.AsC4Slice());
             }
         }
 
@@ -1700,8 +1720,8 @@ namespace CBForest
         /// </summary>
         /// <param name="view">The view to operate on</param>
         /// <returns>The total number of rows in the view index</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern ulong c4view_getTotalRows(C4View *view);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4view_getTotalRows(C4View* view);
 
         /// <summary>
         /// Returns the last database sequence number that's been indexed.
@@ -1709,24 +1729,24 @@ namespace CBForest
         /// </summary>
         /// <param name="view">The view to operate on</param>
         /// <returns>The last database sequence number that's been indexed</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern ulong c4view_getLastSequenceIndexed(C4View *view);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4view_getLastSequenceIndexed(C4View* view);
 
         /// <summary>
         /// Returns the last database sequence number that changed the view index.
         /// </summary>
         /// <param name="view">The view to operate on</param>
         /// <returns>The last database sequence number that changed the view index</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern ulong c4view_getLastSequenceChangedAt(C4View *view);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4view_setDocumentType(C4View *view, C4Slice docType);
-        
-        public static void c4view_setDocumentType(C4View *view, string docType)
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern ulong c4view_getLastSequenceChangedAt(C4View* view);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4view_setDocumentType(C4View* view, C4Slice docType);
+
+        public static void c4view_setDocumentType(C4View* view, string docType)
         {
             using(var docType_ = new C4String(docType)) {
-                c4view_setDocumentType(view, docType_.AsC4Slice());   
+                c4view_setDocumentType(view, docType_.AsC4Slice());
             }
         }
 
@@ -1737,12 +1757,12 @@ namespace CBForest
         /// <param name="view">The view to change the encryption key of.</param>
         /// <param name="newKey">The new encryption key to use</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4view_rekey(C4View *view, C4EncryptionKey *newKey, C4Error *outError);
+        public static extern bool c4view_rekey(C4View* view, C4EncryptionKey* newKey, C4Error* outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_begin")]
-        private static extern C4Indexer* _c4indexer_begin(C4Database *db, C4View** views, UIntPtr viewCount, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4indexer_begin")]
+        private static extern C4Indexer* _c4indexer_begin(C4Database* db, C4View** views, UIntPtr viewCount, C4Error* outError);
 
         /// <summary>
         /// Creates an indexing task on one or more views in a database.
@@ -1753,25 +1773,26 @@ namespace CBForest
         /// <returns>A pointer to the indexer on success, otherwise null</returns>
         public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, C4Error* outError)
         {
-            fixed(C4View** viewPtr = views) {
-                #if DEBUG && !NET_3_5
+            fixed (C4View** viewPtr = views)
+            {
+#if DEBUG && !NET_3_5
                 var retVal = _c4indexer_begin(db, viewPtr, (UIntPtr)(uint)views.Length, outError);
                 if(retVal != null) {
                     _AllocatedObjects.TryAdd((IntPtr)retVal, "C4Indexer");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                     Console.WriteLine("[c4indexer_begin] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
                 }
 
                 return retVal;
-                #else
+#else
                 return _c4indexer_begin(db, viewPtr, (UIntPtr)(uint)views.Length, outError);
-                #endif
+#endif
             }
         }
-            
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_enumerateDocuments")]
-        private static extern C4DocEnumerator* _c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4indexer_enumerateDocuments")]
+        private static extern C4DocEnumerator* _c4indexer_enumerateDocuments(C4Indexer* indexer, C4Error* outError);
 
         /// <summary>
         /// Enumerate the documents that still need to be indexed in a given indexer
@@ -1779,21 +1800,21 @@ namespace CBForest
         /// <returns>The enumerator, or null on failure</returns>
         /// <param name="indexer">The indexer to check for documents.</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
-        public static C4DocEnumerator *c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError)
+        public static C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer* indexer, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4indexer_enumerateDocuments(indexer, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4indexer_enumerateDocuments] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4indexer_enumerateDocuments(indexer, outError);
-            #endif
+#endif
         }
 
         /// <summary>
@@ -1802,10 +1823,10 @@ namespace CBForest
         /// <param name="indexer">The indexer to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber, uint emitCount,
-            C4Key** emittedKeys, C4Slice* emittedValues, C4Error *outError);
+        public static extern bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, uint emitCount,
+            C4Key** emittedKeys, C4Slice* emittedValues, C4Error* outError);
 
         /// <summary>
         /// Emits new keys/values derived from one document, for one view.
@@ -1823,11 +1844,11 @@ namespace CBForest
         /// <param name="emittedValues">Array of values being emitted. (JSON by convention.)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
-            C4Key*[] emittedKeys, C4Slice[] emittedValues, C4Error *outError)
+        public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber,
+            C4Key*[] emittedKeys, C4Slice[] emittedValues, C4Error* outError)
         {
-            fixed(C4Key** keysPtr = emittedKeys)
-            fixed(C4Slice* valuesPtr = emittedValues)
+            fixed (C4Key** keysPtr = emittedKeys)
+            fixed (C4Slice* valuesPtr = emittedValues)
             {
                 return c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, keysPtr, valuesPtr, outError);
             }
@@ -1849,8 +1870,8 @@ namespace CBForest
         /// <param name="emittedValues">Array of values being emitted. (JSON by convention.)</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4indexer_emit(C4Indexer *indexer, C4Document *document, uint viewNumber,
-            C4Key*[] emittedKeys, string[] emittedValues, C4Error *outError)
+        public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber,
+            C4Key*[] emittedKeys, string[] emittedValues, C4Error* outError)
         {
             var c4StringArr = emittedValues.Select(x => new C4String(x)).ToArray();
             var sliceArr = c4StringArr.Select(x => x.AsC4Slice()).ToArray();
@@ -1858,18 +1879,18 @@ namespace CBForest
             foreach(var c4str in c4StringArr) {
                 c4str.Dispose();
             }
-    
+
             return retVal;
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4indexer_emitList(C4Indexer *indexer, C4Document *document, uint viewNumber,
-            C4KeyValueList *kv, C4Error *outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4indexer_end")]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern bool _c4indexer_end(C4Indexer *indexer, [MarshalAs(UnmanagedType.U1)]bool commit, C4Error *outError);
+        public static extern bool c4indexer_emitList(C4Indexer* indexer, C4Document* document, uint viewNumber,
+            C4KeyValueList* kv, C4Error* outError);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4indexer_end")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool _c4indexer_end(C4Indexer* indexer, [MarshalAs(UnmanagedType.U1)]bool commit, C4Error* outError);
 
         /// <summary>
         /// Finishes an indexing task and frees the indexer reference.
@@ -1878,25 +1899,25 @@ namespace CBForest
         /// <param name="commit">True to commit changes to the indexes, false to abort</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
-        public static bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError)
+        public static bool c4indexer_end(C4Indexer* indexer, bool commit, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)indexer;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4indexer_end] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             return _c4indexer_end(indexer, commit, outError);
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_query")]
-        private static extern C4QueryEnumerator* _c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_query")]
+        private static extern C4QueryEnumerator* _c4view_query(C4View* view, C4QueryOptions* options, C4Error* outError);
 
         /// <summary>
         /// Runs a query and returns an enumerator for the results.
@@ -1906,27 +1927,27 @@ namespace CBForest
         /// <param name="options">The query options</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
-        public static C4QueryEnumerator *c4view_query(C4View *view, C4QueryOptions *options, C4Error *outError)
+        public static C4QueryEnumerator* c4view_query(C4View* view, C4QueryOptions* options, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4view_query(view, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4view_query(view, options, outError);
-            #endif
+#endif
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_fullTextQuery")]
-        private static extern C4QueryEnumerator *_c4view_fullTextQuery(C4View *view, C4Slice queryString,
-            C4Slice queryStringLanguage, C4QueryOptions *options, C4Error *outError);
-        
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_fullTextQuery")]
+        private static extern C4QueryEnumerator* _c4view_fullTextQuery(C4View* view, C4Slice queryString,
+            C4Slice queryStringLanguage, C4QueryOptions* options, C4Error* outError);
+
         /// <summary>
         /// Runs a full-text query and returns an enumerator for the results.
         /// </summary>
@@ -1939,24 +1960,24 @@ namespace CBForest
         /// c4key_setDefaultFullTextLanguage.)</param>
         /// <param name="options">Query options. Only skip, limit, descending, rankFullText are used.</param>
         /// <param name="outError">On failure, error info will be stored here.</param>
-        public static C4QueryEnumerator *c4view_fullTextQuery(C4View *view, C4Slice queryString,
-            C4Slice queryStringLanguage, C4QueryOptions *options, C4Error *outError)
+        public static C4QueryEnumerator* c4view_fullTextQuery(C4View* view, C4Slice queryString,
+            C4Slice queryStringLanguage, C4QueryOptions* options, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4view_fullTextQuery(view, queryString, queryStringLanguage, options, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4view_fullTextQuery(view, queryString, queryStringLanguage, options, outError);
-            #endif
+#endif
         }
-        
+
         /// <summary>
         /// Runs a full-text query and returns an enumerator for the results.
         /// </summary>
@@ -1969,19 +1990,19 @@ namespace CBForest
         /// c4key_setDefaultFullTextLanguage.)</param>
         /// <param name="options">Query options. Only skip, limit, descending, rankFullText are used.</param>
         /// <param name="outError">On failure, error info will be stored here.</param>
-        public static C4QueryEnumerator *c4view_fullTextQuery(C4View *view, string queryString,
-            string queryStringLanguage, C4QueryOptions *options, C4Error *outError)
+        public static C4QueryEnumerator* c4view_fullTextQuery(C4View* view, string queryString,
+            string queryStringLanguage, C4QueryOptions* options, C4Error* outError)
         {
             using(var queryString_ = new C4String(queryString))
             using(var queryStringLanguage_ = new C4String(queryStringLanguage)) {
-                return c4view_fullTextQuery(view, queryString_.AsC4Slice(), queryStringLanguage_.AsC4Slice(), 
+                return c4view_fullTextQuery(view, queryString_.AsC4Slice(), queryStringLanguage_.AsC4Slice(),
                     options, outError);
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4view_geoQuery")]
-        private static extern C4QueryEnumerator* _c4view_geoQuery(C4View *view, C4GeoArea area, C4Error *outError);
-        
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_geoQuery")]
+        private static extern C4QueryEnumerator* _c4view_geoQuery(C4View* view, C4GeoArea area, C4Error* outError);
+
         /// <summary>
         /// Runs a geo-query and returns an enumerator for the results.
         /// </summary>
@@ -1989,41 +2010,41 @@ namespace CBForest
         /// <param name="view">The view to query.</param>
         /// <param name="area">The bounding box to search for. Rows intersecting this will be returned.</param>
         /// <param name="outError">On failure, error info will be stored here.</param>
-        public static C4QueryEnumerator* c4view_geoQuery(C4View *view, C4GeoArea area, C4Error *outError)
+        public static C4QueryEnumerator* c4view_geoQuery(C4View* view, C4GeoArea area, C4Error* outError)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4view_geoQuery(view, area, outError);
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4QueryEnumerator");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4view_geoQuery(view, area, outError);
-            #endif
+#endif
         }
-        
+
         /// <summary>
         /// In a full-text query enumerator, returns the string that was emitted during indexing that
         /// contained the search term(s).
         /// </summary>
         /// <returns>The string that was emitted during indexing</returns>
         /// <param name="e">The enumerator to operate on</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4queryenum_fullTextMatched")]
-        public static extern C4Slice _c4queryenum_fullTextMatched(C4QueryEnumerator *e);
-        
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4queryenum_fullTextMatched")]
+        public static extern C4Slice _c4queryenum_fullTextMatched(C4QueryEnumerator* e);
+
         /// <summary>
         /// In a full-text query enumerator, returns the string that was emitted during indexing that
         /// contained the search term(s).
         /// </summary>
         /// <returns>The string that was emitted during indexing</returns>
         /// <param name="e">The enumerator to operate on</param>
-        public static string c4queryenum_fullTextMatched(C4QueryEnumerator *e)
+        public static string c4queryenum_fullTextMatched(C4QueryEnumerator* e)
         {
-            return BridgeSlice(() => _c4queryenum_fullTextMatched(e));   
+            return BridgeSlice(() => _c4queryenum_fullTextMatched(e));
         }
 
         /// <summary>
@@ -2031,18 +2052,18 @@ namespace CBForest
         /// during indexing.
         /// </summary>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern C4Slice c4view_fullTextMatched(C4View *view, C4Slice docID, ulong seq, uint fullTextID,
-            C4Error *outError);
-        
+        public static extern C4Slice c4view_fullTextMatched(C4View* view, C4Slice docID, ulong seq, uint fullTextID,
+            C4Error* outError);
+
         /// <summary>
         /// Given a document and the fullTextID from the enumerator, returns the text that was emitted
         /// during indexing.
         /// </summary>
-        public static string c4view_fullTextMatched(C4View *view, string docID, ulong seq, uint fullTextID,
-            C4Error *outError)
+        public static string c4view_fullTextMatched(C4View* view, string docID, ulong seq, uint fullTextID,
+            C4Error* outError)
         {
             using(var docID_ = new C4String(docID)) {
-                return BridgeSlice(() => c4view_fullTextMatched(view, docID_.AsC4Slice(), seq, fullTextID, outError));  
+                return BridgeSlice(() => c4view_fullTextMatched(view, docID_.AsC4Slice(), seq, fullTextID, outError));
             }
         }
 
@@ -2053,34 +2074,37 @@ namespace CBForest
         /// <param name="e">The enumerator to operate on</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false on error or end reached</returns>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4queryenum_next(C4QueryEnumerator *e, C4Error *outError);
+        public static extern bool c4queryenum_next(C4QueryEnumerator* e, C4Error* outError);
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4queryenum_free")]
-        private static extern void _c4queryenum_free(C4QueryEnumerator *e);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4queryenum_close(C4QueryEnumerator* e);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4queryenum_free")]
+        private static extern void _c4queryenum_free(C4QueryEnumerator* e);
 
         /// <summary>
         /// Frees a query enumerator.
         /// </summary>
         /// <param name="e">The enumerator to free</param>
-        public static void c4queryenum_free(C4QueryEnumerator *e)
+        public static void c4queryenum_free(C4QueryEnumerator* e)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)e;
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4queryenum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4queryenum_free(e);
         }
-        
+
         /// <summary>
         /// Registers (or unregisters) a log callback, and sets the minimum log level to report.
         /// Before this is called, logs are by default written to stderr for warnings and errors.
@@ -2088,7 +2112,7 @@ namespace CBForest
         /// </summary>
         /// <param name="level">The minimum level of message to log</param>
         /// <param name="callback">The logging callback, or NULL to disable logging entirely</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
 
         /// <summary>
@@ -2105,60 +2129,68 @@ namespace CBForest
             _NativeLogCallback = _LogCallback == null ? null : new C4LogCallback(c4log_wedge);
             c4log_register(level, _NativeLogCallback);
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4kv_new")]
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4kv_new")]
         private static extern C4KeyValueList* _c4kv_new();
-        
+
         public static C4KeyValueList* c4kv_new()
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var retVal = _c4kv_new();
             if(retVal != null) {
                 _AllocatedObjects.TryAdd((IntPtr)retVal, "C4KeyValueList");
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
                 Console.WriteLine("[c4view_query] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
-                #endif
+#endif
             }
 
             return retVal;
-            #else
+#else
             return _c4kv_new();
-            #endif
+#endif
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value);
-        
-        public static void c4kv_add(C4KeyValueList *kv, C4Key *key, string value)
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4kv_add(C4KeyValueList* kv, C4Key* key, C4Slice value);
+
+        public static void c4kv_add(C4KeyValueList* kv, C4Key* key, string value)
         {
             using(var value_ = new C4String(value)) {
-                c4kv_add(kv, key, value_.AsC4Slice());   
+                c4kv_add(kv, key, value_.AsC4Slice());
             }
         }
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4kv_reset(C4KeyValueList *kv);
-        
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4kv_free")]
-        private static extern void _c4kv_free(C4KeyValueList *kv);
-        
-        public static void c4kv_free(C4KeyValueList *kv)
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4kv_reset(C4KeyValueList* kv);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4kv_free")]
+        private static extern void _c4kv_free(C4KeyValueList* kv);
+
+        public static void c4kv_free(C4KeyValueList* kv)
         {
-            #if DEBUG && !NET_3_5
+#if DEBUG && !NET_3_5
             var ptr = (IntPtr)kv;
-                #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
                 Console.WriteLine("WARNING: [c4queryenum_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
             } else {
-            #endif
+#endif
                 _AllocatedObjects.TryRemove(ptr, out _Dummy);
-            #if ENABLE_LOGGING
+#if ENABLE_LOGGING
             }
-            #endif
-            #endif
+#endif
+#endif
             _c4kv_free(kv);
         }
-        
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4error_getMessage")]
+        public static extern C4Slice _c4error_getMessage(C4Error err);
+
+        public static string c4error_getMessage(C4Error err)
+        {
+            return BridgeSlice(() => _c4error_getMessage(err));
+        }
+
         private static string BridgeSlice(Func<C4Slice> nativeFunc)
         {
             var rawRetVal = nativeFunc();
@@ -2167,12 +2199,12 @@ namespace CBForest
             return retVal;
         }
 
-        #if __IOS__
+#if __IOS__
         [ObjCRuntime.MonoPInvokeCallback(typeof(C4LogCallback))]
-        #endif
+#endif
         private static void c4log_wedge(C4LogLevel level, C4Slice message)
         {
-            if (_LogCallback != null) {
+            if(_LogCallback != null) {
                 var sharpString = (string)message;
                 _LogCallback(level, sharpString);
             }
