@@ -24,7 +24,8 @@ struct C4ExpiryEnumerator
 public:
     C4ExpiryEnumerator(C4Database *database) :
     _db(database),
-    _reader(slice::null)
+    _reader(slice::null),
+    _e(_db->getKeyStore("expiry"), slice::null, slice::null)
     {
         _endTimestamp = time(NULL);
         reset();
@@ -61,7 +62,7 @@ public:
         c.beginMap();
         c.endMap();
         c.endArray();
-        _e = DocEnumerator(KeyStore((const Database*)_db, "expiry"), slice::null, c.data());
+        _e = DocEnumerator(_db->getKeyStore("expiry"), slice::null, c.data());
         _reader = CollatableReader(slice::null);
     }
     
@@ -80,12 +81,12 @@ private:
 
 C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError)
 {
-	try {
-		WITH_LOCK(database);
-		return new C4ExpiryEnumerator(database);
-	} catchError(outError);
+    try {
+        WITH_LOCK(database);
+        return new C4ExpiryEnumerator(database);
+    } catchError(outError);
 
-	return NULL;
+    return NULL;
 }
 
 bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
@@ -111,7 +112,7 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
     try {
         e->reset();
         Transaction t(e->getDatabase());
-        KeyStore expiry(e->getDatabase(), "expiry");
+        KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");
         KeyStoreWriter writer = t(expiry);
         while(e->next()) {
             writer.del(e->key());

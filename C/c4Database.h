@@ -107,7 +107,7 @@ extern "C" {
     /** Removes all trace of a document and its revisions from the database. */
     bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError);
 
-	uint64_t c4db_nextDocExpiration(C4Database *database);
+    uint64_t c4db_nextDocExpiration(C4Database *database);
 
     //////// RAW DOCUMENTS (i.e. info or _local)
 
