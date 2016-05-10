@@ -54,12 +54,12 @@ namespace CBForest
             System.Collections.Concurrent.ConcurrentDictionary<IntPtr, string>();
         private static readonly Dictionary<string, Action<IntPtr>> _GcAction = new Dictionary<string, Action<IntPtr>>
         {
-            { "C4Database", p => _c4db_close((C4Database*)p.ToPointer(), null) },
+            { "C4Database", p => _c4db_free((C4Database*)p.ToPointer()) },
             { "C4RawDocument", p => _c4raw_free((C4RawDocument*)p.ToPointer()) },
             { "C4Document", p => _c4doc_free((C4Document*)p.ToPointer()) },
             { "C4DocEnumerator", p => _c4enum_free((C4DocEnumerator*)p.ToPointer()) },
             { "C4Key", p => _c4key_free((C4Key*)p.ToPointer()) },
-            { "C4View", p => _c4view_close((C4View*)p.ToPointer(), null) },
+            { "C4View", p => _c4view_free((C4View*)p.ToPointer()) },
             { "C4Indexer", p => _c4indexer_end((C4Indexer*)p.ToPointer(), false, null) },
             { "C4QueryEnumerator", p => _c4queryenum_free((C4QueryEnumerator*)p.ToPointer()) },
             { "C4KeyValueList", p => _c4kv_free((C4KeyValueList*)p.ToPointer()) }
