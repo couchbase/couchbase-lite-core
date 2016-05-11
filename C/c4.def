@@ -53,7 +53,8 @@ c4enum_getDocument
 c4enum_close
 c4enum_free
 c4exp_free
-c4exp_getInfo
+c4exp_close
+c4exp_getDocID
 c4exp_next
 c4exp_purgeExpired
 kC4DefaultEnumeratorOptions

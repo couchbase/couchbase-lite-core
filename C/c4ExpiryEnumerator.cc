@@ -65,6 +65,11 @@ public:
         _e = DocEnumerator(_db->getKeyStore("expiry"), slice::null, c.data());
         _reader = CollatableReader(slice::null);
     }
+
+    void close()
+    {
+        _e.close();
+    }
     
     C4Database *getDatabase() const
     {
@@ -98,31 +103,37 @@ bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
     return false;
 }
 
-void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *docInfo)
+C4Slice c4exp_getDocID(C4ExpiryEnumerator *e)
 {
-    auto d = e->docID();
-    docInfo->docID = {d.buf, d.size};
-    docInfo->sequence = 0ul;
-    docInfo->revID = kC4SliceNull;
-    docInfo->flags = 0;
+    return e->docID();
 }
 
 bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
 {
     try {
+        c4db_beginTransaction(e->getDatabase(), NULL);
         e->reset();
-        Transaction t(e->getDatabase());
+        Transaction *t = e->getDatabase()->transaction();
         KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");
-        KeyStoreWriter writer = t(expiry);
+        KeyStoreWriter writer = (*t)(expiry);
         while(e->next()) {
             writer.del(e->key());
             writer.del(e->docID());
         }
         
+        c4db_endTransaction(e->getDatabase(), true, NULL);
         return true;
     } catchError(outError);
     
+    c4db_endTransaction(e->getDatabase(), false,  NULL);
     return false;
+}
+
+void c4exp_close(C4ExpiryEnumerator *e)
+{
+    if (e) {
+        e->close();
+    }
 }
 
 void c4exp_free(C4ExpiryEnumerator *e)

@@ -25,15 +25,15 @@ using System.Runtime.InteropServices;
 namespace CBForest
 {
     public unsafe sealed class CBForestExpiryEnumerator : IEnumerable<string>
-	{
+    {
         private readonly C4Database *_db;
         private readonly bool _dispose;
 
         public CBForestExpiryEnumerator(C4Database *db, bool dispose)
-		{
+        {
             _db = db;
             _dispose = dispose;
-		}
+        }
 
         #region IEnumerable
 
@@ -48,19 +48,18 @@ namespace CBForest
         }
 
         #endregion
-	}
+    }
 
     internal unsafe sealed class ExpiryEnumerator : IEnumerator<string>
     {
         private readonly C4ExpiryEnumerator *_e;
         private readonly bool _dispose;
-        private C4DocumentInfo *_currentInfo;
+        private C4Slice _currentdocID;
 
         public ExpiryEnumerator(C4Database *db, bool dispose)
         {
             _e = (C4ExpiryEnumerator*)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateExpired(db, err));
             _dispose = dispose;
-            _currentInfo = (C4DocumentInfo *)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
         }
 
         ~ExpiryEnumerator()
@@ -78,7 +77,6 @@ namespace CBForest
             }
 
             Native.c4exp_free(_e);
-            Marshal.FreeHGlobal((IntPtr)_currentInfo);
         }
 
         #region IEnumerator
@@ -91,7 +89,7 @@ namespace CBForest
 
             var retVal = Native.c4exp_next(_e, null);
             if (retVal) {
-                Native.c4exp_getInfo(_e, _currentInfo);
+                _currentdocID = Native.c4exp_getDocID(_e);
             }
 
             return retVal;
@@ -114,7 +112,7 @@ namespace CBForest
         {
             get
             {
-                return (string)_currentInfo->docID;
+                return (string)_currentdocID;
             }
         }
 

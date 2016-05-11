@@ -1,4 +1,4 @@
-?¿//
+//
 //  Native.cs
 //
 //  Author:
@@ -933,7 +933,7 @@ namespace CBForest
         /// <param name="info">A pointer to a C4DocumentInfo struct that will be filled in if a document
         ///   is found.  Only the document ID is valid and other values will be zeroed.</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *info);
+        public static extern C4Slice c4exp_getDocID(C4ExpiryEnumerator *e);
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -947,6 +947,9 @@ namespace CBForest
         /// <param name="cleanupKvs">If set to <c>true</c> cleanup the old entries from the expiration store</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern void c4exp_free(C4ExpiryEnumerator *e);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4exp_close(C4ExpiryEnumerator* e);
 
         /// <summary>
         /// Advances the enumerator to the next document.

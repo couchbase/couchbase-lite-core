@@ -31,16 +31,18 @@ extern "C" {
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
         and don't forget to free the enumerator. */
     bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError);
-    
-    /** Stores the metadata of the enumerator's current document into the supplied
-        C4DocumentInfo struct. Unlike c4enum_getDocument(), this allocates no memory.
-        @param e  The enumerator.
-        @param outInfo  A pointer to a C4DocumentInfo struct that will be filled in if a document
-        is found.  Only the document ID is valid and other values will be zeroed. */
-    void c4exp_getInfo(C4ExpiryEnumerator *e, C4DocumentInfo *docInfo);
+
+    /** Gets the document ID of the current doc being enumerated
+        @param e The enumerator.
+        @return A slice representing the doc ID (internal pointer, so don't free)
+    */
+    C4Slice c4exp_getDocID(C4ExpiryEnumerator *e);
     
     /** Purges the processed entries from the expiration key value store */
     bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
+
+    /** Closes the enumeator and disallows further use */
+    void c4exp_close(C4ExpiryEnumerator *e);
     
     /** Frees a C4DocEnumerator handle */
     void c4exp_free(C4ExpiryEnumerator *e);

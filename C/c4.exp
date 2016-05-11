@@ -64,7 +64,8 @@ _c4enum_getDocument
 _c4enum_close
 _c4enum_free
 _c4exp_free
-_c4exp_getInfo
+_c4exp_close
+_c4exp_getDocID
 _c4exp_next
 _c4exp_purgeExpired
 
