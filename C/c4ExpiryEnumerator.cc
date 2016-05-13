@@ -24,8 +24,8 @@ struct C4ExpiryEnumerator
 public:
     C4ExpiryEnumerator(C4Database *database) :
     _db(database),
-    _reader(slice::null),
-    _e(_db->getKeyStore("expiry"), slice::null, slice::null)
+    _e(_db->getKeyStore("expiry"), slice::null, slice::null),
+    _reader(slice::null)
     {
         _endTimestamp = time(NULL);
         reset();

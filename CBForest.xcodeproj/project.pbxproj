@@ -278,9 +278,9 @@
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		720EA41B1BA8D834002B8416 /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4871A19218E5D007D8940 /* slice.cc */; };
 		720EA41C1BA8D834002B8416 /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDFC0018EA58BF00AC4647 /* varint.cc */; };
-		72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; };
+		72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72C086951CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; };
-		72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; };
+		72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
 
