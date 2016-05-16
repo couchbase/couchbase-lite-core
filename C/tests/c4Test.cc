@@ -39,16 +39,16 @@ void C4Test::setUp() {
     c4log_register(kC4LogWarning, log);
 #ifdef _MSC_VER
     const char *dbPath = "C:\\tmp\\forest_temp.fdb";
-	::unlink("C:\\tmp\\forest_temp.fdb");
-	::unlink("C:\\tmp\\forest_temp.fdb.0");
-	::unlink("C:\\tmp\\forest_temp.fdb.1");
-	::unlink("C:\\tmp\\forest_temp.fdb.meta");
+    ::unlink("C:\\tmp\\forest_temp.fdb");
+    ::unlink("C:\\tmp\\forest_temp.fdb.0");
+    ::unlink("C:\\tmp\\forest_temp.fdb.1");
+    ::unlink("C:\\tmp\\forest_temp.fdb.meta");
 #else
-	const char *dbPath = "/tmp/forest_temp.fdb";
-	::unlink("/tmp/forest_temp.fdb");
-	::unlink("/tmp/forest_temp.fdb.0");
-	::unlink("/tmp/forest_temp.fdb.1");
-	::unlink("/tmp/forest_temp.fdb.meta");
+    const char *dbPath = "/tmp/forest_temp.fdb";
+    ::unlink("/tmp/forest_temp.fdb");
+    ::unlink("/tmp/forest_temp.fdb.0");
+    ::unlink("/tmp/forest_temp.fdb.1");
+    ::unlink("/tmp/forest_temp.fdb.meta");
 #endif
     
     C4Error error;

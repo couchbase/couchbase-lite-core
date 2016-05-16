@@ -54,7 +54,6 @@ namespace CBForest
     {
         private readonly C4ExpiryEnumerator *_e;
         private readonly bool _dispose;
-        private C4Slice _currentdocID;
 
         public ExpiryEnumerator(C4Database *db, bool dispose)
         {
@@ -89,7 +88,7 @@ namespace CBForest
 
             var retVal = Native.c4exp_next(_e, null);
             if (retVal) {
-                _currentdocID = Native.c4exp_getDocID(_e);
+                Current = Native.c4exp_getDocID(_e);
             }
 
             return retVal;
@@ -108,13 +107,7 @@ namespace CBForest
             }
         }
 
-        public string Current
-        {
-            get
-            {
-                return (string)_currentdocID;
-            }
-        }
+        public string Current { get; private set; }
 
         #endregion
 

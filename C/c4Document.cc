@@ -13,6 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#define NOMINMAX
 #include "c4Impl.hh"
 #include "c4Document.h"
 #include "c4Database.h"
@@ -25,10 +26,8 @@
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "varint.hh"
-
-#ifdef _MSC_VER
 #include <ctime>
-#endif
+#include <algorithm>
 
 using namespace cbforest;
 
@@ -487,12 +486,12 @@ bool c4doc_save(C4Document *doc,
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
     try {
-        if (!db->mustBeInTransaction(outError)) {
+        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
             return false;
         }
 
-        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+        if (!c4db_beginTransaction(db, outError)) {
             return false;
         }
 
@@ -506,14 +505,15 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
         alloc_slice tsValue(SizeOfVarInt(timestamp));
         PutUVarInt((void *)tsValue.buf, timestamp);
 
-        KeyStore &expiryKvs = db->getKeyStore("expiry");
-        KeyStoreWriter writer = KeyStoreWriter(expiryKvs, *(db->transaction()));
+        Transaction *t = db->transaction();
+        KeyStore& expiry = db->getKeyStore("expiry");
+        KeyStoreWriter writer(expiry, *t);
         Document existingDoc = writer.get(docId);
         if (existingDoc.exists()) {
             // Previous entry found
             if (existingDoc.body().compare(tsValue) == 0) {
                 // No change
-                return true;
+                return c4db_endTransaction(db, true, outError);
             }
 
             // Remove old entry
@@ -536,9 +536,10 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
             writer.set(docId, tsValue);
         }
 
-        return true;
+        return c4db_endTransaction(db, true, outError);
     } catchError(outError);
 
+    c4db_endTransaction(db, false, NULL);
     return false;
 }
 
@@ -559,7 +560,7 @@ static alloc_slice createDocUUID() {
 #if SECURE_RANDOMIZE_AVAILABLE
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
                                     "0123456789-_";
-    static unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
+    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
     uint8_t r[kLength];
     SecureRandomize({r, sizeof(r)});
 
@@ -586,7 +587,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
         md5Context ctx;
         md5_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
         if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
             md5_add(&ctx, &revLen, 1);
         md5_add(&ctx, parentRevID.buf, revLen);
@@ -599,7 +600,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // SHA-1 digest:
         sha1Context ctx;
         sha1_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
         sha1_add(&ctx, &revLen, 1);
         sha1_add(&ctx, parentRevID.buf, revLen);
         uint8_t delByte = deleted;

@@ -37,7 +37,7 @@ class C4DatabaseTest : public C4Test {
     void testErrorMessages() {
         C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
         AssertEqual(msg.buf, (const void*)nullptr);
-        AssertEqual(msg.size, 0ul);
+        AssertEqual((unsigned long)msg.size, 0ul);
 
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
         assertMessage(HTTPDomain, kC4HTTPBadRequest, "invalid parameter");
@@ -555,30 +555,31 @@ class C4DatabaseTest : public C4Test {
         createRev(docID3, kRevID, kBody);
         sleep(2u);
         
-        auto e = c4db_enumerateExpired(db, &err);
+        C4ExpiryEnumerator *e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);
         
         int expiredCount = 0;
-        C4DocumentInfo info;
         while(c4exp_next(e, NULL)) {
-            c4exp_getInfo(e, &info);
-            Assert(!c4SliceEqual(info.docID, docID3));
+            C4Slice existingDocID = c4exp_getDocID(e);
+            Assert(!c4SliceEqual(existingDocID, docID3));
+            c4slice_free(existingDocID);
             expiredCount++;
         }
         
         c4exp_free(e);
         AssertEqual(expiredCount, 2);
-		AssertEqual(c4doc_getExpiration(db, docID), (uint64_t)expire);
-		AssertEqual(c4doc_getExpiration(db, docID2), (uint64_t)expire);
-		AssertEqual(c4db_nextDocExpiration(db), (uint64_t)expire);
+        AssertEqual(c4doc_getExpiration(db, docID), (uint64_t)expire);
+        AssertEqual(c4doc_getExpiration(db, docID2), (uint64_t)expire);
+        AssertEqual(c4db_nextDocExpiration(db), (uint64_t)expire);
         
         e = c4db_enumerateExpired(db, &err);
         Assert(e != NULL);
         
         expiredCount = 0;
         while(c4exp_next(e, NULL)) {
-            c4exp_getInfo(e, &info);
-            Assert(!c4SliceEqual(info.docID, docID3));
+            C4Slice existingDocID = c4exp_getDocID(e);
+            Assert(!c4SliceEqual(existingDocID, docID3));
+            c4slice_free(existingDocID);
             expiredCount++;
         }
         

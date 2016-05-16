@@ -51,9 +51,35 @@
 
 #elif defined(_CRYPTO_OPENSSL)
 
-    #include <openssl/aes.h>
-    // TODO
-    #define SECURE_DIGEST_AVAILABLE 0
+    #include <openssl/sha.h>
+    #include <openssl/md5.h>
+
+    typedef MD5_CTX md5Context;
+
+    static inline void md5_begin(md5Context *ctx) {
+        MD5_Init(ctx);
+    }
+    static inline void md5_add(md5Context *ctx, const void *bytes, size_t length) {
+        MD5_Update(ctx, bytes, length);
+    }
+    static inline void md5_end(md5Context *ctx, void *outDigest) {
+        MD5_Final((unsigned char*)outDigest, ctx);
+    }
+
+
+    typedef SHA_CTX sha1Context;
+
+    static inline void sha1_begin(sha1Context *ctx) {
+        SHA1_Init(ctx);
+    }
+    static inline void sha1_add(sha1Context *ctx, const void *bytes, size_t length) {
+        SHA1_Update(ctx, bytes, length);
+    }
+    static inline void sha1_end(sha1Context *ctx, void *outDigest) {
+        SHA1_Final((unsigned char *)outDigest, ctx);
+    }
+
+    #define SECURE_DIGEST_AVAILABLE 1
 
 #else
 

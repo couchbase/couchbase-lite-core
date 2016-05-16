@@ -932,8 +932,13 @@ namespace CBForest
         /// <param name="e">The enumerator</param>
         /// <param name="info">A pointer to a C4DocumentInfo struct that will be filled in if a document
         ///   is found.  Only the document ID is valid and other values will be zeroed.</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4Slice c4exp_getDocID(C4ExpiryEnumerator *e);
+        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4exp_getDocID")]
+        public static extern C4Slice _c4exp_getDocID(C4ExpiryEnumerator *e);
+
+        public static string c4exp_getDocID(C4ExpiryEnumerator *e)
+        {
+            return BridgeSlice(() => _c4exp_getDocID(e));
+        }
 
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]

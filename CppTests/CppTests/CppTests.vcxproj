@@ -58,36 +58,42 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\CBForest.VS2015\LibLocations.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\CBForest.VS2015\LibLocations.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\CBForest.VS2015\LibLocations.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\CBForest.VS2015\LibLocations.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\cppunit.1.12.1.4\build\native\lib\v120\Win32\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(CppUnit_Include);$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(CppUnit_Lib_x86);$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\cppunit.1.12.1.4\build\native\lib\v120\Win32\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(CppUnit_Include);$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(CppUnit_Lib_x64);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\cppunit.1.12.1.4\build\native\lib\v120\Win32\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(CppUnit_Include);$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(CppUnit_Lib_x86);$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\cppunit.1.12.1.4\build\native\lib\v120\Win32\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(CppUnit_Include);$(SolutionDir)..\vendor\forestdb\include\libforestdb;$(SolutionDir)..\C\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(CppUnit_Lib_x64);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -128,6 +134,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>__cplusplus;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -138,8 +138,8 @@ typedef C4Slice C4SliceResult;
 
 /** Creates a slice pointing to the contents of a C string. */
 static CBINLINE C4Slice c4str(const char *str) {
-	C4Slice foo = { str, str ? strlen(str) : 0 };
-	return foo;
+    C4Slice foo = { str, str ? strlen(str) : 0 };
+    return foo;
 }
 
 // Macro version of c4str, for use in initializing compile-time constants.

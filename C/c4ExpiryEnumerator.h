@@ -36,7 +36,7 @@ extern "C" {
         @param e The enumerator.
         @return A slice representing the doc ID (internal pointer, so don't free)
     */
-    C4Slice c4exp_getDocID(C4ExpiryEnumerator *e);
+    C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e);
     
     /** Purges the processed entries from the expiration key value store */
     bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
