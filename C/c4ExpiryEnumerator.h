@@ -34,7 +34,7 @@ extern "C" {
 
     /** Gets the document ID of the current doc being enumerated
         @param e The enumerator.
-        @return A slice representing the doc ID (internal pointer, so don't free)
+        @return A slice representing the doc ID (caller must free)
     */
     C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e);
     

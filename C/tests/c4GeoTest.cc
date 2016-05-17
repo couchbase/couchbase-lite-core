@@ -20,17 +20,12 @@
 
 #ifdef _MSC_VER
 static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
-static double randomLat() { return random() / (double)RAND_MAX * 180.0 - 90.0; }
-static double randomLon() { return random() / (double)RAND_MAX * 360.0 - 180.0; }
 #else
 static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
-static double randomLat() { return random() / (double)INT_MAX * 180.0 - 90.0; }
-static double randomLon() { return random() / (double)INT_MAX * 360.0 - 180.0; }
 #endif
 
-
-
-
+static double randomLat() { return random() / (double)RAND_MAX * 180.0 - 90.0; }
+static double randomLon() { return random() / (double)RAND_MAX * 360.0 - 180.0; }
 
 class C4GeoTest : public C4Test {
 public:

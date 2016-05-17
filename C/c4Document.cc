@@ -486,12 +486,12 @@ bool c4doc_save(C4Document *doc,
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
     try {
-        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+        if (!c4db_beginTransaction(db, outError)) {
             return false;
         }
 
-        if (!c4db_beginTransaction(db, outError)) {
+        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
             return false;
         }
 
