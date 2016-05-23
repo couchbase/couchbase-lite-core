@@ -185,6 +185,61 @@ static inline C4DocumentInternal *internal(C4Document *doc) {
     return (C4DocumentInternal*)doc;
 }
 
+// This helper function is meant to be wrapped in a transaction
+static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
+{
+    try {
+        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            return false;
+        }
+
+        CollatableBuilder tsKeyBuilder;
+        tsKeyBuilder.beginArray();
+        tsKeyBuilder << (double)timestamp;
+        tsKeyBuilder << docId;
+        tsKeyBuilder.endArray();
+        slice tsKey = tsKeyBuilder.data();
+
+        alloc_slice tsValue(SizeOfVarInt(timestamp));
+        PutUVarInt((void *)tsValue.buf, timestamp);
+
+        Transaction *t = db->transaction();
+        KeyStore& expiry = db->getKeyStore("expiry");
+        KeyStoreWriter writer(expiry, *t);
+        Document existingDoc = writer.get(docId);
+        if (existingDoc.exists()) {
+            // Previous entry found
+            if (existingDoc.body().compare(tsValue) == 0) {
+                // No change
+                return true;
+            }
+
+            // Remove old entry
+            uint64_t oldTimestamp;
+            CollatableBuilder oldTsKey;
+            GetUVarInt(existingDoc.body(), &oldTimestamp);
+            oldTsKey.beginArray();
+            oldTsKey << (double)oldTimestamp;
+            oldTsKey << docId;
+            oldTsKey.endArray();
+            writer.del(oldTsKey);
+        }
+
+        if (timestamp == 0) {
+            writer.del(tsKey);
+            writer.del(docId);
+        } else {
+            writer.set(tsKey, slice::null);
+            writer.set(docId, tsValue);
+        }
+
+        return true;
+    } catchError(outError);
+
+    return false;
+}
+
 namespace c4Internal {
     C4Document* newC4Document(C4Database *db, Document &&doc) {
         // Doesn't need to lock since Document is already in memory
@@ -485,62 +540,12 @@ bool c4doc_save(C4Document *doc,
 
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
-    try {
-        if (!c4db_beginTransaction(db, outError)) {
-            return false;
-        }
+    if (!c4db_beginTransaction(db, outError)) {
+        return false;
+    }
 
-        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
-            return false;
-        }
-
-        CollatableBuilder tsKeyBuilder;
-        tsKeyBuilder.beginArray();
-        tsKeyBuilder << (double)timestamp;
-        tsKeyBuilder << docId;
-        tsKeyBuilder.endArray();
-        slice tsKey = tsKeyBuilder.data();
-
-        alloc_slice tsValue(SizeOfVarInt(timestamp));
-        PutUVarInt((void *)tsValue.buf, timestamp);
-
-        Transaction *t = db->transaction();
-        KeyStore& expiry = db->getKeyStore("expiry");
-        KeyStoreWriter writer(expiry, *t);
-        Document existingDoc = writer.get(docId);
-        if (existingDoc.exists()) {
-            // Previous entry found
-            if (existingDoc.body().compare(tsValue) == 0) {
-                // No change
-                return c4db_endTransaction(db, true, outError);
-            }
-
-            // Remove old entry
-            uint64_t oldTimestamp;
-            CollatableBuilder oldTsKey;
-            GetUVarInt(existingDoc.body(), &oldTimestamp);
-            oldTsKey.beginArray();
-            oldTsKey << (double)oldTimestamp;
-            oldTsKey << docId;
-            oldTsKey.endArray();
-            writer.del(oldTsKey);
-        }
-
-        if (timestamp == 0) {
-            writer.del(tsKey);
-            writer.del(docId);
-        }
-        else {
-            writer.set(tsKey, slice::null);
-            writer.set(docId, tsValue);
-        }
-
-        return c4db_endTransaction(db, true, outError);
-    } catchError(outError);
-
-    c4db_endTransaction(db, false, NULL);
-    return false;
+    bool commit = c4doc_setExpirationInternal(db, docId, timestamp, outError);
+    return c4db_endTransaction(db, commit, outError);
 }
 
 uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)
