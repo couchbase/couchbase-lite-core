@@ -13,6 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#define NOMINMAX
 #include "c4Impl.hh"
 #include "c4Document.h"
 #include "c4Database.h"
@@ -24,6 +25,8 @@
 #include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+
+#include <algorithm>
 
 using namespace cbforest;
 
@@ -481,7 +484,7 @@ static alloc_slice createDocUUID() {
 #if SECURE_RANDOMIZE_AVAILABLE
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
                                     "0123456789-_";
-    static unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
+    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
     uint8_t r[kLength];
     SecureRandomize({r, sizeof(r)});
 
@@ -508,7 +511,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
         md5Context ctx;
         md5_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
         if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
             md5_add(&ctx, &revLen, 1);
         md5_add(&ctx, parentRevID.buf, revLen);
@@ -521,7 +524,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // SHA-1 digest:
         sha1Context ctx;
         sha1_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min(parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
         sha1_add(&ctx, &revLen, 1);
         sha1_add(&ctx, parentRevID.buf, revLen);
         uint8_t delByte = deleted;
@@ -548,6 +551,10 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
     return {result.buf, result.size};
 }
 
+void c4doc_generateOldStyleRevID(bool generateOldStyle)
+{
+    C4GenerateOldStyleRevIDs = generateDocRevID;
+}
 
 // Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
 // After this succeeds, you can call c4doc_insertRevision and then c4doc_save.

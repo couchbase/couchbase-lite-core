@@ -41,6 +41,7 @@ _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision
 _c4doc_getForPut
 _c4doc_generateRevID
+_c4doc_generateOldStyleRevID
 _c4doc_put
 _c4doc_insertRevision
 _c4doc_insertRevisionWithHistory

@@ -1187,6 +1187,15 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Set whether or not to generate the rev IDs for Couchbase Lite 1.0 - 1.2 (using MD5) instead of
+        /// the current way (using SHA)
+        /// </summary>
+        /// <param name="generateOldStyle"><c>false</c> (default) to generate new style, and <c>true</c>
+        ///  to generate old style</param>
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void c4doc_generateOldStyleRevID([MarshalAs(UnmanagedType.U1)]bool generateOldStyle);
+
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4key_new")]
         private static extern C4Key* _c4key_new();
 
