@@ -29,6 +29,8 @@
 #include <ctime>
 #include <algorithm>
 
+#include <algorithm>
+
 using namespace cbforest;
 
 
@@ -632,6 +634,10 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
     return {result.buf, result.size};
 }
 
+void c4doc_generateOldStyleRevID(bool generateOldStyle)
+{
+    C4GenerateOldStyleRevIDs = generateDocRevID;
+}
 
 // Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
 // After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
