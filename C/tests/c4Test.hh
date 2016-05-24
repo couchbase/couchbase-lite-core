@@ -13,14 +13,7 @@
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4View.h"
-#include <cppunit/TestCase.h>
-#include <cppunit/extensions/HelperMacros.h>
-#include "iostream"
-
-
-// Less-obnoxious names for assertions:
-#define Assert CPPUNIT_ASSERT
-#define AssertEqual(ACTUAL, EXPECTED) CPPUNIT_ASSERT_EQUAL(EXPECTED, ACTUAL)
+#include "CppTest.hh"
 
 
 // Some operators to make C4Slice work with AssertEqual:
@@ -28,8 +21,6 @@ bool operator== (C4Slice s1, C4Slice s2);
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 
 std::string toJSON(C4KeyReader r);
-
-
 
 // This helper is necessary because it ends an open transaction if an assertion fails.
 // If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.

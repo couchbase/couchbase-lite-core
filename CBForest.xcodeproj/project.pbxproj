@@ -29,6 +29,16 @@
 		2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
 		2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
+		2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE361CF3A0F10022F721 /* VersionVector.cc */; };
+		2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE361CF3A0F10022F721 /* VersionVector.cc */; };
+		2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE371CF3A0F10022F721 /* VersionVector.hh */; };
+		2708FE421CF4CC880022F721 /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */; };
+		2708FE4D1CF4CC880022F721 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
+		2708FE551CF4CCCE0022F721 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
+		2708FE561CF4CD170022F721 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
+		2708FE571CF4CD240022F721 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
+		2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBForestTest.cc */; };
 		2709F29A191EA10E00C5A8A3 /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
 		2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
 		2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
@@ -323,6 +333,13 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
 		};
+		2708FE531CF4CCAB0022F721 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "CBForest static";
+		};
 		27410EA9198BFD97007EE67C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -431,6 +448,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		2708FE4E1CF4CC880022F721 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		274D04061BA75E1C00FF7C35 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -454,6 +480,14 @@
 /* Begin PBXFileReference section */
 		2701993919F1972E00FDC239 /* Tokenizer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cc; sourceTree = "<group>"; };
 		2701993A19F1972E00FDC239 /* Tokenizer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Tokenizer.hh; sourceTree = "<group>"; };
+		2704A1E219049E2300138320 /* slice.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = slice.hh; sourceTree = "<group>"; };
+		2708FE361CF3A0F10022F721 /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
+		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
+		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
+		2708FE3D1CF4C8B10022F721 /* CppTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CppTest.hh; sourceTree = "<group>"; };
+		2708FE521CF4CC880022F721 /* CBForestCppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForestCppTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		2708FE591CF4D0450022F721 /* CBForestTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CBForestTest.hh; sourceTree = "<group>"; };
+		2708FE5A1CF4D3370022F721 /* CBForestTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CBForestTest.cc; sourceTree = "<group>"; };
 		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
 		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
@@ -512,7 +546,7 @@
 		273E9FAD1C519A1B003115A6 /* CBForest Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "CBForest Tests.xcconfig"; sourceTree = "<group>"; };
 		273E9FB01C519A1B003115A6 /* CBForest-Interop.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "CBForest-Interop.xcconfig"; sourceTree = "<group>"; };
 		273E9FB31C519A1B003115A6 /* CBForestJNI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CBForestJNI.xcconfig; sourceTree = "<group>"; };
-		273E9FB61C519A1B003115A6 /* CppTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CppTests.xcconfig; sourceTree = "<group>"; };
+		273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = C4Tests.xcconfig; sourceTree = "<group>"; };
 		273E9FB91C519A1B003115A6 /* forestdb.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = forestdb.xcconfig; sourceTree = "<group>"; };
 		273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
 		273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release.xcconfig; sourceTree = "<group>"; };
@@ -539,7 +573,7 @@
 		274D03FA1BA7414100FF7C35 /* jni.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jni.h; sourceTree = "<group>"; };
 		274D03FE1BA7443600FF7C35 /* CBForestJNI.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = CBForestJNI.exp; sourceTree = "<group>"; };
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
-		274D04081BA75E1C00FF7C35 /* CppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CppTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libcppunit-1.13.0.dylib"; path = "../../../../usr/local/Cellar/cppunit/1.13.2/lib/libcppunit-1.13.0.dylib"; sourceTree = "<group>"; };
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
@@ -794,6 +828,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2708FE4B1CF4CC880022F721 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2708FE561CF4CD170022F721 /* libCBForest.a in Frameworks */,
+				2708FE4D1CF4CC880022F721 /* libcppunit-1.13.0.dylib in Frameworks */,
+				2708FE571CF4CD240022F721 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27139B2D18F8E9750021A9A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -951,6 +995,8 @@
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
 				277D19C6194CCE7A008E91EB /* RevID.mm */,
+				2708FE361CF3A0F10022F721 /* VersionVector.cc */,
+				2708FE371CF3A0F10022F721 /* VersionVector.hh */,
 				27E487211922A64F007D8940 /* RevTree.cc */,
 				27E487221922A64F007D8940 /* RevTree.hh */,
 			);
@@ -964,7 +1010,7 @@
 				273E9FAD1C519A1B003115A6 /* CBForest Tests.xcconfig */,
 				273E9FB01C519A1B003115A6 /* CBForest-Interop.xcconfig */,
 				273E9FB31C519A1B003115A6 /* CBForestJNI.xcconfig */,
-				273E9FB61C519A1B003115A6 /* CppTests.xcconfig */,
+				273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */,
 				273E9FB91C519A1B003115A6 /* forestdb.xcconfig */,
 				273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */,
 				273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */,
@@ -1048,10 +1094,11 @@
 				27EF807419142C2500A327B9 /* libTokenizer.a */,
 				27EF81121917EEC600A327B9 /* libCBForest.a */,
 				274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */,
-				274D04081BA75E1C00FF7C35 /* CppTests */,
+				274D04081BA75E1C00FF7C35 /* C4Tests */,
 				720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */,
 				27A6579C1CBC190B00A7A1D7 /* SwiftForest.framework */,
 				27A657A51CBC190B00A7A1D7 /* SwiftForestTests.xctest */,
+				2708FE521CF4CC880022F721 /* CBForestCppTests */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1214,6 +1261,10 @@
 				9399E72C1B7E536700D4BE79 /* Slice_Test.mm */,
 				27E4872019226699007D8940 /* testutil.h */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
+				2708FE3D1CF4C8B10022F721 /* CppTest.hh */,
+				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
+				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
+				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 			);
 			path = "CBForest Tests";
 			sourceTree = "<group>";
@@ -1570,6 +1621,7 @@
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				273E9ED71C506DB4003115A6 /* FullTextIndex.hh in Headers */,
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
+				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
 				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
@@ -1578,6 +1630,24 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		2708FE3E1CF4CC880022F721 /* CBForestCppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "CBForestCppTests" */;
+			buildPhases = (
+				2708FE411CF4CC880022F721 /* Sources */,
+				2708FE4B1CF4CC880022F721 /* Frameworks */,
+				2708FE4E1CF4CC880022F721 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2708FE541CF4CCAB0022F721 /* PBXTargetDependency */,
+			);
+			name = CBForestCppTests;
+			productName = CppTests;
+			productReference = 2708FE521CF4CC880022F721 /* CBForestCppTests */;
+			productType = "com.apple.product-type.tool";
+		};
 		27139B2F18F8E9750021A9A3 /* CBForest Tests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */;
@@ -1616,9 +1686,9 @@
 			productReference = 274D03D31BA732B000FF7C35 /* libCBForestJNI.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		274D04071BA75E1C00FF7C35 /* CppTests */ = {
+		274D04071BA75E1C00FF7C35 /* C4Tests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "CppTests" */;
+			buildConfigurationList = 274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "C4Tests" */;
 			buildPhases = (
 				274D04041BA75E1C00FF7C35 /* Sources */,
 				274D04051BA75E1C00FF7C35 /* Frameworks */,
@@ -1629,9 +1699,9 @@
 			dependencies = (
 				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
 			);
-			name = CppTests;
+			name = C4Tests;
 			productName = CppTests;
-			productReference = 274D04081BA75E1C00FF7C35 /* CppTests */;
+			productReference = 274D04081BA75E1C00FF7C35 /* C4Tests */;
 			productType = "com.apple.product-type.tool";
 		};
 		275072C218E4AA4400A80C5A /* forestdb */ = {
@@ -1792,7 +1862,8 @@
 			targets = (
 				27EF80F91917EEC600A327B9 /* CBForest static */,
 				27139B2F18F8E9750021A9A3 /* CBForest Tests */,
-				274D04071BA75E1C00FF7C35 /* CppTests */,
+				2708FE3E1CF4CC880022F721 /* CBForestCppTests */,
+				274D04071BA75E1C00FF7C35 /* C4Tests */,
 				274D03D21BA732B000FF7C35 /* CBForestJNI */,
 				720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
@@ -1853,6 +1924,17 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2708FE411CF4CC880022F721 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2708FE421CF4CC880022F721 /* VersionVectorTest.cc in Sources */,
+				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
+				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
+				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27139B2C18F8E9750021A9A3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2057,6 +2139,7 @@
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
+				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
@@ -2091,6 +2174,7 @@
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+				2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 			);
@@ -2108,6 +2192,11 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* CBForest-Interop */;
 			targetProxy = 2701C2301C4DA840006D7A99 /* PBXContainerItemProxy */;
+		};
+		2708FE541CF4CCAB0022F721 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* CBForest static */;
+			targetProxy = 2708FE531CF4CCAB0022F721 /* PBXContainerItemProxy */;
 		};
 		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2183,6 +2272,22 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		2708FE501CF4CC880022F721 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		2708FE511CF4CC880022F721 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		27139B4218F8E9750021A9A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* CBForest Tests.xcconfig */;
@@ -2213,14 +2318,14 @@
 		};
 		274D040D1BA75E1C00FF7C35 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* CppTests.xcconfig */;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
 			};
 			name = Debug;
 		};
 		274D040E1BA75E1C00FF7C35 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* CppTests.xcconfig */;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;
@@ -2338,6 +2443,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "CBForestCppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2708FE501CF4CC880022F721 /* Debug */,
+				2708FE511CF4CC880022F721 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "CBForest Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2356,7 +2470,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "CppTests" */ = {
+		274D040C1BA75E1C00FF7C35 /* Build configuration list for PBXNativeTarget "C4Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				274D040D1BA75E1C00FF7C35 /* Debug */,

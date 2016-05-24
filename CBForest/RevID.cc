@@ -48,9 +48,9 @@ namespace cbforest {
     using namespace fleece;
 
     // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.
-    static inline uint32_t parseDigits(const char *str, const char *end)
+    static inline uint64_t parseDigits(const char *str, const char *end)
     {
-        uint32_t result = 0;
+        uint64_t result = 0;
         for (; str < end; ++str) {
             if (!isdigit(*str))
                 return 0;
@@ -212,8 +212,8 @@ namespace cbforest {
     }
 
 
-    void revidBuffer::parse(slice s) {
-        if (!tryParse(s, false))
+    void revidBuffer::parse(slice s, bool allowClock) {
+        if (!tryParse(s, allowClock))
             throw error(error::BadRevisionID);
     }
 
@@ -228,23 +228,23 @@ namespace cbforest {
         size = 0;
 
         // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
-        const char *sep = (const char*)::memchr(ascii.buf, '@', ascii.size);
+        const char *sep = (const char*)ascii.findByte('@');
         bool isClock = (sep != NULL);
         if (isClock) {
             if (!allowClock)
                 return false;
             *dst++ = 0; // leading zero byte denotes clock-style revid
         } else {
-            sep = (const char*)::memchr(ascii.buf, '-', ascii.size);
+            sep = (const char*)ascii.findByte('-');
             if (sep == NULL)
                 return false; // separator is missing
         }
 
         ssize_t sepPos = sep - (const char*)ascii.buf;
-        if (sepPos == 0 || sepPos > 8 || sepPos >= ascii.size-1)
+        if (sepPos == 0 || sepPos > 20 || sepPos >= ascii.size-1)
             return false; // generation too large, or separator at end
 
-        unsigned gen = parseDigits((const char*)ascii.buf, sep);
+        uint64_t gen = parseDigits((const char*)ascii.buf, sep);
         if (gen == 0)
             return false; // unparseable generation
         size_t genSize = PutUVarInt(dst, gen);

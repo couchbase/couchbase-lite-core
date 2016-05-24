@@ -38,6 +38,7 @@ namespace cbforest {
             CorruptIndexData = -1002,
             AssertionFailed = -1003,
             TokenizerError = -1004, // can't create tokenizer
+            BadVersionVector = -1005
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
