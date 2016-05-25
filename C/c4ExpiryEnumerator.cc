@@ -97,9 +97,10 @@ C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outErro
 bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
 {
     try {
-        return e->next();
+        if (e->next())
+            return true;
+        clearError(outError);
     } catchError(outError);
-    
     return false;
 }
 

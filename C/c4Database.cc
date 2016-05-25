@@ -453,16 +453,16 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
 
 uint64_t c4db_nextDocExpiration(C4Database *database)
 {
-    KeyStore& expiryKvs = database->getKeyStore("expiry");
-    DocEnumerator e(expiryKvs);
-    if(e.next() && e.doc().body() == slice::null) {
-        // Look for an entry with a null body (otherwise, its key is simply
-        // a doc ID)
-        CollatableReader r(e.doc().key());
-        r.beginArray();
-        return (uint64_t)r.readInt();
-    }
-
+    try {
+        KeyStore& expiryKvs = database->getKeyStore("expiry");
+        DocEnumerator e(expiryKvs);
+        if(e.next() && e.doc().body() == slice::null) {
+            // Look for an entry with a null body (otherwise, its key is simply a doc ID)
+            CollatableReader r(e.doc().key());
+            r.beginArray();
+            return (uint64_t)r.readInt();
+        }
+    } catchError(NULL)
     return 0ul;
 }
 
