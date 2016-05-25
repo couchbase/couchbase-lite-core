@@ -14,99 +14,36 @@
 //  and limitations under the License.
 
 #include "RevTree.hh"
-#include "varint.hh"
+#include "RawRevTree.hh"
 #include <forestdb.h>
 #include <algorithm>
-#ifdef _MSC_VER
-#include <WinSock2.h>
-#else
-#include <arpa/inet.h>  // for htons, etc.
-#endif
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if DEBUG
 #include <ostream>
 #include <sstream>
+#endif
 
 
 namespace cbforest {
-
     using namespace fleece;
 
-    // Layout of revision rev in encoded form. Tree is a sequence of these followed by a 32-bit zero.
-    // Revs are stored in decending priority, with the current leaf rev(s) coming first.
-    class RawRevision {
-    public:
-        // Private RevisionFlags bits used in encoded form:
-        enum : uint8_t {
-            kPublicPersistentFlags = (Revision::kLeaf | Revision::kDeleted | Revision::kHasAttachments),
-            kHasBodyOffset = 0x40,  /**< Does this raw rev have a file position (oldBodyOffset)? */
-            kHasData       = 0x80,  /**< Does this raw rev contain JSON data? */
-        };
-        
-        uint32_t        size;           // Total size of this tree rev
-        uint16_t        parentIndex;
-        uint8_t         flags;
-        uint8_t         revIDLen;
-        char            revID[1];       // actual size is [revIDLen]
-        // These follow the revID:
-        // varint       sequence
-        // if HasData flag:
-        //    char      data[];       // Contains the revision body (JSON)
-        // else:
-        //    varint    oldBodyOffset;  // Points to doc that has the body (0 if none)
-        //    varint    body_size;
-
-        bool isValid() const {
-            return size != 0;
-        }
-
-        const RawRevision *next() const {
-            return (const RawRevision*)offsetby(this, ntohl(size));
-        }
-
-        unsigned count() const {
-            unsigned count = 0;
-            for (const RawRevision *rev = this; rev->isValid(); rev = rev->next())
-                ++count;
-            return count;
-        }
-    };
-
-
     RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
-    :_bodyOffset(docOffset)
+    :_bodyOffset(docOffset),
+     _revs(RawRevision::decode(raw_tree, this, seq))
     {
-        decode(raw_tree, seq, docOffset);
     }
 
     void RevTree::decode(cbforest::slice raw_tree, sequence seq, uint64_t docOffset) {
-        const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
-        unsigned count = rawRev->count();
-        if (count > UINT16_MAX)
-            throw error(error::CorruptRevisionData);
         _bodyOffset = docOffset;
-        _revs.resize(count);
-        auto rev = _revs.begin();
-        for (; rawRev->isValid(); rawRev = rawRev->next()) {
-            rev->read(rawRev);
-            if (rev->sequence == 0)
-                rev->sequence = seq;
-            rev->owner = this;
-            rev++;
-        }
-        if ((uint8_t*)rawRev != (uint8_t*)raw_tree.end() - sizeof(uint32_t)) {
-            throw error(error::CorruptRevisionData);
-        }
+        _revs = RawRevision::decode(raw_tree, this, seq);
     }
 
     alloc_slice RevTree::encode() {
         sort();
-
-        // Allocate output buffer:
-        size_t size = sizeof(uint32_t);  // start with space for trailing 0 size
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->body.size > 0 && !(rev->isLeaf() || rev->isNew())) {
                 // Prune body of an already-saved rev that's no longer a leaf:
@@ -115,77 +52,8 @@ namespace cbforest {
                 CBFAssert(_bodyOffset > 0);
                 rev->oldBodyOffset = _bodyOffset;
             }
-            size += rev->sizeToWrite();
         }
-
-        alloc_slice result(size);
-
-        // Write the raw revs:
-        RawRevision *dst = (RawRevision*)result.buf;
-        for (auto src = _revs.begin(); src != _revs.end(); ++src) {
-            dst = src->write(dst, _bodyOffset);
-        }
-        dst->size = htonl(0);   // write trailing 0 size marker
-        CBFAssert((&dst->size + 1) == result.end());
-        return result;
-    }
-
-    size_t Revision::sizeToWrite() const {
-        size_t size = offsetof(RawRevision, revID) + this->revID.size + SizeOfVarInt(this->sequence);
-        if (this->body.size > 0)
-            size += this->body.size;
-        else if (this->oldBodyOffset > 0)
-            size += SizeOfVarInt(this->oldBodyOffset);
-        return size;
-    }
-
-    RawRevision* Revision::write(RawRevision* dst, uint64_t bodyOffset) const {
-        size_t revSize = this->sizeToWrite();
-        dst->size = htonl((uint32_t)revSize);
-        dst->revIDLen = (uint8_t)this->revID.size;
-        memcpy(dst->revID, this->revID.buf, this->revID.size);
-        dst->parentIndex = htons(this->parentIndex);
-
-        uint8_t dstFlags = this->flags & RawRevision::kPublicPersistentFlags;
-        if (this->body.size > 0)
-            dstFlags |= RawRevision::kHasData;
-        else if (this->oldBodyOffset > 0)
-            dstFlags |= RawRevision::kHasBodyOffset;
-        dst->flags = (Revision::Flags)dstFlags;
-
-        void *dstData = offsetby(&dst->revID[0], this->revID.size);
-        dstData = offsetby(dstData, PutUVarInt(dstData, this->sequence));
-        if (dst->flags & RawRevision::kHasData) {
-            memcpy(dstData, this->body.buf, this->body.size);
-        } else if (dst->flags & RawRevision::kHasBodyOffset) {
-            /*dstData +=*/ PutUVarInt(dstData, this->oldBodyOffset ? this->oldBodyOffset : bodyOffset);
-        }
-
-        return (RawRevision*)offsetby(dst, revSize);
-    }
-
-    void Revision::read(const RawRevision *src) {
-        const void* end = src->next();
-        this->revID.buf = (char*)src->revID;
-        this->revID.size = src->revIDLen;
-        this->flags = (Flags)(src->flags & RawRevision::kPublicPersistentFlags);
-        this->parentIndex = ntohs(src->parentIndex);
-        const void *data = offsetby(&src->revID, src->revIDLen);
-        ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
-        data = offsetby(data, GetUVarInt(slice(data, len), &this->sequence));
-        this->oldBodyOffset = 0;
-        if (src->flags & RawRevision::kHasData) {
-            this->body.buf = (char*)data;
-            this->body.size = (char*)end - (char*)data;
-        } else {
-            this->body.buf = NULL;
-            this->body.size = 0;
-            if (src->flags & RawRevision::kHasBodyOffset) {
-                slice buf = {(void*)data, (size_t)((uint8_t*)end-(uint8_t*)data)};
-                size_t nBytes = GetUVarInt(buf, &this->oldBodyOffset);
-                buf.moveStart(nBytes);
-            }
-        }
+        return RawRevision::encode(_revs);
     }
 
 #if DEBUG

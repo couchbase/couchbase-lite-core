@@ -25,7 +25,6 @@
 namespace cbforest {
 
     class RevTree;
-    class RawRevision;
 
     /** In-memory representation of a single revision's metadata. */
     class Revision {
@@ -66,9 +65,6 @@ namespace cbforest {
         uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
         uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
 
-        void read(const RawRevision *src);
-        RawRevision* write(RawRevision* dst, uint64_t bodyOffset) const;
-        size_t sizeToWrite() const;
         void addFlag(Flags f)      {flags = (Flags)(flags | f);}
         void clearFlag(Flags f)    {flags = (Flags)(flags & ~f);}
 #if DEBUG

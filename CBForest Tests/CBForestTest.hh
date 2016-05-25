@@ -11,7 +11,7 @@
 
 #include "slice.hh"
 
-using namespace cbforest;
+using namespace fleece;
 
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);

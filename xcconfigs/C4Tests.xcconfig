@@ -8,5 +8,5 @@
 SDKROOT                     = macosx
 SUPPORTED_PLATFORMS         = macosx
 
-HEADER_SEARCH_PATHS         = $(inherited) /usr/local/include/
+HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/vendor/fleece/Fleece /usr/local/include/
 LIBRARY_SEARCH_PATHS        = $(inherited) /usr/local/lib
