@@ -901,7 +901,7 @@ namespace CBForest
             #if DEBUG && !NET_3_5
             var retVal = _c4db_enumerateExpired(db, outError);
             if(retVal != null) {
-            _AllocatedObjects.TryAdd((IntPtr)retVal, "C4DocEnumerator");
+            _AllocatedObjects.TryAdd((IntPtr)retVal, "C4ExpiryEnumerator");
             #if TRACE
             Trace.WriteLine("[c4db_enumerateExpired] Allocated 0x{0}", ((IntPtr)retVal).ToString("X"));
             #endif
@@ -950,8 +950,25 @@ namespace CBForest
         /// </summary>
         /// <param name="e">The enumerator</param>
         /// <param name="cleanupKvs">If set to <c>true</c> cleanup the old entries from the expiration store</param>
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern void c4exp_free(C4ExpiryEnumerator *e);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4exp_free")]
+        private static extern void _c4exp_free(C4ExpiryEnumerator* e);
+
+        public static void c4exp_free(C4ExpiryEnumerator *e)
+        {
+#if DEBUG && !NET_3_5
+            var ptr = (IntPtr)e;
+#if TRACE
+            if(ptr != IntPtr.Zero && !_AllocatedObjects.ContainsKey(ptr)) {
+                Trace.WriteLine("WARNING: [c4exp_free] freeing object 0x{0} that was not found in allocated list", ptr.ToString("X"));
+            } else {
+#endif
+            _AllocatedObjects.TryRemove(ptr, out _Dummy);
+#if TRACE
+            }
+#endif
+#endif
+            _c4exp_free(e);
+        }
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4exp_close(C4ExpiryEnumerator* e);
