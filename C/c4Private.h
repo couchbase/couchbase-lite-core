@@ -20,7 +20,7 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool deleting,
                             bool allowConflict,
                             C4Error *outError);
-
+    
 #ifdef __cplusplus
 }
 #endif

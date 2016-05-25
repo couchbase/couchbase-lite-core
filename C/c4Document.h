@@ -20,7 +20,7 @@ extern "C" {
     typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
         kDeleted        = 0x01,     /**< The document's current revision is deleted. */
         kConflicted     = 0x02,     /**< The document is in conflict. */
-        kHasAttachments = 0x04,     /**< One or more revisions have attachments. */
+        kHasAttachments = 0x04,     /**< The document's current revision has attachments. */
 
         kExists         = 0x1000    /**< The document exists (i.e. has revisions.) */
     }; // Note: Superset of VersionedDocument::Flags
@@ -181,6 +181,24 @@ extern "C" {
     bool c4doc_save(C4Document *doc,
                     uint32_t maxRevTreeDepth,
                     C4Error *outError);
+        
+        
+    /** Sets an expiration date on a document.  After this time the
+     document will be labeled as expired.
+     @param db The database to set the expiration date in
+     @param docId The ID of the document to set the expiration date for
+     @param timestamp The UNIX timestamp of the expiration date (must
+     be in the future, i.e. after the current value of time()).  A value
+     of UINT64_MAX indicates that the expiration should be cancelled.
+     @param outError Information about any error that occurred
+     @return true on sucess, false on failure
+     */
+    bool c4doc_setExpiration(C4Database *db,
+                             C4Slice docId,
+                             uint64_t timestamp,
+                             C4Error *outError);
+        
+    uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId);
 
 
     //////// HIGH-LEVEL:

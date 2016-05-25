@@ -12,8 +12,17 @@
 #include "c4Test.hh"
 #include "forestdb.h"
 #include "c4Private.h"
+#include "c4DocEnumerator.h"
+#include "c4ExpiryEnumerator.h"
+#include <cmath>
+
 #ifdef _MSC_VER
 #define random() rand()
+#include <ctime>
+#include "Windows.h"
+#define sleep(sec) Sleep((sec)*1000)
+#else
+#include "unistd.h"
 #endif
 
 class C4DatabaseTest : public C4Test {
@@ -28,7 +37,7 @@ class C4DatabaseTest : public C4Test {
     void testErrorMessages() {
         C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
         AssertEqual(msg.buf, (const void*)nullptr);
-        AssertEqual(msg.size, 0ul);
+        AssertEqual((unsigned long)msg.size, 0ul);
 
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
         assertMessage(HTTPDomain, kC4HTTPBadRequest, "invalid parameter");
@@ -76,7 +85,7 @@ class C4DatabaseTest : public C4Test {
         C4Document* doc;
         doc = c4doc_get(db, kDocID, true, &error);
         Assert(!doc);
-        AssertEqual(error.domain, ForestDBDomain);
+        AssertEqual((uint32_t)error.domain, (uint32_t)ForestDBDomain);
         AssertEqual(error.code, (int)FDB_RESULT_KEY_NOT_FOUND);
         c4doc_free(doc);
 
@@ -311,7 +320,7 @@ class C4DatabaseTest : public C4Test {
         auto doc = c4doc_put(db, &rq, NULL, &error);
         Assert(doc != NULL);
         AssertEqual(doc->docID, kDocID);
-        auto kExpectedRevID = C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab");
+        C4Slice kExpectedRevID = C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab");
         AssertEqual(doc->revID, kExpectedRevID);
         AssertEqual(doc->flags, (C4DocumentFlags)kExists);
         AssertEqual(doc->selectedRev.revID, kExpectedRevID);
@@ -324,8 +333,8 @@ class C4DatabaseTest : public C4Test {
         size_t commonAncestorIndex;
         doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         Assert(doc != NULL);
-        AssertEqual(commonAncestorIndex, 1ul);
-        auto kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
+        AssertEqual((unsigned long)commonAncestorIndex, 1ul);
+        C4Slice kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
         AssertEqual(doc->revID, kExpectedRev2ID);
         AssertEqual(doc->flags, (C4DocumentFlags)kExists);
         AssertEqual(doc->selectedRev.revID, kExpectedRev2ID);
@@ -339,7 +348,7 @@ class C4DatabaseTest : public C4Test {
         rq.historyCount = 2;
         doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         Assert(doc != NULL);
-        AssertEqual(commonAncestorIndex, 1ul);
+        AssertEqual((unsigned long)commonAncestorIndex, 1ul);
         AssertEqual(doc->revID, kRev2ID);
         AssertEqual(doc->flags, (C4DocumentFlags)(kExists | kConflicted));
         AssertEqual(doc->selectedRev.revID, kRev2ID);
@@ -526,6 +535,93 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(seq, (C4SequenceNumber)100);
     }
 
+    void testExpired() {
+        C4Slice docID = C4STR("expire_me");
+        createRev(docID, kRevID, kBody);
+        time_t expire = time(NULL) + 1;
+        C4Error err;
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        
+        expire = time(NULL) + 2;
+        // Make sure setting it to the same is also true
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        
+        C4Slice docID2 = C4STR("expire_me_too");
+        createRev(docID2, kRevID, kBody);
+        Assert(c4doc_setExpiration(db, docID2, expire, &err));
+    
+        C4Slice docID3 = C4STR("dont_expire_me");
+        createRev(docID3, kRevID, kBody);
+        sleep(2u);
+        
+        C4ExpiryEnumerator *e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        int expiredCount = 0;
+        while(c4exp_next(e, NULL)) {
+            C4Slice existingDocID = c4exp_getDocID(e);
+            Assert(!c4SliceEqual(existingDocID, docID3));
+            c4slice_free(existingDocID);
+            expiredCount++;
+        }
+        
+        c4exp_free(e);
+        AssertEqual(expiredCount, 2);
+        AssertEqual(c4doc_getExpiration(db, docID), (uint64_t)expire);
+        AssertEqual(c4doc_getExpiration(db, docID2), (uint64_t)expire);
+        AssertEqual(c4db_nextDocExpiration(db), (uint64_t)expire);
+        
+        e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        expiredCount = 0;
+        while(c4exp_next(e, NULL)) {
+            C4Slice existingDocID = c4exp_getDocID(e);
+            Assert(!c4SliceEqual(existingDocID, docID3));
+            c4slice_free(existingDocID);
+            expiredCount++;
+        }
+        
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
+        AssertEqual(expiredCount, 2);
+        
+        e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        expiredCount = 0;
+        while(c4exp_next(e, NULL)) {
+            expiredCount++;
+        }
+        
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
+        AssertEqual(expiredCount, 0);
+    }
+    
+    void testCancelExpire()
+    {
+        C4Slice docID = C4STR("expire_me");
+        createRev(docID, kRevID, kBody);
+        time_t expire = time(NULL) + 2;
+        C4Error err;
+        Assert(c4doc_setExpiration(db, docID, expire, &err));
+        Assert(c4doc_setExpiration(db, docID, UINT64_MAX, &err));
+        
+        sleep(2u);
+        auto e = c4db_enumerateExpired(db, &err);
+        Assert(e != NULL);
+        
+        int expiredCount = 0;
+        while(c4exp_next(e, NULL)) {
+            expiredCount++;
+        }
+        
+        Assert(c4exp_purgeExpired(e, &err));
+        c4exp_free(e);
+        AssertEqual(expiredCount, 0);
+    }
 
     CPPUNIT_TEST_SUITE( C4DatabaseTest );
     CPPUNIT_TEST( testErrorMessages );
@@ -538,6 +634,8 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST( testAllDocsInfo );
     CPPUNIT_TEST( testAllDocsIncludeDeleted );
     CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST( testExpired );
+    CPPUNIT_TEST( testCancelExpire );
     CPPUNIT_TEST_SUITE_END();
 };
 

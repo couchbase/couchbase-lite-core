@@ -7,6 +7,10 @@
 //
 
 #include "c4Test.hh"
+#ifdef _MSC_VER
+#define random() rand()
+#include <chrono>
+#endif
 
 class C4AllDocsPerformanceTest : public C4Test {
 public:

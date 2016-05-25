@@ -48,18 +48,27 @@ _c4doc_insertRevisionWithHistory
 _c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save
+_c4doc_setExpiration
+_c4doc_getExpiration
+_c4db_nextDocExpiration
 
 _c4rev_getGeneration
 
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
 _c4db_enumerateSomeDocs
+_c4db_enumerateExpired
 _c4enum_next
 _c4enum_nextDocument
 _c4enum_getDocumentInfo
 _c4enum_getDocument
 _c4enum_close
 _c4enum_free
+_c4exp_free
+_c4exp_close
+_c4exp_getDocID
+_c4exp_next
+_c4exp_purgeExpired
 
 _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions

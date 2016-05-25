@@ -41,7 +41,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -71,29 +71,31 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)..\CBForest.VS2015;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\vendor\openssl\libs\windows\x86;$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)..\vendor\openssl\libs\windows\amd64;$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)..\vendor\openssl\libs\windows\amd64;$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(UniversalCRT_IncludePath);$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)..\CBForest.VS2015;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(UniversalCRT_IncludePath);$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\vendor\openssl\libs\windows\x86;$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir);$(ProjectDir)..\CBForest;$(ProjectDir)..\CBForest\Encryption;$(ProjectDir)..\vendor\snappy;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\forestdb\option;$(ProjectDir)..\vendor\forestdb\utils;$(ProjectDir)..\vendor\forestdb\src;$(ProjectDir)..\vendor\forestdb\include\;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..;$(UniversalCRT_IncludePath);$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\vendor\openssl\libs\windows\amd64;$(SolutionDir)$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)..\vendor\openssl\libs\windows\amd64;$(LibraryPath)</LibraryPath>
     <TargetName>CBForest-Interop</TargetName>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -103,11 +105,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
@@ -137,18 +140,24 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutputPath)CBForest-Interop.dll $(SolutionDir)..\CSharp\prebuilt\$(PlatformTarget)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copies the compiled DLL to the CSharp prebuilt directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -159,7 +168,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -170,6 +179,12 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ModuleDefinitionFile>$(SolutionDir)..\C\c4.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutputPath)CBForest-Interop.dll $(SolutionDir)..\CSharp\prebuilt\$(PlatformTarget)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copies the compiled DLL to the CSharp prebuilt directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\CBForest\Collatable.cc" />
@@ -194,6 +209,7 @@
     <ClCompile Include="..\C\c4Database.cc" />
     <ClCompile Include="..\C\c4DocEnumerator.cc" />
     <ClCompile Include="..\C\c4Document.cc" />
+    <ClCompile Include="..\C\c4ExpiryEnumerator.cc" />
     <ClCompile Include="..\C\c4Key.cc" />
     <ClCompile Include="..\C\c4View.cc" />
     <ClCompile Include="..\vendor\forestdb\src\api_wrapper.cc" />

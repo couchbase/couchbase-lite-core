@@ -291,5 +291,8 @@
     <ClCompile Include="..\CBForest\Error.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\C\c4ExpiryEnumerator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

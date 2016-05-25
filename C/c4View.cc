@@ -146,9 +146,9 @@ bool c4view_eraseIndex(C4View *view, C4Error *outError) {
 
 bool c4view_delete(C4View *view, C4Error *outError) {
     try {
-		if (view == NULL) {
-			return true;
-		}
+        if (view == NULL) {
+            return true;
+        }
 
         WITH_LOCK(view);
         if (!view->checkNotBusy(outError))

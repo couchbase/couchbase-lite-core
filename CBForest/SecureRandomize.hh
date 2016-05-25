@@ -30,15 +30,13 @@
 
 #elif defined(_CRYPTO_OPENSSL)
 
-#include <openssl/rand.h>
+    #include <openssl/rand.h>
 
-static inline void SecureRandomize(slice s) {
-    RAND_bytes((unsigned char *)s.buf, s.size);
-    
-}
+    static inline void SecureRandomize(slice s) {
+        RAND_bytes((unsigned char *)s.buf, s.size);
+    }
 
-#define SECURE_RANDOMIZE_AVAILABLE 1
-
+    #define SECURE_RANDOMIZE_AVAILABLE 1
 
 #else
 

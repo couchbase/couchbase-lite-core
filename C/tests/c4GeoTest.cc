@@ -12,6 +12,10 @@
 #include <iostream>
 #ifndef _MSC_VER
 #include <unistd.h>
+#else
+#define random() rand()
+#define srandom(seed) srand(seed)
+#include <algorithm>
 #endif
 
 #ifdef _MSC_VER
@@ -20,10 +24,8 @@ static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
 static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
 #endif
 
-
-static double randomLat()   {return random() / (double)INT_MAX * 180.0 -  90.0;}
-static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
-
+static double randomLat() { return random() / (double)RAND_MAX * 180.0 - 90.0; }
+static double randomLon() { return random() / (double)RAND_MAX * 360.0 - 180.0; }
 
 class C4GeoTest : public C4Test {
 public:
@@ -127,12 +129,17 @@ public:
         while (c4queryenum_next(e, &error)) {
             ++found;
             C4GeoArea a = e->geoBBox;
-            if (verbose)
+            if (verbose) {
                 fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
-                        (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
-            AssertEqual(e->value, C4STR("1234"));
+                    (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
+            }
+
+            C4Slice expected = C4STR("1234");
+            AssertEqual(e->value, expected);
             Assert(a.xmin <= 40 && a.xmax >= 10 && a.ymin <= 40 && a.ymax >= 10);
-            AssertEqual(e->geoJSON, C4STR("{\"geo\":true}"));
+
+            expected = C4STR("{\"geo\":true}");
+            AssertEqual(e->geoJSON, expected);
         }
         c4queryenum_free(e);
         AssertEqual(error.code, 0);

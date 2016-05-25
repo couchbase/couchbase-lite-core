@@ -568,6 +568,13 @@ namespace CBForest
     }
 
     /// <summary>
+    /// Opaque handle to an enumerator that iterates through expired documents.
+    /// </summary>
+    public struct C4ExpiryEnumerator
+    {
+    }
+
+    /// <summary>
     /// An opaque value used as a key or value in a view index. JSON-compatible.
     /// </summary>
     public struct C4Key

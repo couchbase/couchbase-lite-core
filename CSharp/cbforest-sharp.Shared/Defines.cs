@@ -96,7 +96,11 @@ namespace CBForest
         /// <summary>
         /// Object in key is not JSON-compatible
         /// </summary>
-        InvalidKey
+        InvalidKey,
+        /// <summary>
+        /// An invalid parameter was passed to an API call
+        /// </summary>
+        InvalidParameter
     }
 
     /// <summary>
