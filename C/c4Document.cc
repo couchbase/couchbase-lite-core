@@ -636,9 +636,8 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
     return {result.buf, result.size};
 }
 
-void c4doc_generateOldStyleRevID(bool generateOldStyle)
-{
-    C4GenerateOldStyleRevIDs = generateDocRevID;
+void c4doc_generateOldStyleRevID(bool generateOldStyle) {
+    C4GenerateOldStyleRevIDs = generateOldStyle;
 }
 
 // Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
