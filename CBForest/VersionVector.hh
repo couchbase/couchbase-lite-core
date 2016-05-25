@@ -19,23 +19,29 @@ namespace cbforest {
     typedef slice peerID;
     typedef uint64_t generation;
 
+    /** A single version identifier in a vector. Consists of a peerID (author) and generation count.
+        This is equivalent to a clock-style revid. */
     struct version {
-        peerID peer;
+        peerID author;
         generation gen {0};
 
+        static const size_t kMaxAuthorSize = 64;
+
         version()                               {}
-        version(generation g, peerID p)         :peer(p), gen(g) { }
+        version(generation g, peerID p)         :author(p), gen(g) { }
         version(slice string);
 
+        void validate() const;
+
         bool operator== (const version& v) const {
-            return gen == v.gen && peer == v.peer;
+            return gen == v.gen && author == v.author;
         }
 
-        revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, peer, kClockType);}
+        revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, author, kClockType);}
     };
 
 
-    /** A version vector: an array of clock-type revids in reverse chronological order. */
+    /** A version vector: an array of version identifiers in reverse chronological order. */
     class versionVector {
     public:
         versionVector() { }
@@ -47,10 +53,10 @@ namespace cbforest {
         const version& operator[] (size_t i) const          {return _vers[i];}
         const version& current() const                      {return _vers[0];}
 
-        generation genOfPeer(peerID) const;
-        generation operator[] (peerID peer) const           {return genOfPeer(peer);}
+        generation genOfAuthor(peerID) const;
+        generation operator[] (peerID author) const         {return genOfAuthor(author);}
 
-        void incrementGenOfPeer(peerID);
+        void incrementGen(peerID);
 
         void append(version);
 
@@ -75,12 +81,12 @@ namespace cbforest {
 
     private:
         std::vector<version>::iterator findPeerIter(peerID);
-        alloc_slice copyPeerID(peerID);
+        alloc_slice copyAuthor(peerID);
         friend class versionMap;
 
         alloc_slice _string;
         std::vector<version> _vers;
-        std::list<alloc_slice> _added;      // storage space for added peerIDs
+        std::list<alloc_slice> _addedAuthors;      // storage space for added peerIDs
         bool _changed {false};
     };
 

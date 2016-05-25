@@ -19,7 +19,7 @@ static std::ostream& operator<< (std::ostream& o, const versionVector &v) {
 }
 
 static std::ostream& operator<< (std::ostream& o, const version &v) {
-    o << v.gen << "@" << std::string((char*)v.peer.buf, v.peer.size);
+    o << v.gen << "@" << (std::string)v.author;
     return o;
 }
 
@@ -141,7 +141,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
 
     void testIncrement() {
         versionVector v(slice("123@jens,3141592654@bob"));
-        v.incrementGenOfPeer(slice("bob"));
+        v.incrementGen(slice("bob"));
 
         AssertEqual(v[slice("jens")], 123ull);
         AssertEqual(v[slice("bob")],  3141592655ull);
@@ -151,7 +151,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         alloc_slice str = v.asString();
         AssertEqual((slice)str, slice("3141592655@bob,123@jens"));
 
-        v.incrementGenOfPeer(slice("may"));
+        v.incrementGen(slice("may"));
 
         AssertEqual(v[slice("jens")], 123ull);
         AssertEqual(v[slice("bob")],  3141592655ull);
@@ -165,7 +165,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
 
     void testIncrementEmpty() {
         versionVector v;
-        v.incrementGenOfPeer(slice("may"));
+        v.incrementGen(slice("may"));
         AssertEqual(v[slice("may")],  1ull);
         AssertEqual(v.current(), version(1, slice("may")));
         AssertEqual(v.count(), 1ul);

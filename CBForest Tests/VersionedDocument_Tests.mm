@@ -77,9 +77,9 @@ static revidBuffer stringToRev(NSString* str) {
         "1@",
         "@snej",
         "snej@x",
-        "0@snej"
-        "1234567890@snej",
-        "1234@abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+        "0@snej",
+        "12345678901234567890123@snej",
+        "1234@abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
         "-",
         "1-",
         "-ff",
@@ -87,7 +87,7 @@ static revidBuffer stringToRev(NSString* str) {
         "1-abc",
         "0-cafe",
         "1-123",
-        "1234567890-cafe",
+        "12345678901234567890123-cafe",
         "123-f@bb",
     };
     for (int i = 0; i < sizeof(kBadStrings)/sizeof(char*); i++) {

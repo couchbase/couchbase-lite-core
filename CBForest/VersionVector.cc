@@ -16,16 +16,28 @@
 namespace cbforest {
 
     version::version(slice string) {
+        // Note: The validation in this constructor doesn't bother to check for commas or nul bytes
+        // because its caller (versionVector's constructor) won't call it with such strings.
         gen = string.readDecimal();                             // read generation
-        if (gen == 0 || string.readByte() != '@')               // read '@'
+        if (gen == 0 || string.readByte() != '@'                // read '@'
+                     || string.size < 1 || string.size > kMaxAuthorSize)
             throw error(error::BadVersionVector);
-        peer = string;                                          // read peer ID
+        author = string;                                        // read peer ID
+    }
+
+    void version::validate() const {
+        if (gen == 0 || author.size < 1 || author.size > kMaxAuthorSize
+                     || author.findByte(',') || author.findByte('\0'))
+            throw error(error::BadVersionVector);
     }
 
 
     versionVector::versionVector(slice string)
     :_string(string)
     {
+        if (string.size == 0 || string.findByte('\0'))
+            throw error(error::BadVersionVector);
+
         while (string.size > 0) {
             const void *comma = string.findByte(',') ?: string.end();
             _vers.push_back( version(string.upTo(comma)) );
@@ -41,7 +53,7 @@ namespace cbforest {
 
         size_t dataSize = 0;
         for (auto v = _vers.begin(); v != _vers.end(); ++v)
-            dataSize += slice::sizeOfDecimal(v->gen) + v->peer.size + 2;
+            dataSize += slice::sizeOfDecimal(v->gen) + v->author.size + 2;
         if (dataSize > 0)
             --dataSize;
 
@@ -52,7 +64,7 @@ namespace cbforest {
                 out.writeByte(',');
             out.writeDecimal(v->gen);
             out.writeByte('@');
-            out.writeFrom(v->peer);
+            out.writeFrom(v->author);
         }
         return data;
     }
@@ -66,7 +78,7 @@ namespace cbforest {
             o = kNewer;
 
         for (auto v = _vers.begin(); v != _vers.end(); ++v) {
-            auto othergen = other[v->peer];
+            auto othergen = other[v->author];
             if (v->gen < othergen)
                 o |= kOlder;
             else if (v->gen > othergen)
@@ -79,22 +91,22 @@ namespace cbforest {
         return (order)o;
     }
 
-    std::vector<version>::iterator versionVector::findPeerIter(peerID peer) {
+    std::vector<version>::iterator versionVector::findPeerIter(peerID author) {
         auto v = _vers.begin();
         for (; v != _vers.end(); ++v) {
-            if (v->peer == peer)
+            if (v->author == author)
                 break;
         }
         return v;
     }
 
-    generation versionVector::genOfPeer(peerID peer) const {
-        auto v = const_cast<versionVector*>(this)->findPeerIter(peer);
+    generation versionVector::genOfAuthor(peerID author) const {
+        auto v = const_cast<versionVector*>(this)->findPeerIter(author);
         return (v != _vers.end()) ? v->gen : 0;
     }
 
-    void versionVector::incrementGenOfPeer(peerID peer) {
-        auto versP = findPeerIter(peer);
+    void versionVector::incrementGen(peerID author) {
+        auto versP = findPeerIter(author);
         version v;
         if (versP != _vers.end()) {
             v = *versP;
@@ -102,20 +114,22 @@ namespace cbforest {
             _vers.erase(versP);
         } else {
             v.gen = 1;
-            v.peer = copyPeerID(peer);
+            v.author = copyAuthor(author);
+            v.validate();
         }
         _vers.insert(_vers.begin(), v);
         _changed = true;
     }
 
     void versionVector::append(version vers) {
-        vers.peer = copyPeerID(vers.peer);
+        vers.validate();
+        vers.author = copyAuthor(vers.author);
         _vers.push_back(vers);
         _changed = true;
     }
 
-    alloc_slice versionVector::copyPeerID(peerID peer) {
-        return *_added.emplace(_added.begin(), peer);
+    alloc_slice versionVector::copyAuthor(peerID author) {
+        return *_addedAuthors.emplace(_addedAuthors.begin(), author);
     }
 
 
@@ -129,11 +143,11 @@ namespace cbforest {
         }
 
         void add(const version &vers) {
-            _map[vers.peer] = vers.gen;
+            _map[vers.author] = vers.gen;
         }
 
-        generation operator[] (peerID peer) {
-            auto i = _map.find(peer);
+        generation operator[] (peerID author) {
+            auto i = _map.find(author);
             return (i == _map.end()) ? 0 : i->second;
         }
 
@@ -149,16 +163,16 @@ namespace cbforest {
         versionMap myMap(*this), otherMap(other);
         versionVector result;
         for (size_t i = 0; i < std::max(_vers.size(), other._vers.size()); ++i) {
-            peerID peer;
+            peerID author;
             if (i < _vers.size()) {
                 auto &vers = _vers[i];
-                auto othergen = otherMap[vers.peer];
+                auto othergen = otherMap[vers.author];
                 if (vers.gen >= othergen)
                     result.append(vers);
             }
             if (i < other._vers.size()) {
                 auto &vers = other._vers[i];
-                auto mygen = myMap[vers.peer];
+                auto mygen = myMap[vers.author];
                 if (vers.gen > mygen)
                     result.append(vers);
             }
