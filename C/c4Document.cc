@@ -585,14 +585,14 @@ static alloc_slice createDocUUID() {
 }
 
 
-bool C4GenerateOldStyleRevIDs = false;
+static bool sGenerateOldStyleRevIDs = false;
 
 
 static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
 #if SECURE_DIGEST_AVAILABLE
     uint8_t digestBuf[20];
     slice digest;
-    if (C4GenerateOldStyleRevIDs) {
+    if (sGenerateOldStyleRevIDs) {
         // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
         md5Context ctx;
         md5_begin(&ctx);
@@ -637,7 +637,7 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
 }
 
 void c4doc_generateOldStyleRevID(bool generateOldStyle) {
-    C4GenerateOldStyleRevIDs = generateOldStyle;
+    sGenerateOldStyleRevIDs = generateOldStyle;
 }
 
 // Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
