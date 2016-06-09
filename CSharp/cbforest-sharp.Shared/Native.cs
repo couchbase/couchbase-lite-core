@@ -623,9 +623,6 @@ namespace CBForest
             }
         }
 
-        [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
-        public static extern C4DocEnumerator* c4db_purgeExpired(C4Database *db);
-
         /// <summary>
         /// Selects a specific revision of a document (or no revision, if revID is NULL.)
         /// </summary>
@@ -930,8 +927,6 @@ namespace CBForest
         /// C4DocumentInfo struct. Unlike c4enum_getDocument(), this allocates no memory.
         /// </summary>
         /// <param name="e">The enumerator</param>
-        /// <param name="info">A pointer to a C4DocumentInfo struct that will be filled in if a document
-        ///   is found.  Only the document ID is valid and other values will be zeroed.</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4exp_getDocID")]
         public static extern C4Slice _c4exp_getDocID(C4ExpiryEnumerator *e);
 
@@ -949,7 +944,6 @@ namespace CBForest
         /// from the expiration key value store.
         /// </summary>
         /// <param name="e">The enumerator</param>
-        /// <param name="cleanupKvs">If set to <c>true</c> cleanup the old entries from the expiration store</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4exp_free")]
         private static extern void _c4exp_free(C4ExpiryEnumerator* e);
 
