@@ -108,9 +108,7 @@ double c4key_readNumber(C4KeyReader* r) {
 C4SliceResult c4key_readString(C4KeyReader* r) {
     slice s;
     try {
-        s = ((CollatableReader*)r)->readString().copy();
-        //OPT: This makes an extra copy because I can't find a way to 'adopt' the allocated block
-        // managed by the alloc_slice's std::shared_ptr.
+        s = ((CollatableReader*)r)->readString().dontFree();
     } catchError(NULL)
     return {s.buf, s.size};
 }
