@@ -15,6 +15,7 @@
 
 #include "GeoIndex.hh"
 #include "LogInternal.hh"
+#include "Fleece.hh"
 #include <math.h>
 #include <set>
 #include <algorithm>
@@ -24,10 +25,6 @@ namespace cbforest {
 
     static const unsigned kMaxKeyRanges = 50;
 
-    CollatableBuilder& operator<< (CollatableBuilder &coll, const geohash::area &a) {
-        coll << a.longitude.min << a.latitude.min << a.longitude.max << a.latitude.max;
-        return coll;
-    }
 
     geohash::area readGeoArea(CollatableReader& reader) {
         geohash::area a;
@@ -35,6 +32,15 @@ namespace cbforest {
         a.latitude.min = reader.readDouble();
         a.longitude.max = reader.readDouble();
         a.latitude.max = reader.readDouble();
+        return a;
+    }
+
+    geohash::area readGeoArea(fleece::Array::iterator& iter) {
+        geohash::area a;
+        a.longitude.min = iter[0]->asDouble();
+        a.latitude.min = iter[1]->asDouble();
+        a.longitude.max = iter[2]->asDouble();
+        a.latitude.max = iter[3]->asDouble();
         return a;
     }
 

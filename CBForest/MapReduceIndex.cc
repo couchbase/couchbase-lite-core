@@ -15,15 +15,17 @@
 
 #include "MapReduceIndex.hh"
 #include "Collatable.hh"
+#include "Fleece.hh"
 #include "GeoIndex.hh"
 #include "Tokenizer.hh"
 #include "LogInternal.hh"
 #include <algorithm>
 
 namespace cbforest {
+    using namespace fleece;
 
-    static int64_t kMinFormatVersion = 4;
-    static int64_t kCurFormatVersion = 5;
+    static int64_t kMinFormatVersion = 6;
+    static int64_t kCurFormatVersion = 6;
 
     MapReduceIndex::MapReduceIndex(Database* db, std::string name, Database *sourceDatabase)
     :Index(db, name),
@@ -145,7 +147,7 @@ namespace cbforest {
 
     alloc_slice MapReduceIndex::getSpecialEntry(slice docID, sequence seq, unsigned entryID) const
     {
-        // This data was written by emitter::emitTextTokens, below
+        // This data was written by emitSpecial
         CollatableBuilder key;
         key.addNull();
         return getEntry(docID, seq, key, entryID);
@@ -153,20 +155,17 @@ namespace cbforest {
 
     alloc_slice MapReduceIndex::readFullText(slice docID, sequence seq, unsigned fullTextID) const {
         alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
-        CollatableReader reader(entry);
-        reader.beginArray();
-        return reader.readString();
+        auto array = Value::fromTrustedData(entry)->asArray();
+        return alloc_slice(array->get(0)->asString());
     }
 
     alloc_slice MapReduceIndex::readFullTextValue(slice docID, sequence seq, unsigned fullTextID) const {
-        // This data was written by emitter::emitTextTokens, below
+        // This data was written by emitSpecial, as called by emitTextTokens
         alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
-        CollatableReader reader(entry);
-        reader.beginArray();
-        (void)reader.read(); // skip text
-        if (reader.peekTag() == Collatable::kEndSequence)
+        auto array = Value::fromTrustedData(entry)->asArray();
+        if (array->count() < 2)
             return alloc_slice();
-        return alloc_slice(reader.readString());
+        return alloc_slice(array->get(1)->asString());
     }
 
     void MapReduceIndex::readGeoArea(slice docID, sequence seq, unsigned geoID,
@@ -176,17 +175,15 @@ namespace cbforest {
     {
         // Reads data written by emitter::emit(const geohash::area&,...), below
         alloc_slice entry = getSpecialEntry(docID, seq, geoID);
-        CollatableReader reader(entry);
-        reader.beginArray();
-        outArea = ::cbforest::readGeoArea(reader);
+        Array::iterator iter(Value::fromTrustedData(entry)->asArray());
+        outArea = ::cbforest::readGeoArea(iter);
         outGeoJSON = outValue = slice::null;
-        if (reader.peekTag() != CollatableReader::kEndSequence) {
-            if (reader.peekTag() == CollatableReader::kString)
-                outGeoJSON = alloc_slice(reader.readString());
-            else
-                (void)reader.read();
-            if (reader.peekTag() != CollatableReader::kEndSequence)
-                outValue = alloc_slice(reader.readString());
+        if (iter.count() > 0) {
+            if (iter->type() == kString)
+                outGeoJSON = alloc_slice(iter->asString());
+            ++iter;
+            if (iter)
+                outValue = alloc_slice(iter->asString());
         }
     }
 
@@ -239,7 +236,7 @@ namespace cbforest {
                 _tokenizer = std::unique_ptr<Tokenizer> {
                     new Tokenizer(languageCode, (languageCode == "en")) };
             }
-            std::unordered_map<std::string, CollatableBuilder> tokens;
+            std::unordered_map<std::string, Encoder> tokens;
             int specialKey = -1;
             for (TokenIterator i(*_tokenizer, slice(text), false); i; ++i) {
                 if (specialKey < 0) {
@@ -247,8 +244,8 @@ namespace cbforest {
                     specialKey = emitSpecial(text, value);
                 }
                 // Add the word position to the value array for this token:
-                CollatableBuilder& tokValue = tokens[i.token()];
-                if (tokValue.empty()) {
+                Encoder& tokValue = tokens[i.token()];
+                if (tokValue.isEmpty()) {
                     tokValue.beginArray();
                     tokValue << specialKey;
                 }
@@ -258,9 +255,9 @@ namespace cbforest {
             // Emit each token string and value array as a key:
             for (auto kv = tokens.begin(); kv != tokens.end(); ++kv) {
                 CollatableBuilder collKey(kv->first);
-                CollatableBuilder& collValue = kv->second;
-                collValue.endArray();
-                _emit(collKey, collValue);
+                Encoder& tokValue = kv->second;
+                tokValue.endArray();
+                _emit(collKey, tokValue.extractOutput());
             }
         }
 
@@ -272,14 +269,16 @@ namespace cbforest {
                   boundingBox.longitude.min, boundingBox.longitude.max);
             // Emit the bbox, geoJSON, and value, under a special key:
             unsigned specialKey = emitSpecial(boundingBox, geoJSON, value);
-            CollatableBuilder collValue(specialKey);
+            Encoder enc;
+            enc << specialKey;
+            auto specialKeyEncoded = enc.extractOutput();
 
             // Now emit a set of geohashes that cover the given area:
             auto hashes = boundingBox.coveringHashes();
             for (auto iHash = hashes.begin(); iHash != hashes.end(); ++iHash) {
                 Debug("    hash='%s'", (const char*)(*iHash));
                 CollatableBuilder collKey(*iHash);
-                _emit(collKey, collValue);
+                _emit(collKey, specialKeyEncoded);
             }
         }
 
@@ -291,22 +290,22 @@ namespace cbforest {
             CollatableBuilder collKey;
             collKey.addNull();
 
-            CollatableBuilder collValue;
-            collValue.beginArray();
-            collValue << key;
+            Encoder encValue;
+            encValue.beginArray();
+            encValue << key;
             // Write value1 (or a null placeholder) then value2
             if (value1.size > 0 || value2.size > 0) {
                 if (value1.size > 0)
-                    collValue << value1;
+                    encValue << value1;
                 else
-                    collValue.addNull();
+                    encValue.writeNull();
                 if (value2.size > 0)
-                    collValue << value2;
+                    encValue << value2;
             }
-            collValue.endArray();
+            encValue.endArray();
 
             auto result = keys.size();
-            emit(collKey, collValue.extractOutput());
+            emit(collKey, encValue.extractOutput());
             return (unsigned)result;
         }
 

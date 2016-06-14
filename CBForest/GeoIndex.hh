@@ -18,13 +18,20 @@
 #include "MapReduceIndex.hh"
 #include "Geohash.hh"
 #include "KeyStore.hh"
+#include "Fleece.hh"
 #include <set>
 
 
 namespace cbforest {
 
-    CollatableBuilder& operator<< (CollatableBuilder&, const geohash::area&);
+    template <typename ENC>
+    ENC& operator<< (ENC &enc, const geohash::area &a) {
+        enc << a.longitude.min << a.latitude.min << a.longitude.max << a.latitude.max;
+        return enc;
+    }
+
     geohash::area readGeoArea(CollatableReader&);
+    geohash::area readGeoArea(fleece::Array::iterator&);
 
 
     class GeoIndexEnumerator : public IndexEnumerator {

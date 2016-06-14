@@ -15,6 +15,7 @@
 
 #include "Index.hh"
 #include "Collatable.hh"
+#include "Fleece.hh"
 #include "varint.hh"
 #include "LogInternal.hh"
 
@@ -61,10 +62,13 @@ namespace cbforest {
     void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
         Document doc = get(docID);
         if (doc.body().size > 0) {
-            CollatableReader reader(doc.body());
-            hash = (uint32_t)reader.readInt();
-            while (!reader.atEnd()) {
-                keys.push_back( Collatable::withData(reader.read()) );
+            auto keyArray = Value::fromTrustedData(doc.body())->asArray();
+            Array::iterator iter(keyArray);
+            hash = (uint32_t)iter->asUnsigned();
+            ++iter;
+            keys.reserve(iter.count());
+            for (; iter; ++iter) {
+                keys.push_back( Collatable::withData(iter->asString()) );
             }
         } else {
             hash = kInitialHash;
@@ -73,11 +77,13 @@ namespace cbforest {
 
     void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash) {
         if (keys.size() > 0) {
-            CollatableBuilder writer;
-            writer << hash;
+            Encoder enc;
+            enc.beginArray();
+            enc.writeUInt(hash);
             for (auto i=keys.begin(); i != keys.end(); ++i)
-                writer << *i;
-            set(docID, writer);
+                enc.writeData(*i);
+            enc.endArray();
+            set(docID, enc.extractOutput());
         } else {
             del(docID);
         }
