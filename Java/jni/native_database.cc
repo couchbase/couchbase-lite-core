@@ -16,13 +16,15 @@
 #include "com_couchbase_cbforest_Database.h"
 #include "native_glue.hh"
 #include "c4Database.h"
+#include "c4Document.h"
+#include "c4ExpiryEnumerator.h"
+#include "LogInternal.hh"
 
 #undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
 #ifdef DEBUG_TERMINATION
 #include <execinfo.h>   // Not available in Linux or Windows?
 #include <unistd.h>
 #endif
-
 
 using namespace cbforest::jni;
 
@@ -202,6 +204,82 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
     C4Error error;
     if(!c4db_purgeDoc((C4Database*)db, docID, &error))
         throwError(env, error);
+}
+
+#pragma mark - EXPIRATION:
+/*
+ * Class:     com_couchbase_cbforest_Database
+ * Method:    expirationOfDoc
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_expirationOfDoc
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jdocID)
+{
+    jstringSlice docID(env, jdocID);
+    return c4doc_getExpiration((C4Database*)dbHandle, docID);
+}
+
+/*
+ * Class:     com_couchbase_cbforest_Database
+ * Method:    setExpiration
+ * Signature: (JLjava/lang/String;J)V
+ */
+JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setExpiration
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jdocID, jlong jtimestamp)
+{
+    jstringSlice docID(env, jdocID);
+    C4Error error;
+    if(!c4doc_setExpiration((C4Database*)dbHandle, docID, jtimestamp, &error))
+        throwError(env, error);
+}
+
+/*
+ * Class:     com_couchbase_cbforest_Database
+ * Method:    nextDocExpiration
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_nextDocExpiration
+        (JNIEnv *env, jclass clazz, jlong dbHandle)
+{
+    return c4db_nextDocExpiration((C4Database*)dbHandle);
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpiredDocuments
+        (JNIEnv *env, jclass clazz, jlong dbHandle)
+{
+    C4Error err;
+    C4ExpiryEnumerator *e = c4db_enumerateExpired((C4Database *)dbHandle, &err);
+    if (!e) {
+        throwError(env, err);
+        return 0;
+    }
+
+    std::vector<std::string> docIDs;
+    while(c4exp_next(e, &err)) {
+        C4SliceResult docID = c4exp_getDocID(e);
+        std::string strDocID((char*)docID.buf, docID.size);
+        C4Error docErr;
+        if (!c4db_purgeDoc((C4Database *) dbHandle, docID, &docErr))
+            Debug("Unable to purge expired doc: CBForest error %d/%d", docErr.domain, docErr.code);
+        docIDs.push_back(strDocID);
+        c4slice_free(docID);
+    }
+    if(err.code)
+        Debug("Error enumerating expired docs: CBForest error %d/%d", err.domain,err.code);
+
+    c4exp_purgeExpired(e, NULL);    // remove the expiration markers
+
+    jobjectArray ret= (jobjectArray)env->NewObjectArray(
+            docIDs.size(),
+            env->FindClass("java/lang/String"),
+            env->NewStringUTF(""));
+    for (int i = 0; i < docIDs.size(); i++)
+        env->SetObjectArrayElement(ret, i, env->NewStringUTF(docIDs[i].c_str()));
+
+    if (e)
+        c4exp_free(e);
+
+    return ret;
 }
 
 #pragma mark - RAW DOCUMENTS:

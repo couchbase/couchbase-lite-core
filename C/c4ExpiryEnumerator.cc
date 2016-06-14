@@ -23,14 +23,18 @@ struct C4ExpiryEnumerator
 {
 public:
     C4ExpiryEnumerator(C4Database *database) :
-    _db(database),
+    _db(database->retain()),
     _e(_db->getKeyStore("expiry"), slice::null, slice::null),
     _reader(slice::null)
     {
         _endTimestamp = time(NULL);
         reset();
     }
-    
+
+    ~C4ExpiryEnumerator() {
+        _db->release();
+    }
+
     bool next() {
         if(!_e.next()) {
             return false;

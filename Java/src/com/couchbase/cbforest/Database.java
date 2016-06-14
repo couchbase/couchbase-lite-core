@@ -83,11 +83,38 @@ public class Database {
 
     //////// DOCUMENTS
 
-    public void purgeDoc(String docID)throws ForestException{
+    public void purgeDoc(String docID) throws ForestException {
         purgeDoc(_handle, docID);
     }
 
     private native static void purgeDoc(long dbHandle, String docID) throws ForestException;
+
+    //////// EXPIRATION
+
+    public long expirationOfDoc(String docID) throws ForestException {
+        return _handle != 0 ? expirationOfDoc(_handle, docID) : 0;
+    }
+
+    public void setExpiration(String docID, long timestamp) throws ForestException {
+        if (_handle != 0)
+            setExpiration(_handle, docID, timestamp);
+    }
+
+    public long nextDocExpiration() throws ForestException {
+        return _handle != 0 ? nextDocExpiration(_handle) : 0;
+    }
+
+    public String[] purgeExpiredDocuments() throws ForestException {
+        return _handle != 0 ? purgeExpiredDocuments(_handle) : null;
+    }
+
+    private native static long expirationOfDoc(long dbHandle, String docID) throws ForestException;
+
+    private native static void setExpiration(long dbHandle, String docID, long timestamp) throws ForestException;
+
+    private native static long nextDocExpiration(long dbHandle) throws ForestException;
+
+    private native static String[] purgeExpiredDocuments(long dbHandle) throws ForestException;
 
     //////// RAW DOCUMENTS (i.e. info or _local)
 
