@@ -29,8 +29,7 @@ namespace cbforest {
 
         version()                               {}
         version(generation g, peerID p)         :author(p), gen(g) { }
-        version(slice string);
-
+        version(slice string)                   :version(string, true) { }
         void validate() const;
 
         bool operator== (const version& v) const {
@@ -38,6 +37,11 @@ namespace cbforest {
         }
 
         revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, author, kClockType);}
+
+    private:
+        friend class versionVector;
+
+        version(slice string, bool validateAuthor);
     };
 
 

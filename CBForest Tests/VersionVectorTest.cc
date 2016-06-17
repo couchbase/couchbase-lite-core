@@ -104,6 +104,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         alloc_slice str = v.asString();
         AssertEqual((slice)v.asString(), slice("1@jens,2@bob"));
 
+        // Create versionVector from multi-version string:
         versionVector vv(str);
         AssertEqual(vv, v);
         AssertEqual(vv.asString(), v.asString());

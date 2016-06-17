@@ -15,13 +15,14 @@
 
 namespace cbforest {
 
-    version::version(slice string) {
-        // Note: The validation in this constructor doesn't bother to check for commas or nul bytes
-        // because its caller (versionVector's constructor) won't call it with such strings.
+    version::version(slice string, bool validateAuthor) {
         gen = string.readDecimal();                             // read generation
         if (gen == 0 || string.readByte() != '@'                // read '@'
                      || string.size < 1 || string.size > kMaxAuthorSize)
             throw error(error::BadVersionVector);
+        if (validateAuthor)
+            if (author.findByte(',') || author.findByte('\0'))
+                throw error(error::BadVersionVector);
         author = string;                                        // read peer ID
     }
 
@@ -40,7 +41,7 @@ namespace cbforest {
 
         while (string.size > 0) {
             const void *comma = string.findByte(',') ?: string.end();
-            _vers.push_back( version(string.upTo(comma)) );
+            _vers.push_back( version(string.upTo(comma), false) );
             string = string.from(comma);
             if (string.size > 0)
                 string.moveStart(1); // skip comma

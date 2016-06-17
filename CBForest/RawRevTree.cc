@@ -13,7 +13,7 @@
 
 namespace cbforest {
 
-    std::vector<Revision> RawRevision::decode(slice raw_tree, RevTree* owner, sequence curSeq) {
+    std::vector<Revision> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence curSeq) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
@@ -34,7 +34,7 @@ namespace cbforest {
     }
 
 
-    alloc_slice RawRevision::encode(std::vector<Revision> &revs) {
+    alloc_slice RawRevision::encodeTree(std::vector<Revision> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for (auto rev = revs.begin(); rev != revs.end(); ++rev)

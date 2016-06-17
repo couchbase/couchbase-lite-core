@@ -33,13 +33,13 @@ namespace cbforest {
 
     RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
     :_bodyOffset(docOffset),
-     _revs(RawRevision::decode(raw_tree, this, seq))
+     _revs(RawRevision::decodeTree(raw_tree, this, seq))
     {
     }
 
     void RevTree::decode(cbforest::slice raw_tree, sequence seq, uint64_t docOffset) {
         _bodyOffset = docOffset;
-        _revs = RawRevision::decode(raw_tree, this, seq);
+        _revs = RawRevision::decodeTree(raw_tree, this, seq);
     }
 
     alloc_slice RevTree::encode() {
@@ -53,7 +53,7 @@ namespace cbforest {
                 rev->oldBodyOffset = _bodyOffset;
             }
         }
-        return RawRevision::encode(_revs);
+        return RawRevision::encodeTree(_revs);
     }
 
 #if DEBUG

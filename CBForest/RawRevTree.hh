@@ -16,15 +16,16 @@
 
 namespace cbforest {
 
-    // Layout of revision in encoded form. Tree is a sequence of these followed by a 32-bit zero.
+    // Layout of a single revision in encoded form. Rev tree is stored as a sequence of these
+    // followed by a 32-bit zero.
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
     class RawRevision {
     public:
-        static std::vector<Revision> decode(slice raw_tree,
-                                            RevTree *owner,
-                                            sequence curSeq);
+        static std::vector<Revision> decodeTree(slice raw_tree,
+                                                RevTree *owner,
+                                                sequence curSeq);
 
-        static alloc_slice encode(std::vector<Revision> &revs);
+        static alloc_slice encodeTree(std::vector<Revision> &revs);
 
     private:
         // Private RevisionFlags bits used in encoded form:
