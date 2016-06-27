@@ -40,7 +40,7 @@ namespace cbforest {
 
         geohash::area keyBoundingBox() const    {return _keyBBox;}
         slice keyGeoJSON() const                {return _geoKey;}
-
+        unsigned geoID() const                  {return _geoID;}
 #if DEBUG
         virtual ~GeoIndexEnumerator();
 #endif
@@ -53,6 +53,7 @@ namespace cbforest {
 
         const geohash::area _searchArea;
         geohash::area _keyBBox;
+        unsigned _geoID;
         alloc_slice _geoKey;
         alloc_slice _geoValue;
         std::set<ItemID> _alreadySeen;

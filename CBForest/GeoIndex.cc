@@ -81,11 +81,10 @@ namespace cbforest {
      _searchArea(searchArea)
     { }
 
-
     bool GeoIndexEnumerator::approve(slice key) {
         // Have we seen this result before?
-        unsigned geoID = (unsigned)CollatableReader(value()).readInt();
-        ItemID item((std::string)docID(), geoID);
+        _geoID = (unsigned)Value::fromTrustedData(value())->asUnsigned();
+        ItemID item((std::string)docID(), _geoID);
         if (_alreadySeen.find(item) != _alreadySeen.end()) {
             _dups++;
             return false;
@@ -93,7 +92,7 @@ namespace cbforest {
         _alreadySeen.insert(item);
 
         // Read the actual rect and see if it truly intersects the query:
-        ((MapReduceIndex*)index())->readGeoArea(item.first, sequence(), geoID,
+        ((MapReduceIndex*)index())->readGeoArea(item.first, sequence(), _geoID,
                                                 _keyBBox, _geoKey, _geoValue);
         if (!_keyBBox.intersects(_searchArea)) {
             _misses++;
