@@ -239,11 +239,12 @@ struct c4Indexer : public MapReduceIndexer, c4Internal::InstanceCounted {
     }
 
     void addView(C4View *view) {
-        addIndex(&view->_index);
 #if C4DB_THREADSAFE
         view->_mutex.lock();
         _views.push_back(view);
 #endif
+        WITH_LOCK(view->_sourceDB); // MapReduceIndexer::addIndex ends up calling _sourceDB
+        addIndex(&view->_index);
     }
 
     C4Database* _db;
@@ -278,8 +279,11 @@ void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) {
 
 C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
     try {
-        auto docTypes = indexer->documentTypes();
-        sequence startSequence = indexer->startingSequence();
+        sequence startSequence;
+        {
+            WITH_LOCK(indexer->_db);       // startingSequence calls _sourceDB
+            startSequence = indexer->startingSequence();
+        }
         if (startSequence == UINT64_MAX) {
             clearError(outError);      // end of iteration is not an error
             return NULL;
@@ -287,6 +291,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
 
         auto options = kC4DefaultEnumeratorOptions;
         options.flags |= kC4IncludeDeleted | kC4IncludePurged;
+        auto docTypes = indexer->documentTypes();
         if (docTypes)
             options.flags &= ~kC4IncludeBodies;
         auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
