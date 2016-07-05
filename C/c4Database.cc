@@ -466,6 +466,15 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
     return 0ul;
 }
 
+bool c4_shutdown(C4Error *outError) {
+    fdb_status err = fdb_shutdown();
+    if (err) {
+        recordError(err, outError);
+        return false;
+    }
+    return true;
+}
+
 #pragma mark - RAW DOCUMENTS:
 
 

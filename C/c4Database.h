@@ -110,6 +110,9 @@ extern "C" {
     /** Returns the timestamp at which the next document expiration should take place. */
     uint64_t c4db_nextDocExpiration(C4Database *database);
 
+    /** Closes down ForestDB state by calling fdb_shutdown(). */
+    bool c4_shutdown(C4Error *outError);
+
     //////// RAW DOCUMENTS (i.e. info or _local)
 
 

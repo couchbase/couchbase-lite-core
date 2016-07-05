@@ -107,3 +107,4 @@ c4queryenum_close
 c4queryenum_free
 c4doc_getForPut
 c4_getObjectCount
+c4_shutdown

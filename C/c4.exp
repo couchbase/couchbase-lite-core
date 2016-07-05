@@ -126,3 +126,4 @@ _c4queryenum_free
 # Private API, only exposed for testing:
 _c4doc_getForPut
 _c4_getObjectCount
+_c4_shutdown

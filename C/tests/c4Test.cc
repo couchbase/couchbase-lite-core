@@ -35,6 +35,8 @@ static void log(C4LogLevel level, C4Slice message) {
 
 
 void C4Test::setUp() {
+    c4_shutdown(NULL);
+    
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
 #ifdef _MSC_VER
