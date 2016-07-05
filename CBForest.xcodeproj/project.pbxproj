@@ -123,6 +123,7 @@
 		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
+		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2783DFA01D2892A500F84E6E /* breakpad_dummy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */; };
 		2783DFA11D2892A500F84E6E /* superblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9C1D28929400F84E6E /* superblock.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
@@ -573,6 +574,7 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
+		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = breakpad_dummy.cc; sourceTree = "<group>"; };
 		2783DF9B1D28929400F84E6E /* breakpad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = breakpad.h; sourceTree = "<group>"; };
 		2783DF9C1D28929400F84E6E /* superblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = superblock.cc; sourceTree = "<group>"; };
@@ -976,6 +978,7 @@
 				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
 				273E9EC71C506CB4003115A6 /* c4GeoTest.cc */,
+				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -1838,6 +1841,7 @@
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
+				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

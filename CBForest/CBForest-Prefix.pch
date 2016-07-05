@@ -20,3 +20,6 @@
 
 // Enable encryption support
 #define CBFOREST_ENCRYPTION
+
+// Enable thread safety of C API:
+#define C4DB_THREADSAFE 0

@@ -13,5 +13,6 @@ ENABLE_STRICT_OBJC_MSGSEND  = YES
 EXECUTABLE_PREFIX           = lib
 EXPORTED_SYMBOLS_FILE       = C/c4.exp
 GCC_NO_COMMON_BLOCKS        = YES
+GCC_PREFIX_HEADER           = CBForest/CBForest-Prefix.pch
 HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/vendor/forestdb/include/** /usr/local/include
 PRODUCT_NAME                = CBForest-Interop

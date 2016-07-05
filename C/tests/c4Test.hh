@@ -27,6 +27,7 @@
 bool operator== (C4Slice s1, C4Slice s2);
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 
+std::string toJSON(C4KeyReader r);
 
 
 
