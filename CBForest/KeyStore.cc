@@ -19,22 +19,18 @@
 
 namespace cbforest {
 
-    KeyStore::KeyStore(fdb_kvs_handle* handle)
-    :_handle(handle)
-    {
-        if (_handle)
-            enableErrorLogs(true);
-    }
-
     static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
         WarnError("ForestDB error %d: %s (fdb_kvs_handle=%p)", err_code, err_msg, ctx_data);
+    }
+
+    static void nullLogCallback(int err_code, const char *err_msg, void *ctx_data) {
     }
 
     void KeyStore::enableErrorLogs(bool enable) {
         if (enable)
             (void)fdb_set_log_callback(_handle, logCallback, _handle);
         else
-            (void)fdb_set_log_callback(_handle, NULL, NULL);
+            (void)fdb_set_log_callback(_handle, nullLogCallback, NULL);
     }
 
     KeyStore::kvinfo KeyStore::getInfo() const {

@@ -55,7 +55,7 @@ namespace cbforest {
         void erase();
 
     protected:
-        KeyStore(fdb_kvs_handle* handle);
+        KeyStore(fdb_kvs_handle* handle)                    :_handle(handle) { }
         fdb_kvs_handle* handle() const                      {return _handle;}
 
         fdb_kvs_handle* _handle;

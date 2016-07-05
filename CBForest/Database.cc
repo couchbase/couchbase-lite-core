@@ -159,6 +159,7 @@ namespace cbforest {
             } else {
                 auto store = new KeyStore(handle);
                 const_cast<Database*>(this)->_keyStores[name].reset(store);
+                store->enableErrorLogs(true);
                 return *store;
             }
         }
