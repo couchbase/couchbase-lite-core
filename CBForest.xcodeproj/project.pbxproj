@@ -123,6 +123,8 @@
 		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277D19C7194CCE7A008E91EB /* RevID.mm in Sources */ = {isa = PBXBuildFile; fileRef = 277D19C6194CCE7A008E91EB /* RevID.mm */; };
+		2783DFA01D2892A500F84E6E /* breakpad_dummy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */; };
+		2783DFA11D2892A500F84E6E /* superblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9C1D28929400F84E6E /* superblock.cc */; };
 		278EBFA01976325A006362F8 /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
 		278EBFA11976325A006362F8 /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
 		278EBFA519763269006362F8 /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
@@ -182,8 +184,6 @@
 		27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
-		27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7F8D1911A85800A327B9 /* snapshot.cc */; };
-		27EF7F911911A85800A327B9 /* snapshot.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7F8E1911A85800A327B9 /* snapshot.h */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -573,6 +573,10 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
+		2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = breakpad_dummy.cc; sourceTree = "<group>"; };
+		2783DF9B1D28929400F84E6E /* breakpad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = breakpad.h; sourceTree = "<group>"; };
+		2783DF9C1D28929400F84E6E /* superblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = superblock.cc; sourceTree = "<group>"; };
+		2783DF9D1D28929400F84E6E /* superblock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = superblock.h; sourceTree = "<group>"; };
 		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
 		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
 		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cc; path = vendor/forestdb/utils/debug.cc; sourceTree = SOURCE_ROOT; };
@@ -660,8 +664,6 @@
 		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
 		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable.mm; sourceTree = "<group>"; };
-		27EF7F8D1911A85800A327B9 /* snapshot.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = snapshot.cc; sourceTree = "<group>"; };
-		27EF7F8E1911A85800A327B9 /* snapshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snapshot.h; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
 		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
@@ -1099,6 +1101,10 @@
 		2750726218E3E72900A80C5A /* src */ = {
 			isa = PBXGroup;
 			children = (
+				2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */,
+				2783DF9B1D28929400F84E6E /* breakpad.h */,
+				2783DF9C1D28929400F84E6E /* superblock.cc */,
+				2783DF9D1D28929400F84E6E /* superblock.h */,
 				2726A0641A8BF9CC0042F944 /* atomic */,
 				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
 				2750729318E4857900A80C5A /* avltree.cc */,
@@ -1128,7 +1134,6 @@
 				275072A118E4857900A80C5A /* iterator.cc */,
 				27DF46BF1A119860007BB4A4 /* kv_instance.cc */,
 				275072A218E4857900A80C5A /* list.cc */,
-				27EF7F8D1911A85800A327B9 /* snapshot.cc */,
 				27A994E91BF2B6C100320AF2 /* staleblock.cc */,
 				27EF007E1949297F001BF7F3 /* transaction.cc */,
 				2733A74F1BD6C78400F0FF07 /* version.cc */,
@@ -1159,7 +1164,6 @@
 				2750728718E3E72900A80C5A /* hbtrie.h */,
 				273AD3CE18F45E05007D8C23 /* internal_types.h */,
 				2750728B18E3E72900A80C5A /* list.h */,
-				27EF7F8E1911A85800A327B9 /* snapshot.h */,
 				27A994EA1BF2B6C100320AF2 /* staleblock.h */,
 				2733A7501BD6C78400F0FF07 /* version.h */,
 				2750729118E3E72900A80C5A /* wal.h */,
@@ -1458,7 +1462,6 @@
 			files = (
 				2744151F1900E8D800964583 /* fdb_errors.h in Headers */,
 				273AD3E618F5E8D8007D8C23 /* snappy.h in Headers */,
-				27EF7F911911A85800A327B9 /* snapshot.h in Headers */,
 				273AD3E918F5EB15007D8C23 /* config.h in Headers */,
 				273AD3E218F5E8D8007D8C23 /* snappy-stubs-internal.h in Headers */,
 				273AD3DD18F5E8D8007D8C23 /* snappy-c.h in Headers */,
@@ -1861,10 +1864,11 @@
 				275072C818E4AA5000A80C5A /* blockcache.cc in Sources */,
 				273AD3E518F5E8D8007D8C23 /* snappy.cc in Sources */,
 				2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */,
+				2783DFA01D2892A500F84E6E /* breakpad_dummy.cc in Sources */,
 				27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */,
 				27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */,
-				27EF7F8F1911A85800A327B9 /* snapshot.cc in Sources */,
 				275072CE18E4AA5000A80C5A /* filemgr_ops_windows.cc in Sources */,
+				2783DFA11D2892A500F84E6E /* superblock.cc in Sources */,
 				275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */,
 				275072D618E4AA5000A80C5A /* list.cc in Sources */,
 				273AD3DC18F5E8D8007D8C23 /* snappy-c.cc in Sources */,
