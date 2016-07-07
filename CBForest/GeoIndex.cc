@@ -37,10 +37,11 @@ namespace cbforest {
 
     geohash::area readGeoArea(fleece::Array::iterator& iter) {
         geohash::area a;
-        a.longitude.min = iter[0]->asDouble();
-        a.latitude.min = iter[1]->asDouble();
-        a.longitude.max = iter[2]->asDouble();
-        a.latitude.max = iter[3]->asDouble();
+        a.longitude.min = iter->asDouble();
+        a.latitude.min  = (++iter)->asDouble();
+        a.longitude.max = (++iter)->asDouble();
+        a.latitude.max  = (++iter)->asDouble();
+        ++iter;
         return a;
     }
 

@@ -73,6 +73,7 @@ namespace cbforest {
 
     private:
         void search();
+        std::vector<size_t> getTextTokenInfo(unsigned &fullTextID);
 
         std::vector<std::string> _tokens;
         IndexEnumerator _e;

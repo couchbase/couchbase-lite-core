@@ -161,7 +161,8 @@ namespace cbforest {
             }
 
             // Store the key & value:
-            Log("**** update: realKey = %s", realKey.toJSON().c_str());
+            Log("**** Index: realKey = %s  value = %s",
+                realKey.toJSON().c_str(), (*value).hexString().c_str());
             set(realKey, meta, *value);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
@@ -348,18 +349,6 @@ namespace cbforest {
                     cbforest::CollatableReader(_key).toJSON().c_str());
             return true;
         }
-    }
-
-    std::vector<size_t> IndexEnumerator::getTextTokenInfo(unsigned &fullTextID) {
-        CollatableReader reader(value());
-        reader.beginArray();
-        fullTextID = (unsigned)reader.readInt();
-        std::vector<size_t> tokens;
-        do {
-            tokens.push_back((size_t)reader.readInt());
-            tokens.push_back((size_t)reader.readInt());
-        } while (reader.peekTag() != CollatableReader::kEndSequence);
-        return tokens;
     }
 
     void IndexEnumerator::nextKeyRange() {

@@ -264,9 +264,10 @@ namespace cbforest {
         static const unsigned kMaxCoveringHashes = 4;
 
         void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
-            Debug("emit {%g ... %g, %g ... %g}",
+            Debug("emit {%g ... %g, %g ... %g} --> %s",
                   boundingBox.latitude.min, boundingBox.latitude.max,
-                  boundingBox.longitude.min, boundingBox.longitude.max);
+                  boundingBox.longitude.min, boundingBox.longitude.max,
+                  value.hexString().c_str());
             // Emit the bbox, geoJSON, and value, under a special key:
             unsigned specialKey = emitSpecial(boundingBox, geoJSON, value);
             Encoder enc;
