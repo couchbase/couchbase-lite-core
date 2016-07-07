@@ -150,7 +150,8 @@ namespace cbforest {
         enum state {
             kNoOp,
             kAbort,
-            kCommit
+            kCommit,
+            kCommitManualWALFlush
         };
 
         Transaction(Database*);
@@ -165,6 +166,9 @@ namespace cbforest {
 
         /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
         void abort()                        {if (_state != kNoOp) _state = kAbort;}
+
+        /** Force the database write-ahead log to be completely flushed on commit. */
+        void flushWAL()                     {if (_state == kCommit) _state = kCommitManualWALFlush;}
 
         void check(fdb_status status);
 

@@ -278,7 +278,7 @@ namespace cbforest {
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
 
-        if (t->state() == Transaction::kCommit) {
+        if (t->state() >= Transaction::kCommit) {
             Log("Database: beginTransaction");
             check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED));
         }
@@ -292,6 +292,10 @@ namespace cbforest {
             case Transaction::kCommit:
                 Log("Database: commit transaction");
                 status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
+                break;
+            case Transaction::kCommitManualWALFlush:
+                Log("Database: commit transaction with WAL flush");
+                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_MANUAL_WAL_FLUSH);
                 break;
             case Transaction::kAbort:
                 Log("Database: abort transaction");

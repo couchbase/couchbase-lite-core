@@ -60,7 +60,7 @@ public:
 
 
     void testCreateVsEnumerate() {
-        std::cerr << "Threading test...\n";
+        std::cerr << "\nThreading test ";
 
         // Ensure view is created:
         closeView(openView(db));
@@ -85,7 +85,7 @@ public:
         // This implicitly uses the 'db' connection created (but not used) by the main thread
         if (kLog) fprintf(stderr, "Adding documents...\n");
         for (int i = 1; i <= kNumDocs; i++) {
-            if (kLog) fprintf(stderr, "(%d) ", i); else fprintf(stderr, ":");
+            if (kLog) fprintf(stderr, "(%d) ", i); else if (i%10 == 0) fprintf(stderr, ":");
             char docID[20];
             sprintf(docID, "doc-%05d", i);
             createRev(c4str(docID), kRevID, kBody);
@@ -152,13 +152,13 @@ public:
             return;
         }
 
-        fprintf(stderr, "<< ");
+        if (kLog) fprintf(stderr, "<< ");
 
         C4Document *doc;
         C4SequenceNumber lastSeq = 0;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
-            fprintf(stderr, "(#%lld) ", doc->sequence);
+            if (kLog) fprintf(stderr, "(#%lld) ", doc->sequence);
             if (lastSeq)
                 AssertEqual(doc->sequence, lastSeq+1);
             lastSeq = doc->sequence;
@@ -173,12 +173,12 @@ public:
         }
         AssertEqual(error.code, 0);
         c4enum_free(e);
-        fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
+        if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
         Assert(c4indexer_end(ind, true, &error));
 
         C4SequenceNumber gotLastSeq = c4view_getLastSequenceIndexed(view);
         if (gotLastSeq != lastSeq)
-            fprintf(stderr, "BUT read lastSeq=%lld! ", gotLastSeq);
+            if (kLog) fprintf(stderr, "BUT read lastSeq=%lld! ", gotLastSeq);
         AssertEqual(gotLastSeq, lastSeq);
         AssertEqual(c4view_getLastSequenceChangedAt(view), lastSeq);
     }
@@ -202,7 +202,7 @@ public:
         C4Error error;
         auto e = c4view_query(view, NULL, &error);
         Assert(e);
-        fprintf(stderr, "{ ");
+        if (kLog) fprintf(stderr, "{ ");
 
         C4SequenceNumber i = 0;
         while (c4queryenum_next(e, &error)) {
@@ -212,7 +212,7 @@ public:
             sprintf(buf, "\"doc-%05llu\"", i);
 #if 1
             if (e->docSequence != i) {
-                fprintf(stderr,"\n*** Expected %s, got %s ***\n", buf, toJSON(e->key).c_str());
+                if (kLog) fprintf(stderr,"\n*** Expected %s, got %s ***\n", buf, toJSON(e->key).c_str());
                 i = e->docSequence;
                 continue;
             }
@@ -223,7 +223,7 @@ public:
             AssertEqual(e->value, c4str("1234"));
 
         }
-        fprintf(stderr, "}queried_to:%llu ", i);
+        if (kLog) fprintf(stderr, "}queried_to:%llu ", i);
         c4queryenum_free(e);
         AssertEqual(error.code, 0);
         return (i < kNumDocs);
@@ -235,4 +235,4 @@ public:
 };
 
 //FIX: This test is disabled until ForestDB bugs are fixed
-// CPPUNIT_TEST_SUITE_REGISTRATION(C4ThreadingTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(C4ThreadingTest);

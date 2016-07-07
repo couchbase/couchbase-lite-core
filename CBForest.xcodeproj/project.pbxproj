@@ -1834,15 +1834,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
-				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
-				273E9ECA1C506CBC003115A6 /* c4GeoTest.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
-				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
-				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
+				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
+				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
+				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
+				273E9ECA1C506CBC003115A6 /* c4GeoTest.cc in Sources */,
+				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
