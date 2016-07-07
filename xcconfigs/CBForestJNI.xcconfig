@@ -14,6 +14,7 @@ DYLIB_CURRENT_VERSION       = 1
 ALWAYS_SEARCH_USER_PATHS    = YES
 
 CLANG_WARN_UNREACHABLE_CODE = YES
+HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/vendor/fleece/Fleece
 
 EXECUTABLE_PREFIX           = lib
 EXPORTED_SYMBOLS_FILE       = java/CBForestJNI.exp

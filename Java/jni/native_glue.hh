@@ -17,6 +17,8 @@
 namespace cbforest {
     namespace jni {
 
+    using namespace fleece;
+
 // Soft limit of number of local JNI refs to use. Even using PushLocalFrame(), you may not get as
 // many refs as you asked for. At least, that's what happens on Android: the new frame won't have
 // more than 512 refs available. So 200 is being conservative.

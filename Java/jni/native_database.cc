@@ -259,18 +259,24 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
         C4SliceResult docID = c4exp_getDocID(e);
         std::string strDocID((char*)docID.buf, docID.size);
         C4Error docErr;
-        if (!c4db_purgeDoc((C4Database *) dbHandle, docID, &docErr))
-            Debug("Unable to purge expired doc: CBForest error %d/%d", docErr.domain, docErr.code);
+        if (!c4db_purgeDoc((C4Database *) dbHandle, docID, &docErr)) {
+            char msg[100];
+            Debug("Unable to purge expired doc: CBForest error %d/%d: %s",
+                  docErr.domain, docErr.code, c4error_getMessageC(err, msg, sizeof(msg)));
+        }
         docIDs.push_back(strDocID);
         c4slice_free(docID);
     }
-    if(err.code)
-        Debug("Error enumerating expired docs: CBForest error %d/%d", err.domain,err.code);
+    if(err.code) {
+        char msg[100];
+        Debug("Error enumerating expired docs: CBForest error %d/%d",
+              err.domain,err.code, c4error_getMessageC(err, msg, sizeof(msg)));
+    }
 
     c4exp_purgeExpired(e, NULL);    // remove the expiration markers
 
     jobjectArray ret= (jobjectArray)env->NewObjectArray(
-            docIDs.size(),
+            (jsize)docIDs.size(),
             env->FindClass("java/lang/String"),
             env->NewStringUTF(""));
     for (int i = 0; i < docIDs.size(); i++)

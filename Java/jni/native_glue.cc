@@ -158,7 +158,7 @@ namespace cbforest {
             outKey->algorithm = (C4EncryptionAlgorithm)keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
-                cbforest::slice keySlice = keyBytes;
+                fleece::slice keySlice = keyBytes;
                 if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
                     throwError(env, C4Error{ForestDBDomain, FDB_RESULT_CRYPTO_ERROR});
                     return false;

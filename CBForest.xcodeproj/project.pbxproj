@@ -277,7 +277,6 @@
 		720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
-		72C086951CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; };
 		72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
@@ -1879,7 +1878,6 @@
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
 				273E9F781C5165FA003115A6 /* sqlite_glue.c in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
-				72C086951CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
 				273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */,
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
