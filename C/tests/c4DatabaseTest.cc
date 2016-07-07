@@ -32,12 +32,22 @@ class C4DatabaseTest : public C4Test {
         C4SliceResult msg = c4error_getMessage({domain, code});
         AssertEqual(std::string((char*)msg.buf, msg.size), std::string(expectedMsg));
         c4slice_free(msg);
+
+        char buf[256];
+        char *cmsg = c4error_getMessageC({domain, code}, buf, sizeof(buf));
+        AssertEqual(std::string(cmsg), std::string(expectedMsg));
+        AssertEqual(cmsg, &buf[0]);
     }
 
     void testErrorMessages() {
         C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
         AssertEqual(msg.buf, (const void*)nullptr);
         AssertEqual((unsigned long)msg.size, 0ul);
+
+        char buf[256];
+        char *cmsg = c4error_getMessageC({ForestDBDomain, 0}, buf, sizeof(buf));
+        AssertEqual(cmsg, &buf[0]);
+        AssertEqual(buf[0], '\0');
 
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
         assertMessage(HTTPDomain, kC4HTTPBadRequest, "invalid parameter");

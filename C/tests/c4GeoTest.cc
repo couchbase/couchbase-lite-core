@@ -44,7 +44,9 @@ public:
     virtual void tearDown() {
         C4Error error;
         if (view && !c4view_delete(view, &error)) {
-            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
+            char msg[256];
+            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d: %s\n",
+                    error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
             Assert(false);
         }
         c4view_free(view);

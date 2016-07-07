@@ -41,7 +41,9 @@ public:
             bool ok = c4view_delete(view, &error);
             c4view_free(view);
             if (!ok) {
-                fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d\n", error.domain, error.code);
+                char msg[256];
+                fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d: %s\n",
+                        error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
                 Assert(false);
             }
         }

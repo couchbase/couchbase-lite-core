@@ -169,6 +169,14 @@ void c4slice_free(C4Slice);
 /** Returns an error message describing a C4Error. Remember to free the result. */
 C4SliceResult c4error_getMessage(C4Error error);
 
+/** Writes an error message describing a C4Error to a buffer, as a C string.
+    It will not write past the end of the buffer; the message will be truncated if necessary.
+    @param error  The error to describe
+    @param buffer  Where to write the C string to
+    @param bufferSize  The size of the buffer
+    @return  A pointer to the string, i.e. to the first byte of the buffer. */
+char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize);
+
 
 /** Logging levels. */
 typedef C4_ENUM(uint8_t, C4LogLevel) {
