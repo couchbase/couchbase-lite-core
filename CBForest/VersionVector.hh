@@ -13,6 +13,12 @@
 #include "RevID.hh"
 #include <vector>
 #include <list>
+#include <iostream>
+
+namespace fleece {
+    class Value;
+    class Encoder;
+}
 
 namespace cbforest {
 
@@ -28,7 +34,7 @@ namespace cbforest {
         static const size_t kMaxAuthorSize = 64;
 
         version()                               {}
-        version(generation g, peerID p)         :author(p), gen(g) { }
+        version(generation g, peerID p)         :author(p), gen(g) {validate();}
         version(slice string)                   :version(string, true) { }
         void validate() const;
 
@@ -45,17 +51,24 @@ namespace cbforest {
     };
 
 
-    /** A version vector: an array of version identifiers in reverse chronological order. */
+    /** A version vector: an array of version identifiers in reverse chronological order.
+        Can be serialized either as a human-readable string or as a binary Fleece value. */
     class versionVector {
     public:
         versionVector() { }
 
-        /** Parses version vector from string. Throws BadVersionVector if string is invalid. */
+        /** Parses version vector from string. Throws BadVersionVector if string is invalid.
+            The input slice is not needed after the constructor returns. */
         explicit versionVector(slice string);
+
+        /** Parses version vector from Fleece value previously written by the overloaded "<<"
+            operator. The Value needs to remain valid for the lifetime of the versionVector. */
+        explicit versionVector(const fleece::Value*);
 
         size_t count() const                                {return _vers.size();}
         const version& operator[] (size_t i) const          {return _vers[i];}
         const version& current() const                      {return _vers[0];}
+        const std::vector<version> versions() const         {return _vers;}
 
         generation genOfAuthor(peerID) const;
         generation operator[] (peerID author) const         {return genOfAuthor(author);}
@@ -65,6 +78,10 @@ namespace cbforest {
         void append(version);
 
         alloc_slice asString() const;
+
+        /** Writes a versionVector to a Fleece encoder (as an array of alternating peer IDs and
+            generation numbers.) */
+        void writeTo(fleece::Encoder&) const;
 
         explicit operator slice() const                     {return asString();}
 
@@ -88,11 +105,27 @@ namespace cbforest {
         alloc_slice copyAuthor(peerID);
         friend class versionMap;
 
-        alloc_slice _string;
-        std::vector<version> _vers;
-        std::list<alloc_slice> _addedAuthors;      // storage space for added peerIDs
-        bool _changed {false};
+        alloc_slice _string;                        // The string I was parsed from
+        std::vector<version> _vers;                 // versions, in order
+        std::list<alloc_slice> _addedAuthors;       // storage space for added peerIDs
+        bool _changed {false};                      // Changed since created?
     };
+
+
+    // Some implementations of "<<" to write to ostreams and Fleece encoders: 
+
+    static inline std::ostream& operator<< (std::ostream& o, const version &v) {
+        return o << v.gen << "@" << (std::string)v.author;
+    }
+    
+    static inline std::ostream& operator<< (std::ostream& o, const versionVector &vv) {
+        return o << (std::string)vv.asString();
+    }
+    
+    static inline fleece::Encoder& operator<< (fleece::Encoder &encoder, const versionVector &vv) {
+        vv.writeTo(encoder);
+        return encoder;
+    }
 
 }
 

@@ -9,6 +9,7 @@
 #include "VersionVector.hh"
 #include "varint.hh"
 #include "error.hh"
+#include "Fleece.hh"
 #include <sstream>
 #include <unordered_map>
 
@@ -19,17 +20,17 @@ namespace cbforest {
         gen = string.readDecimal();                             // read generation
         if (gen == 0 || string.readByte() != '@'                // read '@'
                      || string.size < 1 || string.size > kMaxAuthorSize)
-            throw error(error::BadVersionVector);
+            error::_throw(error::BadVersionVector);
         if (validateAuthor)
             if (author.findByte(',') || author.findByte('\0'))
-                throw error(error::BadVersionVector);
+                error::_throw(error::BadVersionVector);
         author = string;                                        // read peer ID
     }
 
     void version::validate() const {
         if (gen == 0 || author.size < 1 || author.size > kMaxAuthorSize
                      || author.findByte(',') || author.findByte('\0'))
-            throw error(error::BadVersionVector);
+            error::_throw(error::BadVersionVector);
     }
 
 
@@ -37,7 +38,7 @@ namespace cbforest {
     :_string(string)
     {
         if (string.size == 0 || string.findByte('\0'))
-            throw error(error::BadVersionVector);
+            error::_throw(error::BadVersionVector);
 
         while (string.size > 0) {
             const void *comma = string.findByte(',') ?: string.end();
@@ -46,6 +47,17 @@ namespace cbforest {
             if (string.size > 0)
                 string.moveStart(1); // skip comma
         }
+    }
+
+    versionVector::versionVector(const fleece::Value* val) {
+        auto *arr = val->asArray();
+        if (!arr)
+            error::_throw(error::BadVersionVector);
+        fleece::Array::iterator i(arr);
+        if (i.count() % 2 != 0)
+            error::_throw(error::BadVersionVector);
+        for (; i; i += 2)
+            _vers.push_back( version((generation)i[1]->asUnsigned(), i[0]->asString()) );
     }
 
     alloc_slice versionVector::asString() const {
@@ -69,7 +81,16 @@ namespace cbforest {
         }
         return data;
     }
-    
+
+    void versionVector::writeTo(fleece::Encoder &encoder) const {
+        encoder.beginArray();
+        for (auto v : _vers) {
+            encoder << v.author;
+            encoder << v.gen;
+        }
+        encoder.endArray();
+    }
+
     versionVector::order versionVector::compareTo(const versionVector &other) const {
         int o = kSame;
         ssize_t countDiff = count() - other.count();

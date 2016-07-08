@@ -20,8 +20,14 @@ namespace cbforest {
 
     
     void error::_throw(fdb_status status) {
-        WarnError("%s (%d)\n", fdb_error_msg(status), status);
+        WarnError("%s (%d)", fdb_error_msg(status), status);
         throw error{status};
+    }
+
+    
+    void error::_throw(error::CBForestError err) {
+        WarnError("CBForestError %d", err);
+        throw error{err};
     }
 
 

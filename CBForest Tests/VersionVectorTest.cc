@@ -8,21 +8,11 @@
 
 #include "RevID.hh"
 #include "VersionVector.hh"
+#include "Fleece.hh"
 #include <iostream>
 using namespace cbforest;
 
-// Some operators to make slice work with AssertEqual:
-// (This has to be declared before including cppunit, because C++ sucks)
-static std::ostream& operator<< (std::ostream& o, const versionVector &v) {
-    o << (std::string)v.asString();
-    return o;
-}
-
-static std::ostream& operator<< (std::ostream& o, const version &v) {
-    o << v.gen << "@" << (std::string)v.author;
-    return o;
-}
-
+// This has to come last for obscure C++ reasons
 #include "CBForestTest.hh"
 
 
@@ -101,13 +91,21 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.current(), version(1, slice("jens")));
         AssertEqual(v.count(), 2ul);
 
+        // Convert to string and back:
         alloc_slice str = v.asString();
         AssertEqual((slice)v.asString(), slice("1@jens,2@bob"));
-
-        // Create versionVector from multi-version string:
         versionVector vv(str);
         AssertEqual(vv, v);
         AssertEqual(vv.asString(), v.asString());
+
+        // Convert to Fleece and back:
+        fleece::Encoder enc;
+        enc << v;
+        alloc_slice f = enc.extractOutput();
+        AssertEqual(f.size, 22ul);
+        auto fleeceRoot = fleece::Value::fromData(f);
+        versionVector vvf(fleeceRoot);
+        AssertEqual(vvf, v);
     }
 
     void testCreateSingle() {

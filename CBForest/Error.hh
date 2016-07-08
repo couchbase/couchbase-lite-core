@@ -50,6 +50,7 @@ namespace cbforest {
         virtual const char *what() const noexcept;
 
         [[noreturn]] static void _throw(fdb_status);
+        [[noreturn]] static void _throw(CBForestError);
 
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);
