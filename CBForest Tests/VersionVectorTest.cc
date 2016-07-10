@@ -21,11 +21,6 @@ static revidBuffer stringToRev(const char* str) {
     return buf;
 }
 
-static versionVector& operator << (versionVector &v, const char *str) {
-    v.append( version(slice(str)) );
-    return v;
-}
-
 
 class VersionVectorTest : public CppUnit::TestFixture {
 
@@ -83,8 +78,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
     
     
     void testCreate() {
-        versionVector v;
-        v << "1@jens" << "2@bob";
+        versionVector v(slice("1@jens,2@bob"));
         AssertEqual(v[slice("jens")], 1ull);
         AssertEqual(v[slice("bob")],  2ull);
         AssertEqual(v[slice("may")],  0ull);
@@ -118,15 +112,13 @@ class VersionVectorTest : public CppUnit::TestFixture {
     }
 
     void testCompare() {
-        versionVector v;
-        v << "1@jens" << "2@bob";
+        versionVector v(slice("1@jens,2@bob"));
         AssertEqual(v, v);
         Assert(!(v > v));
         Assert(!(v < v));
         AssertEqual(v.compareTo(v), versionVector::kSame);
 
-        versionVector oldv;
-        oldv << "2@bob";
+        versionVector oldv(slice("2@bob"));
 
         Assert(!(v == oldv));
         Assert(v > oldv);

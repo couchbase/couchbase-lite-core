@@ -46,7 +46,12 @@ namespace cbforest {
 
         Document get(slice key, contentOptions = kDefaultContent) const;
         Document get(sequence, contentOptions = kDefaultContent) const;
-        bool read(Document&, contentOptions = kDefaultContent) const; // key must already be set
+
+        /** Reads a document whose key() is already set. */
+        bool read(Document&, contentOptions = kDefaultContent) const;
+
+        /** Reads the body of a Document that's already been read with kMetaonly. */
+        void readBody(Document&) const;
 
         Document getByOffset(uint64_t offset, sequence) const;
         Document getByOffsetNoErrors(uint64_t offset, sequence) const;  // doesn't throw or log

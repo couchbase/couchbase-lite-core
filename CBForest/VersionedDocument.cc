@@ -16,6 +16,7 @@
 #include "VersionedDocument.hh"
 #include "Error.hh"
 #include "varint.hh"
+#include "Fleece.hh"
 #include <ostream>
 
 namespace cbforest {
@@ -66,9 +67,19 @@ namespace cbforest {
     bool VersionedDocument::readMeta(const Document& doc,
                                      Flags& flags, revid& revID, slice& docType)
     {
-        slice meta = doc.meta();
-        if (meta.size < 2)
+        slice metaBytes = doc.meta();
+        if (metaBytes.size < 2)
             return false;
+
+        auto metaValue = fleece::Value::fromTrustedData(metaBytes);
+        fleece::Array::iterator meta(metaValue->asArray());
+        flags = (Flags)meta.read()->asInt();
+        revID = revid(meta.read()->asString());
+        docType = meta.read()->asString();
+        if (docType.size == 0)
+            docType = slice::null;
+
+#if 0
         flags = meta.read(1)[0];
         uint8_t length = meta.read(1)[0];
         revID = revid(meta.read(length));
@@ -82,6 +93,7 @@ namespace cbforest {
         } else {
             docType = slice::null;
         }
+#endif
         return true;
     }
 
@@ -112,6 +124,20 @@ namespace cbforest {
         _flags = flags;
 
         // Write to _doc.meta:
+#if 1
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc << _flags;
+        enc << revID;
+        enc << _docType;
+        enc.endArray();
+        _doc.setMeta(enc.extractOutput());
+
+        // Have to point _revID at newly written value:
+        auto metaValue = fleece::Value::fromTrustedData(_doc.meta());
+        fleece::Array::iterator meta(metaValue->asArray());
+        _revID = revid(meta[1]->asString());
+#else
         slice meta = _doc.resizeMeta(2 + revID.size + SizeOfVarInt(_docType.size) + _docType.size);
         meta.writeFrom(slice(&flags,1));
         uint8_t revIDSize = (uint8_t)revID.size;
@@ -121,6 +147,7 @@ namespace cbforest {
         WriteUVarInt(&meta, _docType.size);
         meta.writeFrom(_docType);
         CBFAssert(meta.size == 0);
+#endif
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {

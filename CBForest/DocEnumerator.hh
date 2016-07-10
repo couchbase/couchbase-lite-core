@@ -44,6 +44,7 @@ namespace cbforest {
             bool                     includeDeleted :1;
             KeyStore::contentOptions contentOptions :4;
 
+            /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */
             static const Options kDefault;
         };
 

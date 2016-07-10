@@ -80,6 +80,22 @@ namespace cbforest {
             return checkGet(fdb_get(_handle, doc));
     }
 
+    void KeyStore::readBody(Document& doc) const {
+        CBFAssert(doc.offset() > 0);
+        fdb_doc tempDoc = {};
+        tempDoc.offset = doc.offset();
+        tempDoc.seqnum = doc.sequence();
+        check(fdb_get_byoffset(_handle, &tempDoc));
+        CBFAssert(tempDoc.seqnum == doc.sequence());
+        free(tempDoc.meta);
+
+        // Move tempDoc's body into realDoc:
+        fdb_doc *realDoc = doc;
+        free(realDoc->body);
+        realDoc->body = tempDoc.body;
+        realDoc->bodylen = tempDoc.bodylen;
+    }
+
     Document KeyStore::getByOffset(uint64_t offset, sequence seq) const {
         Document doc;
         doc._doc.offset = offset;

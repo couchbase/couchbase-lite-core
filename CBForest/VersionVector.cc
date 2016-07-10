@@ -16,6 +16,9 @@
 
 namespace cbforest {
 
+    const peerID kCASServerPeerID = {"$", 1};
+    const peerID kMePeerID        = {"*", 1};
+
     version::version(slice string, bool validateAuthor) {
         gen = string.readDecimal();                             // read generation
         if (gen == 0 || string.readByte() != '@'                // read '@'
@@ -31,6 +34,15 @@ namespace cbforest {
         if (gen == 0 || author.size < 1 || author.size > kMaxAuthorSize
                      || author.findByte(',') || author.findByte('\0'))
             error::_throw(error::BadVersionVector);
+    }
+
+    generation version::CAS() const {
+        return author == kCASServerPeerID ? gen : 0;
+    }
+
+    alloc_slice version::asString() const {
+        char buf[30 + author.size];
+        return alloc_slice(buf, sprintf(buf, "%llu@%.*s", gen, (int)author.size, author.buf));
     }
 
 
@@ -50,6 +62,11 @@ namespace cbforest {
     }
 
     versionVector::versionVector(const fleece::Value* val) {
+        readFrom(val);
+    }
+
+    void versionVector::readFrom(const fleece::Value *val) {
+        CBFDebugAssert(_vers.empty());
         auto *arr = val->asArray();
         if (!arr)
             error::_throw(error::BadVersionVector);
@@ -113,6 +130,10 @@ namespace cbforest {
         return (order)o;
     }
 
+    bool versionVector::isFromCASServer() const {
+        return current().CAS() > 0;
+    }
+
     std::vector<version>::iterator versionVector::findPeerIter(peerID author) {
         auto v = _vers.begin();
         for (; v != _vers.end(); ++v) {
@@ -143,6 +164,24 @@ namespace cbforest {
         _changed = true;
     }
 
+    bool versionVector::setCAS(generation cas) {
+        CBFAssert(cas > 0);
+        auto versP = findPeerIter(kCASServerPeerID);
+        version v;
+        if (versP != _vers.end()) {
+            v = *versP;
+            if (v.gen >= cas)
+                return false;
+            _vers.erase(versP);
+        } else {
+            v.author = kCASServerPeerID;
+        }
+        v.gen = cas;
+        _vers.insert(_vers.begin(), v);
+        _changed = true;
+        return true;
+    }
+
     void versionVector::append(version vers) {
         vers.validate();
         vers.author = copyAuthor(vers.author);
@@ -152,6 +191,22 @@ namespace cbforest {
 
     alloc_slice versionVector::copyAuthor(peerID author) {
         return *_addedAuthors.emplace(_addedAuthors.begin(), author);
+    }
+
+    void versionVector::compactMyPeerID(peerID myID) {
+        auto versP = findPeerIter(myID);
+        if (versP != _vers.end()) {
+            versP->author = kMePeerID;
+            _changed = true;
+        }
+    }
+
+    void versionVector::expandMyPeerID(peerID myID) {
+        auto versP = findPeerIter(kMePeerID);
+        if (versP != _vers.end()) {
+            versP->author = copyAuthor(myID);
+            _changed = true;
+        }
     }
 
 
