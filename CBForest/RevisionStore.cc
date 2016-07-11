@@ -9,22 +9,36 @@
 #include "RevisionStore.hh"
 #include "Revision.hh"
 #include "DocEnumerator.hh"
+#include "VarInt.hh"
 
 namespace cbforest {
 
 
-    RevisionStore::RevisionStore(Database *db, bool usingCAS)
+    // Separates the docID and the author in the keys of non-current Revisions.
+    static const char kDocIDDelimiter ='\t';
+
+    // Separates the author and generation in the keys of non-current Revisions.
+    static const char kAuthorDelimiter = ',';
+
+
+    RevisionStore::RevisionStore(Database *db)
     :_db(db),
-     _nonCurrent(db->getKeyStore("revs")),
-     _usingCAS(usingCAS)
+     _store(db->defaultKeyStore()),
+     _nonCurrentStore(db->getKeyStore("revs"))
     { }
 
+
+#pragma mark - GET:
+
+
+    // Get the current revision of a document
     Revision* RevisionStore::get(slice docID, KeyStore::contentOptions opt) const {
-        auto rev = new Revision(docID, slice::null, *_db, opt);
-        if (!rev->document().exists())
+        Document doc(docID);
+        if (!_store.read(doc, opt))
             return nullptr;
-        return rev;
+        return new Revision(std::move(doc));
     }
+
 
     Revision* RevisionStore::get(slice docID, slice revID, KeyStore::contentOptions opt) const {
         // No revID means current revision:
@@ -43,38 +57,86 @@ namespace cbforest {
         return nullptr;
     }
 
+
+    // Get a revision from the _nonCurrentStore only
     Revision* RevisionStore::getNonCurrent(slice docID, slice revID,
                                            KeyStore::contentOptions opt) const
     {
         CBFAssert(revID.size > 0);
-        std::unique_ptr<Revision> rev {new Revision(docID, revID, _nonCurrent, opt)};
-        if (rev->document().exists())
-            return rev.release();
-        return nullptr;
+        Document doc(keyForNonCurrentRevision(docID, version{revID}));
+        if (!_store.read(doc, opt))
+            return nullptr;
+        return new Revision(std::move(doc));
     }
 
 
-    versionVector::order RevisionStore::insert(Revision &newRev, Transaction &t) {
+    // Make sure a Revision has a body (if it was originally loaded as meta-only)
+    void RevisionStore::readBody(cbforest::Revision &rev) {
+        if (rev.document().body().buf == nullptr) {
+            KeyStore &store = rev.isCurrent() ? _store : _nonCurrentStore;
+            store.readBody(rev.document());
+        }
+    }
+
+
+    bool RevisionStore::has(slice docID, slice revID) {
+        version v(revID);
+        std::unique_ptr<Revision> rev { get(docID) };
+        if (rev) {
+            if (rev->version() >= v)
+                return true;    // Current revision is equal or newer
+            if (rev->isConflicted()) {
+                auto e = enumerateRevisions(docID);
+                while (e.next()) {
+                    Revision conflict(e.moveDoc());
+                    if (conflict.version() >= v)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+#pragma mark - PUT:
+
+
+    bool RevisionStore::create(slice docID,
+                               const VersionVector &parentVersion,
+                               Revision::BodyParams body,
+                               Transaction &t)
+    {
+        // Check for conflict, and compute new version-vector:
+        std::unique_ptr<Revision> current { get(docID, KeyStore::kMetaOnly) };
+        VersionVector newVersion;
+        if (current)
+            newVersion = current->version();
+        if (parentVersion != newVersion)
+            return false;
+        newVersion.incrementGen(kMePeerID);
+
+        Revision newRev(docID, newVersion, body, true);
+        replaceCurrent(newRev, current.get(), t);
+        return true;
+    }
+
+
+
+    versionOrder RevisionStore::insert(Revision &newRev, Transaction &t) {
         std::unique_ptr<Revision> current { get(newRev.docID(), KeyStore::kMetaOnly) };
-        auto cmp = current ? newRev.version().compareTo(current->version()) : versionVector::kNewer;
+        auto cmp = current ? newRev.version().compareTo(current->version()) : kNewer;
         switch (cmp) {
-            case versionVector::kSame:
-            case versionVector::kOlder:
+            case kSame:
+            case kOlder:
                 // This revision already exists, or is obsolete: no-op
                 break;
 
-            case versionVector::kNewer:
+            case kNewer:
                 // This revision is newer than the current one, so replace it:
-                backupCASVersion(newRev, current.get(), t);
-                if (current && (current->isConflicted()
-                                    || shouldDeleteCASBackup(newRev, current.get()))) {
-                    deleteAncestors(newRev, t);
-                }
-                newRev.setCurrent(true);    // update revID to just docID
-                t.write(newRev.document());
+                replaceCurrent(newRev, current.get(), t);
                 break;
 
-            case versionVector::kConflicting:
+            case kConflicting:
                 // Oops, they conflict:
                 CBFAssert(false);//TODO
                 break;
@@ -83,32 +145,15 @@ namespace cbforest {
     }
 
 
-#pragma mark - CAS SERVER STUFF:
-
-
-    // If a revision from the CAS server is being replaced by a newer revision that isn't,
-    // back it up to the nonCurrent store so we can merge with it if necessary.
-    void RevisionStore::backupCASVersion(const Revision &newRev, Revision *current, Transaction &t)
-    {
-        if (_usingCAS && current && current->isFromCASServer() && !newRev.isFromCASServer()) {
-            _db->readBody(current->document());     // load the body
-            current->setCurrent(false);             // append the revID to the key
-            t(_nonCurrent).write(current->document());
+    // Replace the current revision `current` with `newRev`
+    void RevisionStore::replaceCurrent(Revision &newRev, Revision *current, Transaction &t) {
+        if (current) {
+            backupCASVersion(*current, newRev, t);
+            if (current->isConflicted() || shouldDeleteCASBackup(newRev, current))
+                deleteAncestors(newRev, t);
         }
-    }
-
-    // Is the current CAS-server backup revision (if any) now obsolete?
-    // This happens when a revision from the CAS server replaces one that isn't.
-    bool RevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
-        return _usingCAS && current && newRev.isFromCASServer() && !current->isFromCASServer();
-    }
-
-    // Is `rev` a saved CAS-server backup of the current revision `child`?
-    bool RevisionStore::isSavedCASBackup(const Revision &rev, const Revision &child) {
-        if (!_usingCAS)
-            return false;
-        auto cas = rev.version().current().CAS();
-        return cas > 0 && cas == child.version().CAS();
+        newRev.setCurrent(true);    // update key to just docID
+        t.write(newRev.document());
     }
 
 
@@ -126,18 +171,87 @@ namespace cbforest {
     };
 
 
+    DocEnumerator RevisionStore::enumerateRevisions(slice docID, slice author) {
+        return DocEnumerator(_nonCurrentStore,
+                             startKeyFor(docID, author),
+                             endKeyFor(docID, author),
+                             kRevEnumOptions);
+    }
+
+
     void RevisionStore::deleteAncestors(Revision &child, Transaction &t) {
-        DocEnumerator e(_nonCurrent,
-                        Revision::startKeyForDocID(child.docID()),
-                        Revision::endKeyForDocID(child.docID()),
-                        kRevEnumOptions);
+        DocEnumerator e = enumerateRevisions(child.docID());
         while (e.next()) {
             Revision rev(e.moveDoc());
-            if (rev.version().compareTo(child.version()) == versionVector::kOlder
-                    && !isSavedCASBackup(rev, child)) {
+            if (rev.version().compareTo(child.version()) == kOlder
+                    && !shouldKeepAncestor(rev, child)) {
                 t.del(rev.document());
             }
         }
     }
+
+
+#pragma mark DOC ID / KEYS:
+
+
+    // Concatenates the docID, the author and the generation (with delimiters).
+    // author and generation are optional.
+    static alloc_slice mkkey(slice docID, peerID author, generation gen) {
+        size_t size = docID.size + 1;
+        if (author.buf) {
+            size += author.size + 1;
+            if (gen > 0)
+                size += SizeOfVarInt(gen);
+        }
+        alloc_slice result(size);
+        slice out = result;
+        out.writeFrom(docID);
+        out.writeByte(kDocIDDelimiter);
+        if (author.buf) {
+            out.writeFrom(author);
+            out.writeByte(kAuthorDelimiter);
+            if (gen > 0)
+                WriteUVarInt(&out, gen);
+        }
+        return result;
+    }
+
+    alloc_slice RevisionStore::keyForNonCurrentRevision(slice docID, struct version vers) {
+        return mkkey(docID, vers.author, vers.gen);
+    }
+
+    alloc_slice RevisionStore::startKeyFor(slice docID, peerID author) {
+        return mkkey(docID, author, 0);
+    }
+
+    alloc_slice RevisionStore::endKeyFor(slice docID, peerID author) {
+        alloc_slice result = mkkey(docID, author, 0);
+        const_cast<uint8_t&>(result[result.size-1])++;
+        return result;
+    }
+
+    slice RevisionStore::docIDFromKey(slice key) {
+        auto delim = key.findByte(kDocIDDelimiter);
+        if (delim)
+            key = key.upTo(delim);
+        return key;
+    }
+
+
+#pragma mark TO OVERRIDE:
+
+    // These are no-op stubs. CASRevisionStore implements them.
+
+    void RevisionStore::backupCASVersion(Revision &, const Revision &, Transaction &t) {
+    }
+
+    bool RevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
+        return false;
+    }
+
+    bool RevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
+        return false;
+    }
+
 
 }

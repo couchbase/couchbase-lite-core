@@ -28,8 +28,18 @@ namespace cbforest {
     extern const peerID kCASServerPeerID;   // "$"
     extern const peerID kMePeerID;          // "*"
 
-    /** A single version identifier in a vector. Consists of a peerID (author) and generation count.
-        This is equivalent to a clock-style revid. */
+    /** The possible orderings of two VersionVectors. */
+    enum versionOrder {
+        kSame        = 0,                   // Equal
+        kOlder       = 1,                   // This one is older
+        kNewer       = 2,                   // This one is newer
+        kConflicting = kOlder | kNewer      // The vectors conflict
+    };
+
+
+    /** A single version identifier in a VersionVector.
+        Consists of a peerID (author) and generation count.
+        Does NOT own the storage of `author`! */
     struct version {
         peerID author;
         generation gen {0};
@@ -39,19 +49,24 @@ namespace cbforest {
         version()                               {}
         version(generation g, peerID p)         :author(p), gen(g) {validate();}
         version(slice string)                   :version(string, true) { }
-        void validate() const;
 
         bool operator== (const version& v) const {
             return gen == v.gen && author == v.author;
         }
 
+        alloc_slice asString() const;
+//        revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, author, kClockType);}
+
+        /** The CAS counter of a version that comes from a CAS server.
+            If author == kCASServerPeerID, returns the gen; else returns 0. */
         generation CAS() const;
 
-        alloc_slice asString() const;
-        revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, author, kClockType);}
+        /** Convenience to compare two generations and return a versionOrder. */
+        static versionOrder compareGen(generation a, generation b);
 
     private:
-        friend class versionVector;
+        void validate() const;
+        friend class VersionVector;
 
         version(slice string, bool validateAuthor);
     };
@@ -59,21 +74,28 @@ namespace cbforest {
 
     /** A version vector: an array of version identifiers in reverse chronological order.
         Can be serialized either as a human-readable string or as a binary Fleece value. */
-    class versionVector {
+    class VersionVector {
     public:
         /** Constructs an empty vector. */
-        versionVector() { }
+        VersionVector() { }
 
         /** Parses version vector from string. Throws BadVersionVector if string is invalid.
             The input slice is not needed after the constructor returns. */
-        explicit versionVector(slice string);
+        explicit VersionVector(slice string);
 
         /** Parses version vector from Fleece value previously written by the overloaded "<<"
-            operator. The Value needs to remain valid for the lifetime of the versionVector. */
-        explicit versionVector(const fleece::Value*);
+            operator. The Value needs to remain valid for the lifetime of the VersionVector. */
+        explicit VersionVector(const fleece::Value*);
+
+        VersionVector(const VersionVector&);
+        VersionVector(VersionVector&&);
+
+        VersionVector& operator=(const VersionVector&);
 
         /** Populates an empty vector from a Fleece value. */
         void readFrom(const fleece::Value*);
+
+        void reset();
 
         size_t count() const                                {return _vers.size();}
         const version& operator[] (size_t i) const          {return _vers[i];}
@@ -109,30 +131,34 @@ namespace cbforest {
         bool changed() const                                {return _changed;}
 
         /** Converts the vector to a human-readable string. */
-        alloc_slice asString() const;
-        explicit operator slice() const                     {return asString();}
+        std::string asString() const;
 
-        /** Writes a versionVector to a Fleece encoder (as an array of alternating peer IDs and
+        /** Converts the vector to a human-readable string, replacing kMePeerID ("*" with the
+            given peerID in the output. Use this when sharing a vector with another peer. */
+        std::string exportAsString(peerID myID) const;
+
+        /** Writes a VersionVector to a Fleece encoder (as an array of alternating peer IDs and
             generation numbers.) */
         void writeTo(fleece::Encoder&) const;
 
-        enum order {
-            kSame        = 0,                   // Equal
-            kOlder       = 1,                   // This one is older
-            kNewer       = 2,                   // This one is newer
-            kConflicting = kOlder | kNewer      // The vectors conflict
-        };
-
         /** Compares this vector to another. */
-        order compareTo(const versionVector&) const;
+        versionOrder compareTo(const VersionVector&) const;
 
-        bool operator == (const versionVector& v) const     {return current() == v.current();}
-        bool operator < (const versionVector& v) const      {return compareTo(v) == kOlder;}
-        bool operator > (const versionVector& v) const      {return compareTo(v) == kNewer;}
+        bool operator == (const VersionVector& v) const     {return current() == v.current();}
+        bool operator != (const VersionVector& v) const     {return !(current() == v.current());}
+        bool operator < (const VersionVector& v) const      {return compareTo(v) == kOlder;}
+        bool operator > (const VersionVector& v) const      {return compareTo(v) == kNewer;}
+
+        /** Compares with a single version, i.e. whether this vector contains that version.
+            Will never return kConflicting. */
+        versionOrder compareTo(const version&) const;
+
+        bool operator == (const version& v) const           {return compareTo(v) == kSame;}
+        bool operator >= (const version& v) const           {return compareTo(v) != kOlder;}
 
         /** Returns a new vector representing a merge of this vector and the argument.
             All the authors in both are present, with the larger of the two generations. */
-        versionVector mergedWith(const versionVector&) const;
+        VersionVector mergedWith(const VersionVector&) const;
 
     private:
         std::vector<version>::iterator findPeerIter(peerID);
@@ -153,11 +179,11 @@ namespace cbforest {
         return o << v.gen << "@" << (std::string)v.author;
     }
     
-    static inline std::ostream& operator<< (std::ostream& o, const versionVector &vv) {
+    static inline std::ostream& operator<< (std::ostream& o, const VersionVector &vv) {
         return o << (std::string)vv.asString();
     }
     
-    static inline fleece::Encoder& operator<< (fleece::Encoder &encoder, const versionVector &vv) {
+    static inline fleece::Encoder& operator<< (fleece::Encoder &encoder, const VersionVector &vv) {
         vv.writeTo(encoder);
         return encoder;
     }

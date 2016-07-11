@@ -17,30 +17,37 @@ namespace cbforest {
 
     class Revision {
     public:
-        typedef uint8_t Flags;
-        enum {
+
+        struct BodyParams {
+            slice body;
+            slice docType;
+            bool deleted;
+            bool hasAttachments;
+        };
+
+        //typedef uint8_t Flags;
+        enum Flags : uint8_t {
+            kNone           = 0x00,
             kDeleted        = 0x01,
             kConflicted     = 0x02,
             kHasAttachments = 0x04,
         };
 
+        /** Creates a Revision from a pre-populated Document read from a Database. */
         Revision(Document&& doc);
 
+        /** Creates a new Revision. */
         Revision(slice docID,
-                 const versionVector &vers,
-                 slice body,
-                 slice docType,
-                 bool deleted,
-                 bool hasAttachments,
+                 const VersionVector &vers,
+                 BodyParams,
                  bool current);
 
-        Revision(slice docID, slice revID, KeyStore&,
-                 KeyStore::contentOptions = KeyStore::kDefaultContent);
-
         slice docID() const;
-        const versionVector& version() const    {return _vers;}
+
+        const VersionVector& version() const    {return _vers;}
         alloc_slice revID() const               {return _vers.current().asString();}
         bool isFromCASServer() const            {return _vers.isFromCASServer();}
+        generation CAS() const                  {return _cas;}
 
         Flags flags() const                 {return _flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}
@@ -58,17 +65,14 @@ namespace cbforest {
         bool isCurrent() const;
         void setCurrent(bool current);
 
-        static alloc_slice startKeyForDocID(slice docID);
-        static alloc_slice endKeyForDocID(slice docID);
-
     private:
         void readMeta();
         void setKey(slice docid, bool current);
-        void setKey(slice docid, slice revid);
 
         Document _doc;
-        Flags _flags {0};
-        versionVector _vers;
+        Flags _flags {kNone};
+        VersionVector _vers;
+        generation _cas {0};
         slice _docType;
     };
 

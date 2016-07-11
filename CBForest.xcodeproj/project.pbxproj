@@ -150,6 +150,10 @@
 		279794A61D307626001D0F3A /* RevisionStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279794A41D307626001D0F3A /* RevisionStore.cc */; };
 		279794A71D307626001D0F3A /* RevisionStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279794A41D307626001D0F3A /* RevisionStore.cc */; };
 		279794A81D307626001D0F3A /* RevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794A51D307626001D0F3A /* RevisionStore.hh */; };
+		279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */; };
+		279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */; };
+		279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */; };
+		279794B41D34583A001D0F3A /* RevisionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279794B31D34583A001D0F3A /* RevisionTest.cc */; };
 		2797BCB11C10F6B400E5C991 /* C_API_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCB01C10F6B400E5C991 /* C_API_Test.mm */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
@@ -664,6 +668,9 @@
 		2797949E1D305EC2001D0F3A /* Revision.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Revision.hh; sourceTree = "<group>"; };
 		279794A41D307626001D0F3A /* RevisionStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStore.cc; sourceTree = "<group>"; };
 		279794A51D307626001D0F3A /* RevisionStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevisionStore.hh; sourceTree = "<group>"; };
+		279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStore.cc; sourceTree = "<group>"; };
+		279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CASRevisionStore.hh; sourceTree = "<group>"; };
+		279794B31D34583A001D0F3A /* RevisionTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionTest.cc; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		2797BCB01C10F6B400E5C991 /* C_API_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = C_API_Test.mm; sourceTree = "<group>"; };
 		27A6578D1CBC189800A7A1D7 /* Base.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base.swift; sourceTree = "<group>"; };
@@ -1279,6 +1286,7 @@
 				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
 				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
 				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
+				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 			);
 			path = "CBForest Tests";
 			sourceTree = "<group>";
@@ -1376,6 +1384,8 @@
 			children = (
 				279794A41D307626001D0F3A /* RevisionStore.cc */,
 				279794A51D307626001D0F3A /* RevisionStore.hh */,
+				279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */,
+				279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */,
 				2797949D1D305EC2001D0F3A /* Revision.cc */,
 				2797949E1D305EC2001D0F3A /* Revision.hh */,
 				2708FE361CF3A0F10022F721 /* VersionVector.cc */,
@@ -1654,6 +1664,7 @@
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
 				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
+				279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */,
 				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1962,6 +1973,7 @@
 				2708FE421CF4CC880022F721 /* VersionVectorTest.cc in Sources */,
 				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
+				279794B41D34583A001D0F3A /* RevisionTest.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2165,6 +2177,7 @@
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
+				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */,
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
@@ -2197,6 +2210,7 @@
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				279794A01D305EC2001D0F3A /* Revision.cc in Sources */,
 				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
+				279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
 				72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */,

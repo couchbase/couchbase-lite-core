@@ -16,6 +16,10 @@
 
 namespace cbforest {
 
+
+#pragma mark - VERSION:
+
+
     const peerID kCASServerPeerID = {"$", 1};
     const peerID kMePeerID        = {"*", 1};
 
@@ -45,8 +49,19 @@ namespace cbforest {
         return alloc_slice(buf, sprintf(buf, "%llu@%.*s", gen, (int)author.size, author.buf));
     }
 
+    versionOrder version::compareGen(generation a, generation b) {
+        if (a > b)
+            return kNewer;
+        else if (a < b)
+            return kOlder;
+        return kSame;
+    }
 
-    versionVector::versionVector(slice string)
+
+#pragma mark - LIFECYCLE:
+
+
+    VersionVector::VersionVector(slice string)
     :_string(string)
     {
         if (string.size == 0 || string.findByte('\0'))
@@ -61,11 +76,40 @@ namespace cbforest {
         }
     }
 
-    versionVector::versionVector(const fleece::Value* val) {
+    VersionVector::VersionVector(const fleece::Value* val) {
         readFrom(val);
     }
 
-    void versionVector::readFrom(const fleece::Value *val) {
+    VersionVector::VersionVector(const VersionVector &v) {
+        *this = v;
+    }
+
+    VersionVector::VersionVector(VersionVector &&oldv)
+    :_string(std::move(oldv._string)),
+     _vers(std::move(oldv._vers)),
+     _addedAuthors(std::move(oldv._addedAuthors)),
+     _changed(oldv._changed)
+    { }
+
+    void VersionVector::reset() {
+        _string = slice::null;
+        _vers.clear();
+        _addedAuthors.clear();
+        _changed = false;
+    }
+
+    VersionVector& VersionVector::operator=(const VersionVector &v) {
+        reset();
+        for (auto vers : v._vers)
+            append(vers);
+        return *this;
+    }
+
+
+#pragma mark - CONVERSION:
+
+
+    void VersionVector::readFrom(const fleece::Value *val) {
         CBFDebugAssert(_vers.empty());
         auto *arr = val->asArray();
         if (!arr)
@@ -77,29 +121,28 @@ namespace cbforest {
             _vers.push_back( version((generation)i[1]->asUnsigned(), i[0]->asString()) );
     }
 
-    alloc_slice versionVector::asString() const {
+
+    std::string VersionVector::asString() const {
         if (!_changed && _string.buf)
-            return _string;
-
-        size_t dataSize = 0;
-        for (auto v = _vers.begin(); v != _vers.end(); ++v)
-            dataSize += slice::sizeOfDecimal(v->gen) + v->author.size + 2;
-        if (dataSize > 0)
-            --dataSize;
-
-        alloc_slice data(dataSize);
-        slice out = data;
-        for (auto v = _vers.begin(); v != _vers.end(); ++v) {
-            if (v != _vers.begin())
-                out.writeByte(',');
-            out.writeDecimal(v->gen);
-            out.writeByte('@');
-            out.writeFrom(v->author);
-        }
-        return data;
+            return (std::string)_string;
+        return exportAsString(kMePeerID);   // leaves "*" unchanged
     }
 
-    void versionVector::writeTo(fleece::Encoder &encoder) const {
+
+    std::string VersionVector::exportAsString(peerID myID) const {
+        std::stringstream out;
+        for (auto v = _vers.begin(); v != _vers.end(); ++v) {
+            if (v != _vers.begin())
+                out << ",";
+            out << v->gen << "@";
+            auto id = (v->author == kMePeerID) ? myID : v->author;
+            out.write((const char*)id.buf, id.size);
+        }
+        return out.str();
+    }
+
+
+    void VersionVector::writeTo(fleece::Encoder &encoder) const {
         encoder.beginArray();
         for (auto v : _vers) {
             encoder << v.author;
@@ -108,7 +151,22 @@ namespace cbforest {
         encoder.endArray();
     }
 
-    versionVector::order versionVector::compareTo(const versionVector &other) const {
+
+#pragma mark - OPERATIONS:
+
+
+    versionOrder VersionVector::compareTo(const version& v) const {
+        generation mine = genOfAuthor(v.author);
+        if (mine < v.gen)
+            return kOlder;
+        else if (mine == v.gen)
+            return kSame;
+        else
+            return kNewer;
+    }
+
+
+    versionOrder VersionVector::compareTo(const VersionVector &other) const {
         int o = kSame;
         ssize_t countDiff = count() - other.count();
         if (countDiff < 0)
@@ -127,14 +185,14 @@ namespace cbforest {
             if (o == kConflicting)
                 break;
         }
-        return (order)o;
+        return (versionOrder)o;
     }
 
-    bool versionVector::isFromCASServer() const {
+    bool VersionVector::isFromCASServer() const {
         return current().CAS() > 0;
     }
 
-    std::vector<version>::iterator versionVector::findPeerIter(peerID author) {
+    std::vector<version>::iterator VersionVector::findPeerIter(peerID author) {
         auto v = _vers.begin();
         for (; v != _vers.end(); ++v) {
             if (v->author == author)
@@ -143,12 +201,12 @@ namespace cbforest {
         return v;
     }
 
-    generation versionVector::genOfAuthor(peerID author) const {
-        auto v = const_cast<versionVector*>(this)->findPeerIter(author);
+    generation VersionVector::genOfAuthor(peerID author) const {
+        auto v = const_cast<VersionVector*>(this)->findPeerIter(author);
         return (v != _vers.end()) ? v->gen : 0;
     }
 
-    void versionVector::incrementGen(peerID author) {
+    void VersionVector::incrementGen(peerID author) {
         auto versP = findPeerIter(author);
         version v;
         if (versP != _vers.end()) {
@@ -164,7 +222,10 @@ namespace cbforest {
         _changed = true;
     }
 
-    bool versionVector::setCAS(generation cas) {
+#pragma mark - MODIFICATION:
+
+
+    bool VersionVector::setCAS(generation cas) {
         CBFAssert(cas > 0);
         auto versP = findPeerIter(kCASServerPeerID);
         version v;
@@ -182,18 +243,18 @@ namespace cbforest {
         return true;
     }
 
-    void versionVector::append(version vers) {
+    void VersionVector::append(version vers) {
         vers.validate();
         vers.author = copyAuthor(vers.author);
         _vers.push_back(vers);
         _changed = true;
     }
 
-    alloc_slice versionVector::copyAuthor(peerID author) {
+    alloc_slice VersionVector::copyAuthor(peerID author) {
         return *_addedAuthors.emplace(_addedAuthors.begin(), author);
     }
 
-    void versionVector::compactMyPeerID(peerID myID) {
+    void VersionVector::compactMyPeerID(peerID myID) {
         auto versP = findPeerIter(myID);
         if (versP != _vers.end()) {
             versP->author = kMePeerID;
@@ -201,7 +262,7 @@ namespace cbforest {
         }
     }
 
-    void versionVector::expandMyPeerID(peerID myID) {
+    void VersionVector::expandMyPeerID(peerID myID) {
         auto versP = findPeerIter(kMePeerID);
         if (versP != _vers.end()) {
             versP->author = copyAuthor(myID);
@@ -210,10 +271,13 @@ namespace cbforest {
     }
 
 
+#pragma mark - MERGING:
+
+
     // A hash table mapping peerID->generation, as an optimization for versionVector operations
     class versionMap {
     public:
-        versionMap(const versionVector &vec) {
+        versionMap(const VersionVector &vec) {
             _map.reserve(vec.count());
             for (auto v = vec._vers.begin(); v != vec._vers.end(); ++v)
                 add(*v);
@@ -233,12 +297,12 @@ namespace cbforest {
     };
     
     
-    versionVector versionVector::mergedWith(const versionVector &other) const {
+    VersionVector VersionVector::mergedWith(const VersionVector &other) const {
         // Walk through the two vectors in parallel, adding the current component from each if it's
         // newer than the corresponding component in the other. This isn't going to produce the
         // optimal ordering, but it should be pretty close.
         versionMap myMap(*this), otherMap(other);
-        versionVector result;
+        VersionVector result;
         for (size_t i = 0; i < std::max(_vers.size(), other._vers.size()); ++i) {
             peerID author;
             if (i < _vers.size()) {

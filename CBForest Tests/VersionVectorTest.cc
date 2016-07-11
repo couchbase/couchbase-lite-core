@@ -78,7 +78,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
     
     
     void testCreate() {
-        versionVector v(slice("1@jens,2@bob"));
+        VersionVector v(slice("1@jens,2@bob"));
         AssertEqual(v[slice("jens")], 1ull);
         AssertEqual(v[slice("bob")],  2ull);
         AssertEqual(v[slice("may")],  0ull);
@@ -86,9 +86,9 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.count(), 2ul);
 
         // Convert to string and back:
-        alloc_slice str = v.asString();
-        AssertEqual((slice)v.asString(), slice("1@jens,2@bob"));
-        versionVector vv(str);
+        auto str = v.asString();
+        AssertEqual(v.asString(), std::string("1@jens,2@bob"));
+        VersionVector vv(str);
         AssertEqual(vv, v);
         AssertEqual(vv.asString(), v.asString());
 
@@ -98,40 +98,49 @@ class VersionVectorTest : public CppUnit::TestFixture {
         alloc_slice f = enc.extractOutput();
         AssertEqual(f.size, 22ul);
         auto fleeceRoot = fleece::Value::fromData(f);
-        versionVector vvf(fleeceRoot);
+        VersionVector vvf(fleeceRoot);
         AssertEqual(vvf, v);
     }
 
     void testCreateSingle() {
-        versionVector v(slice("1@jens"));
+        VersionVector v(slice("1@jens"));
         AssertEqual(v[slice("jens")], 1ull);
         AssertEqual(v[slice("bob")],  0ull);
         AssertEqual(v.current(), version(1, slice("jens")));
         AssertEqual(v.count(), 1ul);
-        AssertEqual((slice)v.asString(), slice("1@jens"));
+        AssertEqual(v.asString(), std::string("1@jens"));
     }
 
     void testCompare() {
-        versionVector v(slice("1@jens,2@bob"));
+        VersionVector v(slice("1@jens,2@bob"));
         AssertEqual(v, v);
         Assert(!(v > v));
         Assert(!(v < v));
-        AssertEqual(v.compareTo(v), versionVector::kSame);
+        AssertEqual(v.compareTo(v), kSame);
 
-        versionVector oldv(slice("2@bob"));
+        VersionVector oldv(slice("2@bob"));
 
         Assert(!(v == oldv));
         Assert(v > oldv);
         Assert(oldv < v);
-        AssertEqual(v.compareTo(oldv), versionVector::kNewer);
-        AssertEqual(oldv.compareTo(v), versionVector::kOlder);
+        AssertEqual(v.compareTo(oldv), kNewer);
+        AssertEqual(oldv.compareTo(v), kOlder);
 
-        versionVector otherV(slice("3@bob"));
-        AssertEqual(v.compareTo(otherV), versionVector::kConflicting);
+        VersionVector otherV(slice("3@bob"));
+        AssertEqual(v.compareTo(otherV), kConflicting);
+
+        // Compare with single version:
+        AssertEqual(v.compareTo(version(slice("1@bob"))), kNewer);
+        AssertEqual(v.compareTo(version(slice("2@bob"))), kSame);
+        AssertEqual(v.compareTo(version(slice("3@bob"))), kOlder);
+        AssertEqual(v.compareTo(version(slice("1@obo"))), kOlder);
+        Assert(v >= version(slice("1@bob")));
+        Assert(v >= version(slice("2@bob")));
+        Assert(!(v >= version(slice("3@bob"))));
     }
 
     void testIncrement() {
-        versionVector v(slice("123@jens,3141592654@bob"));
+        VersionVector v(slice("123@jens,3141592654@bob"));
         v.incrementGen(slice("bob"));
 
         AssertEqual(v[slice("jens")], 123ull);
@@ -139,8 +148,8 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.current(), version(3141592655, slice("bob")));
         AssertEqual(v.count(), 2ul);
 
-        alloc_slice str = v.asString();
-        AssertEqual((slice)str, slice("3141592655@bob,123@jens"));
+        auto str = v.asString();
+        AssertEqual(str, std::string("3141592655@bob,123@jens"));
 
         v.incrementGen(slice("may"));
 
@@ -151,23 +160,33 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.count(), 3ul);
 
         str = v.asString();
-        AssertEqual((slice)str, slice("1@may,3141592655@bob,123@jens"));
+        AssertEqual(str, std::string("1@may,3141592655@bob,123@jens"));
     }
 
     void testIncrementEmpty() {
-        versionVector v;
+        VersionVector v;
         v.incrementGen(slice("may"));
         AssertEqual(v[slice("may")],  1ull);
         AssertEqual(v.current(), version(1, slice("may")));
         AssertEqual(v.count(), 1ul);
-        AssertEqual((slice)v.asString(), slice("1@may"));
+        AssertEqual(v.asString(), std::string("1@may"));
     }
 
     void testMerge(const char *str1, const char *str2, const char *expectedStr) {
-        versionVector v1((slice(str1))), v2((slice(str2)));
-        versionVector result = v1.mergedWith(v2);
-        alloc_slice resultStr = result.asString();
-        AssertEqual((slice)resultStr, (slice)expectedStr);
+        VersionVector v1((slice(str1))), v2((slice(str2)));
+        VersionVector result = v1.mergedWith(v2);
+        auto resultStr = result.asString();
+        AssertEqual(resultStr, (std::string)expectedStr);
+    }
+
+    void testImportExport() {
+        VersionVector v(slice("2@bob,1@*"));
+        auto exported = v.exportAsString(slice("jens"));
+        AssertEqual(exported, std::string("2@bob,1@jens"));
+
+        VersionVector imported(exported);
+        imported.compactMyPeerID(slice("jens"));
+        AssertEqual(imported.asString(), std::string("2@bob,1@*"));
     }
 
     void testMerge() {
