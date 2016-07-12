@@ -7,10 +7,8 @@
 //
 
 #include "Revision.hh"
-using namespace cbforest;
-
-// This has to come last for obscure C++ reasons
 #include "CBForestTest.hh"
+using namespace cbforest;
 
 
 class RevisionTest : public CppUnit::TestFixture {

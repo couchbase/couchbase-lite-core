@@ -20,7 +20,7 @@ namespace cbforest {
 
         CASRevisionStore(Database *db);
 
-        Revision* getLatestCASServerRevision(slice docID);
+        Revision::Ref getLatestCASServerRevision(slice docID);
 
         /** Insert a new revision from the CAS server. */
         versionOrder insertCAS(slice docID,

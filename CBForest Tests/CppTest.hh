@@ -16,6 +16,6 @@
 // Less-obnoxious names for assertions:
 #define Assert CPPUNIT_ASSERT
 #define AssertEqual(ACTUAL, EXPECTED) CPPUNIT_ASSERT_EQUAL(EXPECTED, ACTUAL)
-
+#define AssertNull(ACTUAL) CPPUNIT_ASSERT_EQUAL((ACTUAL), (__typeof(ACTUAL))nullptr)
 
 #endif /* CppTest_hh */

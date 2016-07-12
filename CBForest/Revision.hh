@@ -18,6 +18,8 @@ namespace cbforest {
     class Revision {
     public:
 
+        typedef std::unique_ptr<Revision> Ref;
+
         struct BodyParams {
             slice body;
             slice docType;
@@ -42,6 +44,8 @@ namespace cbforest {
                  BodyParams,
                  bool current);
 
+        Revision(Revision&&);
+
         slice docID() const;
 
         const VersionVector& version() const    {return _vers;}
@@ -58,6 +62,7 @@ namespace cbforest {
         cbforest::sequence sequence() const {return _doc.sequence();}
 
         slice docType() const               {return _docType;}
+        slice body() const                  {return _doc.body();}
 
         const Document& document() const    {return _doc;}
         Document& document()                {return _doc;}

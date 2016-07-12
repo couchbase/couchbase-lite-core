@@ -32,41 +32,41 @@ namespace cbforest {
 
 
     // Get the current revision of a document
-    Revision* RevisionStore::get(slice docID, KeyStore::contentOptions opt) const {
+    Revision::Ref RevisionStore::get(slice docID, KeyStore::contentOptions opt) const {
         Document doc(docID);
         if (!_store.read(doc, opt))
             return nullptr;
-        return new Revision(std::move(doc));
+        return Revision::Ref{ new Revision(std::move(doc)) };
     }
 
 
-    Revision* RevisionStore::get(slice docID, slice revID, KeyStore::contentOptions opt) const {
+    Revision::Ref RevisionStore::get(slice docID, slice revID, KeyStore::contentOptions opt) const {
         // No revID means current revision:
         if (revID.size == 0)
             return get(docID, opt);
 
         // Look in non-current revision store:
-        std::unique_ptr<Revision> rev { getNonCurrent(docID, revID, opt) };
+        auto rev = getNonCurrent(docID, revID, opt);
         if (rev)
-            return rev.release();
+            return rev;
 
         // Not found; see if it's the current revision:
-        rev.reset( get(docID, opt) );
+        rev = get(docID, opt);
         if (rev && rev->revID() == revID)
-            return rev.release();
+            return rev;
         return nullptr;
     }
 
 
     // Get a revision from the _nonCurrentStore only
-    Revision* RevisionStore::getNonCurrent(slice docID, slice revID,
+    Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID,
                                            KeyStore::contentOptions opt) const
     {
         CBFAssert(revID.size > 0);
         Document doc(keyForNonCurrentRevision(docID, version{revID}));
         if (!_store.read(doc, opt))
             return nullptr;
-        return new Revision(std::move(doc));
+        return Revision::Ref{ new Revision(std::move(doc)) };
     }
 
 
@@ -79,51 +79,54 @@ namespace cbforest {
     }
 
 
-    bool RevisionStore::has(slice docID, slice revID) {
+    versionOrder RevisionStore::checkRevision(slice docID, slice revID) {
+        CBFAssert(revID.size);
         version v(revID);
-        std::unique_ptr<Revision> rev { get(docID) };
+        auto rev = get(docID);
         if (rev) {
-            if (rev->version() >= v)
-                return true;    // Current revision is equal or newer
+            auto order = rev->version().compareTo(v);
+            if (order != kOlder)
+                return order;    // Current revision is equal or newer
             if (rev->isConflicted()) {
                 auto e = enumerateRevisions(docID);
                 while (e.next()) {
                     Revision conflict(e.moveDoc());
-                    if (conflict.version() >= v)
-                        return true;
+                    order = conflict.version().compareTo(v);
+                    if (order != kOlder)
+                        return order;
                 }
             }
         }
-        return false;
+        return kOlder;
     }
 
 
 #pragma mark - PUT:
 
 
-    bool RevisionStore::create(slice docID,
-                               const VersionVector &parentVersion,
-                               Revision::BodyParams body,
-                               Transaction &t)
+    Revision::Ref RevisionStore::create(slice docID,
+                                    const VersionVector &parentVersion,
+                                    Revision::BodyParams body,
+                                    Transaction &t)
     {
         // Check for conflict, and compute new version-vector:
-        std::unique_ptr<Revision> current { get(docID, KeyStore::kMetaOnly) };
+        auto current = get(docID, KeyStore::kMetaOnly);
         VersionVector newVersion;
         if (current)
             newVersion = current->version();
         if (parentVersion != newVersion)
-            return false;
+            return nullptr;
         newVersion.incrementGen(kMePeerID);
 
-        Revision newRev(docID, newVersion, body, true);
-        replaceCurrent(newRev, current.get(), t);
-        return true;
+        auto newRev = Revision::Ref{ new Revision(docID, newVersion, body, true) };
+        replaceCurrent(*newRev, current.get(), t);
+        return newRev;
     }
 
 
 
     versionOrder RevisionStore::insert(Revision &newRev, Transaction &t) {
-        std::unique_ptr<Revision> current { get(newRev.docID(), KeyStore::kMetaOnly) };
+        auto current = get(newRev.docID(), KeyStore::kMetaOnly);
         auto cmp = current ? newRev.version().compareTo(current->version()) : kNewer;
         switch (cmp) {
             case kSame:

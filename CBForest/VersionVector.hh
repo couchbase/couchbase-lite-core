@@ -99,7 +99,7 @@ namespace cbforest {
 
         size_t count() const                                {return _vers.size();}
         const version& operator[] (size_t i) const          {return _vers[i];}
-        const version& current() const                      {return _vers[0];}
+        const version& current() const                      {return _vers.at(0);}
         const std::vector<version> versions() const         {return _vers;}
 
         generation genOfAuthor(peerID) const;
@@ -144,8 +144,8 @@ namespace cbforest {
         /** Compares this vector to another. */
         versionOrder compareTo(const VersionVector&) const;
 
-        bool operator == (const VersionVector& v) const     {return current() == v.current();}
-        bool operator != (const VersionVector& v) const     {return !(current() == v.current());}
+        bool operator == (const VersionVector& v) const     {return compareTo(v) == kSame;}
+        bool operator != (const VersionVector& v) const     {return !(*this == v);}
         bool operator < (const VersionVector& v) const      {return compareTo(v) == kOlder;}
         bool operator > (const VersionVector& v) const      {return compareTo(v) == kNewer;}
 

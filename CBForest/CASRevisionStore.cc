@@ -46,15 +46,15 @@ namespace cbforest {
     }
 
 
-    Revision* CASRevisionStore::getLatestCASServerRevision(slice docID) {
-        std::unique_ptr<Revision> cur;
+    Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID) {
+        Revision::Ref cur;
         auto e = enumerateRevisions(docID, kCASServerPeerID);
         while (e.next()) {
             Revision rev(e.moveDoc());
             if (!cur || rev.version().CAS() > cur->version().CAS())
                 cur.reset(new Revision(std::move(rev)));
         }
-        return cur.release();
+        return cur;
         //OPT: Wouldn't have to compare revs if the gen numbers were ordered in the keys.
     }
 
@@ -64,7 +64,7 @@ namespace cbforest {
                                    Transaction &t)
     {
         CBFAssert(cas > 0);
-        std::unique_ptr<Revision> current { get(docID, KeyStore::kMetaOnly) };
+        auto current = get(docID, KeyStore::kMetaOnly);
         generation currentCAS = current ? current->version().CAS() : 0;
         if (!current || current->version().isFromCASServer()) {
             // Current version is from CAS server, or this doc doesn't exist yet:
@@ -79,7 +79,7 @@ namespace cbforest {
         } else {
             // Current version is not from CAS server, so this creates a conflict.
             // Find the latest saved CAS version to replace:
-            std::unique_ptr<Revision> latest{ getLatestCASServerRevision(docID) };
+            auto latest = getLatestCASServerRevision(docID);
             if (latest) {
                 generation latestCAS = latest->version().CAS();
                 versionOrder o = version::compareGen(cas, latestCAS);

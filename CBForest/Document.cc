@@ -28,11 +28,7 @@ namespace cbforest {
     Document::Document(Document&& srcDoc)
     :_doc(srcDoc._doc)
     {
-        // Copy key and meta so srcDoc remains minimally useful, but move body
-        _doc.key = (void*)key().copy().buf;
-        _doc.meta = (void*)meta().copy().buf;
-        srcDoc._doc.body = NULL; // to prevent double-free
-        srcDoc._doc.bodylen = 0;
+        ::memset(&srcDoc._doc, 0, sizeof(srcDoc._doc));
     }
 
     Document::Document(slice key) {

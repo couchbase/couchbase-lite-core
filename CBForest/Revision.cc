@@ -18,7 +18,8 @@ namespace cbforest {
     Revision::Revision(Document&& doc)
     :_doc(std::move(doc))
     {
-        readMeta();
+        if (_doc.meta().buf || _doc.exists())
+            readMeta();
     }
 
 
@@ -45,6 +46,15 @@ namespace cbforest {
         setKey(docID, current);
         _doc.setBody(p.body);
     }
+
+
+    Revision::Revision(Revision &&old)
+    :_doc(std::move(old._doc)),
+     _flags(old._flags),
+     _vers(std::move(old._vers)),
+     _cas(std::move(old._cas)),
+     _docType(std::move(old._docType))
+    { }
 
 
     void Revision::readMeta() {

@@ -26,16 +26,16 @@ namespace cbforest {
 
         //////// GETTING REVISIONS:
 
-        Revision* get(slice docID,
+        Revision::Ref get(slice docID,
                       KeyStore::contentOptions = KeyStore::kDefaultContent) const;
-        Revision* get(slice docID, slice revID,
+        Revision::Ref get(slice docID, slice revID,
                       KeyStore::contentOptions = KeyStore::kDefaultContent) const;
 
         /** Make sure a Revision has a body (if it was originally loaded as meta-only) */
         void readBody(Revision&);
 
-        /** Does this revision exist in the database? */
-        bool has(slice docID, slice revID);
+        /** Does the database contain this revision (kSame) or a newer one (kNewer)? */
+        versionOrder checkRevision(slice docID, slice revID);
 
         //////// ADDING REVISIONS:
 
@@ -44,11 +44,11 @@ namespace cbforest {
             @param parentVersion  The version vector of the revision being modified
             @param body  The body and related flags
             @param t  Transaction to write the revision to
-            @return  True on success, false if there's a conflict */
-        bool create(slice docID,
-                    const VersionVector &parentVersion,
-                    Revision::BodyParams body,
-                    Transaction &t);
+            @return  New Revision, or null if there's a conflict */
+        Revision::Ref create(slice docID,
+                         const VersionVector &parentVersion,
+                         Revision::BodyParams body,
+                         Transaction &t);
 
         /** Inserts a revision, probably from a peer. */
         versionOrder insert(Revision&, Transaction&);
@@ -74,7 +74,7 @@ namespace cbforest {
         virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
 
         void replaceCurrent(Revision &newRev, Revision *current, Transaction &t);
-        Revision* getNonCurrent(slice docID, slice revID, KeyStore::contentOptions) const;
+        Revision::Ref getNonCurrent(slice docID, slice revID, KeyStore::contentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
 
@@ -82,9 +82,6 @@ namespace cbforest {
         Database *_db;
         KeyStore &_store;
         KeyStore &_nonCurrentStore;
-
-        RevisionStore(const RevisionStore&) = delete;
-        RevisionStore& operator=(const RevisionStore&) = delete;
     };
 
 }
