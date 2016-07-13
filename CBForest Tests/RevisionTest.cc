@@ -49,7 +49,8 @@ class RevisionTest : public CppUnit::TestFixture {
         AssertEqual(rev.docID(), slice("DOC"));
         AssertEqual(rev.version(), kTestVers);
         Assert(!rev.isFromCASServer());
-        AssertEqual(rev.CAS(), 3ull);
+        AssertEqual(rev.CAS(), 0ull);
+        AssertEqual(rev.version().CASBase(), 3ull);
         AssertEqual(rev.flags(), Revision::kHasAttachments);
         Assert(rev.hasAttachments());
         Assert(!rev.isDeleted());

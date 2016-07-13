@@ -51,6 +51,7 @@
 		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
+		27297A1A1D36C0EA0006C2F8 /* CASRevisionStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */; };
 		2733A7531BD6C7A400F0FF07 /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		27393A881C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
@@ -525,6 +526,7 @@
 		2722304E1A0858A100BFF25C /* GeoIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeoIndex.hh; sourceTree = "<group>"; };
 		2726A0651A8BF9CC0042F944 /* gcc_atomics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gcc_atomics.h; sourceTree = "<group>"; };
 		2726A0661A8BF9CC0042F944 /* libatomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libatomic.h; sourceTree = "<group>"; };
+		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };
 		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
@@ -1290,6 +1292,7 @@
 				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
+				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
 			);
 			path = "CBForest Tests";
 			sourceTree = "<group>";
@@ -1977,6 +1980,7 @@
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
 				2708FE421CF4CC880022F721 /* VersionVectorTest.cc in Sources */,
+				27297A1A1D36C0EA0006C2F8 /* CASRevisionStoreTest.cc in Sources */,
 				279794B41D34583A001D0F3A /* RevisionTest.cc in Sources */,
 				279794BA1D355A31001D0F3A /* RevisionStoreTest.cc in Sources */,
 			);

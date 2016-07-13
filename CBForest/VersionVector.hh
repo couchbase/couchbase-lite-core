@@ -115,8 +115,8 @@ namespace cbforest {
             Tests whether the first component's author is kCASServerPeerID ("$"). */
         bool isFromCASServer() const;
 
-        /** Returns the generation number of kCASServerPeerID ("$"). */
-        generation CAS() const                              {return genOfAuthor(kCASServerPeerID);}
+        /** Returns most recent server CAS value: generation number of kCASServerPeerID ("$"). */
+        generation CASBase() const                          {return genOfAuthor(kCASServerPeerID);}
 
         /** Sets the server CAS value, assigning it to the generation of kCASServerPeerID,
             and moves that component to the start.

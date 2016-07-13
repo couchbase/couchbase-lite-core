@@ -23,22 +23,28 @@ namespace cbforest {
         /** Returns the latest known revision from the CAS server. */
         Revision::Ref getLatestCASServerRevision(slice docID);
 
+        /** Returns the base revision from the CAS server, the one the current rev is based on. */
+        Revision::Ref getBaseCASServerRevision(Revision&);
+
         /** Inserts a new revision from the CAS server. */
-        versionOrder insertCAS(slice docID,
+        Revision::Ref insertCAS(slice docID,
                                generation cas,
                                Revision::BodyParams,
                                Transaction&);
+
+        /** Assigns a revision a new CAS value after it's pushed to the CAS server. */
+        void assignCAS(Revision&, generation cas, Transaction &t);
 
     private:
         virtual void backupCASVersion(Revision &curRev, const Revision &incomingRev, Transaction &t);
         virtual bool shouldDeleteCASBackup(const Revision &newRev, const Revision *current);
         virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
         
-        void writeCASRevision(const Revision *parent,
-                              bool current,
-                              slice docID, generation cas,
-                              Revision::BodyParams body,
-                              Transaction &t);
+        Revision::Ref writeCASRevision(const Revision *parent,
+                                       bool current,
+                                       slice docID, generation cas,
+                                       Revision::BodyParams body,
+                                       Transaction &t);
     };
 
 }

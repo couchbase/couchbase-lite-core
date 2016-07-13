@@ -23,4 +23,20 @@ std::ostream& operator<< (std::ostream& o, slice s);
 
 #include "CppTest.hh"
 
+#include "Database.hh"
+
+using namespace cbforest;
+
+
+class DatabaseTestFixture : public CppUnit::TestFixture {
+public:
+
+    Database *db {NULL};
+
+    virtual void setUp();
+
+    virtual void tearDown();
+
+};
+
 #endif /* CBForestTest_h */

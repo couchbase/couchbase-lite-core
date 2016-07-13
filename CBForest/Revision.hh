@@ -50,8 +50,10 @@ namespace cbforest {
 
         const VersionVector& version() const    {return _vers;}
         alloc_slice revID() const               {return _vers.current().asString();}
-        bool isFromCASServer() const            {return _vers.isFromCASServer();}
+
+        bool isFromCASServer() const            {return _cas > 0;}
         generation CAS() const                  {return _cas;}
+        bool assignCAS(generation);
 
         Flags flags() const                 {return _flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}
@@ -72,6 +74,7 @@ namespace cbforest {
 
     private:
         void readMeta();
+        void writeMeta(const VersionVector &vers);
         void setKey(slice docid, bool current);
 
         Document _doc;

@@ -7,6 +7,7 @@
 //
 
 #include "CBForestTest.hh"
+#include "unistd.h"
 
 
 std::string sliceToHex(slice result) {
@@ -56,4 +57,29 @@ std::ostream& operator<< (std::ostream& o, slice s) {
             return o << sliceToHex(s) << "]";
     }
     return o << "\"" << std::string((char*)s.buf, s.size) << "\"]";
+}
+
+
+void DatabaseTestFixture::setUp() {
+    TestFixture::setUp();
+#ifdef _MSC_VER
+    const char *dbPath = "C:\\tmp\\forest_temp.fdb";
+    ::unlink("C:\\tmp\\forest_temp.fdb");
+    ::unlink("C:\\tmp\\forest_temp.fdb.0");
+    ::unlink("C:\\tmp\\forest_temp.fdb.1");
+    ::unlink("C:\\tmp\\forest_temp.fdb.meta");
+#else
+    const char *dbPath = "/tmp/forest_temp.fdb";
+    ::unlink("/tmp/forest_temp.fdb");
+    ::unlink("/tmp/forest_temp.fdb.0");
+    ::unlink("/tmp/forest_temp.fdb.1");
+    ::unlink("/tmp/forest_temp.fdb.meta");
+#endif
+    db = new Database(dbPath, Database::defaultConfig());
+}
+
+
+void DatabaseTestFixture::tearDown() {
+    delete db;
+    TestFixture::tearDown();
 }

@@ -64,7 +64,7 @@ namespace cbforest {
     {
         CBFAssert(revID.size > 0);
         Document doc(keyForNonCurrentRevision(docID, version{revID}));
-        if (!_store.read(doc, opt))
+        if (!_nonCurrentStore.read(doc, opt))
             return nullptr;
         return Revision::Ref{ new Revision(std::move(doc)) };
     }

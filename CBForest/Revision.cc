@@ -27,17 +27,17 @@ namespace cbforest {
                        const VersionVector &vers,
                        BodyParams p,
                        bool current)
-    :_cas(vers.genOfAuthor(kCASServerPeerID))
     {
         // Create metadata:
-        fleece::Encoder enc;
-        enc.beginArray();
-        enc << ((p.deleted ? kDeleted : 0) | (p.hasAttachments ? kHasAttachments : 0));
-        enc << vers;
-        enc << _cas;
-        enc << p.docType;
-        enc.endArray();
-        _doc.setMeta(enc.extractOutput());
+        if (p.deleted)
+            _flags = kDeleted;
+        if (p.hasAttachments)
+            _flags = (Flags)(_flags | kHasAttachments);
+        if (vers.count() > 0)
+            _cas = vers.current().CAS();
+        _docType = p.docType;
+
+        writeMeta(vers);
 
         // Read it back in, to set up my pointers into it:
         readMeta();
@@ -57,6 +57,18 @@ namespace cbforest {
     { }
 
 
+    void Revision::writeMeta(const VersionVector &vers) {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc << _flags;
+        enc << vers;
+        enc << _cas;
+        enc << _docType;
+        enc.endArray();
+        _doc.setMeta(enc.extractOutput());
+    }
+
+
     void Revision::readMeta() {
         slice metaBytes = _doc.meta();
         if (metaBytes.size < 2)
@@ -71,6 +83,16 @@ namespace cbforest {
         if (_docType.size == 0)
             _docType.buf = nullptr;
     }
+
+
+    bool Revision::assignCAS(generation cas) {
+        CBFAssert(cas > 0);
+        CBFAssert(_cas == 0);
+        _cas = cas;
+        writeMeta(_vers);
+        return true;
+    }
+
 
 
 #pragma mark DOC ID / KEYS:
