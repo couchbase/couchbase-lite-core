@@ -57,6 +57,16 @@ namespace cbforest {
         return kSame;
     }
 
+    versionOrder version::compareTo(const VersionVector &vv) const {
+        versionOrder o = vv.compareTo(*this);
+        if (o == kOlder)
+            return kNewer;
+        else if (o == kNewer)
+            return kOlder;
+        else
+            return o;
+    }
+
 
 #pragma mark - LIFECYCLE:
 
@@ -156,10 +166,12 @@ namespace cbforest {
 
 
     versionOrder VersionVector::compareTo(const version& v) const {
-        generation mine = genOfAuthor(v.author);
-        if (mine < v.gen)
+        auto mine = const_cast<VersionVector*>(this)->findPeerIter(v.author);
+        if (mine == _vers.end())
             return kOlder;
-        else if (mine == v.gen)
+        else if (mine->gen < v.gen)
+            return kOlder;
+        else if (mine->gen == v.gen && mine == _vers.begin())
             return kSame;
         else
             return kNewer;

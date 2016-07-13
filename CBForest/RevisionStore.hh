@@ -34,7 +34,8 @@ namespace cbforest {
         /** Make sure a Revision has a body (if it was originally loaded as meta-only) */
         void readBody(Revision&);
 
-        /** Does the database contain this revision (kSame) or a newer one (kNewer)? */
+        /** How does this revision compare to what's in the database?
+            @return  kNewer if it should be added, kSame if it's present, kOlder if it's obsolete. */
         versionOrder checkRevision(slice docID, slice revID);
 
         //////// ADDING REVISIONS:
@@ -46,9 +47,9 @@ namespace cbforest {
             @param t  Transaction to write the revision to
             @return  New Revision, or null if there's a conflict */
         Revision::Ref create(slice docID,
-                         const VersionVector &parentVersion,
-                         Revision::BodyParams body,
-                         Transaction &t);
+                             const VersionVector &parentVersion,
+                             Revision::BodyParams body,
+                             Transaction &t);
 
         /** Inserts a revision, probably from a peer. */
         versionOrder insert(Revision&, Transaction&);
@@ -79,7 +80,7 @@ namespace cbforest {
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
 
     protected:
-        Database *_db;
+        Database * const _db;
         KeyStore &_store;
         KeyStore &_nonCurrentStore;
     };

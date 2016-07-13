@@ -13,39 +13,6 @@
 namespace cbforest {
 
 
-    CASRevisionStore::CASRevisionStore(Database *db)
-    :RevisionStore(db)
-    { }
-
-
-    // If a revision from the CAS server is being replaced by a newer revision that isn't,
-    // back it up to the nonCurrent store so we can merge with it if necessary.
-    void CASRevisionStore::backupCASVersion(Revision &curRev,
-                                            const Revision &incomingRev,
-                                            Transaction &t)
-    {
-        if (curRev.isFromCASServer() && !incomingRev.isFromCASServer()) {
-            readBody(curRev);
-            curRev.setCurrent(false);             // append the revID to the key
-            t(_nonCurrentStore).write(curRev.document());
-        }
-    }
-
-
-    // Is the current CAS-server backup revision (if any) now obsolete?
-    // This happens when a revision from the CAS server replaces one that isn't.
-    bool CASRevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
-        return current && newRev.isFromCASServer() && !current->isFromCASServer();
-    }
-
-
-    // Is `rev` a saved CAS-server backup of the current revision `child`?
-    bool CASRevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
-        generation cas = rev.version().current().CAS();
-        return cas > 0 && cas == child.version().CAS();
-    }
-
-
     Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID) {
         Revision::Ref cur;
         auto e = enumerateRevisions(docID, kCASServerPeerID);
@@ -98,12 +65,15 @@ namespace cbforest {
     }
 
 
+#pragma mark - OVERRIDDEN HOOKS:
+
+
     // Writes a revision from the CAS server to the current or non-current store:
     void CASRevisionStore::writeCASRevision(const Revision *parent,
-                                         bool current,
-                                         slice docID, generation cas,
-                                         Revision::BodyParams body,
-                                         Transaction &t)
+                                            bool current,
+                                            slice docID, generation cas,
+                                            Revision::BodyParams body,
+                                            Transaction &t)
     {
         VersionVector vers;
         if (parent)
@@ -113,6 +83,34 @@ namespace cbforest {
         KeyStore &store = current ? *_db : _nonCurrentStore;
         t(store).write(newRev.document());
     }
-    
+
+
+    // If a revision from the CAS server is being replaced by a newer revision that isn't,
+    // back it up to the nonCurrent store so we can merge with it if necessary.
+    void CASRevisionStore::backupCASVersion(Revision &curRev,
+                                            const Revision &incomingRev,
+                                            Transaction &t)
+    {
+        if (curRev.isFromCASServer() && !incomingRev.isFromCASServer()) {
+            readBody(curRev);
+            curRev.setCurrent(false);             // append the revID to the key
+            t(_nonCurrentStore).write(curRev.document());
+        }
+    }
+
+
+    // Is the current CAS-server backup revision (if any) now obsolete?
+    // This happens when a revision from the CAS server replaces one that isn't.
+    bool CASRevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
+        return current && newRev.isFromCASServer() && !current->isFromCASServer();
+    }
+
+
+    // Is `rev` a saved CAS-server backup of the current revision `child`?
+    bool CASRevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
+        generation cas = rev.version().current().CAS();
+        return cas > 0 && cas == child.version().CAS();
+    }
+
     
 }

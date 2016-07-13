@@ -31,6 +31,10 @@ namespace cbforest {
         Document(Document&&);
         ~Document();
 
+        /** Returns a Document whose key and meta are copies, but which adopts this instance's body.
+            Side effect is that this instance's body is set to null. */
+        Document moveBody();
+
         slice key() const   {return slice(_doc.key, _doc.keylen);}
         slice meta() const  {return slice(_doc.meta, _doc.metalen);}
         slice body() const  {return slice(_doc.body, _doc.bodylen);}
@@ -67,7 +71,7 @@ namespace cbforest {
         Document(const Document&) = delete;
         Document& operator= (const Document&) = delete;
 
-        fdb_doc _doc = {};
+        fdb_doc _doc;
     };
 
 }

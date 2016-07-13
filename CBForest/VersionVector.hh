@@ -22,6 +22,8 @@ namespace fleece {
 
 namespace cbforest {
 
+    class VersionVector;
+
     typedef slice peerID;
     typedef uint64_t generation;
 
@@ -63,6 +65,10 @@ namespace cbforest {
 
         /** Convenience to compare two generations and return a versionOrder. */
         static versionOrder compareGen(generation a, generation b);
+
+        /** Compares with a version vector, i.e. whether a vector with this as its current version
+            is newer/older/same as the target vector. (Will never return kConflicting.) */
+        versionOrder compareTo(const VersionVector&) const;
 
     private:
         void validate() const;
@@ -149,8 +155,8 @@ namespace cbforest {
         bool operator < (const VersionVector& v) const      {return compareTo(v) == kOlder;}
         bool operator > (const VersionVector& v) const      {return compareTo(v) == kNewer;}
 
-        /** Compares with a single version, i.e. whether this vector contains that version.
-            Will never return kConflicting. */
+        /** Compares with a single version, i.e. whether this vector is newer/older/same as a
+            vector with the given current version. (Will never return kConflicting.) */
         versionOrder compareTo(const version&) const;
 
         bool operator == (const version& v) const           {return compareTo(v) == kSame;}

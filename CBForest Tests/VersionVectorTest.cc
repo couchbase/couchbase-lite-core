@@ -130,8 +130,10 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.compareTo(otherV), kConflicting);
 
         // Compare with single version:
+        AssertEqual(v.compareTo(version(slice("1@jens"))), kSame);
+        AssertEqual(v.compareTo(version(slice("2@jens"))), kOlder);
         AssertEqual(v.compareTo(version(slice("1@bob"))), kNewer);
-        AssertEqual(v.compareTo(version(slice("2@bob"))), kSame);
+        AssertEqual(v.compareTo(version(slice("2@bob"))), kNewer);
         AssertEqual(v.compareTo(version(slice("3@bob"))), kOlder);
         AssertEqual(v.compareTo(version(slice("1@obo"))), kOlder);
         Assert(v >= version(slice("1@bob")));

@@ -31,7 +31,9 @@ namespace cbforest {
         ::memset(&srcDoc._doc, 0, sizeof(srcDoc._doc));
     }
 
-    Document::Document(slice key) {
+    Document::Document(slice key)
+    :Document()
+    {
         setKey(key);
     }
 
@@ -39,6 +41,16 @@ namespace cbforest {
         key().free();
         meta().free();
         body().free();
+    }
+
+    Document Document::moveBody() {
+        Document d;
+        d._doc = _doc;
+        d._doc.key = (void*)key().copy().buf;       // Copy key and meta...
+        d._doc.meta = (void*)meta().copy().buf;
+        _doc.body = nullptr;                        // ...but move body, clearing my pointer
+        _doc.bodylen = 0;
+        return d;
     }
 
     bool Document::valid() const {

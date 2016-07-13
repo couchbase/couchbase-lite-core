@@ -106,9 +106,9 @@ public:
 
         // First revision shouldn't still exist:
         Assert(store->get(kDoc1ID, kRev1ID) == nullptr);
-        AssertEqual(store->checkRevision(kDoc1ID, kRev1ID), kNewer);
+        AssertEqual(store->checkRevision(kDoc1ID, kRev1ID), kOlder);
         AssertEqual(store->checkRevision(kDoc1ID, slice("2@*")), kSame);
-        AssertEqual(store->checkRevision(kDoc1ID, slice("1@bob")), kOlder);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("1@bob")), kNewer);
     }
 
 
@@ -134,6 +134,13 @@ public:
         auto gotRev = store->get(kDoc1ID, slice("2@ada"));
         Assert(gotRev);
         AssertEqual(gotRev->version().asString(), std::string("2@ada,5@bob"));
+
+        AssertEqual(store->checkRevision(kDoc1ID, slice("5@bob")), kOlder);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("1@ada")), kOlder);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("2@ada")), kSame);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("3@ada")), kNewer);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("6@bob")), kNewer);
+        AssertEqual(store->checkRevision(kDoc1ID, slice("1@tim")), kNewer);
 }
 
 

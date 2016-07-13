@@ -81,17 +81,17 @@ namespace cbforest {
 
     versionOrder RevisionStore::checkRevision(slice docID, slice revID) {
         CBFAssert(revID.size);
-        version v(revID);
+        version checkVers(revID);
         auto rev = get(docID);
         if (rev) {
-            auto order = rev->version().compareTo(v);
+            auto order = checkVers.compareTo(rev->version());
             if (order != kOlder)
                 return order;    // Current revision is equal or newer
             if (rev->isConflicted()) {
                 auto e = enumerateRevisions(docID);
                 while (e.next()) {
                     Revision conflict(e.moveDoc());
-                    order = conflict.version().compareTo(v);
+                    order = checkVers.compareTo(conflict.version());
                     if (order != kOlder)
                         return order;
                 }
