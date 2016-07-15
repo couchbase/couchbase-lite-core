@@ -21,7 +21,7 @@ namespace cbforest {
         CASRevisionStore(Database *db);
 
         /** Returns the latest known revision from the CAS server. */
-        Revision::Ref getLatestCASServerRevision(slice docID);
+        Revision::Ref getLatestCASServerRevision(slice docID, generation &outCAS);
 
         /** Returns the base revision from the CAS server, the one the current rev is based on. */
         Revision::Ref getBaseCASServerRevision(slice docID, generation &outCAS);
@@ -35,6 +35,11 @@ namespace cbforest {
         /** Assigns a revision a new CAS value after it's pushed to the CAS server.
             Also deletes the saved base & latest server revisions, if any. */
         void assignCAS(slice docID, slice revID, generation cas, Transaction &t);
+
+        // override
+        Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
+                                      Revision::BodyParams body,
+                                      Transaction &t);
 
 #if !DEBUG
     private:
@@ -56,7 +61,7 @@ namespace cbforest {
     private:
         virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev, Transaction &t);
         virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
-        
+
         Revision::Ref writeCASRevision(const Revision *parent,
                                        bool current,
                                        slice docID,

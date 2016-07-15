@@ -54,10 +54,12 @@ namespace cbforest {
     }
 
 
-    Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID) {
+    Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID,
+                                                               generation &outCAS) {
         auto serverState = getServerState(docID);
         if (!serverState.latest.revID.buf)
             return nullptr;
+        outCAS = serverState.latest.CAS;
         return get(docID, serverState.latest.revID);
     }
 
@@ -67,7 +69,7 @@ namespace cbforest {
         auto serverState = getServerState(docID);
         if (!serverState.base.revID.buf)
             return nullptr;
-        outCAS = serverState.latest.CAS;
+        outCAS = serverState.base.CAS;
         return get(docID, serverState.base.revID);
     }
 
@@ -148,9 +150,26 @@ namespace cbforest {
     }
 
 
-
 #pragma mark - OVERRIDDEN HOOKS:
 
+
+    Revision::Ref CASRevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+                                                    Revision::BodyParams body,
+                                                    Transaction &t)
+    {
+        slice docID = conflicting[0]->docID();
+        auto state = getServerState(docID);
+
+        // Don't delete the latest server rev after resolving the conflict:
+        auto result = RevisionStore::resolveConflict(conflicting, state.latest.revID, body, t);
+
+        if (state.base.revID != state.latest.revID) {
+            // Update state to reflect that base server rev was deleted:
+            state.base = state.latest;
+            setServerState(docID, state, t);
+        }
+        return result;
+    }
 
     void CASRevisionStore::willReplaceCurrentRevision(Revision &curRev,
                                             const Revision &incomingRev,
@@ -175,5 +194,4 @@ namespace cbforest {
         return rev.revID() == state.latest.revID || rev.revID() == state.base.revID;
     }
 
-    
 }

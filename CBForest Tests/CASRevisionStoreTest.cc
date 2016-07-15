@@ -28,7 +28,7 @@ static std::ostream& operator<< (std::ostream &out, const CASRevisionStore::Serv
 #include "CBForestTest.hh"
 
 
-static const slice kDoc1ID("Doc1");
+static const slice kDocID("Doc1");
 static const slice kRev1ID("1@*");
 
 static const Revision::BodyParams kBody1 {
@@ -36,6 +36,9 @@ static const Revision::BodyParams kBody1 {
 };
 static const Revision::BodyParams kBody2 {
     slice("{\"foo\":23,\"_attachments\":{}}"), slice("foodoc"), false, true
+};
+static const Revision::BodyParams kBody3 {
+    slice("{\"foo\":99,\"_attachments\":{}}"), slice("foodoc"), false, true
 };
 
 
@@ -56,86 +59,134 @@ public:
 
 
     void testEmptyStore() {
-        Assert(store->get(kDoc1ID) == nullptr);
-        Assert(store->get(kDoc1ID, kRev1ID) == nullptr);
-        AssertEqual(store->checkRevision(kDoc1ID, kRev1ID), kOlder);
+        Assert(store->get(kDocID) == nullptr);
+        Assert(store->get(kDocID, kRev1ID) == nullptr);
+        AssertEqual(store->checkRevision(kDocID, kRev1ID), kOlder);
     }
 
     
     void testInsertCASRevs() {
         // Start with CAS=17:
         Transaction t(db);
-        auto rev = store->insertFromServer(kDoc1ID, 17, kBody1, t);
+        auto rev = store->insertFromServer(kDocID, 17, kBody1, t);
         Assert(rev != nullptr);
-        AssertEqual(rev->docID(), kDoc1ID);
+        AssertEqual(rev->docID(), kDocID);
         AssertEqual(rev->body(), kBody1.body);
         AssertEqual(rev->version(), VersionVector(slice("1@$")));
 
         // Adding earlier CASs should do nothing:
-        AssertNull(store->insertFromServer(kDoc1ID, 17, kBody1, t).get());
-        AssertNull(store->insertFromServer(kDoc1ID, 10, kBody1, t).get());
+        AssertNull(store->insertFromServer(kDocID, 17, kBody1, t).get());
+        AssertNull(store->insertFromServer(kDocID, 10, kBody1, t).get());
 
         // Update to CAS=18:
-        rev = store->insertFromServer(kDoc1ID, 18, kBody2, t);
+        rev = store->insertFromServer(kDocID, 18, kBody2, t);
         Assert(rev != nullptr);
-        AssertEqual(rev->docID(), kDoc1ID);
+        AssertEqual(rev->docID(), kDocID);
         AssertEqual(rev->body(), kBody2.body);
         AssertEqual(rev->version(), VersionVector(slice("2@$")));
 
         // Previous revision (1@$) shouldn't be around:
-        AssertNull(store->get(kDoc1ID, slice("1@$")).get());
+        AssertNull(store->get(kDocID, slice("1@$")).get());
 
         // Latest version is 18:
-        rev = store->getLatestCASServerRevision(kDoc1ID);
+        generation cas;
+        rev = store->getLatestCASServerRevision(kDocID, cas);
         Assert(rev != nullptr);
         AssertEqual(rev->version(), VersionVector(slice("2@$")));
+        AssertEqual(cas, (generation)18);
     }
 
 
     void testAddLocalRevs() {
         // Start with CAS=18:
         Transaction t(db);
-        auto rev = store->insertFromServer(kDoc1ID, 18, kBody1, t);
+        auto rev = store->insertFromServer(kDocID, 18, kBody1, t);
 
-        AssertEqual(store->getServerState(kDoc1ID),
+        AssertEqual(store->getServerState(kDocID),
                     (CASRevisionStore::ServerState{{slice("1@$"), 18}, {slice("1@$"), 18}}));
 
         // Update it locally:
-        rev = store->create(kDoc1ID, rev->version(), kBody2, t);
+        rev = store->create(kDocID, rev->version(), kBody2, t);
         Assert(rev);
         AssertEqual(rev->version().asString(), std::string("1@*,1@$"));
 
-        AssertEqual(store->getServerState(kDoc1ID),
+        AssertEqual(store->getServerState(kDocID),
                     (CASRevisionStore::ServerState{{slice("1@$"), 18}, {slice("1@$"), 18}}));
 
         // Current revision is the local one:
-        rev = store->get(kDoc1ID);
+        rev = store->get(kDocID);
         Assert(rev);
         AssertEqual(rev->version().asString(), std::string("1@*,1@$"));
 
         // Latest CAS version is 18:
-        auto casrev = store->getLatestCASServerRevision(kDoc1ID);
+        generation cas;
+        auto casrev = store->getLatestCASServerRevision(kDocID, cas);
         Assert(casrev != nullptr);
         AssertEqual(casrev->version(), VersionVector(slice("1@$")));
+        AssertEqual(cas, (generation)18);
 
         // Can get revision 18 by revID:
-        Assert(store->get(kDoc1ID, slice("1@$")) != nullptr);
+        Assert(store->get(kDocID, slice("1@$")) != nullptr);
 
         // Adding same CAS again should do nothing:
-        AssertNull(store->insertFromServer(kDoc1ID, 17, kBody1, t).get());
+        AssertNull(store->insertFromServer(kDocID, 17, kBody1, t).get());
 
         // Alright, now assume we PUT this to the server and it gets accepted as CAS 23.
         pushRev(*rev, t, 18, 23);
 
-        AssertEqual(store->getServerState(kDoc1ID),
+        AssertEqual(store->getServerState(kDocID),
                     (CASRevisionStore::ServerState{{slice("1@*"), 23}, {slice("1@*"), 23}}));
 
-        rev = store->get(kDoc1ID);
+        rev = store->get(kDocID);
         Assert(rev);
         AssertEqual(rev->version().asString(), std::string("1@*,1@$"));    // vvec hasn't changed
 
         // Ancestor revision 18 is gone:
-        AssertNull(store->get(kDoc1ID, slice("1@$")).get());
+        AssertNull(store->get(kDocID, slice("1@$")).get());
+    }
+
+
+    void testConflict() {
+        // Start with CAS=18:
+        Transaction t(db);
+        auto rev = store->insertFromServer(kDocID, 18, kBody1, t);
+        // Update it locally:
+        rev = store->create(kDocID, rev->version(), kBody2, t);
+
+        // Now pull a conflicting server revision:
+        auto serverRev = store->insertFromServer(kDocID, 77, kBody2, t);
+        Assert(serverRev);
+
+        AssertEqual(store->getServerState(kDocID),
+                    (CASRevisionStore::ServerState{{slice("1@$"), 18}, {slice("2@$"), 77}}));
+
+        auto currentRev = store->get(kDocID);
+        AssertEqual(currentRev->revID(), alloc_slice("1@*"));
+
+        generation cas;
+        auto conflictRev = store->getLatestCASServerRevision(kDocID, cas);
+        Assert(conflictRev != nullptr);
+        AssertEqual(conflictRev->revID(), alloc_slice("2@$"));
+        AssertEqual(cas, (generation)77);
+        auto baseRev = store->getBaseCASServerRevision(kDocID, cas);
+        Assert(baseRev != nullptr);
+        AssertEqual(baseRev->revID(), alloc_slice("1@$"));
+        AssertEqual(cas, (generation)18);
+
+        // Resolve it:
+        auto conflicts = std::vector<Revision*>{currentRev.get(), baseRev.get(), conflictRev.get()};
+        auto resolved = store->resolveConflict(conflicts, kBody3, t);
+
+        Assert(resolved != nullptr);
+        AssertEqual(resolved->version().asString(), std::string("1@*,2@$"));
+
+        AssertEqual(store->getServerState(kDocID),
+                    (CASRevisionStore::ServerState{{slice("2@$"), 77}, {slice("2@$"), 77}}));
+
+        AssertNull(store->get(kDocID, slice("1@$")).get()); // old base rev is gone
+
+        // Push the resolved version:
+        pushRev(*resolved, t, 77, 99);
     }
 
 
@@ -152,6 +203,7 @@ public:
     CPPUNIT_TEST( testEmptyStore );
     CPPUNIT_TEST( testInsertCASRevs );
     CPPUNIT_TEST( testAddLocalRevs );
+    CPPUNIT_TEST( testConflict );
     CPPUNIT_TEST_SUITE_END();
 };
 

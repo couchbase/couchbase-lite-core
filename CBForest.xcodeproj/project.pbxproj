@@ -949,6 +949,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		271057C21D3997230018247B /* C++ Tests */ = {
+			isa = PBXGroup;
+			children = (
+				2708FE3D1CF4C8B10022F721 /* CppTest.hh */,
+				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
+				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
+				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
+				279794B31D34583A001D0F3A /* RevisionTest.cc */,
+				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
+				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
+			);
+			name = "C++ Tests";
+			path = "CBForest Tests";
+			sourceTree = SOURCE_ROOT;
+		};
 		27139B1E18F8E9750021A9A3 /* Other Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -1099,7 +1114,7 @@
 				27E4871019217187007D8940 /* CBForest */,
 				275607791BA22E5700F58218 /* Java */,
 				27A6578C1CBC189800A7A1D7 /* Swift */,
-				275072AD18E4A68E00A80C5A /* CBForest Tests */,
+				275072AD18E4A68E00A80C5A /* Objective-C Tests */,
 				274D04091BA75E1C00FF7C35 /* CppTests */,
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				2750725A18E3E6E100A80C5A /* forestdb */,
@@ -1271,7 +1286,7 @@
 			path = src;
 			sourceTree = "<group>";
 		};
-		275072AD18E4A68E00A80C5A /* CBForest Tests */ = {
+		275072AD18E4A68E00A80C5A /* Objective-C Tests */ = {
 			isa = PBXGroup;
 			children = (
 				2797BCB01C10F6B400E5C991 /* C_API_Test.mm */,
@@ -1286,14 +1301,8 @@
 				9399E72C1B7E536700D4BE79 /* Slice_Test.mm */,
 				27E4872019226699007D8940 /* testutil.h */,
 				275072AE18E4A68E00A80C5A /* Supporting Files */,
-				2708FE3D1CF4C8B10022F721 /* CppTest.hh */,
-				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
-				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
-				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
-				279794B31D34583A001D0F3A /* RevisionTest.cc */,
-				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
-				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
 			);
+			name = "Objective-C Tests";
 			path = "CBForest Tests";
 			sourceTree = "<group>";
 		};
@@ -1444,6 +1453,7 @@
 				273E9F7C1C518678003115A6 /* Documents */,
 				273E9F7B1C518613003115A6 /* Indexes */,
 				2750724318E3E52800A80C5A /* Support */,
+				271057C21D3997230018247B /* C++ Tests */,
 			);
 			path = CBForest;
 			sourceTree = "<group>";

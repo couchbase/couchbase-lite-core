@@ -105,9 +105,9 @@ namespace cbforest {
 
 
     Revision::Ref RevisionStore::create(slice docID,
-                                    const VersionVector &parentVersion,
-                                    Revision::BodyParams body,
-                                    Transaction &t)
+                                        const VersionVector &parentVersion,
+                                        Revision::BodyParams body,
+                                        Transaction &t)
     {
         // Check for conflict, and compute new version-vector:
         auto current = get(docID, KeyStore::kMetaOnly);
@@ -145,6 +145,38 @@ namespace cbforest {
                 break;
         }
         return cmp;
+    }
+
+
+    Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+                                                 Revision::BodyParams body,
+                                                 Transaction &t)
+    {
+        return resolveConflict(conflicting, slice::null, body, t);
+        // CASRevisionStore overrides this
+    }
+
+    Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+                                                 slice keepingRevID,
+                                                 Revision::BodyParams body,
+                                                 Transaction &t)
+    {
+        CBFAssert(conflicting.size() >= 2);
+        VersionVector newVersion;
+        Revision* current = NULL;
+        for (auto rev : conflicting) {
+            newVersion = newVersion.mergedWith(rev->version());
+            if (rev->isCurrent())
+                current = rev;
+            else if (rev->revID() != keepingRevID)
+                t(_nonCurrentStore).del(rev->document());
+        }
+        CBFAssert(current != NULL);
+
+        auto newRev = Revision::Ref{ new Revision(conflicting[0]->docID(), newVersion,
+                                                  body, true) };
+        t(_store).write(newRev->document());
+        return newRev;
     }
 
 
@@ -193,7 +225,7 @@ namespace cbforest {
             Revision rev(e.moveDoc());
             if (rev.version().compareTo(child.version()) == kOlder
                     && !shouldKeepAncestor(rev, child)) {
-                t(_store).del(rev.document());
+                t(_nonCurrentStore).del(rev.document());
             }
         }
     }
@@ -256,6 +288,5 @@ namespace cbforest {
     bool RevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
         return false;
     }
-
 
 }
