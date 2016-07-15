@@ -192,6 +192,7 @@ static inline C4DocumentInternal *internal(C4Document *doc) {
 // This helper function is meant to be wrapped in a transaction
 static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
+    CBFDebugAssert(db->mustBeInTransaction(outError));
     try {
         if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
             recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -207,6 +208,8 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 
         alloc_slice tsValue(SizeOfVarInt(timestamp));
         PutUVarInt((void *)tsValue.buf, timestamp);
+
+        WITH_LOCK(db);
 
         Transaction *t = db->transaction();
         KeyStore& expiry = db->getKeyStore("expiry");

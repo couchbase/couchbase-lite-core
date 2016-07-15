@@ -454,6 +454,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
 uint64_t c4db_nextDocExpiration(C4Database *database)
 {
     try {
+        WITH_LOCK(database);
         KeyStore& expiryKvs = database->getKeyStore("expiry");
         DocEnumerator e(expiryKvs);
         if(e.next() && e.doc().body() == slice::null) {
