@@ -32,6 +32,6 @@ CBForest has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lit
 
 Like all Couchbase source code, this is released under the Apache 2 license.
 
-[FDB]: https://github.com/couchbaselabs/forestdb
+[FDB]: https://github.com/couchbase/forestdb
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
-[COUCHSTORE]: https://github.com/couchbaselabs/couchstore
+[COUCHSTORE]: https://github.com/couchbase/couchstore
