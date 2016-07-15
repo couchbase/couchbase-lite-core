@@ -29,9 +29,23 @@ static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
 class C4ThreadingTest : public C4Test {
 public:
 
+    static const bool kLog = false;
+    static const int kNumDocs = 10000;
+
+    static const bool kSharedHandle = false; // Use same C4Database on all threads?
+    
+
+    C4View* v {nullptr};
+
     virtual void setUp() {
         C4Test::setUp();
         ::unlink(kViewIndexPath);
+        v = openView(db);
+    }
+
+    virtual void tearDown() {
+        closeView(v);
+        C4Test::tearDown();
     }
 
 
@@ -62,9 +76,6 @@ public:
     void testCreateVsEnumerate() {
         std::cerr << "\nThreading test ";
 
-        // Ensure view is created:
-        closeView(openView(db));
-
         std::thread thread1([this]{addDocsTask();});
         std::thread thread2([this]{updateIndexTask();});
         std::thread thread3([this]{queryIndexTask();});
@@ -76,9 +87,6 @@ public:
 //        thread4.join();
         std::cerr << "Threading test done!\n";
     }
-
-    static const bool kLog = false;
-    static const int kNumDocs = 10000;
 
 
     void addDocsTask() {
@@ -95,7 +103,7 @@ public:
 
 
     void enumDocsTask() {
-        C4Database* database = openDB();
+        C4Database* database = db;// openDB();
 
         if (kLog) fprintf(stderr, "Enumerating documents...\n");
         int n;
@@ -126,8 +134,8 @@ public:
 
 
     void updateIndexTask() {
-        C4Database* database = openDB();
-        C4View* view = openView(database);
+        C4Database* database = kSharedHandle ? db : openDB();
+        C4View* view = kSharedHandle ? v : openView(database);
 
         int i = 0;
         do {
@@ -136,8 +144,10 @@ public:
             std::this_thread::sleep_for(std::chrono::microseconds(700));
         } while (c4view_getLastSequenceIndexed(view) < kNumDocs);
 
-        closeView(view);
-        closeDB(database);
+        if (!kSharedHandle) {
+            closeView(view);
+            closeDB(database);
+        }
     }
 
     void updateIndex(C4Database* updateDB, C4View* view) {
@@ -185,8 +195,8 @@ public:
     
 
     void queryIndexTask() {
-        C4Database* database = openDB();
-        C4View* view = openView(database);
+        C4Database* database = kSharedHandle ? db : openDB();
+        C4View* view = kSharedHandle ? v : openView(database);
 
         int i = 0;
         do {
@@ -194,8 +204,10 @@ public:
             if (kLog) fprintf(stderr, "\nIndex query #%3d: ", ++i);
         } while (queryIndex(view));
 
-        closeView(view);
-        closeDB(database);
+        if (!kSharedHandle) {
+            closeView(view);
+            closeDB(database);
+        }
     }
 
     bool queryIndex(C4View* view) {
