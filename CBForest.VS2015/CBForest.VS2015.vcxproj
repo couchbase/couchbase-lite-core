@@ -103,7 +103,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_MVCC_WAL_ENABLE;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;_DEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
@@ -121,7 +121,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;_DEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_MVCC_WAL_ENABLE;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;_DEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -140,7 +140,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_MVCC_WAL_ENABLE;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;WIN32;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -167,7 +167,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>CBFOREST_EXPORTS;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CBFOREST_EXPORTS;_MVCC_WAL_ENABLE;_CRYPTO_OPENSSL;_FDB_TOOLS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS4_UNICODE61;_USE_MATH_DEFINES;WITH_STEMMER_english;DOC_COMP;_DOC_COMP;NDEBUG;_WINDOWS;_USRDLL;FORESTDB_VERSION="Internal";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -216,6 +216,7 @@
     <ClCompile Include="..\vendor\forestdb\src\avltree.cc" />
     <ClCompile Include="..\vendor\forestdb\src\bgflusher.cc" />
     <ClCompile Include="..\vendor\forestdb\src\blockcache.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\breakpad_dummy.cc" />
     <ClCompile Include="..\vendor\forestdb\src\btree.cc" />
     <ClCompile Include="..\vendor\forestdb\src\btreeblock.cc" />
     <ClCompile Include="..\vendor\forestdb\src\btree_fast_str_kv.cc" />
@@ -240,7 +241,7 @@
     <ClCompile Include="..\vendor\forestdb\src\iterator.cc" />
     <ClCompile Include="..\vendor\forestdb\src\kv_instance.cc" />
     <ClCompile Include="..\vendor\forestdb\src\list.cc" />
-    <ClCompile Include="..\vendor\forestdb\src\snapshot.cc" />
+    <ClCompile Include="..\vendor\forestdb\src\superblock.cc" />
     <ClCompile Include="..\vendor\forestdb\src\transaction.cc" />
     <ClCompile Include="..\vendor\forestdb\src\wal.cc" />
     <ClCompile Include="..\vendor\forestdb\src\version.cc" />

@@ -162,9 +162,6 @@
     <ClCompile Include="..\vendor\forestdb\utils\partiallock.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\vendor\forestdb\src\snapshot.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\vendor\forestdb\utils\system_resource_stats.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -292,6 +289,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\C\c4ExpiryEnumerator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\breakpad_dummy.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\forestdb\src\superblock.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
