@@ -111,18 +111,6 @@ namespace cbforest {
         generation genOfAuthor(peerID) const;
         generation operator[] (peerID author) const         {return genOfAuthor(author);}
 
-        /** Is this a version from a CAS server? 
-            Tests whether the first component's author is kCASServerPeerID ("$"). */
-        bool isFromCASServer() const;
-
-        /** Returns most recent server CAS value: generation number of kCASServerPeerID ("$"). */
-        generation CASBase() const                          {return genOfAuthor(kCASServerPeerID);}
-
-        /** Sets the server CAS value, assigning it to the generation of kCASServerPeerID,
-            and moves that component to the start.
-            Does nothing and returns false if the generation is already >= the new value. */
-        bool setCAS(generation);
-
         /** Increments the generation count of the given author (or sets it to 1 if it didn't exist)
             and moves it to the start of the vector. */
         void incrementGen(peerID);

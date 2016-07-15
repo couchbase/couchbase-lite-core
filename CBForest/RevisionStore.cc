@@ -151,12 +151,17 @@ namespace cbforest {
     // Replace the current revision `current` with `newRev`
     void RevisionStore::replaceCurrent(Revision &newRev, Revision *current, Transaction &t) {
         if (current) {
-            backupCASVersion(*current, newRev, t);
-            if (current->isConflicted() || shouldDeleteCASBackup(newRev, current))
+            willReplaceCurrentRevision(*current, newRev, t);
+            if (current->isConflicted())
                 deleteAncestors(newRev, t);
         }
         newRev.setCurrent(true);    // update key to just docID
-        t.write(newRev.document());
+        t(_store).write(newRev.document());
+    }
+
+
+    bool RevisionStore::deleteNonCurrent(slice docID, slice revID, Transaction &t) {
+        return t(_nonCurrentStore).del(keyForNonCurrentRevision(docID, version(revID)));
     }
 
 
@@ -188,7 +193,7 @@ namespace cbforest {
             Revision rev(e.moveDoc());
             if (rev.version().compareTo(child.version()) == kOlder
                     && !shouldKeepAncestor(rev, child)) {
-                t.del(rev.document());
+                t(_store).del(rev.document());
             }
         }
     }
@@ -245,11 +250,7 @@ namespace cbforest {
 
     // These are no-op stubs. CASRevisionStore implements them.
 
-    void RevisionStore::backupCASVersion(Revision &, const Revision &, Transaction &t) {
-    }
-
-    bool RevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
-        return false;
+    void RevisionStore::willReplaceCurrentRevision(Revision &, const Revision &, Transaction &t) {
     }
 
     bool RevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {

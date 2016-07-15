@@ -18,33 +18,52 @@ namespace cbforest {
     class CASRevisionStore : public RevisionStore {
     public:
 
-        CASRevisionStore(Database *db)              :RevisionStore(db) { }
+        CASRevisionStore(Database *db);
 
         /** Returns the latest known revision from the CAS server. */
         Revision::Ref getLatestCASServerRevision(slice docID);
 
         /** Returns the base revision from the CAS server, the one the current rev is based on. */
-        Revision::Ref getBaseCASServerRevision(Revision&);
+        Revision::Ref getBaseCASServerRevision(slice docID, generation &outCAS);
 
         /** Inserts a new revision from the CAS server. */
-        Revision::Ref insertCAS(slice docID,
-                               generation cas,
-                               Revision::BodyParams,
-                               Transaction&);
+        Revision::Ref insertFromServer(slice docID,
+                                       generation cas,
+                                       Revision::BodyParams,
+                                       Transaction&);
 
-        /** Assigns a revision a new CAS value after it's pushed to the CAS server. */
-        void assignCAS(Revision&, generation cas, Transaction &t);
+        /** Assigns a revision a new CAS value after it's pushed to the CAS server.
+            Also deletes the saved base & latest server revisions, if any. */
+        void assignCAS(slice docID, slice revID, generation cas, Transaction &t);
+
+#if !DEBUG
+    private:
+#endif
+        struct ServerState {
+            struct Item {
+                alloc_slice revID;
+                generation CAS {0};
+
+                Item() { }
+                Item(slice r, generation g) :revID(r), CAS(g) { }
+            };
+            Item base;      // Common ancestor of local & server
+            Item latest;    // Latest rev read from server (same as base except in conflicts)
+        };
+        ServerState getServerState(slice docID);
+        void setServerState(slice docID, const ServerState&, Transaction &t);
 
     private:
-        virtual void backupCASVersion(Revision &curRev, const Revision &incomingRev, Transaction &t);
-        virtual bool shouldDeleteCASBackup(const Revision &newRev, const Revision *current);
+        virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev, Transaction &t);
         virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
         
         Revision::Ref writeCASRevision(const Revision *parent,
                                        bool current,
-                                       slice docID, generation cas,
+                                       slice docID,
                                        Revision::BodyParams body,
                                        Transaction &t);
+
+        KeyStore &_casStore;
     };
 
 }

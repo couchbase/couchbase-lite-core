@@ -70,11 +70,11 @@ namespace cbforest {
         static slice docIDFromKey(slice key);
 
     protected:
-        virtual void backupCASVersion(Revision &curRev, const Revision &incomingRev, Transaction &t);
-        virtual bool shouldDeleteCASBackup(const Revision &newRev, const Revision *current);
+        virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev, Transaction &t);
         virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
 
         void replaceCurrent(Revision &newRev, Revision *current, Transaction &t);
+        bool deleteNonCurrent(slice docID, slice revID, Transaction &t);
         Revision::Ref getNonCurrent(slice docID, slice revID, KeyStore::contentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);

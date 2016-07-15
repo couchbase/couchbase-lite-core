@@ -48,12 +48,8 @@ namespace cbforest {
 
         slice docID() const;
 
-        const VersionVector& version() const    {return _vers;}
-        alloc_slice revID() const               {return _vers.current().asString();}
-
-        bool isFromCASServer() const            {return _cas > 0;}
-        generation CAS() const                  {return _cas;}
-        bool assignCAS(generation);
+        const VersionVector& version() const{return _vers;}
+        alloc_slice revID() const           {return _vers.current().asString();}
 
         Flags flags() const                 {return _flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}
@@ -80,7 +76,6 @@ namespace cbforest {
         Document _doc;
         Flags _flags {kNone};
         VersionVector _vers;
-        generation _cas {0};
         slice _docType;
     };
 

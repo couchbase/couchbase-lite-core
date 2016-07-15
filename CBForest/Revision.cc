@@ -33,8 +33,6 @@ namespace cbforest {
             _flags = kDeleted;
         if (p.hasAttachments)
             _flags = (Flags)(_flags | kHasAttachments);
-        if (vers.count() > 0)
-            _cas = vers.current().CAS();
         _docType = p.docType;
 
         writeMeta(vers);
@@ -52,7 +50,6 @@ namespace cbforest {
     :_doc(std::move(old._doc)),
      _flags(old._flags),
      _vers(std::move(old._vers)),
-     _cas(std::move(old._cas)),
      _docType(std::move(old._docType))
     { }
 
@@ -62,7 +59,6 @@ namespace cbforest {
         enc.beginArray();
         enc << _flags;
         enc << vers;
-        enc << _cas;
         enc << _docType;
         enc.endArray();
         _doc.setMeta(enc.extractOutput());
@@ -78,21 +74,10 @@ namespace cbforest {
         fleece::Array::iterator meta(metaValue->asArray());
         _flags = (Flags)meta.read()->asUnsigned();
         _vers.readFrom(meta.read());
-        _cas = (generation)meta.read()->asUnsigned();
         _docType = meta.read()->asString();
         if (_docType.size == 0)
             _docType.buf = nullptr;
     }
-
-
-    bool Revision::assignCAS(generation cas) {
-        CBFAssert(cas > 0);
-        CBFAssert(_cas == 0);
-        _cas = cas;
-        writeMeta(_vers);
-        return true;
-    }
-
 
 
 #pragma mark DOC ID / KEYS:

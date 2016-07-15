@@ -37,20 +37,9 @@ class RevisionTest : public CppUnit::TestFixture {
         AssertEqual(rev2.document().key(), slice("DOC\t*,\02"));
     }
 
-    void testCASRev() {
-        Revision rev(slice("DOC"), kTestCASVers,
-                     Revision::BodyParams{slice("{\"foo\":true}"), slice("O-"), false, true},
-                     true);
-        Assert(rev.isFromCASServer());
-        AssertEqual(rev.CAS(), 3ull);
-    }
-
     void verifyRev(const Revision &rev) {
         AssertEqual(rev.docID(), slice("DOC"));
         AssertEqual(rev.version(), kTestVers);
-        Assert(!rev.isFromCASServer());
-        AssertEqual(rev.CAS(), 0ull);
-        AssertEqual(rev.version().CASBase(), 3ull);
         AssertEqual(rev.flags(), Revision::kHasAttachments);
         Assert(rev.hasAttachments());
         Assert(!rev.isDeleted());
@@ -61,7 +50,6 @@ class RevisionTest : public CppUnit::TestFixture {
 
     CPPUNIT_TEST_SUITE( RevisionTest );
     CPPUNIT_TEST( testCreateRev );
-    CPPUNIT_TEST( testCASRev );
     CPPUNIT_TEST_SUITE_END();
 };
 

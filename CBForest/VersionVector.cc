@@ -200,10 +200,6 @@ namespace cbforest {
         return (versionOrder)o;
     }
 
-    bool VersionVector::isFromCASServer() const {
-        return current().CAS() > 0;
-    }
-
     std::vector<version>::iterator VersionVector::findPeerIter(peerID author) {
         auto v = _vers.begin();
         for (; v != _vers.end(); ++v) {
@@ -236,24 +232,6 @@ namespace cbforest {
 
 #pragma mark - MODIFICATION:
 
-
-    bool VersionVector::setCAS(generation cas) {
-        CBFAssert(cas > 0);
-        auto versP = findPeerIter(kCASServerPeerID);
-        version v;
-        if (versP != _vers.end()) {
-            v = *versP;
-            if (v.gen >= cas)
-                return false;
-            _vers.erase(versP);
-        } else {
-            v.author = kCASServerPeerID;
-        }
-        v.gen = cas;
-        _vers.insert(_vers.begin(), v);
-        _changed = true;
-        return true;
-    }
 
     void VersionVector::append(version vers) {
         vers.validate();

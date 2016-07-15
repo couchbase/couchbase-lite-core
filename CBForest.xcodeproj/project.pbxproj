@@ -1389,12 +1389,12 @@
 			isa = PBXGroup;
 			children = (
 				279794A41D307626001D0F3A /* RevisionStore.cc */,
-				279794A51D307626001D0F3A /* RevisionStore.hh */,
 				279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */,
-				279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */,
 				2797949D1D305EC2001D0F3A /* Revision.cc */,
-				2797949E1D305EC2001D0F3A /* Revision.hh */,
 				2708FE361CF3A0F10022F721 /* VersionVector.cc */,
+				279794A51D307626001D0F3A /* RevisionStore.hh */,
+				279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */,
+				2797949E1D305EC2001D0F3A /* Revision.hh */,
 				2708FE371CF3A0F10022F721 /* VersionVector.hh */,
 			);
 			name = Revisions;

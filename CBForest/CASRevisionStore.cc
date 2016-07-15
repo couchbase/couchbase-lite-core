@@ -9,80 +9,142 @@
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
 #include "DocEnumerator.hh"
+#include "Fleece.hh"
 
 namespace cbforest {
 
 
-    Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID) {
-        Revision::Ref cur = get(docID);
-        if (cur && !cur->isFromCASServer())
-            cur = nullptr;
-        auto e = enumerateRevisions(docID, kCASServerPeerID);
-        while (e.next()) {
-            Revision rev(e.moveDoc());
-            if (rev.isFromCASServer())
-                if (!cur || rev.CAS() > cur->CAS())
-                    cur.reset(new Revision(std::move(rev)));
+    CASRevisionStore::CASRevisionStore(Database *db)
+    :RevisionStore(db),
+     _casStore(db->getKeyStore("CAS"))
+    { }
+
+
+
+    CASRevisionStore::ServerState CASRevisionStore::getServerState(slice docID) {
+        ServerState state;
+        Document d = _casStore.get(docID);
+        if (d.body().buf) {
+            fleece::Array::iterator arr(fleece::Value::fromTrustedData(d.body())->asArray());
+            if (arr.count() >= 2) {
+                state.base.revID = arr[0]->asString();
+                state.base.CAS   = arr[1]->asUnsigned();
+            }
+            if (arr.count() >= 4) {
+                state.latest.revID = arr[2]->asString();
+                state.latest.CAS   = arr[3]->asUnsigned();
+            } else {
+                state.latest = state.base;
+            }
         }
-        return cur;
-        //OPT: Wouldn't have to compare revs if the gen numbers were ordered in the keys.
+        return state;
+    }
+
+    void CASRevisionStore::setServerState(slice docID,
+                                          const CASRevisionStore::ServerState &state,
+                                          Transaction &t)
+    {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc << state.base.revID << state.base.CAS;
+        if (state.latest.revID.buf && state.latest.revID != state.base.revID)
+            enc << state.latest.revID << state.latest.CAS;
+        enc.endArray();
+        t(_casStore).set(docID, slice::null, enc.extractOutput());
     }
 
 
-    Revision::Ref CASRevisionStore::getBaseCASServerRevision(Revision &current) {
-        generation parentCAS = current.version().CASBase();
-        if (parentCAS == 0)
+    Revision::Ref CASRevisionStore::getLatestCASServerRevision(slice docID) {
+        auto serverState = getServerState(docID);
+        if (!serverState.latest.revID.buf)
             return nullptr;
-        return getNonCurrent(current.docID(),
-                             version(parentCAS, kCASServerPeerID).asString(),
-                             KeyStore::kDefaultContent);
+        return get(docID, serverState.latest.revID);
+    }
+
+
+    Revision::Ref CASRevisionStore::getBaseCASServerRevision(slice docID,
+                                                             generation &outCAS) {
+        auto serverState = getServerState(docID);
+        if (!serverState.base.revID.buf)
+            return nullptr;
+        outCAS = serverState.latest.CAS;
+        return get(docID, serverState.base.revID);
     }
 
     
-    Revision::Ref CASRevisionStore::insertCAS(slice docID, generation cas,
-                                              Revision::BodyParams body,
-                                              Transaction &t)
+    Revision::Ref CASRevisionStore::insertFromServer(slice docID, generation cas,
+                                                     Revision::BodyParams body,
+                                                     Transaction &t)
     {
         CBFAssert(cas > 0);
-        auto current = get(docID, KeyStore::kMetaOnly);
-        if (!current || current->isFromCASServer()) {
-            // Current version is from CAS server, or this doc doesn't exist yet:
-            if (current && current->CAS() >= cas)
-                return nullptr;
+        auto state = getServerState(docID);
+        if (cas <= state.latest.CAS)
+            return nullptr;
 
-            // New rev is indeed newer, so save it as current:
-            return writeCASRevision(current.get(), true, docID, cas, body, t);
+        Revision::Ref current;
+        if (state.latest.CAS > 0)
+            current = get(docID, KeyStore::kMetaOnly);
+
+        Revision::Ref newRev;
+        if (!current || current->revID() == state.latest.revID) {
+            // Current version is from CAS server, or this doc doesn't exist yet,
+            // so save this new revision as current:
+            newRev = writeCASRevision(current.get(), true, docID, body, t);
 
         } else {
             // Current version is not from CAS server, so this creates a conflict.
-            // Find the latest saved CAS version to replace:
-            auto latest = getLatestCASServerRevision(docID);
-            if (latest) {
-                generation latestCAS = latest->CAS();
-                if (latestCAS >= cas)
-                    return nullptr;
-
-                // If latest has the same CAS as the current rev, that means it's the saved
-                // common ancestor; don't delete it.
-                if (latestCAS != current->version().CASBase())
-                    t(_nonCurrentStore).del(latest->document());
+            // Delete the latest saved server revision (or keep it as the base):
+            Revision::Ref parent;
+            if (state.latest.revID.buf) {
+                parent = getNonCurrent(docID, state.latest.revID, KeyStore::kMetaOnly);
+                if (state.latest.revID != state.base.revID)
+                    deleteNonCurrent(docID, state.latest.revID, t);
             }
-
-            return writeCASRevision(latest.get(), false, docID, cas, body, t);
+            // Create the new revision as a child of the latest:
+            newRev = writeCASRevision(parent.get(), false, docID, body, t);
         }
+
+        state.latest.revID = newRev->revID();
+        state.latest.CAS = cas;
+        if (!state.base.revID.buf)
+            state.base = state.latest;
+        setServerState(docID, state, t);
+        return newRev;
     }
 
 
-    void CASRevisionStore::assignCAS(Revision& rev, generation cas, Transaction &t) {
-        CBFAssert(rev.isCurrent());
-        generation parentCAS = rev.version().CASBase();
-        rev.assignCAS(cas);
-        t(_store).write(rev.document());
+    void CASRevisionStore::assignCAS(slice docID, slice revID, generation cas, Transaction &t) {
+        auto state = getServerState(docID);
 
-        if (parentCAS > 0) {
-            t(_nonCurrentStore).del(keyForNonCurrentRevision(rev.docID(),
-                                                             version(parentCAS, kCASServerPeerID)));
+        // Delete the saved base & latest server revisions:
+        if (state.latest.revID.buf) {
+            deleteNonCurrent(docID, state.latest.revID, t);
+            if (state.base.revID != state.latest.revID)
+                deleteNonCurrent(docID, state.base.revID, t);
         }
+        // Update the saved state to point to the new revision as both base & latest:
+        state.latest.revID = revID;
+        state.latest.CAS = cas;
+        state.base = state.latest;
+        setServerState(docID, state, t);
+    }
+
+
+    // Writes a revision from the CAS server to the current or non-current store:
+    Revision::Ref CASRevisionStore::writeCASRevision(const Revision *parent,
+                                                     bool current,
+                                                     slice docID,
+                                                     Revision::BodyParams body,
+                                                     Transaction &t)
+    {
+        VersionVector vers;
+        if (parent)
+            vers = parent->version();
+        vers.incrementGen(kCASServerPeerID);
+        Revision::Ref newRev { new Revision(docID, vers, body, current) };
+        KeyStore &store = current ? *_db : _nonCurrentStore;
+        t(store).write(newRev->document());
+        return newRev;
     }
 
 
@@ -90,49 +152,27 @@ namespace cbforest {
 #pragma mark - OVERRIDDEN HOOKS:
 
 
-    // Writes a revision from the CAS server to the current or non-current store:
-    Revision::Ref CASRevisionStore::writeCASRevision(const Revision *parent,
-                                                     bool current,
-                                                     slice docID, generation cas,
-                                                     Revision::BodyParams body,
-                                                     Transaction &t)
-    {
-        VersionVector vers;
-        if (parent)
-            vers = parent->version();
-        vers.setCAS(cas);
-        Revision::Ref newRev {new Revision(docID, vers, body, current) };
-        KeyStore &store = current ? *_db : _nonCurrentStore;
-        t(store).write(newRev->document());
-        return newRev;
-    }
-
-
-    // If a revision from the CAS server is being replaced by a newer revision that isn't,
-    // back it up to the nonCurrent store so we can merge with it if necessary.
-    void CASRevisionStore::backupCASVersion(Revision &curRev,
+    void CASRevisionStore::willReplaceCurrentRevision(Revision &curRev,
                                             const Revision &incomingRev,
                                             Transaction &t)
     {
-        if (curRev.isFromCASServer() && !incomingRev.isFromCASServer()) {
-            readBody(curRev);
-            curRev.setCurrent(false);             // append the revID to the key
-            t(_nonCurrentStore).write(curRev.document());
+        // If a current revision from the CAS server is being replaced by a newer revision that
+        // isn't, back it up to the nonCurrent store.
+        if (incomingRev.version().current().author != kCASServerPeerID) {
+            auto state = getServerState(curRev.docID());
+            if (state.latest.revID == curRev.revID()) {
+                readBody(curRev);
+                curRev.setCurrent(false);             // append the revID to the key
+                t(_nonCurrentStore).write(curRev.document());
+            }
         }
-    }
-
-
-    // Is the current CAS-server backup revision (if any) now obsolete?
-    // This happens when a revision from the CAS server replaces one that isn't.
-    bool CASRevisionStore::shouldDeleteCASBackup(const Revision &newRev, const Revision *current) {
-        return current && newRev.isFromCASServer() && !current->isFromCASServer();
     }
 
 
     // Is `rev` a saved CAS-server backup of the current revision `child`?
     bool CASRevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
-        generation cas = rev.version().current().CAS();
-        return cas > 0 && cas == child.CAS();
+        auto state = getServerState(rev.docID());
+        return rev.revID() == state.latest.revID || rev.revID() == state.base.revID;
     }
 
     
