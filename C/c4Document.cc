@@ -342,6 +342,7 @@ bool c4doc_hasRevisionBody(C4Document* doc) {
         if (!idoc->revisionsLoaded()) {
             Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
         }
+        WITH_LOCK(idoc->_db);
         return idoc->_selectedRev && idoc->_selectedRev->isBodyAvailable();
     } catchError(NULL);
     return false;
