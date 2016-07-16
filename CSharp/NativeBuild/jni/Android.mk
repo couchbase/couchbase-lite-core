@@ -28,7 +28,7 @@ LOCAL_CFLAGS	+=	-DSQLITE_ENABLE_FTS4 \
 					-DWITH_STEMMER_english \
 					-DDOC_COMP \
 					-D_DOC_COMP \
-					-DHAVE_GCC_ATOMICS=1
+					-DHAVE_GCC_ATOMICS=1 \
 
 LOCAL_CPPFLAGS	:= 	-I$(FORESTDB_PATH)/include/ \
 					-I$(FORESTDB_PATH)/include/libforestdb/ \
@@ -39,7 +39,9 @@ LOCAL_CPPFLAGS	:= 	-I$(FORESTDB_PATH)/include/ \
 					-I$(CBFOREST_PATH)/ \
 					-I$(CBFOREST_PATH)/Encryption \
 					-I$(OPENSSL_PATH)/ \
-					-D_CRYPTO_OPENSSL
+					-D_CRYPTO_OPENSSL \
+					-DFORESTDB_VERSION=\"Internal\" \
+					-D_MVCC_WAL_ENABLE
 
 LOCAL_CPPFLAGS	+=	-std=c++11
 LOCAL_CPPFLAGS	+=	-fexceptions
@@ -64,7 +66,7 @@ PCH_FILE  := $(CBFOREST_PATH)/CBForest-Prefix.pch
 LOCAL_CPPFLAGS += -include $(PCH_FILE)
 
 LOCAL_LDLIBS    := -llog
-#LOCAL_LDLIBS    += -latomic  # for armeabi
+LOCAL_LDLIBS    += -latomic  # for armeabi
 
 LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(SQLITE3_PATH)/fts3_unicodesn.c \
@@ -137,7 +139,8 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(FORESTDB_PATH)/src/iterator.cc \
 					$(FORESTDB_PATH)/src/kv_instance.cc \
 					$(FORESTDB_PATH)/src/list.cc \
-					$(FORESTDB_PATH)/src/snapshot.cc \
+					$(FORESTDB_PATH)/src/superblock.cc \
+					$(FORESTDB_PATH)/src/breakpad_dummy.cc \
 					$(FORESTDB_PATH)/src/transaction.cc \
 					$(FORESTDB_PATH)/src/wal.cc \
 					$(FORESTDB_PATH)/src/version.cc \
@@ -167,7 +170,8 @@ LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(LOCAL_PATH)/../C/c4View.cc \
 					$(LOCAL_PATH)/../C/c4Key.cc \
 					$(LOCAL_PATH)/../C/c4Document.cc \
-                    $(LOCAL_PATH)/../C/c4DocEnumerator.cc
+        	$(LOCAL_PATH)/../C/c4DocEnumerator.cc \
+					$(LOCAL_PATH)/../C/c4ExpiryEnumerator.cc
 
 LOCAL_STATIC_LIBRARIES := libcrypto
 
