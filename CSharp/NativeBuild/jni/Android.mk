@@ -41,7 +41,6 @@ LOCAL_CPPFLAGS	:= 	-I$(FORESTDB_PATH)/include/ \
 					-I$(OPENSSL_PATH)/ \
 					-D_CRYPTO_OPENSSL \
 					-DFORESTDB_VERSION=\"Internal\" \
-					-D_MVCC_WAL_ENABLE
 
 LOCAL_CPPFLAGS	+=	-std=c++11
 LOCAL_CPPFLAGS	+=	-fexceptions
