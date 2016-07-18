@@ -116,8 +116,11 @@ C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e)
 
 bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
 {
+    if (!c4db_beginTransaction(e->getDatabase(), outError))
+        return false;
+    bool commit = false;
     try {
-        c4db_beginTransaction(e->getDatabase(), NULL);
+        WITH_LOCK(e->getDatabase());
         e->reset();
         Transaction *t = e->getDatabase()->transaction();
         KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");
@@ -126,13 +129,11 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
             writer.del(e->key());
             writer.del(e->docID());
         }
-        
-        c4db_endTransaction(e->getDatabase(), true, NULL);
-        return true;
+        commit = true;
     } catchError(outError);
     
-    c4db_endTransaction(e->getDatabase(), false,  NULL);
-    return false;
+    c4db_endTransaction(e->getDatabase(), commit,  NULL);
+    return commit;
 }
 
 void c4exp_close(C4ExpiryEnumerator *e)
