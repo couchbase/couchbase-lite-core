@@ -168,8 +168,9 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 #pragma mark - DATABASES:
 
 
-c4Database::c4Database(std::string path, const config& cfg)
-:Database(path, cfg)
+c4Database::c4Database(std::string path, const config& cfg, uint8_t schema_)
+:Database(path, cfg),
+ schema(schema_)
 { }
 
 void c4Database::beginTransaction() {
@@ -262,17 +263,18 @@ C4Database* c4db_open(C4Slice path,
 {
     auto pathStr = (std::string)path;
     auto config = c4DbConfig(flags, encryptionKey);
+    uint8_t schema = (flags & kC4DB_V2Format) ? 2 : 1;
     try {
         try {
-            return new c4Database(pathStr, config);
+            return new c4Database(pathStr, config, schema);
         } catch (cbforest::error error) {
-            if (error.status == FDB_RESULT_INVALID_COMPACTION_MODE
-                        && config.compaction_mode == FDB_COMPACTION_AUTO) {
+            if (schema == 1 && error.status == FDB_RESULT_INVALID_COMPACTION_MODE
+                            && config.compaction_mode == FDB_COMPACTION_AUTO) {
                 // Databases created by earlier builds of CBL (pre-1.2) didn't have auto-compact.
                 // Opening them with auto-compact causes this error. Upgrade such a database by
                 // switching its compaction mode:
                 config.compaction_mode = FDB_COMPACTION_MANUAL;
-                auto db = new c4Database(pathStr, config);
+                auto db = new c4Database(pathStr, config, schema);
                 db->setCompactionMode(FDB_COMPACTION_AUTO);
                 return db;
             } else {

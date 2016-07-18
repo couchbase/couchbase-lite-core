@@ -34,10 +34,10 @@ namespace cbforest {
 
         /** Assigns a revision a new CAS value after it's pushed to the CAS server.
             Also deletes the saved base & latest server revisions, if any. */
-        void assignCAS(slice docID, slice revID, generation cas, Transaction &t);
+        void savedToCASServer(slice docID, slice revID, generation cas, Transaction &t);
 
         virtual Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
-                                      Revision::BodyParams body,
+                                              Revision::BodyParams body,
                                               Transaction &t) override;
 
 #if !DEBUG

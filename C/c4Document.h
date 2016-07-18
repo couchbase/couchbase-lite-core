@@ -29,7 +29,7 @@ extern "C" {
     typedef C4_OPTIONS(uint8_t, C4RevisionFlags) {
         kRevDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
         kRevLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
-        kRevNew            = 0x04, /**< Has this rev been inserted since decoding? */
+        kRevNew            = 0x04, /**< Has this rev been inserted since the doc was read? */
         kRevHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
     }; // Note: Same as Revision::Flags
 

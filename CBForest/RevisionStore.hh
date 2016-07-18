@@ -21,17 +21,24 @@ namespace cbforest {
     class RevisionStore {
     public:
 
-        RevisionStore(Database *db);
+        explicit RevisionStore(Database *db);
         virtual ~RevisionStore() { }
+
+        /** The KeyStore for current revisions of documents. */
+        KeyStore& currentRevisionStore();
 
         //////// GETTING REVISIONS:
 
+        /** Returns the current revision of a document, or null. */
         Revision::Ref get(slice docID,
                       KeyStore::contentOptions = KeyStore::kDefaultContent) const;
+
+        /** Returns a specific revision of a document, or null.
+            (If revID is a null slice, returns the current revision.) */
         Revision::Ref get(slice docID, slice revID,
                       KeyStore::contentOptions = KeyStore::kDefaultContent) const;
 
-        /** Make sure a Revision has a body (if it was originally loaded as meta-only) */
+        /** Loads the body of a Revision (if it was originally loaded as meta-only) */
         void readBody(Revision&);
 
         /** How does this revision compare to what's in the database?
@@ -54,12 +61,18 @@ namespace cbforest {
         /** Inserts a revision, probably from a peer. */
         versionOrder insert(Revision&, Transaction&);
 
+        /** Creates a new revision that resolves a conflict.
+            @param conflicting  The two or more conflicting revisions
+            @param body  The body of the merged revision
+            @param t  A Transaction to use to write the revision
+            @return  The saved merged revision. */
         virtual Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
                                               Revision::BodyParams body,
                                               Transaction &t);
 
         //////// DOCUMENT KEYS:
 
+    protected:
         /** The document key to use for a non-current Revision. */
         static alloc_slice keyForNonCurrentRevision(slice docID, struct version vers);
 
@@ -71,11 +84,8 @@ namespace cbforest {
             (and author, if non-null.) */
         static alloc_slice endKeyFor(slice docID, peerID author =slice::null);
 
+        /** Given a key in the nonCurrentStore, returns the ID of the document. */
         static slice docIDFromKey(slice key);
-
-    protected:
-        virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev, Transaction &t);
-        virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
 
         Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
                                       slice keepingRevID,
@@ -88,9 +98,17 @@ namespace cbforest {
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
 
     protected:
-        Database * const _db;
-        KeyStore &_store;
+        //////// SUBCLASS HOOKS:
+
+        virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev,
+                                                Transaction &t);
+        virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
+
+    protected:
+        KeyStore &_currentStore;
         KeyStore &_nonCurrentStore;
+
+        friend class Revision;
     };
 
 }

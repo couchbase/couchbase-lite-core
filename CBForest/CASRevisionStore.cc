@@ -115,7 +115,7 @@ namespace cbforest {
     }
 
 
-    void CASRevisionStore::assignCAS(slice docID, slice revID, generation cas, Transaction &t) {
+    void CASRevisionStore::savedToCASServer(slice docID, slice revID, generation cas, Transaction &t) {
         auto state = getServerState(docID);
 
         // Delete the saved base & latest server revisions:
@@ -144,7 +144,7 @@ namespace cbforest {
             vers = parent->version();
         vers.incrementGen(kCASServerPeerID);
         Revision::Ref newRev { new Revision(docID, vers, body, current) };
-        KeyStore &store = current ? *_db : _nonCurrentStore;
+        KeyStore &store = current ? _currentStore : _nonCurrentStore;
         t(store).write(newRev->document());
         return newRev;
     }

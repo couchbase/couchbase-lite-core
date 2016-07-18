@@ -22,8 +22,7 @@ namespace cbforest {
 
 
     RevisionStore::RevisionStore(Database *db)
-    :_db(db),
-     _store(db->defaultKeyStore()),
+    :_currentStore(db->defaultKeyStore()),
      _nonCurrentStore(db->getKeyStore("revs"))
     { }
 
@@ -34,7 +33,7 @@ namespace cbforest {
     // Get the current revision of a document
     Revision::Ref RevisionStore::get(slice docID, KeyStore::contentOptions opt) const {
         Document doc(docID);
-        if (!_store.read(doc, opt))
+        if (!_currentStore.read(doc, opt))
             return nullptr;
         return Revision::Ref{ new Revision(std::move(doc)) };
     }
@@ -73,7 +72,7 @@ namespace cbforest {
     // Make sure a Revision has a body (if it was originally loaded as meta-only)
     void RevisionStore::readBody(cbforest::Revision &rev) {
         if (rev.document().body().buf == nullptr) {
-            KeyStore &store = rev.isCurrent() ? _store : _nonCurrentStore;
+            KeyStore &store = rev.isCurrent() ? _currentStore : _nonCurrentStore;
             store.readBody(rev.document());
         }
     }
@@ -175,7 +174,7 @@ namespace cbforest {
 
         auto newRev = Revision::Ref{ new Revision(conflicting[0]->docID(), newVersion,
                                                   body, true) };
-        t(_store).write(newRev->document());
+        t(_currentStore).write(newRev->document());
         return newRev;
     }
 
@@ -188,7 +187,7 @@ namespace cbforest {
                 deleteAncestors(newRev, t);
         }
         newRev.setCurrent(true);    // update key to just docID
-        t(_store).write(newRev.document());
+        t(_currentStore).write(newRev.document());
     }
 
 

@@ -195,7 +195,7 @@ public:
         auto baseRev = store->getBaseCASServerRevision(rev.docID(), baseCAS);
         AssertEqual(baseCAS, expectedBaseCAS);
         // ... here the rev's body & baseCAS would be sent to the server, which would return newCAS
-        store->assignCAS(rev.docID(), rev.revID(), newCAS, t);
+        store->savedToCASServer(rev.docID(), rev.revID(), newCAS, t);
     }
 
 

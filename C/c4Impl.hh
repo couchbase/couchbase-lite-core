@@ -130,11 +130,16 @@ using namespace c4Internal;
 // Structs below must be in the global namespace because they are forward-declared in the C API.
 
 struct c4Database : public Database, RefCounted<c4Database> {
-    c4Database(std::string path, const config& cfg);
+    c4Database(std::string path, const config& cfg, uint8_t schema);
+
+    // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
+    const uint8_t schema;
+
     Transaction* transaction() {
         CBFAssert(_transaction);
         return _transaction;
     }
+
     // Transaction methods below acquire _transactionMutex. Do not call them if
     // _mutex is already locked, or deadlock may occur!
     void beginTransaction();

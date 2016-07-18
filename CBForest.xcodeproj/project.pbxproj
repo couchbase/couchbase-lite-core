@@ -301,8 +301,8 @@
 		720EA4181BA8D834002B8416 /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2701993919F1972E00FDC239 /* Tokenizer.cc */; };
 		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
-		72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
-		72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
+		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
+		72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		9399E72E1B7E536700D4BE79 /* Slice_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9399E72C1B7E536700D4BE79 /* Slice_Test.mm */; };
 /* End PBXBuildFile section */
 
@@ -847,7 +847,7 @@
 		720EA3F51BA7EAD9002B8416 /* libCBForest-Interop.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libCBForest-Interop.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
 		720EA46F1BA90A0C002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk/usr/lib/libstdc++.dylib"; sourceTree = DEVELOPER_DIR; };
-		72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExpiryEnumerator.cc; sourceTree = "<group>"; };
+		72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocExpiration.cc; sourceTree = "<group>"; };
 		72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4ExpiryEnumerator.h; sourceTree = "<group>"; };
 		9399E72C1B7E536700D4BE79 /* Slice_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Slice_Test.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1369,7 +1369,7 @@
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
-				72C086921CBDEB2000808CE7 /* c4ExpiryEnumerator.cc */,
+				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
 				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
 				274A698F1BED3E0500D16D37 /* c4Key.h */,
@@ -2197,7 +2197,7 @@
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
-				72C086941CBDEB2000808CE7 /* c4ExpiryEnumerator.cc in Sources */,
+				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
@@ -2231,7 +2231,7 @@
 				279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */,
-				72C086961CBDFD6600808CE7 /* c4ExpiryEnumerator.cc in Sources */,
+				72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
 				27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				720EA4191BA8D834002B8416 /* Tokenizer.cc in Sources */,
