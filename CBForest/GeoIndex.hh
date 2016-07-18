@@ -46,7 +46,7 @@ namespace cbforest {
 #endif
 
     protected:
-        virtual bool approve(slice key); // override
+        virtual bool approve(slice key) override;
 
     private:
         typedef std::pair<std::string, cbforest::sequence> ItemID;

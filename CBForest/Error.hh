@@ -47,7 +47,7 @@ namespace cbforest {
         error (fdb_status s)        :status(s) {}
         error (CBForestError e)     :status(e) {}
 
-        virtual const char *what() const noexcept;
+        virtual const char *what() const noexcept override;
 
         [[noreturn]] static void _throw(fdb_status);
         [[noreturn]] static void _throw(CBForestError);

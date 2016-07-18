@@ -72,10 +72,10 @@ namespace cbforest {
         std::string dump()          {return RevTree::dump();}
 #endif
     protected:
-        virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
-        virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
+        virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const override;
+        virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const override;
 #if DEBUG
-        virtual void dump(std::ostream&);
+        virtual void dump(std::ostream&) override;
 #endif
 
     private:

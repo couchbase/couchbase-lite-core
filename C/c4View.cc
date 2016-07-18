@@ -481,7 +481,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
      _enum(&view->_index, keyRanges, options)
     { }
 
-    virtual bool next() {
+    virtual bool next() override {
         if (!_enum.next())
             return C4QueryEnumInternal::next();
         key = asKeyReader(_enum.key());
@@ -491,7 +491,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
-    virtual void close() {
+    virtual void close() override {
         _enum.close();
     }
 
@@ -547,7 +547,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
      _enum(&view->_index, queryString, queryStringLanguage, ranked, options)
     { }
 
-    virtual bool next() {
+    virtual bool next() override {
         if (!_enum.next())
             return C4QueryEnumInternal::next();
         auto match = _enum.match();
@@ -565,7 +565,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
         return _enum.match()->matchedText();
     }
 
-    virtual void close() {
+    virtual void close() override {
         _enum.close();
     }
 
@@ -634,7 +634,7 @@ struct C4GeoEnumerator : public C4QueryEnumInternal {
      _enum(&view->_index, bbox)
     { }
 
-    virtual bool next() {
+    virtual bool next() override {
         if (!_enum.next())
             return C4QueryEnumInternal::next();
         docID = _enum.docID();
@@ -649,7 +649,7 @@ struct C4GeoEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
-    virtual void close() {
+    virtual void close() override {
         _enum.close();
     }
 
