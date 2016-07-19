@@ -16,6 +16,10 @@
 namespace cbforest {
 
 
+class C4DocumentV1;
+class C4DocumentV2;
+
+
 class C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
 public:
     alloc_slice _revIDBuf;
@@ -37,33 +41,44 @@ public:
     :_db(database->retain())
     { }
 
+    bool mustBeSchema(int schema, C4Error *outError);
+
     C4Database* database()    {return _db;}
 
     bool mustBeInTransaction(C4Error *outError) {
         return _db->mustBeInTransaction(outError);
     }
 
-    virtual C4SliceResult type() =0;
-    virtual void setType(C4Slice) =0;
+    virtual const Document& document() =0;
+
+    virtual slice type() =0;    // should not throw
+    virtual void setType(slice) =0;    // should not throw
 
     virtual bool exists() =0;
-    virtual bool loadRevisions(C4Error *outError) =0;
+    virtual void loadRevisions() =0;
     virtual bool revisionsLoaded() const =0;
-    virtual bool selectRevision(C4Slice revID, bool withBody, C4Error *outError) = 0;
-    virtual bool selectRevision(const Revision *rev, C4Error *outError =NULL) =0;
-    virtual bool selectCurrentRevision() =0;
-    virtual bool selectParentRevision() =0;
+    virtual void selectRevision(C4Slice revID, bool withBody) = 0;
+    virtual bool selectCurrentRevision() =0;    // should not throw
+    virtual bool selectParentRevision() =0;     // should not throw
     virtual bool selectNextRevision() =0;
-    virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody, C4Error *outError) =0;
+    virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody) =0;
 
     virtual bool hasRevisionBody() =0;
-    virtual bool loadSelectedRevBody(C4Error *outError) =0;
+    virtual bool loadSelectedRevBodyIfAvailable() =0; // can throw; returns false if compacted away
+
+    void loadSelectedRevBody() {
+        if (!loadSelectedRevBodyIfAvailable())
+            throwHTTPError(kC4HTTPGone); // 410 Gone to denote body that's been compacted away
+    }
 
     virtual void save(unsigned maxRevTreeDepth) =0;
     virtual int32_t purgeRevision(C4Slice revID) =0;
 
 
 protected:
+    static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
+    static C4DocumentInternal* newV2Instance(C4Database* database, Document &&doc);
+
     C4Database* const _db;
 };
 
@@ -71,9 +86,6 @@ protected:
 static inline C4DocumentInternal *internal(C4Document *doc) {
     return (C4DocumentInternal*)doc;
 }
-
-
-    class C4DocumentV2;
 
 
 } // end namespace

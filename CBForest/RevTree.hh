@@ -27,7 +27,7 @@ namespace cbforest {
     class RevTree;
 
     /** In-memory representation of a single revision's metadata. */
-    class Revision {
+    class Rev {
     public:
         const RevTree*  owner;
         revid           revID;      /**< Revision ID (compressed) */
@@ -44,11 +44,11 @@ namespace cbforest {
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
-        const Revision* parent() const;
-        const Revision* next() const;       // next by order in array, i.e. descending priority
-        std::vector<const Revision*> history() const;
+        const Rev* parent() const;
+        const Rev* next() const;       // next by order in array, i.e. descending priority
+        std::vector<const Rev*> history() const;
 
-        bool operator< (const Revision& rev) const;
+        bool operator< (const Rev& rev) const;
 
         enum Flags : uint8_t {
             kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
@@ -87,29 +87,29 @@ namespace cbforest {
         alloc_slice encode();
 
         size_t size() const                             {return _revs.size();}
-        const Revision* get(unsigned index) const;
-        const Revision* get(revid) const;
-        const Revision* operator[](unsigned index) const {return get(index);}
-        const Revision* operator[](revid revID) const    {return get(revID);}
-        const Revision* getBySequence(sequence) const;
+        const Rev* get(unsigned index) const;
+        const Rev* get(revid) const;
+        const Rev* operator[](unsigned index) const {return get(index);}
+        const Rev* operator[](revid revID) const    {return get(revID);}
+        const Rev* getBySequence(sequence) const;
 
 #ifdef __OBJC__
-        const Revision* get(NSString* revID) const;
+        const Rev* get(NSString* revID) const;
 #endif
 
-        const std::vector<Revision>& allRevisions() const    {return _revs;}
-        const Revision* currentRevision();
-        std::vector<const Revision*> currentRevisions() const;
+        const std::vector<Rev>& allRevisions() const    {return _revs;}
+        const Rev* currentRevision();
+        std::vector<const Rev*> currentRevisions() const;
         bool hasConflict() const;
 
-        const Revision* insert(revid, slice body,
+        const Rev* insert(revid, slice body,
                                bool deleted, bool hasAttachments,
                                revid parentRevID,
                                bool allowConflict,
                                int &httpStatus);
-        const Revision* insert(revid, slice body,
+        const Rev* insert(revid, slice body,
                                bool deleted, bool hasAttachments,
-                               const Revision* parent,
+                               const Rev* parent,
                                bool allowConflict,
                                int &httpStatus);
         int insertHistory(const std::vector<revidBuffer> history,
@@ -128,23 +128,23 @@ namespace cbforest {
 #endif
 
     protected:
-        virtual bool isBodyOfRevisionAvailable(const Revision*, uint64_t atOffset) const;
-        virtual alloc_slice readBodyOfRevision(const Revision*, uint64_t atOffset) const;
+        virtual bool isBodyOfRevisionAvailable(const Rev*, uint64_t atOffset) const;
+        virtual alloc_slice readBodyOfRevision(const Rev*, uint64_t atOffset) const;
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
 
     private:
-        friend class Revision;
-        const Revision* _insert(revid, slice body, const Revision *parentRev,
+        friend class Rev;
+        const Rev* _insert(revid, slice body, const Rev *parentRev,
                                 bool deleted, bool hasAttachments);
-        bool confirmLeaf(Revision* testRev);
+        bool confirmLeaf(Rev* testRev);
         void compact();
         RevTree(const RevTree&) = delete;
 
         uint64_t    _bodyOffset {0};     // File offset of body this tree was read from
         bool        _sorted {true};         // Are the revs currently sorted?
-        std::vector<Revision> _revs;
+        std::vector<Rev> _revs;
         std::vector<alloc_slice> _insertedData;
     protected:
         bool _changed {false};
@@ -152,13 +152,13 @@ namespace cbforest {
     };
 
 
-    inline bool Revision::isBodyAvailable() const {
+    inline bool Rev::isBodyAvailable() const {
         return owner->isBodyOfRevisionAvailable(this, oldBodyOffset);
     }
-    inline alloc_slice Revision::readBody() const {
+    inline alloc_slice Rev::readBody() const {
         return owner->readBodyOfRevision(this, oldBodyOffset);
     }
-    inline slice Revision::inlineBody() const {
+    inline slice Rev::inlineBody() const {
         return body;
     }
 

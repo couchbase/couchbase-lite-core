@@ -64,6 +64,8 @@ namespace c4Internal {
     void recordUnknownException(C4Error* outError);
     static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
 
+    [[noreturn]] void throwHTTPError(int httpStatus);
+
     #define catchError(OUTERR) \
         catch (const error &err) { \
             recordError(err, OUTERR); \
@@ -136,6 +138,8 @@ struct c4Database : public Database, RefCounted<c4Database> {
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
     const uint8_t schema;
+
+    bool mustBeSchema(int schema, C4Error*);
 
     Transaction* transaction() {
         CBFAssert(_transaction);

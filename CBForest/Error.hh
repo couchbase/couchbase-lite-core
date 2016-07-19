@@ -38,7 +38,9 @@ namespace cbforest {
             CorruptIndexData = -1002,
             AssertionFailed = -1003,
             TokenizerError = -1004, // can't create tokenizer
-            BadVersionVector = -1005
+            BadVersionVector = -1005,
+
+            HTTPStatusBase = 10000,
         };
 
         /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
@@ -51,6 +53,7 @@ namespace cbforest {
 
         [[noreturn]] static void _throw(fdb_status);
         [[noreturn]] static void _throw(CBForestError);
+        [[noreturn]] static void _throwHTTPStatus(int status);
 
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);

@@ -21,16 +21,16 @@ namespace cbforest {
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
     class RawRevision {
     public:
-        static std::vector<Revision> decodeTree(slice raw_tree,
+        static std::vector<Rev> decodeTree(slice raw_tree,
                                                 RevTree *owner,
                                                 sequence curSeq);
 
-        static alloc_slice encodeTree(std::vector<Revision> &revs);
+        static alloc_slice encodeTree(std::vector<Rev> &revs);
 
     private:
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
-            kPublicPersistentFlags = (Revision::kLeaf | Revision::kDeleted | Revision::kHasAttachments),
+            kPublicPersistentFlags = (Rev::kLeaf | Rev::kDeleted | Rev::kHasAttachments),
             kHasBodyOffset = 0x40,  /**< Does this raw rev have a file position (oldBodyOffset)? */
             kHasData       = 0x80,  /**< Does this raw rev contain JSON data? */
         };
@@ -63,9 +63,9 @@ namespace cbforest {
             return count;
         }
 
-        static size_t sizeToWrite(const Revision&);
-        void copyTo(Revision &dst) const;
-        RawRevision* copyFrom(const Revision &rev);
+        static size_t sizeToWrite(const Rev&);
+        void copyTo(Rev &dst) const;
+        RawRevision* copyFrom(const Rev &rev);
     };
     
 }

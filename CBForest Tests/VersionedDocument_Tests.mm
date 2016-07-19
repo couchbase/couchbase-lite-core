@@ -113,7 +113,7 @@ static revidBuffer stringToRev(NSString* str) {
 
 - (void) test02_RevTreeInsert {
     RevTree tree;
-    const Revision* rev;
+    const Rev* rev;
     revidBuffer rev1ID(cbforest::slice("1-aaaa"));
     cbforest::slice rev1Data("body of revision");
     int httpStatus;
@@ -123,7 +123,7 @@ static revidBuffer stringToRev(NSString* str) {
     AssertEq(httpStatus, 201);
     Assert(rev->revID == rev1ID);
     Assert(rev->inlineBody() == rev1Data);
-    AssertEq(rev->parent(), (Revision*)NULL);
+    AssertEq(rev->parent(), (Rev*)NULL);
     Assert(!rev->isDeleted());
 
     revidBuffer rev2ID(cbforest::slice("2-bbbb"));
@@ -165,7 +165,7 @@ static revidBuffer stringToRev(NSString* str) {
     v.insert(revIDBuf, nsstring_slice(body), false, false, NULL, false, httpStatus);
     AssertEq(httpStatus, 201);
 
-    const Revision* node = v.get(stringToRev(revID));
+    const Rev* node = v.get(stringToRev(revID));
     Assert(node);
     Assert(!node->isDeleted());
     Assert(node->isLeaf());

@@ -53,7 +53,10 @@ namespace c4Internal {
     }
 
     void recordError(const error &e, C4Error* outError) {
-        recordError(ForestDBDomain, e.status, outError);
+        if (e.status >= error::HTTPStatusBase)
+            recordHTTPError(e.status - error::HTTPStatusBase, outError);
+        else
+            recordError(ForestDBDomain, e.status, outError);
     }
 
     void recordException(const std::exception &e, C4Error* outError) {
@@ -64,6 +67,10 @@ namespace c4Internal {
     void recordUnknownException(C4Error* outError) {
         Warn("Unexpected C++ exception thrown from CBForest");
         recordError(C4Domain, kC4ErrorInternalException, outError);
+    }
+
+    void throwHTTPError(int status) {
+        error::_throwHTTPStatus(status);
     }
 }
 
@@ -172,6 +179,13 @@ c4Database::c4Database(std::string path, const config& cfg, uint8_t schema_)
 :Database(path, cfg),
  schema(schema_)
 { }
+
+bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
+    if (schema == requiredSchema)
+        return true;
+    recordError(C4Domain, kC4ErrorUnsupported, outError);
+    return false;
+}
 
 void c4Database::beginTransaction() {
 #if C4DB_THREADSAFE

@@ -31,6 +31,11 @@ namespace cbforest {
     }
 
 
+    void error::_throwHTTPStatus(int status) {
+        throw error{(CBForestError)(HTTPStatusBase + status)};
+    }
+
+
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
         if (LogLevel > kError || LogCallback == NULL)
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);

@@ -17,6 +17,7 @@
 #include "c4View.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
+#include "c4DocInternal.hh"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
 #include "FullTextIndex.hh"
@@ -319,14 +320,14 @@ bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                    unsigned viewNumber,
                                    C4Document *doc)
 {
-    auto &vDoc = versionedDocument(doc);
-    if (!indexer->shouldMapDocIntoView(vDoc.document(), viewNumber))
+    auto idoc = cbforest::internal(doc);
+    if (!indexer->shouldMapDocIntoView(idoc->document(), viewNumber))
         return false;
-    else if (indexer->shouldMapDocTypeIntoView(vDoc.docType(), viewNumber))
+    else if (indexer->shouldMapDocTypeIntoView(idoc->type(), viewNumber))
         return true;
     else {
         // We're skipping this doc, but we do have to update the index to _remove_ it
-        indexer->skipDocInView(vDoc.document().key(), vDoc.sequence(), viewNumber);
+        indexer->skipDocInView(idoc->document().key(), idoc->sequence, viewNumber);
         return false;
     }
 }

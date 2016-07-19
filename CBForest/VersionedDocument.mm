@@ -25,7 +25,7 @@ namespace cbforest {
         decode();
     }
 
-    const Revision* RevTree::get(NSString* revID) const {
+    const Rev* RevTree::get(NSString* revID) const {
         return get(revidBuffer(revID));
     }
 

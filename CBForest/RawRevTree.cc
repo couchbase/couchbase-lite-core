@@ -13,12 +13,12 @@
 
 namespace cbforest {
 
-    std::vector<Revision> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence curSeq) {
+    std::vector<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence curSeq) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
             throw error(error::CorruptRevisionData);
-        std::vector<Revision> revs(count);
+        std::vector<Rev> revs(count);
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
             rawRev->copyTo(*rev);
@@ -34,7 +34,7 @@ namespace cbforest {
     }
 
 
-    alloc_slice RawRevision::encodeTree(std::vector<Revision> &revs) {
+    alloc_slice RawRevision::encodeTree(std::vector<Rev> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for (auto rev = revs.begin(); rev != revs.end(); ++rev)
@@ -52,7 +52,7 @@ namespace cbforest {
         return result;
     }
 
-    size_t RawRevision::sizeToWrite(const Revision &rev) {
+    size_t RawRevision::sizeToWrite(const Rev &rev) {
         size_t size = offsetof(RawRevision, revID) + rev.revID.size + SizeOfVarInt(rev.sequence);
         if (rev.body.size > 0)
             size += rev.body.size;
@@ -61,7 +61,7 @@ namespace cbforest {
         return size;
     }
 
-    RawRevision* RawRevision::copyFrom(const Revision &rev) {
+    RawRevision* RawRevision::copyFrom(const Rev &rev) {
         size_t revSize = sizeToWrite(rev);
         this->size = _enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
@@ -73,7 +73,7 @@ namespace cbforest {
             dstFlags |= RawRevision::kHasData;
         else if (rev.oldBodyOffset > 0)
             dstFlags |= RawRevision::kHasBodyOffset;
-        this->flags = (Revision::Flags)dstFlags;
+        this->flags = (Rev::Flags)dstFlags;
 
         void *dstData = offsetby(&this->revID[0], rev.revID.size);
         dstData = offsetby(dstData, PutUVarInt(dstData, rev.sequence));
@@ -86,11 +86,11 @@ namespace cbforest {
         return (RawRevision*)offsetby(this, revSize);
     }
 
-    void RawRevision::copyTo(Revision &dst) const {
+    void RawRevision::copyTo(Rev &dst) const {
         const void* end = this->next();
         dst.revID.buf = (char*)this->revID;
         dst.revID.size = this->revIDLen;
-        dst.flags = (Revision::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
+        dst.flags = (Rev::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
         dst.parentIndex = ntohs(this->parentIndex);
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;

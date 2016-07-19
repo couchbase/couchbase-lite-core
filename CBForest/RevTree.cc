@@ -57,7 +57,7 @@ namespace cbforest {
     }
 
 #if DEBUG
-    void Revision::dump(std::ostream& out) {
+    void Rev::dump(std::ostream& out) {
         out << "(" << sequence << ") " << (std::string)revID.expanded() << "  ";
         if (isLeaf())
             out << " leaf";
@@ -72,19 +72,19 @@ namespace cbforest {
 
 #pragma mark - ACCESSORS:
 
-    const Revision* RevTree::currentRevision() {
+    const Rev* RevTree::currentRevision() {
         CBFAssert(!_unknown);
         sort();
         return _revs.size() == 0 ? NULL : &_revs[0];
     }
 
-    const Revision* RevTree::get(unsigned index) const {
+    const Rev* RevTree::get(unsigned index) const {
         CBFAssert(!_unknown);
         CBFAssert(index < _revs.size());
         return &_revs[index];
     }
 
-    const Revision* RevTree::get(revid revID) const {
+    const Rev* RevTree::get(revid revID) const {
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->revID == revID)
                 return &*rev;
@@ -93,7 +93,7 @@ namespace cbforest {
         return NULL;
     }
 
-    const Revision* RevTree::getBySequence(sequence seq) const {
+    const Rev* RevTree::getBySequence(sequence seq) const {
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->sequence == seq)
                 return &*rev;
@@ -120,9 +120,9 @@ namespace cbforest {
         }
     }
 
-    std::vector<const Revision*> RevTree::currentRevisions() const {
+    std::vector<const Rev*> RevTree::currentRevisions() const {
         CBFAssert(!_unknown);
-        std::vector<const Revision*> cur;
+        std::vector<const Rev*> cur;
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->isLeaf())
                 cur.push_back(&*rev);
@@ -130,46 +130,46 @@ namespace cbforest {
         return cur;
     }
 
-    unsigned Revision::index() const {
+    unsigned Rev::index() const {
         ptrdiff_t index = this - &owner->_revs[0];
         CBFAssert(index >= 0 && index < owner->_revs.size());
         return (unsigned)index;
     }
 
-    const Revision* Revision::parent() const {
-        if (parentIndex == Revision::kNoParent)
+    const Rev* Rev::parent() const {
+        if (parentIndex == Rev::kNoParent)
             return NULL;
         return owner->get(parentIndex);
     }
 
-    const Revision* Revision::next() const {
+    const Rev* Rev::next() const {
         auto i = index() + 1;
         return i < owner->size() ? owner->get(i) : NULL;
     }
 
-    std::vector<const Revision*> Revision::history() const {
-        std::vector<const Revision*> h;
-        for (const Revision* rev = this; rev; rev = rev->parent())
+    std::vector<const Rev*> Rev::history() const {
+        std::vector<const Rev*> h;
+        for (const Rev* rev = this; rev; rev = rev->parent())
             h.push_back(rev);
         return h;
     }
 
-    bool RevTree::isBodyOfRevisionAvailable(const Revision* rev, uint64_t atOffset) const {
+    bool RevTree::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {
         return rev->body.buf != NULL; // VersionedDocument overrides this
     }
 
-    alloc_slice RevTree::readBodyOfRevision(const Revision* rev, uint64_t atOffset) const {
+    alloc_slice RevTree::readBodyOfRevision(const Rev* rev, uint64_t atOffset) const {
         if (rev->body.buf != NULL)
             return alloc_slice(rev->body);
         return alloc_slice(); // VersionedDocument overrides this
     }
 
-    bool RevTree::confirmLeaf(Revision* testRev) {
+    bool RevTree::confirmLeaf(Rev* testRev) {
         int index = testRev->index();
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev)
             if (rev->parentIndex == index)
                 return false;
-        testRev->addFlag(Revision::kLeaf);
+        testRev->addFlag(Rev::kLeaf);
         return true;
     }
     
@@ -177,9 +177,9 @@ namespace cbforest {
 #pragma mark - INSERTION:
 
     // Lowest-level insert method. Does no sanity checking, always inserts.
-    const Revision* RevTree::_insert(revid unownedRevID,
+    const Rev* RevTree::_insert(revid unownedRevID,
                                      slice body,
-                                     const Revision *parentRev,
+                                     const Rev *parentRev,
                                      bool deleted,
                                      bool hasAttachments)
     {
@@ -190,23 +190,23 @@ namespace cbforest {
         _insertedData.push_back(alloc_slice(body));
         body = _insertedData.back();
 
-        Revision newRev;
+        Rev newRev;
         newRev.owner = this;
         newRev.revID = revID;
         newRev.body = body;
         newRev.sequence = 0; // Sequence is unknown till doc is saved
         newRev.oldBodyOffset = 0; // Body position is unknown till doc is saved
-        newRev.flags = (Revision::Flags)(Revision::kLeaf | Revision::kNew);
+        newRev.flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew);
         if (deleted)
-            newRev.addFlag(Revision::kDeleted);
+            newRev.addFlag(Rev::kDeleted);
         if (hasAttachments)
-            newRev.addFlag(Revision::kHasAttachments);
+            newRev.addFlag(Rev::kHasAttachments);
 
-        newRev.parentIndex = Revision::kNoParent;
+        newRev.parentIndex = Rev::kNoParent;
         if (parentRev) {
             ptrdiff_t parentIndex = parentRev->index();
             newRev.parentIndex = (uint16_t)parentIndex;
-            ((Revision*)parentRev)->clearFlag(Revision::kLeaf);
+            ((Rev*)parentRev)->clearFlag(Rev::kLeaf);
         }
 
         _revs.push_back(newRev);
@@ -217,8 +217,8 @@ namespace cbforest {
         return &_revs.back();
     }
 
-    const Revision* RevTree::insert(revid revID, slice data, bool deleted, bool hasAttachments,
-                                   const Revision* parent, bool allowConflict,
+    const Rev* RevTree::insert(revid revID, slice data, bool deleted, bool hasAttachments,
+                                   const Rev* parent, bool allowConflict,
                                    int &httpStatus)
     {
         // Make sure the given revID is valid:
@@ -260,11 +260,11 @@ namespace cbforest {
         return _insert(revID, data, parent, deleted, hasAttachments);
     }
 
-    const Revision* RevTree::insert(revid revID, slice body, bool deleted, bool hasAttachments,
+    const Rev* RevTree::insert(revid revID, slice body, bool deleted, bool hasAttachments,
                                    revid parentRevID, bool allowConflict,
                                    int &httpStatus)
     {
-        const Revision* parent = NULL;
+        const Rev* parent = NULL;
         if (parentRevID.buf) {
             parent = get(parentRevID);
             if (!parent) {
@@ -281,7 +281,7 @@ namespace cbforest {
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
         unsigned lastGen = 0;
-        const Revision* parent = NULL;
+        const Rev* parent = NULL;
         size_t historyCount = history.size();
         for (i = 0; i < historyCount; i++) {
             unsigned gen = history[i].generation();
@@ -310,12 +310,12 @@ namespace cbforest {
 
         // First find all the leaves, and walk from each one down to its root:
         int numPruned = 0;
-        Revision* rev = &_revs[0];
+        Rev* rev = &_revs[0];
         for (unsigned i=0; i<_revs.size(); i++,rev++) {
             if (rev->isLeaf()) {
                 // Starting from a leaf rev, trace its ancestry to find its depth:
                 unsigned depth = 0;
-                for (Revision* anc = rev; anc; anc = (Revision*)anc->parent()) {
+                for (Rev* anc = rev; anc; anc = (Rev*)anc->parent()) {
                     if (++depth > maxDepth) {
                         // Mark revs that are too far away:
                         anc->revID.size = 0;
@@ -333,15 +333,15 @@ namespace cbforest {
 
     int RevTree::purge(revid leafID) {
         int nPurged = 0;
-        Revision* rev = (Revision*)get(leafID);
+        Rev* rev = (Rev*)get(leafID);
         if (!rev || !rev->isLeaf())
             return 0;
         do {
             nPurged++;
             rev->revID.size = 0;                    // mark for purge
-            const Revision* parent = (Revision*)rev->parent();
-            rev->parentIndex = Revision::kNoParent; // unlink from parent
-            rev = (Revision*)parent;
+            const Rev* parent = (Rev*)rev->parent();
+            rev->parentIndex = Rev::kNoParent; // unlink from parent
+            rev = (Rev*)parent;
         } while (rev && confirmLeaf(rev));
         compact();
         return nPurged;
@@ -355,15 +355,15 @@ namespace cbforest {
             if (rev->revID.size > 0)
                 map[i] = (uint16_t)(j++);
             else
-                map[i] = Revision::kNoParent;
+                map[i] = Rev::kNoParent;
         }
 
         // Finally, slide the surviving revs down and renumber their parent indexes:
-        Revision* rev = &_revs[0];
-        Revision* dst = rev;
+        Rev* rev = &_revs[0];
+        Rev* dst = rev;
         for (i=0; i<_revs.size(); i++,rev++) {
             if (rev->revID.size > 0) {
-                if (rev->parentIndex != Revision::kNoParent)
+                if (rev->parentIndex != Rev::kNoParent)
                     rev->parentIndex = map[rev->parentIndex];
                 if (dst != rev)
                     *dst = *rev;
@@ -375,7 +375,7 @@ namespace cbforest {
     }
 
     // Sort comparison function for an array of Revisions. Higher priority comes _first_.
-    bool Revision::operator<(const Revision& rev2) const
+    bool Rev::operator<(const Rev& rev2) const
     {
         // Leaf revs go first.
         int delta = rev2.isLeaf() - this->isLeaf();
@@ -415,7 +415,7 @@ namespace cbforest {
         for (unsigned i = 0; i < _revs.size(); ++i) {
             uint16_t oldIndex = _revs[i].parentIndex;
             uint16_t parent = oldParents[oldIndex];
-            if (parent != Revision::kNoParent)
+            if (parent != Rev::kNoParent)
                 parent = oldToNew[parent];
                 _revs[i].parentIndex = parent;
                 }
