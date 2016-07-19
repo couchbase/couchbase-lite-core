@@ -76,6 +76,11 @@ namespace cbforest {
         if (options.descending)
             std::swap(minKey, maxKey);
 
+#if VALIDATE_ITERATOR
+        _minKey = minKey;
+        _maxKey = maxKey;
+#endif
+
         fdb_status status = fdb_iterator_init(_store->handle(), &_iterator,
                                               minKey.buf, minKey.size,
                                               maxKey.buf, maxKey.size,
@@ -252,6 +257,34 @@ namespace cbforest {
         }
         check(status);
         Debug("enum:     fdb_iterator_get --> [%s]", _doc.key().hexCString());
+
+#if VALIDATE_ITERATOR
+        if (_minKey.buf) {
+            bool skipMin = (iteratorOptions(_options) & FDB_ITR_SKIP_MIN_KEY) != 0;
+            bool ok = (_doc.key().compare(_minKey) >= 0);
+            if (ok && skipMin)
+                ok = _doc.key().compare(_minKey) > 0;
+            if (!ok) {
+                Warn("ForestDB fdb_iterator returned key '%s' which is not %s minKey '%s'",
+                     _doc.key().hexCString(), (skipMin ? ">" : ">="),
+                     _minKey.hexCString());
+                throw error(error::AssertionFailed);
+            }
+        }
+        if (_maxKey.buf) {
+            bool skipMax = (iteratorOptions(_options) & FDB_ITR_SKIP_MAX_KEY) != 0;
+            bool ok = (_doc.key().compare(_maxKey) <= 0);
+            if (ok && skipMax)
+                ok = (_doc.key().compare(_maxKey) < 0);
+            if (!ok) {
+                Warn("ForestDB fdb_iterator returned key '%s' which is not %s maxKey '%s'",
+                     _doc.key().hexCString(), (skipMax ? "<" : "<="),
+                     _maxKey.hexCString());
+                throw error(error::AssertionFailed);
+            }
+        }
+#endif
+        
         return true;
     }
 

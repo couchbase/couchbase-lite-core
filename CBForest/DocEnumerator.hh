@@ -20,6 +20,10 @@
 
 namespace cbforest {
 
+#if DEBUG
+#define VALIDATE_ITERATOR 1
+#endif
+
     /** KeyStore enumerator/iterator that returns a range of Documents.
         Usage:
             for (auto e=db.enumerate(); e.next(); ) {...}
@@ -86,6 +90,10 @@ namespace cbforest {
         int _curDocIndex {0};
         Document _doc;
         bool _skipStep {true};
+
+#if VALIDATE_ITERATOR
+        alloc_slice _minKey, _maxKey;
+#endif
 
         friend class KeyStore;
         void setDocIDs(std::vector<std::string> docIDs);
