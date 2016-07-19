@@ -47,6 +47,8 @@
 		2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
 		2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
 		270A4B071925746900DE4104 /* VersionedDocument_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */; };
+		271057D41D3D70780018247B /* c4Document2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* c4Document2.cc */; };
+		271057D51D3D70780018247B /* c4Document2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* c4Document2.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		2722304B1A08178200BFF25C /* GeoHash_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2722304A1A08178200BFF25C /* GeoHash_Test.mm */; };
@@ -509,6 +511,8 @@
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
 		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
 		270A4B061925746900DE4104 /* VersionedDocument_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument_Tests.mm; sourceTree = "<group>"; };
+		271057D31D3D70780018247B /* c4Document2.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document2.cc; sourceTree = "<group>"; };
+		271057D61D3D70B10018247B /* c4DocInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4DocInternal.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -1367,6 +1371,8 @@
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
+				271057D61D3D70B10018247B /* c4DocInternal.hh */,
+				271057D31D3D70780018247B /* c4Document2.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
@@ -2205,6 +2211,7 @@
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
+				271057D41D3D70780018247B /* c4Document2.cc in Sources */,
 				277D19C7194CCE7A008E91EB /* RevID.mm in Sources */,
 				273E9F761C51612E003115A6 /* c4Key.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
@@ -2245,6 +2252,7 @@
 				279794A71D307626001D0F3A /* RevisionStore.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
+				271057D51D3D70780018247B /* c4Document2.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

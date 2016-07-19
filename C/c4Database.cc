@@ -224,7 +224,6 @@ bool c4Database::endTransaction(bool commit) {
     return true;
 }
 
-
 namespace c4Internal {
 
     Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {

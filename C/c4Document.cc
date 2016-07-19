@@ -19,16 +19,11 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "Database.hh"
-#include "Document.hh"
-#include "LogInternal.hh"
-#include "VersionedDocument.hh"
+#include "c4DocInternal.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "varint.hh"
 #include <ctime>
-#include <algorithm>
-
 #include <algorithm>
 
 #include <algorithm>
@@ -39,225 +34,256 @@ using namespace cbforest;
 static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
-struct C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
-    C4Database* _db;
-    VersionedDocument _versionedDoc;
-    const Revision *_selectedRev;
-    alloc_slice _revIDBuf;
-    alloc_slice _selectedRevIDBuf;
-    alloc_slice _loadedBody;
+namespace cbforest {
 
-    C4DocumentInternal(C4Database* database, C4Slice docID)
-    :_db(database->retain()),
-     _versionedDoc(*_db, docID),
-     _selectedRev(NULL)
-    {
-        init();
-    }
-
-    C4DocumentInternal(C4Database *database, Document &&doc)
-    :_db(database->retain()),
-    _versionedDoc(*_db, std::move(doc)),
-    _selectedRev(NULL)
-    {
-        init();
-    }
-
-    ~C4DocumentInternal() {
-        _db->release();
-    }
-
-    void init() {
-        docID = _versionedDoc.docID();
-        flags = (C4DocumentFlags)_versionedDoc.flags();
-        if (_versionedDoc.exists())
-            flags = (C4DocumentFlags)(flags | kExists);
-        
-        initRevID();
-        selectCurrentRevision();
-    }
-
-    void initRevID() {
-        if (_versionedDoc.revID().size > 0) {
-            _revIDBuf = _versionedDoc.revID().expanded();
-        } else {
-            _revIDBuf = slice::null;
-        }
-        revID = _revIDBuf;
-        sequence = _versionedDoc.sequence();
-    }
-
-    bool selectRevision(const Revision *rev, C4Error *outError =NULL) {
-        _selectedRev = rev;
-        _loadedBody = slice::null;
-        if (rev) {
-            _selectedRevIDBuf = rev->revID.expanded();
-            selectedRev.revID = _selectedRevIDBuf;
-            selectedRev.flags = (C4RevisionFlags)rev->flags;
-            selectedRev.sequence = rev->sequence;
-            selectedRev.body = rev->inlineBody();
-            return true;
-        } else {
-            _selectedRevIDBuf = slice::null;
-            selectedRev.revID = slice::null;
-            selectedRev.flags = (C4RevisionFlags)0;
-            selectedRev.sequence = 0;
-            selectedRev.body = slice::null;
-            recordHTTPError(kC4HTTPNotFound, outError);
-            return false;
-        }
-    }
-
-    bool selectCurrentRevision() {
-        if (_versionedDoc.revsAvailable()) {
-            return selectRevision(_versionedDoc.currentRevision());
-        } else {
-            // Doc body (rev tree) isn't available, but we know enough about the current rev:
-            _selectedRev = NULL;
-            selectedRev.revID = revID;
-            selectedRev.sequence = sequence;
-            int revFlags = 0;
-            if (flags & kExists) {
-                revFlags |= kRevLeaf;
-                if (flags & kDeleted)
-                    revFlags |= kRevDeleted;
-                if (flags & kHasAttachments)
-                    revFlags |= kRevHasAttachments;
-            }
-            selectedRev.flags = (C4RevisionFlags)revFlags;
-            selectedRev.body = slice::null;
-            return true;
-        }
-    }
-
-    bool revisionsLoaded() const {
-        return _versionedDoc.revsAvailable();
-    }
-
-    bool loadRevisions(C4Error *outError) {
-        if (_versionedDoc.revsAvailable())
-            return true;
-        try {
-            WITH_LOCK(_db);
-            _versionedDoc.read();
-            _selectedRev = _versionedDoc.currentRevision();
-            return true;
-        } catchError(outError)
-        return false;
-    }
-
-    bool loadSelectedRevBody(C4Error *outError) {
-        if (!loadRevisions(outError))
-            return false;
-        if (!_selectedRev)
-            return true;
-        if (selectedRev.body.buf)
-            return true;  // already loaded
-        try {
-            WITH_LOCK(_db);
-            _loadedBody = _selectedRev->readBody();
-            selectedRev.body = _loadedBody;
-            if (_loadedBody.buf)
-                return true;
-            recordHTTPError(kC4HTTPGone, outError); // 410 Gone to denote body that's been compacted away
-        } catchError(outError);
-        return false;
-    }
-
-    void updateMeta() {
-        _versionedDoc.updateMeta();
-        flags = (C4DocumentFlags)(_versionedDoc.flags() | kExists);
-        initRevID();
-    }
-
-    bool mustBeInTransaction(C4Error *outError) {
-        return _db->mustBeInTransaction(outError);
-    }
-
-    void save(unsigned maxRevTreeDepth) {
-        _versionedDoc.prune(maxRevTreeDepth);
+    class C4DocumentV1 : public C4DocumentInternal {
+    public:
+        C4DocumentV1(C4Database* database, C4Slice docID)
+        :C4DocumentInternal(database, docID),
+         _versionedDoc(*database, docID),
+         _selectedRev(NULL)
         {
-            WITH_LOCK(_db);
-            _versionedDoc.save(*_db->transaction());
+            init();
         }
-        sequence = _versionedDoc.sequence();
-    }
 
-};
 
-static inline C4DocumentInternal *internal(C4Document *doc) {
-    return (C4DocumentInternal*)doc;
-}
+        C4DocumentV1(C4Database *database, Document &&doc)
+        :C4DocumentInternal(database, std::move(doc)),
+         _versionedDoc(*database, std::move(doc)),
+         _selectedRev(NULL)
+        {
+            init();
+        }
 
-// This helper function is meant to be wrapped in a transaction
-static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
-{
-    CBFDebugAssert(db->mustBeInTransaction(outError));
-    try {
-        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+
+        void init() {
+            docID = _versionedDoc.docID();
+            flags = (C4DocumentFlags)_versionedDoc.flags();
+            if (_versionedDoc.exists())
+                flags = (C4DocumentFlags)(flags | kExists);
+
+            initRevID();
+            selectCurrentRevision();
+        }
+
+        void initRevID() {
+            if (_versionedDoc.revID().size > 0) {
+                _revIDBuf = _versionedDoc.revID().expanded();
+            } else {
+                _revIDBuf = slice::null;
+            }
+            revID = _revIDBuf;
+            sequence = _versionedDoc.sequence();
+        }
+
+        C4SliceResult type() override {
+            slice result = _versionedDoc.docType().copy();
+            return {result.buf, result.size};
+        }
+
+        void setType(C4Slice docType) override {
+            _versionedDoc.setDocType(docType);
+        }
+
+
+        bool exists() override {
+            return _versionedDoc.exists();
+        }
+
+        bool selectRevision(C4Slice revID, bool withBody, C4Error *outError) override {
+            if (revID.buf) {
+                if (!loadRevisions(outError))
+                    return false;
+                const Revision *rev = _versionedDoc[revidBuffer(revID)];
+                return selectRevision(rev, outError) && (!withBody || loadSelectedRevBody(outError));
+            } else {
+                selectRevision(NULL);
+                return true;
+            }
+        }
+
+        bool selectRevision(const Revision *rev, C4Error *outError =NULL) override {
+            _selectedRev = rev;
+            _loadedBody = slice::null;
+            if (rev) {
+                _selectedRevIDBuf = rev->revID.expanded();
+                selectedRev.revID = _selectedRevIDBuf;
+                selectedRev.flags = (C4RevisionFlags)rev->flags;
+                selectedRev.sequence = rev->sequence;
+                selectedRev.body = rev->inlineBody();
+                return true;
+            } else {
+                _selectedRevIDBuf = slice::null;
+                selectedRev.revID = slice::null;
+                selectedRev.flags = (C4RevisionFlags)0;
+                selectedRev.sequence = 0;
+                selectedRev.body = slice::null;
+                recordHTTPError(kC4HTTPNotFound, outError);
+                return false;
+            }
+        }
+
+        bool selectCurrentRevision() override {
+            if (_versionedDoc.revsAvailable()) {
+                return selectRevision(_versionedDoc.currentRevision());
+            } else {
+                // Doc body (rev tree) isn't available, but we know enough about the current rev:
+                _selectedRev = NULL;
+                selectedRev.revID = revID;
+                selectedRev.sequence = sequence;
+                int revFlags = 0;
+                if (flags & kExists) {
+                    revFlags |= kRevLeaf;
+                    if (flags & kDeleted)
+                        revFlags |= kRevDeleted;
+                    if (flags & kHasAttachments)
+                        revFlags |= kRevHasAttachments;
+                }
+                selectedRev.flags = (C4RevisionFlags)revFlags;
+                selectedRev.body = slice::null;
+                return true;
+            }
+        }
+
+        bool revisionsLoaded() const override {
+            return _versionedDoc.revsAvailable();
+        }
+
+        bool loadRevisions(C4Error *outError) override {
+            if (_versionedDoc.revsAvailable())
+                return true;
+            try {
+                WITH_LOCK(_db);
+                _versionedDoc.read();
+                _selectedRev = _versionedDoc.currentRevision();
+                return true;
+            } catchError(outError)
             return false;
         }
 
-        CollatableBuilder tsKeyBuilder;
-        tsKeyBuilder.beginArray();
-        tsKeyBuilder << (double)timestamp;
-        tsKeyBuilder << docId;
-        tsKeyBuilder.endArray();
-        slice tsKey = tsKeyBuilder.data();
+        bool hasRevisionBody() override {
+            if (!revisionsLoaded())
+                Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
+            WITH_LOCK(database());
+            return _selectedRev && _selectedRev->isBodyAvailable();
+        }
 
-        alloc_slice tsValue(SizeOfVarInt(timestamp));
-        PutUVarInt((void *)tsValue.buf, timestamp);
+        bool selectParentRevision() override {
+            if (!revisionsLoaded())
+                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            if (_selectedRev)
+                selectRevision(_selectedRev->parent());
+            return _selectedRev != NULL;
+        }
 
-        WITH_LOCK(db);
+        bool selectNextRevision() override {
+            if (!revisionsLoaded())
+                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            if (_selectedRev)
+                selectRevision(_selectedRev->next());
+            return _selectedRev != NULL;
+        }
 
-        Transaction *t = db->transaction();
-        KeyStore& expiry = db->getKeyStore("expiry");
-        KeyStoreWriter writer(expiry, *t);
-        Document existingDoc = writer.get(docId);
-        if (existingDoc.exists()) {
-            // Previous entry found
-            if (existingDoc.body().compare(tsValue) == 0) {
-                // No change
-                return true;
+        bool selectNextLeafRevision(bool includeDeleted, bool withBody, C4Error *outError) override {
+            if (!revisionsLoaded())
+                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            auto rev = _selectedRev;
+            if (rev) {
+                do {
+                    rev = rev->next();
+                } while (rev && (!rev->isLeaf() || (!includeDeleted && rev->isDeleted())));
             }
-
-            // Remove old entry
-            uint64_t oldTimestamp;
-            CollatableBuilder oldTsKey;
-            GetUVarInt(existingDoc.body(), &oldTimestamp);
-            oldTsKey.beginArray();
-            oldTsKey << (double)oldTimestamp;
-            oldTsKey << docId;
-            oldTsKey.endArray();
-            writer.del(oldTsKey);
+            if (!selectRevision(rev, NULL)) {
+                clearError(outError);  // Normal termination, not error
+                return false;
+            }
+            return (!withBody || loadSelectedRevBody(outError));
         }
 
-        if (timestamp == 0) {
-            writer.del(tsKey);
-            writer.del(docId);
-        } else {
-            writer.set(tsKey, slice::null);
-            writer.set(docId, tsValue);
+        bool loadSelectedRevBody(C4Error *outError) override {
+            if (!loadRevisions(outError))
+                return false;
+            if (!_selectedRev)
+                return true;
+            if (selectedRev.body.buf)
+                return true;  // already loaded
+            try {
+                WITH_LOCK(_db);
+                _loadedBody = _selectedRev->readBody();
+                selectedRev.body = _loadedBody;
+                if (_loadedBody.buf)
+                    return true;
+                recordHTTPError(kC4HTTPGone, outError); // 410 Gone to denote body that's been compacted away
+            } catchError(outError);
+            return false;
         }
 
-        return true;
-    } catchError(outError);
+        void updateMeta() {
+            _versionedDoc.updateMeta();
+            flags = (C4DocumentFlags)(_versionedDoc.flags() | kExists);
+            initRevID();
+        }
 
-    return false;
+        void save(unsigned maxRevTreeDepth) override {
+            _versionedDoc.prune(maxRevTreeDepth);
+            {
+                WITH_LOCK(_db);
+                _versionedDoc.save(*_db->transaction());
+            }
+            sequence = _versionedDoc.sequence();
+        }
+
+        int32_t purgeRevision(C4Slice revID) override {
+            int32_t total = _versionedDoc.purge(revidBuffer(revID));
+            if (total > 0) {
+                updateMeta();
+                if (_selectedRevIDBuf == revID)
+                    selectRevision(_versionedDoc.currentRevision());
+            }
+            return total;
+        }
+            
+        public:
+            VersionedDocument _versionedDoc;
+            const Revision *_selectedRev;
+
+    };
+
+
+    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, C4Slice docID) {
+        if (database->schema <= 1)
+            return new C4DocumentV1(database, docID);
+        else
+            return new C4DocumentV2(database, docID);
+    }
+
+    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, Document &&doc) {
+        if (database->schema <= 1)
+            return new C4DocumentV1(database, std::move(doc));
+        else
+            return new C4DocumentV2(database, std::move(doc));
+    }
+
 }
+
 
 namespace c4Internal {
+    static inline C4DocumentV1* internalV1(C4Document *doc) {
+        return (C4DocumentV1*)internal(doc);
+    }
+
     C4Document* newC4Document(C4Database *db, Document &&doc) {
         // Doesn't need to lock since Document is already in memory
-        return new C4DocumentInternal(db, std::move(doc));
+        return C4DocumentInternal::newInstance(db, std::move(doc));
     }
 
     const VersionedDocument& versionedDocument(C4Document* doc) {
-        return internal(doc)->_versionedDoc;
+        return internalV1(doc)->_versionedDoc;
     }
 }
 
+
+#pragma mark - PUBLIC API:
 
 
 void c4doc_free(C4Document *doc) {
@@ -272,8 +298,8 @@ C4Document* c4doc_get(C4Database *database,
 {
     try {
         WITH_LOCK(database);
-        auto doc = new C4DocumentInternal(database, docID);
-        if (mustExist && !doc->_versionedDoc.exists()) {
+        auto doc = C4DocumentInternal::newInstance(database, docID);
+        if (mustExist && !doc->exists()) {
             delete doc;
             doc = NULL;
             recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -292,8 +318,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
 {
     try {
         WITH_LOCK(database);
-        auto doc = new C4DocumentInternal(database, database->get(sequence));
-        if (!doc->_versionedDoc.exists()) {
+        auto doc = C4DocumentInternal::newInstance(database, database->get(sequence));
+        if (!doc->exists()) {
             delete doc;
             doc = NULL;
             recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -301,6 +327,15 @@ C4Document* c4doc_getBySequence(C4Database *database,
         return doc;
     } catchError(outError);
     return NULL;
+}
+
+
+C4SliceResult c4doc_getType(C4Document *doc) {
+    return internal(doc)->type();
+}
+
+void c4doc_setType(C4Document *doc, C4Slice docType) {
+    return internal(doc)->setType(docType);
 }
 
 
@@ -313,16 +348,7 @@ bool c4doc_selectRevision(C4Document* doc,
                           C4Error *outError)
 {
     try {
-        auto idoc = internal(doc);
-        if (revID.buf) {
-            if (!idoc->loadRevisions(outError))
-                return false;
-            const Revision *rev = idoc->_versionedDoc[revidBuffer(revID)];
-            return idoc->selectRevision(rev, outError) && (!withBody || idoc->loadSelectedRevBody(outError));
-        } else {
-            idoc->selectRevision(NULL);
-            return true;
-        }
+        return internal(doc)->selectRevision(revID, withBody, outError);
     } catchError(outError);
     return false;
 }
@@ -341,36 +367,19 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
 
 bool c4doc_hasRevisionBody(C4Document* doc) {
     try {
-        auto idoc = internal(doc);
-        if (!idoc->revisionsLoaded()) {
-            Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
-        }
-        WITH_LOCK(idoc->_db);
-        return idoc->_selectedRev && idoc->_selectedRev->isBodyAvailable();
+        return internal(doc)->hasRevisionBody();
     } catchError(NULL);
     return false;
 }
 
 
 bool c4doc_selectParentRevision(C4Document* doc) {
-    auto idoc = internal(doc);
-    if (!idoc->revisionsLoaded()) {
-        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
-    }
-    if (idoc->_selectedRev)
-        idoc->selectRevision(idoc->_selectedRev->parent());
-    return idoc->_selectedRev != NULL;
+    return internal(doc)->selectParentRevision();
 }
 
 
 bool c4doc_selectNextRevision(C4Document* doc) {
-    auto idoc = internal(doc);
-    if (!idoc->revisionsLoaded()) {
-        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
-    }
-    if (idoc->_selectedRev)
-        idoc->selectRevision(idoc->_selectedRev->next());
-    return idoc->_selectedRev != NULL;
+    return internal(doc)->selectNextRevision();
 }
 
 
@@ -379,21 +388,7 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
                                   bool withBody,
                                   C4Error *outError)
 {
-    auto idoc = internal(doc);
-    if (!idoc->revisionsLoaded()) {
-        Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
-    }
-    auto rev = idoc->_selectedRev;
-    if (rev) {
-        do {
-            rev = rev->next();
-        } while (rev && (!rev->isLeaf() || (!includeDeleted && rev->isDeleted())));
-    }
-    if (!idoc->selectRevision(rev, NULL)) {
-        clearError(outError);  // Normal termination, not error
-        return false;
-    }
-    return (!withBody || idoc->loadSelectedRevBody(outError));
+    internal(doc)->selectNextLeafRevision(includeDeleted, withBody, outError);
 }
 
 
@@ -409,7 +404,7 @@ unsigned c4rev_getGeneration(C4Slice revID) {
 
 
 // Internal form of c4doc_insertRevision that takes compressed revID and doesn't check preconditions
-static int32_t insertRevision(C4DocumentInternal *idoc,
+static int32_t insertRevision(C4DocumentV1 *idoc,
                               revid encodedRevID,
                               C4Slice body,
                               bool deletion,
@@ -451,7 +446,7 @@ int32_t c4doc_insertRevision(C4Document *doc,
                              bool allowConflict,
                              C4Error *outError)
 {
-    auto idoc = internal(doc);
+    auto idoc = internalV1(doc);
     if (!idoc->mustBeInTransaction(outError))
         return -1;
     if (!idoc->loadRevisions(outError))
@@ -475,7 +470,7 @@ int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
 {
     if (historyCount < 1)
         return 0;
-    auto idoc = internal(doc);
+    auto idoc = internalV1(doc);
     if (!idoc->mustBeInTransaction(outError))
         return -1;
     if (!idoc->loadRevisions(outError))
@@ -510,25 +505,9 @@ int32_t c4doc_purgeRevision(C4Document *doc,
     if (!idoc->loadRevisions(outError))
         return -1;
     try {
-        int32_t total = idoc->_versionedDoc.purge(revidBuffer(revID));
-        if (total > 0) {
-            idoc->updateMeta();
-            if (idoc->_selectedRevIDBuf == revID)
-                idoc->selectRevision(idoc->_versionedDoc.currentRevision());
-        }
-        return total;
+        return idoc->purgeRevision(revID);
     } catchError(outError)
     return -1;
-}
-
-
-C4SliceResult c4doc_getType(C4Document *doc) {
-    slice result = internal(doc)->_versionedDoc.docType().copy();
-    return {result.buf, result.size};
-}
-
-void c4doc_setType(C4Document *doc, C4Slice docType) {
-    internal(doc)->_versionedDoc.setDocType(docType);
 }
 
 
@@ -544,29 +523,6 @@ bool c4doc_save(C4Document *doc,
         return true;
     } catchError(outError)
     return false;
-}
-
-bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
-{
-    if (!c4db_beginTransaction(db, outError)) {
-        return false;
-    }
-
-    bool commit = c4doc_setExpirationInternal(db, docId, timestamp, outError);
-    return c4db_endTransaction(db, commit, outError);
-}
-
-uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)
-{
-    KeyStore &expiryKvs = db->getKeyStore("expiry");
-    Document existing = expiryKvs.get(docID);
-    if (!existing.exists()) {
-        return 0;
-    }
-
-    uint64_t timestamp;
-    GetUVarInt(existing.body(), &timestamp);
-    return timestamp;
 }
 
 static alloc_slice createDocUUID() {
@@ -655,7 +611,7 @@ C4Document* c4doc_getForPut(C4Database *database,
 {
     if (!database->mustBeInTransaction(outError))
         return NULL;
-    C4DocumentInternal *idoc = NULL;
+    C4DocumentV1 *idoc = NULL;
     try {
         do {
             alloc_slice newDocID;
@@ -665,7 +621,7 @@ C4Document* c4doc_getForPut(C4Database *database,
                 docID = newDocID;
             }
 
-            idoc = new C4DocumentInternal(database, docID);
+            idoc = new C4DocumentV1(database, docID);
 
             if (!isNewDoc && !idoc->loadRevisions(outError))
                 break;
@@ -746,7 +702,7 @@ C4Document* c4doc_put(C4Database *database,
 
         revidBuffer revID = generateDocRevID(rq->body, doc->selectedRev.revID, rq->deletion);
 
-        inserted = insertRevision(internal(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
+        inserted = insertRevision(internalV1(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
                                   rq->allowConflict, outError);
     }
 

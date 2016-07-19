@@ -13,6 +13,7 @@
 #include "Database.hh"
 #include "Collatable.hh"
 #include "VersionedDocument.hh"
+#include "CASRevisionStore.hh"
 #include "Error.hh"
 #include <functional>
 
@@ -28,6 +29,7 @@ using namespace cbforest;
 
 namespace cbforest {
     class VersionedDocument;
+    class CASRevisionStore;
 }
 
 
@@ -77,7 +79,7 @@ namespace c4Internal {
 
     C4Document* newC4Document(C4Database*, Document&&);
 
-    const VersionedDocument& versionedDocument(C4Document*);
+    //const VersionedDocument& versionedDocument(C4Document*);
 
     typedef std::function<bool(const Document&,
                                uint32_t documentFlags,  // C4DocumentFlags
@@ -148,6 +150,8 @@ struct c4Database : public Database, RefCounted<c4Database> {
     bool mustNotBeInTransaction(C4Error *outError);
     bool endTransaction(bool commit);
 
+    CASRevisionStore& revisionStore();
+
 #if C4DB_THREADSAFE
     // Mutex for synchronizing Database calls. Non-recursive!
     std::mutex _mutex;
@@ -162,6 +166,7 @@ private:
 #endif
     Transaction* _transaction {NULL};
     int _transactionLevel {0};
+    std::unique_ptr<CASRevisionStore> _revisionStore;
 };
 
 
