@@ -10,7 +10,7 @@
 DSTROOT                      = /tmp/CBForest_iOS.dst
 GCC_PRECOMPILE_PREFIX_HEADER = YES
 GCC_PREFIX_HEADER            = CBForest/CBForest-Prefix.pch
-GENERATE_MASTER_OBJECT_FILE  = YES
+GENERATE_MASTER_OBJECT_FILE  = NO
 HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/vendor/forestdb/include/**
 PRODUCT_NAME                 = CBForest
 SKIP_INSTALL                 = YES
