@@ -48,7 +48,7 @@ std::string PathForDatabaseNamed(NSString *name) {
 
 static void randomAESKey(fdb_encryption_key &key) {
     key.algorithm = FDB_ENCRYPTION_AES256;
-    SecRandomCopyBytes(kSecRandomDefault, sizeof(key.bytes), (uint8_t*)&key.bytes);
+    (void)SecRandomCopyBytes(kSecRandomDefault, sizeof(key.bytes), (uint8_t*)&key.bytes);
 }
 
 Database::config TestDBConfig() {

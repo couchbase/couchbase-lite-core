@@ -36,7 +36,7 @@ static NSData* collatableData(id obj) {
 
 static uint64_t randn(uint64_t limit) {
     uint64_t n;
-    SecRandomCopyBytes(kSecRandomDefault, 8, (uint8_t*)&n);
+    (void)SecRandomCopyBytes(kSecRandomDefault, 8, (uint8_t*)&n);
     return n % limit;
 }
 
