@@ -20,7 +20,8 @@ LOCAL_CFLAGS    :=  -I$(SQLITE3_PATH)/libstemmer_c/runtime/ \
 					-I$(SQLITE3_PATH)/libstemmer_c/src_c/ \
 					-I$(SQLITE3_PATH)/ \
 					-I$(SQLITE_INC_PATH)/ \
-					-I$(OPENSSL_PATH)/
+					-I$(OPENSSL_PATH)/ \
+					-D_ALIGN_MEM_ACCESS
 
 # For sqlite3-unicodesn
 LOCAL_CFLAGS	+=	-DSQLITE_ENABLE_FTS4 \
@@ -41,6 +42,7 @@ LOCAL_CPPFLAGS	:= 	-I$(FORESTDB_PATH)/include/ \
 					-I$(OPENSSL_PATH)/ \
 					-D_CRYPTO_OPENSSL \
 					-DFORESTDB_VERSION=\"Internal\" \
+					-D_ALIGN_MEM_ACCESS
 
 LOCAL_CPPFLAGS	+=	-std=c++11
 LOCAL_CPPFLAGS	+=	-fexceptions
@@ -52,7 +54,7 @@ LOCAL_CPPFLAGS	+=	-D__ANDROID__
 # With android-21, it seems no longer necessary.
 # http://stackoverflow.com/questions/986426/what-do-stdc-limit-macros-and-stdc-constant-macros-mean
 LOCAL_CPPFLAGS	+=	-D__STDC_LIMIT_MACROS  
-LOCAL_CPPFLAGS  +=  -g -O0
+LOCAL_CPPFLAGS  +=  -g -O3
 LOCAL_CPPFLAGS	+=	-Wno-unused-value
 LOCAL_CPPFLAGS	+=	-Wno-deprecated-register
 LOCAL_CPPFLAGS  += -fexceptions
