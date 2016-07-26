@@ -52,7 +52,7 @@ LOCAL_CPPFLAGS	+=	-D__ANDROID__
 # With android-21, it seems no longer necessary.
 # http://stackoverflow.com/questions/986426/what-do-stdc-limit-macros-and-stdc-constant-macros-mean
 LOCAL_CPPFLAGS	+=	-D__STDC_LIMIT_MACROS  
-#LOCAL_CPPFLAGS  +=  -g -O0
+LOCAL_CPPFLAGS  +=  -g -O0
 LOCAL_CPPFLAGS	+=	-Wno-unused-value
 LOCAL_CPPFLAGS	+=	-Wno-deprecated-register
 LOCAL_CPPFLAGS  += -fexceptions
@@ -65,7 +65,7 @@ PCH_FILE  := $(CBFOREST_PATH)/CBForest-Prefix.pch
 LOCAL_CPPFLAGS += -include $(PCH_FILE)
 
 LOCAL_LDLIBS    := -llog
-LOCAL_LDLIBS    += -latomic  # for armeabi
+LOCAL_LDLIBS    += -latomic
 
 LOCAL_SRC_FILES :=	$(SQLITE3_PATH)/fts3_unicode2.c \
 					$(SQLITE3_PATH)/fts3_unicodesn.c \
