@@ -151,6 +151,7 @@ public:
     }
 
     void updateIndex(C4Database* updateDB, C4View* view) {
+        C4SequenceNumber oldLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         C4Error error;
         C4Indexer* ind = c4indexer_begin(updateDB, &view, 1, &error);
         Assert(ind);
@@ -165,7 +166,7 @@ public:
         if (kLog) fprintf(stderr, "<< ");
 
         C4Document *doc;
-        C4SequenceNumber lastSeq = 0;
+        C4SequenceNumber lastSeq = oldLastSeqIndexed;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
             if (kLog) fprintf(stderr, "(#%lld) ", doc->sequence);
@@ -186,10 +187,10 @@ public:
         if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
         Assert(c4indexer_end(ind, true, &error));
 
-        C4SequenceNumber gotLastSeq = c4view_getLastSequenceIndexed(view);
-        if (gotLastSeq != lastSeq)
-            if (kLog) fprintf(stderr, "BUT read lastSeq=%lld! ", gotLastSeq);
-        AssertEqual(gotLastSeq, lastSeq);
+        C4SequenceNumber newLastSeqIndexed = c4view_getLastSequenceIndexed(view);
+        if (newLastSeqIndexed != lastSeq)
+            if (kLog) fprintf(stderr, "BUT view.lastSequenceIndexed=%lld! (Started as %lld) ", newLastSeqIndexed, oldLastSeqIndexed);
+        AssertEqual(newLastSeqIndexed, lastSeq);
         AssertEqual(c4view_getLastSequenceChangedAt(view), lastSeq);
     }
     
