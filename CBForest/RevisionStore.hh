@@ -12,6 +12,8 @@
 #include "Revision.hh"
 #include "VersionVector.hh"
 
+class RevisionStoreTest;
+
 namespace cbforest {
 
     class Revision;
@@ -109,6 +111,7 @@ namespace cbforest {
         KeyStore &_nonCurrentStore;
 
         friend class Revision;
+        friend class ::RevisionStoreTest;
     };
 
 }
