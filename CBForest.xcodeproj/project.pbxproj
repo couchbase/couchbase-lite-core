@@ -732,8 +732,8 @@
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/cbforest/Constants.java; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
-		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../CBForest/Database.cc; sourceTree = "<group>"; };
-		27E48712192171EA007D8940 /* Database.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Database.hh; path = ../CBForest/Database.hh; sourceTree = "<group>"; };
+		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
+		27E48712192171EA007D8940 /* Database.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
 		27E4871D19226508007D8940 /* Database_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Database_Test.mm; sourceTree = "<group>"; };
 		27E4872019226699007D8940 /* testutil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = testutil.h; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
@@ -1026,16 +1026,12 @@
 				2701993A19F1972E00FDC239 /* Tokenizer.hh */,
 				27EF80C7191445CF00A327B9 /* english_stopwords.h */,
 			);
-			name = Indexes;
+			path = Indexes;
 			sourceTree = "<group>";
 		};
-		273E9F7C1C518678003115A6 /* Documents */ = {
+		273E9F7C1C518678003115A6 /* Rev-Trees */ = {
 			isa = PBXGroup;
 			children = (
-				27DF46C21A12CF46007BB4A4 /* Document.cc */,
-				27DF46C31A12CF46007BB4A4 /* Document.hh */,
-				27E609A11951E4C000202B72 /* DocEnumerator.cc */,
-				27E609A41951E53F00202B72 /* DocEnumerator.hh */,
 				27E487291923F24D007D8940 /* VersionedDocument.cc */,
 				27E4872A1923F24D007D8940 /* VersionedDocument.hh */,
 				275F1444195CC588009DADB2 /* VersionedDocument.mm */,
@@ -1047,7 +1043,8 @@
 				2708FE5C1CF6197D0022F721 /* RawRevTree.cc */,
 				2708FE5D1CF6197D0022F721 /* RawRevTree.hh */,
 			);
-			name = Documents;
+			name = "Rev-Trees";
+			path = RevTrees;
 			sourceTree = "<group>";
 		};
 		273E9FA41C519A1B003115A6 /* xcconfigs */ = {
@@ -1186,8 +1183,7 @@
 				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
 			);
-			name = Support;
-			path = ../CBForest;
+			path = Support;
 			sourceTree = "<group>";
 		};
 		2750725A18E3E6E100A80C5A /* forestdb */ = {
@@ -1404,7 +1400,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		279794A91D3187E8001D0F3A /* Revisions */ = {
+		279794A91D3187E8001D0F3A /* VersionVectors */ = {
 			isa = PBXGroup;
 			children = (
 				279794A41D307626001D0F3A /* RevisionStore.cc */,
@@ -1416,7 +1412,7 @@
 				2797949E1D305EC2001D0F3A /* Revision.hh */,
 				2708FE371CF3A0F10022F721 /* VersionVector.hh */,
 			);
-			name = Revisions;
+			path = VersionVectors;
 			sourceTree = "<group>";
 		};
 		27A6578C1CBC189800A7A1D7 /* Swift */ = {
@@ -1451,16 +1447,28 @@
 			path = Swift/tests;
 			sourceTree = SOURCE_ROOT;
 		};
-		27E4871019217187007D8940 /* CBForest */ = {
+		27D74A5F1D4C063A00D806E0 /* Storage */ = {
 			isa = PBXGroup;
 			children = (
-				27DD150719354C70009A367D /* CBForest.hh */,
 				27C319EC1A143F5D00A89EDC /* KeyStore.cc */,
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
 				27E48711192171EA007D8940 /* Database.cc */,
 				27E48712192171EA007D8940 /* Database.hh */,
-				279794A91D3187E8001D0F3A /* Revisions */,
-				273E9F7C1C518678003115A6 /* Documents */,
+				27DF46C21A12CF46007BB4A4 /* Document.cc */,
+				27DF46C31A12CF46007BB4A4 /* Document.hh */,
+				27E609A11951E4C000202B72 /* DocEnumerator.cc */,
+				27E609A41951E53F00202B72 /* DocEnumerator.hh */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		27E4871019217187007D8940 /* CBForest */ = {
+			isa = PBXGroup;
+			children = (
+				27DD150719354C70009A367D /* CBForest.hh */,
+				27D74A5F1D4C063A00D806E0 /* Storage */,
+				279794A91D3187E8001D0F3A /* VersionVectors */,
+				273E9F7C1C518678003115A6 /* Rev-Trees */,
 				273E9F7B1C518613003115A6 /* Indexes */,
 				2750724318E3E52800A80C5A /* Support */,
 				271057C21D3997230018247B /* C++ Tests */,

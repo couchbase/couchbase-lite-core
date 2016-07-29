@@ -9,7 +9,7 @@
 
 DSTROOT                      = /tmp/CBForest_iOS.dst
 GCC_PRECOMPILE_PREFIX_HEADER = YES
-GCC_PREFIX_HEADER            = CBForest/CBForest-Prefix.pch
+GCC_PREFIX_HEADER            = CBForest/Support/CBForest-Prefix.pch
 HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/vendor/forestdb/include/** $(SRCROOT)/vendor/fleece/Fleece
 PRODUCT_NAME                 = CBForest
 SKIP_INSTALL                 = YES
