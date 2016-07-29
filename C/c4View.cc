@@ -234,8 +234,8 @@ struct c4Indexer : public MapReduceIndexer, c4Internal::InstanceCounted {
 
     virtual ~c4Indexer() {
 #if C4DB_THREADSAFE
-        for (auto view = _views.begin(); view != _views.end(); ++view)
-            (*view)->_mutex.unlock();
+        for (auto view : _views)
+            view->_mutex.unlock();
 #endif
     }
 

@@ -272,8 +272,8 @@ std::vector<hashRange> area::coveringHashRangesOfLength(unsigned nChars) const {
 
     // Coalesce the hashes into hashRanges:
     std::vector<hashRange> result;
-    for (auto h = covering.begin(); h != covering.end(); ++h) {
-        if (result.size() > 0 && result.back().add(*h)) {
+    for (auto &h : covering) {
+        if (result.size() > 0 && result.back().add(h)) {
             // Check if result.back() can itself be coalesced
             if (result.back().compact()) {
                 while (result.size() > 1 && result[result.size()-2].add(result.back().first())) {
@@ -282,7 +282,7 @@ std::vector<hashRange> area::coveringHashRangesOfLength(unsigned nChars) const {
                 }
             }
         } else {
-            result.push_back(hashRange(*h, 1));
+            result.push_back(hashRange(h, 1));
         }
     }
     return result;

@@ -49,16 +49,16 @@ namespace cbforest {
     static std::vector<KeyRange> keyRangesFor(geohash::area a) {
         auto hashes = a.coveringHashRanges(kMaxKeyRanges);
         std::vector<KeyRange> ranges;
-        for (auto h = hashes.begin(); h != hashes.end(); ++h) {
-            geohash::hash lastHash = h->last();
+        for (auto &h : hashes) {
+            geohash::hash lastHash = h.last();
             Log("GeoIndexEnumerator: query add '%s' ... '%s'",
-                (const char*)h->first(), (const char*)lastHash);
+                (const char*)h.first(), (const char*)lastHash);
             strcat(lastHash.string, "Z"); // so the string range includes everything inside lastHash
-            ranges.push_back(KeyRange(CollatableBuilder(h->first()), CollatableBuilder(lastHash)));
+            ranges.push_back(KeyRange(CollatableBuilder(h.first()), CollatableBuilder(lastHash)));
 
             // Also need to look for all _exact_ parent hashes. For example, if the hashRange
             // is 9b1...9b7, we also want the exact keys "9b" and "9".
-            geohash::hash parent = h->first();
+            geohash::hash parent = h.first();
             size_t len = strlen(parent.string);
             while (len > 1) {
                 parent.string[--len] = '\0';

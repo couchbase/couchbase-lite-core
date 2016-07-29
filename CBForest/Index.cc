@@ -80,8 +80,8 @@ namespace cbforest {
             Encoder enc;
             enc.beginArray();
             enc.writeUInt(hash);
-            for (auto i=keys.begin(); i != keys.end(); ++i)
-                enc.writeData(*i);
+            for (auto &key : keys)
+                enc.writeData(key);
             enc.endArray();
             set(docID, enc.extractOutput());
         } else {
@@ -108,13 +108,13 @@ namespace cbforest {
 
         // Compute a hash of the values and see whether it's the same as the previous values' hash:
         uint32_t newStoredHash = kInitialHash;
-        for (auto value = values.begin(); value != values.end(); ++value) {
-            if (*value == Index::kSpecialValue) {
+        for (auto &value : values) {
+            if (value == Index::kSpecialValue) {
                 // kSpecialValue is placeholder for entire doc, and always considered changed.
                 oldStoredHash = newStoredHash - 1; // force comparison to fail
                 break;
             }
-            addHash(newStoredHash, *value);
+            addHash(newStoredHash, value);
         }
         bool valuesMightBeUnchanged = (newStoredHash == oldStoredHash);
 
@@ -280,8 +280,8 @@ namespace cbforest {
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
         index->addUser();
-        for (auto i = _keyRanges.begin(); i != _keyRanges.end(); ++i)
-            Debug("    key range: %s -- %s (%d)", i->start.toJSON().c_str(), i->end.toJSON().c_str(), i->inclusiveEnd);
+        for (auto &r : _keyRanges)
+            Debug("    key range: %s -- %s (%d)", r.start.toJSON().c_str(), r.end.toJSON().c_str(), r.inclusiveEnd);
         nextKeyRange();
     }
 

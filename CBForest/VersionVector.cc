@@ -186,11 +186,11 @@ namespace cbforest {
         else if (countDiff > 0)
             o = kNewer;
 
-        for (auto v = _vers.begin(); v != _vers.end(); ++v) {
-            auto othergen = other[v->author];
-            if (v->gen < othergen)
+        for (auto &v : _vers) {
+            auto othergen = other[v.author];
+            if (v.gen < othergen)
                 o |= kOlder;
-            else if (v->gen > othergen)
+            else if (v.gen > othergen)
                 o |= kNewer;
             else if (o == kSame)
                 break; // first revs are identical so vectors are equal
@@ -269,8 +269,8 @@ namespace cbforest {
     public:
         versionMap(const VersionVector &vec) {
             _map.reserve(vec.count());
-            for (auto v = vec._vers.begin(); v != vec._vers.end(); ++v)
-                add(*v);
+            for (auto &v : vec._vers)
+                add(v);
         }
 
         void add(const version &vers) {

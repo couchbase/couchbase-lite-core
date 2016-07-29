@@ -253,9 +253,9 @@ namespace cbforest {
             }
 
             // Emit each token string and value array as a key:
-            for (auto kv = tokens.begin(); kv != tokens.end(); ++kv) {
-                CollatableBuilder collKey(kv->first);
-                Encoder& tokValue = kv->second;
+            for (auto &kv : tokens) {
+                CollatableBuilder collKey(kv.first);
+                Encoder& tokValue = kv.second;
                 tokValue.endArray();
                 _emit(collKey, tokValue.extractOutput());
             }
@@ -276,9 +276,9 @@ namespace cbforest {
 
             // Now emit a set of geohashes that cover the given area:
             auto hashes = boundingBox.coveringHashes();
-            for (auto iHash = hashes.begin(); iHash != hashes.end(); ++iHash) {
-                Debug("    hash='%s'", (const char*)(*iHash));
-                CollatableBuilder collKey(*iHash);
+            for (auto &hash : hashes) {
+                Debug("    hash='%s'", (const char*)hash);
+                CollatableBuilder collKey(hash);
                 _emit(collKey, specialKeyEncoded);
             }
         }
@@ -391,11 +391,11 @@ namespace cbforest {
 
         // First find the minimum sequence that not all indexes have indexed yet.
         sequence startSequence = _latestDbSequence+1;
-        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
-            sequence lastSequence = (*writer)->index->lastSequenceIndexed();
+        for (auto writer : _writers) {
+            sequence lastSequence = writer->index->lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
-            } else if ((*writer)->index == _triggerIndex) {
+            } else if (writer->index == _triggerIndex) {
                 return UINT64_MAX; // The trigger index doesn't need to be updated, so abort
             }
         }
@@ -410,9 +410,9 @@ namespace cbforest {
 
 
     MapReduceIndexer::~MapReduceIndexer() {
-        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
-            (*writer)->finish(_finished);
-            delete *writer;
+        for (auto writer : _writers) {
+            writer->finish(_finished);
+            delete writer;
         }
     }
 
@@ -434,8 +434,8 @@ namespace cbforest {
     }
 
     void MapReduceIndexer::skipDoc(slice docID, sequence docSequence) {
-        for (auto i = _writers.begin(); i != _writers.end(); ++i)
-            (*i)->indexDocument(docID, docSequence, _noKeys, _noValues);
+        for (auto writer : _writers)
+            writer->indexDocument(docID, docSequence, _noKeys, _noValues);
     }
 
     void MapReduceIndexer::skipDocInView(slice docID, sequence docSequence, unsigned viewNumber) {

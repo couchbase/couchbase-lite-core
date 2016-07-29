@@ -71,11 +71,12 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
     auto c4keys = handlesToVector<C4Key*>(env, jkeys);
     C4KeyValueList* kv = c4kv_new();
     int i = 0;
-    for (auto key = c4keys.begin(); key != c4keys.end(); ++key, ++i) {
+    for (auto &key : c4keys) {
         jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
         jbyteArraySlice value(env, jvalue);
         c4kv_add(kv, *key, value);
         c4key_free(*key);
+        ++i;
     }
 
     C4Indexer* indexer = (C4Indexer*)indexerHandle;
