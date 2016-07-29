@@ -61,6 +61,14 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Creates a CBForestHistoryEnumerator that enumerates all specified revisions
+        /// of a document
+        /// </summary>
+        /// <param name="db">The document to enumerate</param>
+        /// <param name="startingSequence">The sequence to begin the enumeration from</param>
+        /// <param name="onlyLeaf">If set to <c>true</c> only leaf revisions (i.e. revisions
+        /// with no children) will be processed</param>
         public CBForestHistoryEnumerator(C4Database *db, long startingSequence, bool onlyLeaf)
         {
             _doc = Native.c4doc_getBySequence(db, (ulong)startingSequence, null);
@@ -81,6 +89,9 @@ namespace CBForest
             _byParent = true;
         }
 
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~CBForestHistoryEnumerator()
         {
             Dispose(true);

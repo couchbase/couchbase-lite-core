@@ -24,11 +24,19 @@ using System.Runtime.InteropServices;
 
 namespace CBForest
 {
+    /// <summary>
+    /// A class for enumerating through documents that are expired
+    /// </summary>
     public unsafe sealed class CBForestExpiryEnumerator : IEnumerable<string>
     {
         private readonly C4Database *_db;
         private readonly bool _dispose;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="db">The database to query</param>
+        /// <param name="dispose">Whether or not to cleanup the expiration entries on Dispose().</param>
         public CBForestExpiryEnumerator(C4Database *db, bool dispose)
         {
             _db = db;
@@ -36,6 +44,7 @@ namespace CBForest
         }
 
         #region IEnumerable
+        #pragma warning disable 1591
 
         public IEnumerator<string> GetEnumerator()
         {
@@ -47,6 +56,7 @@ namespace CBForest
             return GetEnumerator();
         }
 
+        #pragma warning restore 1591
         #endregion
     }
 

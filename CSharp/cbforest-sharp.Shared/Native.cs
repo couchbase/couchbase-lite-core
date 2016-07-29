@@ -95,6 +95,9 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Checks the internal object tracking for any objects that were not freed
+        /// </summary>
         [Conditional("DEBUG")]
         public static void CheckMemoryLeaks()
         {
@@ -115,6 +118,10 @@ namespace CBForest
 #endif
         }
 
+        /// <summary>
+        /// Gets the count of live unmanaged objects in CBForest (for debugging)
+        /// </summary>
+        /// <returns>The get object count.</returns>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern int c4_getObjectCount();
 
@@ -176,7 +183,7 @@ namespace CBForest
         /// Opens a database.
         /// </summary>
         /// <param name="path">The path to the DB file</param>
-        /// <param name="readOnly">Whether or not the DB should be opened in read-only mode</param>
+        /// <param name="flags">The flags for opening the database</param>
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
@@ -202,7 +209,7 @@ namespace CBForest
         /// Opens a database.
         /// </summary>
         /// <param name="path">The path to the DB file</param>
-        /// <param name="readOnly">Whether or not the DB should be opened in read-only mode</param>
+        /// <param name="flags">The flags for opening the database</param>
         /// <param name="encryptionKey">The option encryption key used to encrypt the database</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A database instance for use in the C4 API</returns>
@@ -214,6 +221,12 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Closes a database (any further access attempts are invalid)
+        /// </summary>
+        /// <returns>Whether or not the database was successfully closed</returns>
+        /// <param name="db">The database to close</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_close(C4Database* db, C4Error* outError);
@@ -226,7 +239,6 @@ namespace CBForest
         /// Closes the database and frees the object.
         /// </summary>
         /// <param name="db">The DB object to close</param>
-        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
         public static bool c4db_free(C4Database* db)
         {
@@ -309,6 +321,11 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_compact(C4Database* db, C4Error* outError);
 
+        /// <summary>
+        /// Gets whether or not the database is currently in a compact operation
+        /// </summary>
+        /// <returns>Whether or not the database is currently in a compact operation</returns>
+        /// <param name="db">The database to check</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4db_isCompacting(C4Database* db);
@@ -742,6 +759,10 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Closes the given doc enumerator, all further access is invalid.
+        /// </summary>
+        /// <param name="e">The doc enumerator to close</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4enum_close(C4DocEnumerator* e);
 
@@ -938,11 +959,23 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi, EntryPoint="c4exp_getDocID")]
         public static extern C4Slice _c4exp_getDocID(C4ExpiryEnumerator *e);
 
+        /// <summary>
+        /// Stores the metadata of the enumerator's current document into the supplied
+        /// C4DocumentInfo struct. Unlike c4enum_getDocument(), this allocates no memory.
+        /// </summary>
+        /// <param name="e">The enumerator</param>
         public static string c4exp_getDocID(C4ExpiryEnumerator *e)
         {
             return BridgeSlice(() => _c4exp_getDocID(e));
         }
 
+        /// <summary>
+        /// Purges the records of expired documents from the database (doesn't purge the documents themselves,
+        /// only the entires in the expiration date key store)
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="e">The enumerator to get the entries to delete from</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
@@ -955,6 +988,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4exp_free")]
         private static extern void _c4exp_free(C4ExpiryEnumerator* e);
 
+        /// <summary>
+        /// Frees the resources from this expiration enumerator
+        /// </summary>
+        /// <param name="e">The enumerator to free</param>
         public static void c4exp_free(C4ExpiryEnumerator *e)
         {
 #if DEBUG && !NET_3_5
@@ -972,6 +1009,10 @@ namespace CBForest
             _c4exp_free(e);
         }
 
+        /// <summary>
+        /// Closes the expiration enumerator
+        /// </summary>
+        /// <param name="e">The enumerator to close</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4exp_close(C4ExpiryEnumerator* e);
 
@@ -987,6 +1028,12 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4enum_next(C4DocEnumerator* e, C4Error* outError);
 
+        /// <summary>
+        /// Gets metadata about the document from the current doc enumerator
+        /// </summary>
+        /// <returns>Whether or not the information was successfully retrieved</returns>
+        /// <param name="e">The enumerator to query</param>
+        /// <param name="info">The document metadata that was retrieved</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4enum_getDocumentInfo(C4DocEnumerator* e, C4DocumentInfo* info);
@@ -1091,11 +1138,13 @@ namespace CBForest
         ///  Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
         /// On success, the new revision will be selected.
         /// Must be called within a transaction.
+        /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <param name="body">The (JSON) body of the revision</param>
         /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
         /// <param name="hasAttachments">True if this revision contains an _attachments dictionary</param>
         /// <param name="history">The ancestors' revision IDs, starting with the parent, in reverse order</param>
+        /// <param name="historyCount">The number of objects in the history array</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>The number of revisions added to the document, or -1 on error.</returns>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -1107,6 +1156,7 @@ namespace CBForest
         ///  Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
         /// On success, the new revision will be selected.
         /// Must be called within a transaction.
+        /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <param name="body">The (JSON) body of the revision</param>
         /// <param name="deleted">True if this revision is a deletion (tombstone)</param>
@@ -1144,7 +1194,6 @@ namespace CBForest
         /// <returns><c>true</c>, if the operation succeeeded, <c>false</c> otherwise.</returns>
         /// <param name="doc">The document to modify.</param>
         /// <param name="docType">The type to set.</param>
-        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4doc_setType(C4Document* doc, C4Slice docType);
 
@@ -1155,7 +1204,6 @@ namespace CBForest
         /// </summary>
         /// <param name="doc">The document to operate on</param>
         /// <param name="docType">The document type to set</param>
-        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>true on success, false otherwise</returns>
         public static void c4doc_setType(C4Document* doc, string docType)
         {
@@ -1229,6 +1277,22 @@ namespace CBForest
             return retVal;
         }
 
+        /// <summary>
+        /// A high-level Put operation, to insert a new or downloaded revision.
+        /// * If request->existingRevision is true, then request->history must contain the revision's
+        ///   history, with the revision's ID as the first item.
+        /// * Otherwise, a new revision will be created and assigned a revID.The parent revision ID,
+        ///   if any, should be given as the single item of request->history.
+        /// Either way, on success the document is returned with the inserted revision selected.
+        /// Note that actually saving the document back to the database is optional -- it only happens
+        /// if request->save is true. You can set this to false if you want to review the changes
+        /// before saving, e.g.to run them through a validation function.
+        /// </summary>
+        /// <returns>The created document</returns>
+        /// <param name="database">The database to insert into</param>
+        /// <param name="request">The information about the document to insert</param>
+        /// <param name="outCommonAncestorIndex">The index of the existing ancestor of the document in the database</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         public static C4Document* c4doc_put(C4Database* database, C4DocPutRequest request,
             ulong* outCommonAncestorIndex, C4Error* outError)
         {
@@ -1270,9 +1334,21 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets the expiration date of the document with the given ID
+        /// </summary>
+        /// <returns>The expiration date as a unix timestamp</returns>
+        /// <param name="db">The database to check</param>
+        /// <param name="docID">The ID of the document to check</param>
         [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, CharSet=CharSet.Ansi)]
         public static extern ulong c4doc_getExpiration(C4Database *db, C4Slice docID);
 
+        /// <summary>
+        /// Gets the expiration date of the document with the given ID
+        /// </summary>
+        /// <returns>The expiration date as a unix timestamp</returns>
+        /// <param name="db">The database to check</param>
+        /// <param name="docID">The ID of the document to check</param>
         public static ulong c4doc_getExpiration(C4Database* db, string docID)
         {
             using (var docID_ = new C4String(docID)) {
@@ -1280,6 +1356,11 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Gets the time of the next document scheduled for expiration (if any)
+        /// </summary>
+        /// <returns>The time of the next document scheduled for expiration as a unix timestamp</returns>
+        /// <param name="db">The database to query</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern ulong c4db_nextDocExpiration(C4Database* db);
 
@@ -1360,7 +1441,7 @@ namespace CBForest
         /// <summary>
         /// Creates a C4Key by copying the data, which must be in the C4Key binary format.
         /// </summary>
-        /// <param name="bytes">The data to use in the C4Key</param>
+        /// <param name="slice">The data to use in the C4Key</param>
         /// <returns>A pointer to the created C4Key</returns>
         public static C4Key* c4key_withBytes(C4Slice slice)
         {
@@ -1531,7 +1612,7 @@ namespace CBForest
         /// <summary>
         /// Adds a UTF-8 string to a C4Key.
         /// </summary>
-        /// <param name="key"The key to operate on></param>
+        /// <param name="key">The key to operate on></param>
         /// <param name="s">The value to store</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4key_addString(C4Key* key, C4Slice s);
@@ -1539,7 +1620,7 @@ namespace CBForest
         /// <summary>
         /// Adds a UTF-8 string to a C4Key.
         /// </summary>
-        /// <param name="key"The key to operate on></param>
+        /// <param name="key">The key to operate on></param>
         /// <param name="s">The value to store</param>
         public static void c4key_addString(C4Key* key, string s)
         {
@@ -1607,7 +1688,7 @@ namespace CBForest
         /// </summary>
         /// <returns><c>true</c>, if the languageName was recognized, <c>false</c> if not.</returns>
         /// <param name="languageName">An ISO language name like 'english'</param>
-        /// <param name="stripDiacriticals"></param><c>true</c> if accents and other diacriticals should be stripped from
+        /// <param name="stripDiacriticals"><c>true</c> if accents and other diacriticals should be stripped from
         /// letters. Appropriate for English but not for most other languages.</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -1620,7 +1701,7 @@ namespace CBForest
         /// </summary>
         /// <returns><c>true</c>, if the languageName was recognized, <c>false</c> if not.</returns>
         /// <param name="languageName">An ISO language name like 'english'</param>
-        /// <param name="stripDiacriticals"></param><c>true</c> if accents and other diacriticals should be stripped from
+        /// <param name="stripDiacriticals"><c>true</c> if accents and other diacriticals should be stripped from
         /// letters. Appropriate for English but not for most other languages.</param>
         public static bool c4key_setDefaultFullTextLanguage(string languageName, bool stripDiacriticals)
         {
@@ -1762,18 +1843,23 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Closes a given view.  Any further access to it is invalid.
+        /// </summary>
+        /// <returns>Whether or not the close succeeded</returns>
+        /// <param name="view">The view to close.</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4view_close(C4View* view, C4Error* outError);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4view_free")]
-        public static extern void _c4view_free(C4View* view);
+        private static extern void _c4view_free(C4View* view);
 
         /// <summary>
-        /// Closes the view and frees the object.
+        /// Frees the given view.
         /// </summary>
-        /// <param name="view">The view to close</param>
-        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
+        /// <param name="view">The view to free</param>
         /// <returns>true on success, false otherwise</returns>
         public static void c4view_free(C4View* view)
         {
@@ -1841,6 +1927,14 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4view_deleteAtPath(C4Slice path, C4DatabaseFlags flags, C4Error* outError);
 
+        /// <summary>
+        /// Deletes the file(s) for the view at the given path.
+        /// All C4Databases at that path should be closed first.
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="path">The path to delete at.</param>
+        /// <param name="flags">The flags for closing.</param>
+        /// <param name="outError">Any errors that occurred will be recorded here</param> 
         public static bool c4view_deleteAtPath(string path, C4DatabaseFlags flags, C4Error* outError)
         {
             using(var path_ = new C4String(path)) {
@@ -1848,9 +1942,21 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Sets the version of the map function on the given view.  Any change to the version
+        /// will result in the index being invalidated.
+        /// </summary>
+        /// <param name="view">The view to set the map version on.</param>
+        /// <param name="version">The version to set.</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4view_setMapVersion(C4View* view, C4Slice version);
 
+        /// <summary>
+        /// Sets the version of the map function on the given view.  Any change to the version
+        /// will result in the index being invalidated.
+        /// </summary>
+        /// <param name="view">The view to set the map version on.</param>
+        /// <param name="version">The version to set.</param>
         public static void c4view_setMapVersion(C4View* view, string version)
         {
             using(var version_ = new C4String(version)) {
@@ -1883,9 +1989,19 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern ulong c4view_getLastSequenceChangedAt(C4View* view);
 
+        /// <summary>
+        /// Sets the document type for a given view
+        /// </summary>
+        /// <param name="view">The view to operate on.</param>
+        /// <param name="docType">The document type to set</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4view_setDocumentType(C4View* view, C4Slice docType);
 
+        /// <summary>
+        /// Sets the document type for a given view
+        /// </summary>
+        /// <param name="view">The view to operate on.</param>
+        /// <param name="docType">The document type to set</param>
         public static void c4view_setDocumentType(C4View* view, string docType)
         {
             using(var docType_ = new C4String(docType)) {
@@ -1964,6 +2080,11 @@ namespace CBForest
         /// Creates an enumerator that will return all the documents that need to be (re)indexed.
         /// </summary>
         /// <param name="indexer">The indexer to operate on</param>
+        /// <param name="document">The document to use during the emit</param>
+        /// <param name="viewNumber">The index of the view in the views passed to the indexer</param>
+        /// <param name="emitCount">The number of elements on the emittedKeys and emittedValues</param>
+        /// <param name="emittedKeys">The keys emitted by the map function</param>
+        /// <param name="emittedValues">The values emitted by the map function</param>
         /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         /// <returns>A pointer to the enumerator on success, otherwise null</returns>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -2026,6 +2147,15 @@ namespace CBForest
             return retVal;
         }
 
+        /// <summary>
+        /// Emits a preconfigured key value list to the given indexer
+        /// </summary>
+        /// <returns>Whether or not the operation succeeded</returns>
+        /// <param name="indexer">The indexer to operate on</param>
+        /// <param name="document">The document being indexed</param>
+        /// <param name="viewNumber">The position of the view in the indexer's views[] array</param>
+        /// <param name="kv">The list of emitted keys and values</param>
+        /// <param name="outError">The error that occurred if the operation doesn't succeed</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4indexer_emitList(C4Indexer* indexer, C4Document* document, uint viewNumber,
@@ -2221,6 +2351,10 @@ namespace CBForest
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4queryenum_next(C4QueryEnumerator* e, C4Error* outError);
 
+        /// <summary>
+        /// Closes a query enumerator, any further access is invalid.
+        /// </summary>
+        /// <param name="e">The query enumerator to close</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4queryenum_close(C4QueryEnumerator* e);
 
@@ -2276,6 +2410,10 @@ namespace CBForest
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4kv_new")]
         private static extern C4KeyValueList* _c4kv_new();
 
+        /// <summary>
+        /// Creates a new key value list
+        /// </summary>
+        /// <returns>The created object</returns>
         public static C4KeyValueList* c4kv_new()
         {
 #if DEBUG && !NET_3_5
@@ -2293,9 +2431,21 @@ namespace CBForest
 #endif
         }
 
+        /// <summary>
+        /// Adds a given key/value pair to the list
+        /// </summary>
+        /// <param name="kv">The list to add to</param>
+        /// <param name="key">The key to add</param>
+        /// <param name="value">The value to add</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4kv_add(C4KeyValueList* kv, C4Key* key, C4Slice value);
 
+        /// <summary>
+        /// Adds a given key/value pair to the list
+        /// </summary>
+        /// <param name="kv">The list to add to</param>
+        /// <param name="key">The key to add</param>
+        /// <param name="value">The value to add</param>
         public static void c4kv_add(C4KeyValueList* kv, C4Key* key, string value)
         {
             using(var value_ = new C4String(value)) {
@@ -2303,12 +2453,20 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Removes all the keys and values from the list
+        /// </summary>
+        /// <param name="kv">The list to reset</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void c4kv_reset(C4KeyValueList* kv);
 
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4kv_free")]
         private static extern void _c4kv_free(C4KeyValueList* kv);
 
+        /// <summary>
+        /// Frees the given key value list
+        /// </summary>
+        /// <param name="kv">The key value list to free</param>
         public static void c4kv_free(C4KeyValueList* kv)
         {
 #if DEBUG && !NET_3_5
@@ -2326,9 +2484,19 @@ namespace CBForest
             _c4kv_free(kv);
         }
 
+        /// <summary>
+        /// Gets the error message associated with the given error
+        /// </summary>
+        /// <returns>The error message</returns>
+        /// <param name="err">The error object to investigate</param>
         [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, EntryPoint = "c4error_getMessage")]
         public static extern C4Slice _c4error_getMessage(C4Error err);
 
+        /// <summary>
+        /// Gets the error message associated with the given error
+        /// </summary>
+        /// <returns>The error message</returns>
+        /// <param name="err">The error object to investigate</param>
         public static string c4error_getMessage(C4Error err)
         {
             return BridgeSlice(() => _c4error_getMessage(err));

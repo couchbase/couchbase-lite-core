@@ -36,7 +36,14 @@ namespace CBForest
     /// </summary>
     public enum C4EncryptionAlgorithm
     {
+        /// <summary>
+        /// No encryption
+        /// </summary>
         None = 0,
+
+        /// <summary>
+        /// AES 256-bit encryption
+        /// </summary>
         AES256 = 1
     }
     
@@ -45,9 +52,21 @@ namespace CBForest
     /// </summary>
     public enum C4LogLevel
     {
+        /// <summary>
+        /// DEBUG logging level (only for debug builds)
+        /// </summary>
         Debug,
+        /// <summary>
+        /// INFO logging level
+        /// </summary>
         Info,
+        /// <summary>
+        /// WARNING logging level
+        /// </summary>
         Warning,
+        /// <summary>
+        /// ERROR logging level
+        /// </summary>
         Error
     }
     
@@ -72,7 +91,9 @@ namespace CBForest
         /// code is C4-specific code (TBD)
         /// </summary>
         C4,
-
+        /// <summary>
+        /// Used internally for filtering on any of the above
+        /// </summary>
         Any = UInt32.MaxValue
     }
 
@@ -108,9 +129,21 @@ namespace CBForest
     /// </summary>
     public enum HttpErrorCode
     {
+        /// <summary>
+        /// HTTP Bad Request
+        /// </summary>
         BadRequest = 400,
+        /// <summary>
+        /// HTTP Not Found
+        /// </summary>
         NotFound = 404,
+        /// <summary>
+        /// HTTP Conflict
+        /// </summary>
         Conflict = 409,
+        /// <summary>
+        /// HTTP Gone
+        /// </summary>
         Gone = 410
     }
     
@@ -228,17 +261,47 @@ namespace CBForest
     /// </summary>
     public enum C4KeyToken
     {
+        /// <summary>
+        /// A null value
+        /// </summary>
         Null,
+        /// <summary>
+        /// A boolean value
+        /// </summary>
         Bool,
+        /// <summary>
+        /// A numeric value
+        /// </summary>
         Number,
+        /// <summary>
+        /// A text value
+        /// </summary>
         String,
+        /// <summary>
+        /// A begin array indicator
+        /// </summary>
         Array,
+        /// <summary>
+        /// A begin map (dictionary) indicator
+        /// </summary>
         Map,
+        /// <summary>
+        /// The end of either an array or map
+        /// </summary>
         EndSequence,
+        /// <summary>
+        /// A special reserved token
+        /// </summary>
         Special,
+        /// <summary>
+        /// Represents an error
+        /// </summary>
         Error = 255
     }
-    
+
+    /// <summary>
+    /// ForestDB status codes
+    /// </summary>
     public enum ForestDBStatus
     {
         /// <summary>

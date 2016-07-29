@@ -39,6 +39,9 @@ namespace CBForest
         /// </summary>
         public readonly C4DocumentInfo *DocumentInfo;
 
+        /// <summary>
+        /// The sequence of the loaded document revision
+        /// </summary>
         public readonly long Sequence;
         private readonly bool _owner;
         private string _docID;
@@ -110,7 +113,8 @@ namespace CBForest
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="doc">The document to retrieve information form.</param>
+        /// <param name="docInfo">The document metadata to get information from</param>
+        /// <param name="e">The enumerator currently being enumerated</param>
         /// <param name="owner">Whether or not the instance should own the
         /// document (i.e. free it when it is finished)</param>
         public CBForestDocStatus(C4DocumentInfo *docInfo, C4DocEnumerator *e, bool owner)
@@ -124,6 +128,12 @@ namespace CBForest
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="doc">The document to retrieve information form.</param>
+        /// <param name="owner">Whether or not the instance should own the
+        /// document (i.e. free it when it is finished)</param>
         public CBForestDocStatus(C4Document *doc, bool owner)
         {
             DocumentInfo = (C4DocumentInfo*)Marshal.AllocHGlobal(sizeof(C4DocumentInfo)).ToPointer();
@@ -136,6 +146,9 @@ namespace CBForest
             Sequence = (long)doc->sequence;
         }
 
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~CBForestDocStatus()
         {
             Dispose(true);
@@ -145,6 +158,10 @@ namespace CBForest
 
         #region Public Methods
 
+        /// <summary>
+        /// Gets the document object from this object (more expensive than just document info)
+        /// </summary>
+        /// <returns>The document object</returns>
         public C4Document *GetDocument()
         {
             if (_document == null) {
@@ -258,6 +275,9 @@ namespace CBForest
             _e = (C4DocEnumerator *)RetryHandler.RetryIfBusy().Execute(err => Native.c4db_enumerateChanges(db, (ulong)lastSequence, options_, err));
         }
 
+        /// <summary>
+        /// Finalizer
+        /// </summary>
         ~CBForestDocEnumerator()
         {
             Dispose(true);
