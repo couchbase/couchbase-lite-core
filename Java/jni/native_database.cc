@@ -26,6 +26,7 @@
 #include <unistd.h>
 #endif
 
+using namespace cbforest;
 using namespace cbforest::jni;
 
 

@@ -74,8 +74,8 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
     for (auto &key : c4keys) {
         jbyteArray jvalue = (jbyteArray) env->GetObjectArrayElement(jvalues, i);
         jbyteArraySlice value(env, jvalue);
-        c4kv_add(kv, *key, value);
-        c4key_free(*key);
+        c4kv_add(kv, key, value);
+        c4key_free(key);
         ++i;
     }
 
