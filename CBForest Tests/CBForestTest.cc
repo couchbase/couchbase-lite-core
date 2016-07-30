@@ -7,7 +7,8 @@
 //
 
 #include "CBForestTest.hh"
-#include "unistd.h"
+#include "ForestDatabase.hh"
+#include <unistd.h>
 
 
 std::string sliceToHex(slice result) {
@@ -75,7 +76,7 @@ void DatabaseTestFixture::setUp() {
     ::unlink("/tmp/forest_temp.fdb.1");
     ::unlink("/tmp/forest_temp.fdb.meta");
 #endif
-    db = new Database(dbPath, Database::defaultConfig());
+    db = new ForestDatabase(dbPath, Database::Options::defaults);
 }
 
 

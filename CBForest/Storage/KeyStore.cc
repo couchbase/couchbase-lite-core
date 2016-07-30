@@ -1,6 +1,6 @@
 //
 //  KeyStore.cc
-//  CBForest
+//  CBNano
 //
 //  Created by Jens Alfke on 11/12/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
@@ -15,179 +15,60 @@
 
 #include "KeyStore.hh"
 #include "Document.hh"
+#include "Database.hh"
 #include "LogInternal.hh"
+
+using namespace std;
+
 
 namespace cbforest {
 
-    static void logCallback(int err_code, const char *err_msg, void *ctx_data) {
-        WarnError("ForestDB error %d: %s (fdb_kvs_handle=%p)", err_code, err_msg, ctx_data);
-    }
+    const KeyStore::Options KeyStore::Options::defaults = KeyStore::Options{false, false};
 
-    static void nullLogCallback(int err_code, const char *err_msg, void *ctx_data) {
-    }
-
-    void KeyStore::enableErrorLogs(bool enable) {
-        if (enable)
-            (void)fdb_set_log_callback(_handle, logCallback, _handle);
-        else
-            (void)fdb_set_log_callback(_handle, nullLogCallback, NULL);
-    }
-
-    KeyStore::kvinfo KeyStore::getInfo() const {
-        kvinfo i;
-        check(fdb_get_kvs_info(_handle, &i));
-        return i;
-    }
-
-    std::string KeyStore::name() const {
-        return std::string(getInfo().name);
-    }
-
-    sequence KeyStore::lastSequence() const {
-        fdb_seqnum_t seq;
-        check(fdb_get_kvs_seqnum(_handle, &seq));
-        return seq;
-    }
-
-    static bool checkGet(fdb_status status) {
-        if (status == FDB_RESULT_KEY_NOT_FOUND)
-            return false;
-        check(status);
-        return true;
-    }
-
-    Document KeyStore::get(slice key, contentOptions options) const {
+    Document KeyStore::get(slice key, ContentOptions options) const {
         Document doc(key);
         read(doc, options);
         return doc;
     }
 
-    Document KeyStore::get(sequence seq, contentOptions options) const {
-        Document doc;
-        doc._doc.seqnum = seq;
-        if (options & kMetaOnly)
-            check(fdb_get_metaonly_byseq(_handle, &doc._doc));
-        else
-            check(fdb_get_byseq(_handle, doc));
-        return doc;
+    void KeyStore::get(slice key, ContentOptions options, function<void(const Document&)> fn) {
+        // Subclasses can implement this differently for better memory management.
+        Document doc(key);
+        read(doc, options);
+        fn(doc);
     }
 
-    bool KeyStore::read(Document& doc, contentOptions options) const {
-        doc.clearMetaAndBody();
-        if (options & kMetaOnly)
-            return checkGet(fdb_get_metaonly(_handle, doc));
-        else
-            return checkGet(fdb_get(_handle, doc));
-    }
-
-    void KeyStore::readBody(Document& doc) const {
-        CBFAssert(doc.offset() > 0);
-        fdb_doc tempDoc = {};
-        tempDoc.offset = doc.offset();
-        tempDoc.seqnum = doc.sequence();
-        check(fdb_get_byoffset(_handle, &tempDoc));
-        CBFAssert(tempDoc.seqnum == doc.sequence());
-        free(tempDoc.meta);
-
-        // Move tempDoc's body into realDoc:
-        fdb_doc *realDoc = doc;
-        free(realDoc->body);
-        realDoc->body = tempDoc.body;
-        realDoc->bodylen = tempDoc.bodylen;
-    }
-
-    Document KeyStore::getByOffset(uint64_t offset, sequence seq) const {
-        Document doc;
-        doc._doc.offset = offset;
-        doc._doc.seqnum = seq;
-        checkGet(fdb_get_byoffset(_handle, doc));
-        return doc;
-    }
-
-    Document KeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
-        Document doc;
-        doc._doc.offset = offset;
-        doc._doc.seqnum = seq;
-
-        const_cast<KeyStore*>(this)->enableErrorLogs(false);     // Don't log ForestDB errors caused by reading invalid offset
-        (void) fdb_get_byoffset(_handle, doc);
-        const_cast<KeyStore*>(this)->enableErrorLogs(true);
-
-        return doc;
-    }
-
-    void KeyStore::close() {
-        if (_handle) {
-            fdb_kvs_close(_handle);
-            _handle = NULL;
-        }
-    }
-
-    void KeyStore::erase() {
-        check(fdb_rollback(&_handle, 0));
+    void KeyStore::get(sequence seq, ContentOptions options, function<void(const Document&)> fn) {
+        fn(get(seq, options));
     }
 
     void KeyStore::deleteKeyStore(Transaction& trans) {
-        trans.database()->deleteKeyStore(name());
-        _handle = NULL;
+        trans.database().deleteKeyStore(name());
     }
 
-
-#pragma mark - KEYSTOREWRITER:
-
-
-    void KeyStoreWriter::rollbackTo(sequence seq) {
-        check(fdb_rollback(&_handle, seq));
+    void KeyStore::write(Document &doc, Transaction &t) {
+        if (doc.deleted())
+            del(doc, t);
+        else
+            set(doc.key(), doc.meta(), doc.body(), t);
     }
 
-    void KeyStoreWriter::write(Document &doc) {
-        check(fdb_set(_handle, doc));
+    bool KeyStore::del(slice key, Transaction &t) {
+        bool ok = _del(key, t);
+        if (ok)
+            t.incrementDeletionCount();
+        return ok;
     }
 
-    sequence KeyStoreWriter::set(slice key, slice meta, slice body) {
-        if ((size_t)key.buf & 0x03) {
-            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
-            void* keybuf = alloca(key.size);
-            memcpy(keybuf, key.buf, key.size);
-            key.buf = keybuf;
-        }
-        fdb_doc doc = {};
-        doc.key = (void*)key.buf;
-        doc.keylen = key.size;
-        doc.meta = (void*)meta.buf;
-        doc.metalen = meta.size;
-        doc.body = (void*)body.buf;
-        doc.bodylen = body.size;
-
-        check(fdb_set(_handle, &doc));
-        Log("DB %p: added %s --> %s (meta %s) (seq %llu)\n",
-            _handle, key.hexCString(), body.hexCString(), meta.hexCString(), doc.seqnum);
-        return doc.seqnum;
+    bool KeyStore::del(sequence s, Transaction &t) {
+        bool ok = _del(s, t);
+        if (ok)
+            t.incrementDeletionCount();
+        return ok;
     }
 
-    bool KeyStoreWriter::del(cbforest::Document &doc) {
-        return checkGet(fdb_del(_handle, doc));
-    }
-
-    bool KeyStoreWriter::del(cbforest::slice key) {
-        if ((size_t)key.buf & 0x03) {
-            // Workaround for unaligned-access crashes on ARM (down in forestdb's crc_32_8 fn)
-            void* keybuf = alloca(key.size);
-            memcpy(keybuf, key.buf, key.size);
-            key.buf = keybuf;
-        }
-        fdb_doc doc = {};
-        doc.key = (void*)key.buf;
-        doc.keylen = key.size;
-
-        return checkGet(fdb_del(_handle, &doc));
-    }
-
-    bool KeyStoreWriter::del(sequence seq) {
-        Document doc;
-        doc._doc.seqnum = seq;
-        return checkGet(fdb_get_metaonly_byseq(_handle, doc))
-            && del(doc);
+    bool KeyStore::del(cbforest::Document &doc, Transaction &t) {
+        return doc.sequence() ? del(doc.sequence(), t) : del(doc.key(), t);
     }
 
 }

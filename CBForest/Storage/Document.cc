@@ -1,6 +1,6 @@
 //
 //  Document.cc
-//  CBForest
+//  CBNano
 //
 //  Created by Jens Alfke on 11/11/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
@@ -15,21 +15,9 @@
 
 #include "Document.hh"
 
+using namespace std;
+
 namespace cbforest {
-
-    const size_t Document::kMaxKeyLength  = FDB_MAX_KEYLEN;
-    const size_t Document::kMaxMetaLength = FDB_MAX_METALEN;
-    const size_t Document::kMaxBodyLength = FDB_MAX_BODYLEN;
-
-    Document::Document() {
-        memset(&_doc, 0, sizeof(_doc));
-    }
-
-    Document::Document(Document&& srcDoc)
-    :_doc(srcDoc._doc)
-    {
-        ::memset(&srcDoc._doc, 0, sizeof(srcDoc._doc));
-    }
 
     Document::Document(slice key)
     :Document()
@@ -37,53 +25,43 @@ namespace cbforest {
         setKey(key);
     }
 
-    Document::~Document() {
-        key().free();
-        meta().free();
-        body().free();
-    }
-
-    Document Document::moveBody() {
-        Document d;
-        d._doc = _doc;
-        d._doc.key = (void*)key().copy().buf;       // Copy key and meta...
-        d._doc.meta = (void*)meta().copy().buf;
-        _doc.body = nullptr;                        // ...but move body, clearing my pointer
-        _doc.bodylen = 0;
-        return d;
-    }
-
-    bool Document::valid() const {
-        return _doc.key != NULL && _doc.keylen > 0 && _doc.keylen <= kMaxKeyLength
-            && _doc.metalen <= kMaxMetaLength && !(_doc.metalen != 0 && _doc.meta == NULL)
-            && _doc.bodylen <= kMaxBodyLength && !(_doc.bodylen != 0 && _doc.body == NULL);
-    }
+    Document::Document(Document &&d)
+    :_key(move(d._key)),
+     _meta(move(d._meta)),
+     _body(move(d._body)),
+     _sequence(d._sequence),
+     _exists(d._exists)
+    { }
 
     void Document::clearMetaAndBody() {
         setMeta(slice::null);
         setBody(slice::null);
-        _doc.deleted = false;
-        _doc.seqnum = 0;
-        _doc.offset = 0;
-        _doc.size_ondisk = 0;
+        _sequence = 0;
+        _exists = false;
     }
 
-    static inline void _assign(void* &buf, size_t &size, slice s) {
-        ::free(buf);
-        buf = (void*)s.copy().buf;
-        size = s.size;
+    void Document::clear() {
+        clearMetaAndBody();
+        setKey(slice::null);
     }
-
-    void Document::setKey(slice key)   {_assign(_doc.key,  _doc.keylen,  key);}
-    void Document::setMeta(slice meta) {_assign(_doc.meta, _doc.metalen, meta);}
-    void Document::setBody(slice body) {_assign(_doc.body, _doc.bodylen, body);}
-
+    
     slice Document::resizeMeta(size_t newSize) {
-        if (newSize != _doc.metalen) {
-            _doc.meta = slice::reallocBytes(_doc.meta, newSize);
-            _doc.metalen = newSize;
+        if (newSize != _meta.size) {
+            void* newBuf = slice::reallocBytes((void*)_meta.buf, newSize);
+            if (newBuf != _meta.buf) {
+                _meta.dontFree();
+                _meta = alloc_slice::adopt(newBuf, newSize);
+            }
         }
         return meta();
+    }
+
+    Document Document::moveBody() {
+        Document d(_key);               // copies key
+        d._meta = _meta;                // copies meta
+        d._body = move(_body);     // moves body, setting my _body to null
+        d._sequence = _sequence;
+        return d;
     }
 
 }

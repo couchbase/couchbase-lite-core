@@ -14,25 +14,30 @@
 
 namespace cbforest {
 
+    static const char* kDomainNames[] = {"CBForest", "POSIX", "HTTP", "ForestDB", "SQLite"};
+
     const char* error::what() const noexcept {
-        return fdb_error_msg((fdb_status)status);
+        switch (domain) {
+            case ForestDB:
+                return fdb_error_msg((fdb_status)code);
+            default:
+                return "cbforest::error?";
+        }
     }
 
     
-    void error::_throw(fdb_status status) {
-        WarnError("%s (%d)", fdb_error_msg(status), status);
-        throw error{status};
+    void error::_throw(Domain domain, int code ) {
+        WarnError("CBForest throwing error (%s, %d)", kDomainNames[domain], code);
+        throw error{domain, code};
     }
 
     
     void error::_throw(error::CBForestError err) {
-        WarnError("CBForestError %d", err);
-        throw error{err};
+        _throw(CBForest, err);
     }
 
-
     void error::_throwHTTPStatus(int status) {
-        throw error{(CBForestError)(HTTPStatusBase + status)};
+        _throw(HTTP, status);
     }
 
 
@@ -41,6 +46,29 @@ namespace cbforest {
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
         WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
         throw error(error::AssertionFailed);
+    }
+
+
+#pragma mark - LOGGING:
+
+    
+    static void defaultLogCallback(logLevel level, const char *message) {
+        static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
+        fprintf(stderr, "CBForest %s: %s\n", kLevelNames[level], message);
+    }
+
+    logLevel LogLevel = kWarning;
+    void (*LogCallback)(logLevel, const char *message) = &defaultLogCallback;
+
+    void _Log(logLevel level, const char *message, ...) {
+        if (LogLevel <= level && LogCallback != NULL) {
+            va_list args;
+            va_start(args, message);
+            char *formatted = NULL;
+            vasprintf(&formatted, message, args);
+            va_end(args);
+            LogCallback(level, formatted);
+        }
     }
     
 }

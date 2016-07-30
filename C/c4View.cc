@@ -47,10 +47,11 @@ struct c4View : public c4Internal::RefCounted<c4View> {
     c4View(C4Database *sourceDB,
            C4Slice path,
            C4Slice name,
-           const Database::config &config,
+           Database::Options options,
+           const fdb_config &config,
            C4Slice version)
     :_sourceDB(sourceDB->retain()),
-     _viewDB((std::string)path, config),
+     _viewDB((std::string)path, options, config),
      _index(&_viewDB, (std::string)name, sourceDB)
     {
         setVersion(version);
@@ -73,7 +74,7 @@ struct c4View : public c4Internal::RefCounted<c4View> {
     }
 
     C4Database *_sourceDB;
-    Database _viewDB;
+    ForestDatabase _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
     std::mutex _mutex;
@@ -95,12 +96,13 @@ C4View* c4view_open(C4Database* db,
                     C4Error *outError)
 {
     try {
+        auto options = c4DbOptions(flags);
         auto config = c4DbConfig(flags, key);
         config.wal_threshold = kViewDBWALThreshold;
         config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
         config.purging_interval = 0;              // nor have any use for keeping deleted docs
 
-        return new c4View(db, path, viewName, config, version);
+        return new c4View(db, path, viewName, options, config, version);
     } catchError(outError);
     return NULL;
 }
@@ -207,7 +209,9 @@ void c4view_setDocumentType(C4View *view, C4Slice docType) {
 
 void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *context) {
     WITH_LOCK(view);
-    view->_viewDB.setOnCompact(cb, context);
+    view->_viewDB.setOnCompact([cb,context](bool compacting) {
+        cb(context, compacting);
+    });
 }
 
 

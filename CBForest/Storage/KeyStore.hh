@@ -1,70 +1,112 @@
 //
 //  KeyStore.hh
-//  CBForest
+//  CBNano
 //
 //  Created by Jens Alfke on 11/12/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#ifndef __CBForest__KeyStore__
-#define __CBForest__KeyStore__
+#ifndef __CBNano__KeyStore__
+#define __CBNano__KeyStore__
 
-#include "Error.hh"
-#include "forestdb.h"
-#include "slice.hh"
+#include "Base.hh"
+#include "DocEnumerator.hh"
+#include <functional>
 
 namespace cbforest {
-    using namespace fleece;
+
+    using namespace std;
 
     class Database;
     class Document;
-    class KeyStoreWriter;
     class Transaction;
 
-    typedef fdb_seqnum_t sequence;
+    /** A sequence number in a KeyStore. */
+    typedef uint64_t sequence;
 
-    /** Provides read-only access to a key-value store inside a Database.
-        (Just a wrapper around a fdb_kvs_handle*.) */
+
+    /** A container of key/value mappings. Keys and values are opaque blobs.
+        The value is divided into 'meta' and 'body'; the body can optionally be omitted when
+        reading, to save time/space. There is also a 'sequence' number that's assigned every time
+        a value is saved, from an incrementing counter.
+        A key, meta and body together are called a Document.
+        This is an abstract class; the Database instance acts as its factory and will instantiate
+        the appropriate subclass for the storage engine in use. */
     class KeyStore {
     public:
-        typedef fdb_kvs_info kvinfo;
 
-        void enableErrorLogs(bool enable);                  // defaults to true
-        
-        kvinfo getInfo() const;
-        sequence lastSequence() const;
-        std::string name() const;
+        struct Options {
+            bool sequences      :1;     //< Documents have sequences & can be enumerated by sequence
+            bool softDeletes    :1;     //< Deleted documents have sequence numbers (until compact)
 
-        bool isOpen()                                       {return _handle != NULL;}
+            static const Options defaults;
+        };
+
+
+        Database& database() const                  {return _db;}
+        const string& name() const                  {return _name;}
+        Options options() const                     {return _options;}
+
+        virtual uint64_t documentCount() const =0;
+        virtual sequence lastSequence() const =0;
 
         // Keys/values:
 
-        enum contentOptions {
-            kDefaultContent = 0,
-            kMetaOnly = 0x01
-        };
+        Document get(slice key, ContentOptions = kDefaultContent) const;
+        virtual Document get(sequence, ContentOptions = kDefaultContent) const =0;
 
-        Document get(slice key, contentOptions = kDefaultContent) const;
-        Document get(sequence, contentOptions = kDefaultContent) const;
+        virtual void get(slice key, ContentOptions, function<void(const Document&)>);
+        virtual void get(sequence, ContentOptions, function<void(const Document&)>);
 
         /** Reads a document whose key() is already set. */
-        bool read(Document&, contentOptions = kDefaultContent) const;
+        virtual bool read(Document &doc, ContentOptions options = kDefaultContent) const =0;
 
         /** Reads the body of a Document that's already been read with kMetaonly. */
-        void readBody(Document&) const;
+        virtual void readBody(Document &doc) const      {read(doc, kDefaultContent);}
 
-        Document getByOffset(uint64_t offset, sequence) const;
-        Document getByOffsetNoErrors(uint64_t offset, sequence) const;  // doesn't throw or log
+        virtual Document getByOffsetNoErrors(uint64_t offset, sequence) const
+                {return Document();}
 
-        void close();
-        void deleteKeyStore(Transaction& t);
-        void erase();
+        //////// Writing:
+
+        virtual sequence set(slice key, slice meta, slice value, Transaction&) =0;
+        sequence set(slice key, slice value, Transaction &t)
+                                                        {return set(key, slice::null, value, t);}
+        void write(Document&, Transaction&);
+
+        bool del(slice key, Transaction&);
+        bool del(sequence s, Transaction&);
+        bool del(Document&, Transaction&);
+
+        virtual void erase() =0;
+
+        void deleteKeyStore(Transaction&);
+
+        // public for complicated reasons; clients should never call it
+        virtual ~KeyStore()                             { }
 
     protected:
-        KeyStore(fdb_kvs_handle* handle)                    :_handle(handle) { }
-        fdb_kvs_handle* handle() const                      {return _handle;}
+        KeyStore(Database &db, const string &name, Options options)
+                :_db(db), _name(name), _options(options) { }
 
-        fdb_kvs_handle* _handle;
+        virtual void reopen()                           { }
+        virtual void close()                            { }
+
+        virtual bool _del(slice key, Transaction&) =0;
+        virtual bool _del(sequence s, Transaction&) =0;
+
+        virtual DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey,
+                                                       DocEnumerator::Options&) =0;
+        virtual DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
+                                                       DocEnumerator::Options&) =0;
+
+        void updateDoc(Document &doc, sequence seq, uint64_t offset =0, bool exists =true) const {
+            doc.update(seq, offset, exists);
+        }
+
+        Database &_db;
+        const string _name;
+        const Options _options;
 
     private:
         KeyStore(const KeyStore&) = delete;
@@ -75,33 +117,6 @@ namespace cbforest {
         friend class KeyStoreWriter;
     };
 
-
-    /** Adds write access to a KeyStore. */
-    class KeyStoreWriter : public KeyStore {
-    public:
-        KeyStoreWriter(const KeyStore &store, Transaction&) :KeyStore(store._handle) { }
-
-        sequence set(slice key, slice meta, slice value);
-        sequence set(slice key, slice value)                {return set(key, slice::null, value);}
-        void write(Document&);
-
-        bool del(slice key);
-        bool del(sequence);
-        bool del(Document&);
-
-        void rollbackTo(sequence);
-
-        friend class KeyStore;
-
-        KeyStoreWriter(const KeyStoreWriter& k)            :KeyStore(k._handle) { }
-        KeyStoreWriter& operator=(const KeyStoreWriter &k) {_handle = k._handle; return *this;}
-
-    private:
-        KeyStoreWriter(KeyStore& store)                      :KeyStore(store._handle) { }
-        friend class Transaction;
-        friend class Database;
-    };
-
 }
 
-#endif /* defined(__CBForest__KeyStore__) */
+#endif /* defined(__CBNano__KeyStore__) */

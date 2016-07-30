@@ -74,7 +74,9 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     HTTPDomain,         // code is an HTTP status code
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
-    C4Domain            // code is C4-specific (see below)
+    C4Domain,           // code is C4-specific (see below)
+    CBForestDomain,     // code is a cbforest::error code
+    SQLiteDomain,       // code is a SQLite error
 };
 
 

@@ -15,6 +15,7 @@
 #include "VersionedDocument.hh"
 #include "CASRevisionStore.hh"
 #include "Error.hh"
+#include "ForestDatabase.hh"
 #include <functional>
 
 // Defining C4DB_THREADSAFE as 1 will make C4Database thread-safe: the same handle can be called
@@ -75,7 +76,8 @@ namespace c4Internal {
             recordUnknownException(OUTERR); \
         }
 
-    Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key);
+    Database::Options c4DbOptions(C4DatabaseFlags);
+    fdb_config c4DbConfig(C4DatabaseFlags, const C4EncryptionKey*);
 
     bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
 
@@ -133,8 +135,10 @@ using namespace c4Internal;
 
 // Structs below must be in the global namespace because they are forward-declared in the C API.
 
-struct c4Database : public Database, RefCounted<c4Database> {
-    c4Database(std::string path, const config& cfg, uint8_t schema);
+struct c4Database : public ForestDatabase, RefCounted<c4Database> {
+    c4Database(std::string path,
+               Database::Options options, const fdb_config& cfg,
+               uint8_t schema_);
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
     const uint8_t schema;

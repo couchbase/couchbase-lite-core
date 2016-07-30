@@ -17,11 +17,13 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "Database.hh"
+#include "ForestDatabase.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
 #include "VersionedDocument.hh"
+
+#include "forestdb.h"
 
 using namespace cbforest;
 
@@ -53,10 +55,9 @@ namespace c4Internal {
     }
 
     void recordError(const error &e, C4Error* outError) {
-        if (e.status >= error::HTTPStatusBase)
-            recordHTTPError(e.status - error::HTTPStatusBase, outError);
-        else
-            recordError(ForestDBDomain, e.status, outError);
+        static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain, HTTPDomain,
+                                                  ForestDBDomain, SQLiteDomain};
+        recordError(domainMap[e.domain], e.code, outError);
     }
 
     void recordException(const std::exception &e, C4Error* outError) {
@@ -95,8 +96,16 @@ C4SliceResult c4error_getMessage(C4Error error) {
                 case kC4HTTPNotFound:   msg = "not found"; break;
                 case kC4HTTPConflict:   msg = "conflict"; break;
                 case kC4HTTPGone:       msg = "gone"; break;
+
                 default: break;
             }
+            break;
+        case CBForestDomain:
+            msg = cbforest::error(cbforest::error::CBForest, error.code).what();
+            break;
+        case SQLiteDomain:
+            msg = cbforest::error(cbforest::error::SQLite, error.code).what();
+            break;
         case C4Domain:
             switch (error.code) {
                 case kC4ErrorInternalException:     msg = "internal exception"; break;
@@ -175,8 +184,10 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 #pragma mark - DATABASES:
 
 
-c4Database::c4Database(std::string path, const config& cfg, uint8_t schema_)
-:Database(path, cfg),
+c4Database::c4Database(std::string path,
+                       Database::Options options, const fdb_config& cfg,
+                       uint8_t schema_)
+:ForestDatabase(path, options, cfg),
  schema(schema_)
 { }
 
@@ -240,8 +251,15 @@ bool c4Database::endTransaction(bool commit) {
 
 namespace c4Internal {
 
-    Database::config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
-        auto config = Database::defaultConfig();
+    Database::Options c4DbOptions(C4DatabaseFlags flags) {
+        Database::Options options { };
+        options.create = (flags & kC4DB_Create) != 0;
+        options.writeable = (flags & kC4DB_ReadOnly) == 0;
+        return options;
+    }
+
+    fdb_config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
+        auto config = ForestDatabase::defaultConfig();
         // global to all databases:
         config.buffercache_size = kDBBufferCacheSize;
         config.compress_document_body = true;
@@ -275,20 +293,22 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError)
 {
     auto pathStr = (std::string)path;
+    auto options = c4DbOptions(flags);
     auto config = c4DbConfig(flags, encryptionKey);
     uint8_t schema = (flags & kC4DB_V2Format) ? 2 : 1;
     try {
         try {
-            return new c4Database(pathStr, config, schema);
+            return new c4Database(pathStr, options, config, schema);
         } catch (cbforest::error error) {
-            if (schema == 1 && error.status == FDB_RESULT_INVALID_COMPACTION_MODE
+            if (schema == 1 && error.domain == error::ForestDB
+                            && error.code == FDB_RESULT_INVALID_COMPACTION_MODE
                             && config.compaction_mode == FDB_COMPACTION_AUTO) {
                 // Databases created by earlier builds of CBL (pre-1.2) didn't have auto-compact.
                 // Opening them with auto-compact causes this error. Upgrade such a database by
                 // switching its compaction mode:
                 config.compaction_mode = FDB_COMPACTION_MANUAL;
-                auto db = new c4Database(pathStr, config, schema);
-                db->setCompactionMode(FDB_COMPACTION_AUTO);
+                auto db = new c4Database(pathStr, options, config, schema);
+                db->setAutoCompact(true);
                 return db;
             } else {
                 throw error;
@@ -344,8 +364,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 
 bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError) {
     try {
-        auto config = c4DbConfig(flags, NULL);
-        Database::deleteDatabase((std::string)dbPath, config);
+        Database::deleteDatabase((std::string)dbPath);
         return true;
     } catchError(outError);
     return false;
@@ -365,12 +384,14 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 
 bool c4db_isCompacting(C4Database *database) {
-    return database ? database->isCompacting() : Database::isAnyCompacting();
+    return database ? database->isCompacting() : ForestDatabase::isAnyCompacting();
 }
 
 void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) {
     WITH_LOCK(database);
-    database->setOnCompact(cb, context);
+    database->setOnCompact([cb,context](bool compacting) {
+        cb(context, compacting);
+    });
 }
 
 
@@ -390,7 +411,7 @@ bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
             key.algorithm = newKey->algorithm;
             memcpy(key.bytes, newKey->bytes, sizeof(key.bytes));
         }
-        database->rekey(key);
+        dynamic_cast<ForestDatabase*>(database)->rekey(key);
         return true;
     } catchError(outError);
     return false;
@@ -398,7 +419,7 @@ bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
 
 
 C4SliceResult c4db_getPath(C4Database *database) {
-    slice path(database->getInfo().filename);
+    slice path(database->filename());
     path = path.copy();  // C4SliceResult must be malloced & adopted by caller
     return {path.buf, path.size};
 }
@@ -408,12 +429,12 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
         WITH_LOCK(database);
         auto opts = DocEnumerator::Options::kDefault;
-        opts.contentOptions = Database::kMetaOnly;
+        opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(*database, cbforest::slice::null, cbforest::slice::null, opts);
+        for (DocEnumerator e(database->defaultKeyStore(), cbforest::slice::null, cbforest::slice::null, opts);
                 e.next(); ) {
-            VersionedDocument vdoc(*database, e.moveDoc());
+            VersionedDocument vdoc(database->defaultKeyStore(), e.moveDoc());
             if (!vdoc.isDeleted())
                 ++count;
         }
@@ -426,7 +447,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
 C4SequenceNumber c4db_getLastSequence(C4Database* database) {
     WITH_LOCK(database);
     try {
-        return database->lastSequence();
+        return database->defaultKeyStore().lastSequence();
     } catchError(NULL);
     return 0;
 }
@@ -494,7 +515,7 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
 bool c4_shutdown(C4Error *outError) {
     fdb_status err = fdb_shutdown();
     if (err) {
-        recordError(err, outError);
+        recordError(ForestDBDomain, err, outError);
         return false;
     }
     return true;
@@ -523,7 +544,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         KeyStore& localDocs = database->getKeyStore((std::string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
-            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
             return NULL;
         }
         auto rawDoc = new C4RawDocument;
@@ -549,11 +570,11 @@ bool c4raw_put(C4Database* database,
     try {
         WITH_LOCK(database);
         KeyStore &localDocs = database->getKeyStore((std::string)storeName);
-        KeyStoreWriter localWriter = (*database->transaction())(localDocs);
+        auto &t = *database->transaction();
         if (body.buf || meta.buf)
-            localWriter.set(key, meta, body);
+            localDocs.set(key, meta, body, t);
         else
-            localWriter.del(key);
+            localDocs.del(key, t);
         commit = true;
     } catchError(outError);
     c4db_endTransaction(database, commit, outError);

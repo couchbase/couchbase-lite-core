@@ -33,12 +33,12 @@ namespace cbforest {
 
         /** Returns the current revision of a document, or null. */
         Revision::Ref get(slice docID,
-                      KeyStore::contentOptions = KeyStore::kDefaultContent) const;
+                      ContentOptions = kDefaultContent) const;
 
         /** Returns a specific revision of a document, or null.
             (If revID is a null slice, returns the current revision.) */
         Revision::Ref get(slice docID, slice revID,
-                      KeyStore::contentOptions = KeyStore::kDefaultContent) const;
+                      ContentOptions = kDefaultContent) const;
 
         /** Loads the body of a Revision (if it was originally loaded as meta-only) */
         void readBody(Revision&);
@@ -95,7 +95,7 @@ namespace cbforest {
                                       Transaction &t);
         void replaceCurrent(Revision &newRev, Revision *current, Transaction &t);
         bool deleteNonCurrent(slice docID, slice revID, Transaction &t);
-        Revision::Ref getNonCurrent(slice docID, slice revID, KeyStore::contentOptions) const;
+        Revision::Ref getNonCurrent(slice docID, slice revID, ContentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
 

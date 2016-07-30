@@ -21,6 +21,8 @@
 
 #include "c4DocInternal.hh"
 
+#include "forestdb.h"
+
 using namespace cbforest;
 
 
@@ -54,7 +56,7 @@ C4Document* c4doc_get(C4Database *database,
         if (mustExist && !doc->exists()) {
             delete doc;
             doc = NULL;
-            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
         }
         
         
@@ -70,11 +72,11 @@ C4Document* c4doc_getBySequence(C4Database *database,
 {
     try {
         WITH_LOCK(database);
-        auto doc = C4DocumentInternal::newInstance(database, database->get(sequence));
+        auto doc = C4DocumentInternal::newInstance(database, database->defaultKeyStore().get(sequence));
         if (!doc->exists()) {
             delete doc;
             doc = NULL;
-            recordError(FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
         }
         return doc;
     } catchError(outError);

@@ -156,9 +156,9 @@ namespace cbforest {
         if (currentRevision()) {
             // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
             // the existing body buffer.
-            _doc.updateSequence( transaction(_db).set(_doc.key(), _doc.meta(), encode()) );
+            _doc.updateSequence( _db.set(_doc.key(), _doc.meta(), encode(), transaction) );
         } else {
-            transaction(_db).del(_doc.key());
+            _db.del(_doc.key(), transaction);
         }
         _changed = false;
     }

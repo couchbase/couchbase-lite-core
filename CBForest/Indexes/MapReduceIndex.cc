@@ -15,6 +15,7 @@
 
 #include "MapReduceIndex.hh"
 #include "Collatable.hh"
+#include "Error.hh"
 #include "Fleece.hh"
 #include "GeoIndex.hh"
 #include "Tokenizer.hh"
@@ -61,7 +62,7 @@ namespace cbforest {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
-        CBFAssert(t.database()->contains(_store));
+        CBFAssert(&_store.database() == &t.database());
         _lastMapVersion = _mapVersion;
 
         CollatableBuilder stateKey;
@@ -73,7 +74,7 @@ namespace cbforest {
               << _rowCount << kCurFormatVersion << _lastPurgeCount;
         state.endArray();
 
-        _stateReadAt = t(_store).set(stateKey, state);
+        _stateReadAt = _store.set(stateKey, state, t);
         Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }

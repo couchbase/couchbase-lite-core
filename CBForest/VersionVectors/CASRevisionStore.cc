@@ -9,6 +9,7 @@
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
 #include "DocEnumerator.hh"
+#include "Error.hh"
 #include "Fleece.hh"
 
 namespace cbforest {
@@ -50,7 +51,7 @@ namespace cbforest {
         if (state.latest.revID.buf && state.latest.revID != state.base.revID)
             enc << state.latest.revID << state.latest.CAS;
         enc.endArray();
-        t(_casStore).set(docID, slice::null, enc.extractOutput());
+        _casStore.set(docID, slice::null, enc.extractOutput(), t);
     }
 
 
@@ -85,7 +86,7 @@ namespace cbforest {
 
         Revision::Ref current;
         if (state.latest.CAS > 0)
-            current = get(docID, KeyStore::kMetaOnly);
+            current = get(docID, kMetaOnly);
 
         Revision::Ref newRev;
         if (!current || current->revID() == state.latest.revID) {
@@ -98,7 +99,7 @@ namespace cbforest {
             // Delete the latest saved server revision (or keep it as the base):
             Revision::Ref parent;
             if (state.latest.revID.buf) {
-                parent = getNonCurrent(docID, state.latest.revID, KeyStore::kMetaOnly);
+                parent = getNonCurrent(docID, state.latest.revID, kMetaOnly);
                 if (state.latest.revID != state.base.revID)
                     deleteNonCurrent(docID, state.latest.revID, t);
             }
@@ -145,7 +146,7 @@ namespace cbforest {
         vers.incrementGen(kCASServerPeerID);
         Revision::Ref newRev { new Revision(docID, vers, body, current) };
         KeyStore &store = current ? _currentStore : _nonCurrentStore;
-        t(store).write(newRev->document());
+        store.write(newRev->document(), t);
         return newRev;
     }
 
@@ -182,7 +183,7 @@ namespace cbforest {
             if (state.latest.revID == curRev.revID()) {
                 readBody(curRev);
                 curRev.setCurrent(false);             // append the revID to the key
-                t(_nonCurrentStore).write(curRev.document());
+                _nonCurrentStore.write(curRev.document(), t);
             }
         }
     }

@@ -15,6 +15,7 @@
 
 #include "Index.hh"
 #include "Collatable.hh"
+#include "Error.hh"
 #include "Fleece.hh"
 #include "varint.hh"
 #include "LogInternal.hh"
@@ -40,10 +41,10 @@ namespace cbforest {
     }
 
     IndexWriter::IndexWriter(Index* index, Transaction& t)
-    :KeyStoreWriter(index->_store, t),
-     _index(index)
+    :_index(index),
+     _transaction(t)
     {
-        CBFDebugAssert(t.database()->contains(index->_store));
+        CBFDebugAssert(&t.database() == &index->_store.database());
         index->addUser();
     }
 
@@ -60,7 +61,7 @@ namespace cbforest {
     }
 
     void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
-        Document doc = get(docID);
+        Document doc = _index->_store.get(docID);
         if (doc.body().size > 0) {
             auto keyArray = Value::fromTrustedData(doc.body())->asArray();
             Array::iterator iter(keyArray);
@@ -83,9 +84,9 @@ namespace cbforest {
             for (auto &key : keys)
                 enc.writeData(key);
             enc.endArray();
-            set(docID, enc.extractOutput());
+            _index->_store.set(docID, enc.extractOutput(), _transaction);
         } else {
-            del(docID);
+            _index->_store.del(docID, _transaction);
         }
     }
 
@@ -131,11 +132,6 @@ namespace cbforest {
             if (emitIndex > 0)
                 realKey << emitIndex;
             realKey.endArray();
-            if (realKey.size() > Document::kMaxKeyLength
-                    || value->size > Document::kMaxBodyLength) {
-                Warn("Index key or value too long"); //FIX: Need more-official warning
-                continue;
-            }
 
             // Is this a key that was previously emitted last time we indexed this document?
             if (keysChanged || oldKey == oldStoredKeys.end() || !(*oldKey == *key)) {
@@ -146,7 +142,7 @@ namespace cbforest {
                 ++oldKey;
                 if (valuesMightBeUnchanged) {
                     // read the old row so we can compare the value too:
-                    Document oldRow = get(realKey);
+                    Document oldRow = _index->_store.get(realKey);
                     if (oldRow.exists()) {
                         if (oldRow.body() == *value) {
                             Log("Old k/v pair (%s, %s) unchanged",
@@ -163,7 +159,7 @@ namespace cbforest {
             // Store the key & value:
             Log("**** Index: realKey = %s  value = %s",
                 realKey.toJSON().c_str(), (*value).hexString().c_str());
-            set(realKey, meta, *value);
+            _index->_store.set(realKey, meta, *value, _transaction);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
         }
@@ -176,7 +172,7 @@ namespace cbforest {
             if (oldEmitIndex > 0)
                 realKey << oldEmitIndex;
             realKey.endArray();
-            bool deleted = del(realKey);
+            bool deleted = _index->_store.del(realKey, _transaction);
             if (!deleted) {
                 Warn("Failed to delete old emitted k/v pair");
             }
@@ -243,7 +239,7 @@ namespace cbforest {
         options.limit = DocEnumerator::Options::kDefault.limit;
         options.skip = DocEnumerator::Options::kDefault.skip;
         options.includeDeleted = false;
-        options.contentOptions = KeyStore::kDefaultContent; // read() method needs the doc bodies
+        options.contentOptions = kDefaultContent; // read() method needs the doc bodies
         return options;
     }
 

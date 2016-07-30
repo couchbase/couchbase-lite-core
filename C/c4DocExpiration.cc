@@ -12,7 +12,8 @@
 #include "DocEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"
-#include "stdint.h"
+#include "forestdb.h"
+#include <stdint.h>
 #include <ctime>
 
 using namespace cbforest;
@@ -22,7 +23,7 @@ using namespace cbforest;
 static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
     try {
-        if (!db->get(docId, KeyStore::kMetaOnly).exists()) {
+        if (!db->defaultKeyStore().get(docId, kMetaOnly).exists()) {
             recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
             return false;
         }
@@ -37,10 +38,9 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
         alloc_slice tsValue(SizeOfVarInt(timestamp));
         PutUVarInt((void *)tsValue.buf, timestamp);
 
-        Transaction *t = db->transaction();
+        Transaction &t = *db->transaction();
         KeyStore& expiry = db->getKeyStore("expiry");
-        KeyStoreWriter writer(expiry, *t);
-        Document existingDoc = writer.get(docId);
+        Document existingDoc = expiry.get(docId);
         if (existingDoc.exists()) {
             // Previous entry found
             if (existingDoc.body().compare(tsValue) == 0) {
@@ -56,15 +56,15 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
             oldTsKey << (double)oldTimestamp;
             oldTsKey << docId;
             oldTsKey.endArray();
-            writer.del(oldTsKey);
+            expiry.del(oldTsKey, t);
         }
 
         if (timestamp == 0) {
-            writer.del(tsKey);
-            writer.del(docId);
+            expiry.del(tsKey, t);
+            expiry.del(docId, t);
         } else {
-            writer.set(tsKey, slice::null);
-            writer.set(docId, tsValue);
+            expiry.set(tsKey, slice::null, t);
+            expiry.set(docId, tsValue, t);
         }
 
         return true;
@@ -205,12 +205,11 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
     try {
         WITH_LOCK(e->getDatabase());
         e->reset();
-        Transaction *t = e->getDatabase()->transaction();
+        Transaction &t = *e->getDatabase()->transaction();
         KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");
-        KeyStoreWriter writer(expiry, *t);
         while(e->next()) {
-            writer.del(e->key());
-            writer.del(e->docID());
+            expiry.del(e->key(), t);
+            expiry.del(e->docID(), t);
         }
         commit = true;
     } catchError(outError);

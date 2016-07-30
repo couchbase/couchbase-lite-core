@@ -16,6 +16,7 @@
 #ifndef __CBForest__Index__
 #define __CBForest__Index__
 
+#include "Database.hh"
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
 #include <atomic>
@@ -73,7 +74,7 @@ namespace cbforest {
 
 
     /** A transaction to update an index. */
-    class IndexWriter : protected KeyStoreWriter {
+    class IndexWriter {
     public:
         IndexWriter(Index* index, Transaction& t);
         ~IndexWriter();
@@ -95,6 +96,7 @@ namespace cbforest {
         friend class MapReduceIndex;
 
         Index *_index;
+        Transaction &_transaction;
     };
 
 

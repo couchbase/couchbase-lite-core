@@ -30,7 +30,7 @@ namespace cbforest {
     public:
         C4DocumentV1(C4Database* database, C4Slice docID)
         :C4DocumentInternal(database, docID),
-         _versionedDoc(*database, docID),
+         _versionedDoc(database->defaultKeyStore(), docID),
          _selectedRev(NULL)
         {
             init();
@@ -39,7 +39,7 @@ namespace cbforest {
 
         C4DocumentV1(C4Database *database, Document &&doc)
         :C4DocumentInternal(database, std::move(doc)),
-         _versionedDoc(*database, std::move(doc)),
+         _versionedDoc(database->defaultKeyStore(), std::move(doc)),
          _selectedRev(NULL)
         {
             init();

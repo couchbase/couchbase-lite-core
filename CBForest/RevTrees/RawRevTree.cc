@@ -8,6 +8,7 @@
 
 #include "RawRevTree.hh"
 #include "RevTree.hh"
+#include "Error.hh"
 #include "varint.hh"
 
 

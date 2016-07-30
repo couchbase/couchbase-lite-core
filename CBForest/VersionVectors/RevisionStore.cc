@@ -8,6 +8,7 @@
 
 #include "RevisionStore.hh"
 #include "Revision.hh"
+#include "Error.hh"
 #include "DocEnumerator.hh"
 #include "VarInt.hh"
 
@@ -31,7 +32,7 @@ namespace cbforest {
 
 
     // Get the current revision of a document
-    Revision::Ref RevisionStore::get(slice docID, KeyStore::contentOptions opt) const {
+    Revision::Ref RevisionStore::get(slice docID, ContentOptions opt) const {
         Document doc(docID);
         if (!_currentStore.read(doc, opt))
             return nullptr;
@@ -39,7 +40,7 @@ namespace cbforest {
     }
 
 
-    Revision::Ref RevisionStore::get(slice docID, slice revID, KeyStore::contentOptions opt) const {
+    Revision::Ref RevisionStore::get(slice docID, slice revID, ContentOptions opt) const {
         // No revID means current revision:
         if (revID.size == 0)
             return get(docID, opt);
@@ -59,7 +60,7 @@ namespace cbforest {
 
     // Get a revision from the _nonCurrentStore only
     Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID,
-                                           KeyStore::contentOptions opt) const
+                                           ContentOptions opt) const
     {
         CBFAssert(revID.size > 0);
         Document doc(keyForNonCurrentRevision(docID, version{revID}));
@@ -109,7 +110,7 @@ namespace cbforest {
                                         Transaction &t)
     {
         // Check for conflict, and compute new version-vector:
-        auto current = get(docID, KeyStore::kMetaOnly);
+        auto current = get(docID, kMetaOnly);
         VersionVector newVersion;
         if (current)
             newVersion = current->version();
@@ -125,7 +126,7 @@ namespace cbforest {
 
 
     versionOrder RevisionStore::insert(Revision &newRev, Transaction &t) {
-        auto current = get(newRev.docID(), KeyStore::kMetaOnly);
+        auto current = get(newRev.docID(), kMetaOnly);
         auto cmp = current ? newRev.version().compareTo(current->version()) : kNewer;
         switch (cmp) {
             case kSame:
@@ -168,13 +169,13 @@ namespace cbforest {
             if (rev->isCurrent())
                 current = rev;
             else if (rev->revID() != keepingRevID)
-                t(_nonCurrentStore).del(rev->document());
+                _nonCurrentStore.del(rev->document(), t);
         }
         CBFAssert(current != NULL);
 
         auto newRev = Revision::Ref{ new Revision(conflicting[0]->docID(), newVersion,
                                                   body, true) };
-        t(_currentStore).write(newRev->document());
+        _currentStore.write(newRev->document(), t);
         return newRev;
     }
 
@@ -187,12 +188,12 @@ namespace cbforest {
                 deleteAncestors(newRev, t);
         }
         newRev.setCurrent(true);    // update key to just docID
-        t(_currentStore).write(newRev.document());
+        _currentStore.write(newRev.document(), t);
     }
 
 
     bool RevisionStore::deleteNonCurrent(slice docID, slice revID, Transaction &t) {
-        return t(_nonCurrentStore).del(keyForNonCurrentRevision(docID, version(revID)));
+        return _nonCurrentStore.del(keyForNonCurrentRevision(docID, version(revID)), t);
     }
 
 
@@ -206,7 +207,7 @@ namespace cbforest {
         false,  // no inclusiveStart
         false,  // no inclusiveEnd
         false,
-        KeyStore::kMetaOnly
+        kMetaOnly
     };
 
 
@@ -224,7 +225,7 @@ namespace cbforest {
             Revision rev(e.moveDoc());
             if (rev.version().compareTo(child.version()) == kOlder
                     && !shouldKeepAncestor(rev, child)) {
-                t(_nonCurrentStore).del(rev.document());
+                _nonCurrentStore.del(rev.document(), t);
             }
         }
     }

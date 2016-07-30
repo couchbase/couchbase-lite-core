@@ -1,6 +1,6 @@
 //
 //  Database.hh
-//  CBForest
+//  CBNano
 //
 //  Created by Jens Alfke on 5/12/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
@@ -13,8 +13,8 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__Database__
-#define __CBForest__Database__
+#ifndef __CBNano__Database__
+#define __CBNano__Database__
 #include "KeyStore.hh"
 #include <vector>
 #include <unordered_map>
@@ -25,127 +25,128 @@
 
 namespace cbforest {
 
+    using namespace std;
+
     class Transaction;
 
 
-    enum logLevel {
-        kDebug,
-        kInfo,
-        kWarning,
-        kError,
-        kNone
-    };
-    extern logLevel LogLevel;
-    extern void (*LogCallback)(logLevel, const char *message);
-
-
-    /** ForestDB database; primarily a container of KeyStores.
-        A Database also acts as its default KeyStore. */
-    class Database : public KeyStore {
+    /** A database file, primarily a container of KeyStores which store the actual data.
+        This is an abstract class, with concrete subclasses for different database engines. */
+    class Database {
     public:
 
-        typedef ::fdb_file_info info;
-        typedef ::fdb_config config;
+        struct Options {
+            KeyStore::Options keyStores;
+            bool create         :1;     //< Should the db be created if it doesn't exist?
+            bool writeable      :1;     //< If false, db is opened read-only
 
-        static config defaultConfig();
-        static void setDefaultConfig(const config&);
+            static const Options defaults;
+        };
 
-        Database(std::string path, const config&);
-        Database(Database* original, sequence snapshotSequence);
+        Database(const string &path, Options);
         virtual ~Database();
 
-        const std::string& filename() const;
-        info getInfo() const;
-        config getConfig()                      {return _config;}
+        const string& filename() const;
+        const Options& options() const              {return _options;}
+
+        virtual bool isOpen() const =0;
+
+        /** Closes the database. Do not call any methods on this object afterwards,
+            except isOpen() or mustBeOpen(), before deleting it. */
+        virtual void close();
+
+        /** Reopens database after it's been closed. */
+        virtual void reopen() =0;
+
+        /** Closes the database and deletes its file. */
+        virtual void deleteDatabase() =0;
+
+        /** Deletes a database that isn't open. */
+        static void deleteDatabase(const string &path);
+
+        virtual void compact() =0;
+
+        static const string kDefaultKeyStoreName;
+
+        /** The Database's default key-value store. */
+        KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
+        KeyStore& defaultKeyStore(KeyStore::Options) const;
+
+        KeyStore& getKeyStore(const string &name) const;
+        KeyStore& getKeyStore(const string &name, KeyStore::Options) const;
+
+        /** The names of all existing KeyStores (whether opened yet or not) */
+        virtual vector<string> allKeyStoreNames() =0;
+
+        void closeKeyStore(const string &name);
+        virtual void deleteKeyStore(const string &name) =0;
 
         /** The number of deletions that have been purged via compaction. (Used by the indexer) */
         uint64_t purgeCount() const;
 
-        bool isReadOnly() const;
+    protected:
+        virtual void _beginTransaction(Transaction*) =0;
+        virtual void _endTransaction(Transaction*) =0;
+        virtual KeyStore* newKeyStore(const string &name, KeyStore::Options) =0;
 
-        bool isOpen()                           {return _fileHandle != NULL;}
-
-        /** Closes the database. Do not call any methods on this object afterwards,
-            except isOpen() or mustBeOpen(), before deleting it. */
-        void close();
-
-        /** Closes the database and deletes its file. */
-        void deleteDatabase();
-
-        /** Reopens database after it's been closed. */
-        void reopen();
-
-        /** Deletes a database that isn't open. */
-        static void deleteDatabase(std::string path, const config&);
-
-        void compact();
-        bool isCompacting() const               {return _isCompacting;}
-        static bool isAnyCompacting();
-        void setCompactionMode(fdb_compaction_mode_t);
-
-        typedef void (*OnCompactCallback)(void *context, bool compacting);
-
-        void setOnCompact(OnCompactCallback callback, void *context) {
-            _onCompactCallback = callback;
-            _onCompactContext = context;
-        }
-
-        void rekey(const fdb_encryption_key&);
-
-        /** The Database's default key-value store. (You can also just use the Database
-            instance directly as a KeyStore since it inherits from it.) */
-        const KeyStore& defaultKeyStore() const {return *this;}
-        KeyStore& defaultKeyStore()             {return *this;}
-
-        KeyStore& getKeyStore(std::string name) const;
-
-        bool contains(KeyStore&) const;
-
-        void closeKeyStore(std::string name);
-        void deleteKeyStore(std::string name);
+        void updatePurgeCount();
 
     private:
         class File;
         friend class KeyStore;
         friend class Transaction;
-        fdb_kvs_handle* openKVS(std::string name) const;
+
+        KeyStore& addKeyStore(const string &name, KeyStore::Options);
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
 
         Database(const Database&) = delete;
         Database& operator=(const Database&) = delete;
 
-        void incrementDeletionCount(Transaction *t);
-        void updatePurgeCount();
-        static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
-                                                       fdb_compaction_status status,
-                                                       const char *kv_store_name,
-                                                       fdb_doc *doc,
-                                                       uint64_t last_oldfile_offset,
-                                                       uint64_t last_newfile_offset,
-                                                       void *ctx);
-        bool onCompact(fdb_compaction_status status,
-                       const char *kv_store_name,
-                       fdb_doc *doc,
-                       uint64_t lastOldFileOffset,
-                       uint64_t lastNewFileOffset);
+        void incrementDeletionCount(Transaction &t);
 
-        File* _file;
-        config _config;
-        fdb_file_handle* _fileHandle {nullptr};
-        std::unordered_map<std::string, std::unique_ptr<KeyStore> > _keyStores;
+        File* const _file;
+        const Options _options;
+        KeyStore* _defaultKeyStore;
+        unordered_map<string, unique_ptr<KeyStore> > _keyStores;
         bool _inTransaction {false};
-        bool _isCompacting {false};
-        OnCompactCallback _onCompactCallback {nullptr};
-        void  *_onCompactContext {nullptr};
     };
 
+
+
+    /** Mix-in interface for a Database implementation that supports automatic compaction. */
+    class AutoCompacting {
+    public:
+        virtual ~AutoCompacting()                       { }
+        
+        bool isCompacting() const                       {return _isCompacting;}
+        virtual void setAutoCompact(bool autoCompact) =0;
+
+        typedef function<void(bool compacting)> OnCompactCallback;
+
+        void setOnCompact(OnCompactCallback callback)   {_onCompactCallback = callback;}
+
+    protected:
+        void beganCompacting() {
+            _isCompacting = true;
+            if (_onCompactCallback) _onCompactCallback(true);
+        }
+        void finishedCompacting() {
+            _isCompacting = false;
+            if (_onCompactCallback) _onCompactCallback(false);
+        }
+
+        atomic<bool> _isCompacting {false};
+        OnCompactCallback _onCompactCallback {nullptr};
+    };
+
+    
 
     /** Grants exclusive write access to a Database while in scope.
         The transaction is committed when the object exits scope, unless abort() was called.
         Only one Transaction object can be created on a database file at a time.
         Not just per Database object; per database _file_. */
-    class Transaction : public KeyStoreWriter {
+    class Transaction {
     public:
         enum state {
             kNoOp,
@@ -157,11 +158,7 @@ namespace cbforest {
         Transaction(Database*);
         ~Transaction()                          {_db.endTransaction(this);}
 
-        /** Converts a KeyStore to a KeyStoreWriter to allow write access. */
-        KeyStoreWriter operator() (KeyStore& s)  {return KeyStoreWriter(s, *this);}
-        KeyStoreWriter operator() (KeyStore* s) {return KeyStoreWriter(*s, *this);}
-
-        Database* database() const          {return &_db;}
+        Database& database() const          {return _db;}
         state state() const                 {return _state;}
 
         /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
@@ -170,14 +167,16 @@ namespace cbforest {
         /** Force the database write-ahead log to be completely flushed on commit. */
         void flushWAL()                     {if (_state == kCommit) _state = kCommitManualWALFlush;}
 
-        void check(fdb_status status);
-
         /** Deletes the doc, and increments the database's purgeCount */
         bool del(slice key);
         bool del(Document &doc);
 
     private:
         friend class Database;
+        friend class KeyStore;
+
+        void incrementDeletionCount()       {_db.incrementDeletionCount(*this);}
+
         Transaction(Database*, bool begin);
         Transaction(const Transaction&) = delete;
 
@@ -187,4 +186,4 @@ namespace cbforest {
     
 }
 
-#endif /* defined(__CBForest__Database__) */
+#endif /* defined(__CBNano__Database__) */

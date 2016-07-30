@@ -16,7 +16,6 @@
 #ifndef CBForest_Error_h
 #define CBForest_Error_h
 
-#include "forestdb.h"
 #include <exception>
 
 #undef check
@@ -31,6 +30,14 @@ namespace cbforest {
 
     /** Most API calls can throw this. */
     struct error : public std::exception {
+        enum Domain {
+            CBForest,
+            POSIX,
+            HTTP,
+            ForestDB,
+            SQLite,
+        };
+
         // Extra status codes not defined by fdb_errors.h
         enum CBForestError {
             BadRevisionID = -1000,
@@ -39,30 +46,23 @@ namespace cbforest {
             AssertionFailed = -1003,
             TokenizerError = -1004, // can't create tokenizer
             BadVersionVector = -1005,
-
-            HTTPStatusBase = 10000,
         };
 
-        /** Either an fdb_status code, as defined in fdb_errors.h; or a CBForestError. */
-        int const status;
+        Domain const domain;
+        int const code;
 
-        error (fdb_status s)        :status(s) {}
-        error (CBForestError e)     :status(e) {}
+        error (Domain d, int c )    :domain(d), code(c) { }
+        error (CBForestError e)     :domain(CBForest), code(e) {}
 
         virtual const char *what() const noexcept override;
 
-        [[noreturn]] static void _throw(fdb_status);
+        [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(CBForestError);
         [[noreturn]] static void _throwHTTPStatus(int status);
 
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);
     };
-
-    static inline void check(fdb_status status) {
-        if (expected(status != FDB_RESULT_SUCCESS, false))
-            error::_throw(status);
-    }
 
 
 // Like C assert() but throws an exception instead of aborting

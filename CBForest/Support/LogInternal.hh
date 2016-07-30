@@ -21,6 +21,16 @@
 
 namespace cbforest {
 
+enum logLevel {
+    kDebug,
+    kInfo,
+    kWarning,
+    kError,
+    kNone
+};
+extern logLevel LogLevel;
+extern void (*LogCallback)(logLevel, const char *message);
+
 void _Log(logLevel, const char *message, ...);
 
 #ifdef _MSC_VER

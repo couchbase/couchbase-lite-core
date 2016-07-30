@@ -40,7 +40,7 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
                     sequence end,
                     const C4EnumeratorOptions &options)
     :_database(database->retain()),
-     _e(*database, start, end, allDocOptions(options)),
+     _e(database->defaultKeyStore(), start, end, allDocOptions(options)),
      _options(options)
     { }
 
@@ -49,7 +49,7 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
                     C4Slice endDocID,
                     const C4EnumeratorOptions &options)
     :_database(database->retain()),
-     _e(*database, startDocID, endDocID, allDocOptions(options)),
+     _e(database->defaultKeyStore(), startDocID, endDocID, allDocOptions(options)),
      _options(options)
     { }
 
@@ -57,7 +57,7 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
                     std::vector<std::string>docIDs,
                     const C4EnumeratorOptions &options)
     :_database(database->retain()),
-     _e(*database, docIDs, allDocOptions(options)),
+     _e(database->defaultKeyStore(), docIDs, allDocOptions(options)),
      _options(options)
     { }
 
@@ -78,7 +78,7 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
         options.includeDeleted = (c4options.flags & kC4IncludePurged) != 0;
         // (Remember, ForestDB's 'deleted' is what CBL calls 'purged')
         if ((c4options.flags & kC4IncludeBodies) == 0)
-            options.contentOptions = KeyStore::kMetaOnly;
+            options.contentOptions = kMetaOnly;
         return options;
     }
 
