@@ -38,14 +38,16 @@ namespace cbforest {
             SQLite,
         };
 
-        // Extra status codes not defined by fdb_errors.h
+        // Error codes in CBForest domain:
         enum CBForestError {
-            BadRevisionID = -1000,
-            CorruptRevisionData = -1001,
-            CorruptIndexData = -1002,
-            AssertionFailed = -1003,
-            TokenizerError = -1004, // can't create tokenizer
-            BadVersionVector = -1005,
+            BadRevisionID = 1,
+            CorruptRevisionData,
+            CorruptIndexData,
+            AssertionFailed,
+            TokenizerError, // can't create text tokenizer for FTS
+            BadVersionVector,
+            NoSequences,
+            Unimplemented,
         };
 
         Domain const domain;

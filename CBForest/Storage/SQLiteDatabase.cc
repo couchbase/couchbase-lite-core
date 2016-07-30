@@ -18,7 +18,7 @@ using namespace std;
 
 namespace cbforest {
 
-    SQLiteDatabase::SQLiteDatabase(const string &path, Options options)
+    SQLiteDatabase::SQLiteDatabase(const string &path, const Options *options)
     :Database(path, options)
     {
         reopen();
@@ -171,18 +171,18 @@ namespace cbforest {
     bool SQLiteKeyStore::read(Document &doc, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
             ? db().compile(_getMetaByKeyStmt,
-                          string("SELECT sequence, meta FROM kv_")+name()+" WHERE key=? AND deleted!=1")
+                          string("SELECT sequence, meta, deleted, FROM kv_")+name()+" WHERE key=?")
             : db().compile(_getByKeyStmt,
-                          string("SELECT sequence, meta, body FROM kv_")+name()+" WHERE key=? AND deleted!=1");
+                          string("SELECT sequence, meta, deleted, body FROM kv_")+name()+" WHERE key=?");
         stmt.bindNoCopy(1, doc.key().buf, (int)doc.key().size);
         if (!stmt.executeStep())
             return false;
 
         if (_options.sequences)
-            updateDoc(doc, (int64_t)stmt.getColumn(0));
+            updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(2));
         doc.setMeta(columnAsSlice(stmt.getColumn(1)));
         if (options == kDefaultContent)
-            doc.setBody(columnAsSlice(stmt.getColumn(2)));
+            doc.setBody(columnAsSlice(stmt.getColumn(3)));
         stmt.reset();
         return true;
     }
@@ -191,19 +191,19 @@ namespace cbforest {
     void SQLiteKeyStore::get(slice key, ContentOptions options, function<void(const Document&)> fn) {
         auto &stmt = (options & kMetaOnly)
         ? db().compile(_getMetaByKeyStmt,
-                       string("SELECT sequence, meta FROM kv_")+name()+" WHERE key=? AND deleted!=1")
+                       string("SELECT sequence, meta, deleted FROM kv_")+name()+" WHERE key=?")
         : db().compile(_getByKeyStmt,
-                       string("SELECT sequence, meta, body FROM kv_")+name()+" WHERE key=? AND deleted!=1");
+                       string("SELECT sequence, meta, deleted, body FROM kv_")+name()+" WHERE key=?");
         stmt.bindNoCopy(1, key.buf, (int)key.size);
 
         Document doc;
         doc.setKeyNoCopy(key);
         if (stmt.executeStep()) {
             if (_options.sequences)
-                updateDoc(doc, (int64_t)stmt.getColumn(0));
+                updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(2));
             doc.setMetaNoCopy(columnAsSlice(stmt.getColumn(1)));
             if (options == kDefaultContent)
-                doc.setBodyNoCopy(columnAsSlice(stmt.getColumn(2)));
+                doc.setBodyNoCopy(columnAsSlice(stmt.getColumn(3)));
         }
         fn(doc);
         stmt.reset();   // invalidates the memory pointed to by doc
@@ -212,7 +212,7 @@ namespace cbforest {
     
     Document SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
         if (!_options.sequences)
-            error::_throw(error::CBNano, error::NoSequences);
+            error::_throw(error::NoSequences);
         Document doc;
         auto &stmt = (options & kMetaOnly)
             ? db().compile(_getMetaBySeqStmt,
@@ -308,15 +308,15 @@ namespace cbforest {
         }
 
         virtual bool seek(slice key) override {
-            error::_throw(error::CBNano, error::Unimplemented); //FIX
+            error::_throw(error::Unimplemented); //FIX
         }
 
         virtual bool read(Document &doc) override {
-            updateDoc(doc, (int64_t)_stmt->getColumn(0));
+            updateDoc(doc, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(3));
             doc.setKey(columnAsSlice(_stmt->getColumn(1)));
             doc.setMeta(columnAsSlice(_stmt->getColumn(2)));
             if (_content == kDefaultContent)
-                doc.setBody(columnAsSlice(_stmt->getColumn(3)));
+                doc.setBody(columnAsSlice(_stmt->getColumn(4)));
             return true;
         }
 
@@ -328,7 +328,7 @@ namespace cbforest {
 
     stringstream SQLiteKeyStore::selectFrom(const DocEnumerator::Options &options) {
         stringstream sql;
-        sql << "SELECT sequence, key, meta";
+        sql << "SELECT sequence, key, meta, deleted";
         if (options.contentOptions == kDefaultContent)
             sql << ", body";
         sql << " FROM kv_" << name();
@@ -385,7 +385,7 @@ namespace cbforest {
                                                            DocEnumerator::Options &options)
     {
         if (!_options.sequences)
-            error::_throw(error::CBNano, error::NoSequences);
+            error::_throw(error::NoSequences);
         db()._sqlDb->exec(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs ON kv_"+name()+" (sequence)"));
 
         stringstream sql = selectFrom(options);

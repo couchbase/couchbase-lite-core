@@ -10,3 +10,6 @@
 [submodule "vendor/fleece"]
 	path = vendor/fleece
 	url = git@github.com:couchbaselabs/fleece.git
+[submodule "vendor/SQLiteCpp"]
+	path = vendor/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git

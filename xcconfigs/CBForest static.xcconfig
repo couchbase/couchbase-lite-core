@@ -10,7 +10,8 @@
 DSTROOT                      = /tmp/CBForest_iOS.dst
 GCC_PRECOMPILE_PREFIX_HEADER = YES
 GCC_PREFIX_HEADER            = CBForest/Support/CBForest-Prefix.pch
-HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/vendor/forestdb/include/** $(SRCROOT)/vendor/fleece/Fleece
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
+HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/vendor/forestdb/include/** $(SRCROOT)/vendor/fleece/Fleece $(SRCROOT)/vendor/SQLiteCpp/include/
 PRODUCT_NAME                 = CBForest
 SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO

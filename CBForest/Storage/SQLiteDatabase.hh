@@ -28,7 +28,7 @@ namespace cbforest {
     class SQLiteDatabase : public Database {
     public:
 
-        SQLiteDatabase(const string &path, Options);
+        SQLiteDatabase(const string &path, const Options*);
         ~SQLiteDatabase();
 
         bool isOpen() const override;

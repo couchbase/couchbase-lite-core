@@ -76,7 +76,7 @@ void DatabaseTestFixture::setUp() {
     ::unlink("/tmp/forest_temp.fdb.1");
     ::unlink("/tmp/forest_temp.fdb.meta");
 #endif
-    db = new ForestDatabase(dbPath, Database::Options::defaults);
+    db = new ForestDatabase(dbPath);
 }
 
 
