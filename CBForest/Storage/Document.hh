@@ -56,7 +56,7 @@ namespace cbforest {
         void setMetaNoCopy(slice meta)          {adoptMeta(meta); _meta.dontFree();}
         void setBodyNoCopy(slice body)          {adoptBody(body); _body.dontFree();}
 
-        void setDeleted(bool deleted)           {_deleted = deleted;}
+        void setDeleted(bool deleted)           {_deleted = deleted; if (deleted) _exists = false;}
 
         /** Reallocs the 'meta' slice to the desired size. */
         slice resizeMeta(size_t);
@@ -77,15 +77,15 @@ namespace cbforest {
         friend class Transaction;
         friend class DocEnumerator;
 
-        void update(cbforest::sequence sequence, uint64_t offset, bool exists) {
-            _sequence = sequence; _offset = offset; _exists = exists;
+        void update(cbforest::sequence sequence, uint64_t offset, bool deleted) {
+            _sequence = sequence; _offset = offset; _deleted = deleted; _exists = !deleted;
         }
 
         Document(const Document&) = delete;                 // no copying allowed
         Document& operator=(const Document&) = delete;      // no assignment allowed
 
         alloc_slice _key, _meta, _body;
-        cbforest::sequence _sequence      {0};
+        cbforest::sequence _sequence    {0};
         uint64_t _offset                {0};
         bool _deleted                   {false};
         bool _exists                    {false};

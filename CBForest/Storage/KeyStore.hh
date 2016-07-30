@@ -62,7 +62,7 @@ namespace cbforest {
         virtual bool read(Document &doc, ContentOptions options = kDefaultContent) const =0;
 
         /** Reads the body of a Document that's already been read with kMetaonly. */
-        virtual void readBody(Document &doc) const      {read(doc, kDefaultContent);}
+        virtual void readBody(Document &doc) const;
 
         virtual Document getByOffsetNoErrors(uint64_t offset, sequence) const
                 {return Document();}
@@ -100,8 +100,8 @@ namespace cbforest {
         virtual DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
                                                        DocEnumerator::Options&) =0;
 
-        void updateDoc(Document &doc, sequence seq, uint64_t offset =0, bool exists =true) const {
-            doc.update(seq, offset, exists);
+        void updateDoc(Document &doc, sequence seq, uint64_t offset =0, bool deleted = false) const {
+            doc.update(seq, offset, deleted);
         }
 
         Database &_db;

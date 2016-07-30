@@ -74,34 +74,34 @@ namespace cbforest {
     }
 
 
-    ForestDatabase::ForestDatabase(const string &path, Database::Options options)
+    ForestDatabase::ForestDatabase(const string &path, const Database::Options *options)
     :ForestDatabase(path, options, defaultConfig())
     { }
 
 
-    ForestDatabase::ForestDatabase(const string &path, Database::Options options, const fdb_config& cfg)
+    ForestDatabase::ForestDatabase(const string &path, const Database::Options *options, const fdb_config& cfg)
     :Database(path, options),
      _config(cfg)
     {
-        if (options.writeable)
-            _config.flags |= FDB_OPEN_FLAG_CREATE;
-        else
-            _config.flags &= ~FDB_OPEN_FLAG_CREATE;
-        if (options.create)
-            _config.flags |= FDB_OPEN_FLAG_CREATE;
-        else
-            _config.flags &= ~FDB_OPEN_FLAG_CREATE;
+        if (options) {
+            if (options->writeable)
+                _config.flags |= FDB_OPEN_FLAG_CREATE;
+            else
+                _config.flags &= ~FDB_OPEN_FLAG_CREATE;
+            if (options->create)
+                _config.flags |= FDB_OPEN_FLAG_CREATE;
+            else
+                _config.flags &= ~FDB_OPEN_FLAG_CREATE;
+            _config.seqtree_opt = options->keyStores.sequences ? FDB_SEQTREE_USE : FDB_SEQTREE_NOT_USE;
 
-        _config.seqtree_opt = options.keyStores.sequences ? FDB_SEQTREE_USE : FDB_SEQTREE_NOT_USE;
-
-        // If purging_interval is 0, deleted ForestDB docs vanish pretty much instantly (_not_
-        // "at the next replication" as the ForestDB header says.) A value of > 0 makes them stick
-        // around until the next compaction.
-        if (options.keyStores.softDeletes)
-            _config.purging_interval = max(_config.purging_interval, 1u);
-        else
-            _config.purging_interval = 0;
-
+            // If purging_interval is 0, deleted ForestDB docs vanish pretty much instantly (_not_
+            // "at the next replication" as the ForestDB header says.) A value of > 0 makes them
+            // stick around until the next compaction.
+            if (options->keyStores.softDeletes)
+                _config.purging_interval = max(_config.purging_interval, 1u);
+            else
+                _config.purging_interval = 0;
+        }
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
         reopen();
@@ -341,7 +341,8 @@ namespace cbforest {
     void ForestKeyStore::setDocNoKey(Document &doc, fdb_doc &fdoc) const {
         doc.adoptMeta(slice(fdoc.meta, fdoc.metalen));
         doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
-        updateDoc(doc, fdoc.seqnum, fdoc.offset);
+        doc.setDeleted(fdoc.deleted);
+        updateDoc(doc, fdoc.seqnum, fdoc.offset, fdoc.deleted);
     }
 
     void ForestKeyStore::setDoc(Document &doc, fdb_doc &fdoc) const {
@@ -384,6 +385,7 @@ namespace cbforest {
     Document ForestKeyStore::get(sequence seq, ContentOptions options) const {
         Document doc;
         fdb_doc fdoc = {};
+        fdoc.seqnum = seq;
         fdb_status status;
         if (options & kMetaOnly)
             status = fdb_get_metaonly_byseq(_handle, &fdoc);
@@ -395,6 +397,19 @@ namespace cbforest {
         // (the heap blocks pointed to by fdoc have been adopted by doc, so don't free them.)
         return doc;
     }
+
+
+    Document ForestKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+        Document result;
+
+        fdb_doc fdoc = {};
+        fdoc.offset = offset;
+        fdoc.seqnum = seq;
+        if (fdb_get_byoffset(_handle, &fdoc) == FDB_RESULT_SUCCESS)
+            setDoc(result, fdoc);
+        return result;
+    }
+
 
 
     sequence ForestKeyStore::set(slice key, slice meta, slice body, Transaction&) {

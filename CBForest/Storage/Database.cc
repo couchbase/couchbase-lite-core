@@ -68,9 +68,9 @@ namespace cbforest {
     const Database::Options Database::Options::defaults = Database::Options {{true, true}, true, true};
 
 
-    Database::Database(const string &path, Database::Options options)
+    Database::Database(const string &path, const Database::Options *options)
     :_file(File::forPath(path)),
-     _options(options)
+     _options(options ? *options : Options::defaults)
     { }
 
     Database::~Database() {

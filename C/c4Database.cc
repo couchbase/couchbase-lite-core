@@ -185,7 +185,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 
 
 c4Database::c4Database(std::string path,
-                       Database::Options options, const fdb_config& cfg,
+                       const Database::Options *options, const fdb_config& cfg,
                        uint8_t schema_)
 :ForestDatabase(path, options, cfg),
  schema(schema_)
@@ -293,12 +293,11 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError)
 {
     auto pathStr = (std::string)path;
-    auto options = c4DbOptions(flags);
     auto config = c4DbConfig(flags, encryptionKey);
     uint8_t schema = (flags & kC4DB_V2Format) ? 2 : 1;
     try {
         try {
-            return new c4Database(pathStr, options, config, schema);
+            return new c4Database(pathStr, nullptr, config, schema);
         } catch (cbforest::error error) {
             if (schema == 1 && error.domain == error::ForestDB
                             && error.code == FDB_RESULT_INVALID_COMPACTION_MODE
@@ -307,7 +306,7 @@ C4Database* c4db_open(C4Slice path,
                 // Opening them with auto-compact causes this error. Upgrade such a database by
                 // switching its compaction mode:
                 config.compaction_mode = FDB_COMPACTION_MANUAL;
-                auto db = new c4Database(pathStr, options, config, schema);
+                auto db = new c4Database(pathStr, nullptr, config, schema);
                 db->setAutoCompact(true);
                 return db;
             } else {
@@ -488,7 +487,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
     if (!database->mustBeInTransaction(outError))
         return false;
     try {
-        if (database->transaction()->del(docID))
+        if (database->defaultKeyStore().del(docID, *database->transaction()))
             return true;
         else
             recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);

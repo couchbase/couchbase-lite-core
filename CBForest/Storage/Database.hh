@@ -43,7 +43,7 @@ namespace cbforest {
             static const Options defaults;
         };
 
-        Database(const string &path, Options);
+        Database(const string &path, const Options* =nullptr);
         virtual ~Database();
 
         const string& filename() const;
@@ -107,7 +107,7 @@ namespace cbforest {
 
         File* const _file;
         const Options _options;
-        KeyStore* _defaultKeyStore;
+        KeyStore* _defaultKeyStore {nullptr};
         unordered_map<string, unique_ptr<KeyStore> > _keyStores;
         bool _inTransaction {false};
     };
@@ -166,10 +166,6 @@ namespace cbforest {
 
         /** Force the database write-ahead log to be completely flushed on commit. */
         void flushWAL()                     {if (_state == kCommit) _state = kCommitManualWALFlush;}
-
-        /** Deletes the doc, and increments the database's purgeCount */
-        bool del(slice key);
-        bool del(Document &doc);
 
     private:
         friend class Database;

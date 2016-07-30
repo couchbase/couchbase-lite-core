@@ -137,7 +137,7 @@ using namespace c4Internal;
 
 struct c4Database : public ForestDatabase, RefCounted<c4Database> {
     c4Database(std::string path,
-               Database::Options options, const fdb_config& cfg,
+               const Database::Options *options, const fdb_config& cfg,
                uint8_t schema_);
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2

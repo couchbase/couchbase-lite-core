@@ -18,6 +18,8 @@ namespace cbforest {
 
     const char* error::what() const noexcept {
         switch (domain) {
+            case POSIX:
+                return strerror(code);
             case ForestDB:
                 return fdb_error_msg((fdb_status)code);
             default:
@@ -27,8 +29,18 @@ namespace cbforest {
 
     
     void error::_throw(Domain domain, int code ) {
-        WarnError("CBForest throwing error (%s, %d)", kDomainNames[domain], code);
-        throw error{domain, code};
+        error err{domain, code};
+        switch (domain) {
+            case POSIX:
+            case ForestDB:
+                WarnError("CBForest throwing %s error %d: %s",
+                          kDomainNames[domain], code, err.what());
+                break;
+            default:
+                WarnError("CBForest throwing %s error %d", kDomainNames[domain], code);
+                break;
+        }
+        throw err;
     }
 
     

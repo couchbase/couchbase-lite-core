@@ -24,8 +24,8 @@ namespace cbforest {
         static fdb_config defaultConfig();
         static void setDefaultConfig(const fdb_config&);
 
-        ForestDatabase(const string &path, Database::Options options);
-        ForestDatabase(const string &path, Database::Options options, const fdb_config&);
+        ForestDatabase(const string &path, const Options* =nullptr);
+        ForestDatabase(const string &path, const Options*, const fdb_config&);
         ~ForestDatabase();
 
         fdb_file_info info() const;
@@ -82,6 +82,7 @@ namespace cbforest {
         Document get(sequence, ContentOptions) const override;
         bool read(Document &doc, ContentOptions options) const override;
         void readBody(Document &doc) const override;
+        Document getByOffsetNoErrors(uint64_t offset, sequence seq) const override;
 
         sequence set(slice key, slice meta, slice value, Transaction&) override;
 

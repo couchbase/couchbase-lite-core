@@ -42,6 +42,11 @@ namespace cbforest {
         fn(get(seq, options));
     }
 
+    void KeyStore::readBody(Document &doc) const {
+        Document fullDoc = get(doc.key(), kDefaultContent);
+        doc._body = fullDoc._body;  // avoid copying block
+    }
+
     void KeyStore::deleteKeyStore(Transaction& trans) {
         trans.database().deleteKeyStore(name());
     }

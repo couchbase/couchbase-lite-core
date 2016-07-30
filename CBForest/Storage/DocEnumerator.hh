@@ -106,8 +106,8 @@ namespace cbforest {
             virtual bool read(Document&) =0;
             virtual bool shouldSkipFirstStep()      {return false;}
         protected:
-            void updateDoc(Document &doc, sequence s, uint64_t offset =0, bool exists =true) const {
-                doc.update(s, offset, exists);
+            void updateDoc(Document &doc, sequence s, uint64_t offset =0, bool deleted =false) const {
+                doc.update(s, offset, deleted);
             }
         };
 
