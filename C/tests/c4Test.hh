@@ -16,6 +16,13 @@
 #include "CppTest.hh"
 
 
+#ifdef _MSC_VER
+#define kTestDir "C:\\tmp\\"
+#else
+#define kTestDir "/tmp/"
+#endif
+
+
 // Some operators to make C4Slice work with AssertEqual:
 bool operator== (C4Slice s1, C4Slice s2);
 std::ostream& operator<< (std::ostream& o, C4Slice s);

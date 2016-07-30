@@ -63,19 +63,8 @@ std::ostream& operator<< (std::ostream& o, slice s) {
 
 void DatabaseTestFixture::setUp() {
     TestFixture::setUp();
-#ifdef _MSC_VER
-    const char *dbPath = "C:\\tmp\\forest_temp.fdb";
-    ::unlink("C:\\tmp\\forest_temp.fdb");
-    ::unlink("C:\\tmp\\forest_temp.fdb.0");
-    ::unlink("C:\\tmp\\forest_temp.fdb.1");
-    ::unlink("C:\\tmp\\forest_temp.fdb.meta");
-#else
-    const char *dbPath = "/tmp/forest_temp.fdb";
-    ::unlink("/tmp/forest_temp.fdb");
-    ::unlink("/tmp/forest_temp.fdb.0");
-    ::unlink("/tmp/forest_temp.fdb.1");
-    ::unlink("/tmp/forest_temp.fdb.meta");
-#endif
+    const char *dbPath = kTestDir "forest_temp.fdb";
+    Database::deleteDatabase(dbPath);
     db = new ForestDatabase(dbPath);
 }
 

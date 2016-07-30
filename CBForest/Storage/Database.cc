@@ -23,9 +23,9 @@
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
 #include <dirent.h>
-#include <unistd.h>         //FIX: UNIX-specific
+#include <unistd.h>
 #ifdef _MSC_VER
-#include "asprintf.h"
+#include <asprintf.h>
 #endif
 
 using namespace std;
@@ -93,11 +93,18 @@ namespace cbforest {
 
 
     void Database::deleteDatabase(const string &path) {
+#ifdef _MSC_VER
+        static const char kSeparatorChar = '\\';
+        static const char* kCurrentDir = ".\\";
+#else
+        static const char kSeparatorChar = '/';
+        static const char* kCurrentDir = "./";
+#endif
         // Split path into directory name and base filename:
         string dirname, basename;
-        auto slash = path.rfind('/');           //FIX: OS-dependent
+        auto slash = path.rfind(kSeparatorChar);           //FIX: OS-dependent
         if (slash == string::npos) {
-            dirname = string("./");
+            dirname = string(kCurrentDir);
             basename = path;
         } else {
             dirname = path.substr(0, slash+1);

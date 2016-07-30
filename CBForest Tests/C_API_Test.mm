@@ -29,11 +29,7 @@ static const unsigned kNumDocuments = 10000;
     [super setUp];
 
     const char *dbPath = "/tmp/forest_temp.fdb";
-    ::unlink("/tmp/forest_temp.fdb");
-    ::unlink("/tmp/forest_temp.fdb.0");
-    ::unlink("/tmp/forest_temp.fdb.1");
-    ::unlink("/tmp/forest_temp.fdb.meta");
-
+    c4db_deleteAtPath(c4str(dbPath), kC4DB_Create, NULL);
     C4Error error;
     db = c4db_open(c4str(dbPath), kC4DB_Create, NULL, &error);
     Assert(db != NULL);

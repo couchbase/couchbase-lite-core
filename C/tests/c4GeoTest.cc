@@ -18,11 +18,7 @@
 #include <algorithm>
 #endif
 
-#ifdef _MSC_VER
-static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
-#else
-static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
-#endif
+static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
 
 static double randomLat() { return random() / (double)RAND_MAX * 180.0 - 90.0; }
 static double randomLon() { return random() / (double)RAND_MAX * 360.0 - 180.0; }
@@ -34,7 +30,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        ::unlink(kViewIndexPath);
+        c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
                            kC4DB_Create, encryptionKey(), &error);

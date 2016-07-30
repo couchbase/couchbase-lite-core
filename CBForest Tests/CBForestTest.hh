@@ -13,6 +13,14 @@
 
 using namespace fleece;
 
+
+#ifdef _MSC_VER
+#define kTestDir "C:\\tmp\\"
+#else
+#define kTestDir "/tmp/"
+#endif
+
+
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);
 

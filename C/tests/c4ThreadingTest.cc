@@ -12,18 +12,10 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
 
 
-#ifdef _MSC_VER
-static const char *kDBPath = "C:\\tmp\\forest_temp.fdb";
-static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
-#else
-static const char *kDBPath = "/tmp/forest_temp.fdb";
-static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
-#endif
+static const char *kDBPath = kTestDir "forest_temp.fdb";
+static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
 
 
 class C4ThreadingTest : public C4Test {
@@ -39,7 +31,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        ::unlink(kViewIndexPath);
+        c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
         v = openView(db);
     }
 

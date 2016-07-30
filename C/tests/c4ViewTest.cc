@@ -10,15 +10,9 @@
 #include "c4View.h"
 #include "c4DocEnumerator.h"
 #include <iostream>
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
 
-#ifdef _MSC_VER
-static const char *kViewIndexPath = "C:\\tmp\\forest_temp.view.index";
-#else
-static const char *kViewIndexPath = "/tmp/forest_temp.view.index";
-#endif
+
+static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
 
 
 class C4ViewTest : public C4Test {
@@ -28,7 +22,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        ::unlink(kViewIndexPath);
+        c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
                            kC4DB_Create, encryptionKey(), &error);
