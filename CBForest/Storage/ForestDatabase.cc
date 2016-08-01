@@ -204,8 +204,6 @@ namespace cbforest {
 #pragma mark - COMPACTION:
 
 
-    static atomic<uint32_t> sCompactCount;
-
     void ForestDatabase::compact() {
         auto status = fdb_compact(_fileHandle, NULL);
         if (status == FDB_RESULT_FILE_IS_BUSY) {
@@ -241,32 +239,25 @@ namespace cbforest {
     {
         switch (status) {
             case FDB_CS_BEGIN:
-                _isCompacting = true;
-                ++sCompactCount;
                 Log("ForestDatabase %p COMPACTING...", this);
+                beganCompacting();
                 break;
             case FDB_CS_COMPLETE:
                 updatePurgeCount();
-                _isCompacting = false;
-                --sCompactCount;
                 Log("ForestDatabase %p END COMPACTING", this);
+                finishedCompacting();
                 break;
             default:
-                return true; // skip the onCompactCallback
+                break;
         }
-        if (_onCompactCallback)
-            _onCompactCallback(_isCompacting);
         return true;
     }
 
-    bool ForestDatabase::isAnyCompacting() {
-        return sCompactCount > 0;
-    }
-
-    void ForestDatabase::setAutoCompact(bool autoCompact) {
+    bool ForestDatabase::setAutoCompact(bool autoCompact) {
         auto mode = (autoCompact ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL);
         check(fdb_switch_compaction_mode(_fileHandle, mode, _config.compaction_threshold));
         _config.compaction_mode = mode;
+        return true;
     }
 
 

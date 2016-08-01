@@ -18,6 +18,7 @@
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4DocInternal.hh"
+#include "ForestDatabase.hh"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
 #include "FullTextIndex.hh"
@@ -50,8 +51,8 @@ struct c4View : public c4Internal::RefCounted<c4View> {
            const fdb_config &config,
            C4Slice version)
     :_sourceDB(sourceDB->retain()),
-     _viewDB((std::string)path, nullptr, config),
-     _index(&_viewDB, (std::string)name, sourceDB)
+     _viewDB(new ForestDatabase((std::string)path, nullptr, config)),
+     _index(_viewDB.get(), (std::string)name, sourceDB->db())
     {
         setVersion(version);
     }
@@ -69,11 +70,11 @@ struct c4View : public c4Internal::RefCounted<c4View> {
     }
 
     void close() {
-        _viewDB.close();
+        _viewDB->close();
     }
 
     C4Database *_sourceDB;
-    ForestDatabase _viewDB;
+    std::unique_ptr<Database> _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
     std::mutex _mutex;
@@ -133,7 +134,7 @@ bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError
     WITH_LOCK(view);
     if (!view->checkNotBusy(outError))
         return false;
-    return rekey(&view->_viewDB, newKey, outError);
+    return rekey(view->_viewDB.get(), newKey, outError);
 }
 
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
@@ -154,7 +155,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
         WITH_LOCK(view);
         if (!view->checkNotBusy(outError))
             return false;
-        view->_viewDB.deleteDatabase();
+        view->_viewDB->deleteDatabase();
         view->close();
         return true;
     } catchError(outError)
@@ -207,7 +208,7 @@ void c4view_setDocumentType(C4View *view, C4Slice docType) {
 
 void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *context) {
     WITH_LOCK(view);
-    view->_viewDB.setOnCompact([cb,context](bool compacting) {
+    view->_viewDB->setOnCompact([cb,context](bool compacting) {
         cb(context, compacting);
     });
 }

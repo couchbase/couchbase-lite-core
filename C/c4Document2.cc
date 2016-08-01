@@ -76,6 +76,6 @@ namespace cbforest {
 
 CASRevisionStore& c4Database::revisionStore() {
     if (!_revisionStore)
-        _revisionStore.reset(new CASRevisionStore(this));
+        _revisionStore.reset(new CASRevisionStore(_db.get()));
     return *_revisionStore;
 }

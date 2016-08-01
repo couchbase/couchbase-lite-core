@@ -65,6 +65,14 @@ namespace cbforest {
         static void deleteDatabase(const string &path);
 
         virtual void compact() =0;
+        bool isCompacting() const;
+        static bool isAnyCompacting();
+
+        typedef function<void(bool compacting)> OnCompactCallback;
+
+        void setOnCompact(OnCompactCallback callback)   {_onCompactCallback = callback;}
+
+        virtual bool setAutoCompact(bool autoCompact)   {return false;}
 
         static const string kDefaultKeyStoreName;
 
@@ -91,6 +99,9 @@ namespace cbforest {
 
         void updatePurgeCount();
 
+        void beganCompacting();
+        void finishedCompacting();
+
     private:
         class File;
         friend class KeyStore;
@@ -110,37 +121,18 @@ namespace cbforest {
         KeyStore* _defaultKeyStore {nullptr};
         unordered_map<string, unique_ptr<KeyStore> > _keyStores;
         bool _inTransaction {false};
-    };
-
-
-
-    /** Mix-in interface for a Database implementation that supports automatic compaction. */
-    class AutoCompacting {
-    public:
-        virtual ~AutoCompacting()                       { }
-        
-        bool isCompacting() const                       {return _isCompacting;}
-        virtual void setAutoCompact(bool autoCompact) =0;
-
-        typedef function<void(bool compacting)> OnCompactCallback;
-
-        void setOnCompact(OnCompactCallback callback)   {_onCompactCallback = callback;}
-
-    protected:
-        void beganCompacting() {
-            _isCompacting = true;
-            if (_onCompactCallback) _onCompactCallback(true);
-        }
-        void finishedCompacting() {
-            _isCompacting = false;
-            if (_onCompactCallback) _onCompactCallback(false);
-        }
-
-        atomic<bool> _isCompacting {false};
         OnCompactCallback _onCompactCallback {nullptr};
     };
 
-    
+
+    class DatabaseFactory {
+    public:
+        virtual ~DatabaseFactory()  { }
+        virtual Database* newDatabase(const string &path, const Database::Options* =nullptr) =0;
+        virtual std::string name() const =0;
+    };
+
+
 
     /** Grants exclusive write access to a Database while in scope.
         The transaction is committed when the object exits scope, unless abort() was called.

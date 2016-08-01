@@ -43,6 +43,7 @@ namespace cbforest {
         mutex _transactionMutex;
         condition_variable _transactionCond;
         Transaction* _transaction {NULL};
+        atomic<bool> _isCompacting {false};
 
         static unordered_map<string, File*> sFileMap;
         static mutex sMutex;
@@ -263,6 +264,32 @@ namespace cbforest {
      _state(begin ? kCommit : kNoOp)
     {
         _db.beginTransaction(this);
+    }
+
+
+#pragma mark - COMPACTION:
+
+
+    static atomic<uint32_t> sCompactCount;
+
+
+    void Database::beganCompacting() {
+        ++sCompactCount;
+        _file->_isCompacting = true;
+        if (_onCompactCallback) _onCompactCallback(true);
+    }
+    void Database::finishedCompacting() {
+        --sCompactCount;
+        _file->_isCompacting = false;
+        if (_onCompactCallback) _onCompactCallback(false);
+    }
+
+    bool Database::isCompacting() const {
+        return _file->_isCompacting;
+    }
+
+    bool Database::isAnyCompacting() {
+        return sCompactCount > 0;
     }
 
 }

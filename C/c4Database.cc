@@ -187,8 +187,8 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 c4Database::c4Database(std::string path,
                        const Database::Options *options, const fdb_config& cfg,
                        uint8_t schema_)
-:ForestDatabase(path, options, cfg),
- schema(schema_)
+:schema(schema_),
+ _db(new ForestDatabase(path, options, cfg))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
@@ -204,7 +204,7 @@ void c4Database::beginTransaction() {
 #endif
     if (++_transactionLevel == 1) {
         WITH_LOCK(this);
-        _transaction = new Transaction(this);
+        _transaction = new Transaction(_db.get());
     }
 }
 
@@ -284,6 +284,15 @@ namespace c4Internal {
         return config;
     }
 
+    DatabaseFactory* c4DbFactory() {
+        static DatabaseFactory* sFactory = nullptr;
+        if (!sFactory) {
+            sFactory = new ForestDatabaseFactory();
+            sFactory->config = c4DbConfig
+        }
+        return sFactory;
+    }
+
 }
 
 
@@ -307,7 +316,7 @@ C4Database* c4db_open(C4Slice path,
                 // switching its compaction mode:
                 config.compaction_mode = FDB_COMPACTION_MANUAL;
                 auto db = new c4Database(pathStr, nullptr, config, schema);
-                db->setAutoCompact(true);
+                db->db()->setAutoCompact(true);
                 return db;
             } else {
                 throw error;
@@ -325,7 +334,7 @@ bool c4db_close(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     try {
-        database->close();
+        database->db()->close();
         return true;
     } catchError(outError);
     return false;
@@ -354,7 +363,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
         if (database->refCount() > 1) {
             recordError(ForestDBDomain, FDB_RESULT_FILE_IS_BUSY, outError);
         }
-        database->deleteDatabase();
+        database->db()->deleteDatabase();
         return true;
     } catchError(outError);
     return false;
@@ -375,7 +384,7 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     try {
-        database->compact();
+        database->db()->compact();
         return true;
     } catchError(outError);
     return false;
@@ -383,12 +392,12 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 
 bool c4db_isCompacting(C4Database *database) {
-    return database ? database->isCompacting() : ForestDatabase::isAnyCompacting();
+    return database ? database->db()->isCompacting() : Database::isAnyCompacting();
 }
 
 void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) {
     WITH_LOCK(database);
-    database->setOnCompact([cb,context](bool compacting) {
+    database->db()->setOnCompact([cb,context](bool compacting) {
         cb(context, compacting);
     });
 }
@@ -398,7 +407,7 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
     if (!database->mustNotBeInTransaction(outError))
         return false;
     WITH_LOCK(database);
-    return rekey(database, newKey, outError);
+    return rekey(database->db(), newKey, outError);
 }
 
 
@@ -418,7 +427,7 @@ bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
 
 
 C4SliceResult c4db_getPath(C4Database *database) {
-    slice path(database->filename());
+    slice path(database->db()->filename());
     path = path.copy();  // C4SliceResult must be malloced & adopted by caller
     return {path.buf, path.size};
 }

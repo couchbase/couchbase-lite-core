@@ -98,6 +98,23 @@ namespace cbforest {
         unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         unique_ptr<SQLite::Statement> _setStmt, _delByKeyStmt, _delBySeqStmt;
     };
+
+
+
+    class SQLiteDatabaseFactory : public DatabaseFactory {
+    public:
+        virtual Database* newDatabase(const string &path,
+                                      const Database::Options* options =nullptr) override
+        {
+            return new SQLiteDatabase(path, options);
+        }
+
+        virtual std::string name() const override {
+            return std::string("SQLite");
+        }
+        virtual ~SQLiteDatabaseFactory() { }
+    };
+    
 }
 
 

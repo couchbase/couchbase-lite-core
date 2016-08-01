@@ -19,7 +19,8 @@ namespace cbforest {
     class ForestKeyStore;
 
 
-    class ForestDatabase : public Database, public AutoCompacting {
+
+    class ForestDatabase : public Database {
     public:
         static fdb_config defaultConfig();
         static void setDefaultConfig(const fdb_config&);
@@ -30,8 +31,6 @@ namespace cbforest {
 
         fdb_file_info info() const;
         fdb_config config() const                   {return _config;}
-
-        static bool isAnyCompacting();
 
         void rekey(const fdb_encryption_key&);
 
@@ -44,7 +43,7 @@ namespace cbforest {
         void reopen() override;
         vector<string> allKeyStoreNames() override;
         void compact() override;
-        void setAutoCompact(bool autoCompact) override;
+        bool setAutoCompact(bool autoCompact) override;
 
     protected:
         KeyStore* newKeyStore(const string &name, KeyStore::Options) override;
@@ -70,6 +69,29 @@ namespace cbforest {
 
         fdb_config _config;
         fdb_file_handle* _fileHandle {nullptr};
+    };
+
+
+
+    class ForestDatabaseFactory : public DatabaseFactory {
+    public:
+        fdb_config config;
+
+        ForestDatabaseFactory() {
+            config = ForestDatabase::defaultConfig();
+        }
+
+        virtual ~ForestDatabaseFactory() { }
+
+        virtual Database* newDatabase(const string &path,
+                                      const Database::Options* options =nullptr) override
+        {
+            return new ForestDatabase(path, options, config);
+        }
+
+        virtual std::string name() const override {
+            return std::string("ForestDB");
+        }
     };
 
 

@@ -15,7 +15,8 @@
 #include "VersionedDocument.hh"
 #include "CASRevisionStore.hh"
 #include "Error.hh"
-#include "ForestDatabase.hh"
+#include "Database.hh"
+#include "forestdb.h"
 #include <functional>
 
 // Defining C4DB_THREADSAFE as 1 will make C4Database thread-safe: the same handle can be called
@@ -135,10 +136,13 @@ using namespace c4Internal;
 
 // Structs below must be in the global namespace because they are forward-declared in the C API.
 
-struct c4Database : public ForestDatabase, RefCounted<c4Database> {
+struct c4Database : public RefCounted<c4Database> {
+
     c4Database(std::string path,
                const Database::Options *options, const fdb_config& cfg,
                uint8_t schema_);
+
+    Database* db()                                      {return _db.get();}
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
     const uint8_t schema;
@@ -160,6 +164,9 @@ struct c4Database : public ForestDatabase, RefCounted<c4Database> {
 
     CASRevisionStore& revisionStore();
 
+    KeyStore& defaultKeyStore()                         {return _db->defaultKeyStore();}
+    KeyStore& getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
+
 #if C4DB_THREADSAFE
     // Mutex for synchronizing Database calls. Non-recursive!
     std::mutex _mutex;
@@ -167,6 +174,8 @@ struct c4Database : public ForestDatabase, RefCounted<c4Database> {
 
 private:
     virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
+
+    std::unique_ptr<Database> _db;
 #if C4DB_THREADSAFE
     // Recursive mutex for accessing _transaction and _transactionLevel.
     // Must be acquired BEFORE _mutex, or deadlock may occur!
