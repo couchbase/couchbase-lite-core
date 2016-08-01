@@ -196,14 +196,17 @@ namespace cbforest {
                        string("SELECT sequence, meta, deleted, body FROM kv_")+name()+" WHERE key=?");
         stmt.bindNoCopy(1, key.buf, (int)key.size);
 
+        // OPT: Would be nice to avoid copying key/meta/body here; this would require Document to
+        // know that the pointers are ephemeral, and create copies if they're accessed as
+        // alloc_slice (not just slice).
         Document doc;
-        doc.setKeyNoCopy(key);
+        doc.setKey(key);
         if (stmt.executeStep()) {
             if (_options.sequences)
                 updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(2));
-            doc.setMetaNoCopy(columnAsSlice(stmt.getColumn(1)));
+            doc.setMeta(columnAsSlice(stmt.getColumn(1)));
             if (options == kDefaultContent)
-                doc.setBodyNoCopy(columnAsSlice(stmt.getColumn(3)));
+                doc.setBody(columnAsSlice(stmt.getColumn(3)));
         }
         fn(doc);
         stmt.reset();   // invalidates the memory pointed to by doc

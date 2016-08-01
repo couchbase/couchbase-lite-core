@@ -25,11 +25,22 @@ namespace cbforest {
         setKey(key);
     }
 
+    Document::Document(const Document &d)
+    :_key(d._key),
+     _meta(d._meta),
+     _body(d._body),
+     _sequence(d._sequence),
+     _offset(d._offset),
+     _deleted(d._deleted),
+     _exists(d._exists)
+    { }
+
     Document::Document(Document &&d)
     :_key(move(d._key)),
      _meta(move(d._meta)),
      _body(move(d._body)),
      _sequence(d._sequence),
+     _offset(d._offset),
      _deleted(d._deleted),
      _exists(d._exists)
     { }
@@ -37,35 +48,13 @@ namespace cbforest {
     void Document::clearMetaAndBody() {
         setMeta(slice::null);
         setBody(slice::null);
-        _sequence = 0;
+        _sequence = _offset = 0;
         _exists = _deleted = false;
     }
 
     void Document::clear() {
         clearMetaAndBody();
         setKey(slice::null);
-    }
-    
-    slice Document::resizeMeta(size_t newSize) {
-        if (newSize != _meta.size) {
-            void* newBuf = slice::reallocBytes((void*)_meta.buf, newSize);
-            if (newBuf != _meta.buf) {
-                _meta.dontFree();
-                _meta = alloc_slice::adopt(newBuf, newSize);
-            }
-        }
-        return meta();
-    }
-
-    Document Document::moveBody() {
-        Document d(_key);               // copies key
-        d._meta = _meta;                // copies meta
-        d._body = move(_body);          // moves body, setting my _body to null
-        d._sequence = _sequence;
-        d._offset = _offset;
-        d._deleted = _deleted;
-        d._exists = _exists;
-        return d;
     }
 
 }

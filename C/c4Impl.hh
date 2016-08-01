@@ -81,7 +81,7 @@ namespace c4Internal {
 
     bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
 
-    C4Document* newC4Document(C4Database*, Document&&);
+    C4Document* newC4Document(C4Database*, const Document&);
 
     //const VersionedDocument& versionedDocument(C4Document*);
 

@@ -37,9 +37,9 @@ namespace cbforest {
         }
 
 
-        C4DocumentV1(C4Database *database, Document &&doc)
+        C4DocumentV1(C4Database *database, const Document &doc)
         :C4DocumentInternal(database, std::move(doc)),
-         _versionedDoc(database->defaultKeyStore(), std::move(doc)),
+         _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(NULL)
         {
             init();
@@ -241,11 +241,11 @@ namespace cbforest {
             return newV2Instance(database, docID);
     }
 
-    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, Document &&doc) {
+    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, const Document &doc) {
         if (database->schema <= 1)
-            return new C4DocumentV1(database, std::move(doc));
+            return new C4DocumentV1(database, doc);
         else
-            return newV2Instance(database, std::move(doc));
+            return newV2Instance(database, doc);
     }
 
 }

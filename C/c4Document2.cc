@@ -27,7 +27,7 @@ namespace cbforest {
         {
         }
 
-        C4DocumentV2(C4Database *database, Document &&doc)
+        C4DocumentV2(C4Database *database, const Document &doc)
         :C4DocumentInternal(database, std::move(doc)),
          _store(database->revisionStore())
         { }
@@ -66,7 +66,7 @@ namespace cbforest {
         return nullptr;// new C4DocumentV2(database, docID);
     }
 
-    C4DocumentInternal* C4DocumentInternal::newV2Instance(C4Database* database, Document &&doc) {
+    C4DocumentInternal* C4DocumentInternal::newV2Instance(C4Database* database, const Document &doc) {
         return nullptr;//new C4DocumentV2(database, std::move(doc));
     }
 

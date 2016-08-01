@@ -95,7 +95,7 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
     }
 
     C4Document* getDoc() {
-        return _e ? newC4Document(_database, _e.moveDoc()) : NULL;
+        return _e ? newC4Document(_database, _e.doc()) : NULL;
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {

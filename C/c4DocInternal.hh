@@ -27,7 +27,7 @@ public:
     alloc_slice _loadedBody;
 
     static C4DocumentInternal* newInstance(C4Database* database, C4Slice docID);
-    static C4DocumentInternal* newInstance(C4Database* database, Document &&doc);
+    static C4DocumentInternal* newInstance(C4Database* database, const Document &doc);
 
     virtual ~C4DocumentInternal() {
         _db->release();
@@ -37,7 +37,7 @@ public:
     :_db(database->retain())
     { }
 
-    C4DocumentInternal(C4Database *database, Document &&doc)
+    C4DocumentInternal(C4Database *database, const Document &doc)
     :_db(database->retain())
     { }
 
@@ -77,7 +77,7 @@ public:
 
 protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
-    static C4DocumentInternal* newV2Instance(C4Database* database, Document &&doc);
+    static C4DocumentInternal* newV2Instance(C4Database* database, const Document &doc);
 
     C4Database* const _db;
 };

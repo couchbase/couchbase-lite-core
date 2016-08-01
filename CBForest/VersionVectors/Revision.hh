@@ -36,7 +36,7 @@ namespace cbforest {
         };
 
         /** Creates a Revision from a pre-populated Document read from a Database. */
-        Revision(Document&& doc);
+        Revision(const Document& doc);
 
         /** Creates a new Revision. */
         Revision(slice docID,

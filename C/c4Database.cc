@@ -433,7 +433,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
         uint64_t count = 0;
         for (DocEnumerator e(database->defaultKeyStore(), cbforest::slice::null, cbforest::slice::null, opts);
                 e.next(); ) {
-            VersionedDocument vdoc(database->defaultKeyStore(), e.moveDoc());
+            VersionedDocument vdoc(database->defaultKeyStore(), e.doc());
             if (!vdoc.isDeleted())
                 ++count;
         }

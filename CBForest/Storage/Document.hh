@@ -23,51 +23,51 @@ namespace cbforest {
     using namespace std;
 
 
-    /** Stores a document's key, metadata, body and sequence. Memory is owned by the object. */
+    /** Stores a document's key, metadata, body and sequence. */
     class Document {
     public:
         Document()                              { }
         Document(slice key);
+        Document(const Document&);
         Document(Document&&);
+        Document& operator=(const Document&);
 
-        /** Returns a Document whose key and meta are copies, but which adopts this instance's body.
-            Side effect is that this instance's body is set to null. */
-        Document moveBody();
+        const alloc_slice& key() const          {return _key;}
+        const alloc_slice& meta() const         {return _meta;}
+        const alloc_slice& body() const         {return _body;}
 
-        slice key() const                       {return _key;}
-        slice meta() const                      {return _meta;}
-        slice body() const                      {return _body;}
-
-        cbforest::sequence sequence() const       {return _sequence;}
+        cbforest::sequence sequence() const     {return _sequence;}
         bool deleted() const                    {return _deleted;}
 
+        /** A storage-system-dependent position in the database file, that can be used later
+            to retrieve the document. Not supported by all storage systems. */
+        uint64_t offset() const                 {return _offset;}
+
         bool exists() const                     {return _exists;}
-        bool valid() const;
 
-        void setKey(slice key)                  {_key = key;}
-        void setMeta(slice meta)                {_meta = meta;}
-        void setBody(slice body)                {_body = body;}
+        template <typename T>
+            void setKey(const T &key)           {_key = key;}
+        template <typename T>
+            void setMeta(const T &meta)         {_meta = meta;}
+        template <typename T>
+            void setBody(const T &body)         {_body = body;}
 
+        // Sets key/meta/body from an existing malloc'ed block. The Document assumes responsibility
+        // for freeing the block; caller should _not_ free it afterwards.
         void adoptKey(slice key)                {_key = alloc_slice::adopt(key);}
         void adoptMeta(slice meta)              {_meta = alloc_slice::adopt(meta);}
         void adoptBody(slice body)              {_body = alloc_slice::adopt(body);}
 
-        void setKeyNoCopy(slice key)            {adoptKey(key); _key.dontFree();}
-        void setMetaNoCopy(slice meta)          {adoptMeta(meta); _meta.dontFree();}
-        void setBodyNoCopy(slice body)          {adoptBody(body); _body.dontFree();}
-
         void setDeleted(bool deleted)           {_deleted = deleted; if (deleted) _exists = false;}
 
         /** Reallocs the 'meta' slice to the desired size. */
-        slice resizeMeta(size_t);
+        const alloc_slice& resizeMeta(size_t newSize)        {_meta.resize(newSize); return _meta;}
 
         /** Clears/frees everything. */
         void clear();
 
         /** Clears everything but the key. */
         void clearMetaAndBody();
-
-        uint64_t offset() const                 {return _offset;}
 
         void updateSequence(cbforest::sequence s)         {_sequence = s;}
 
@@ -80,9 +80,6 @@ namespace cbforest {
         void update(cbforest::sequence sequence, uint64_t offset, bool deleted) {
             _sequence = sequence; _offset = offset; _deleted = deleted; _exists = !deleted;
         }
-
-        Document(const Document&) = delete;                 // no copying allowed
-        Document& operator=(const Document&) = delete;      // no assignment allowed
 
         alloc_slice _key, _meta, _body;
         cbforest::sequence _sequence    {0};

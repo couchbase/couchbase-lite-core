@@ -15,8 +15,8 @@
 namespace cbforest {
 
 
-    Revision::Revision(Document&& doc)
-    :_doc(std::move(doc))
+    Revision::Revision(const Document& doc)
+    :_doc(doc)
     {
         if (_doc.meta().buf || _doc.exists())
             readMeta();

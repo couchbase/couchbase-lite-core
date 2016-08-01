@@ -15,6 +15,9 @@
 #include <algorithm>
 #include <unistd.h>
 
+// This constant is used by fdb_get_byoffset but not exposed in fdb_types.h.
+#define SEQNUM_NOT_USED (fdb_seqnum_t)(-1ll)
+
 using namespace std;
 
 
@@ -370,11 +373,18 @@ namespace cbforest {
 
     void ForestKeyStore::readBody(Document &doc) const {
         if (doc.offset() > 0) {
+            slice existingKey = doc.key();
             fdb_doc fdoc = {};
             fdoc.offset = doc.offset();
+            fdoc.key = (void*)existingKey.buf;
+            fdoc.keylen = existingKey.size;
+            fdoc.seqnum = doc.sequence() ?: SEQNUM_NOT_USED;
+            
             check(fdb_get_byoffset(_handle, &fdoc));
+
             doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
-            free(fdoc.key);
+            if (fdoc.key != existingKey.buf)
+                free(fdoc.key);
             free(fdoc.meta);
         } else {
             KeyStore::readBody(doc);

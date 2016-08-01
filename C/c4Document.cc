@@ -27,9 +27,9 @@ using namespace cbforest;
 
 
 namespace c4Internal {
-    C4Document* newC4Document(C4Database *db, Document &&doc) {
+    C4Document* newC4Document(C4Database *db, const Document &doc) {
         // Doesn't need to lock since Document is already in memory
-        return C4DocumentInternal::newInstance(db, std::move(doc));
+        return C4DocumentInternal::newInstance(db, doc);
     }
 }
 

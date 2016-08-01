@@ -90,7 +90,7 @@ namespace cbforest {
             if (rev->isConflicted()) {
                 auto e = enumerateRevisions(docID);
                 while (e.next()) {
-                    Revision conflict(e.moveDoc());
+                    Revision conflict(e.doc());
                     order = checkVers.compareTo(conflict.version());
                     if (order != kOlder)
                         return order;
@@ -222,7 +222,7 @@ namespace cbforest {
     void RevisionStore::deleteAncestors(Revision &child, Transaction &t) {
         DocEnumerator e = enumerateRevisions(child.docID());
         while (e.next()) {
-            Revision rev(e.moveDoc());
+            Revision rev(e.doc());
             if (rev.version().compareTo(child.version()) == kOlder
                     && !shouldKeepAncestor(rev, child)) {
                 _nonCurrentStore.del(rev.document(), t);

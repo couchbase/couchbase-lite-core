@@ -21,7 +21,7 @@ class RevisionTest : public CppUnit::TestFixture {
                      Revision::BodyParams{slice("{\"foo\":true}"), slice("O-"), false, true},
                      true);
         verifyRev(rev);
-        AssertEqual(rev.document().key(), slice("DOC"));
+        AssertEqual(rev.document().key(), alloc_slice("DOC"));
 
         // Copy document:
         const Document &doc = rev.document();
@@ -34,7 +34,7 @@ class RevisionTest : public CppUnit::TestFixture {
 
         rev2.setCurrent(false);
         Assert(!rev2.isCurrent());
-        AssertEqual(rev2.document().key(), slice("DOC\t*,\02"));
+        AssertEqual(rev2.document().key(), alloc_slice("DOC\t*,\02"));
     }
 
     void verifyRev(const Revision &rev) {

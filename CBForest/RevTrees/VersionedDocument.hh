@@ -33,7 +33,7 @@ namespace cbforest {
         };
 
         VersionedDocument(KeyStore&, slice docID);
-        VersionedDocument(KeyStore&, Document&&);
+        VersionedDocument(KeyStore&, const Document&);
 
 #ifdef __OBJC__
         VersionedDocument(KeyStore&, NSString* docID);

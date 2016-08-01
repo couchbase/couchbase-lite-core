@@ -91,9 +91,6 @@ namespace cbforest {
         /** The current document. */
         const Document& doc() const         {return _doc;}
 
-        /** Rvalue reference to document, allowing it to be moved (which will clear this copy) */
-        Document moveDoc()                  {return _doc.moveBody();}
-
         // Can treat an enumerator as a document pointer:
         operator const Document*() const    {return _doc.key().buf ? &_doc : NULL;}
         const Document* operator->() const  {return _doc.key().buf ? &_doc : NULL;}
