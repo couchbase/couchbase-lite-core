@@ -30,24 +30,25 @@ namespace cbforest {
 
     /** Most API calls can throw this. */
     struct error : public std::exception {
+
         enum Domain {
             CBForest,
             POSIX,
-            HTTP,
             ForestDB,
             SQLite,
+            HTTP,
         };
 
         // Error codes in CBForest domain:
         enum CBForestError {
-            BadRevisionID = 1,
+            AssertionFailed = 1,
+            Unimplemented,
+            NoSequences,
+            BadRevisionID,
+            BadVersionVector,
             CorruptRevisionData,
             CorruptIndexData,
-            AssertionFailed,
             TokenizerError, // can't create text tokenizer for FTS
-            BadVersionVector,
-            NoSequences,
-            Unimplemented,
         };
 
         Domain const domain;
@@ -70,7 +71,7 @@ namespace cbforest {
 // Like C assert() but throws an exception instead of aborting
 #define	CBFAssert(e) \
     (expected(!(e), 0) ? cbforest::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
-                               : (void)0)
+                       : (void)0)
 
 // CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifdef NDEBUG

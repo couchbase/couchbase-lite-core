@@ -217,6 +217,7 @@
 		27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8D1D4D3F3400D806E0 /* Transaction.h */; };
 		27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */; };
 		27D74A991D4D404100D806E0 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
+		27D74A9B1D4D65F700D806E0 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		27DD14F019328576009A367D /* Index_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14EF19328576009A367D /* Index_Test.mm */; };
 		27DD14F31934F44F009A367D /* MapReduce_Test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DD14F21934F44F009A367D /* MapReduce_Test.mm */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
@@ -913,6 +914,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27D74A9B1D4D65F700D806E0 /* libsqlite3.tbd in Frameworks */,
 				2708FE561CF4CD170022F721 /* libCBForest.a in Frameworks */,
 				2708FE4D1CF4CC880022F721 /* libcppunit-1.13.0.dylib in Frameworks */,
 				2708FE571CF4CD240022F721 /* Foundation.framework in Frameworks */,

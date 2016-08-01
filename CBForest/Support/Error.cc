@@ -9,19 +9,42 @@
 #include "Error.hh"
 #include "LogInternal.hh"
 #include "forestdb.h"
+#include <sqlite3.h>
 #include <string>
 
 
 namespace cbforest {
 
-    static const char* kDomainNames[] = {"CBForest", "POSIX", "HTTP", "ForestDB", "SQLite"};
+    static const char* kDomainNames[] = {"CBForest", "POSIX", "ForestDB", "SQLite", "HTTP"};
+
+    static const char* cbforest_errstr(error::CBForestError code) {
+        static const char* kCBForestMessages[] = {
+            "no error",
+            "assertion failed",
+            "unimplemented function called"
+            "database doesn't support sequences",
+            "bad revision ID",
+            "bad version vector",
+            "corrupt revision data",
+            "corrupt index",
+            "text tokenizer error",
+        };
+        if (code < sizeof(kCBForestMessages)/sizeof(char*))
+            return kCBForestMessages[code];
+        else
+            return "(unknown CBForestError)";
+    }
 
     const char* error::what() const noexcept {
         switch (domain) {
+            case CBForest:
+                return cbforest_errstr((CBForestError)code);
             case POSIX:
                 return strerror(code);
             case ForestDB:
                 return fdb_error_msg((fdb_status)code);
+            case SQLite:
+                return sqlite3_errstr(code);
             default:
                 return "cbforest::error?";
         }
@@ -29,10 +52,13 @@ namespace cbforest {
 
     
     void error::_throw(Domain domain, int code ) {
+        CBFDebugAssert(code != 0);
         error err{domain, code};
         switch (domain) {
+            case CBForest:
             case POSIX:
             case ForestDB:
+            case SQLite:
                 WarnError("CBForest throwing %s error %d: %s",
                           kDomainNames[domain], code, err.what());
                 break;
