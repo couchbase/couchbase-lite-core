@@ -93,7 +93,7 @@ C4View* c4view_open(C4Database* db,
                     C4Error *outError)
 {
     try {
-        return new c4View(db, path, viewName, version, flags, key);
+        return (new c4View(db, path, viewName, version, flags, key))->retain();
     } catchError(outError);
     return NULL;
 }

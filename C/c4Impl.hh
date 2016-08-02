@@ -107,8 +107,7 @@ namespace c4Internal {
         int refCount() const { return _refCount; }
 
         SELF* retain() {
-            int newref = ++_refCount;
-            CBFAssert(newref > 1);
+            ++_refCount;
             return (SELF*)this;
         }
 
@@ -124,7 +123,7 @@ namespace c4Internal {
             CBFAssert(_refCount == 0);
         }
     private:
-        std::atomic_int _refCount {1};
+        std::atomic_int _refCount {0};
     };
 
 

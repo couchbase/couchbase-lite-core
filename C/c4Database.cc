@@ -138,7 +138,7 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError)
 {
     try {
-        return new c4Database((std::string)path, flags, encryptionKey);
+        return (new c4Database((std::string)path, flags, encryptionKey))->retain();
     }catchError(outError);
     return NULL;
 }
