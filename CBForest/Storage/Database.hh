@@ -35,10 +35,17 @@ namespace cbforest {
     class Database {
     public:
 
+        enum EncryptionAlgorithm : uint8_t {
+            kNoEncryption = 0,      /**< No encryption (default) */
+            kAES256                 /**< AES with 256-bit key */
+        };
+
         struct Options {
             KeyStore::Options keyStores;
             bool create         :1;     //< Should the db be created if it doesn't exist?
             bool writeable      :1;     //< If false, db is opened read-only
+            EncryptionAlgorithm encryptionAlgorithm;
+            alloc_slice encryptionKey;
 
             static const Options defaults;
         };

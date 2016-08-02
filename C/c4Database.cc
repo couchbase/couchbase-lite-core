@@ -18,177 +18,56 @@
 #include "c4Private.h"
 
 #include "ForestDatabase.hh"
+#include "SQLiteDatabase.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
-#include "LogInternal.hh"
 #include "VersionedDocument.hh"
 
-#include "forestdb.h"
 
 using namespace cbforest;
 
 
-// Size of ForestDB buffer cache allocated for a database
-static const size_t kDBBufferCacheSize = (8*1024*1024);
-
-// ForestDB Write-Ahead Log size (# of records)
-static const size_t kDBWALThreshold = 1024;
-
-// How often ForestDB should check whether databases need auto-compaction
-static const uint64_t kAutoCompactInterval = (5*60);
+static const uint32_t kFlagsStorageTypeMask = 0xF00;
 
 
 namespace c4Internal {
-    std::atomic_int InstanceCounted::gObjectCount;
 
-    void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
-        if (outError) {
-            if (domain == ForestDBDomain && code <= -1000)   // custom CBForest errors (Error.hh)
-                domain = C4Domain;
-            outError->domain = domain;
-            outError->code = code;
+    Database* newDatabase(std::string path,
+                          C4DatabaseFlags flags,
+                          const C4EncryptionKey *encryptionKey,
+                          bool isMainDB)
+    {
+        Database::Options options { };
+        options.keyStores.sequences = options.keyStores.softDeletes = isMainDB;
+        options.create = (flags & kC4DB_Create) != 0;
+        options.writeable = (flags & kC4DB_ReadOnly) == 0;
+        if (encryptionKey) {
+            options.encryptionAlgorithm = (Database::EncryptionAlgorithm)encryptionKey->algorithm;
+            options.encryptionKey = alloc_slice(encryptionKey->bytes,
+                                                sizeof(encryptionKey->bytes));
+        }
+
+        switch (flags & kFlagsStorageTypeMask) {
+            case kC4DB_ForestDBStorage:
+                return new ForestDatabase(path, &options);
+            case kC4DB_SQLiteStorage:
+                return new SQLiteDatabase(path, &options);
+            default:
+                error::_throw(error::Unimplemented);
         }
     }
 
-    void recordHTTPError(int httpStatus, C4Error* outError) {
-        recordError(HTTPDomain, httpStatus, outError);
-    }
-
-    void recordError(const error &e, C4Error* outError) {
-        static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain, HTTPDomain,
-                                                  ForestDBDomain, SQLiteDomain};
-        recordError(domainMap[e.domain], e.code, outError);
-    }
-
-    void recordException(const std::exception &e, C4Error* outError) {
-        Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
-        recordError(C4Domain, kC4ErrorInternalException, outError);
-    }
-
-    void recordUnknownException(C4Error* outError) {
-        Warn("Unexpected C++ exception thrown from CBForest");
-        recordError(C4Domain, kC4ErrorInternalException, outError);
-    }
-
-    void throwHTTPError(int status) {
-        error::_throwHTTPStatus(status);
-    }
 }
 
 
-C4SliceResult c4error_getMessage(C4Error error) {
-    if (error.code == 0)
-        return {NULL, 0};
-    
-    const char *msg = NULL;
-    switch (error.domain) {
-        case ForestDBDomain:
-            msg = fdb_error_msg((fdb_status)error.code);
-            if (strcmp(msg, "unknown error") == 0)
-                msg = NULL;
-            break;
-        case POSIXDomain:
-            msg = strerror(error.code);
-            break;
-        case HTTPDomain:
-            switch (error.code) {
-                case kC4HTTPBadRequest: msg = "invalid parameter"; break;
-                case kC4HTTPNotFound:   msg = "not found"; break;
-                case kC4HTTPConflict:   msg = "conflict"; break;
-                case kC4HTTPGone:       msg = "gone"; break;
-
-                default: break;
-            }
-            break;
-        case CBForestDomain:
-            msg = cbforest::error(cbforest::error::CBForest, error.code).what();
-            break;
-        case SQLiteDomain:
-            msg = cbforest::error(cbforest::error::SQLite, error.code).what();
-            break;
-        case C4Domain:
-            switch (error.code) {
-                case kC4ErrorInternalException:     msg = "internal exception"; break;
-                case kC4ErrorNotInTransaction:      msg = "no transaction is open"; break;
-                case kC4ErrorTransactionNotClosed:  msg = "a transaction is still open"; break;
-                case kC4ErrorIndexBusy:             msg = "index busy; can't close view"; break;
-                case kC4ErrorBadRevisionID:         msg = "invalid revision ID"; break;
-                case kC4ErrorCorruptRevisionData:   msg = "corrupt revision data"; break;
-                case kC4ErrorCorruptIndexData:      msg = "corrupt view-index data"; break;
-                case kC4ErrorAssertionFailed:       msg = "internal assertion failure"; break;
-                case kC4ErrorTokenizerError:        msg = "full-text tokenizer error"; break;
-                default: break;
-            }
-    }
-
-    char buf[100];
-    if (!msg) {
-        const char* const kDomainNames[4] = {"HTTP", "POSIX", "ForestDB", "CBForest"};
-        if (error.domain <= C4Domain)
-            sprintf(buf, "unknown %s error %d", kDomainNames[error.domain], error.code);
-        else
-            sprintf(buf, "bogus C4Error (%d, %d)", error.domain, error.code);
-        msg = buf;
-    }
-
-    slice result = alloc_slice(msg, strlen(msg)).dontFree();
-    return {result.buf, result.size};
-}
-
-char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {
-    C4SliceResult msg = c4error_getMessage(error);
-    auto len = std::min(msg.size, bufferSize-1);
-    memcpy(buffer, msg.buf, len);
-    buffer[len] = '\0';
-    free((void*)msg.buf);
-    return buffer;
-}
-
-
-int c4_getObjectCount() {
-    return InstanceCounted::gObjectCount;
-}
-
-
-bool c4SliceEqual(C4Slice a, C4Slice b) {
-    return a == b;
-}
-
-
-void c4slice_free(C4Slice slice) {
-    slice.free();
-}
-
-
-static C4LogCallback clientLogCallback;
-
-static void logCallback(logLevel level, const char *message) {
-    auto cb = clientLogCallback;
-    if (cb)
-        cb((C4LogLevel)level, slice(message));
-}
-
-
-void c4log_register(C4LogLevel level, C4LogCallback callback) {
-    if (callback) {
-        LogLevel = (logLevel)level;
-        LogCallback = logCallback;
-    } else {
-        LogLevel = kNone;
-        LogCallback = NULL;
-    }
-    clientLogCallback = callback;
-}
-
-
-#pragma mark - DATABASES:
+#pragma mark - C4DATABASE CLASS:
 
 
 c4Database::c4Database(std::string path,
-                       const Database::Options *options, const fdb_config& cfg,
-                       uint8_t schema_)
-:schema(schema_),
- _db(new ForestDatabase(path, options, cfg))
+                       C4DatabaseFlags flags,
+                       const C4EncryptionKey *encryptionKey)
+:schema((flags & kC4DB_V2Format) ? 2 : 1),
+ _db(newDatabase(path, flags, encryptionKey, true))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
@@ -249,51 +128,8 @@ bool c4Database::endTransaction(bool commit) {
     return true;
 }
 
-namespace c4Internal {
 
-    Database::Options c4DbOptions(C4DatabaseFlags flags) {
-        Database::Options options { };
-        options.create = (flags & kC4DB_Create) != 0;
-        options.writeable = (flags & kC4DB_ReadOnly) == 0;
-        return options;
-    }
-
-    fdb_config c4DbConfig(C4DatabaseFlags flags, const C4EncryptionKey *key) {
-        auto config = ForestDatabase::defaultConfig();
-        // global to all databases:
-        config.buffercache_size = kDBBufferCacheSize;
-        config.compress_document_body = true;
-        config.compactor_sleep_duration = kAutoCompactInterval;
-        config.num_compactor_threads = 1;
-        config.num_bgflusher_threads = 1;
-
-        // per-database settings:
-        config.flags &= ~(FDB_OPEN_FLAG_RDONLY | FDB_OPEN_FLAG_CREATE);
-        if (flags & kC4DB_ReadOnly)
-            config.flags |= FDB_OPEN_FLAG_RDONLY;
-        if (flags & kC4DB_Create)
-            config.flags |= FDB_OPEN_FLAG_CREATE;
-        config.wal_threshold = kDBWALThreshold;
-        config.wal_flush_before_commit = true;
-        config.seqtree_opt = FDB_SEQTREE_USE;
-        config.compaction_mode = (flags & kC4DB_AutoCompact) ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL;
-        if (key) {
-            config.encryption_key.algorithm = key->algorithm;
-            memcpy(config.encryption_key.bytes, key->bytes, sizeof(config.encryption_key.bytes));
-        }
-        return config;
-    }
-
-    DatabaseFactory* c4DbFactory() {
-        static DatabaseFactory* sFactory = nullptr;
-        if (!sFactory) {
-            sFactory = new ForestDatabaseFactory();
-            sFactory->config = c4DbConfig
-        }
-        return sFactory;
-    }
-
-}
+#pragma mark - DATABASE API:
 
 
 C4Database* c4db_open(C4Slice path,
@@ -301,27 +137,8 @@ C4Database* c4db_open(C4Slice path,
                       const C4EncryptionKey *encryptionKey,
                       C4Error *outError)
 {
-    auto pathStr = (std::string)path;
-    auto config = c4DbConfig(flags, encryptionKey);
-    uint8_t schema = (flags & kC4DB_V2Format) ? 2 : 1;
     try {
-        try {
-            return new c4Database(pathStr, nullptr, config, schema);
-        } catch (cbforest::error error) {
-            if (schema == 1 && error.domain == error::ForestDB
-                            && error.code == FDB_RESULT_INVALID_COMPACTION_MODE
-                            && config.compaction_mode == FDB_COMPACTION_AUTO) {
-                // Databases created by earlier builds of CBL (pre-1.2) didn't have auto-compact.
-                // Opening them with auto-compact causes this error. Upgrade such a database by
-                // switching its compaction mode:
-                config.compaction_mode = FDB_COMPACTION_MANUAL;
-                auto db = new c4Database(pathStr, nullptr, config, schema);
-                db->db()->setAutoCompact(true);
-                return db;
-            } else {
-                throw error;
-            }
-        }
+        return new c4Database((std::string)path, flags, encryptionKey);
     }catchError(outError);
     return NULL;
 }

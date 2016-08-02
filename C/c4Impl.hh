@@ -77,8 +77,10 @@ namespace c4Internal {
             recordUnknownException(OUTERR); \
         }
 
-    Database::Options c4DbOptions(C4DatabaseFlags);
-    fdb_config c4DbConfig(C4DatabaseFlags, const C4EncryptionKey*);
+    Database* newDatabase(std::string path,
+                          C4DatabaseFlags flags,
+                          const C4EncryptionKey *encryptionKey,
+                          bool isMainDB);
 
     bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
 
@@ -139,8 +141,8 @@ using namespace c4Internal;
 struct c4Database : public RefCounted<c4Database> {
 
     c4Database(std::string path,
-               const Database::Options *options, const fdb_config& cfg,
-               uint8_t schema_);
+               C4DatabaseFlags flags,
+               const C4EncryptionKey *encryptionKey);
 
     Database* db()                                      {return _db.get();}
 

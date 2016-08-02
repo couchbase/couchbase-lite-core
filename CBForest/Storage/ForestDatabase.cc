@@ -77,12 +77,15 @@ namespace cbforest {
     }
 
 
-    ForestDatabase::ForestDatabase(const string &path, const Database::Options *options)
+    ForestDatabase::ForestDatabase(const string &path,
+                                   const Database::Options *options)
     :ForestDatabase(path, options, defaultConfig())
     { }
 
 
-    ForestDatabase::ForestDatabase(const string &path, const Database::Options *options, const fdb_config& cfg)
+    ForestDatabase::ForestDatabase(const string &path,
+                                   const Database::Options *options,
+                                   const fdb_config& cfg)
     :Database(path, options),
      _config(cfg)
     {
@@ -95,7 +98,8 @@ namespace cbforest {
                 _config.flags |= FDB_OPEN_FLAG_CREATE;
             else
                 _config.flags &= ~FDB_OPEN_FLAG_CREATE;
-            _config.seqtree_opt = options->keyStores.sequences ? FDB_SEQTREE_USE : FDB_SEQTREE_NOT_USE;
+            _config.seqtree_opt = options->keyStores.sequences ? FDB_SEQTREE_USE
+                                                               : FDB_SEQTREE_NOT_USE;
 
             // If purging_interval is 0, deleted ForestDB docs vanish pretty much instantly (_not_
             // "at the next replication" as the ForestDB header says.) A value of > 0 makes them
@@ -104,6 +108,15 @@ namespace cbforest {
                 _config.purging_interval = max(_config.purging_interval, 1u);
             else
                 _config.purging_interval = 0;
+
+            if (options->encryptionAlgorithm != kNoEncryption) {
+                CBFAssert(options->encryptionKey.buf != NULL);
+                CBFAssert(options->encryptionKey.size == sizeof(_config.encryption_key.bytes));
+                _config.encryption_key.algorithm = options->encryptionAlgorithm;
+                memcpy(_config.encryption_key.bytes,
+                       options->encryptionKey.buf,
+                       sizeof(_config.encryption_key.bytes));
+            }
         }
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
@@ -147,7 +160,17 @@ namespace cbforest {
         CBFAssert(!isOpen());
         const char *cpath = filename().c_str();
         Debug("ForestDatabase: open %s", cpath);
-        check(::fdb_open(&_fileHandle, cpath, &_config));
+        auto status = ::fdb_open(&_fileHandle, cpath, &_config);
+        if (status == FDB_RESULT_INVALID_COMPACTION_MODE
+                && _config.compaction_mode == FDB_COMPACTION_AUTO) {
+            // Database didn't use to have autocompact; open it the old way and update it:
+            auto config = _config;
+            config.compaction_mode = FDB_COMPACTION_MANUAL;
+            check(fdb_open(&_fileHandle, cpath, &config));
+            setAutoCompact(true);
+        } else {
+            check(status);
+        }
     }
 
     void ForestDatabase::deleteDatabase() {

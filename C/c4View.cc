@@ -18,7 +18,7 @@
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4DocInternal.hh"
-#include "ForestDatabase.hh"
+#include "Database.hh"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
 #include "FullTextIndex.hh"
@@ -28,10 +28,6 @@
 #include <math.h>
 #include <limits.h>
 using namespace cbforest;
-
-
-// ForestDB Write-Ahead Log size (# of records)
-static const size_t kViewDBWALThreshold = 1024;
 
 
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
@@ -47,12 +43,13 @@ static inline C4KeyReader asKeyReader(const CollatableReader &r) {
 struct c4View : public c4Internal::RefCounted<c4View> {
     c4View(C4Database *sourceDB,
            C4Slice path,
-           C4Slice name,
-           const fdb_config &config,
-           C4Slice version)
+           C4Slice viewName,
+           C4Slice version,
+           C4DatabaseFlags flags,
+           const C4EncryptionKey *encryptionKey)
     :_sourceDB(sourceDB->retain()),
-     _viewDB(new ForestDatabase((std::string)path, nullptr, config)),
-     _index(_viewDB.get(), (std::string)name, sourceDB->db())
+     _viewDB(newDatabase((std::string)path, flags, encryptionKey, false)),
+     _index(_viewDB.get(), (std::string)viewName, sourceDB->db())
     {
         setVersion(version);
     }
@@ -96,12 +93,7 @@ C4View* c4view_open(C4Database* db,
                     C4Error *outError)
 {
     try {
-        auto config = c4DbConfig(flags, key);
-        config.wal_threshold = kViewDBWALThreshold;
-        config.seqtree_opt = FDB_SEQTREE_NOT_USE; // indexes don't need by-sequence ordering
-        config.purging_interval = 0;              // nor have any use for keeping deleted docs
-
-        return new c4View(db, path, viewName, config, version);
+        return new c4View(db, path, viewName, version, flags, key);
     } catchError(outError);
     return NULL;
 }

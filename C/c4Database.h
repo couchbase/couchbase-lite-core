@@ -27,6 +27,9 @@ extern "C" {
         kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
 
         kC4DB_V2Format      = 0x20, /**< Couchbase Lite 2 format */
+
+        kC4DB_ForestDBStorage   = 0x000,
+        kC4DB_SQLiteStorage     = 0x100,
     };
 
     /** Encryption algorithms. */
