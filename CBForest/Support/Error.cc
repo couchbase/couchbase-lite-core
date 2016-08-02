@@ -24,6 +24,7 @@ namespace cbforest {
             "unimplemented function called",
             "database doesn't support sequences",
             "unsupported encryption algorithm",
+            "call must be made in a transaction",
             "bad revision ID",
             "bad version vector",
             "corrupt revision data",

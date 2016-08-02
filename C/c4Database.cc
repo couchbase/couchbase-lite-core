@@ -64,12 +64,11 @@ c4Database::c4Database(std::string path,
                        C4DatabaseFlags flags_,
                        const C4EncryptionKey *encryptionKey)
 :flags(flags_),
- schema((flags_ & kC4DB_V2Format) ? 2 : 1),
  _db(newDatabase(path, flags_, encryptionKey, true))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
-    if (schema == requiredSchema)
+    if (schema() == requiredSchema)
         return true;
     recordError(C4Domain, kC4ErrorUnsupported, outError);
     return false;

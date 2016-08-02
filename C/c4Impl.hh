@@ -148,7 +148,7 @@ struct c4Database : public RefCounted<c4Database> {
     const C4DatabaseFlags flags;
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
-    const uint8_t schema;
+    const uint8_t schema()          {return (flags & kC4DB_V2Format) ? 2 : 1;}
 
     bool mustBeSchema(int schema, C4Error*);
 

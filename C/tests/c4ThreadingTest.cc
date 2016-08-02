@@ -31,7 +31,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
+        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getFlags(db), NULL);
         v = openView(db);
     }
 
@@ -42,14 +42,15 @@ public:
 
 
     C4Database* openDB() {
-        C4Database* database = c4db_open(c4str(kDBPath), kC4DB_Create, encryptionKey(), NULL);
+        C4Database* database = c4db_open(c4str(kDBPath), c4db_getFlags(db), encryptionKey(), NULL);
         Assert(database);
         return database;
     }
 
     C4View* openView(C4Database* onDB) {
-        C4View* view = c4view_open(onDB, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                                   kC4DB_Create, encryptionKey(), NULL);
+        C4View* view = c4view_open(onDB, c4str(kViewIndexPath),
+                                   c4str("myview"), c4str("1"),
+                                   c4db_getFlags(db), encryptionKey(), NULL);
         Assert(view);
         return view;
     }

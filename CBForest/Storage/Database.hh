@@ -108,6 +108,8 @@ namespace cbforest {
         virtual void _endTransaction(Transaction*) =0;
         virtual KeyStore* newKeyStore(const string &name, KeyStore::Options) =0;
 
+        bool inTransaction() const                  {return _inTransaction;}
+
         void updatePurgeCount();
 
         void beganCompacting();

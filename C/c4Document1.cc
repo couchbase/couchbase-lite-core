@@ -235,14 +235,14 @@ namespace cbforest {
 
 
     C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, C4Slice docID) {
-        if (database->schema <= 1)
+        if (database->schema() < 2)
             return new C4DocumentV1(database, docID);
         else
             return newV2Instance(database, docID);
     }
 
     C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, const Document &doc) {
-        if (database->schema <= 1)
+        if (database->schema() < 2)
             return new C4DocumentV1(database, doc);
         else
             return newV2Instance(database, doc);

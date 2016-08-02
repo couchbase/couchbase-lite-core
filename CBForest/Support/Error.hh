@@ -45,6 +45,7 @@ namespace cbforest {
             Unimplemented,
             NoSequences,
             UnsupportedEncryption,
+            NoTransaction,
             BadRevisionID,
             BadVersionVector,
             CorruptRevisionData,

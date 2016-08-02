@@ -40,6 +40,7 @@ namespace cbforest {
         _sqlDb->exec("PRAGMA mmap_size=50000000");
         _sqlDb->exec("PRAGMA journal_mode=WAL");
         _sqlDb->exec("CREATE TABLE IF NOT EXISTS kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
+        (void)defaultKeyStore();    // make sure its table is created
     }
 
 
@@ -75,6 +76,14 @@ namespace cbforest {
         if (t->state() >= Transaction::kCommit)
             _transaction->commit();
         _transaction.reset(); // destructs the SQLite::Transaction, which does the actual commit
+    }
+
+
+    int SQLiteDatabase::execInTransaction(std::string sql) {
+        unique_ptr<Transaction> t;
+        if (!inTransaction())
+            t.reset(new Transaction(this));
+        return _sqlDb->exec(sql);
     }
 
 
@@ -141,12 +150,23 @@ namespace cbforest {
     }
 
 
+    bool SQLiteDatabase::keyStoreExists(const string &name) {
+        SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master WHERE type='table' AND name=?"));
+        storeExists.bind(1, std::string("kv_") + name);
+        bool exists = storeExists.executeStep();
+        storeExists.reset();
+        return exists;
+    }
+
+
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Options options)
     :KeyStore(db, name, options)
     {
-        // Create the sequence and deleted columns regardless of options, otherwise it's too
-        // complicated to customize all the SQL queries to conditionally use them...
-        db._sqlDb->exec(string("CREATE TABLE IF NOT EXISTS kv_"+name+" (key BLOB PRIMARY KEY, meta BLOB, body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+        if (!db.keyStoreExists(name)) {
+            // Create the sequence and deleted columns regardless of options, otherwise it's too
+            // complicated to customize all the SQL queries to conditionally use them...
+            db.execInTransaction(string("CREATE TABLE IF NOT EXISTS kv_"+name+" (key BLOB PRIMARY KEY, meta BLOB, body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+        }
     }
 
 
@@ -348,7 +368,10 @@ namespace cbforest {
     DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
                                                            DocEnumerator::Options &options)
     {
-        db()._sqlDb->exec(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys ON kv_"+name()+" (key)"));
+        if (!_createdKeyIndex) {
+            db().execInTransaction(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys ON kv_"+name()+" (key)"));
+            _createdKeyIndex = true;
+        }
 
         stringstream sql = selectFrom(options);
         bool noDeleted = _options.softDeletes && !options.includeDeleted;
@@ -386,7 +409,11 @@ namespace cbforest {
     {
         if (!_options.sequences)
             error::_throw(error::NoSequences);
-        db()._sqlDb->exec(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs ON kv_"+name()+" (sequence)"));
+
+        if (!_createdSeqIndex) {
+            db().execInTransaction(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs ON kv_"+name()+" (sequence)"));
+            _createdSeqIndex = true;
+        }
 
         stringstream sql = selectFrom(options);
         sql << (options.inclusiveMin() ? " WHERE sequence >= ?" : " WHERE sequence > ?");

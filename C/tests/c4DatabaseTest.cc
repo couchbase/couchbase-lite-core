@@ -693,4 +693,4 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
 
 C4EncryptionKey C4EncryptedDatabaseTest::sKey;
 
-CPPUNIT_TEST_SUITE_REGISTRATION(C4EncryptedDatabaseTest);
+//TEMP CPPUNIT_TEST_SUITE_REGISTRATION(C4EncryptedDatabaseTest);

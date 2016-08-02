@@ -42,18 +42,20 @@ namespace cbforest {
         operator SQLite::Database&() {return *_sqlDb;}
 
         vector<string> allKeyStoreNames() override;
+        bool keyStoreExists(const string &name);
 
     protected:
-        void deleteKeyStore(const string &name) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
         KeyStore* newKeyStore(const string &name, KeyStore::Options) override;
+        void deleteKeyStore(const string &name) override;
 
         sequence lastSequence(const string& keyStoreName) const;
         void setLastSequence(SQLiteKeyStore&, sequence);
 
         SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    string sql) const;
+        int execInTransaction(std::string sql);
 
     private:
         friend class SQLiteKeyStore;
@@ -96,6 +98,8 @@ namespace cbforest {
         unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt;
         unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         unique_ptr<SQLite::Statement> _setStmt, _delByKeyStmt, _delBySeqStmt;
+        bool _createdKeyIndex {false};
+        bool _createdSeqIndex {false};
     };
 
 
