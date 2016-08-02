@@ -165,7 +165,8 @@ class C4DatabaseTest : public C4Test {
         Assert(c4doc_selectParentRevision(doc));
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
-        AssertEqual(doc->selectedRev.body, kC4SliceNull);
+        if (isForestDB())
+            AssertEqual(doc->selectedRev.body, kC4SliceNull);
         Assert(c4doc_hasRevisionBody(doc));
         Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         AssertEqual(doc->selectedRev.body, kBody);
@@ -180,9 +181,11 @@ class C4DatabaseTest : public C4Test {
         Assert(c4doc_selectParentRevision(doc));
         AssertEqual(doc->selectedRev.revID, kRevID);
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
-        AssertEqual(doc->selectedRev.body, kC4SliceNull);
-        Assert(!c4doc_hasRevisionBody(doc));
-        Assert(!c4doc_loadRevisionBody(doc, &error));
+        if (!isSQLite()) {
+            AssertEqual(doc->selectedRev.body, kC4SliceNull);
+            Assert(!c4doc_hasRevisionBody(doc));
+            Assert(!c4doc_loadRevisionBody(doc, &error));
+        }
 
         // Purge doc
         {

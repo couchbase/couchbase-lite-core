@@ -21,8 +21,9 @@ namespace cbforest {
         static const char* kCBForestMessages[] = {
             "no error",
             "assertion failed",
-            "unimplemented function called"
+            "unimplemented function called",
             "database doesn't support sequences",
+            "unsupported encryption algorithm",
             "bad revision ID",
             "bad version vector",
             "corrupt revision data",

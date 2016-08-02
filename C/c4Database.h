@@ -28,8 +28,9 @@ extern "C" {
 
         kC4DB_V2Format      = 0x20, /**< Couchbase Lite 2 format */
 
-        kC4DB_ForestDBStorage   = 0x000,
-        kC4DB_SQLiteStorage     = 0x100,
+        kC4DB_ForestDBStorage   = 0x000,    /**< Use ForestDB storage engine (default) */
+        kC4DB_SQLiteStorage     = 0x100,    /**< Use SQLite 3 storage engine */
+        kC4DB_StorageTypeMask   = 0xF00,    /**< Mask for storage-type bits */
     };
 
     /** Encryption algorithms. */
@@ -88,6 +89,9 @@ extern "C" {
 
     /** Returns the path of the database. */
     C4SliceResult c4db_getPath(C4Database*);
+
+    /** Returns the flags the database was opened with. */
+    C4DatabaseFlags c4db_getFlags(C4Database*);
 
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);

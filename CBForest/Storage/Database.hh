@@ -81,6 +81,13 @@ namespace cbforest {
 
         virtual bool setAutoCompact(bool autoCompact)   {return false;}
 
+        virtual void rekey(EncryptionAlgorithm, slice newKey);
+
+        /** The number of deletions that have been purged via compaction. (Used by the indexer) */
+        uint64_t purgeCount() const;
+
+        //////// KEY-STORES:
+
         static const string kDefaultKeyStoreName;
 
         /** The Database's default key-value store. */
@@ -95,9 +102,6 @@ namespace cbforest {
 
         void closeKeyStore(const string &name);
         virtual void deleteKeyStore(const string &name) =0;
-
-        /** The number of deletions that have been purged via compaction. (Used by the indexer) */
-        uint64_t purgeCount() const;
 
     protected:
         virtual void _beginTransaction(Transaction*) =0;

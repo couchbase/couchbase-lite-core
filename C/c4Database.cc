@@ -27,9 +27,6 @@
 using namespace cbforest;
 
 
-static const uint32_t kFlagsStorageTypeMask = 0xF00;
-
-
 namespace c4Internal {
 
     Database* newDatabase(std::string path,
@@ -47,7 +44,7 @@ namespace c4Internal {
                                                 sizeof(encryptionKey->bytes));
         }
 
-        switch (flags & kFlagsStorageTypeMask) {
+        switch (flags & kC4DB_StorageTypeMask) {
             case kC4DB_ForestDBStorage:
                 return new ForestDatabase(path, &options);
             case kC4DB_SQLiteStorage:
@@ -64,10 +61,11 @@ namespace c4Internal {
 
 
 c4Database::c4Database(std::string path,
-                       C4DatabaseFlags flags,
+                       C4DatabaseFlags flags_,
                        const C4EncryptionKey *encryptionKey)
-:schema((flags & kC4DB_V2Format) ? 2 : 1),
- _db(newDatabase(path, flags, encryptionKey, true))
+:flags(flags_),
+ schema((flags_ & kC4DB_V2Format) ? 2 : 1),
+ _db(newDatabase(path, flags_, encryptionKey, true))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
@@ -231,12 +229,12 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
                                  C4Error *outError) {
     try {
-        fdb_encryption_key key = {FDB_ENCRYPTION_NONE, {}};
         if (newKey) {
-            key.algorithm = newKey->algorithm;
-            memcpy(key.bytes, newKey->bytes, sizeof(key.bytes));
+            database->rekey((Database::EncryptionAlgorithm)newKey->algorithm,
+                            slice(newKey->bytes, 32));
+        } else {
+            database->rekey(Database::kNoEncryption, slice::null);
         }
-        dynamic_cast<ForestDatabase*>(database)->rekey(key);
         return true;
     } catchError(outError);
     return false;
@@ -247,6 +245,11 @@ C4SliceResult c4db_getPath(C4Database *database) {
     slice path(database->db()->filename());
     path = path.copy();  // C4SliceResult must be malloced & adopted by caller
     return {path.buf, path.size};
+}
+
+
+C4DatabaseFlags c4db_getFlags(C4Database *database) {
+    return database->flags;
 }
 
 

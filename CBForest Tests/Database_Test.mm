@@ -187,7 +187,7 @@ Database::config TestDBConfig() {
                 NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
                 AssertEqual((NSString*)e->key(), expectedDocID);
                 AssertEq(e->sequence(), (sequence)i);
-                Assert(e->body().size > 0); // even metaOnly should set the body length
+                Assert(e->bodySize() > 0); // even metaOnly should set the body size
                 Assert(e->offset() > 0);
             }
             AssertEq(i, 101);
@@ -200,7 +200,7 @@ Database::config TestDBConfig() {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
             AssertEq(e->sequence(), (sequence)i);
-            Assert(e->body().size > 0); // even metaOnly should set the body length
+            Assert(e->bodySize() > 0); // even metaOnly should set the body length
             Assert(e->offset() > 0);
         }
         AssertEq(i, 30);
@@ -212,7 +212,7 @@ Database::config TestDBConfig() {
             NSString* expectedDocID = [NSString stringWithFormat: @"doc-%03d", i];
             AssertEqual((NSString*)e->key(), expectedDocID);
             AssertEq(e->sequence(), (sequence)i);
-            Assert(e->body().size > 0); // even metaOnly should set the body length
+            Assert(e->bodySize() > 0); // even metaOnly should set the body length
             Assert(e->offset() > 0);
         }
         AssertEq(i, 29);
@@ -235,7 +235,7 @@ Database::config TestDBConfig() {
                    (NSString*)e->key());
             AssertEq(e->exists(), i < 6);
             if (i < 6) {
-                Assert(e->body().size > 0); // even metaOnly should set the body length
+                Assert(e->bodySize() > 0); // even metaOnly should set the body length
                 Assert(e->offset() > 0);
             }
         }

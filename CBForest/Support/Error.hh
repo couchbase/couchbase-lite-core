@@ -44,6 +44,7 @@ namespace cbforest {
             AssertionFailed = 1,
             Unimplemented,
             NoSequences,
+            UnsupportedEncryption,
             BadRevisionID,
             BadVersionVector,
             CorruptRevisionData,

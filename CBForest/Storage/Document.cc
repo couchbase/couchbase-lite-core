@@ -29,6 +29,7 @@ namespace cbforest {
     :_key(d._key),
      _meta(d._meta),
      _body(d._body),
+     _bodySize(d._bodySize),
      _sequence(d._sequence),
      _offset(d._offset),
      _deleted(d._deleted),
@@ -39,6 +40,7 @@ namespace cbforest {
     :_key(move(d._key)),
      _meta(move(d._meta)),
      _body(move(d._body)),
+     _bodySize(d._bodySize),
      _sequence(d._sequence),
      _offset(d._offset),
      _deleted(d._deleted),
@@ -48,7 +50,7 @@ namespace cbforest {
     void Document::clearMetaAndBody() {
         setMeta(slice::null);
         setBody(slice::null);
-        _sequence = _offset = 0;
+        _bodySize = _sequence = _offset = 0;
         _exists = _deleted = false;
     }
 

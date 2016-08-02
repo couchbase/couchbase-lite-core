@@ -71,7 +71,6 @@ namespace cbforest {
         sequence lastSequence() const override              {return db().lastSequence(_name);}
 
         Document get(sequence, ContentOptions) const override;
-        void get(slice key, ContentOptions, function<void(const Document&)>) override;
         bool read(Document &doc, ContentOptions options) const override;
 
         sequence set(slice key, slice meta, slice value, Transaction&) override;

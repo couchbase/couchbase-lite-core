@@ -77,6 +77,26 @@ namespace cbforest {
     }
 
 
+    static fdb_encryption_key forestEncryptionKey(Database::EncryptionAlgorithm alg,
+                                                  slice key) {
+        fdb_encryption_key fdbKey;
+        switch (alg) {
+            case Database::kNoEncryption:
+                fdbKey.algorithm = FDB_ENCRYPTION_NONE;
+                break;
+            case Database::kAES256:
+                fdbKey.algorithm = FDB_ENCRYPTION_AES256;
+                CBFAssert(key.buf != NULL);
+                CBFAssert(key.size == sizeof(fdbKey.bytes));
+                memcpy(fdbKey.bytes, key.buf, sizeof(fdbKey.bytes));
+                break;
+            default:
+                error::_throw(error::UnsupportedEncryption);
+        }
+        return fdbKey;
+    }
+
+
     ForestDatabase::ForestDatabase(const string &path,
                                    const Database::Options *options)
     :ForestDatabase(path, options, defaultConfig())
@@ -109,14 +129,8 @@ namespace cbforest {
             else
                 _config.purging_interval = 0;
 
-            if (options->encryptionAlgorithm != kNoEncryption) {
-                CBFAssert(options->encryptionKey.buf != NULL);
-                CBFAssert(options->encryptionKey.size == sizeof(_config.encryption_key.bytes));
-                _config.encryption_key.algorithm = options->encryptionAlgorithm;
-                memcpy(_config.encryption_key.bytes,
-                       options->encryptionKey.buf,
-                       sizeof(_config.encryption_key.bytes));
-            }
+            _config.encryption_key = forestEncryptionKey(options->encryptionAlgorithm,
+                                                         options->encryptionKey);
         }
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
@@ -190,9 +204,10 @@ namespace cbforest {
         check(fdb_destroy(path.c_str(), (fdb_config*)&cfg));
     }
 
-    void ForestDatabase::rekey(const fdb_encryption_key &encryptionKey) {
-        check(fdb_rekey(_fileHandle, encryptionKey));
-        _config.encryption_key = encryptionKey;
+    void ForestDatabase::rekey(EncryptionAlgorithm alg, slice newKey) {
+        fdb_encryption_key fdbKey = forestEncryptionKey(alg, newKey);
+        check(fdb_rekey(_fileHandle, fdbKey));
+        _config.encryption_key = fdbKey;
     }
 
 
@@ -357,7 +372,10 @@ namespace cbforest {
 
     void ForestKeyStore::setDocNoKey(Document &doc, fdb_doc &fdoc) const {
         doc.adoptMeta(slice(fdoc.meta, fdoc.metalen));
-        doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
+        if (fdoc.body)
+            doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
+        else
+            doc.setUnloadedBodySize(fdoc.bodylen);
         doc.setDeleted(fdoc.deleted);
         updateDoc(doc, fdoc.seqnum, fdoc.offset, fdoc.deleted);
     }

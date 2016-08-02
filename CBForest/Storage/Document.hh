@@ -36,6 +36,8 @@ namespace cbforest {
         const alloc_slice& meta() const         {return _meta;}
         const alloc_slice& body() const         {return _body;}
 
+        size_t bodySize() const                 {return _bodySize;}
+
         cbforest::sequence sequence() const     {return _sequence;}
         bool deleted() const                    {return _deleted;}
 
@@ -50,13 +52,13 @@ namespace cbforest {
         template <typename T>
             void setMeta(const T &meta)         {_meta = meta;}
         template <typename T>
-            void setBody(const T &body)         {_body = body;}
+            void setBody(const T &body)         {_body = body; _bodySize = _body.size;}
 
         // Sets key/meta/body from an existing malloc'ed block. The Document assumes responsibility
         // for freeing the block; caller should _not_ free it afterwards.
         void adoptKey(slice key)                {_key = alloc_slice::adopt(key);}
         void adoptMeta(slice meta)              {_meta = alloc_slice::adopt(meta);}
-        void adoptBody(slice body)              {_body = alloc_slice::adopt(body);}
+        void adoptBody(slice body)              {_body = alloc_slice::adopt(body); _bodySize = _body.size;}
 
         void setDeleted(bool deleted)           {_deleted = deleted; if (deleted) _exists = false;}
 
@@ -69,7 +71,8 @@ namespace cbforest {
         /** Clears everything but the key. */
         void clearMetaAndBody();
 
-        void updateSequence(cbforest::sequence s)         {_sequence = s;}
+        void updateSequence(cbforest::sequence s)       {_sequence = s;}
+        void setUnloadedBodySize(size_t size)           {_body = slice::null; _bodySize = size;}
 
     private:
         friend class KeyStore;
@@ -82,6 +85,7 @@ namespace cbforest {
         }
 
         alloc_slice _key, _meta, _body;
+        size_t _bodySize                {0};
         cbforest::sequence _sequence    {0};
         uint64_t _offset                {0};
         bool _deleted                   {false};

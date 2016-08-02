@@ -145,6 +145,8 @@ struct c4Database : public RefCounted<c4Database> {
 
     Database* db()                                      {return _db.get();}
 
+    const C4DatabaseFlags flags;
+
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
     const uint8_t schema;
 

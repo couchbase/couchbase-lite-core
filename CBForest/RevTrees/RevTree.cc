@@ -45,13 +45,14 @@ namespace cbforest {
 
     alloc_slice RevTree::encode() {
         sort();
-        for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
-            if (rev->body.size > 0 && !(rev->isLeaf() || rev->isNew())) {
-                // Prune body of an already-saved rev that's no longer a leaf:
-                rev->body.buf = NULL;
-                rev->body.size = 0;
-                CBFAssert(_bodyOffset > 0);
-                rev->oldBodyOffset = _bodyOffset;
+        if (_bodyOffset > 0) {
+            for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
+                if (rev->body.size > 0 && !(rev->isLeaf() || rev->isNew())) {
+                    // Prune body of an already-saved rev that's no longer a leaf:
+                    rev->body.buf = NULL;
+                    rev->body.size = 0;
+                    rev->oldBodyOffset = _bodyOffset;
+                }
             }
         }
         return RawRevision::encodeTree(_revs);

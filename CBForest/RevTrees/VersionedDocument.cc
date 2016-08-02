@@ -50,7 +50,7 @@ namespace cbforest {
         _unknown = false;
         if (_doc.body().buf)
             RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
-        else if (_doc.body().size > 0)
+        else if (_doc.bodySize() > 0)
             _unknown = true;        // i.e. doc was read as meta-only
 
         if (_doc.exists()) {

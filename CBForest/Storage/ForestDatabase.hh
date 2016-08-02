@@ -32,8 +32,6 @@ namespace cbforest {
         fdb_file_info info() const;
         fdb_config config() const                   {return _config;}
 
-        void rekey(const fdb_encryption_key&);
-
         static void deleteDatabase(const string &path, const fdb_config&);
 
         // Inherited methods:
@@ -44,6 +42,7 @@ namespace cbforest {
         vector<string> allKeyStoreNames() override;
         void compact() override;
         bool setAutoCompact(bool autoCompact) override;
+        void rekey(EncryptionAlgorithm, slice newKey) override;
 
     protected:
         KeyStore* newKeyStore(const string &name, KeyStore::Options) override;

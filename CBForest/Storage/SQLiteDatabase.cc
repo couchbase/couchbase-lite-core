@@ -31,6 +31,8 @@ namespace cbforest {
 
 
     void SQLiteDatabase::reopen() {
+        if (options().encryptionAlgorithm != kNoEncryption)
+            error::_throw(error::UnsupportedEncryption);
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
@@ -168,68 +170,55 @@ namespace cbforest {
     }
 
 
+    // OPT: Would be nice to avoid copying key/meta/body here; this would require Document to
+    // know that the pointers are ephemeral, and create copies if they're accessed as
+    // alloc_slice (not just slice).
+
+
+    // Gets meta from column 3, and body (or its length) from column 4
+    static void setDocMetaAndBody(Document &doc,
+                                  SQLite::Statement &stmt,
+                                  ContentOptions options)
+    {
+        doc.setMeta(columnAsSlice(stmt.getColumn(3)));
+        if (options & kMetaOnly)
+            doc.setUnloadedBodySize((int64_t)stmt.getColumn(4));
+        else
+            doc.setBody(columnAsSlice(stmt.getColumn(4)));
+    }
+
     bool SQLiteKeyStore::read(Document &doc, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
             ? db().compile(_getMetaByKeyStmt,
-                          string("SELECT sequence, meta, deleted, FROM kv_")+name()+" WHERE key=?")
+                          string("SELECT sequence, deleted, 0, meta, length(body) FROM kv_")+name()+" WHERE key=?")
             : db().compile(_getByKeyStmt,
-                          string("SELECT sequence, meta, deleted, body FROM kv_")+name()+" WHERE key=?");
+                          string("SELECT sequence, deleted, 0, meta, body FROM kv_")+name()+" WHERE key=?");
         stmt.bindNoCopy(1, doc.key().buf, (int)doc.key().size);
         if (!stmt.executeStep())
             return false;
 
-        if (_options.sequences)
-            updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(2));
-        doc.setMeta(columnAsSlice(stmt.getColumn(1)));
-        if (options == kDefaultContent)
-            doc.setBody(columnAsSlice(stmt.getColumn(3)));
+        if (_options.sequences | _options.softDeletes)
+            updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(1));
+        setDocMetaAndBody(doc, stmt, options);
         stmt.reset();
         return true;
     }
 
 
-    void SQLiteKeyStore::get(slice key, ContentOptions options, function<void(const Document&)> fn) {
-        auto &stmt = (options & kMetaOnly)
-        ? db().compile(_getMetaByKeyStmt,
-                       string("SELECT sequence, meta, deleted FROM kv_")+name()+" WHERE key=?")
-        : db().compile(_getByKeyStmt,
-                       string("SELECT sequence, meta, deleted, body FROM kv_")+name()+" WHERE key=?");
-        stmt.bindNoCopy(1, key.buf, (int)key.size);
-
-        // OPT: Would be nice to avoid copying key/meta/body here; this would require Document to
-        // know that the pointers are ephemeral, and create copies if they're accessed as
-        // alloc_slice (not just slice).
-        Document doc;
-        doc.setKey(key);
-        if (stmt.executeStep()) {
-            if (_options.sequences)
-                updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(2));
-            doc.setMeta(columnAsSlice(stmt.getColumn(1)));
-            if (options == kDefaultContent)
-                doc.setBody(columnAsSlice(stmt.getColumn(3)));
-        }
-        fn(doc);
-        stmt.reset();   // invalidates the memory pointed to by doc
-    }
-
-    
     Document SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
         if (!_options.sequences)
             error::_throw(error::NoSequences);
         Document doc;
         auto &stmt = (options & kMetaOnly)
             ? db().compile(_getMetaBySeqStmt,
-                          string("SELECT key, meta, deleted FROM kv_")+name()+" WHERE sequence=?")
+                          string("SELECT 0, deleted, key, meta, length(body) FROM kv_")+name()+" WHERE sequence=?")
             : db().compile(_getBySeqStmt,
-                          string("SELECT key, meta, deleted, body FROM kv_")+name()+" WHERE sequence=?");
+                          string("SELECT 0, deleted, key, meta, body FROM kv_")+name()+" WHERE sequence=?");
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
-            updateDoc(doc, seq);
-            doc.setKey(columnAsSlice(stmt.getColumn(0)));
-            doc.setMeta(columnAsSlice(stmt.getColumn(1)));
-            doc.setDeleted((int)stmt.getColumn(2));
-            if (options == kDefaultContent)
-                doc.setBody(columnAsSlice(stmt.getColumn(3)));
+            updateDoc(doc, seq, 0, (int)stmt.getColumn(1));
+            doc.setKey(columnAsSlice(stmt.getColumn(2)));
+            setDocMetaAndBody(doc, stmt, options);
             stmt.reset();
         }
         return doc;
@@ -286,6 +275,7 @@ namespace cbforest {
         bool ok = stmt->exec() > 0;
         if (ok && newSeq > 0)
             db().setLastSequence(*this, newSeq);
+        stmt->reset();
         return ok;
     }
 
@@ -315,11 +305,9 @@ namespace cbforest {
         }
 
         virtual bool read(Document &doc) override {
-            updateDoc(doc, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(3));
-            doc.setKey(columnAsSlice(_stmt->getColumn(1)));
-            doc.setMeta(columnAsSlice(_stmt->getColumn(2)));
-            if (_content == kDefaultContent)
-                doc.setBody(columnAsSlice(_stmt->getColumn(4)));
+            updateDoc(doc, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(1));
+            doc.setKey(columnAsSlice(_stmt->getColumn(2)));
+            setDocMetaAndBody(doc, *_stmt.get(), _content);
             return true;
         }
 
@@ -331,8 +319,10 @@ namespace cbforest {
 
     stringstream SQLiteKeyStore::selectFrom(const DocEnumerator::Options &options) {
         stringstream sql;
-        sql << "SELECT sequence, key, meta, deleted";
-        if (options.contentOptions == kDefaultContent)
+        sql << "SELECT sequence, deleted, key, meta";
+        if (options.contentOptions & kMetaOnly)
+            sql << ", length(body)";
+        else
             sql << ", body";
         sql << " FROM kv_" << name();
         return sql;
@@ -361,16 +351,23 @@ namespace cbforest {
         db()._sqlDb->exec(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys ON kv_"+name()+" (key)"));
 
         stringstream sql = selectFrom(options);
-        if (minKey.buf) {
-            sql << (options.inclusiveMin() ? " WHERE key >= ?" : " WHERE key > ?");
-            if (maxKey.buf)
-                sql << " AND ";
+        bool noDeleted = _options.softDeletes && !options.includeDeleted;
+        if (minKey.buf || maxKey.buf || noDeleted) {
+            sql << " WHERE ";
+            bool writeAnd = false;
+            if (minKey.buf) {
+                sql << (options.inclusiveMin() ? "key >= ?" : "key > ?");
+                writeAnd = true;
+            }
+            if (maxKey.buf) {
+                if (writeAnd) sql << " AND "; else writeAnd = true;
+                sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
+            }
+            if (noDeleted) {
+                if (writeAnd) sql << " AND "; else writeAnd = true;
+                sql << "deleted!=1";
+            }
         }
-        if (maxKey.buf) {
-            sql << (options.inclusiveMax() ? " key <= ?" : " key < ?");
-        }
-        if (_options.softDeletes && !options.includeDeleted)
-            sql << " AND deleted!=1";
         sql << " ORDER BY key";
         writeSQLOptions(sql, options);
 

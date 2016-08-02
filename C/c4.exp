@@ -18,6 +18,7 @@ _c4db_deleteAtPath
 _c4db_compact
 _c4db_rekey
 _c4db_getPath
+_c4db_getFlags
 _c4db_getDocumentCount
 _c4db_getLastSequence
 _c4db_beginTransaction

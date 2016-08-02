@@ -137,6 +137,12 @@ namespace cbforest {
     }
 
 
+    void Database::rekey(EncryptionAlgorithm alg, slice newKey) {
+        if (alg != kNoEncryption)
+            error::_throw(error::UnsupportedEncryption);
+    }
+
+
 #pragma mark KEY-STORES:
 
 

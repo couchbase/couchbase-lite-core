@@ -63,6 +63,10 @@ public:
 protected:
     C4Database *db;
 
+    C4DatabaseFlags storageType() const;
+    bool isSQLite() const               {return storageType() == kC4DB_SQLiteStorage;}
+    bool isForestDB() const             {return storageType() == kC4DB_ForestDBStorage;}
+
     virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
 
     // Creates a new document revision
