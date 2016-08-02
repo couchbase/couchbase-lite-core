@@ -232,7 +232,6 @@ namespace cbforest {
                 (void)fdb_abort_transaction(_fileHandle);
                 break;
             case Transaction::kNoOp:
-                Log("ForestDatabase: end noop transaction");
                 break;
         }
         check(status);
@@ -281,7 +280,10 @@ namespace cbforest {
                 beganCompacting();
                 break;
             case FDB_CS_COMPLETE:
-                updatePurgeCount();
+                {
+                    Transaction t(this);
+                    updatePurgeCount(t);
+                }
                 Log("ForestDatabase %p END COMPACTING", this);
                 finishedCompacting();
                 break;

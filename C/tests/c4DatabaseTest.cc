@@ -655,8 +655,23 @@ class C4DatabaseTest : public C4Test {
 CPPUNIT_TEST_SUITE_REGISTRATION(C4DatabaseTest);
 
 
+
+class C4SQLiteDatabaseTest : public C4DatabaseTest {
+
+    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+
+    CPPUNIT_TEST_SUB_SUITE( C4SQLiteDatabaseTest, C4DatabaseTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteDatabaseTest);
+
+
+
 class C4EncryptedDatabaseTest : public C4DatabaseTest {
+
     static C4EncryptionKey sKey;
+
     const C4EncryptionKey* encryptionKey()  {
         sKey.algorithm = kC4EncryptionAES256;
         memcpy(sKey.bytes, "this is not a random key at all...", 32);
@@ -666,7 +681,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
 
     void testRekey() {
         testCreateRawDoc();
-        
+
         C4Error error;
         Assert(c4db_rekey(db, NULL, &error));
 
@@ -676,21 +691,11 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     }
 
 
-    CPPUNIT_TEST_SUITE( C4EncryptedDatabaseTest );
-    CPPUNIT_TEST( testTransaction );
-    CPPUNIT_TEST( testCreateRawDoc );
-    CPPUNIT_TEST( testCreateVersionedDoc );
-    CPPUNIT_TEST( testCreateMultipleRevisions );
-    CPPUNIT_TEST( testGetForPut );
-    CPPUNIT_TEST( testPut );
-    CPPUNIT_TEST( testAllDocs );
-    CPPUNIT_TEST( testAllDocsInfo );
-    CPPUNIT_TEST( testAllDocsIncludeDeleted );
-    CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST_SUB_SUITE( C4EncryptedDatabaseTest, C4DatabaseTest );
     CPPUNIT_TEST( testRekey );
     CPPUNIT_TEST_SUITE_END();
 };
 
 C4EncryptionKey C4EncryptedDatabaseTest::sKey;
 
-//TEMP CPPUNIT_TEST_SUITE_REGISTRATION(C4EncryptedDatabaseTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(C4EncryptedDatabaseTest);

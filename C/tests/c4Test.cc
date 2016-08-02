@@ -43,7 +43,10 @@ void C4Test::setUp() {
 
     C4Error error;
     c4db_deleteAtPath(c4str(dbPath), kC4DB_Create, NULL);
-    db = c4db_open(c4str(dbPath), kC4DB_Create | kC4DB_SQLiteStorage, encryptionKey(), &error);
+    db = c4db_open(c4str(dbPath),
+                   kC4DB_Create | storageType(),
+                   encryptionKey(),
+                   &error);
     Assert(db != NULL);
 }
 
@@ -55,11 +58,6 @@ void C4Test::tearDown() {
 
     // Check for leaks:
     AssertEqual(c4_getObjectCount() - objectCount, 0);
-}
-
-
-C4DatabaseFlags C4Test::storageType() const {
-    return c4db_getFlags(db) & kC4DB_StorageTypeMask;
 }
 
 

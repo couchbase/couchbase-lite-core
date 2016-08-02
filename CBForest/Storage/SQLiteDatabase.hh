@@ -55,7 +55,7 @@ namespace cbforest {
 
         SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    string sql) const;
-        int execInTransaction(std::string sql);
+        int exec(const string &sql);
 
     private:
         friend class SQLiteKeyStore;

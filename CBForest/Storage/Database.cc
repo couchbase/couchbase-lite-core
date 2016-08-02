@@ -170,8 +170,6 @@ namespace cbforest {
         CBFAssert(!(options.softDeletes && !_options.keyStores.softDeletes));
         KeyStore *store = newKeyStore(name, options);
         _keyStores[name] = unique_ptr<KeyStore>(store);
-        if (name == kDefaultKeyStoreName)
-            _defaultKeyStore = store;
         return *store;
     }
 
@@ -186,7 +184,8 @@ namespace cbforest {
 
     KeyStore& Database::defaultKeyStore(KeyStore::Options options) const {
         if (!_defaultKeyStore)
-            getKeyStore(kDefaultKeyStoreName, options);   // this will assign _defaultKeyStore
+            const_cast<Database*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
+                                                                         options);
         return *_defaultKeyStore;
     }
 
@@ -220,9 +219,7 @@ namespace cbforest {
         return readCount( infoStore.get(slice(kPurgeCountKey)) );
     }
 
-    void Database::updatePurgeCount() {
-        Transaction t(this, !_inTransaction);
-
+    void Database::updatePurgeCount(Transaction &t) {
         KeyStore& infoStore = getKeyStore(kInfoStoreName);
         Document purgeCount = infoStore.get(slice(kDeletionCountKey));
         if (purgeCount.exists())
@@ -248,13 +245,24 @@ namespace cbforest {
     }
 
     void Database::endTransaction(Transaction* t) {
-        _endTransaction(t);
+        if (t->state() != Transaction::kNoOp)
+            _endTransaction(t);
 
         unique_lock<mutex> lock(_file->_transactionMutex);
         CBFAssert(_file->_transaction == t);
         _file->_transaction = NULL;
         _file->_transactionCond.notify_one();
         _inTransaction = false;
+    }
+
+
+    void Database::withFileLock(function<void(void)> fn) {
+        if (_inTransaction) {
+            fn();
+        } else {
+            Transaction t(this, false);
+            fn();
+        }
     }
 
 

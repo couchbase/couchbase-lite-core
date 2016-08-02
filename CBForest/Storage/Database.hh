@@ -101,16 +101,29 @@ namespace cbforest {
         virtual vector<string> allKeyStoreNames() =0;
 
         void closeKeyStore(const string &name);
+
+        /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const string &name) =0;
 
     protected:
-        virtual void _beginTransaction(Transaction*) =0;
-        virtual void _endTransaction(Transaction*) =0;
+        /** Override to instantiate a KeyStore object. */
         virtual KeyStore* newKeyStore(const string &name, KeyStore::Options) =0;
 
+        /** Override to begin a database transaction. */
+        virtual void _beginTransaction(Transaction*) =0;
+
+        /** Override to commit or abort a database transaction. */
+        virtual void _endTransaction(Transaction*) =0;
+
+        /** Is this Database object currently in a transaction? */
         bool inTransaction() const                  {return _inTransaction;}
 
-        void updatePurgeCount();
+        /** Runs the function/lambda while holding the file lock. This doesn't create a real
+            transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
+            is in a transaction, nor starts a transaction while the function is running. */
+        void withFileLock(function<void(void)> fn);
+
+        void updatePurgeCount(Transaction&);
 
         void beganCompacting();
         void finishedCompacting();
@@ -161,6 +174,7 @@ namespace cbforest {
         };
 
         Transaction(Database*);
+        Transaction(Database &db)               :Transaction(&db) { }
         ~Transaction()                          {_db.endTransaction(this);}
 
         Database& database() const          {return _db;}

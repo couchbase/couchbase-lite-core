@@ -37,10 +37,14 @@ namespace cbforest {
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
         _sqlDb.reset(new SQLite::Database(filename().c_str(), sqlFlags));
-        _sqlDb->exec("PRAGMA mmap_size=50000000");
-        _sqlDb->exec("PRAGMA journal_mode=WAL");
-        _sqlDb->exec("CREATE TABLE IF NOT EXISTS kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
-        (void)defaultKeyStore();    // make sure its table is created
+        
+        withFileLock([this]{
+            _sqlDb->exec("PRAGMA mmap_size=50000000");
+            _sqlDb->exec("PRAGMA journal_mode=WAL");
+            _sqlDb->exec("CREATE TABLE IF NOT EXISTS kvmeta (name TEXT PRIMARY KEY,"
+                         " lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
+            (void)defaultKeyStore();    // make sure its table is created
+        });
     }
 
 
@@ -62,7 +66,7 @@ namespace cbforest {
     }
 
     void SQLiteDatabase::deleteKeyStore(const string &name) {
-        _sqlDb->exec(string("DROP TABLE IF EXISTS kv_") + name);
+        exec(string("DROP TABLE IF EXISTS kv_") + name);
     }
 
 
@@ -79,11 +83,10 @@ namespace cbforest {
     }
 
 
-    int SQLiteDatabase::execInTransaction(std::string sql) {
-        unique_ptr<Transaction> t;
-        if (!inTransaction())
-            t.reset(new Transaction(this));
-        return _sqlDb->exec(sql);
+    int SQLiteDatabase::exec(const string &sql) {
+        int result;
+        withFileLock([&]{ result = _sqlDb->exec(sql); });
+        return result;
     }
 
 
@@ -130,10 +133,13 @@ namespace cbforest {
 
 
     void SQLiteDatabase::compact() {
-        for (auto& name : allKeyStoreNames())
-            _sqlDb->exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
-        _sqlDb->exec(string("VACUUM"));
-        updatePurgeCount();
+        {
+            Transaction t(this);
+            for (auto& name : allKeyStoreNames())
+                _sqlDb->exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
+            updatePurgeCount(t);
+        }
+        _sqlDb->exec(string("VACUUM"));     // Vacuum can't be called in a transaction
     }
 
 
@@ -142,7 +148,8 @@ namespace cbforest {
 
     vector<string> SQLiteDatabase::allKeyStoreNames() {
         vector<string> names;
-        SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master WHERE type='table' AND name GLOB 'kv_*'"));
+        SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
+                                                    " WHERE type='table' AND name GLOB 'kv_*'"));
         while (allStores.executeStep()) {
             names.push_back(allStores.getColumn(0));
         }
@@ -151,7 +158,8 @@ namespace cbforest {
 
 
     bool SQLiteDatabase::keyStoreExists(const string &name) {
-        SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master WHERE type='table' AND name=?"));
+        SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
+                                                      " WHERE type='table' AND name=?"));
         storeExists.bind(1, std::string("kv_") + name);
         bool exists = storeExists.executeStep();
         storeExists.reset();
@@ -165,7 +173,9 @@ namespace cbforest {
         if (!db.keyStoreExists(name)) {
             // Create the sequence and deleted columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
-            db.execInTransaction(string("CREATE TABLE IF NOT EXISTS kv_"+name+" (key BLOB PRIMARY KEY, meta BLOB, body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+            db.exec(string("CREATE TABLE IF NOT EXISTS kv_"+name+
+                                        " (key BLOB PRIMARY KEY, meta BLOB, body BLOB,"
+                                        " sequence INTEGER, deleted INTEGER DEFAULT 0)"));
         }
     }
 
@@ -231,9 +241,11 @@ namespace cbforest {
         Document doc;
         auto &stmt = (options & kMetaOnly)
             ? db().compile(_getMetaBySeqStmt,
-                          string("SELECT 0, deleted, key, meta, length(body) FROM kv_")+name()+" WHERE sequence=?")
+                          string("SELECT 0, deleted, key, meta, length(body) FROM kv_")+name()+
+                           " WHERE sequence=?")
             : db().compile(_getBySeqStmt,
-                          string("SELECT 0, deleted, key, meta, body FROM kv_")+name()+" WHERE sequence=?");
+                          string("SELECT 0, deleted, key, meta, body FROM kv_")+name()+
+                           " WHERE sequence=?");
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
             updateDoc(doc, seq, 0, (int)stmt.getColumn(1));
@@ -301,6 +313,7 @@ namespace cbforest {
 
 
     void SQLiteKeyStore::erase() {
+        Transaction t(db());
         db()._sqlDb->exec(string("DELETE FROM kv_"+name()));
         db().setLastSequence(*this, 0);
     }
@@ -351,9 +364,8 @@ namespace cbforest {
     void SQLiteKeyStore::writeSQLOptions(stringstream &sql, DocEnumerator::Options &options) {
         if (options.descending)
             sql << " DESC";
-        if (options.limit < UINT_MAX) {
+        if (options.limit < UINT_MAX)
             sql << " LIMIT " << options.limit;
-        }
         if (options.skip > 0) {
             if (options.limit == UINT_MAX)
                 sql << " LIMIT -1";             // OFFSET has to have a LIMIT before it
@@ -369,7 +381,8 @@ namespace cbforest {
                                                            DocEnumerator::Options &options)
     {
         if (!_createdKeyIndex) {
-            db().execInTransaction(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys ON kv_"+name()+" (key)"));
+            db().exec(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys"
+                                          " ON kv_"+name()+" (key)"));
             _createdKeyIndex = true;
         }
 
@@ -386,7 +399,7 @@ namespace cbforest {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
             }
-            if (noDeleted) {
+            if (_options.softDeletes && noDeleted) {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << "deleted!=1";
             }
@@ -411,7 +424,8 @@ namespace cbforest {
             error::_throw(error::NoSequences);
 
         if (!_createdSeqIndex) {
-            db().execInTransaction(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs ON kv_"+name()+" (sequence)"));
+            db().exec(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs"
+                                          " ON kv_"+name()+" (sequence)"));
             _createdSeqIndex = true;
         }
 
