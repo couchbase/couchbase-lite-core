@@ -52,10 +52,12 @@ namespace cbforest {
     }
 
     void KeyStore::write(Document &doc, Transaction &t) {
-        if (doc.deleted())
+        if (doc.deleted()) {
             del(doc, t);
-        else
-            set(doc.key(), doc.meta(), doc.body(), t);
+        } else {
+            sequence seq = set(doc.key(), doc.meta(), doc.body(), t);
+            updateDoc(doc, seq);
+        }
     }
 
     bool KeyStore::del(slice key, Transaction &t) {

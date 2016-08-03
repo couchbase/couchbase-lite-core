@@ -20,9 +20,14 @@ using namespace fleece;
 #define kTestDir "/tmp/"
 #endif
 
+void Log(const char *format, ...);
+
+std::string stringWithFormat(const char *format, ...);
 
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);
+
+void randomBytes(slice dst);
 
 // Some operators to make slice work with AssertEqual:
 // (This has to be declared before including cppunit, because C++ sucks)
@@ -39,11 +44,15 @@ using namespace cbforest;
 class DatabaseTestFixture : public CppUnit::TestFixture {
 public:
 
-    Database *db {NULL};
+    Database *db {nullptr};
+    KeyStore *store {nullptr};
 
-    virtual void setUp();
+    Database* newDatabase(std::string path, Database::Options* =nullptr);
+    void reopenDatabase(Database::Options *newOptions =nullptr);
 
-    virtual void tearDown();
+    virtual void setUp() override;
+
+    virtual void tearDown() override;
 
 };
 

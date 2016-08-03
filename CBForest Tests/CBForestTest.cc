@@ -8,7 +8,32 @@
 
 #include "CBForestTest.hh"
 #include "ForestDatabase.hh"
+#include <stdlib.h>
 #include <unistd.h>
+
+
+using namespace std;
+
+
+void Log(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
+
+
+string stringWithFormat(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    char *cstr;
+    vasprintf(&cstr, format, args);
+    va_end(args);
+    string str(cstr);
+    free(cstr);
+    return str;
+}
 
 
 std::string sliceToHex(slice result) {
@@ -48,6 +73,11 @@ std::string sliceToHexDump(slice result, size_t width) {
 }
 
 
+void randomBytes(slice dst) {
+    arc4random_buf((void*)dst.buf, dst.size);
+}
+
+
 std::ostream& operator<< (std::ostream& o, slice s) {
     o << "slice[";
     if (s.buf == NULL)
@@ -61,11 +91,31 @@ std::ostream& operator<< (std::ostream& o, slice s) {
 }
 
 
+Database* DatabaseTestFixture::newDatabase(std::string path, Database::Options *options) {
+    //TODO: Set up options
+    return new ForestDatabase(path, options);
+}
+
+
+void DatabaseTestFixture::reopenDatabase(Database::Options *newOptions) {
+    auto dbPath = db->filename();
+    auto options = db->options();
+    Log("//// Closing db");
+    delete db;
+    db = nullptr;
+    store = nullptr;
+    Log("//// Reopening db");
+    db = newDatabase(dbPath, newOptions ? newOptions : &options);
+    store = &db->defaultKeyStore();
+}
+
+
 void DatabaseTestFixture::setUp() {
     TestFixture::setUp();
     const char *dbPath = kTestDir "forest_temp.fdb";
     Database::deleteDatabase(dbPath);
-    db = new ForestDatabase(dbPath);
+    db = newDatabase(dbPath);
+    store = &db->defaultKeyStore();
 }
 
 

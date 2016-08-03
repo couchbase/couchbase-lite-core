@@ -8,7 +8,6 @@
 
 #import "Collatable.hh"
 #import "CBForestTest.hh"
-#include <stdlib.h>
 
 using namespace cbforest;
 
@@ -32,7 +31,7 @@ static int compareCollated(T1 obj1, T2 obj2) {
 
 static uint64_t randn(uint64_t limit) {
     uint64_t n;
-    arc4random_buf(&n, sizeof(n));
+    randomBytes(slice(&n, sizeof(n)));
     return n % limit;
 }
 
@@ -56,16 +55,6 @@ static CollatableReader roundTrip(T input) {
 static void checkRoundTrip(std::string str) {
     AssertEqual(roundTrip(str).readString(), alloc_slice(str));
 }
-
-#if 0
-- (void) checkRoundTrip: (id)input {
-    AssertEqual(roundTrip(input), input);
-    // Note: isEqual: has some limitations when comparing NSNumbers. If one number is a double it
-    // seems to convert the other number to double and then compare; this can produce false
-    // positives when the other number is a very large 64-bit integer that can't be precisely
-    // represented as a double (basically anything above 2^56 or so.)
-}
-#endif
 
 static void compareNumber(double n1, double n2) {
     AssertEqual(compareCollated(n1, n2), sgn(n1 - n2));
@@ -112,7 +101,7 @@ void testFloats() {
     const int nFloats = sizeof(numbers)/sizeof(numbers[0]);
     for (int i=0; i<nFloats; i++) {
         double n1 = numbers[i];
-        //fprintf(stderr, "%16g --> %s\n", numbers[i], collatableData(n1).hexString().c_str());
+        //Log("%16g --> %s\n", numbers[i], collatableData(n1).hexString().c_str());
         AssertEqual(roundTrip(n1).readDouble(), n1);
         for (int j=0; j<nFloats; j++) {
             compareNumber(n1, numbers[j]);
@@ -124,7 +113,7 @@ void testRandomFloats() {
     srandomdev();
     for (int i=0; i< 100000; i++) {
         double n1 = randf(), n2 = randf();
-        //NSLog(@"Compare: %@ <--> %@", n1, n2);
+        //Log(@"Compare: %@ <--> %@", n1, n2);
         AssertEqual(roundTrip(n1).readDouble(), n1);
         AssertEqual(roundTrip(n2).readDouble(), n2);
         compareNumber(n1, n2);
@@ -139,7 +128,7 @@ void testRoundTripInts() {
         alloc_slice encoded((cbforest::slice)c);
         CollatableReader reader(encoded);
         uint64_t result = reader.readInt();
-        //NSLog(@"2^%2d - 1: %llx --> %llx", bits, n-1, result);
+        //Log(@"2^%2d - 1: %llx --> %llx", bits, n-1, result);
         // At 2^54-1 floating-point roundoff starts to occur. This is known, so skip the assert
         if (bits < 54)
             AssertEqual(result, n-1);

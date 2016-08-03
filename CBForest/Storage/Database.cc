@@ -88,8 +88,6 @@ namespace cbforest {
         for (auto& i : _keyStores) {
             i.second->close();
         }
-        _keyStores.clear();
-        _defaultKeyStore = nullptr;
     }
 
 

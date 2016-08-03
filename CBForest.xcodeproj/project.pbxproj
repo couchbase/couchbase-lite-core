@@ -140,6 +140,7 @@
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		277015001D516CE2008BADD7 /* CollatableTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277014FF1D516CE2008BADD7 /* CollatableTest.cc */; };
+		277015091D523E2E008BADD7 /* DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DatabaseTest.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277CB6311D0DF0B200702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
 		277CB6361D0DF0D900702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
@@ -691,6 +692,7 @@
 		27696AD119F5B66800B8D3D6 /* Tokenizer_Test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Tokenizer_Test.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
 		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
+		277015081D523E2E008BADD7 /* DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseTest.cc; sourceTree = "<group>"; };
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = vendor/fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
@@ -1019,8 +1021,9 @@
 				2708FE3D1CF4C8B10022F721 /* CppTest.hh */,
 				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
 				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
-				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				277014FF1D516CE2008BADD7 /* CollatableTest.cc */,
+				277015081D523E2E008BADD7 /* DatabaseTest.cc */,
+				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
 				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
@@ -2108,14 +2111,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				277015001D516CE2008BADD7 /* CollatableTest.cc in Sources */,
 				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
+				277015001D516CE2008BADD7 /* CollatableTest.cc in Sources */,
+				277015091D523E2E008BADD7 /* DatabaseTest.cc in Sources */,
 				2708FE421CF4CC880022F721 /* VersionVectorTest.cc in Sources */,
-				27297A1A1D36C0EA0006C2F8 /* CASRevisionStoreTest.cc in Sources */,
 				279794B41D34583A001D0F3A /* RevisionTest.cc in Sources */,
 				279794BA1D355A31001D0F3A /* RevisionStoreTest.cc in Sources */,
+				27297A1A1D36C0EA0006C2F8 /* CASRevisionStoreTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

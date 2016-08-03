@@ -111,9 +111,9 @@ namespace cbforest {
     {
         if (options) {
             if (options->writeable)
-                _config.flags |= FDB_OPEN_FLAG_CREATE;
+                _config.flags &= ~FDB_OPEN_FLAG_RDONLY;
             else
-                _config.flags &= ~FDB_OPEN_FLAG_CREATE;
+                _config.flags |= FDB_OPEN_FLAG_RDONLY;
             if (options->create)
                 _config.flags |= FDB_OPEN_FLAG_CREATE;
             else

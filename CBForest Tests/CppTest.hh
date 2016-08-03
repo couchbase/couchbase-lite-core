@@ -18,4 +18,6 @@
 #define AssertEqual(ACTUAL, EXPECTED) CPPUNIT_ASSERT_EQUAL(EXPECTED, ACTUAL)
 #define AssertNull(ACTUAL) CPPUNIT_ASSERT_EQUAL((ACTUAL), (__typeof(ACTUAL))nullptr)
 
+#define AssertionFailed(MESSAGE)    CPPUNIT_FAIL(MESSAGE)
+
 #endif /* CppTest_hh */
