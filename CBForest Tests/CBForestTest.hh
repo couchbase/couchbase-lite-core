@@ -20,7 +20,7 @@ using namespace fleece;
 #define kTestDir "/tmp/"
 #endif
 
-void Log(const char *format, ...);
+void Log(const char *format, ...) __printflike(1, 2);
 
 std::string stringWithFormat(const char *format, ...);
 
@@ -39,6 +39,7 @@ std::ostream& operator<< (std::ostream& o, slice s);
 #include "Database.hh"
 
 using namespace cbforest;
+using namespace std;
 
 
 class DatabaseTestFixture : public CppUnit::TestFixture {

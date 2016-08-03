@@ -1,13 +1,5 @@
 //
-//  DatabaseTest.cc
-//  CBForest
-//
-//  Created by Jens Alfke on 8/3/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
-//
-
-//
-//  Database_Test.mm
+//  Database_Test.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 5/13/14.
@@ -294,7 +286,7 @@ void testTransactionsThenIterate() {
     int i = 0;
     for (DocEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
         slice key = (*iter).key();
-        //Log("key = %@", key);
+        //Log("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
         unsigned d = (i % kNDocs) + 1;
         AssertEqual(key, slice(stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d)));

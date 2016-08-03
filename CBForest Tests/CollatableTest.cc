@@ -6,8 +6,8 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#import "Collatable.hh"
-#import "CBForestTest.hh"
+#include "Collatable.hh"
+#include "CBForestTest.hh"
 
 using namespace cbforest;
 
@@ -113,7 +113,7 @@ void testRandomFloats() {
     srandomdev();
     for (int i=0; i< 100000; i++) {
         double n1 = randf(), n2 = randf();
-        //Log(@"Compare: %@ <--> %@", n1, n2);
+        //Log("Compare: %s <--> %s", n1, n2);
         AssertEqual(roundTrip(n1).readDouble(), n1);
         AssertEqual(roundTrip(n2).readDouble(), n2);
         compareNumber(n1, n2);
@@ -128,7 +128,7 @@ void testRoundTripInts() {
         alloc_slice encoded((cbforest::slice)c);
         CollatableReader reader(encoded);
         uint64_t result = reader.readInt();
-        //Log(@"2^%2d - 1: %llx --> %llx", bits, n-1, result);
+        //Log("2^%2d - 1: %llx --> %llx", bits, n-1, result);
         // At 2^54-1 floating-point roundoff starts to occur. This is known, so skip the assert
         if (bits < 54)
             AssertEqual(result, n-1);
