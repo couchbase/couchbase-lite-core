@@ -163,18 +163,6 @@ namespace cbforest {
         return true;
     }
 
-    void DocEnumerator::seek(slice key) {
-        Debug("enum: seek([%s])", key.hexCString());
-        if (!_impl)
-            return;
-
-        _doc.clear();
-        if (_impl->seek(key))
-            _skipStep = true; // so next() won't skip over the doc
-        else
-            close();
-    }
-
     bool DocEnumerator::getDoc() {
         _doc.clear();
         if (!_impl->read(_doc)) {

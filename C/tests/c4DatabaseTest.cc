@@ -50,11 +50,11 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(buf[0], '\0');
 
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
-        assertMessage(HTTPDomain, kC4HTTPBadRequest, "invalid parameter");
+        assertMessage(CBForestDomain, 15, "invalid parameter");
         assertMessage(POSIXDomain, ENOENT, "No such file or directory");
         assertMessage(C4Domain, kC4ErrorIndexBusy, "index busy; can't close view");
-        assertMessage(ForestDBDomain, -1234, "unknown ForestDB error -1234");
-        assertMessage((C4ErrorDomain)666, -1234, "bogus C4Error (666, -1234)");
+        assertMessage(ForestDBDomain, -1234, "unknown error");
+        assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
     }
 
     void testTransaction() {
@@ -673,6 +673,8 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     static C4EncryptionKey sKey;
 
     const C4EncryptionKey* encryptionKey()  {
+        if (!isForestDB())
+            return nullptr; //FIX
         sKey.algorithm = kC4EncryptionAES256;
         memcpy(sKey.bytes, "this is not a random key at all...", 32);
         return &sKey;

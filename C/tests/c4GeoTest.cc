@@ -33,7 +33,7 @@ public:
         c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                           kC4DB_Create, encryptionKey(), &error);
+                           c4db_getFlags(db), encryptionKey(), &error);
         Assert(view);
     }
 
@@ -152,3 +152,15 @@ public:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(C4GeoTest);
+
+
+
+class C4SQLiteGeoTest : public C4GeoTest {
+
+    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+
+    CPPUNIT_TEST_SUB_SUITE( C4SQLiteGeoTest, C4GeoTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteGeoTest);

@@ -526,16 +526,6 @@ namespace cbforest {
             return true;
         }
 
-        bool seek(slice key) override {
-            fdb_status status = fdb_iterator_seek(_iterator, key.buf, key.size,
-                                                  (_descending ? FDB_ITR_SEEK_LOWER
-                                                   : FDB_ITR_SEEK_HIGHER));
-            if (status == FDB_RESULT_ITERATOR_FAIL)
-                return false;
-            check(status);
-            return true;
-        }
-
         bool read(Document &doc) override {
             auto fn = (_metaOnly ? fdb_iterator_get_metaonly : fdb_iterator_get);
             fdb_doc fdoc = { };

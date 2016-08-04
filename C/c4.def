@@ -2,6 +2,7 @@ EXPORTS
 c4SliceEqual
 c4slice_free
 c4log_register
+c4log_setLevel
 c4error_getMessage
 c4error_getMessageC
 c4db_open

@@ -68,7 +68,7 @@ public:
 
     void loadSelectedRevBody() {
         if (!loadSelectedRevBodyIfAvailable())
-            throwHTTPError(kC4HTTPGone); // 410 Gone to denote body that's been compacted away
+            error::_throw(error::Deleted);      // body has been compacted away
     }
 
     virtual void save(unsigned maxRevTreeDepth) =0;

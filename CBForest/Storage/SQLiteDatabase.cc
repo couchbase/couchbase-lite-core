@@ -53,6 +53,12 @@ namespace cbforest {
     }
 
 
+    void SQLiteDatabase::checkOpen() const {
+        if (!_sqlDb)
+            error::_throw(error::NotOpen);
+    }
+
+
     void SQLiteDatabase::close() {
         Database::close(); // closes all the KeyStores
         _getLastSeqStmt.reset();
@@ -71,6 +77,7 @@ namespace cbforest {
 
 
     void SQLiteDatabase::_beginTransaction(Transaction*) {
+        checkOpen();
         CBFAssert(_transaction == nullptr);
         _transaction.reset( new SQLite::Transaction(*_sqlDb) );
     }
@@ -84,6 +91,7 @@ namespace cbforest {
 
 
     int SQLiteDatabase::exec(const string &sql) {
+        checkOpen();
         int result;
         withFileLock([&]{ result = _sqlDb->exec(sql); });
         return result;
@@ -93,6 +101,7 @@ namespace cbforest {
     SQLite::Statement& SQLiteDatabase::compile(const unique_ptr<SQLite::Statement>& ref,
                                                string sql) const
     {
+        checkOpen();
         if (ref == nullptr)
             const_cast<unique_ptr<SQLite::Statement>&>(ref).reset(new SQLite::Statement(*_sqlDb, sql));
         ref->reset();  // prepare statement to be run again
@@ -133,6 +142,8 @@ namespace cbforest {
 
 
     void SQLiteDatabase::compact() {
+        checkOpen();
+        beganCompacting();
         {
             Transaction t(this);
             for (auto& name : allKeyStoreNames())
@@ -140,6 +151,7 @@ namespace cbforest {
             updatePurgeCount(t);
         }
         _sqlDb->exec(string("VACUUM"));     // Vacuum can't be called in a transaction
+        finishedCompacting();
     }
 
 
@@ -147,6 +159,7 @@ namespace cbforest {
 
 
     vector<string> SQLiteDatabase::allKeyStoreNames() {
+        checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
                                                     " WHERE type='table' AND name GLOB 'kv_*'"));
@@ -158,6 +171,7 @@ namespace cbforest {
 
 
     bool SQLiteDatabase::keyStoreExists(const string &name) {
+        checkOpen();
         SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
                                                       " WHERE type='table' AND name=?"));
         storeExists.bind(1, std::string("kv_") + name);
@@ -240,11 +254,10 @@ namespace cbforest {
         if (!stmt.executeStep())
             return false;
 
-        if (_options.sequences | _options.softDeletes)
-            updateDoc(doc, (int64_t)stmt.getColumn(0), (int)stmt.getColumn(1));
+        updateDoc(doc, (int64_t)stmt.getColumn(0), 0, (int)stmt.getColumn(1));
         setDocMetaAndBody(doc, stmt, options);
         stmt.reset();
-        return true;
+        return !doc.deleted();
     }
 
 
@@ -337,17 +350,13 @@ namespace cbforest {
 
     class SQLiteIterator : public DocEnumerator::Impl {
     public:
-        SQLiteIterator(SQLite::Statement *stmt, ContentOptions content)
+        SQLiteIterator(SQLite::Statement *stmt, bool descending, ContentOptions content)
         :_stmt(stmt),
          _content(content)
         { }
 
         virtual bool next() override {
             return _stmt->executeStep();
-        }
-
-        virtual bool seek(slice key) override {
-            error::_throw(error::Unimplemented); //FIX
         }
 
         virtual bool read(Document &doc) override {
@@ -426,7 +435,7 @@ namespace cbforest {
             st->bind(param++, minKey.buf, (int)minKey.size);
         if (maxKey.buf)
             st->bind(param++, maxKey.buf, (int)maxKey.size);
-        return new SQLiteIterator(st, options.contentOptions);
+        return new SQLiteIterator(st, options.descending, options.contentOptions);
     }
 
     // iterate by sequence:
@@ -455,7 +464,7 @@ namespace cbforest {
         st->bind(1, (int64_t)min);
         if (max < INT64_MAX)
             st->bind(2, (int64_t)max);
-        return new SQLiteIterator(st, options.contentOptions);
+        return new SQLiteIterator(st, options.descending, options.contentOptions);
     }
 
 }

@@ -71,21 +71,11 @@ typedef uint64_t C4SequenceNumber;
 
 
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
-    HTTPDomain,         // code is an HTTP status code
-    POSIXDomain,        // code is an errno
+    POSIXDomain = 1,    // code is an errno
     ForestDBDomain,     // code is a fdb_status
     C4Domain,           // code is C4-specific (see below)
     CBForestDomain,     // code is a cbforest::error code
     SQLiteDomain,       // code is a SQLite error
-};
-
-
-// HTTPDomain error codes:
-enum {
-    kC4HTTPBadRequest   = 400,          // Invalid parameters
-    kC4HTTPNotFound     = 404,          // Doc/revision not found
-    kC4HTTPConflict     = 409,          // Doc update conflict (parent rev no longer current)
-    kC4HTTPGone         = 410,          // Rev body has been compacted away
 };
 
 
@@ -96,6 +86,11 @@ enum {
     kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
     kC4ErrorIndexBusy,                  // View can't be closed while index is enumerating
     kC4ErrorUnsupported,                // Operation not supported in this database
+
+//    kC4ErrorInvalidParameter,
+//    kC4ErrorNotFound,
+//    kC4ErrorConflict,
+//    kC4ErrorDeleted,
 
     // These come from CBForest (error.hh)
     kC4ErrorBadRevisionID = -1000,
@@ -198,6 +193,9 @@ typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
     @param level  The minimum level of message to log.
     @param callback  The logging callback, or NULL to disable logging entirely. */
 void c4log_register(C4LogLevel level, C4LogCallback callback);
+
+/** Changes the log level. */
+void c4log_setLevel(C4LogLevel level);
 
 
 /** Returns the number of objects that have been created but not yet freed. */

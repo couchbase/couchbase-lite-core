@@ -63,7 +63,7 @@ namespace cbforest {
     private:
         Collatable(alloc_slice s, bool)     :alloc_slice(s) { }
         Collatable(slice s, bool)           :alloc_slice(s) { }
-};
+    };
 
     
     /** A binary encoding of JSON-compatible data, that collates with CouchDB-compatible semantics

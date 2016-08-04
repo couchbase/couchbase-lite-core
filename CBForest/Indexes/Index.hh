@@ -128,10 +128,11 @@ namespace cbforest {
         void close()                            {_dbEnum.close();}
 
     protected:
-        void nextKeyRange();
+        bool nextKeyRange();
         virtual bool approve(slice key)         {return true;}
         bool read();
         void setValue(slice value)              {_value = value;}
+        DocEnumerator enumeratorForIndex(int keyRangeIndex);
 
     private:
         friend class Index;

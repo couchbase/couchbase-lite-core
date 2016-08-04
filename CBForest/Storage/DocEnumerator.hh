@@ -80,10 +80,6 @@ namespace cbforest {
 
         bool atEnd() const                  {return _doc.key().buf == nullptr;}
 
-        /** Repositions the enumerator at a specific key (or just after, if it's missing).
-            You must call next() before accessing the document! */
-        void seek(slice key);
-
         /** Stops the enumerator and frees its resources. (You only need to call this if the
             destructor might not be called soon enough.) */
         void close();
@@ -99,7 +95,6 @@ namespace cbforest {
         public:
             virtual ~Impl()                         { }
             virtual bool next() =0;
-            virtual bool seek(slice key) =0;
             virtual bool read(Document&) =0;
             virtual bool shouldSkipFirstStep()      {return false;}
         protected:

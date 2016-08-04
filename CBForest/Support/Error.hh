@@ -29,14 +29,13 @@ namespace cbforest {
 #endif
 
     /** Most API calls can throw this. */
-    struct error : public std::exception {
+    struct error : public std::runtime_error {
 
         enum Domain {
             CBForest,
             POSIX,
             ForestDB,
             SQLite,
-            HTTP,
         };
 
         // Error codes in CBForest domain:
@@ -51,19 +50,38 @@ namespace cbforest {
             CorruptRevisionData,
             CorruptIndexData,
             TokenizerError, // can't create text tokenizer for FTS
+            NotOpen,
+            NotFound,
+            Deleted,
+            Conflict,
+            InvalidParameter,
+            DatabaseError,
+            UnexpectedError,
+            CantOpenFile,
+            IOError,
+            CommitFailed,
+            MemoryError,
+            NotWriteable,
+            CorruptData,
+            Busy,
+
+            NumCBForestErrors
         };
 
         Domain const domain;
         int const code;
 
-        error (Domain d, int c )    :domain(d), code(c) { }
-        error (CBForestError e)     :domain(CBForest), code(e) {}
+        error standardized() const;
 
-        virtual const char *what() const noexcept override;
+        error (Domain d, int c );
+        error (CBForestError e)     :error(CBForest, e) {}
+
+        static error convertRuntimeError(const std::runtime_error &re);
+
+        static std::string _what(Domain d, int c) noexcept;
 
         [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(CBForestError);
-        [[noreturn]] static void _throwHTTPStatus(int status);
 
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);

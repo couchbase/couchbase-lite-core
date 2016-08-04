@@ -138,7 +138,7 @@ namespace cbforest {
                 loadRevisions();
                 const Rev *rev = _versionedDoc[revidBuffer(revID)];
                 if (!selectRevision(rev))
-                    throwHTTPError(kC4HTTPNotFound);
+                    error::_throw(error::NotFound);
                 if (withBody)
                     loadSelectedRevBody();
             } else {
@@ -287,8 +287,11 @@ static int32_t insertRevision(C4DocumentV1 *idoc,
             // Revision already exists, so nothing was added. Not an error.
             c4doc_selectRevision(idoc, encodedRevID.expanded(), true, outError);
             return 0;
+        } else if (httpStatus == 400) {
+            recordError(CBForestDomain, error::InvalidParameter, outError);
+        } else if (httpStatus == 409) {
+            recordError(CBForestDomain, error::Conflict, outError);
         }
-        recordHTTPError(httpStatus, outError);
     } catchError(outError)
     return -1;
 }
@@ -346,7 +349,8 @@ int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
             idoc->updateMeta();
             idoc->selectRevision(idoc->_versionedDoc[revidBuffer(history[0])]);
         } else {
-            recordHTTPError(kC4HTTPBadRequest, outError); // must be invalid revision IDs
+            // must be invalid revision IDs
+            recordError(CBForestDomain, error::InvalidParameter, outError);
         }
     } catchError(outError)
     return commonAncestor;
@@ -476,31 +480,32 @@ C4Document* c4doc_getForPut(C4Database *database,
                 // Updating an existing revision; make sure it exists and is a leaf:
                 const Rev *rev = idoc->_versionedDoc[revidBuffer(parentRevID)];
                 if (!idoc->selectRevision(rev)) {
-                    recordHTTPError(kC4HTTPNotFound, outError);
+                    recordError(CBForestDomain, error::NotFound, outError);
                     break;
                 } else if (!allowConflict && !rev->isLeaf()) {
-                    recordHTTPError(kC4HTTPConflict, outError);
+                    recordError(CBForestDomain, error::Conflict, outError);
                     break;
                 }
             } else {
                 // No parent revision given:
                 if (deleting) {
                     // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                    recordHTTPError(idoc->_versionedDoc.exists() ?kC4HTTPConflict :kC4HTTPNotFound,
-                                    outError );
+                    recordError(CBForestDomain,
+                            (idoc->_versionedDoc.exists() ?error::Conflict :error::NotFound),
+                            outError);
                     break;
                 }
                 // If doc exists, current rev must be in a deleted state or there will be a conflict:
                 const Rev *rev = idoc->_versionedDoc.currentRevision();
                 if (rev) {
                     if (!rev->isDeleted()) {
-                        recordHTTPError(kC4HTTPConflict, outError);
+                        recordError(CBForestDomain, error::Conflict, outError);
                         break;
                     }
                     // New rev will be child of the tombstone:
                     // (T0D0: Write a horror novel called "Child Of The Tombstone"!)
                     if (!idoc->selectRevision(rev)) {
-                        recordHTTPError(kC4HTTPNotFound, outError);
+                        recordError(CBForestDomain, error::NotFound, outError);
                         break;
                     }
                 }
@@ -528,7 +533,7 @@ C4Document* c4doc_put(C4Database *database,
     if (rq->existingRevision) {
         // Existing revision:
         if (rq->docID.size == 0 || rq->historyCount == 0) {
-            recordHTTPError(kC4HTTPBadRequest, outError);
+            recordError(CBForestDomain, error::InvalidParameter, outError);
             return NULL;
         }
         doc = c4doc_get(database, rq->docID, false, outError);
@@ -543,7 +548,7 @@ C4Document* c4doc_put(C4Database *database,
         if (rq->historyCount == 1) {
             parentRevID = rq->history[0];
         } else if (rq->historyCount > 1) {
-            recordHTTPError(kC4HTTPBadRequest, outError);
+            recordError(CBForestDomain, error::InvalidParameter, outError);
             return NULL;
         }
         doc = c4doc_getForPut(database, rq->docID, parentRevID, rq->deletion, rq->allowConflict,

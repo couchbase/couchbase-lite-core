@@ -25,7 +25,7 @@ public:
         c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                           kC4DB_Create, encryptionKey(), &error);
+                           c4db_getFlags(db), encryptionKey(), &error);
         Assert(view);
     }
 
@@ -133,7 +133,7 @@ public:
         c4view_free(view);
 
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                           kC4DB_Create, encryptionKey(), &error);
+                           c4db_getFlags(db), encryptionKey(), &error);
         Assert(view != NULL);
 
         AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)200);
@@ -145,7 +145,7 @@ public:
         c4view_free(view);
 
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("2"),
-                           kC4DB_Create, encryptionKey(), &error);
+                           c4db_getFlags(db), encryptionKey(), &error);
         Assert(view != NULL);
 
         AssertEqual(c4view_getTotalRows(view), (C4SequenceNumber)0);
@@ -305,3 +305,15 @@ public:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(C4ViewTest);
+
+
+
+class C4SQLiteViewTest : public C4ViewTest {
+
+    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+
+    CPPUNIT_TEST_SUB_SUITE( C4SQLiteViewTest, C4ViewTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteViewTest);

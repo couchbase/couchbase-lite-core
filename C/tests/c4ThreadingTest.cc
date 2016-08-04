@@ -239,5 +239,16 @@ public:
     CPPUNIT_TEST_SUITE_END();
 };
 
-//FIX: This test is disabled until ForestDB bugs are fixed
 CPPUNIT_TEST_SUITE_REGISTRATION(C4ThreadingTest);
+
+
+
+class C4SQLiteThreadingTest : public C4ThreadingTest {
+
+    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+
+    CPPUNIT_TEST_SUB_SUITE( C4SQLiteThreadingTest, C4ThreadingTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteThreadingTest);

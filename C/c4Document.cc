@@ -120,7 +120,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
     try {
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
             return true;
-        recordHTTPError(kC4HTTPGone, outError);
+        recordError(CBForestDomain, error::Deleted, outError);
     } catchError(outError);
     return false;
 }

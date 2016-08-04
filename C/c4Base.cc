@@ -12,6 +12,8 @@
 
 #include "LogInternal.hh"
 
+#include "SQLiteCpp/Exception.h"
+
 using namespace cbforest;
 
 
@@ -20,71 +22,45 @@ namespace c4Internal {
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
         if (outError) {
-            if (domain == ForestDBDomain && code <= -1000)   // custom CBForest errors (Error.hh)
-                domain = C4Domain;
             outError->domain = domain;
             outError->code = code;
         }
     }
 
-    void recordHTTPError(int httpStatus, C4Error* outError) {
-        recordError(HTTPDomain, httpStatus, outError);
-    }
-
     void recordError(const error &e, C4Error* outError) {
-        static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain, HTTPDomain,
+        static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
         recordError(domainMap[e.domain], e.code, outError);
     }
 
     void recordException(const std::exception &e, C4Error* outError) {
-        Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
-        recordError(C4Domain, kC4ErrorInternalException, outError);
+        auto rterr = dynamic_cast<const std::runtime_error*>(&e);
+        if (rterr) {
+            recordError(error::convertRuntimeError(*rterr), outError);
+        } else {
+            Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
+            recordError(C4Domain, kC4ErrorInternalException, outError);
+        }
     }
 
     void recordUnknownException(C4Error* outError) {
         Warn("Unexpected C++ exception thrown from CBForest");
         recordError(C4Domain, kC4ErrorInternalException, outError);
     }
-
-    void throwHTTPError(int status) {
-        error::_throwHTTPStatus(status);
-    }
 }
 
 
-C4SliceResult c4error_getMessage(C4Error error) {
-    if (error.code == 0)
+C4SliceResult c4error_getMessage(C4Error err) {
+    if (err.code == 0)
         return {NULL, 0};
+
+    static const int kDomains[] = {0, error::POSIX, error::ForestDB, 0, error::CBForest, error::SQLite};
+    error e((error::Domain)kDomains[err.domain], err.code);
     
     const char *msg = NULL;
-    switch (error.domain) {
-        case ForestDBDomain:
-            msg = fdb_error_msg((fdb_status)error.code);
-            if (strcmp(msg, "unknown error") == 0)
-                msg = NULL;
-            break;
-        case POSIXDomain:
-            msg = strerror(error.code);
-            break;
-        case HTTPDomain:
-            switch (error.code) {
-                case kC4HTTPBadRequest: msg = "invalid parameter"; break;
-                case kC4HTTPNotFound:   msg = "not found"; break;
-                case kC4HTTPConflict:   msg = "conflict"; break;
-                case kC4HTTPGone:       msg = "gone"; break;
-
-                default: break;
-            }
-            break;
-        case CBForestDomain:
-            msg = cbforest::error(cbforest::error::CBForest, error.code).what();
-            break;
-        case SQLiteDomain:
-            msg = cbforest::error(cbforest::error::SQLite, error.code).what();
-            break;
+    switch (err.domain) {
         case C4Domain:
-            switch (error.code) {
+            switch (err.code) {
                 case kC4ErrorInternalException:     msg = "internal exception"; break;
                 case kC4ErrorNotInTransaction:      msg = "no transaction is open"; break;
                 case kC4ErrorTransactionNotClosed:  msg = "a transaction is still open"; break;
@@ -94,17 +70,21 @@ C4SliceResult c4error_getMessage(C4Error error) {
                 case kC4ErrorCorruptIndexData:      msg = "corrupt view-index data"; break;
                 case kC4ErrorAssertionFailed:       msg = "internal assertion failure"; break;
                 case kC4ErrorTokenizerError:        msg = "full-text tokenizer error"; break;
+                    //FIX: Add other error codes
                 default: break;
             }
+            break;
+        default:
+            msg = e.what();
     }
 
     char buf[100];
     if (!msg) {
         const char* const kDomainNames[4] = {"HTTP", "POSIX", "ForestDB", "CBForest"};
-        if (error.domain <= C4Domain)
-            sprintf(buf, "unknown %s error %d", kDomainNames[error.domain], error.code);
+        if (err.domain <= C4Domain)
+            sprintf(buf, "unknown %s error %d", kDomainNames[err.domain], err.code);
         else
-            sprintf(buf, "bogus C4Error (%d, %d)", error.domain, error.code);
+            sprintf(buf, "bogus C4Error (%d, %d)", err.domain, err.code);
         msg = buf;
     }
 
@@ -155,4 +135,9 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
         LogCallback = NULL;
     }
     clientLogCallback = callback;
+}
+
+
+void c4log_setLevel(C4LogLevel level) {
+    LogLevel = (logLevel)level;
 }

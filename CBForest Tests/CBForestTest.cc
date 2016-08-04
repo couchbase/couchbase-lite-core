@@ -94,7 +94,10 @@ std::ostream& operator<< (std::ostream& o, slice s) {
 
 Database* DatabaseTestFixture::newDatabase(std::string path, Database::Options *options) {
     //TODO: Set up options
-    return new ForestDatabase(path, options);
+    if (isForestDB())
+        return new ForestDatabase(path, options);
+    else
+        return new SQLiteDatabase(path, options);
 }
 
 
@@ -113,7 +116,7 @@ void DatabaseTestFixture::reopenDatabase(Database::Options *newOptions) {
 
 void DatabaseTestFixture::setUp() {
     TestFixture::setUp();
-    const char *dbPath = kTestDir "forest_temp.fdb";
+    const char *dbPath = kTestDir "cbforest_temp.db";
     Database::deleteDatabase(dbPath);
     db = newDatabase(dbPath);
     store = &db->defaultKeyStore();

@@ -272,7 +272,7 @@ namespace cbforest {
      _inclusiveStart(true),
      _inclusiveEnd(true),
      _keyRanges(keyRanges),
-     _dbEnum(_index->_store, slice::null, slice::null, docOptions(options))
+     _dbEnum(enumeratorForIndex(0))
     {
         Debug("IndexEnumerator(%p), key ranges:", this);
         index->addUser();
@@ -287,11 +287,10 @@ namespace cbforest {
                 if (_currentKeyIndex < 0)
                     return false; // at end
                 else {
-                    nextKeyRange();
-                    if (_dbEnum.next())
-                        continue;
-                    else
-                        return false;
+                    if (!nextKeyRange())
+                        return false; // out of ranges
+                    _dbEnum.next();
+                    continue;
                 }
             }
             
@@ -347,17 +346,23 @@ namespace cbforest {
         }
     }
 
-    void IndexEnumerator::nextKeyRange() {
+    bool IndexEnumerator::nextKeyRange() {
         if (++_currentKeyIndex >= _keyRanges.size()) {
             _dbEnum.close();
-            return;
+            return false;
         }
+        _dbEnum = enumeratorForIndex(_currentKeyIndex);
+        return true;
+    }
 
-        Collatable& startKey = _keyRanges[_currentKeyIndex].start;
-        Debug("IndexEnumerator: Advance to key '%s'", startKey.toJSON().c_str());
-        if (!_dbEnum)
-            _dbEnum = DocEnumerator(_index->_store, slice::null, slice::null, docOptions(_options));
-        _dbEnum.seek(makeRealKey(startKey, slice::null, false, _options.descending));
+    DocEnumerator IndexEnumerator::enumeratorForIndex(int i) {
+        Collatable& startKey = _keyRanges[i].start;
+        Collatable& endKey = _keyRanges[i].end;
+        Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
+        return DocEnumerator(_index->_store,
+                             makeRealKey(startKey, slice::null, false, _options.descending),
+                             makeRealKey(endKey,   slice::null, true,  _options.descending),
+                             docOptions(_options));
     }
 
     bool IndexEnumerator::next() {

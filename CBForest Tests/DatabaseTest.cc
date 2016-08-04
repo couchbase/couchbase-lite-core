@@ -118,7 +118,8 @@ void testEnumerateDocs() {
                 AssertEqual(e->key(), alloc_slice(expectedDocID));
                 AssertEqual(e->sequence(), (sequence)i);
                 Assert(e->bodySize() > 0); // even metaOnly should set the body size
-                Assert(e->offset() > 0);
+                if (isForestDB())
+                    Assert(e->offset() > 0);
             }
             AssertEqual(i, 101);
             Assert(!e);
@@ -131,7 +132,8 @@ void testEnumerateDocs() {
             AssertEqual(e->key(), alloc_slice(expectedDocID));
             AssertEqual(e->sequence(), (sequence)i);
             Assert(e->bodySize() > 0); // even metaOnly should set the body length
-            Assert(e->offset() > 0);
+            if (isForestDB())
+                Assert(e->offset() > 0);
         }
         AssertEqual(i, 30);
 
@@ -143,7 +145,8 @@ void testEnumerateDocs() {
             AssertEqual(e->key(), alloc_slice(expectedDocID));
             AssertEqual(e->sequence(), (sequence)i);
             Assert(e->bodySize() > 0); // even metaOnly should set the body length
-            Assert(e->offset() > 0);
+            if (isForestDB())
+                Assert(e->offset() > 0);
         }
         AssertEqual(i, 29);
         opts.inclusiveStart = opts.inclusiveEnd = true;
@@ -164,7 +167,8 @@ void testEnumerateDocs() {
             AssertEqual(e->exists(), i < 6);
             if (i < 6) {
                 Assert(e->bodySize() > 0); // even metaOnly should set the body length
-                Assert(e->offset() > 0);
+                if (isForestDB())
+                    Assert(e->offset() > 0);
             }
         }
         AssertEqual(i, 7);
@@ -406,8 +410,9 @@ void testKeyStoreAfterClose() {
     try {
         Log("NOTE: Expecting an invalid-handle exception to be thrown");
         Document doc = s.get(key);
-    } catch (error e) {
-        AssertEqual(e.code, (int)FDB_RESULT_INVALID_HANDLE);
+    } catch (std::runtime_error &x) {
+        error e = error::convertRuntimeError(x).standardized();
+        AssertEqual(e.code, (int)error::NotOpen);
         return;
     }
     Assert(false); // should not reach here
@@ -432,22 +437,24 @@ void testReadOnly() {
     try {
         Transaction t(db);
         // This is expected to throw an exception:
-        Log("NOTE: Expecting an read-only exception to be thrown");
+        Log("NOTE: Expecting a read-only exception to be thrown");
         store->set(slice("key"), slice("somethingelse"), t);
-    } catch (error x) {
-        code = x.code;
+    } catch (std::runtime_error &x) {
+        error e = error::convertRuntimeError(x).standardized();
+        code = e.code;
     }
-    AssertEqual(code, (int)FDB_RESULT_RONLY_VIOLATION); //FIX
+    AssertEqual(code, (int)error::NotWriteable);
 
     // Now try to open a nonexistent db, read-only:
     code = 0;
     try {
-        Log("NOTE: Expecting an no-such-file exception to be thrown");
+        Log("NOTE: Expecting a no-such-file exception to be thrown");
         (void)newDatabase("/tmp/db_non_existent", &options);
-    } catch (error x) {
-        code = x.code;
+    } catch (std::runtime_error &x) {
+        error e = error::convertRuntimeError(x).standardized();
+        code = e.code;
     }
-    AssertEqual(code, (int)FDB_RESULT_NO_SUCH_FILE);    //FIX
+    AssertEqual(code, (int)error::CantOpenFile);
 }
 
 void testCompact() {
@@ -475,6 +482,11 @@ void testCompact() {
 
 
 void testRekey() {
+    if (!isForestDB()) {
+        Log("Skipping rekey test: not supported for this DB type");
+        return;
+    }
+
     auto dbPath = db->filename();
     auto options = db->options();
     createNumberedDocs();
