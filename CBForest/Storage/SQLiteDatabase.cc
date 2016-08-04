@@ -180,6 +180,19 @@ namespace cbforest {
     }
 
 
+    void SQLiteKeyStore::close() {
+        _docCountStmt.reset();
+        _getByKeyStmt.reset();
+        _getMetaByKeyStmt.reset();
+        _getBySeqStmt.reset();
+        _getMetaBySeqStmt.reset();
+        _setStmt.reset();
+        _delByKeyStmt.reset();
+        _delBySeqStmt.reset();
+        KeyStore::close();
+    }
+
+    
     uint64_t SQLiteKeyStore::documentCount() const {
         stringstream sql;
         sql << "SELECT count(*) FROM kv_" << _name;

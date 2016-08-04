@@ -60,6 +60,8 @@ public:
     virtual void setUp();
     virtual void tearDown();
 
+    static C4Slice databasePath();
+
 protected:
     C4Database *db;
 

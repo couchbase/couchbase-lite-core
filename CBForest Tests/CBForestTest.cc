@@ -8,6 +8,7 @@
 
 #include "CBForestTest.hh"
 #include "ForestDatabase.hh"
+#include "SQLiteDatabase.hh"
 #include <stdlib.h>
 #include <unistd.h>
 

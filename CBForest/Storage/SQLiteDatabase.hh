@@ -10,11 +10,11 @@
 #define SQLiteDatabase_hh
 
 #include "Database.hh"
-#include "SQLiteCpp/Database.h"
-#include "SQLiteCpp/Transaction.h"
 
 namespace SQLite {
+    class Database;
     class Statement;
+    class Transaction;
 }
 
 
@@ -86,6 +86,8 @@ namespace cbforest {
 
         DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;
         DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
+
+        void close() override;
 
     private:
         friend class SQLiteDatabase;

@@ -14,7 +14,6 @@
 #include <thread>
 
 
-static const char *kDBPath = kTestDir "forest_temp.fdb";
 static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
 
 
@@ -42,7 +41,7 @@ public:
 
 
     C4Database* openDB() {
-        C4Database* database = c4db_open(c4str(kDBPath), c4db_getFlags(db), encryptionKey(), NULL);
+        C4Database* database = c4db_open(databasePath(), c4db_getFlags(db), encryptionKey(), NULL);
         Assert(database);
         return database;
     }

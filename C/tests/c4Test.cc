@@ -34,17 +34,22 @@ static void log(C4LogLevel level, C4Slice message) {
 }
 
 
+C4Slice C4Test::databasePath() {
+    return c4str(kTestDir "cbforest_test.db");
+}
+
+
 void C4Test::setUp() {
     c4_shutdown(NULL);
     
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
-    const char *dbPath = kTestDir "forest_temp.fdb";
 
+    C4DatabaseFlags flags = kC4DB_Create | storageType();
     C4Error error;
-    c4db_deleteAtPath(c4str(dbPath), kC4DB_Create, NULL);
-    db = c4db_open(c4str(dbPath),
-                   kC4DB_Create | storageType(),
+    c4db_deleteAtPath(databasePath(), flags, NULL);
+    db = c4db_open(databasePath(),
+                   flags,
                    encryptionKey(),
                    &error);
     Assert(db != NULL);
