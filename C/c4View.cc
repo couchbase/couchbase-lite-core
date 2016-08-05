@@ -60,7 +60,7 @@ struct c4View : public c4Internal::RefCounted<c4View> {
 
     bool checkNotBusy(C4Error *outError) {
         if (_index.isBusy()) {
-            recordError(C4Domain, kC4ErrorIndexBusy, outError);
+            recordError(CBForestDomain, kC4ErrorIndexBusy, outError);
             return false;
         }
         return true;

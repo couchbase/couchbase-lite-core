@@ -161,6 +161,11 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 }
 
 
+static bool isNotFoundError(C4Error error) {
+    return error.domain == CBForestDomain && (error.code == kC4ErrorNotFound ||
+                                              error.code == kC4ErrorDeleted);
+}
+
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
 (JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody)
@@ -169,10 +174,11 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
     jstringSlice revID(env, jrevID);
     C4Error error;
     bool ok = c4doc_selectRevision(doc, revID, withBody, &error);
-    if (ok || error.domain == HTTPDomain)
+    if (ok || isNotFoundError(error)) {
         updateSelection(env, self, doc);
-    else
+    } else {
         throwError(env, error);
+    }
     return ok;
 }
 
@@ -213,7 +219,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
     auto doc = (C4Document*)docHandle;
     C4Error error;
     bool ok = c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &error);
-    if (ok || error.code == 0 || error.domain == HTTPDomain)  // 404 or 410 don't trigger exceptions
+    if (ok || error.code == 0 || isNotFoundError(error))  // 404 or 410 don't trigger exceptions
         updateSelection(env, self, doc, withBody);
     else
         throwError(env, error);

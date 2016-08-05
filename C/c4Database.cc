@@ -70,7 +70,7 @@ c4Database::c4Database(std::string path,
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
     if (schema() == requiredSchema)
         return true;
-    recordError(C4Domain, kC4ErrorUnsupported, outError);
+    recordError(CBForestDomain, kC4ErrorUnsupported, outError);
     return false;
 }
 
@@ -94,14 +94,14 @@ bool c4Database::inTransaction() {
 bool c4Database::mustBeInTransaction(C4Error *outError) {
     if (inTransaction())
         return true;
-    recordError(C4Domain, kC4ErrorNotInTransaction, outError);
+    recordError(CBForestDomain, kC4ErrorNotInTransaction, outError);
     return false;
 }
 
 bool c4Database::mustNotBeInTransaction(C4Error *outError) {
     if (!inTransaction())
         return true;
-    recordError(C4Domain, kC4ErrorTransactionNotClosed, outError);
+    recordError(CBForestDomain, kC4ErrorTransactionNotClosed, outError);
     return false;
 }
 
@@ -303,7 +303,7 @@ bool c4db_endTransaction(C4Database* database,
     try {
         bool ok = database->endTransaction(commit);
         if (!ok)
-            recordError(C4Domain, kC4ErrorNotInTransaction, outError);
+            recordError(CBForestDomain, kC4ErrorNotInTransaction, outError);
         return ok;
     } catchError(outError);
     return false;

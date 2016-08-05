@@ -71,34 +71,44 @@ typedef uint64_t C4SequenceNumber;
 
 
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
-    POSIXDomain = 1,    // code is an errno
+    CBForestDomain = 1, // code is a CBForest error code (see below)
+    POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
-    C4Domain,           // code is C4-specific (see below)
-    CBForestDomain,     // code is a cbforest::error code
     SQLiteDomain,       // code is a SQLite error
 };
 
 
-// C4Domain error codes:
+// CBForestDomain error codes:
+// (These are identical to the internal C++ error::CBForestError enum values.)
 enum {
-    kC4ErrorInternalException = 1,      // CBForest threw an unexpected C++ exception
-    kC4ErrorNotInTransaction,           // Function must be called while in a transaction
-    kC4ErrorTransactionNotClosed,       // Database can't be closed while a transaction is open
-    kC4ErrorIndexBusy,                  // View can't be closed while index is enumerating
-    kC4ErrorUnsupported,                // Operation not supported in this database
-
-//    kC4ErrorInvalidParameter,
-//    kC4ErrorNotFound,
-//    kC4ErrorConflict,
-//    kC4ErrorDeleted,
-
-    // These come from CBForest (error.hh)
-    kC4ErrorBadRevisionID = -1000,
-    kC4ErrorCorruptRevisionData = -1001,
-    kC4ErrorCorruptIndexData = -1002,
-    kC4ErrorAssertionFailed = -1003,
-    kC4ErrorTokenizerError = -1004,     // can't create FTS tokenizer
-
+    kC4ErrorAssertionFailed = 1,    // Internal assertion failure
+    kC4ErrorUnimplemented,          // Oops, an unimplemented API call
+    kC4ErrorNoSequences,            // This KeyStore does not support sequences
+    kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
+    kC4ErrorNoTransaction,          // Function must be called within a transaction
+    kC4ErrorBadRevisionID,          // Invalid revision ID syntax
+    kC4ErrorBadVersionVector,       // Invalid version vector syntax
+    kC4ErrorCorruptRevisionData,    // Revision contains corrupted/unreadable data
+    kC4ErrorCorruptIndexData,       // Index contains corrupted/unreadable data
+    kC4ErrorTokenizerError,         // can't create text tokenizer for FTS
+    kC4ErrorNotOpen,                // Database/KeyStore/index is not open
+    kC4ErrorNotFound,               // Document not found
+    kC4ErrorDeleted,                // Document has been deleted
+    kC4ErrorConflict,               // Document update conflict
+    kC4ErrorInvalidParameter,       // Invalid function parameter or struct value
+    kC4ErrorDatabaseError,          // Lower-level database error (ForestDB or SQLite)
+    kC4ErrorUnexpectedError,        // Internal unexpected C++ exception
+    kC4ErrorCantOpenFile,           // Database file can't be opened; may not exist
+    kC4ErrorIOError,                // File I/O error
+    kC4ErrorCommitFailed,           // Transaction commit failed
+    kC4ErrorMemoryError,            // Memory allocation failed (out of memory?)
+    kC4ErrorNotWriteable,           // File is not writeable
+    kC4ErrorCorruptData,            // Data is corrupted
+    kC4ErrorBusy,                   // Database is busy/locked
+    kC4ErrorNotInTransaction,       // Function cannot be called while in a transaction
+    kC4ErrorTransactionNotClosed,   // Database can't be closed while a transaction is open
+    kC4ErrorIndexBusy,              // View can't be closed while index is enumerating
+    kC4ErrorUnsupported,            // Operation not supported in this database
 };
 
 

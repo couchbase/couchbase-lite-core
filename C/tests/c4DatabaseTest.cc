@@ -52,7 +52,7 @@ class C4DatabaseTest : public C4Test {
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
         assertMessage(CBForestDomain, 15, "invalid parameter");
         assertMessage(POSIXDomain, ENOENT, "No such file or directory");
-        assertMessage(C4Domain, kC4ErrorIndexBusy, "index busy; can't close view");
+        assertMessage(CBForestDomain, kC4ErrorIndexBusy, "index busy; can't close view");
         assertMessage(ForestDBDomain, -1234, "unknown error");
         assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
     }

@@ -147,6 +147,7 @@
 		2770151A1D528491008BADD7 /* TokenizerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015191D528491008BADD7 /* TokenizerTest.cc */; };
 		2770151C1D5284AA008BADD7 /* VersionedDocumentTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */; };
 		2770151E1D5284C4008BADD7 /* GeoIndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2770151D1D5284C4008BADD7 /* GeoIndexTest.cc */; };
+		277015261D55112E008BADD7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277CB6311D0DF0B200702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
 		277CB6361D0DF0D900702E56 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CB62C1D0DED5E00702E56 /* libFleece.a */; };
@@ -956,6 +957,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				274D03E51BA7332000FF7C35 /* libCBForest.a in Frameworks */,
+				277015261D55112E008BADD7 /* libsqlite3.tbd in Frameworks */,
 				274D03E71BA7333800FF7C35 /* Security.framework in Frameworks */,
 				274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */,
 				274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */,

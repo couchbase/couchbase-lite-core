@@ -20,8 +20,12 @@ namespace cbforest {
     using namespace std;
 
 
+#pragma mark ERROR CODES, NAMES, etc.
+
+
     struct codeMapping { int err; error::Domain domain; int code; };
 
+    // Maps ForestDB errors (fdb_error.h).
     static const codeMapping kForestDBMapping[] = {
         {FDB_RESULT_INVALID_ARGS,       error::CBForest,    error::InvalidParameter},
         {FDB_RESULT_OPEN_FAIL,          error::CBForest,    error::CantOpenFile},
@@ -61,7 +65,7 @@ namespace cbforest {
         {FDB_RESULT_ENAMETOOLONG,       error::POSIX,       ENAMETOOLONG},
         {FDB_RESULT_EOVERFLOW,          error::POSIX,       EOVERFLOW},
         {FDB_RESULT_EAGAIN,             error::POSIX,       EAGAIN},
-        {0,                             error::CBForest,    0},
+        {0, /*must end with err=0*/     error::CBForest,    0},
     };
 
     static const codeMapping kSQLiteMapping[] = {
@@ -76,8 +80,9 @@ namespace cbforest {
         {SQLITE_CANTOPEN,               error::CBForest,    error::CantOpenFile},
         {SQLITE_NOTADB,                 error::CBForest,    error::CantOpenFile},
         {SQLITE_PERM,                   error::CBForest,    error::NotWriteable},
-        {0,                             error::CBForest,    0},
+        {0, /*must end with err=0*/     error::CBForest,    0},
     };
+    //TODO: Map the SQLite 'extended error codes' that give more detail about file errors
 
     static bool mapError(error::Domain &domain, int &code, const codeMapping table[]) {
         for (const codeMapping *row = &table[0]; row->err != 0; ++row) {
@@ -91,7 +96,8 @@ namespace cbforest {
     }
 
 
-    static const char* kDomainNames[] = {"CBForest", "POSIX", "ForestDB", "SQLite", "HTTP"};
+    // Indexed by C4ErrorDomain
+    static const char* kDomainNames[] = {"CBForest", "POSIX", "ForestDB", "SQLite"};
 
     static const char* cbforest_errstr(error::CBForestError code) {
         static const char* kCBForestMessages[error::NumCBForestErrors] = {
@@ -121,6 +127,10 @@ namespace cbforest {
             "not writeable",
             "file data is corrupted",
             "database busy/locked",
+            "must be called during a transaction",
+            "transaction not closed",
+            "index busy; can't close view",
+            "unsupported operation for this database type",
         };
         const char *str = nullptr;
         if (code < sizeof(kCBForestMessages)/sizeof(char*))
@@ -144,6 +154,9 @@ namespace cbforest {
                 return "unknown error domain";
         }
     }
+
+
+#pragma mark - ERROR CLASS:
 
     
     error::error (error::Domain d, int c )

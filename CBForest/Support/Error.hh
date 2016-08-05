@@ -64,6 +64,10 @@ namespace cbforest {
             NotWriteable,
             CorruptData,
             Busy,
+            NotInTransaction,
+            TransactionNotClosed,
+            IndexBusy,
+            UnsupportedOperation,
 
             NumCBForestErrors
         };
@@ -71,18 +75,25 @@ namespace cbforest {
         Domain const domain;
         int const code;
 
-        error standardized() const;
-
         error (Domain d, int c );
         error (CBForestError e)     :error(CBForest, e) {}
 
+        /** Returns an equivalent error in the CBForest or POSIX domain. */
+        error standardized() const;
+
+        /** Returns the error equivalent to a given runtime_error. Uses RTTI to discover if the
+            error is already an `error` instance; otherwise tries to convert some other known
+            exception types like SQLite::Exception. */
         static error convertRuntimeError(const std::runtime_error &re);
 
-        static std::string _what(Domain d, int c) noexcept;
+        /** Static version of the standard `what` method. */
+        static std::string _what(Domain, int code) noexcept;
 
+        /** Constructs and throws an error. */
         [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(CBForestError);
 
+        /** Throws an assertion failure exception. Called by the CBFAssert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);
     };

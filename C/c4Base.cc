@@ -39,57 +39,38 @@ namespace c4Internal {
             recordError(error::convertRuntimeError(*rterr), outError);
         } else {
             Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
-            recordError(C4Domain, kC4ErrorInternalException, outError);
+            recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
         }
     }
 
     void recordUnknownException(C4Error* outError) {
         Warn("Unexpected C++ exception thrown from CBForest");
-        recordError(C4Domain, kC4ErrorInternalException, outError);
+        recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
+    }
+}
+
+
+static C4SliceResult stringResult(const char *str) {
+    if (str) {
+        slice result = alloc_slice(str, strlen(str)).dontFree();
+        return {result.buf, result.size};
+    } else {
+        return {nullptr, 0};
     }
 }
 
 
 C4SliceResult c4error_getMessage(C4Error err) {
-    if (err.code == 0)
-        return {NULL, 0};
-
-    static const int kDomains[] = {0, error::POSIX, error::ForestDB, 0, error::CBForest, error::SQLite};
-    error e((error::Domain)kDomains[err.domain], err.code);
-    
-    const char *msg = NULL;
-    switch (err.domain) {
-        case C4Domain:
-            switch (err.code) {
-                case kC4ErrorInternalException:     msg = "internal exception"; break;
-                case kC4ErrorNotInTransaction:      msg = "no transaction is open"; break;
-                case kC4ErrorTransactionNotClosed:  msg = "a transaction is still open"; break;
-                case kC4ErrorIndexBusy:             msg = "index busy; can't close view"; break;
-                case kC4ErrorBadRevisionID:         msg = "invalid revision ID"; break;
-                case kC4ErrorCorruptRevisionData:   msg = "corrupt revision data"; break;
-                case kC4ErrorCorruptIndexData:      msg = "corrupt view-index data"; break;
-                case kC4ErrorAssertionFailed:       msg = "internal assertion failure"; break;
-                case kC4ErrorTokenizerError:        msg = "full-text tokenizer error"; break;
-                    //FIX: Add other error codes
-                default: break;
-            }
-            break;
-        default:
-            msg = e.what();
+    if (err.code == 0) {
+        return stringResult(nullptr);
+    } else if (err.domain < 1 || err.domain > SQLiteDomain) {
+        return stringResult("unknown error domain");
+    } else {
+        static const error::Domain kDomains[] = {error::CBForest, error::POSIX,
+                                                 error::ForestDB, error::SQLite};
+        error e(kDomains[err.domain - 1], err.code);
+        return stringResult(e.what());
     }
-
-    char buf[100];
-    if (!msg) {
-        const char* const kDomainNames[4] = {"HTTP", "POSIX", "ForestDB", "CBForest"};
-        if (err.domain <= C4Domain)
-            sprintf(buf, "unknown %s error %d", kDomainNames[err.domain], err.code);
-        else
-            sprintf(buf, "bogus C4Error (%d, %d)", err.domain, err.code);
-        msg = buf;
-    }
-
-    slice result = alloc_slice(msg, strlen(msg)).dontFree();
-    return {result.buf, result.size};
 }
 
 char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {

@@ -213,7 +213,7 @@ public interface Constants {
         int kExists = 0x1000;       // The document exists (i.e. has revisions.)
     }
 
-    //  Flags that apply to a revision.
+    // Flags that apply to a revision.
     // Note: Same as Revision::Flags
     interface C4RevisionFlags {
         int kRevDeleted = 0x01;        // Is this revision a deletion/tombstone?
@@ -234,33 +234,44 @@ public interface Constants {
         int kDefault = kInclusiveStart | kInclusiveEnd | kIncludeNonConflicted | kIncludeBodies;
     }
 
+    // Error domains:
     interface C4ErrorDomain {
-        int HTTPDomain = 0;         // code is an HTTP status code
-        int POSIXDomain = 1;        // code is an errno
-        int ForestDBDomain = 2;     // code is a fdb_status
-        int C4Domain = 3;           // code is C4-specific code (TBD)
+        int CBForestDomain = 1;     // code is CBForest-specific code (c4Base.h)
+        int POSIXDomain = 2;        // code is an errno (errno.h)
+        int ForestDBDomain = 3;     // code is a fdb_status (fdb_error.h)
+        int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)
     }
 
-    // Extra status codes not defined by fdb_errors.h
+    // CBForestDomain error codes:
     interface CBForestError {
-        int BadRevisionID = -1000;
-        int CorruptRevisionData = -1001;
-        int CorruptIndexData = -1002;
-        int AssertionFailed = -1003;
-    }
-
-    // C4Domain error codes:
-    interface C4DomainErrorCode {
-        int kC4ErrorInternalException = 1;    // CBForest threw an unexpected C++ exception
-        int kC4ErrorNotInTransaction = 2;     // Function must be called while in a transaction
-        int kC4ErrorTransactionNotClosed = 3; // Database can't be closed while a transaction is open
-
-        // These come from CBForest (error.hh)
-        int kC4ErrorBadRevisionID = -1000;
-        int kC4ErrorCorruptRevisionData = -1001;
-        int kC4ErrorCorruptIndexData = -1002;
-        int kC4ErrorAssertionFailed = -1003;
-        int kC4ErrorTokenizerError = -1004;     // can't create FTS tokenizer
+        int kC4ErrorAssertionFailed = 1;        // Internal assertion failure
+        int kC4ErrorUnimplemented = 2;          // Oops, an unimplemented API call
+        int kC4ErrorNoSequences = 3;            // This KeyStore does not support sequences
+        int kC4ErrorUnsupportedEncryption = 4;  // Unsupported encryption algorithm
+        int kC4ErrorNoTransaction = 5;          // Function must be called within a transaction
+        int kC4ErrorBadRevisionID = 6;          // Invalid revision ID syntax
+        int kC4ErrorBadVersionVector = 7;       // Invalid version vector syntax
+        int kC4ErrorCorruptRevisionData = 8;    // Revision contains corrupted/unreadable data
+        int kC4ErrorCorruptIndexData = 9;       // Index contains corrupted/unreadable data
+        int kC4ErrorTokenizerError = 10;        // can't create text tokenizer for FTS
+        int kC4ErrorNotOpen = 11;               // Database/KeyStore/index is not open
+        int kC4ErrorNotFound = 12;              // Document not found
+        int kC4ErrorDeleted = 13;               // Document has been deleted
+        int kC4ErrorConflict = 14;              // Document update conflict
+        int kC4ErrorInvalidParameter = 15;      // Invalid function parameter or struct value
+        int kC4ErrorDatabaseError = 16;         // Lower-level database error (ForestDB or SQLite)
+        int kC4ErrorUnexpectedError = 17;       // Internal unexpected C++ exception
+        int kC4ErrorCantOpenFile = 18;          // Database file can't be opened; may not exist
+        int kC4ErrorIOError = 19;               // File I/O error
+        int kC4ErrorCommitFailed = 20;          // Transaction commit failed
+        int kC4ErrorMemoryError = 21;           // Memory allocation failed (out of memory?)
+        int kC4ErrorNotWriteable = 22;          // File is not writeable
+        int kC4ErrorCorruptData = 23;           // Data is corrupted
+        int kC4ErrorBusy = 24;                  // Database is busy/locked
+        int kC4ErrorNotInTransaction = 25;      // Function cannot be called while in a transaction
+        int kC4ErrorTransactionNotClosed = 26;  // Database can't be closed while a transaction is open
+        int kC4ErrorIndexBusy = 27;             // View can't be closed while index is enumerating
+        int kC4ErrorUnsupported = 28;           // Operation not supported in this database
     }
 
     // The types of tokens in a key.

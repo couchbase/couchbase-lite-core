@@ -18,7 +18,10 @@ public class Database {
     public static final int Create = 1;
     public static final int ReadOnly = 2;
     public static final int AutoCompact = 4;
+    public static final int ForestDBStorage = 0x000;
+    public static final int SQLiteStorage = 0x100;
 
+    // Encryption algorithms:
     public static final int NoEncryption = 0;
     public static final int AES256Encryption = 1;
 
