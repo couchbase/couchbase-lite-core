@@ -180,7 +180,7 @@ public:
         Assert(resolved != nullptr);
         // Note: Any change to the resolved revision's body, or to the digest algorithm,
         // will cause this assertion to fail:
-        AssertEqual(resolved->version().asString(), std::string("^xsRvLTXXq3Xu/Z8j/EsoS4vUIuk=,1@*,2@$"));
+        AssertEqual(resolved->version().asString(), std::string("^+IAy11SY941zjp4RhcnpjFzT19k=,1@*,2@$"));
         Assert(!resolved->isConflicted());
 
         AssertEqual(store->getServerState(kDocID),

@@ -185,6 +185,18 @@ namespace cbforest {
     }
 
 
+    std::string VersionVector::canonicalString(peerID myPeerID) const {
+        auto vec = *this; // copy before sorting
+        vec.expandMyPeerID(myPeerID);
+        std::sort(vec._vers.begin(), vec._vers.end(),
+                  [myPeerID](const version &a, const version &b) {
+                      return a.author < b.author;
+                  });
+        vec._changed = true;
+        return vec.asString();
+    }
+    
+    
     void VersionVector::writeTo(fleece::Encoder &encoder) const {
         encoder.beginArray();
         for (auto v : _vers) {
@@ -351,16 +363,18 @@ namespace cbforest {
         // SHA-1 digest of version vector + nul byte + revision body
         sha1Context ctx;
         sha1_begin(&ctx);
-        auto versString = exportAsString(myPeerID);
+        auto versString = canonicalString(myPeerID);
         sha1_add(&ctx, versString.data(), versString.size());
         sha1_add(&ctx ,"\0", 1);
         sha1_add(&ctx, revisionBody.buf, revisionBody.size);
         char digest[20];
         sha1_end(&ctx, digest);
 
+        // Convert to base64:
         fleece::Writer w;
         w.writeBase64(slice(&digest, sizeof(digest)));
 
+        // Prepend a version representing the merge:
         version mergeVers(0, copyAuthor(w.extractOutput()));
         _vers.insert(_vers.begin(), mergeVers);
         _changed = true;

@@ -155,6 +155,7 @@ namespace cbforest {
             All the authors in both are present, with the larger of the two generations. */
         VersionVector mergedWith(const VersionVector&) const;
 
+        std::string canonicalString(peerID myPeerID) const;
         void insertMergeRevID(peerID myPeerID, slice revisionBody);
 
     private:

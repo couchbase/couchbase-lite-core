@@ -166,8 +166,8 @@ public:
         Assert(resolved.get());
         // Note: Any change to the resolved revision's body, or to the digest algorithm,
         // will cause these assertions to fail:
-        AssertEqual(resolved->version().asString(), std::string("^3UuHX0d9ukV37gFm3xmIvm4xlqs=,6@*,2@ada"));
-        AssertEqual(resolved->revID().asString(), std::string("^3UuHX0d9ukV37gFm3xmIvm4xlqs="));
+        AssertEqual(resolved->version().asString(), std::string("^sHsohHU0KoR+wvwbc5jjJgtA56Q=,6@*,2@ada"));
+        AssertEqual(resolved->revID().asString(), std::string("^sHsohHU0KoR+wvwbc5jjJgtA56Q="));
 
         auto getResolved = store->get(kDoc1ID);
         Assert(getResolved.get());

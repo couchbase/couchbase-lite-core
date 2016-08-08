@@ -175,13 +175,6 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.asString(), std::string("1@may"));
     }
 
-    void testMerge(const char *str1, const char *str2, const char *expectedStr) {
-        VersionVector v1((slice(str1))), v2((slice(str2)));
-        VersionVector result = v1.mergedWith(v2);
-        auto resultStr = result.asString();
-        AssertEqual(resultStr, (std::string)expectedStr);
-    }
-
     void testImportExport() {
         VersionVector v(slice("2@bob,1@*"));
         auto exported = v.exportAsString(slice("jens"));
@@ -190,6 +183,14 @@ class VersionVectorTest : public CppUnit::TestFixture {
         VersionVector imported(exported);
         imported.compactMyPeerID(slice("jens"));
         AssertEqual(imported.asString(), std::string("2@bob,1@*"));
+    }
+
+
+    void testMerge(const char *str1, const char *str2, const char *expectedStr) {
+        VersionVector v1((slice(str1))), v2((slice(str2)));
+        VersionVector result = v1.mergedWith(v2);
+        auto resultStr = result.asString();
+        AssertEqual(resultStr, (std::string)expectedStr);
     }
 
     void testMerge() {
@@ -203,14 +204,37 @@ class VersionVectorTest : public CppUnit::TestFixture {
         testMerge("2@bob,18@jens,3@eve", "19@jens,3@eve,1@bob", "2@bob,19@jens,3@eve");
     }
 
-    void testMergedRevID() {
-        VersionVector v1((slice("2@bob,18@*,3@eve"))), v2((slice("19@*,3@eve,1@bob")));
+
+    void testCanonicalString(const char *vecStr, const char *me, std::string expectedCanon) {
+        VersionVector v {slice(vecStr)};
+        AssertEqual(v.canonicalString(peerID(me)), expectedCanon);
+    }
+    
+    void testCanonicalString() {
+        testCanonicalString("19@bob",               "jens", "19@bob");
+        testCanonicalString("2@bob,18@alice,3@eve", "jens", "18@alice,2@bob,3@eve");
+        testCanonicalString("2@bob,18@*,3@eve",     "jens", "2@bob,3@eve,18@jens");
+        testCanonicalString("2@bob,^deadbeef,3@eve","jens", "2@bob,^deadbeef,3@eve");
+    }
+
+
+    void testMergedRevID(const char *vec1, const char *vec2, std::string expected) {
+        VersionVector v1((slice(vec1))), v2((slice(vec2)));
         VersionVector result = v1.mergedWith(v2);
         result.insertMergeRevID(peerID("jens"), slice("{\"foo\":17}"));
         cerr << "Merged version = " << result << "\n";
-        AssertEqual(result.asString(), std::string("^JRzKa33ofeP5yxxaFoMD5XXlmas=,2@bob,19@*,3@eve"));
-        AssertEqual(result.exportAsString(peerID("jens")), std::string("^JRzKa33ofeP5yxxaFoMD5XXlmas=,2@bob,19@jens,3@eve"));
-        // NOTE: This assertion will fail if we ever change the algorithm for computing the digest
+        // NOTE: This assertion will fail if we ever change the algorithm for computing the digest:
+        AssertEqual(result.asString(), expected);
+    }
+
+    void testMergedRevID() {
+        // Make sure the revID (first component, i.e. merge digest) is the same regardless of the
+        // order of the merge:
+        std::string digest = "^8GsuP45bb/QOE0QyQkM9Nlj0lTU=";
+        testMergedRevID("2@bob,18@*,3@eve", "19@*,3@eve,1@bob",
+                        digest + ",2@bob,19@*,3@eve");
+        testMergedRevID("19@*,3@eve,1@bob", "2@bob,18@*,3@eve",
+                        digest + ",19@*,2@bob,3@eve");
     }
 
 
@@ -222,6 +246,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
     CPPUNIT_TEST( testCompare );
     CPPUNIT_TEST( testIncrement );
     CPPUNIT_TEST( testIncrementEmpty );
+    CPPUNIT_TEST( testCanonicalString );
     CPPUNIT_TEST( testMerge );
     CPPUNIT_TEST( testMergedRevID );
     CPPUNIT_TEST_SUITE_END();
