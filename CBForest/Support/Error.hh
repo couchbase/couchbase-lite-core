@@ -96,6 +96,8 @@ namespace cbforest {
         /** Throws an assertion failure exception. Called by the CBFAssert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);
+
+        static bool sWarnOnError;
     };
 
 

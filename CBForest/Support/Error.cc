@@ -158,6 +158,9 @@ namespace cbforest {
 
 #pragma mark - ERROR CLASS:
 
+
+    bool error::sWarnOnError = true;
+
     
     error::error (error::Domain d, int c )
     :runtime_error(_what(d, c)),
@@ -198,8 +201,10 @@ namespace cbforest {
     void error::_throw(Domain domain, int code ) {
         CBFDebugAssert(code != 0);
         error err{domain, code};
-        WarnError("CBForest throwing %s error %d: %s",
-                  kDomainNames[domain], code, err.what());
+        if (sWarnOnError) {
+            WarnError("CBForest throwing %s error %d: %s",
+                      kDomainNames[domain], code, err.what());
+        }
         throw err;
     }
 

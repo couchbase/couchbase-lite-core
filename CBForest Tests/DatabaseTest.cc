@@ -409,12 +409,15 @@ void testKeyStoreAfterClose() {
     db->close();
     try {
         Log("NOTE: Expecting an invalid-handle exception to be thrown");
+        error::sWarnOnError = false;
         Document doc = s.get(key);
     } catch (std::runtime_error &x) {
+        error::sWarnOnError = true;
         error e = error::convertRuntimeError(x).standardized();
         AssertEqual(e.code, (int)error::NotOpen);
         return;
     }
+    error::sWarnOnError = true;
     Assert(false); // should not reach here
 }
 
@@ -438,22 +441,26 @@ void testReadOnly() {
         Transaction t(db);
         // This is expected to throw an exception:
         Log("NOTE: Expecting a read-only exception to be thrown");
+        error::sWarnOnError = false;
         store->set(slice("key"), slice("somethingelse"), t);
     } catch (std::runtime_error &x) {
         error e = error::convertRuntimeError(x).standardized();
         code = e.code;
     }
+    error::sWarnOnError = true;
     AssertEqual(code, (int)error::NotWriteable);
 
     // Now try to open a nonexistent db, read-only:
     code = 0;
     try {
         Log("NOTE: Expecting a no-such-file exception to be thrown");
+        error::sWarnOnError = false;
         (void)newDatabase("/tmp/db_non_existent", &options);
     } catch (std::runtime_error &x) {
         error e = error::convertRuntimeError(x).standardized();
         code = e.code;
     }
+    error::sWarnOnError = true;
     AssertEqual(code, (int)error::CantOpenFile);
 }
 
