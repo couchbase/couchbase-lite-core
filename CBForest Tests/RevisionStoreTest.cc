@@ -8,6 +8,7 @@
 
 #include "RevisionStore.hh"
 #include "CBForestTest.hh"
+#include "LogInternal.hh"
 
 
 static const slice kDoc1ID("Doc1");
@@ -19,6 +20,12 @@ static const Revision::BodyParams kBody1 {
 static const Revision::BodyParams kBody2 {
     slice("{\"foo\":23,\"_attachments\":{}}"), slice("foodoc"), false, true
 };
+static const Revision::BodyParams kBody3 {
+    slice("{\"foo\":24,\"_attachments\":{}}"), slice("foodoc"), false, true
+};
+static const Revision::BodyParams kBody4 {
+    slice("{\"foo\":25,\"_attachments\":{}}"), slice("foodoc"), false, true
+};
 
 
 class RevisionStoreTest : public DatabaseTestFixture {
@@ -28,7 +35,7 @@ public:
 
     void setUp() {
         DatabaseTestFixture::setUp();
-        store = new RevisionStore(db);
+        store = new RevisionStore(db, peerID("jens"));
     }
 
     void tearDown() {
@@ -123,6 +130,52 @@ public:
         AssertEqual(store->checkRevision(kDoc1ID, slice("3@ada")), kNewer);
         AssertEqual(store->checkRevision(kDoc1ID, slice("6@bob")), kNewer);
         AssertEqual(store->checkRevision(kDoc1ID, slice("1@tim")), kNewer);
+    }
+
+
+    void testConflict() {
+        LogLevel = kDebug;
+        // Start with a doc edited by me and Ada:
+        Transaction t(db);
+        Revision rev1(kDoc1ID, VersionVector(slice("5@*,1@ada")),
+                      Revision::BodyParams{kBody1}, true);
+        AssertEqual(store->insert(rev1, t), kNewer);
+
+        // Update it locally:
+        auto myRev = store->create(kDoc1ID, rev1.version(), kBody2, t);
+        Assert(myRev);
+        AssertEqual(myRev->version().asString(), std::string("6@*,1@ada"));
+
+        // Ada updates the original doc too:
+        Revision revC(kDoc1ID, VersionVector(slice("2@ada,5@*")),
+                      Revision::BodyParams{kBody3}, true);
+        AssertEqual(store->insert(revC, t), kConflicting);
+
+        // Check that we can get both my rev and the conflicting one:
+        auto current = store->get(kDoc1ID);
+        Assert(current.get());
+        AssertEqual(current->version(), myRev->version());
+        Assert(current->isConflicted());
+        auto getRevC = store->get(kDoc1ID, revC.revID());
+        Assert(getRevC.get());
+        AssertEqual(getRevC->version(), revC.version());
+        Assert(getRevC->isConflicted());
+
+        std::vector<Revision*> conflicts = {current.get(), getRevC.get()};
+        auto resolved = store->resolveConflict(conflicts, kBody4, t);
+        Assert(resolved.get());
+        // Note: Any change to the resolved revision's body, or to the digest algorithm,
+        // will cause these assertions to fail:
+        AssertEqual(resolved->version().asString(), std::string("^3UuHX0d9ukV37gFm3xmIvm4xlqs=,6@*,2@ada"));
+        AssertEqual(resolved->revID().asString(), std::string("^3UuHX0d9ukV37gFm3xmIvm4xlqs="));
+
+        auto getResolved = store->get(kDoc1ID);
+        Assert(getResolved.get());
+        AssertEqual(getResolved->version(), resolved->version());
+        Assert(!getResolved->isConflicted());
+
+        Assert(store->get(kDoc1ID, current->revID()).get() == nullptr);
+        Assert(store->get(kDoc1ID, getRevC->revID()).get() == nullptr);
 }
 
 
@@ -131,6 +184,7 @@ public:
     CPPUNIT_TEST( testEmptyStore );
     CPPUNIT_TEST( testCreateRevs );
     CPPUNIT_TEST( testInsertRevs );
+    CPPUNIT_TEST( testConflict );
     CPPUNIT_TEST_SUITE_END();
 };
 

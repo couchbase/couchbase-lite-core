@@ -9,8 +9,7 @@
 #ifndef VersionVector_hh
 #define VersionVector_hh
 
-#include "slice.hh"
-#include "RevID.hh"
+#include "Base.hh"
 #include <vector>
 #include <list>
 #include <iostream>
@@ -19,6 +18,7 @@ namespace fleece {
     class Value;
     class Encoder;
 }
+
 
 namespace cbforest {
 
@@ -57,7 +57,8 @@ namespace cbforest {
         }
 
         alloc_slice asString() const;
-//        revidBuffer asRevID() const         {return revidBuffer((unsigned)gen, author, kClockType);}
+
+        bool isMerge() const                    {return gen == 0;}
 
         /** The CAS counter of a version that comes from a CAS server.
             If author == kCASServerPeerID, returns the gen; else returns 0. */
@@ -154,6 +155,8 @@ namespace cbforest {
             All the authors in both are present, with the larger of the two generations. */
         VersionVector mergedWith(const VersionVector&) const;
 
+        void insertMergeRevID(peerID myPeerID, slice revisionBody);
+
     private:
         std::vector<version>::iterator findPeerIter(peerID);
         alloc_slice copyAuthor(peerID);
@@ -169,10 +172,9 @@ namespace cbforest {
 
     // Some implementations of "<<" to write to ostreams and Fleece encoders: 
 
-    static inline std::ostream& operator<< (std::ostream& o, const version &v) {
-        return o << v.gen << "@" << (std::string)v.author;
-    }
-    
+    // Note: This does not replace "*" with the local author's ID!
+    std::ostream& operator<< (std::ostream& o, const version &v);
+
     static inline std::ostream& operator<< (std::ostream& o, const VersionVector &vv) {
         return o << (std::string)vv.asString();
     }

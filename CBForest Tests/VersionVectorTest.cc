@@ -10,6 +10,7 @@
 #include "VersionVector.hh"
 #include "Fleece.hh"
 #include <iostream>
+using namespace std;
 using namespace cbforest;
 
 // This has to come last for obscure C++ reasons
@@ -202,6 +203,16 @@ class VersionVectorTest : public CppUnit::TestFixture {
         testMerge("2@bob,18@jens,3@eve", "19@jens,3@eve,1@bob", "2@bob,19@jens,3@eve");
     }
 
+    void testMergedRevID() {
+        VersionVector v1((slice("2@bob,18@*,3@eve"))), v2((slice("19@*,3@eve,1@bob")));
+        VersionVector result = v1.mergedWith(v2);
+        result.insertMergeRevID(peerID("jens"), slice("{\"foo\":17}"));
+        cerr << "Merged version = " << result << "\n";
+        AssertEqual(result.asString(), std::string("^JRzKa33ofeP5yxxaFoMD5XXlmas=,2@bob,19@*,3@eve"));
+        AssertEqual(result.exportAsString(peerID("jens")), std::string("^JRzKa33ofeP5yxxaFoMD5XXlmas=,2@bob,19@jens,3@eve"));
+        // NOTE: This assertion will fail if we ever change the algorithm for computing the digest
+    }
+
 
     CPPUNIT_TEST_SUITE( VersionVectorTest );
     CPPUNIT_TEST( testRevIDs );
@@ -212,6 +223,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
     CPPUNIT_TEST( testIncrement );
     CPPUNIT_TEST( testIncrementEmpty );
     CPPUNIT_TEST( testMerge );
+    CPPUNIT_TEST( testMergedRevID );
     CPPUNIT_TEST_SUITE_END();
 };
 

@@ -39,6 +39,7 @@ namespace cbforest {
         virtual Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
                                               Revision::BodyParams body,
                                               Transaction &t) override;
+        virtual void purge(slice docID, Transaction &t) override;
 
 #if !DEBUG
     private:
@@ -60,7 +61,7 @@ namespace cbforest {
     protected:
         virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev,
                                                 Transaction &t) override;
-        virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child) override;
+        virtual bool shouldKeepAncestor(const Revision &rev) override;
 
     private:
         Revision::Ref writeCASRevision(const Revision *parent,

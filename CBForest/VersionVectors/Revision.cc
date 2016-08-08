@@ -37,9 +37,6 @@ namespace cbforest {
 
         writeMeta(vers);
 
-        // Read it back in, to set up my pointers into it:
-        readMeta();
-
         // Set the doc key and body:
         setKey(docID, current);
         _doc.setBody(p.body);
@@ -62,6 +59,8 @@ namespace cbforest {
         enc << _docType;
         enc.endArray();
         _doc.setMeta(enc.extractOutput());
+        // Read it back in, to set up my pointers into it:
+        readMeta();
     }
 
 
@@ -77,6 +76,18 @@ namespace cbforest {
         _docType = meta.read()->asString();
         if (_docType.size == 0)
             _docType.buf = nullptr;
+    }
+
+
+    bool Revision::setConflicted(bool conflicted) {
+        if (conflicted == isConflicted())
+            return false;
+        if (conflicted)
+            _flags = (Flags)(_flags | kConflicted);
+        else
+            _flags = (Flags)(_flags & ~kConflicted);
+        writeMeta(_vers);
+        return true;
     }
 
 

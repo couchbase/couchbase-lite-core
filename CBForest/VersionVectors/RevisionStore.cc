@@ -12,6 +12,19 @@
 #include "DocEnumerator.hh"
 #include "VarInt.hh"
 
+/** IMPLEMENTATION NOTES:
+ 
+    RevisionStore uses two KeyStores:
+
+    `_currentStore` (the database's default KeyStore) stores only current revisions.
+    The key is the exact document ID; meta contains the flags, version vector and document type;
+    and the body is the document body (JSON or Fleece; CBForest currently doesn't care.)
+ 
+    `nonCurrentStore` (named "revs") stores non-current revisions. These are usually conflicts,
+    but if using CAS this also contains the server ancestor of the current revision.
+    The key is the docID plus revID; meta and body are the same as in `_currentStore`.
+ */
+
 namespace cbforest {
 
 
@@ -22,9 +35,10 @@ namespace cbforest {
     static const char kAuthorDelimiter = ',';
 
 
-    RevisionStore::RevisionStore(Database *db)
+    RevisionStore::RevisionStore(Database *db, peerID myPeerID)
     :_currentStore(db->defaultKeyStore()),
-     _nonCurrentStore(db->getKeyStore("revs"))
+     _nonCurrentStore(db->getKeyStore("revs")),
+     _myPeerID(myPeerID)
     { }
 
 
@@ -59,9 +73,7 @@ namespace cbforest {
 
 
     // Get a revision from the _nonCurrentStore only
-    Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID,
-                                           ContentOptions opt) const
-    {
+    Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID, ContentOptions opt) const {
         CBFAssert(revID.size > 0);
         Document doc(keyForNonCurrentRevision(docID, version{revID}));
         if (!_nonCurrentStore.read(doc, opt))
@@ -72,13 +84,12 @@ namespace cbforest {
 
     // Make sure a Revision has a body (if it was originally loaded as meta-only)
     void RevisionStore::readBody(cbforest::Revision &rev) {
-        if (rev.document().body().buf == nullptr) {
-            KeyStore &store = rev.isCurrent() ? _currentStore : _nonCurrentStore;
-            store.readBody(rev.document());
-        }
+        KeyStore &store = rev.isCurrent() ? _currentStore : _nonCurrentStore;
+        store.readBody(rev.document());
     }
 
 
+    // How does this revision compare to what's in the database?
     versionOrder RevisionStore::checkRevision(slice docID, slice revID) {
         CBFAssert(revID.size);
         version checkVers(revID);
@@ -104,6 +115,7 @@ namespace cbforest {
 #pragma mark - PUT:
 
 
+    // Creates a new revision.
     Revision::Ref RevisionStore::create(slice docID,
                                         const VersionVector &parentVersion,
                                         Revision::BodyParams body,
@@ -124,7 +136,7 @@ namespace cbforest {
     }
 
 
-
+    // Inserts a revision, probably from a peer.
     versionOrder RevisionStore::insert(Revision &newRev, Transaction &t) {
         auto current = get(newRev.docID(), kMetaOnly);
         auto cmp = current ? newRev.version().compareTo(current->version()) : kNewer;
@@ -140,14 +152,20 @@ namespace cbforest {
                 break;
 
             case kConflicting:
-                // Oops, they conflict:
-                CBFAssert(false);//TODO
+                // Oops, it conflicts. Delete any saved revs that are ancestors of it,
+                // then save it to the non-current store and mark the current rev as conflicted:
+                deleteAncestors(newRev, t);
+                newRev.setCurrent(false);
+                newRev.setConflicted(true);
+                _nonCurrentStore.write(newRev.document(), t);
+                markConflicted(*current, true, t);
                 break;
         }
         return cmp;
     }
 
 
+    // Creates a new revision that resolves a conflict.
     Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
                                                  Revision::BodyParams body,
                                                  Transaction &t)
@@ -157,8 +175,8 @@ namespace cbforest {
     }
 
     Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
-                                                 slice keepingRevID,
-                                                 Revision::BodyParams body,
+                                                 slice keepRevID,
+                                                 Revision::BodyParams bodyParams,
                                                  Transaction &t)
     {
         CBFAssert(conflicting.size() >= 2);
@@ -168,15 +186,36 @@ namespace cbforest {
             newVersion = newVersion.mergedWith(rev->version());
             if (rev->isCurrent())
                 current = rev;
-            else if (rev->revID() != keepingRevID)
+            else if (rev->revID() != keepRevID)
                 _nonCurrentStore.del(rev->document(), t);
         }
-        CBFAssert(current != NULL);
+        if (!current)
+            error::_throw(error::InvalidParameter); // Merge must include current revision
+        newVersion.insertMergeRevID(_myPeerID, bodyParams.body);
 
-        auto newRev = Revision::Ref{ new Revision(conflicting[0]->docID(), newVersion,
-                                                  body, true) };
+        slice docID = conflicting[0]->docID();
+        bodyParams.conflicted = hasConflictingRevisions(docID);
+        auto newRev = Revision::Ref{ new Revision(docID, newVersion, bodyParams, true) };
         _currentStore.write(newRev->document(), t);
         return newRev;
+    }
+
+
+    void RevisionStore::markConflicted(Revision &current, bool conflicted, Transaction &t) {
+        if (current.setConflicted(conflicted)) {
+            _currentStore.readBody(current.document());
+            _currentStore.write(current.document(), t);
+            //OPT: This is an expensive way to set a single flag, and it bumps the sequence too
+        }
+    }
+
+
+    void RevisionStore::purge(slice docID, Transaction &t) {
+        if (_currentStore.del(docID, t)) {
+            DocEnumerator e = enumerateRevisions(docID);
+            while (e.next())
+                _nonCurrentStore.del(e.doc(), t);
+        }
     }
 
 
@@ -224,10 +263,21 @@ namespace cbforest {
         while (e.next()) {
             Revision rev(e.doc());
             if (rev.version().compareTo(child.version()) == kOlder
-                    && !shouldKeepAncestor(rev, child)) {
+                    && !shouldKeepAncestor(rev)) {
                 _nonCurrentStore.del(rev.document(), t);
             }
         }
+    }
+
+
+    bool RevisionStore::hasConflictingRevisions(slice docID) {
+        DocEnumerator e = enumerateRevisions(docID);
+        while (e.next()) {
+            Revision rev(e.doc());
+            if (!shouldKeepAncestor(rev))
+                return true;
+        }
+        return false;
     }
 
 
@@ -285,7 +335,7 @@ namespace cbforest {
     void RevisionStore::willReplaceCurrentRevision(Revision &, const Revision &, Transaction &t) {
     }
 
-    bool RevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
+    bool RevisionStore::shouldKeepAncestor(const Revision &rev) {
         return false;
     }
 

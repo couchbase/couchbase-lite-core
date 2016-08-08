@@ -25,6 +25,7 @@ namespace cbforest {
             slice docType;
             bool deleted;
             bool hasAttachments;
+            bool conflicted;
         };
 
         //typedef uint8_t Flags;
@@ -67,6 +68,12 @@ namespace cbforest {
 
         bool isCurrent() const;
         void setCurrent(bool current);
+
+        bool setConflicted(bool);
+
+        static alloc_slice generateMergedRevID(slice body,
+                                               const VersionVector &vers,
+                                               peerID myPeerID);
 
     private:
         void readMeta();

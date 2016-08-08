@@ -99,7 +99,6 @@ public:
 
     void testAddLocalRevs() {
         // Start with CAS=18:
-        {
         Transaction t(db);
         auto rev = store->insertFromServer(kDocID, 18, kBody1, t);
 
@@ -134,11 +133,10 @@ public:
 
         // Alright, now assume we PUT this to the server and it gets accepted as CAS 23.
         pushRev(*rev, t, 18, 23);
-        }
         AssertEqual(store->getServerState(kDocID),
                     (CASRevisionStore::ServerState{{slice("1@*"), 23}, {slice("1@*"), 23}}));
 
-        auto rev = store->get(kDocID);
+        rev = store->get(kDocID);
         Assert(rev);
         AssertEqual(rev->version().asString(), std::string("1@*,1@$"));    // vvec hasn't changed
 
@@ -163,6 +161,7 @@ public:
 
         auto currentRev = store->get(kDocID);
         AssertEqual(currentRev->revID(), alloc_slice("1@*"));
+        Assert(currentRev->isConflicted());
 
         generation cas;
         auto conflictRev = store->getLatestCASServerRevision(kDocID, cas);
@@ -179,7 +178,10 @@ public:
         auto resolved = store->resolveConflict(conflicts, kBody3, t);
 
         Assert(resolved != nullptr);
-        AssertEqual(resolved->version().asString(), std::string("1@*,2@$"));
+        // Note: Any change to the resolved revision's body, or to the digest algorithm,
+        // will cause this assertion to fail:
+        AssertEqual(resolved->version().asString(), std::string("^xsRvLTXXq3Xu/Z8j/EsoS4vUIuk=,1@*,2@$"));
+        Assert(!resolved->isConflicted());
 
         AssertEqual(store->getServerState(kDocID),
                     (CASRevisionStore::ServerState{{slice("2@$"), 77}, {slice("2@$"), 77}}));

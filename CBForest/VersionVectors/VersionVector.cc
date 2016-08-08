@@ -7,9 +7,10 @@
 //
 
 #include "VersionVector.hh"
-#include "varint.hh"
-#include "error.hh"
+#include "SecureDigest.hh"
+#include "Error.hh"
 #include "Fleece.hh"
+#include "varint.hh"
 #include <sstream>
 #include <unordered_map>
 
@@ -24,20 +25,37 @@ namespace cbforest {
     const peerID kMePeerID        = {"*", 1};
 
     version::version(slice string, bool validateAuthor) {
-        gen = string.readDecimal();                             // read generation
-        if (gen == 0 || string.readByte() != '@'                // read '@'
-                     || string.size < 1 || string.size > kMaxAuthorSize)
-            error::_throw(error::BadVersionVector);
-        if (validateAuthor)
-            if (author.findByte(',') || author.findByte('\0'))
+        if (string[0] == '^') {
+            gen = 0;
+            author = string;
+            author.moveStart(1);
+            if (validateAuthor)
+                validate();
+        } else {
+            gen = string.readDecimal();                             // read generation
+            if (gen == 0 || string.readByte() != '@'                // read '@'
+                         || string.size < 1 || string.size > kMaxAuthorSize)
                 error::_throw(error::BadVersionVector);
-        author = string;                                        // read peer ID
+            if (validateAuthor)
+                if (author.findByte(',') || author.findByte('\0'))
+                    error::_throw(error::BadVersionVector);
+            author = string;                                        // read peer ID
+        }
     }
 
     void version::validate() const {
-        if (gen == 0 || author.size < 1 || author.size > kMaxAuthorSize
-                     || author.findByte(',') || author.findByte('\0'))
+        if (author.size < 1 || author.size > kMaxAuthorSize)
             error::_throw(error::BadVersionVector);
+        if (isMerge()) {
+            for (size_t i = 0; i < author.size; i++) {
+                char c = author[i];
+                if (!isalpha(c) && !isnumber(c) && c != '+' && c != '/' && c != '=')
+                    error::_throw(error::BadVersionVector);
+            }
+        } else {
+            if (author.findByte(',') || author.findByte('\0'))
+                error::_throw(error::BadVersionVector);
+        }
     }
 
     generation version::CAS() const {
@@ -45,8 +63,22 @@ namespace cbforest {
     }
 
     alloc_slice version::asString() const {
-        char buf[30 + author.size];
-        return alloc_slice(buf, sprintf(buf, "%llu@%.*s", gen, (int)author.size, author.buf));
+        if (isMerge()) {
+            char buf[2 + author.size];
+            return alloc_slice(buf, sprintf(buf, "^%.*s", (int)author.size, author.buf));
+        } else {
+            char buf[30 + author.size];
+            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", gen, (int)author.size, author.buf));
+        }
+    }
+
+    std::ostream& operator << (std::ostream &out, const version &v) {
+        if (v.isMerge())
+            out << "^";
+        else
+            out << v.gen << "@";
+        out.write((const char*)v.author.buf, v.author.size);
+        return out;
     }
 
     versionOrder version::compareGen(generation a, generation b) {
@@ -120,7 +152,7 @@ namespace cbforest {
 
 
     void VersionVector::readFrom(const fleece::Value *val) {
-        CBFDebugAssert(_vers.empty());
+        reset();
         auto *arr = val->asArray();
         if (!arr)
             error::_throw(error::BadVersionVector);
@@ -128,7 +160,7 @@ namespace cbforest {
         if (i.count() % 2 != 0)
             error::_throw(error::BadVersionVector);
         for (; i; i += 2)
-            _vers.push_back( version((generation)i[1]->asUnsigned(), i[0]->asString()) );
+            _vers.push_back( version((generation)i[0]->asUnsigned(), i[1]->asString()) );
     }
 
 
@@ -144,9 +176,10 @@ namespace cbforest {
         for (auto v = _vers.begin(); v != _vers.end(); ++v) {
             if (v != _vers.begin())
                 out << ",";
-            out << v->gen << "@";
-            auto id = (v->author == kMePeerID) ? myID : v->author;
-            out.write((const char*)id.buf, id.size);
+            if (v->author == kMePeerID)
+                out << version(v->gen, myID);
+            else
+                out << *v;
         }
         return out.str();
     }
@@ -155,8 +188,8 @@ namespace cbforest {
     void VersionVector::writeTo(fleece::Encoder &encoder) const {
         encoder.beginArray();
         for (auto v : _vers) {
-            encoder << v.author;
             encoder << v.gen;
+            encoder << v.author;
         }
         encoder.endArray();
     }
@@ -219,6 +252,8 @@ namespace cbforest {
         version v;
         if (versP != _vers.end()) {
             v = *versP;
+            if (v.isMerge())
+                error::_throw(error::BadVersionVector);
             v.gen++;
             _vers.erase(versP);
         } else {
@@ -283,7 +318,7 @@ namespace cbforest {
         }
 
     private:
-        std::unordered_map<peerID, generation, sliceHash> _map;
+        std::unordered_map<peerID, generation, fleece::sliceHash> _map;
     };
     
     
@@ -309,6 +344,26 @@ namespace cbforest {
             }
         }
         return result;
+    }
+
+
+    void VersionVector::insertMergeRevID(peerID myPeerID, slice revisionBody) {
+        // SHA-1 digest of version vector + nul byte + revision body
+        sha1Context ctx;
+        sha1_begin(&ctx);
+        auto versString = exportAsString(myPeerID);
+        sha1_add(&ctx, versString.data(), versString.size());
+        sha1_add(&ctx ,"\0", 1);
+        sha1_add(&ctx, revisionBody.buf, revisionBody.size);
+        char digest[20];
+        sha1_end(&ctx, digest);
+
+        fleece::Writer w;
+        w.writeBase64(slice(&digest, sizeof(digest)));
+
+        version mergeVers(0, copyAuthor(w.extractOutput()));
+        _vers.insert(_vers.begin(), mergeVers);
+        _changed = true;
     }
 
 

@@ -16,7 +16,7 @@ namespace cbforest {
 
 
     CASRevisionStore::CASRevisionStore(Database *db)
-    :RevisionStore(db),
+    :RevisionStore(db, peerID("jens")),
      _casStore(db->getKeyStore("CAS"))
     { }
 
@@ -105,6 +105,9 @@ namespace cbforest {
             }
             // Create the new revision as a child of the latest:
             newRev = writeCASRevision(parent.get(), false, docID, body, t);
+
+            // Set the 'conflicted' flag in the current revision:
+            markConflicted(*current, true, t);
         }
 
         state.latest.revID = newRev->revID();
@@ -172,6 +175,11 @@ namespace cbforest {
         return result;
     }
 
+    void CASRevisionStore::purge(slice docID, Transaction &t) {
+        RevisionStore::purge(docID, t);
+        _casStore.del(docID, t);
+    }
+
     void CASRevisionStore::willReplaceCurrentRevision(Revision &curRev,
                                             const Revision &incomingRev,
                                             Transaction &t)
@@ -190,7 +198,7 @@ namespace cbforest {
 
 
     // Is `rev` a saved CAS-server backup of the current revision `child`?
-    bool CASRevisionStore::shouldKeepAncestor(const Revision &rev, const Revision &child) {
+    bool CASRevisionStore::shouldKeepAncestor(const Revision &rev) {
         auto state = getServerState(rev.docID());
         return rev.revID() == state.latest.revID || rev.revID() == state.base.revID;
     }

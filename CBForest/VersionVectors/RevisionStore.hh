@@ -23,11 +23,13 @@ namespace cbforest {
     class RevisionStore {
     public:
 
-        explicit RevisionStore(Database *db);
+        explicit RevisionStore(Database *db, peerID myPeerID);
         virtual ~RevisionStore() { }
 
         /** The KeyStore for current revisions of documents. */
         KeyStore& currentRevisionStore();
+
+        const alloc_slice& myPeerID() const                       {return _myPeerID;}
 
         //////// GETTING REVISIONS:
 
@@ -51,7 +53,7 @@ namespace cbforest {
 
         /** Creates a new revision.
             @param docID  The document ID
-            @param parentVersion  The version vector of the revision being modified
+            @param parentVersion  The version vector of the revision being modified, empty if new
             @param body  The body and related flags
             @param t  Transaction to write the revision to
             @return  New Revision, or null if there's a conflict */
@@ -72,9 +74,12 @@ namespace cbforest {
                                               Revision::BodyParams body,
                                               Transaction &t);
 
-        //////// DOCUMENT KEYS:
+        /** Remove a document entirely from storage. */
+        virtual void purge(slice docID, Transaction &t);
 
     protected:
+        //////// DOCUMENT KEYS:
+
         /** The document key to use for a non-current Revision. */
         static alloc_slice keyForNonCurrentRevision(slice docID, struct version vers);
 
@@ -93,22 +98,24 @@ namespace cbforest {
                                       slice keepingRevID,
                                       Revision::BodyParams body,
                                       Transaction &t);
+        void markConflicted(Revision &current, bool conflicted, Transaction &t);
+        bool hasConflictingRevisions(slice docID);
         void replaceCurrent(Revision &newRev, Revision *current, Transaction &t);
         bool deleteNonCurrent(slice docID, slice revID, Transaction &t);
         Revision::Ref getNonCurrent(slice docID, slice revID, ContentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
         DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
 
-    protected:
         //////// SUBCLASS HOOKS:
 
         virtual void willReplaceCurrentRevision(Revision &curRev, const Revision &incomingRev,
                                                 Transaction &t);
-        virtual bool shouldKeepAncestor(const Revision &rev, const Revision &child);
+        virtual bool shouldKeepAncestor(const Revision &rev);
 
     protected:
         KeyStore &_currentStore;
         KeyStore &_nonCurrentStore;
+        alloc_slice _myPeerID;
 
         friend class Revision;
         friend class ::RevisionStoreTest;
