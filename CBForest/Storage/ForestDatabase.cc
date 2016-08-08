@@ -406,6 +406,9 @@ namespace cbforest {
 
 
     void ForestKeyStore::readBody(Document &doc) const {
+        if (doc.body().buf)
+            return;
+        
         if (doc.offset() > 0) {
             slice existingKey = doc.key();
             fdb_doc fdoc = {};

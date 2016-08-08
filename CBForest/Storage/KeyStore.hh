@@ -61,7 +61,8 @@ namespace cbforest {
         /** Reads a document whose key() is already set. */
         virtual bool read(Document &doc, ContentOptions options = kDefaultContent) const =0;
 
-        /** Reads the body of a Document that's already been read with kMetaonly. */
+        /** Reads the body of a Document that's already been read with kMetaonly.
+            Does nothing if the document's body is non-null. */
         virtual void readBody(Document &doc) const;
 
         virtual Document getByOffsetNoErrors(uint64_t offset, sequence) const
@@ -76,7 +77,7 @@ namespace cbforest {
 
         bool del(slice key, Transaction&);
         bool del(sequence s, Transaction&);
-        bool del(Document&, Transaction&);
+        bool del(const Document&, Transaction&);
 
         virtual void erase() =0;
 

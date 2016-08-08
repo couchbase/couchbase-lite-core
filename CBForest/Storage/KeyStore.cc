@@ -43,8 +43,11 @@ namespace cbforest {
     }
 
     void KeyStore::readBody(Document &doc) const {
-        Document fullDoc = get(doc.key(), kDefaultContent);
-        doc._body = fullDoc._body;  // avoid copying block
+        if (doc.body().buf == nullptr) {
+            Document fullDoc = doc.sequence() ? get(doc.sequence(), kDefaultContent)
+                                              : get(doc.key(), kDefaultContent);
+            doc._body = fullDoc._body;
+        }
     }
 
     void KeyStore::deleteKeyStore(Transaction& trans) {
@@ -74,8 +77,8 @@ namespace cbforest {
         return ok;
     }
 
-    bool KeyStore::del(cbforest::Document &doc, Transaction &t) {
-        return doc.sequence() ? del(doc.sequence(), t) : del(doc.key(), t);
+    bool KeyStore::del(const cbforest::Document &doc, Transaction &t) {
+        return del(doc.key(), t);
     }
 
 }
