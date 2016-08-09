@@ -186,7 +186,7 @@ namespace cbforest {
     {
         // If a current revision from the CAS server is being replaced by a newer revision that
         // isn't, back it up to the nonCurrent store.
-        if (incomingRev.version().current().author != kCASServerPeerID) {
+        if (incomingRev.version().current().author() != kCASServerPeerID) {
             auto state = getServerState(curRev.docID());
             if (state.latest.revID == curRev.revID()) {
                 readBody(curRev);

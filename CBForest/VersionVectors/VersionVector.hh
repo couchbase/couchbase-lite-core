@@ -41,24 +41,27 @@ namespace cbforest {
 
     /** A single version identifier in a VersionVector.
         Consists of a peerID (author) and generation count.
-        Does NOT own the storage of `author`! */
-    struct version {
-        peerID author;
-        generation gen {0};
-
+        Does NOT own the storage of `author` -- its owning VersionVector does. */
+    class Version {
+    public:
         static const size_t kMaxAuthorSize = 64;
 
-        version()                               {}
-        version(generation g, peerID p)         :author(p), gen(g) {validate();}
-        version(slice string)                   :version(string, true) { }
+        /** Creates a valid peerID from binary data (like a raw digest or something.) */
+        static alloc_slice peerIDFromBinary(slice binaryPeerID);
 
-        bool operator== (const version& v) const {
-            return gen == v.gen && author == v.author;
+        Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
+        Version(slice string)                   :Version(string, true) { }
+
+        peerID author() const                   {return _author;}
+        generation gen() const                  {return _gen;}
+
+        bool operator== (const Version& v) const {
+            return _gen == v._gen && _author == v._author;
         }
 
         alloc_slice asString() const;
 
-        bool isMerge() const                    {return gen == 0;}
+        bool isMerge() const                    {return _gen == 0;}
 
         /** The CAS counter of a version that comes from a CAS server.
             If author == kCASServerPeerID, returns the gen; else returns 0. */
@@ -72,10 +75,14 @@ namespace cbforest {
         versionOrder compareTo(const VersionVector&) const;
 
     private:
-        void validate() const;
         friend class VersionVector;
 
-        version(slice string, bool validateAuthor);
+        Version()                               {}
+        Version(slice string, bool validateAuthor);
+        void validate() const;
+
+        peerID _author;
+        generation _gen {0};
     };
 
 
@@ -105,9 +112,9 @@ namespace cbforest {
         void reset();
 
         size_t count() const                                {return _vers.size();}
-        const version& operator[] (size_t i) const          {return _vers[i];}
-        const version& current() const                      {return _vers.at(0);}
-        const std::vector<version> versions() const         {return _vers;}
+        const Version& operator[] (size_t i) const          {return _vers[i];}
+        const Version& current() const                      {return _vers.at(0);}
+        const std::vector<Version> versions() const         {return _vers;}
 
         generation genOfAuthor(peerID) const;
         generation operator[] (peerID author) const         {return genOfAuthor(author);}
@@ -122,8 +129,8 @@ namespace cbforest {
         /** Replaces kMePeerID ("*") with the given peerID in the vector. */
         void expandMyPeerID(peerID myID);
 
-        /** Has this vector been modified since it was created? */
-        bool changed() const                                {return _changed;}
+        /** Returns true if none of the versions' authors are "*". */
+        bool isExpanded() const;
 
         /** Converts the vector to a human-readable string. */
         std::string asString() const;
@@ -146,10 +153,10 @@ namespace cbforest {
 
         /** Compares with a single version, i.e. whether this vector is newer/older/same as a
             vector with the given current version. (Will never return kConflicting.) */
-        versionOrder compareTo(const version&) const;
+        versionOrder compareTo(const Version&) const;
 
-        bool operator == (const version& v) const           {return compareTo(v) == kSame;}
-        bool operator >= (const version& v) const           {return compareTo(v) != kOlder;}
+        bool operator == (const Version& v) const           {return compareTo(v) == kSame;}
+        bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
 
         /** Returns a new vector representing a merge of this vector and the argument.
             All the authors in both are present, with the larger of the two generations. */
@@ -159,27 +166,30 @@ namespace cbforest {
         void insertMergeRevID(peerID myPeerID, slice revisionBody);
 
     private:
-        std::vector<version>::iterator findPeerIter(peerID);
+        std::vector<Version>::iterator findPeerIter(peerID);
         alloc_slice copyAuthor(peerID);
-        void append(version);
+        void append(Version);
         friend class versionMap;
 
         alloc_slice _string;                        // The string I was parsed from
-        std::vector<version> _vers;                 // versions, in order
+        std::vector<Version> _vers;                 // versions, in order
         std::list<alloc_slice> _addedAuthors;       // storage space for added peerIDs
-        bool _changed {false};                      // Changed since created?
     };
 
 
     // Some implementations of "<<" to write to ostreams and Fleece encoders: 
 
-    // Note: This does not replace "*" with the local author's ID!
-    std::ostream& operator<< (std::ostream& o, const version &v);
+    /** Writes a `version` to a stream.
+        Note: This does not replace "*" with the local author's ID! */
+    std::ostream& operator<< (std::ostream& o, const Version &v);
 
+    /** Writes a VersionVector to a stream.
+        Note: This does not replace "*" with the local author's ID! */
     static inline std::ostream& operator<< (std::ostream& o, const VersionVector &vv) {
         return o << (std::string)vv.asString();
     }
-    
+
+    /** Writes a VersionVector to a Fleece encoder. */
     static inline fleece::Encoder& operator<< (fleece::Encoder &encoder, const VersionVector &vv) {
         vv.writeTo(encoder);
         return encoder;

@@ -75,7 +75,7 @@ namespace cbforest {
     // Get a revision from the _nonCurrentStore only
     Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID, ContentOptions opt) const {
         CBFAssert(revID.size > 0);
-        Document doc(keyForNonCurrentRevision(docID, version{revID}));
+        Document doc(keyForNonCurrentRevision(docID, Version{revID}));
         if (!_nonCurrentStore.read(doc, opt))
             return nullptr;
         return Revision::Ref{ new Revision(std::move(doc)) };
@@ -92,7 +92,7 @@ namespace cbforest {
     // How does this revision compare to what's in the database?
     versionOrder RevisionStore::checkRevision(slice docID, slice revID) {
         CBFAssert(revID.size);
-        version checkVers(revID);
+        Version checkVers(revID);
         auto rev = get(docID);
         if (rev) {
             auto order = checkVers.compareTo(rev->version());
@@ -232,7 +232,7 @@ namespace cbforest {
 
 
     bool RevisionStore::deleteNonCurrent(slice docID, slice revID, Transaction &t) {
-        return _nonCurrentStore.del(keyForNonCurrentRevision(docID, version(revID)), t);
+        return _nonCurrentStore.del(keyForNonCurrentRevision(docID, Version(revID)), t);
     }
 
 
@@ -306,8 +306,8 @@ namespace cbforest {
         return result;
     }
 
-    alloc_slice RevisionStore::keyForNonCurrentRevision(slice docID, struct version vers) {
-        return mkkey(docID, vers.author, vers.gen);
+    alloc_slice RevisionStore::keyForNonCurrentRevision(slice docID, class Version vers) {
+        return mkkey(docID, vers.author(), vers.gen());
     }
 
     alloc_slice RevisionStore::startKeyFor(slice docID, peerID author) {

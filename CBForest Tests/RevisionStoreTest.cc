@@ -45,7 +45,7 @@ public:
 
 
     void testKeys() {
-        AssertEqual(RevisionStore::keyForNonCurrentRevision(kDoc1ID, version(2, peerID("snej"))),
+        AssertEqual(RevisionStore::keyForNonCurrentRevision(kDoc1ID, Version(2, peerID("snej"))),
                     alloc_slice("Doc1\tsnej,\002"));
         AssertEqual(RevisionStore::startKeyFor(kDoc1ID, peerID("snej")),
                     alloc_slice("Doc1\tsnej,"));

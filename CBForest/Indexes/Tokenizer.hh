@@ -78,7 +78,7 @@ namespace cbforest {
         /** Finds the next token, returning false when it reaches the end. */
         bool next();
 
-        operator bool() const           {return hasToken();}
+        explicit operator bool() const  {return hasToken();}
         TokenIterator& operator++()     {next(); return *this;}
 
     private:

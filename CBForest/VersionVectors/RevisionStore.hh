@@ -81,7 +81,7 @@ namespace cbforest {
         //////// DOCUMENT KEYS:
 
         /** The document key to use for a non-current Revision. */
-        static alloc_slice keyForNonCurrentRevision(slice docID, struct version vers);
+        static alloc_slice keyForNonCurrentRevision(slice docID, class Version vers);
 
         /** The start of the key range for non-current Revisions with the given docID
             (and author, if non-null.) */

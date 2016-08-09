@@ -83,7 +83,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v[slice("jens")], 1ull);
         AssertEqual(v[slice("bob")],  2ull);
         AssertEqual(v[slice("may")],  0ull);
-        AssertEqual(v.current(), version(1, slice("jens")));
+        AssertEqual(v.current(), Version(1, slice("jens")));
         AssertEqual(v.count(), 2ul);
 
         // Convert to string and back:
@@ -107,7 +107,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         VersionVector v(slice("1@jens"));
         AssertEqual(v[slice("jens")], 1ull);
         AssertEqual(v[slice("bob")],  0ull);
-        AssertEqual(v.current(), version(1, slice("jens")));
+        AssertEqual(v.current(), Version(1, slice("jens")));
         AssertEqual(v.count(), 1ul);
         AssertEqual(v.asString(), std::string("1@jens"));
     }
@@ -131,15 +131,15 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v.compareTo(otherV), kConflicting);
 
         // Compare with single version:
-        AssertEqual(v.compareTo(version(slice("1@jens"))), kSame);
-        AssertEqual(v.compareTo(version(slice("2@jens"))), kOlder);
-        AssertEqual(v.compareTo(version(slice("1@bob"))), kNewer);
-        AssertEqual(v.compareTo(version(slice("2@bob"))), kNewer);
-        AssertEqual(v.compareTo(version(slice("3@bob"))), kOlder);
-        AssertEqual(v.compareTo(version(slice("1@obo"))), kOlder);
-        Assert(v >= version(slice("1@bob")));
-        Assert(v >= version(slice("2@bob")));
-        Assert(!(v >= version(slice("3@bob"))));
+        AssertEqual(v.compareTo(Version(slice("1@jens"))), kSame);
+        AssertEqual(v.compareTo(Version(slice("2@jens"))), kOlder);
+        AssertEqual(v.compareTo(Version(slice("1@bob"))), kNewer);
+        AssertEqual(v.compareTo(Version(slice("2@bob"))), kNewer);
+        AssertEqual(v.compareTo(Version(slice("3@bob"))), kOlder);
+        AssertEqual(v.compareTo(Version(slice("1@obo"))), kOlder);
+        Assert(v >= Version(slice("1@bob")));
+        Assert(v >= Version(slice("2@bob")));
+        Assert(!(v >= Version(slice("3@bob"))));
     }
 
     void testIncrement() {
@@ -148,7 +148,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
 
         AssertEqual(v[slice("jens")], 123ull);
         AssertEqual(v[slice("bob")],  3141592655ull);
-        AssertEqual(v.current(), version(3141592655, slice("bob")));
+        AssertEqual(v.current(), Version(3141592655, slice("bob")));
         AssertEqual(v.count(), 2ul);
 
         auto str = v.asString();
@@ -159,7 +159,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         AssertEqual(v[slice("jens")], 123ull);
         AssertEqual(v[slice("bob")],  3141592655ull);
         AssertEqual(v[slice("may")],  1ull);
-        AssertEqual(v.current(), version(1, slice("may")));
+        AssertEqual(v.current(), Version(1, slice("may")));
         AssertEqual(v.count(), 3ul);
 
         str = v.asString();
@@ -170,7 +170,7 @@ class VersionVectorTest : public CppUnit::TestFixture {
         VersionVector v;
         v.incrementGen(slice("may"));
         AssertEqual(v[slice("may")],  1ull);
-        AssertEqual(v.current(), version(1, slice("may")));
+        AssertEqual(v.current(), Version(1, slice("may")));
         AssertEqual(v.count(), 1ul);
         AssertEqual(v.asString(), std::string("1@may"));
     }
