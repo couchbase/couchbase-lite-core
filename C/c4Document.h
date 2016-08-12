@@ -9,7 +9,7 @@
 #ifndef c4Document_h
 #define c4Document_h
 
-#include "c4Base.h"
+#include "c4Database.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -70,7 +70,7 @@ namespace cbforest {
                                        Revision::BodyParams body,
                                        Transaction &t);
 
-        KeyStore &_casStore;
+        KeyStore &  _casStore;  // The KeyStore holding CAS metadata
     };
 
 }

@@ -39,7 +39,7 @@ extern "C" {
         kC4EncryptionAES256 = 1     /**< AES with 256-bit key */
     };
 
-    typedef struct {
+    typedef struct C4EncryptionKey {
         C4EncryptionAlgorithm algorithm;
         uint8_t bytes[32];
     } C4EncryptionKey;

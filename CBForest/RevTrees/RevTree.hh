@@ -31,7 +31,7 @@ namespace cbforest {
     public:
         const RevTree*  owner;
         revid           revID;      /**< Revision ID (compressed) */
-        cbforest::sequence    sequence;   /**< DB sequence number that this revision has/had */
+        sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
         inline slice inlineBody() const;     /**< Body if stored in Revision, or null if not */
         inline bool isBodyAvailable() const; /**< Is body inline or loadable from an earlier doc? */

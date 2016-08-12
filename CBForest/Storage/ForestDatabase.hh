@@ -19,7 +19,7 @@ namespace cbforest {
     class ForestKeyStore;
 
 
-
+    /** ForestDB implementation of Database */
     class ForestDatabase : public Database {
     public:
         static fdb_config defaultConfig();
@@ -47,7 +47,7 @@ namespace cbforest {
         void rekey(EncryptionAlgorithm, slice newKey) override;
 
     protected:
-        KeyStore* newKeyStore(const string &name, KeyStore::Options) override;
+        KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const string &name) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
@@ -68,35 +68,13 @@ namespace cbforest {
                        uint64_t lastOldFileOffset,
                        uint64_t lastNewFileOffset);
 
-        fdb_config _config;
-        fdb_file_handle* _fileHandle {nullptr};
+        fdb_config          _config;                    // ForestDB database configuration
+        fdb_file_handle*    _fileHandle {nullptr};      // ForestDB database handle
     };
 
 
 
-    class ForestDatabaseFactory : public DatabaseFactory {
-    public:
-        fdb_config config;
-
-        ForestDatabaseFactory() {
-            config = ForestDatabase::defaultConfig();
-        }
-
-        virtual ~ForestDatabaseFactory() { }
-
-        virtual Database* newDatabase(const string &path,
-                                      const Database::Options* options =nullptr) override
-        {
-            return new ForestDatabase(path, options, config);
-        }
-
-        virtual std::string name() const override {
-            return std::string("ForestDB");
-        }
-    };
-
-
-
+    /** ForestDB implementation of KeyStore. */
     class ForestKeyStore : public KeyStore {
     public:
         uint64_t documentCount() const override;
@@ -112,7 +90,7 @@ namespace cbforest {
         void erase() override;
 
     protected:
-        ForestKeyStore(ForestDatabase&, const string &name, KeyStore::Options options);
+        ForestKeyStore(ForestDatabase&, const string &name, KeyStore::Capabilities options);
         ~ForestKeyStore();
 
         void reopen() override;
@@ -131,7 +109,7 @@ namespace cbforest {
         friend class ForestDatabase;
         friend class ForestEnumerator;
 
-        fdb_kvs_handle* _handle {nullptr};
+        fdb_kvs_handle* _handle {nullptr};  // ForestDB key-value store handle
     };
 }
 

@@ -19,15 +19,12 @@ namespace cbforest {
     class Revision;
 
 
-    /** Manages storage of version-vectored document revisions in a Database. */
+    /** Manages storage of version-vectored document revisions (Revision objects) in a Database. */
     class RevisionStore {
     public:
 
-        explicit RevisionStore(Database *db, peerID myPeerID);
+        RevisionStore(Database *db, peerID myPeerID);
         virtual ~RevisionStore() { }
-
-        /** The KeyStore for current revisions of documents. */
-        KeyStore& currentRevisionStore();
 
         const alloc_slice& myPeerID() const                       {return _myPeerID;}
 
@@ -116,9 +113,9 @@ namespace cbforest {
         virtual bool shouldKeepAncestor(const Revision &rev);
 
     protected:
-        KeyStore &_currentStore;
-        KeyStore &_nonCurrentStore;
-        alloc_slice _myPeerID;
+        KeyStore &  _currentStore;      // The KeyStore where current revisons are stored
+        KeyStore &  _nonCurrentStore;   // The KeyStore for non-current revisions
+        alloc_slice _myPeerID;          // The local peerID, represented by "*" in Revisions.
 
         friend class Revision;
         friend class ::RevisionStoreTest;

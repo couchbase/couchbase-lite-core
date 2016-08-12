@@ -109,10 +109,8 @@ namespace cbforest {
 
     // Assignment from a temporary
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
-        Debug("enum: operator= %p <-- %p", this, &e);
         _store = e._store;
         _impl = move(e._impl);
-        e._impl = nullptr;
         _docIDs = e._docIDs;
         _curDocIndex = e._curDocIndex;
         _options = e._options;

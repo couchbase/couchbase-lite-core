@@ -13,12 +13,14 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
+#include "c4DatabaseInternal.hh"
 #include "c4Database.h"
 #include "c4Private.h"
 
 #include "ForestDatabase.hh"
 #include "SQLiteDatabase.hh"
+#include "Collatable.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 
@@ -26,33 +28,29 @@
 using namespace cbforest;
 
 
-namespace c4Internal {
-
-    Database* newDatabase(std::string path,
-                          C4DatabaseFlags flags,
-                          const C4EncryptionKey *encryptionKey,
-                          bool isMainDB)
-    {
-        Database::Options options { };
-        options.keyStores.sequences = options.keyStores.softDeletes = isMainDB;
-        options.create = (flags & kC4DB_Create) != 0;
-        options.writeable = (flags & kC4DB_ReadOnly) == 0;
-        if (encryptionKey) {
-            options.encryptionAlgorithm = (Database::EncryptionAlgorithm)encryptionKey->algorithm;
-            options.encryptionKey = alloc_slice(encryptionKey->bytes,
-                                                sizeof(encryptionKey->bytes));
-        }
-
-        switch (flags & kC4DB_StorageTypeMask) {
-            case kC4DB_ForestDBStorage:
-                return new ForestDatabase(path, &options);
-            case kC4DB_SQLiteStorage:
-                return new SQLiteDatabase(path, &options);
-            default:
-                error::_throw(error::Unimplemented);
-        }
+Database* c4Database::newDatabase(std::string path,
+                                  C4DatabaseFlags flags,
+                                  const C4EncryptionKey *encryptionKey,
+                                  bool isMainDB)
+{
+    Database::Options options { };
+    options.keyStores.sequences = options.keyStores.softDeletes = isMainDB;
+    options.create = (flags & kC4DB_Create) != 0;
+    options.writeable = (flags & kC4DB_ReadOnly) == 0;
+    if (encryptionKey) {
+        options.encryptionAlgorithm = (Database::EncryptionAlgorithm)encryptionKey->algorithm;
+        options.encryptionKey = alloc_slice(encryptionKey->bytes,
+                                            sizeof(encryptionKey->bytes));
     }
 
+    switch (flags & kC4DB_StorageTypeMask) {
+        case kC4DB_ForestDBStorage:
+            return new ForestDatabase(path, &options);
+        case kC4DB_SQLiteStorage:
+            return new SQLiteDatabase(path, &options);
+        default:
+            error::_throw(error::Unimplemented);
+    }
 }
 
 
@@ -125,6 +123,22 @@ bool c4Database::endTransaction(bool commit) {
 }
 
 
+/*static*/ bool c4Database::rekey(Database* database, const C4EncryptionKey *newKey,
+                                  C4Error *outError)
+{
+    try {
+        if (newKey) {
+            database->rekey((Database::EncryptionAlgorithm)newKey->algorithm,
+                            slice(newKey->bytes, 32));
+        } else {
+            database->rekey(Database::kNoEncryption, slice::null);
+        }
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
 #pragma mark - DATABASE API:
 
 
@@ -177,7 +191,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
     WITH_LOCK(database);
     try {
         if (database->refCount() > 1) {
-            recordError(error::Busy, outError);
+            recordError(CBForestDomain, kC4ErrorBusy, outError);
         }
         database->db()->deleteDatabase();
         return true;
@@ -223,22 +237,7 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
     if (!database->mustNotBeInTransaction(outError))
         return false;
     WITH_LOCK(database);
-    return rekey(database->db(), newKey, outError);
-}
-
-
-bool c4Internal::rekey(Database* database, const C4EncryptionKey *newKey,
-                                 C4Error *outError) {
-    try {
-        if (newKey) {
-            database->rekey((Database::EncryptionAlgorithm)newKey->algorithm,
-                            slice(newKey->bytes, 32));
-        } else {
-            database->rekey(Database::kNoEncryption, slice::null);
-        }
-        return true;
-    } catchError(outError);
-    return false;
+    return c4Database::rekey(database->db(), newKey, outError);
 }
 
 
@@ -320,7 +319,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
         if (database->defaultKeyStore().del(docID, *database->transaction()))
             return true;
         else
-            recordError(error::NotFound, outError);
+            recordError(CBForestDomain, kC4ErrorNotFound, outError);
     } catchError(outError)
     return false;
 }
@@ -374,7 +373,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         KeyStore& localDocs = database->getKeyStore((std::string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
-            recordError(error::NotFound, outError);
+            recordError(CBForestDomain, kC4ErrorNotFound, outError);
             return NULL;
         }
         auto rawDoc = new C4RawDocument;

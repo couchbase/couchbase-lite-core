@@ -23,11 +23,11 @@ namespace cbforest {
     using namespace std;
 
 
-    /** Stores a document's key, metadata, body and sequence. */
+    /** Stores a CBForest document's key, metadata, body and sequence. */
     class Document {
     public:
         Document()                              { }
-        Document(slice key);
+        explicit Document(slice key);
         Document(const Document&);
         Document(Document&&);
         Document& operator=(const Document&);
@@ -38,7 +38,7 @@ namespace cbforest {
 
         size_t bodySize() const                 {return _bodySize;}
 
-        cbforest::sequence sequence() const     {return _sequence;}
+        sequence_t sequence() const             {return _sequence;}
         bool deleted() const                    {return _deleted;}
 
         /** A storage-system-dependent position in the database file, that can be used later
@@ -71,8 +71,8 @@ namespace cbforest {
         /** Clears everything but the key. */
         void clearMetaAndBody();
 
-        void updateSequence(cbforest::sequence s)       {_sequence = s;}
-        void setUnloadedBodySize(size_t size)           {_body = slice::null; _bodySize = size;}
+        void updateSequence(sequence_t s)       {_sequence = s;}
+        void setUnloadedBodySize(size_t size)   {_body = slice::null; _bodySize = size;}
 
     private:
         friend class KeyStore;
@@ -80,16 +80,16 @@ namespace cbforest {
         friend class Transaction;
         friend class DocEnumerator;
 
-        void update(cbforest::sequence sequence, uint64_t offset, bool deleted) {
+        void update(sequence_t sequence, uint64_t offset, bool deleted) {
             _sequence = sequence; _offset = offset; _deleted = deleted; _exists = !deleted;
         }
 
-        alloc_slice _key, _meta, _body;
-        size_t _bodySize                {0};
-        cbforest::sequence _sequence    {0};
-        uint64_t _offset                {0};
-        bool _deleted                   {false};
-        bool _exists                    {false};
+        alloc_slice _key, _meta, _body;     // The key, metadata and body of the document
+        size_t      _bodySize {0};          // Size of body, if body wasn't loaded
+        sequence_t  _sequence {0};          // Sequence number (if KeyStore supports sequences)
+        uint64_t    _offset {0};            // File offset in db, if KeyStore supports that
+        bool        _deleted {false};       // Is the document deleted?
+        bool        _exists {false};        // Does the document exist?
     };
 
 }

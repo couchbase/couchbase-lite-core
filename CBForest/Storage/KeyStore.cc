@@ -23,7 +23,7 @@ using namespace std;
 
 namespace cbforest {
 
-    const KeyStore::Options KeyStore::Options::defaults = KeyStore::Options{false, false};
+    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false};
 
     Document KeyStore::get(slice key, ContentOptions options) const {
         Document doc(key);

@@ -74,7 +74,7 @@ namespace cbforest {
     }
 
 
-    KeyStore* SQLiteDatabase::newKeyStore(const string &name, KeyStore::Options options) {
+    KeyStore* SQLiteDatabase::newKeyStore(const string &name, KeyStore::Capabilities options) {
         return new SQLiteKeyStore(*this, name, options);
     }
 
@@ -188,7 +188,7 @@ namespace cbforest {
     }
 
 
-    SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Options options)
+    SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Capabilities options)
     :KeyStore(db, name, options)
     {
         if (!db.keyStoreExists(name)) {
@@ -217,7 +217,7 @@ namespace cbforest {
     uint64_t SQLiteKeyStore::documentCount() const {
         stringstream sql;
         sql << "SELECT count(*) FROM kv_" << _name;
-        if (_options.softDeletes)
+        if (_capabilities.softDeletes)
             sql << " WHERE deleted!=1";
         db().compile(_docCountStmt, sql.str());
         if (_docCountStmt->executeStep()) {
@@ -269,7 +269,7 @@ namespace cbforest {
 
 
     Document SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
-        if (!_options.sequences)
+        if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
         Document doc;
         auto &stmt = (options & kMetaOnly)
@@ -299,7 +299,7 @@ namespace cbforest {
         _setStmt->bindNoCopy(3, body.buf, (int)body.size);
 
         sequence seq = 0;
-        if (_options.sequences) {
+        if (_capabilities.sequences) {
             seq = lastSequence() + 1;
             _setStmt->bind(4, (int64_t)seq);
         } else {
@@ -315,9 +315,9 @@ namespace cbforest {
         auto& stmt = delSeq ? _delBySeqStmt : _delByKeyStmt;
         if (!stmt) {
             stringstream sql;
-            if (_options.softDeletes) {
+            if (_capabilities.softDeletes) {
                 sql << "UPDATE kv_" << name() << " SET deleted=1, meta=null, body=null";
-                if (_options.sequences)
+                if (_capabilities.sequences)
                     sql << ", sequence=? ";
             } else {
                 sql << "DELETE FROM kv_" << name();
@@ -328,7 +328,7 @@ namespace cbforest {
 
         sequence newSeq = 0;
         int param = 1;
-        if (_options.softDeletes && _options.sequences) {
+        if (_capabilities.softDeletes && _capabilities.sequences) {
             newSeq = lastSequence() + 1;
             stmt->bind(param++, (int64_t)newSeq);
         }
@@ -416,7 +416,7 @@ namespace cbforest {
         }
 
         stringstream sql = selectFrom(options);
-        bool noDeleted = _options.softDeletes && !options.includeDeleted;
+        bool noDeleted = _capabilities.softDeletes && !options.includeDeleted;
         if (minKey.buf || maxKey.buf || noDeleted) {
             sql << " WHERE ";
             bool writeAnd = false;
@@ -428,7 +428,7 @@ namespace cbforest {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
             }
-            if (_options.softDeletes && noDeleted) {
+            if (_capabilities.softDeletes && noDeleted) {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << "deleted!=1";
             }
@@ -449,7 +449,7 @@ namespace cbforest {
     DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence min, sequence max,
                                                            DocEnumerator::Options &options)
     {
-        if (!_options.sequences)
+        if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
 
         if (!_createdSeqIndex) {
@@ -462,7 +462,7 @@ namespace cbforest {
         sql << (options.inclusiveMin() ? " WHERE sequence >= ?" : " WHERE sequence > ?");
         if (max < INT64_MAX)
             sql << (options.inclusiveMax() ? " AND sequence <= ?"   : " AND sequence < ?");
-        if (_options.softDeletes && !options.includeDeleted)
+        if (_capabilities.softDeletes && !options.includeDeleted)
             sql << " AND deleted!=1";
         sql << " ORDER BY sequence";
         writeSQLOptions(sql, options);

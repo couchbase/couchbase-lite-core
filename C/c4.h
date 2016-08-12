@@ -13,8 +13,8 @@
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
+#include "c4ExpiryEnumerator.h"
 #include "c4Key.h"
 #include "c4View.h"
-
 
 #endif /* c4_h */

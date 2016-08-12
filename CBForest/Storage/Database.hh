@@ -41,7 +41,7 @@ namespace cbforest {
         };
 
         struct Options {
-            KeyStore::Options keyStores;
+            KeyStore::Capabilities keyStores;
             bool create         :1;     //< Should the db be created if it doesn't exist?
             bool writeable      :1;     //< If false, db is opened read-only
             EncryptionAlgorithm encryptionAlgorithm;
@@ -92,10 +92,10 @@ namespace cbforest {
 
         /** The Database's default key-value store. */
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
-        KeyStore& defaultKeyStore(KeyStore::Options) const;
+        KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
         KeyStore& getKeyStore(const string &name) const;
-        KeyStore& getKeyStore(const string &name, KeyStore::Options) const;
+        KeyStore& getKeyStore(const string &name, KeyStore::Capabilities) const;
 
         /** The names of all existing KeyStores (whether opened yet or not) */
         virtual vector<string> allKeyStoreNames() =0;
@@ -107,7 +107,7 @@ namespace cbforest {
 
     protected:
         /** Override to instantiate a KeyStore object. */
-        virtual KeyStore* newKeyStore(const string &name, KeyStore::Options) =0;
+        virtual KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) =0;
 
         /** Override to begin a database transaction. */
         virtual void _beginTransaction(Transaction*) =0;
@@ -133,7 +133,7 @@ namespace cbforest {
         friend class KeyStore;
         friend class Transaction;
 
-        KeyStore& addKeyStore(const string &name, KeyStore::Options);
+        KeyStore& addKeyStore(const string &name, KeyStore::Capabilities);
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
 
@@ -142,22 +142,13 @@ namespace cbforest {
 
         void incrementDeletionCount(Transaction &t);
 
-        File* const _file;
-        const Options _options;
-        KeyStore* _defaultKeyStore {nullptr};
-        unordered_map<string, unique_ptr<KeyStore> > _keyStores;
-        bool _inTransaction {false};
-        OnCompactCallback _onCompactCallback {nullptr};
+        File* const             _file;                          // Shared state of file (lock)
+        const Options           _options;                       // Option/capability flags
+        KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
+        unordered_map<string, unique_ptr<KeyStore> > _keyStores;// Opened KeyStores
+        bool _inTransaction     {false};                        // Am I in a Transaction?
+        OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
     };
-
-
-    class DatabaseFactory {
-    public:
-        virtual ~DatabaseFactory()  { }
-        virtual Database* newDatabase(const string &path, const Database::Options* =nullptr) =0;
-        virtual std::string name() const =0;
-    };
-
 
 
     /** Grants exclusive write access to a Database while in scope.
@@ -173,7 +164,7 @@ namespace cbforest {
             kCommitManualWALFlush
         };
 
-        Transaction(Database*);
+        explicit Transaction(Database*);
         Transaction(Database &db)               :Transaction(&db) { }
         ~Transaction()                          {_db.endTransaction(this);}
 
@@ -195,8 +186,8 @@ namespace cbforest {
         Transaction(Database*, bool begin);
         Transaction(const Transaction&) = delete;
 
-        Database& _db;
-        enum state _state;
+        Database&   _db;        // The Database
+        enum state  _state;     // Remembers what action to take on destruct
     };
     
 }

@@ -36,7 +36,7 @@ namespace cbforest {
 
     class GeoIndexEnumerator : public IndexEnumerator {
     public:
-        GeoIndexEnumerator(Index*, geohash::area);
+        GeoIndexEnumerator(MapReduceIndex&, geohash::area);
 
         geohash::area keyBoundingBox() const    {return _keyBBox;}
         slice keyGeoJSON() const                {return _geoKey;}
@@ -49,7 +49,7 @@ namespace cbforest {
         virtual bool approve(slice key) override;
 
     private:
-        typedef std::pair<std::string, cbforest::sequence> ItemID;
+        typedef std::pair<std::string, sequence_t> ItemID;
 
         const geohash::area _searchArea;
         geohash::area _keyBBox;

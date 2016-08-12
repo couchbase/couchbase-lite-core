@@ -30,9 +30,8 @@ namespace cbforest {
         return inclusiveEnd ? (key > end) : !(key < end);
     }
 
-    Index::Index(Database* db, std::string name)
-    :_store(db->getKeyStore(name)),
-     _indexDB(db),
+    Index::Index(KeyStore &store)
+    :_store(store),
      _userCount(0)
     { }
 
@@ -40,16 +39,16 @@ namespace cbforest {
         if (isBusy()) Warn("Index %p being destructed during enumeration", this);
     }
 
-    IndexWriter::IndexWriter(Index* index, Transaction& t)
+    IndexWriter::IndexWriter(Index& index, Transaction& t)
     :_index(index),
      _transaction(t)
     {
-        CBFDebugAssert(&t.database() == &index->_store.database());
-        index->addUser();
+        CBFDebugAssert(&t.database() == &index._store.database());
+        index.addUser();
     }
 
     IndexWriter::~IndexWriter() {
-        _index->removeUser();
+        _index.removeUser();
     }
 
 
@@ -61,7 +60,7 @@ namespace cbforest {
     }
 
     void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
-        Document doc = _index->_store.get(docID);
+        Document doc = _index._store.get(docID);
         if (doc.body().size > 0) {
             auto keyArray = Value::fromTrustedData(doc.body())->asArray();
             Array::iterator iter(keyArray);
@@ -84,9 +83,9 @@ namespace cbforest {
             for (auto &key : keys)
                 enc.writeData(key);
             enc.endArray();
-            _index->_store.set(docID, enc.extractOutput(), _transaction);
+            _index._store.set(docID, enc.extractOutput(), _transaction);
         } else {
-            _index->_store.del(docID, _transaction);
+            _index._store.del(docID, _transaction);
         }
     }
 
@@ -142,7 +141,7 @@ namespace cbforest {
                 ++oldKey;
                 if (valuesMightBeUnchanged) {
                     // read the old row so we can compare the value too:
-                    Document oldRow = _index->_store.get(realKey);
+                    Document oldRow = _index._store.get(realKey);
                     if (oldRow.exists()) {
                         if (oldRow.body() == *value) {
                             Log("Old k/v pair (%s, %s) unchanged",
@@ -159,7 +158,7 @@ namespace cbforest {
             // Store the key & value:
             Log("**** Index: realKey = %s  value = %s",
                 realKey.toJSON().c_str(), (*value).hexString().c_str());
-            _index->_store.set(realKey, meta, *value, _transaction);
+            _index._store.set(realKey, meta, *value, _transaction);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
         }
@@ -172,7 +171,7 @@ namespace cbforest {
             if (oldEmitIndex > 0)
                 realKey << oldEmitIndex;
             realKey.endArray();
-            bool deleted = _index->_store.del(realKey, _transaction);
+            bool deleted = _index._store.del(realKey, _transaction);
             if (!deleted) {
                 Warn("Failed to delete old emitted k/v pair");
             }
@@ -243,7 +242,7 @@ namespace cbforest {
         return options;
     }
 
-    IndexEnumerator::IndexEnumerator(Index* index,
+    IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
                                      const DocEnumerator::Options& options)
@@ -251,20 +250,20 @@ namespace cbforest {
      _options(options),
      _inclusiveStart(options.inclusiveStart),
      _inclusiveEnd(options.inclusiveEnd),
-     _dbEnum(_index->_store,
+     _dbEnum(_index._store,
              (slice)makeRealKey(startKey, startKeyDocID, false, options.descending),
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
              docOptions(options))
     {
         Debug("IndexEnumerator(%p)", this);
-        index->addUser();
+        index.addUser();
         if (!_inclusiveStart)
             _startKey = (slice)startKey;
         if (!_inclusiveEnd)
             _endKey = (slice)endKey;
     }
 
-    IndexEnumerator::IndexEnumerator(Index* index,
+    IndexEnumerator::IndexEnumerator(Index& index,
                                      std::vector<KeyRange> keyRanges,
                                      const DocEnumerator::Options& options)
     :_index(index),
@@ -274,10 +273,12 @@ namespace cbforest {
      _keyRanges(keyRanges),
      _dbEnum(enumeratorForIndex(0))
     {
+#if DEBUG
         Debug("IndexEnumerator(%p), key ranges:", this);
-        index->addUser();
         for (auto &r : _keyRanges)
             Debug("    key range: %s -- %s (%d)", r.start.toJSON().c_str(), r.end.toJSON().c_str(), r.inclusiveEnd);
+#endif
+        index.addUser();
         nextKeyRange();
     }
 
@@ -359,7 +360,7 @@ namespace cbforest {
         Collatable& startKey = _keyRanges[i].start;
         Collatable& endKey = _keyRanges[i].end;
         Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
-        return DocEnumerator(_index->_store,
+        return DocEnumerator(_index._store,
                              makeRealKey(startKey, slice::null, false, _options.descending),
                              makeRealKey(endKey,   slice::null, true,  _options.descending),
                              docOptions(_options));

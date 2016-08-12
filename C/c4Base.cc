@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4Private.h"
@@ -27,6 +27,7 @@ using namespace cbforest;
 
 
 namespace c4Internal {
+
     std::atomic_int InstanceCounted::gObjectCount;
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
@@ -36,27 +37,34 @@ namespace c4Internal {
         }
     }
 
-    void recordError(const error &e, C4Error* outError) {
+    static void recordError(const error &e, C4Error* outError) {
         static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
         recordError(domainMap[e.domain], e.code, outError);
     }
 
     void recordException(const std::exception &e, C4Error* outError) {
+        auto err = dynamic_cast<const error*>(&e);
+        if (err) {
+            recordError(*err, outError);
+            return;
+        }
+
         auto rterr = dynamic_cast<const std::runtime_error*>(&e);
         if (rterr) {
             recordError(error::convertRuntimeError(*rterr), outError);
-        } else {
-            // Get the actual exception class name using RTTI.
-            // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
-            const char *exceptionName =  typeid(e).name();
-            while (isalpha(*exceptionName)) ++exceptionName;
-            while (isdigit(*exceptionName)) ++exceptionName;
-
-            Warn("Unexpected C++ %s(\"%s\") exception thrown from CBForest",
-                exceptionName, e.what());
-            recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
+            return;
         }
+
+        // Get the actual exception class name using RTTI.
+        // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
+        const char *exceptionName =  typeid(e).name();
+        while (isalpha(*exceptionName)) ++exceptionName;
+        while (isdigit(*exceptionName)) ++exceptionName;
+
+        Warn("Unexpected C++ %s(\"%s\") exception thrown from CBForest",
+            exceptionName, e.what());
+        recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
     }
 
     void recordUnknownException(C4Error* outError) {

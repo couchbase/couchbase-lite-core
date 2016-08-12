@@ -28,8 +28,8 @@ namespace cbforest {
     static int64_t kMinFormatVersion = 6;
     static int64_t kCurFormatVersion = 6;
 
-    MapReduceIndex::MapReduceIndex(Database* db, std::string name, Database *sourceDatabase)
-    :Index(db, name),
+    MapReduceIndex::MapReduceIndex(KeyStore &store, Database &sourceDatabase)
+    :Index(store),
      _sourceDatabase(sourceDatabase)
     {
         readState();
@@ -108,7 +108,7 @@ namespace cbforest {
     // if they don't match, the index is invalidated (erased).
     bool MapReduceIndex::checkForPurge() {
         readState();
-        auto dbPurgeCount = _sourceDatabase->purgeCount();
+        auto dbPurgeCount = _sourceDatabase.purgeCount();
         if (dbPurgeCount == _lastPurgeCount)
             return false;
         invalidate();
@@ -321,17 +321,17 @@ namespace cbforest {
     // In charge of updating one view's index. Owned by a MapReduceIndexer.
     class MapReduceIndexWriter: IndexWriter {
     public:
-        MapReduceIndexWriter(MapReduceIndex *idx, Transaction *t)
+        MapReduceIndexWriter(MapReduceIndex &idx, Transaction *t)
         :IndexWriter(idx, *t),
          index(idx),
-         _documentType(index->documentType()),
+         _documentType(index.documentType()),
          _transaction(t)
         { }
 
-        MapReduceIndex* const index;
+        MapReduceIndex & index;
 
         bool shouldIndexDocument(const Document& doc) const {
-            return doc.sequence() > index->_lastSequenceIndexed;
+            return doc.sequence() > index._lastSequenceIndexed;
         }
 
         bool shouldIndexDocumentType(slice docType) {
@@ -344,15 +344,15 @@ namespace cbforest {
                            const std::vector<Collatable> &keys,
                            const std::vector<alloc_slice> &values)
         {
-            if (docSequence <= index->_lastSequenceIndexed)
+            if (docSequence <= index._lastSequenceIndexed)
                 return false;
             _emitter.reset();
             for (unsigned i = 0; i < keys.size(); ++i)
                 _emitter.emit(keys[i], values[i]);
 
-            index->_lastSequenceIndexed = docSequence;
-            if (update(docID, docSequence, _emitter.keys, _emitter.values, index->_rowCount)) {
-                index->_lastSequenceChangedAt = index->_lastSequenceIndexed;
+            index._lastSequenceIndexed = docSequence;
+            if (update(docID, docSequence, _emitter.keys, _emitter.values, index._rowCount)) {
+                index._lastSequenceChangedAt = index._lastSequenceIndexed;
                 return true;
             }
             return false;
@@ -360,7 +360,7 @@ namespace cbforest {
 
         void finish(bool success) {
             if (success)
-                index->saveState(*_transaction);
+                index.saveState(*_transaction);
             else
                 _transaction->abort();
         }
@@ -375,28 +375,27 @@ namespace cbforest {
 #pragma mark - MAP-REDUCE INDEXER
 
     
-    void MapReduceIndexer::addIndex(MapReduceIndex* index) {
-        CBFAssert(index);
-        index->checkForPurge(); // has to be called before creating the transaction
-        auto writer = new MapReduceIndexWriter(index, new Transaction(index->database()));
+    void MapReduceIndexer::addIndex(MapReduceIndex &index) {
+        index.checkForPurge(); // has to be called before creating the transaction
+        auto writer = new MapReduceIndexWriter(index, new Transaction(index.database()));
         _writers.push_back(writer);
-        if (index->documentType().buf)
-            _docTypes.insert(index->documentType());
+        if (index.documentType().buf)
+            _docTypes.insert(index.documentType());
         else
             _allDocTypes = true;
     }
 
 
     sequence MapReduceIndexer::startingSequence() {
-        _latestDbSequence = _writers[0]->index->sourceStore().lastSequence();
+        _latestDbSequence = _writers[0]->index.sourceStore().lastSequence();
 
         // First find the minimum sequence that not all indexes have indexed yet.
         sequence startSequence = _latestDbSequence+1;
         for (auto writer : _writers) {
-            sequence lastSequence = writer->index->lastSequenceIndexed();
+            sequence lastSequence = writer->index.lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
-            } else if (writer->index == _triggerIndex) {
+            } else if (&writer->index == _triggerIndex) {
                 return UINT64_MAX; // The trigger index doesn't need to be updated, so abort
             }
         }

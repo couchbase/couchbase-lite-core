@@ -14,7 +14,8 @@
 //  and limitations under the License.
 
 #define NOMINMAX
-#include "c4Impl.hh"
+#include "c4Internal.hh"
+#include "c4DatabaseInternal.hh"
 #include "c4Document.h"
 #include "c4Database.h"
 #include "c4Private.h"

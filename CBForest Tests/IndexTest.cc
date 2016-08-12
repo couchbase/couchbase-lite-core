@@ -17,7 +17,7 @@ public:
 
 void setUp() {
     DatabaseTestFixture::setUp();
-    index = new Index(db, "index");
+    index = new Index(db->getKeyStore("index"));
 }
 
 void tearDown() {
@@ -47,7 +47,7 @@ void updateDoc(string docID, vector<string> body, IndexWriter &writer) {
 
 uint64_t doQuery() {
     uint64_t nRows = 0;
-    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
                            Collatable(), cbforest::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
@@ -73,7 +73,7 @@ void testBasics() {
     {
         Log("--- Populate index");
         Transaction trans(db);
-        IndexWriter writer(index, trans);
+        IndexWriter writer(*index, trans);
         for (auto i : docs)
             updateDoc(i.first, i.second, writer);
     }
@@ -83,7 +83,7 @@ void testBasics() {
 
     {
         Transaction trans(db);
-        IndexWriter writer(index, trans);
+        IndexWriter writer(*index, trans);
         Log("--- Updating OR");
         updateDoc("OR", {"Oregon", "Portland", "Walla Walla", "Salem"}, writer);
     }
@@ -92,7 +92,7 @@ void testBasics() {
     {
         Log("--- Removing CA");
         Transaction trans(db);
-        IndexWriter writer(index, trans);
+        IndexWriter writer(*index, trans);
         updateDoc("CA", {}, writer);
     }
     AssertEqual(doQuery(), 6ull);
@@ -101,7 +101,7 @@ void testBasics() {
     uint64_t nRows = 0;
     auto options = DocEnumerator::Options::kDefault;
     options.descending = true;
-    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
                            Collatable(), cbforest::slice::null,
                            options); e.next(); ) {
         nRows++;
@@ -120,7 +120,7 @@ void testBasics() {
     keys.push_back((Collatable)CollatableBuilder("Portland"));
     keys.push_back((Collatable)CollatableBuilder("Skookumchuk"));
     nRows = 0;
-    for (IndexEnumerator e(index, keys, DocEnumerator::Options::kDefault); e.next(); ) {
+    for (IndexEnumerator e(*index, keys, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         Log("key = %.*s, docID = %.*s",
@@ -134,7 +134,7 @@ void testBasics() {
     ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder("Port\uFFFE")));
     ranges.push_back(KeyRange(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti")));
     nRows = 0;
-    for (IndexEnumerator e(index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
+    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         Log("key = %.*s, docID = %.*s",
@@ -147,7 +147,7 @@ void testDuplicateKeys() {
     Log("--- Populate index");
     {
         Transaction trans(db);
-        IndexWriter writer(index, trans);
+        IndexWriter writer(*index, trans);
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         CollatableBuilder key("Schlage");
@@ -163,7 +163,7 @@ void testDuplicateKeys() {
     AssertEqual(doQuery(), 2ull);
     {
         Transaction trans(db);
-        IndexWriter writer(index, trans);
+        IndexWriter writer(*index, trans);
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         CollatableBuilder key("Schlage");

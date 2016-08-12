@@ -17,7 +17,7 @@
 #include "Revision.hh"
 #include "Error.hh"
 #include "DocEnumerator.hh"
-#include "VarInt.hh"
+#include "varint.hh"
 
 /** IMPLEMENTATION NOTES:
  

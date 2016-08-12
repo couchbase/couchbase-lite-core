@@ -13,11 +13,12 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Database.h"
 #include "c4Private.h"
 
+#include "c4DatabaseInternal.hh"
 #include "C4DocInternal.hh"
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
@@ -31,7 +32,7 @@ namespace c4Internal {
     class C4DocumentV2 : public C4DocumentInternal {
     public:
 
-        C4DocumentV2(C4Database* database, C4Slice docID)
+        C4DocumentV2(c4DatabaseV2* database, C4Slice docID)
         :C4DocumentInternal(database, docID),
          _store(database->revisionStore()),
          _current(_store.get(docID))
@@ -44,7 +45,7 @@ namespace c4Internal {
         }
 
 
-        C4DocumentV2(C4Database *database, const Document &doc)
+        C4DocumentV2(c4DatabaseV2 *database, const Document &doc)
         :C4DocumentInternal(database, move(doc)),
          _store(database->revisionStore()),
          _current(new Revision(doc))
@@ -235,6 +236,13 @@ namespace c4Internal {
     }
 
 
+    CASRevisionStore& c4DatabaseV2::revisionStore() {
+        if (!_revisionStore)
+            _revisionStore.reset(new CASRevisionStore(db()));
+        return *_revisionStore;
+    }
+
+
     C4DocumentInternal* c4DatabaseV2::newDocumentInstance(C4Slice docID) {
         return new C4DocumentV2(this, docID);
     }
@@ -259,11 +267,4 @@ namespace c4Internal {
         return true;
     }
 
-}
-
-
-CASRevisionStore& c4Database::revisionStore() {
-    if (!_revisionStore)
-        _revisionStore.reset(new CASRevisionStore(_db.get()));
-    return *_revisionStore;
 }

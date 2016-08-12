@@ -15,7 +15,7 @@ using namespace geohash;
 
 static int numMapCalls;
 
-static void updateIndex(Database *indexDB, MapReduceIndex* index) {
+static void updateIndex(Database *indexDB, MapReduceIndex& index) {
     MapReduceIndexer indexer;
     indexer.addIndex(index);
     auto seq = indexer.startingSequence();
@@ -23,7 +23,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
 
     auto options = DocEnumerator::Options::kDefault;
     options.includeDeleted = true;
-    DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
+    DocEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
         auto &doc = e.doc();
         std::vector<Collatable> keys;
@@ -58,7 +58,7 @@ public:
 
 void setUp() {
     DatabaseTestFixture::setUp();
-    index = new MapReduceIndex(db, "geo", db);
+    index = new MapReduceIndex(db->getKeyStore("geo"), *db);
 }
 
 void tearDown() {
@@ -73,7 +73,7 @@ void addCoords(unsigned n) {
     Log("==== Adding %u docs...", n);
     srandom(42);
     Transaction t(db);
-    IndexWriter writer(index, t);
+    IndexWriter writer(*index, t);
     for (unsigned i = 0; i < n; ++i) {
         char docID[20];
         sprintf(docID, "%u", i);
@@ -90,7 +90,7 @@ void addCoords(unsigned n) {
 void indexIt() {
     index->setup(0, "1");
     Log("==== Indexing...");
-    updateIndex(db, index);
+    updateIndex(db, *index);
 }
 
 void testGeoIndex() {
@@ -101,7 +101,7 @@ void testGeoIndex() {
 
     Log("==== Querying...");
     unsigned found = 0;
-    for (GeoIndexEnumerator e(index, queryArea); e.next(); ) {
+    for (GeoIndexEnumerator e(*index, queryArea); e.next(); ) {
         area a = e.keyBoundingBox();
         ++found;
         unsigned emitID = e.geoID();

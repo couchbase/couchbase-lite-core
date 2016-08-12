@@ -27,7 +27,7 @@ namespace cbforest {
     class FullTextMatch {
     public:
         alloc_slice docID;                  ///< The document ID that produced the text
-        cbforest::sequence sequence;        ///< The sequence number of the document revision
+        sequence_t sequence;                ///< The sequence number of the document revision
         std::vector<TermMatch> textMatches; ///< The positions in the query string of the matches
 
         alloc_slice value() const;          ///< The emitted value
@@ -37,7 +37,7 @@ namespace cbforest {
 
         static alloc_slice matchedText(MapReduceIndex *index,
                                        slice docID,
-                                       cbforest::sequence seq,
+                                       sequence_t seq,
                                        unsigned fullTextID) {
             return index->readFullText(docID, seq, fullTextID);
         }
@@ -47,7 +47,7 @@ namespace cbforest {
         FullTextMatch(const IndexEnumerator&);
         unsigned readTermMatches(slice indexValue, unsigned termIndex);
 
-        const MapReduceIndex *_index;
+        const MapReduceIndex &_index;
         unsigned _fullTextID;
         int _lastTermIndex;
         float _rank {0.0};
@@ -59,7 +59,7 @@ namespace cbforest {
     /** Enumerator for full-text queries. */
     class FullTextIndexEnumerator {
     public:
-        FullTextIndexEnumerator(Index*,
+        FullTextIndexEnumerator(Index&,
                                 slice queryString,
                                 slice queryStringLanguage,
                                 bool ranked,

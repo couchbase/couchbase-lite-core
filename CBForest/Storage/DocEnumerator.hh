@@ -91,18 +91,6 @@ namespace cbforest {
         operator const Document*() const    {return _doc.key().buf ? &_doc : NULL;}
         const Document* operator->() const  {return _doc.key().buf ? &_doc : NULL;}
 
-        class Impl {
-        public:
-            virtual ~Impl()                         { }
-            virtual bool next() =0;
-            virtual bool read(Document&) =0;
-            virtual bool shouldSkipFirstStep()      {return false;}
-        protected:
-            void updateDoc(Document &doc, sequence s, uint64_t offset =0, bool deleted =false) const {
-                doc.update(s, offset, deleted);
-            }
-        };
-
         DocEnumerator(const DocEnumerator&) = delete;               // no copying allowed
         DocEnumerator& operator=(const DocEnumerator&) = delete;    // no assignment allowed
 
@@ -117,6 +105,19 @@ namespace cbforest {
         Iter begin()    {next(); return Iter{this};}
         Iter end()      {return Iter{nullptr};}
 
+        /** Internal implementation of enumerator; each storage type must subclass it. */
+        class Impl {
+        public:
+            virtual ~Impl()                         { }
+            virtual bool next() =0;
+            virtual bool read(Document&) =0;
+            virtual bool shouldSkipFirstStep()      {return false;}
+        protected:
+            void updateDoc(Document &doc, sequence s, uint64_t offset =0, bool del =false) const {
+                doc.update(s, offset, del);
+            }
+        };
+
     private:
         friend class KeyStore;
 
@@ -126,13 +127,13 @@ namespace cbforest {
         bool nextFromArray();
         bool getDoc();
 
-        KeyStore *_store;
-        Options _options;
-        vector<string> _docIDs;
-        int _curDocIndex {0};
-        Document _doc;
-        bool _skipStep {false};
-        unique_ptr<Impl> _impl;
+        KeyStore *      _store;             // The KeyStore I'm enumerating
+        Options         _options;           // Enumeration options
+        vector<string>  _docIDs;            // The set of docIDs to enumerate (if any)
+        int             _curDocIndex {0};   // Current index in _docIDs, else -1
+        Document        _doc;               // Current document
+        bool            _skipStep {false};  // Should next call to next() skip _impl->next()?
+        unique_ptr<Impl> _impl;             // The storage-specific implementation
     };
 
 }

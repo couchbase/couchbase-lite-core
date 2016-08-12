@@ -25,6 +25,8 @@ namespace cbforest {
     
     class Index;
 
+
+    /** Struct representing range of Index keys. */
     struct KeyRange {
         Collatable start;
         Collatable end;
@@ -41,17 +43,17 @@ namespace cbforest {
     };
 
     
-    /** A key-value store used as an index. */
+    /** A key/value index, stored in a KeyStore. */
     class Index {
     public:
-        Index(Database*, std::string name);
+        explicit Index(KeyStore&);
         ~Index();
 
         alloc_slice getEntry(slice docID, sequence docSequence,
                              Collatable key,
                              unsigned emitIndex) const;
 
-        Database* database() const              {return _indexDB;}
+        Database& database() const              {return _store.database();}
         bool isBusy() const                     {return _userCount > 0;}
 
         /** Used as a placeholder for an index value that's stored out of line, i.e. that
@@ -68,15 +70,14 @@ namespace cbforest {
         void addUser()                          {++_userCount;}
         void removeUser()                       {--_userCount;}
 
-        Database* const _indexDB;
         std::atomic_uint _userCount {0};
     };
 
 
-    /** A transaction to update an index. */
+    /** Updates an index, within a Transaction. */
     class IndexWriter {
     public:
-        IndexWriter(Index* index, Transaction& t);
+        IndexWriter(Index& index, Transaction& t);
         ~IndexWriter();
 
         /** Updates the index entry for a document with the given keys and values.
@@ -95,31 +96,31 @@ namespace cbforest {
         friend class Index;
         friend class MapReduceIndex;
 
-        Index *_index;
-        Transaction &_transaction;
+        Index &         _index;             // The Index being written to
+        Transaction &   _transaction;       // The Transaction enabling the write
     };
 
 
     /** Index query enumerator. */
     class IndexEnumerator {
     public:
-        IndexEnumerator(Index*,
+        IndexEnumerator(Index&,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
                         const DocEnumerator::Options&);
 
-        IndexEnumerator(Index*,
+        IndexEnumerator(Index&,
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options&);
 
-        virtual ~IndexEnumerator()              {_index->removeUser();}
+        virtual ~IndexEnumerator()              {_index.removeUser();}
 
-        const Index* index() const              {return _index;}
+        const Index& index() const              {return _index;}
 
         CollatableReader key() const            {return CollatableReader(_key);}
         slice value() const                     {return _value;}
         slice docID() const                     {return _docID;}
-        cbforest::sequence sequence() const     {return _sequence;}
+        sequence_t sequence() const             {return _sequence;}
 
         int currentKeyRangeIndex()              {return _currentKeyIndex;}
 
@@ -137,20 +138,20 @@ namespace cbforest {
     private:
         friend class Index;
 
-        Index* _index;
-        DocEnumerator::Options _options;
-        alloc_slice _startKey;
-        alloc_slice _endKey;
-        bool _inclusiveStart;
-        bool _inclusiveEnd;
-        std::vector<KeyRange> _keyRanges;
-        int _currentKeyIndex {-1};
+        Index&                  _index;                 // The index
+        DocEnumerator::Options  _options;               // Enumeration options
+        alloc_slice             _startKey;              // Key to start at
+        alloc_slice             _endKey;                // Key to end at
+        bool                    _inclusiveStart;        // Include the startKey?
+        bool                    _inclusiveEnd;          // Include the endKey?
+        std::vector<KeyRange>   _keyRanges;             // Ranges of keys to traverse (optional)
+        int                     _currentKeyIndex {-1};  // Current key range's index or -1
 
-        DocEnumerator _dbEnum;
-        slice _key;
-        slice _value;
-        alloc_slice _docID;
-        ::cbforest::sequence _sequence;
+        DocEnumerator           _dbEnum;                // The underlying KeyStore enumerator
+        slice                   _key;                   // Current key
+        slice                   _value;                 // Current value
+        alloc_slice             _docID;                 // Current docID
+        sequence_t              _sequence;              // Current sequence
     };
 
 }

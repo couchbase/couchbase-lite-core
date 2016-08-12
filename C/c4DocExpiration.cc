@@ -13,9 +13,11 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
 #include "c4ExpiryEnumerator.h"
+#include "c4DatabaseInternal.hh"
 
+#include "Collatable.hh"
 #include "DocEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"

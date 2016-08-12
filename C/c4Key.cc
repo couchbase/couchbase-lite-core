@@ -13,7 +13,8 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
+#include "c4KeyInternal.hh"
 #include "c4Key.h"
 #include "c4Document.h"
 #include "Collatable.hh"

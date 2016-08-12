@@ -315,7 +315,7 @@ namespace cbforest {
 #pragma mark - KEY-STORES:
 
 
-    KeyStore* ForestDatabase::newKeyStore(const string &name, KeyStore::Options options) {
+    KeyStore* ForestDatabase::newKeyStore(const string &name, KeyStore::Capabilities options) {
         return new ForestKeyStore(*this, name, options);
     }
 
@@ -341,7 +341,7 @@ namespace cbforest {
     }
 
 
-    ForestKeyStore::ForestKeyStore(ForestDatabase &db, const string &name, KeyStore::Options options)
+    ForestKeyStore::ForestKeyStore(ForestDatabase &db, const string &name, KeyStore::Capabilities options)
     :KeyStore(db, name, options)
     {
         reopen();

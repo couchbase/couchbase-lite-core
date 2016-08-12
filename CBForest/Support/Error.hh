@@ -76,7 +76,7 @@ namespace cbforest {
         int const code;
 
         error (Domain d, int c );
-        error (CBForestError e)     :error(CBForest, e) {}
+        explicit error (CBForestError e)     :error(CBForest, e) {}
 
         /** Returns an equivalent error in the CBForest or POSIX domain. */
         error standardized() const;

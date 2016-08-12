@@ -74,7 +74,7 @@ namespace cbforest {
     }
 
 
-    GeoIndexEnumerator::GeoIndexEnumerator(Index *index,
+    GeoIndexEnumerator::GeoIndexEnumerator(MapReduceIndex &index,
                                            geohash::area searchArea)
     :IndexEnumerator(index,
                      keyRangesFor(searchArea),
@@ -93,7 +93,7 @@ namespace cbforest {
         _alreadySeen.insert(item);
 
         // Read the actual rect and see if it truly intersects the query:
-        ((MapReduceIndex*)index())->readGeoArea(item.first, sequence(), _geoID,
+        ((MapReduceIndex&)index()).readGeoArea(item.first, sequence(), _geoID,
                                                 _keyBBox, _geoKey, _geoValue);
         if (!_keyBBox.intersects(_searchArea)) {
             _misses++;
@@ -109,7 +109,7 @@ namespace cbforest {
 #if DEBUG
     GeoIndexEnumerator::~GeoIndexEnumerator() {
         Log("GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %u keys)",
-            _hits, _misses, _dups, _hits+_misses+_dups, ((MapReduceIndex*)index())->rowCount());
+            _hits, _misses, _dups, _hits+_misses+_dups, ((MapReduceIndex&)index()).rowCount());
     }
 #endif
 

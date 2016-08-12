@@ -13,11 +13,15 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
 #include "c4View.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
+
+#include "c4DatabaseInternal.hh"
 #include "c4DocInternal.hh"
+#include "c4KeyInternal.hh"
+
 #include "Database.hh"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
@@ -47,8 +51,8 @@ struct c4View : public c4Internal::RefCounted<c4View> {
            C4DatabaseFlags flags,
            const C4EncryptionKey *encryptionKey)
     :_sourceDB(sourceDB->retain()),
-     _viewDB(newDatabase((std::string)path, flags, encryptionKey, false)),
-     _index(_viewDB.get(), (std::string)viewName, sourceDB->db())
+     _viewDB(c4Database::newDatabase((std::string)path, flags, encryptionKey, false)),
+     _index(_viewDB->getKeyStore((std::string)viewName), *sourceDB->db())
     {
         setVersion(version);
     }
@@ -125,7 +129,7 @@ bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError
     WITH_LOCK(view);
     if (!view->checkNotBusy(outError))
         return false;
-    return rekey(view->_viewDB.get(), newKey, outError);
+    return c4Database::rekey(view->_viewDB.get(), newKey, outError);
 }
 
 bool c4view_eraseIndex(C4View *view, C4Error *outError) {
@@ -239,7 +243,7 @@ struct c4Indexer : public MapReduceIndexer, c4Internal::InstanceCounted {
         _views.push_back(view);
 #endif
         WITH_LOCK(view->_sourceDB); // MapReduceIndexer::addIndex ends up calling _sourceDB
-        addIndex(&view->_index);
+        addIndex(view->_index);
     }
 
     C4Database* _db;
@@ -466,14 +470,14 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
                         Collatable endKey, slice endKeyDocID,
                         const DocEnumerator::Options &options)
     :C4QueryEnumInternal(view),
-     _enum(&view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
+     _enum(view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
 
     C4MapReduceEnumerator(C4View *view,
                         std::vector<KeyRange> keyRanges,
                         const DocEnumerator::Options &options)
     :C4QueryEnumInternal(view),
-     _enum(&view->_index, keyRanges, options)
+     _enum(view->_index, keyRanges, options)
     { }
 
     virtual bool next() override {
@@ -539,7 +543,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
                          bool ranked,
                          const DocEnumerator::Options &options)
     :C4QueryEnumInternal(view),
-     _enum(&view->_index, queryString, queryStringLanguage, ranked, options)
+     _enum(view->_index, queryString, queryStringLanguage, ranked, options)
     { }
 
     virtual bool next() override {
@@ -626,7 +630,7 @@ bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacritica
 struct C4GeoEnumerator : public C4QueryEnumInternal {
     C4GeoEnumerator(C4View *view, const geohash::area &bbox)
     :C4QueryEnumInternal(view),
-     _enum(&view->_index, bbox)
+     _enum(view->_index, bbox)
     { }
 
     virtual bool next() override {

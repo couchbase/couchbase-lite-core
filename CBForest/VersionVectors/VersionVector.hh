@@ -50,7 +50,7 @@ namespace cbforest {
         static alloc_slice peerIDFromBinary(slice binaryPeerID);
 
         Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
-        Version(slice string)                   :Version(string, true) { }
+        explicit Version(slice string)          :Version(string, true) { }
 
         peerID author() const                   {return _author;}
         generation gen() const                  {return _gen;}
@@ -81,8 +81,8 @@ namespace cbforest {
         Version(slice string, bool validateAuthor);
         void validate() const;
 
-        peerID _author;
-        generation _gen {0};
+        peerID      _author;        // The ID of the peer who created this revision
+        generation  _gen {0};       // The number of times this peer edited this revision
     };
 
 
@@ -103,14 +103,15 @@ namespace cbforest {
 
         VersionVector(const VersionVector&);
         VersionVector(VersionVector&&);
-
         VersionVector& operator=(const VersionVector&);
 
         /** Populates an empty vector from a Fleece value. */
         void readFrom(const fleece::Value*);
 
+        /** Sets the vector to empty. */
         void reset();
 
+        /** True if the vector is non-empty. */
         explicit operator bool() const                      {return count() > 0;}
 
         size_t count() const                                {return _vers.size();}
@@ -118,6 +119,7 @@ namespace cbforest {
         const Version& current() const                      {return _vers.at(0);}
         const std::vector<Version> versions() const         {return _vers;}
 
+        /** Returns the generation count for the given author. */
         generation genOfAuthor(peerID) const;
         generation operator[] (peerID author) const         {return genOfAuthor(author);}
 
@@ -173,9 +175,9 @@ namespace cbforest {
         void append(Version);
         friend class versionMap;
 
-        alloc_slice _string;                        // The string I was parsed from
-        std::vector<Version> _vers;                 // versions, in order
-        std::list<alloc_slice> _addedAuthors;       // storage space for added peerIDs
+        alloc_slice             _string;        // The string I was parsed from (if any)
+        std::vector<Version>    _vers;          // versions, in order
+        std::list<alloc_slice>  _addedAuthors;  // storage space for added peerIDs
     };
 
 

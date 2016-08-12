@@ -17,6 +17,8 @@ namespace cbforest {
     typedef fleece::alloc_slice alloc_slice;
 
     typedef uint64_t sequence;
+
+    typedef sequence sequence_t;    // Sometimes used for disambiguation with a sequence() method
 }
 
 

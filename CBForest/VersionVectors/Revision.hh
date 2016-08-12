@@ -14,6 +14,8 @@
 
 namespace cbforest {
 
+    /** A revision of a versioned document, which is (confusingly) stored as a separate CBForest
+        document. */
     class Revision {
     public:
 
@@ -27,7 +29,8 @@ namespace cbforest {
             bool conflicted;
         };
 
-        enum Flags : uint8_t {          // Matches C4DocumentFlags
+        /** Flags applying to the document if this is the current rev. Matches C4DocumentFlags. */
+        enum Flags : uint8_t {
             kNone           = 0x00,
             kDeleted        = 0x01,
             kConflicted     = 0x02,
@@ -35,7 +38,7 @@ namespace cbforest {
         };
 
         /** Creates a Revision from a pre-populated Document read from a Database. */
-        Revision(const Document& doc);
+        explicit Revision(const Document& doc);
 
         /** Creates a new Revision. */
         Revision(slice docID,
@@ -46,10 +49,9 @@ namespace cbforest {
         Revision(Revision&&);
 
         slice docID() const;
-
-        const VersionVector& version() const{return _vers;}
         alloc_slice revID() const           {return _vers ? _vers.current().asString()
                                                           : alloc_slice();}
+        const VersionVector& version() const{return _vers;}
 
         Flags flags() const                 {return _flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}
@@ -57,32 +59,30 @@ namespace cbforest {
         bool hasAttachments() const         {return (flags() & kHasAttachments) != 0;}
 
         bool exists() const                 {return _doc.exists();}
-        cbforest::sequence sequence() const {return _doc.sequence();}
+        sequence_t sequence() const         {return _doc.sequence();}
 
         slice docType() const               {return _docType;}
         slice body() const                  {return _doc.body();}
 
-        const Document& document() const    {return _doc;}
         Document& document()                {return _doc;}
 
         bool isCurrent() const;
-        void setCurrent(bool current);
+        void setCurrent(bool);
 
         bool setConflicted(bool);
-
-        static alloc_slice generateMergedRevID(slice body,
-                                               const VersionVector &vers,
-                                               peerID myPeerID);
 
     private:
         void readMeta();
         void writeMeta(const VersionVector &vers);
         void setKey(slice docid, bool current);
 
-        Document _doc;
-        Flags _flags {kNone};
-        VersionVector _vers;
-        slice _docType;
+        Revision(const Revision&) =delete;  // not copyable
+        Revision& operator= (const Revision&) =delete;
+
+        Document        _doc;               // The document
+        Flags           _flags {kNone};     // Flags
+        VersionVector   _vers;              // Version vector
+        slice           _docType;           // Document type
     };
 
 }

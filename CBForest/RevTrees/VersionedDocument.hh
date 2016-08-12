@@ -53,7 +53,7 @@ namespace cbforest {
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
 
         bool exists() const         {return _doc.exists();}
-        cbforest::sequence sequence() const {return _doc.sequence();}
+        sequence_t sequence() const {return _doc.sequence();}
 
         const Document& document() const    {return _doc;}
 

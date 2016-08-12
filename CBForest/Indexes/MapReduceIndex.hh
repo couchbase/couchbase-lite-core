@@ -29,11 +29,10 @@ namespace cbforest {
     /** An Index that uses a MapFn to index the documents of another KeyStore. */
     class MapReduceIndex : public Index {
     public:
-        MapReduceIndex(Database*,
-                       std::string name,
-                       Database *sourceDatabase);
+        MapReduceIndex(KeyStore&,
+                       Database &sourceDatabase);
 
-        KeyStore& sourceStore() const           {return _sourceDatabase->defaultKeyStore();}
+        KeyStore& sourceStore() const           {return _sourceDatabase.defaultKeyStore();}
         void readState();
         int indexType() const                   {return _indexType;}
         
@@ -73,7 +72,7 @@ namespace cbforest {
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
-        Database* const _sourceDatabase;
+        Database& _sourceDatabase;
         std::string _mapVersion, _lastMapVersion;
         int _indexType {0};
         sequence _lastSequenceIndexed {0}, _lastSequenceChangedAt {0};
@@ -92,7 +91,7 @@ namespace cbforest {
     public:
         ~MapReduceIndexer();
 
-        void addIndex(MapReduceIndex*);
+        void addIndex(MapReduceIndex&);
 
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}

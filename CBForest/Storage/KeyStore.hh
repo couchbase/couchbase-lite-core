@@ -35,17 +35,17 @@ namespace cbforest {
     class KeyStore {
     public:
 
-        struct Options {
+        struct Capabilities {
             bool sequences      :1;     //< Documents have sequences & can be enumerated by sequence
             bool softDeletes    :1;     //< Deleted documents have sequence numbers (until compact)
 
-            static const Options defaults;
+            static const Capabilities defaults;
         };
 
 
         Database& database() const                  {return _db;}
         const string& name() const                  {return _name;}
-        Options options() const                     {return _options;}
+        Capabilities capabilities() const           {return _capabilities;}
 
         virtual uint64_t documentCount() const =0;
         virtual sequence lastSequence() const =0;
@@ -87,8 +87,8 @@ namespace cbforest {
         virtual ~KeyStore()                             { }
 
     protected:
-        KeyStore(Database &db, const string &name, Options options)
-                :_db(db), _name(name), _options(options) { }
+        KeyStore(Database &db, const string &name, Capabilities capabilities)
+                :_db(db), _name(name), _capabilities(capabilities) { }
 
         virtual void reopen()                           { }
         virtual void close()                            { }
@@ -105,12 +105,12 @@ namespace cbforest {
             doc.update(seq, offset, deleted);
         }
 
-        Database &_db;
-        const string _name;
-        const Options _options;
+        Database &          _db;            // The Database I'm contained in
+        const string        _name;          // My name
+        const Capabilities  _capabilities;  // Do I support sequences or soft deletes?
 
     private:
-        KeyStore(const KeyStore&) = delete;
+        KeyStore(const KeyStore&) = delete;     // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
 
         friend class Database;

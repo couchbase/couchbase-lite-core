@@ -13,9 +13,10 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Impl.hh"
+#include "c4Internal.hh"
 #include "c4DocEnumerator.h"
 
+#include "c4DatabaseInternal.hh"
 #include "c4DocInternal.hh"
 #include "Database.hh"
 #include "Document.hh"

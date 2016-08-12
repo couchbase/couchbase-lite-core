@@ -26,7 +26,7 @@ static CollatableBuilder ToCollatable(T t) {
 
 static int numMapCalls;
 
-static void updateIndex(Database *indexDB, MapReduceIndex* index) {
+static void updateIndex(Database *indexDB, MapReduceIndex& index) {
     MapReduceIndexer indexer;
     indexer.addIndex(index);
     auto seq = indexer.startingSequence();
@@ -35,7 +35,7 @@ static void updateIndex(Database *indexDB, MapReduceIndex* index) {
 
     auto options = DocEnumerator::Options::kDefault;
     options.includeDeleted = true;
-    DocEnumerator e(index->sourceStore(), seq, UINT64_MAX, options);
+    DocEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
         auto &doc = e.doc();
         Log("    enumerating seq %llu: '%.*s' (del=%d)",
@@ -68,7 +68,7 @@ MapReduceIndex* index;
 
 void setUp() {
     DatabaseTestFixture::setUp();
-    index = new MapReduceIndex(db, "index", db);
+    index = new MapReduceIndex(db->getKeyStore("index"), *db);
     Assert(index);
 }
 
@@ -79,10 +79,10 @@ void tearDown() {
 
 
 void queryExpectingKeys(vector<string> expectedKeys) {
-    updateIndex(db, index);
+    updateIndex(db, *index);
 
     size_t nRows = 0;
-    for (IndexEnumerator e(index, Collatable(), cbforest::slice::null,
+    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
                            Collatable(), cbforest::slice::null,
                            DocEnumerator::Options::kDefault); e.next(); ) {
         CollatableReader keyReader(e.key());
@@ -175,7 +175,7 @@ void testMapReduce() {
 
 void testReopen() {
     createDocsAndIndex();
-    updateIndex(db, index);
+    updateIndex(db, *index);
     sequence lastIndexed = index->lastSequenceIndexed();
     sequence lastChangedAt = index->lastSequenceChangedAt();
     Assert(lastChangedAt > 0);
@@ -184,7 +184,7 @@ void testReopen() {
     delete index;
     index = NULL;
 
-    index = new MapReduceIndex(db, "index", db);
+    index = new MapReduceIndex(db->getKeyStore("index"), *db);
     Assert(index);
 
     index->setup(0, "1");

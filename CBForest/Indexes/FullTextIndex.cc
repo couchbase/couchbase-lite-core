@@ -38,7 +38,7 @@ namespace cbforest {
     }
 
 
-    FullTextIndexEnumerator::FullTextIndexEnumerator(Index *index,
+    FullTextIndexEnumerator::FullTextIndexEnumerator(Index &index,
                                                      slice queryString,
                                                      slice queryStringLanguage,
                                                      bool ranked,
@@ -55,7 +55,7 @@ namespace cbforest {
     // Runs the query, accumulating the results in _result.
     void FullTextIndexEnumerator::search() {
         std::vector<unsigned> termTotalCounts(_tokens.size());      // used for ranking
-        typedef std::pair<cbforest::sequence, unsigned> RowID;
+        typedef std::pair<sequence, unsigned> RowID;
         std::map<RowID, FullTextMatch*> rows;
         
         while (_e.next()) {
@@ -148,17 +148,17 @@ namespace cbforest {
     FullTextMatch::FullTextMatch(const IndexEnumerator &e)
     :docID {e.docID()},
      sequence {e.sequence()},
-     _index {(const MapReduceIndex*)e.index()}
+     _index {(const MapReduceIndex&)e.index()}
      // _lastTermIndex, _fullTextID will be initialized later in readTermMatches
     { }
 
 
     alloc_slice FullTextMatch::matchedText() const {
-        return _index->readFullText(docID, sequence, _fullTextID);
+        return _index.readFullText(docID, sequence, _fullTextID);
     }
 
     alloc_slice FullTextMatch::value() const {
-        return _index->readFullTextValue(docID, sequence, _fullTextID);
+        return _index.readFullTextValue(docID, sequence, _fullTextID);
     }
 
 

@@ -25,6 +25,7 @@ namespace cbforest {
     class SQLiteKeyStore;
 
 
+    /** SQLite implementation of Database. */
     class SQLiteDatabase : public Database {
     public:
 
@@ -50,7 +51,7 @@ namespace cbforest {
     protected:
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
-        KeyStore* newKeyStore(const string &name, KeyStore::Options) override;
+        KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const string &name) override;
 
         sequence lastSequence(const string& keyStoreName) const;
@@ -63,13 +64,14 @@ namespace cbforest {
     private:
         friend class SQLiteKeyStore;
 
-        unique_ptr<SQLite::Database> _sqlDb;
-        unique_ptr<SQLite::Transaction> _transaction;
-        unique_ptr<SQLite::Statement> _getLastSeqStmt, _setLastSeqStmt;
+        unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
+        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
     };
 
 
 
+    /** SQLite implementation of KeyStore; corresponds to a SQL table. */
     class SQLiteKeyStore : public KeyStore {
     public:
         uint64_t documentCount() const override;
@@ -94,7 +96,7 @@ namespace cbforest {
 
     private:
         friend class SQLiteDatabase;
-        SQLiteKeyStore(SQLiteDatabase&, const string &name, KeyStore::Options options);
+        SQLiteKeyStore(SQLiteDatabase&, const string &name, KeyStore::Capabilities options);
         SQLiteDatabase& db() const                    {return (SQLiteDatabase&)database();}
         stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(stringstream &sql, DocEnumerator::Options &options);
@@ -103,26 +105,10 @@ namespace cbforest {
         unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt;
         unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         unique_ptr<SQLite::Statement> _setStmt, _delByKeyStmt, _delBySeqStmt;
-        bool _createdKeyIndex {false};
-        bool _createdSeqIndex {false};
+        bool                          _createdKeyIndex {false};     // Created by-key index yet?
+        bool                          _createdSeqIndex {false};     // Created by-seq index yet?
     };
 
-
-
-    class SQLiteDatabaseFactory : public DatabaseFactory {
-    public:
-        virtual Database* newDatabase(const string &path,
-                                      const Database::Options* options =nullptr) override
-        {
-            return new SQLiteDatabase(path, options);
-        }
-
-        virtual std::string name() const override {
-            return std::string("SQLite");
-        }
-        virtual ~SQLiteDatabaseFactory() { }
-    };
-    
 }
 
 

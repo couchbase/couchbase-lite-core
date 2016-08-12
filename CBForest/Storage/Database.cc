@@ -151,7 +151,7 @@ namespace cbforest {
         return getKeyStore(name, _options.keyStores);
     }
 
-    KeyStore& Database::getKeyStore(const string &name, KeyStore::Options options) const {
+    KeyStore& Database::getKeyStore(const string &name, KeyStore::Capabilities options) const {
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
             KeyStore &store = *i->second;
@@ -162,7 +162,7 @@ namespace cbforest {
         }
     }
 
-    KeyStore& Database::addKeyStore(const string &name, KeyStore::Options options) {
+    KeyStore& Database::addKeyStore(const string &name, KeyStore::Capabilities options) {
         Debug("Database: open KVS '%s'", name.c_str());
         CBFAssert(!(options.sequences && !_options.keyStores.sequences));
         CBFAssert(!(options.softDeletes && !_options.keyStores.softDeletes));
@@ -180,7 +180,7 @@ namespace cbforest {
         }
     }
 
-    KeyStore& Database::defaultKeyStore(KeyStore::Options options) const {
+    KeyStore& Database::defaultKeyStore(KeyStore::Capabilities options) const {
         if (!_defaultKeyStore)
             const_cast<Database*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
                                                                          options);
