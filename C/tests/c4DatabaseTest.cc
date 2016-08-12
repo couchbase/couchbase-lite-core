@@ -654,7 +654,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
 
     const C4EncryptionKey* encryptionKey()  {
         if (!isForestDB())
-            return nullptr; //FIX
+            return nullptr; //FIX: Remove this once SQLCipher is supported
         sKey.algorithm = kC4EncryptionAES256;
         memcpy(sKey.bytes, "this is not a random key at all...", 32);
         return &sKey;

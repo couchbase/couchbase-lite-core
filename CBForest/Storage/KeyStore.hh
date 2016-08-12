@@ -1,6 +1,6 @@
 //
 //  KeyStore.hh
-//  CBNano
+//  CBForest
 //
 //  Created by Jens Alfke on 11/12/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.

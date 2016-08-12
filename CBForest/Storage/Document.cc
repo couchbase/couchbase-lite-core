@@ -1,6 +1,6 @@
 //
 //  Document.cc
-//  CBNano
+//  CBForest
 //
 //  Created by Jens Alfke on 11/11/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.

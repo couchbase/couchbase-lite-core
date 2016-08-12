@@ -1,6 +1,6 @@
 //
 //  SQLiteDatabase.hh
-//  CBNano
+//  CBForest
 //
 //  Created by Jens Alfke on 7/21/16.
 //  Copyright © 2016 Couchbase. All rights reserved.
