@@ -1443,28 +1443,21 @@
 		2757DE551B9FC34E002EE261 /* C API */ = {
 			isa = PBXGroup;
 			children = (
-				273E9F7D1C518793003115A6 /* c4.h */,
-				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
-				2757DE591B9FC3F1002EE261 /* c4Base.h */,
+				27F7A0C11D5E5C3500447BC6 /* include */,
+				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
+				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
-				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				27F7A0BD1D5E2BAB00447BC6 /* c4DatabaseInternal.hh */,
-				274A69881BED288D00D16D37 /* c4Document.h */,
 				271057D61D3D70B10018247B /* c4DocInternal.hh */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				275CED441D3ECE9B001DE46C /* c4Document1.cc */,
 				271057D31D3D70780018247B /* c4Document2.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
-				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
-				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
-				274A698F1BED3E0500D16D37 /* c4Key.h */,
 				27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */,
 				274D04241BA8A58200FF7C35 /* c4View.cc */,
-				275607781BA21DAB00F58218 /* c4View.h */,
-				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
 				273E9EC61C506C70003115A6 /* c4.def */,
 				274D03FF1BA7554700FF7C35 /* tests */,
@@ -1722,6 +1715,21 @@
 				27EF7FF71914296D00A327B9 /* README */,
 			);
 			path = "sqlite3-unicodesn";
+			sourceTree = "<group>";
+		};
+		27F7A0C11D5E5C3500447BC6 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				273E9F7D1C518793003115A6 /* c4.h */,
+				2757DE591B9FC3F1002EE261 /* c4Base.h */,
+				2757DE571B9FC3C9002EE261 /* c4Database.h */,
+				274A69881BED288D00D16D37 /* c4Document.h */,
+				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
+				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
+				274A698F1BED3E0500D16D37 /* c4Key.h */,
+				275607781BA21DAB00F58218 /* c4View.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
