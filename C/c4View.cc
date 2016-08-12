@@ -23,7 +23,6 @@
 #include "MapReduceIndex.hh"
 #include "FullTextIndex.hh"
 #include "GeoIndex.hh"
-#include "VersionedDocument.hh"
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
@@ -315,7 +314,7 @@ bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                    unsigned viewNumber,
                                    C4Document *doc)
 {
-    auto idoc = cbforest::internal(doc);
+    auto idoc = c4Internal::internal(doc);
     if (!indexer->shouldMapDocIntoView(idoc->document(), viewNumber))
         return false;
     else if (indexer->shouldMapDocTypeIntoView(idoc->type(), viewNumber))

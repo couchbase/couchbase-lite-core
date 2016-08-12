@@ -424,6 +424,11 @@ namespace cbforest {
         _sorted = true;
     }
 
+    void RevTree::saved() {
+        for (auto &rev : _revs)
+            rev.clearFlag(Rev::kNew);
+    }
+
 #if DEBUG
     std::string RevTree::dump() {
         std::stringstream out;

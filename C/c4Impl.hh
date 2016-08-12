@@ -12,12 +12,10 @@
 #include "slice.hh"
 #include "Database.hh"
 #include "Collatable.hh"
-#include "VersionedDocument.hh"
 #include "CASRevisionStore.hh"
 #include "Error.hh"
-#include "Database.hh"
-#include "forestdb.h"
 #include <functional>
+
 
 // Defining C4DB_THREADSAFE as 1 will make C4Database thread-safe: the same handle can be called
 // simultaneously from multiple threads. Transactions will be single-threaded: once a thread has
@@ -30,7 +28,6 @@
 using namespace cbforest;
 
 namespace cbforest {
-    class VersionedDocument;
     class CASRevisionStore;
 }
 
@@ -53,9 +50,10 @@ typedef struct {
 
 
 #include "c4Database.h"
+#include "c4Document.h"
 
-struct C4Document;
 struct C4DocEnumerator;
+
 
 namespace c4Internal {
 
@@ -80,10 +78,6 @@ namespace c4Internal {
                           bool isMainDB);
 
     bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
-
-    C4Document* newC4Document(C4Database*, const Document&);
-
-    //const VersionedDocument& versionedDocument(C4Document*);
 
     typedef std::function<bool(const Document&,
                                uint32_t documentFlags,  // C4DocumentFlags
@@ -127,6 +121,8 @@ namespace c4Internal {
     // Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted').
     // Should only need to be used for the view indexer's enumerator.
     static const uint16_t kC4IncludePurged = 0x8000;
+
+    class C4DocumentInternal;
 }
 
 using namespace c4Internal;
@@ -167,14 +163,22 @@ struct c4Database : public RefCounted<c4Database> {
     KeyStore& defaultKeyStore()                         {return _db->defaultKeyStore();}
     KeyStore& getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
 
+    virtual C4DocumentInternal* newDocumentInstance(C4Slice docID) =0;
+    virtual C4DocumentInternal* newDocumentInstance(const Document&) =0;
+    virtual bool readDocMeta(const Document&,
+                             C4DocumentFlags*,
+                             alloc_slice *revID =nullptr,
+                             slice *docType =nullptr) =0;
+
 #if C4DB_THREADSAFE
     // Mutex for synchronizing Database calls. Non-recursive!
     std::mutex _mutex;
 #endif
 
-private:
+protected:
     virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
 
+private:
     std::unique_ptr<Database> _db;
 #if C4DB_THREADSAFE
     // Recursive mutex for accessing _transaction and _transactionLevel.
@@ -185,6 +189,38 @@ private:
     int _transactionLevel {0};
     std::unique_ptr<CASRevisionStore> _revisionStore;
 };
+
+
+namespace c4Internal {
+
+    class c4DatabaseV1 : public c4Database {
+    public:
+        c4DatabaseV1(std::string path, C4DatabaseFlags flags_, const C4EncryptionKey *encryptionKey)
+        :c4Database(path, flags_, encryptionKey)
+        { }
+        C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
+        C4DocumentInternal* newDocumentInstance(const Document&) override;
+        bool readDocMeta(const Document&,
+                         C4DocumentFlags*,
+                         alloc_slice *revID =nullptr,
+                         slice *docType =nullptr) override;
+    };
+
+
+    class c4DatabaseV2 : public c4Database {
+    public:
+        c4DatabaseV2(std::string path, C4DatabaseFlags flags_, const C4EncryptionKey *encryptionKey)
+        :c4Database(path, flags_, encryptionKey)
+        { }
+        C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
+        C4DocumentInternal* newDocumentInstance(const Document&) override;
+        bool readDocMeta(const Document&,
+                         C4DocumentFlags*,
+                         alloc_slice *revID =nullptr,
+                         slice *docType =nullptr) override;
+    };
+
+}
 
 
 #if C4DB_THREADSAFE

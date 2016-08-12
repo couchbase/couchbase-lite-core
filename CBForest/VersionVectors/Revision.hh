@@ -9,7 +9,6 @@
 #ifndef Revision_hh
 #define Revision_hh
 #include "Document.hh"
-#include "revid.hh"
 #include "VersionVector.hh"
 
 
@@ -28,8 +27,7 @@ namespace cbforest {
             bool conflicted;
         };
 
-        //typedef uint8_t Flags;
-        enum Flags : uint8_t {
+        enum Flags : uint8_t {          // Matches C4DocumentFlags
             kNone           = 0x00,
             kDeleted        = 0x01,
             kConflicted     = 0x02,
@@ -50,7 +48,8 @@ namespace cbforest {
         slice docID() const;
 
         const VersionVector& version() const{return _vers;}
-        alloc_slice revID() const           {return _vers.current().asString();}
+        alloc_slice revID() const           {return _vers ? _vers.current().asString()
+                                                          : alloc_slice();}
 
         Flags flags() const                 {return _flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}

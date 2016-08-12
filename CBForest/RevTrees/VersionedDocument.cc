@@ -160,6 +160,7 @@ namespace cbforest {
         } else {
             _db.del(_doc.key(), transaction);
         }
+        saved();
         _changed = false;
     }
 

@@ -123,6 +123,8 @@ namespace cbforest {
 
         void sort();
 
+        void saved();
+
 #if DEBUG
         std::string dump();
 #endif

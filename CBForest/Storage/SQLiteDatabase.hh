@@ -40,6 +40,7 @@ namespace cbforest {
         void checkOpen() const;
 
         static void deleteDatabase(const string &path);
+        static void shutdown() { }
 
         operator SQLite::Database&() {return *_sqlDb;}
 

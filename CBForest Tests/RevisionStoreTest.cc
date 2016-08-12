@@ -134,7 +134,7 @@ public:
 
 
     void testConflict() {
-        LogLevel = kDebug;
+        //LogLevel = kDebug;
         // Start with a doc edited by me and Ada:
         Transaction t(db);
         Revision rev1(kDoc1ID, VersionVector(slice("5@*,1@ada")),

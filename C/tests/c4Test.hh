@@ -66,18 +66,19 @@ protected:
     C4Database *db;
 
     virtual C4DatabaseFlags storageType() const     {return kC4DB_ForestDBStorage;}
+    virtual int schemaVersion() const               {return 1;}
     bool isSQLite() const                           {return storageType() == kC4DB_SQLiteStorage;}
     bool isForestDB() const                         {return storageType() == kC4DB_ForestDBStorage;}
 
     virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
 
-    // Creates a new document revision
+    // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
-    static const C4Slice kRevID;    // "1-abcdef"
-    static const C4Slice kRev2ID;   // "2-d00d3333"
+    C4Slice kRevID;    // "1-abcdef"
+    C4Slice kRev2ID;   // "2-d00d3333"
     static const C4Slice kBody;     // "{\"name\":007}"
 
 private:

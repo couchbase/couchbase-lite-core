@@ -34,6 +34,8 @@ namespace cbforest {
 
         static void deleteDatabase(const string &path, const fdb_config&);
 
+        static void shutdown();
+
         // Inherited methods:
         bool isOpen() const override;
         void close() override;

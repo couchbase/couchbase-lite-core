@@ -258,6 +258,16 @@ namespace cbforest {
     }
 
 
+    std::vector<std::shared_ptr<Revision> > RevisionStore::allOtherRevisions(slice docID) {
+        std::vector<std::shared_ptr<Revision> > revs;
+        DocEnumerator e = enumerateRevisions(docID);
+        while (e.next()) {
+            revs.push_back(std::shared_ptr<Revision>(new Revision(e.doc())));
+        }
+        return revs;
+    }
+
+
     void RevisionStore::deleteAncestors(Revision &child, Transaction &t) {
         DocEnumerator e = enumerateRevisions(child.docID());
         while (e.next()) {
@@ -291,7 +301,7 @@ namespace cbforest {
         if (author.buf) {
             size += author.size + 1;
             if (gen > 0)
-                size += SizeOfVarInt(gen);
+                size += fleece::SizeOfVarInt(gen);
         }
         alloc_slice result(size);
         slice out = result;

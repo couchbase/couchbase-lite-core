@@ -8,11 +8,13 @@
 
 #include "c4Impl.hh"
 #include "c4Database.h"
+#include "c4Document.h"
 #include "c4Private.h"
 
 #include "LogInternal.hh"
 
 #include "SQLiteCpp/Exception.h"
+#include <ctype.h>
 
 using namespace cbforest;
 
@@ -38,7 +40,14 @@ namespace c4Internal {
         if (rterr) {
             recordError(error::convertRuntimeError(*rterr), outError);
         } else {
-            Warn("Unexpected C++ \"%s\" exception thrown from CBForest", e.what());
+            // Get the actual exception class name using RTTI.
+            // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
+            const char *exceptionName =  typeid(e).name();
+            while (isalpha(*exceptionName)) ++exceptionName;
+            while (isdigit(*exceptionName)) ++exceptionName;
+
+            Warn("Unexpected C++ %s(\"%s\") exception thrown from CBForest",
+                exceptionName, e.what());
             recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
         }
     }

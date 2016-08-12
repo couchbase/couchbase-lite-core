@@ -153,6 +153,10 @@ namespace cbforest {
         return i;
     }
 
+    void ForestDatabase::shutdown() {
+        check(fdb_shutdown());
+    }
+
 
 #pragma mark - OPEN/CLOSE/DELETE:
 

@@ -49,6 +49,9 @@ namespace cbforest {
             @return  kNewer if it should be added, kSame if it's present, kOlder if it's obsolete. */
         versionOrder checkRevision(slice docID, slice revID);
 
+        /** Returns all the non-current (conflicting or ancestor) revisions of the given doc. */
+        std::vector<std::shared_ptr<Revision> > allOtherRevisions(slice docID);
+
         //////// ADDING REVISIONS:
 
         /** Creates a new revision.

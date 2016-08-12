@@ -46,8 +46,6 @@ _c4doc_getForPut
 _c4doc_generateRevID
 _c4doc_generateOldStyleRevID
 _c4doc_put
-_c4doc_insertRevision
-_c4doc_insertRevisionWithHistory
 _c4doc_purgeRevision
 _c4doc_setType
 _c4doc_save

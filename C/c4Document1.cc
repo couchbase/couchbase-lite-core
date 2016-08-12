@@ -12,6 +12,7 @@
 #include "c4Private.h"
 
 #include "c4DocInternal.hh"
+#include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "varint.hh"
@@ -24,7 +25,7 @@ using namespace cbforest;
 static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
-namespace cbforest {
+namespace c4Internal {
 
     class C4DocumentV1 : public C4DocumentInternal {
     public:
@@ -124,11 +125,7 @@ namespace cbforest {
                 selectedRev.body = rev->inlineBody();
                 return true;
             } else {
-                _selectedRevIDBuf = slice::null;
-                selectedRev.revID = slice::null;
-                selectedRev.flags = (C4RevisionFlags)0;
-                selectedRev.sequence = 0;
-                selectedRev.body = slice::null;
+                clearSelectedRevision();
                 return false;
             }
         }
@@ -151,20 +148,8 @@ namespace cbforest {
                 selectRevision(_versionedDoc.currentRevision());
                 return true;
             } else {
-                // Doc body (rev tree) isn't available, but we know enough about the current rev:
                 _selectedRev = NULL;
-                selectedRev.revID = revID;
-                selectedRev.sequence = sequence;
-                int revFlags = 0;
-                if (flags & kExists) {
-                    revFlags |= kRevLeaf;
-                    if (flags & kDeleted)
-                        revFlags |= kRevDeleted;
-                    if (flags & kHasAttachments)
-                        revFlags |= kRevHasAttachments;
-                }
-                selectedRev.flags = (C4RevisionFlags)revFlags;
-                selectedRev.body = slice::null;
+                C4DocumentInternal::selectCurrentRevision();
                 return false;
             }
         }
@@ -208,13 +193,14 @@ namespace cbforest {
             initRevID();
         }
 
-        void save(unsigned maxRevTreeDepth) override {
+        void save(unsigned maxRevTreeDepth) {
             _versionedDoc.prune(maxRevTreeDepth);
             {
                 WITH_LOCK(_db);
                 _versionedDoc.save(*_db->transaction());
             }
             sequence = _versionedDoc.sequence();
+            selectedRev.flags &= ~kRevNew;
         }
 
         int32_t purgeRevision(C4Slice revID) override {
@@ -226,6 +212,9 @@ namespace cbforest {
             }
             return total;
         }
+
+        virtual int32_t putExistingRevision(const C4DocPutRequest&) override;
+        virtual bool putNewRevision(const C4DocPutRequest&) override;
             
         public:
             VersionedDocument _versionedDoc;
@@ -234,162 +223,65 @@ namespace cbforest {
     };
 
 
-    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, C4Slice docID) {
-        if (database->schema() < 2)
-            return new C4DocumentV1(database, docID);
-        else
-            return newV2Instance(database, docID);
+    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(C4Slice docID) {
+        return new C4DocumentV1(this, docID);
     }
 
-    C4DocumentInternal* C4DocumentInternal::newInstance(C4Database* database, const Document &doc) {
-        if (database->schema() < 2)
-            return new C4DocumentV1(database, doc);
-        else
-            return newV2Instance(database, doc);
+    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(const Document &doc) {
+        return new C4DocumentV1(this, doc);
     }
 
-}
 
-
-static inline C4DocumentV1* internalV1(C4Document *doc) {
-    return (C4DocumentV1*)internal(doc);
+    bool c4DatabaseV1::readDocMeta(const Document &doc,
+                                   C4DocumentFlags *outFlags,
+                                   alloc_slice *outRevID,
+                                   slice *outDocType)
+    {
+        VersionedDocument::Flags vdocFlags;
+        revidBuffer packedRevID;
+        slice docType;
+        if (!VersionedDocument::readMeta(doc, vdocFlags, packedRevID, docType))
+            return false;
+        if (outFlags) {
+            C4DocumentFlags c4flags = 0;
+            if (vdocFlags & VersionedDocument::kDeleted)
+                c4flags |= kDeleted;
+            if (vdocFlags & VersionedDocument::kConflicted)
+                c4flags |= kConflicted;
+            if (vdocFlags & VersionedDocument::kHasAttachments)
+                c4flags |= kHasAttachments;
+            *outFlags = c4flags;
+        }
+        if (outRevID)
+            *outRevID = packedRevID.expanded();
+        if (outDocType)
+            *outDocType = docType;
+        return true;
+    }
 }
 
 
 #pragma mark - INSERTING REVISIONS
 
 
-// Internal form of c4doc_insertRevision that takes compressed revID and doesn't check preconditions
-static int32_t insertRevision(C4DocumentV1 *idoc,
-                              revid encodedRevID,
-                              C4Slice body,
-                              bool deletion,
-                              bool hasAttachments,
-                              bool allowConflict,
-                              C4Error *outError)
-{
-    try {
-        int httpStatus;
-        auto newRev = idoc->_versionedDoc.insert(encodedRevID,
-                                                 body,
-                                                 deletion,
-                                                 hasAttachments,
-                                                 idoc->_selectedRev,
-                                                 allowConflict,
-                                                 httpStatus);
-        if (newRev) {
-            // Success:
-            idoc->updateMeta();
-            newRev = idoc->_versionedDoc.get(encodedRevID);
-            idoc->selectRevision(newRev);
-            return 1;
-        } else if (httpStatus == 200) {
-            // Revision already exists, so nothing was added. Not an error.
-            c4doc_selectRevision(idoc, encodedRevID.expanded(), true, outError);
-            return 0;
-        } else if (httpStatus == 400) {
-            recordError(CBForestDomain, error::InvalidParameter, outError);
-        } else if (httpStatus == 409) {
-            recordError(CBForestDomain, error::Conflict, outError);
-        }
-    } catchError(outError)
-    return -1;
-}
-
-
-int32_t c4doc_insertRevision(C4Document *doc,
-                             C4Slice revID,
-                             C4Slice body,
-                             bool deletion,
-                             bool hasAttachments,
-                             bool allowConflict,
-                             C4Error *outError)
-{
-    auto idoc = internalV1(doc);
-    if (!idoc->mustBeSchema(1, outError))
-        return -1;
-    if (!idoc->mustBeInTransaction(outError))
-        return -1;
-    try {
-        idoc->loadRevisions();
-        revidBuffer encodedRevID(revID);  // this can throw!
-        return insertRevision(idoc, encodedRevID, body, deletion, hasAttachments, allowConflict,
-                              outError);
-    } catchError(outError)
-    return -1;
-}
-
-
-int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
-                                        C4Slice body,
-                                        bool deleted,
-                                        bool hasAttachments,
-                                        const C4Slice history[],
-                                        size_t historyCount,
-                                        C4Error *outError)
-{
-    if (historyCount < 1)
-        return 0;
-    auto idoc = internalV1(doc);
-    if (!idoc->mustBeSchema(1, outError))
-        return -1;
-    if (!idoc->mustBeInTransaction(outError))
-        return -1;
+int32_t C4DocumentV1::putExistingRevision(const C4DocPutRequest &rq) {
+    CBFAssert(rq.historyCount >= 1);
     int32_t commonAncestor = -1;
-    try {
-        idoc->loadRevisions();
-        std::vector<revidBuffer> revIDBuffers(historyCount);
-        for (size_t i = 0; i < historyCount; i++)
-            revIDBuffers[i].parse(history[i]);
-        commonAncestor = idoc->_versionedDoc.insertHistory(revIDBuffers,
-                                                           body,
-                                                           deleted,
-                                                           hasAttachments);
-        if (commonAncestor >= 0) {
-            idoc->updateMeta();
-            idoc->selectRevision(idoc->_versionedDoc[revidBuffer(history[0])]);
-        } else {
-            // must be invalid revision IDs
-            recordError(CBForestDomain, error::InvalidParameter, outError);
-        }
-    } catchError(outError)
+    loadRevisions();
+    std::vector<revidBuffer> revIDBuffers(rq.historyCount);
+    for (size_t i = 0; i < rq.historyCount; i++)
+        revIDBuffers[i].parse(rq.history[i]);
+    commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
+                                                 rq.body,
+                                                 rq.deletion,
+                                                 rq.hasAttachments);
+    if (commonAncestor < 0)
+        error::_throw(error::InvalidParameter); // must be invalid revision IDs
+    updateMeta();
+    selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
+    if (rq.save)
+        save(rq.maxRevTreeDepth);
     return commonAncestor;
-}
-
-
-bool c4doc_save(C4Document *doc,
-                uint32_t maxRevTreeDepth,
-                C4Error *outError)
-{
-    auto idoc = internal(doc);
-    if (!idoc->mustBeSchema(1, outError))
-        return -1;
-    if (!idoc->mustBeInTransaction(outError))
-        return false;
-    try {
-        idoc->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-static alloc_slice createDocUUID() {
-#if SECURE_RANDOMIZE_AVAILABLE
-    static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                    "0123456789-_";
-    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
-    uint8_t r[kLength];
-    SecureRandomize({r, sizeof(r)});
-
-    alloc_slice docIDSlice(1+kLength);
-    char *docID = (char*)docIDSlice.buf;
-    docID[0] = '-';
-    for (unsigned i = 0; i < kLength; ++i)
-        docID[i+1] = kBase64[r[i] % 64];
-    return docIDSlice;
-#else
-    error::_throw(FDB_RESULT_CRYPTO_ERROR);
-#endif
 }
 
 
@@ -439,137 +331,69 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
 #endif
 }
 
+
+bool C4DocumentV1::putNewRevision(const C4DocPutRequest &rq) {
+    revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, rq.deletion);
+    int httpStatus;
+    auto newRev = _versionedDoc.insert(encodedRevID,
+                                       rq.body,
+                                       rq.deletion,
+                                       rq.hasAttachments,
+                                       _selectedRev,
+                                       rq.allowConflict,
+                                       httpStatus);
+    if (newRev) {
+        // Success:
+        updateMeta();
+        newRev = _versionedDoc.get(encodedRevID);
+        selectRevision(newRev);
+        if (rq.save)
+            save(rq.maxRevTreeDepth);
+        return true;
+    } else if (httpStatus == 200) {
+        // Revision already exists, so nothing was added. Not an error.
+        selectRevision(encodedRevID.expanded(), true);
+    } else if (httpStatus == 400) {
+        error::_throw(error::InvalidParameter);
+    } else if (httpStatus == 409) {
+        error::_throw(error::Conflict);
+    }
+    return false;
+}
+
+
+#pragma mark - DEPRECATED API:
+
+
+bool c4doc_save(C4Document *doc,
+                uint32_t maxRevTreeDepth,
+                C4Error *outError)
+{
+    auto idoc = internal(doc);
+    if (!idoc->mustBeSchema(1, outError))
+        return -1;
+    if (!idoc->mustBeInTransaction(outError))
+        return false;
+    try {
+        ((C4DocumentV1*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
 C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
     slice result = generateDocRevID(body, parentRevID, deleted).expanded().dontFree();
     return {result.buf, result.size};
 }
 
+unsigned c4rev_getGeneration(C4Slice revID) {
+    try {
+        return revidBuffer(revID).generation();
+    }catchError(NULL)
+    return 0;
+}
+
 void c4doc_generateOldStyleRevID(bool generateOldStyle) {
     sGenerateOldStyleRevIDs = generateOldStyle;
-}
-
-// Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
-// After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
-C4Document* c4doc_getForPut(C4Database *database,
-                            C4Slice docID,
-                            C4Slice parentRevID,
-                            bool deleting,
-                            bool allowConflict,
-                            C4Error *outError)
-{
-    if (!database->mustBeSchema(1, outError))
-        return NULL;
-    if (!database->mustBeInTransaction(outError))
-        return NULL;
-    C4DocumentV1 *idoc = NULL;
-    try {
-        do {
-            alloc_slice newDocID;
-            bool isNewDoc = (!docID.buf);
-            if (isNewDoc) {
-                newDocID = createDocUUID();
-                docID = newDocID;
-            }
-
-            idoc = new C4DocumentV1(database, docID);
-
-            if (!isNewDoc)
-                idoc->loadRevisions();
-
-            if (parentRevID.buf) {
-                // Updating an existing revision; make sure it exists and is a leaf:
-                const Rev *rev = idoc->_versionedDoc[revidBuffer(parentRevID)];
-                if (!idoc->selectRevision(rev)) {
-                    recordError(CBForestDomain, error::NotFound, outError);
-                    break;
-                } else if (!allowConflict && !rev->isLeaf()) {
-                    recordError(CBForestDomain, error::Conflict, outError);
-                    break;
-                }
-            } else {
-                // No parent revision given:
-                if (deleting) {
-                    // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                    recordError(CBForestDomain,
-                            (idoc->_versionedDoc.exists() ?error::Conflict :error::NotFound),
-                            outError);
-                    break;
-                }
-                // If doc exists, current rev must be in a deleted state or there will be a conflict:
-                const Rev *rev = idoc->_versionedDoc.currentRevision();
-                if (rev) {
-                    if (!rev->isDeleted()) {
-                        recordError(CBForestDomain, error::Conflict, outError);
-                        break;
-                    }
-                    // New rev will be child of the tombstone:
-                    // (T0D0: Write a horror novel called "Child Of The Tombstone"!)
-                    if (!idoc->selectRevision(rev)) {
-                        recordError(CBForestDomain, error::NotFound, outError);
-                        break;
-                    }
-                }
-            }
-            return idoc;
-        } while (false); // not a real loop; it's just to allow 'break' statements to exit
-
-    } catchError(outError)
-    delete idoc;
-    return NULL;
-}
-
-
-C4Document* c4doc_put(C4Database *database,
-                      const C4DocPutRequest *rq,
-                      size_t *outCommonAncestorIndex,
-                      C4Error *outError)
-{
-    if (!database->mustBeSchema(1, outError))
-        return NULL;
-    if (!database->mustBeInTransaction(outError))
-        return NULL;
-    int inserted;
-    C4Document *doc;
-    if (rq->existingRevision) {
-        // Existing revision:
-        if (rq->docID.size == 0 || rq->historyCount == 0) {
-            recordError(CBForestDomain, error::InvalidParameter, outError);
-            return NULL;
-        }
-        doc = c4doc_get(database, rq->docID, false, outError);
-        if (!doc)
-            return NULL;
-
-        inserted = c4doc_insertRevisionWithHistory(doc, rq->body, rq->deletion, rq->hasAttachments,
-                                                   rq->history, rq->historyCount, outError);
-    } else {
-        // New revision:
-        C4Slice parentRevID;
-        if (rq->historyCount == 1) {
-            parentRevID = rq->history[0];
-        } else if (rq->historyCount > 1) {
-            recordError(CBForestDomain, error::InvalidParameter, outError);
-            return NULL;
-        }
-        doc = c4doc_getForPut(database, rq->docID, parentRevID, rq->deletion, rq->allowConflict,
-                              outError);
-        if (!doc)
-            return NULL;
-
-        revidBuffer revID = generateDocRevID(rq->body, doc->selectedRev.revID, rq->deletion);
-
-        inserted = insertRevision(internalV1(doc), revID, rq->body, rq->deletion, rq->hasAttachments,
-                                  rq->allowConflict, outError);
-    }
-
-    // Save:
-    if (inserted < 0 || (inserted > 0 && rq->save && !c4doc_save(doc, rq->maxRevTreeDepth,
-                                                                 outError))) {
-        c4doc_free(doc);
-        return NULL;
-    }
-    
-    if (outCommonAncestorIndex)
-        *outCommonAncestorIndex = inserted;
-    return doc;
 }

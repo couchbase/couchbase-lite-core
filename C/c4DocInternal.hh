@@ -11,9 +11,8 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "LogInternal.hh"
-#include "VersionedDocument.hh"
 
-namespace cbforest {
+namespace c4Internal {
 
 
 class C4DocumentV1;
@@ -25,9 +24,6 @@ public:
     alloc_slice _revIDBuf;
     alloc_slice _selectedRevIDBuf;
     alloc_slice _loadedBody;
-
-    static C4DocumentInternal* newInstance(C4Database* database, C4Slice docID);
-    static C4DocumentInternal* newInstance(C4Database* database, const Document &doc);
 
     virtual ~C4DocumentInternal() {
         _db->release();
@@ -57,8 +53,25 @@ public:
     virtual bool exists() =0;
     virtual void loadRevisions() =0;
     virtual bool revisionsLoaded() const =0;
-    virtual void selectRevision(C4Slice revID, bool withBody) = 0;
-    virtual bool selectCurrentRevision() =0;    // should not throw
+    virtual void selectRevision(C4Slice revID, bool withBody) =0;
+
+    virtual bool selectCurrentRevision() {    // should not throw
+        // By default just fill in what we know about the current revision:
+        selectedRev.revID = revID;
+        selectedRev.sequence = sequence;
+        int revFlags = 0;
+        if (flags & kExists) {
+            revFlags |= kRevLeaf;
+            if (flags & kDeleted)
+                revFlags |= kRevDeleted;
+            if (flags & kHasAttachments)
+                revFlags |= kRevHasAttachments;
+        }
+        selectedRev.flags = (C4RevisionFlags)revFlags;
+        selectedRev.body = slice::null;
+        return false;
+    }
+
     virtual bool selectParentRevision() =0;     // should not throw
     virtual bool selectNextRevision() =0;
     virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody) =0;
@@ -71,13 +84,26 @@ public:
             error::_throw(error::Deleted);      // body has been compacted away
     }
 
-    virtual void save(unsigned maxRevTreeDepth) =0;
-    virtual int32_t purgeRevision(C4Slice revID) =0;
+    virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
+    virtual bool putNewRevision(const C4DocPutRequest&) =0;
+
+    virtual int32_t purgeRevision(C4Slice revID) {
+        error::_throw(error::Unimplemented);
+    }
 
 
 protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
     static C4DocumentInternal* newV2Instance(C4Database* database, const Document &doc);
+
+    void clearSelectedRevision() {
+        _selectedRevIDBuf = slice::null;
+        selectedRev.revID = slice::null;
+        selectedRev.flags = (C4RevisionFlags)0;
+        selectedRev.sequence = 0;
+        selectedRev.body = slice::null;
+        _loadedBody = slice::null;
+    }
 
     C4Database* const _db;
 };

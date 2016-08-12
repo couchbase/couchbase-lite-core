@@ -16,11 +16,11 @@
 #include "c4Impl.hh"
 #include "c4DocEnumerator.h"
 
+#include "c4DocInternal.hh"
 #include "Database.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
-#include "VersionedDocument.hh"
 #include <set>
 
 using namespace cbforest;
@@ -95,15 +95,14 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
     }
 
     C4Document* getDoc() {
-        return _e ? newC4Document(_database, _e.doc()) : NULL;
+        return _e ? _database->newDocumentInstance(_e.doc()) : NULL;
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
         if (!_e)
             return false;
         outInfo->docID = _e.doc().key();
-        _docRevIDExpanded = _docRevID.expanded();
-        outInfo->revID = _docRevIDExpanded;
+        outInfo->revID = _docRevID;
         outInfo->flags = _docFlags;
         outInfo->sequence = _e.doc().sequence();
         return true;
@@ -111,21 +110,21 @@ struct C4DocEnumerator: c4Internal::InstanceCounted {
 
 private:
     inline bool useDoc() {
-        slice docType;
         if (!_e.doc().exists()) {
             // Client must be enumerating a list of docIDs, and this doc doesn't exist.
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
-            _docRevID = revid();
+            _docRevID = slice::null;
             return (!_filter || _filter(_e.doc(), 0, slice::null));
         }
-        VersionedDocument::Flags flags;
-        if (!VersionedDocument::readMeta(_e.doc(), flags, _docRevID, docType))
+        C4DocumentFlags flags;
+        slice docType;
+        if (!_database->readDocMeta(_e.doc(), &flags, &_docRevID, &docType))
             return false;
-        _docFlags = (C4DocumentFlags)flags | kExists;
+        _docFlags = flags | kExists;
         auto optFlags = _options.flags;
-        return (optFlags & kC4IncludeDeleted       || !(_docFlags & VersionedDocument::kDeleted))
-            && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & VersionedDocument::kConflicted))
+        return (optFlags & kC4IncludeDeleted       || !(_docFlags & kDeleted))
+            && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & kConflicted))
             && (!_filter || _filter(_e.doc(), _docFlags, docType));
     }
 
@@ -135,8 +134,7 @@ private:
     EnumFilter _filter;
 
     C4DocumentFlags _docFlags;
-    revid _docRevID;
-    alloc_slice _docRevIDExpanded;
+    alloc_slice _docRevID;
 };
 
 

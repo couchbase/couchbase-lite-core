@@ -7,9 +7,23 @@
 //
 
 #include "c4Test.hh"
+#include "slice.hh"
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+
+
+// Debugging utility to print a slice -- in LLDB enter "call ps(___)"
+void ps(C4Slice s);
+void ps(C4Slice s) {
+    std::cerr << s << "\n";
+}
+
+void ps(fleece::slice s);
+void ps(fleece::slice s) {
+    ps(C4Slice{s.buf, s.size});
+
+}
 
 bool operator== (C4Slice s1, C4Slice s2) {
     return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
@@ -46,6 +60,21 @@ void C4Test::setUp() {
     c4log_register(kC4LogWarning, log);
 
     C4DatabaseFlags flags = kC4DB_Create | storageType();
+    if (schemaVersion() == 1) {
+        kRevID = C4STR("1-abcd");
+        kRev2ID = C4STR("2-c001d00d");
+    } else {
+        flags |= kC4DB_V2Format;
+        kRevID = C4STR("1@*");
+        kRev2ID = C4STR("2@c001d00d");
+    }
+
+    static C4DatabaseFlags sLastFlags = (C4DatabaseFlags)-1;
+    if (flags != sLastFlags) {
+        fprintf(stderr, "Using db flags 0x%04x\n", flags);
+        sLastFlags = flags;
+    }
+
     C4Error error;
     c4db_deleteAtPath(databasePath(), flags, NULL);
     db = c4db_open(databasePath(),
@@ -69,18 +98,27 @@ void C4Test::tearDown() {
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     TransactionHelper t(db);
     C4Error error;
-    C4Document *doc = c4doc_get(db, docID, false, &error);
+    auto curDoc = c4doc_get(db, docID, false, &error);
+    Assert(curDoc);
+
+    C4Slice history[2] = {revID, curDoc->revID};
+
+    C4DocPutRequest rq = {};
+    rq.existingRevision = true;
+    rq.docID = docID;
+    rq.history = history;
+    rq.historyCount = 1 + (curDoc->revID.buf != nullptr);
+    rq.body = body;
+    rq.deletion = (body.buf == nullptr);
+    rq.save = true;
+    auto doc = c4doc_put(db, &rq, NULL, &error);
     Assert(doc != NULL);
-    bool deleted = (body.buf == NULL);
-    AssertEqual(c4doc_insertRevision(doc, revID,  body,  deleted, false, false, &error), (int)isNew);
-    Assert(c4doc_save(doc, 20, &error));
     c4doc_free(doc);
+    c4doc_free(curDoc);
 }
 
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
-const C4Slice C4Test::kRevID = C4STR("1-abcdef");
-const C4Slice C4Test::kRev2ID= C4STR("2-d00d3333");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
 
 

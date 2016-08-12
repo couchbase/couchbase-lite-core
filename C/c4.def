@@ -37,8 +37,6 @@ c4doc_selectNextLeafRevision
 c4doc_generateRevID
 c4doc_generateOldStyleRevID
 c4doc_put
-c4doc_insertRevision
-c4doc_insertRevisionWithHistory
 c4doc_purgeRevision
 c4doc_setType
 c4doc_save

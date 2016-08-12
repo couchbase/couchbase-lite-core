@@ -20,18 +20,11 @@
 #include "c4Private.h"
 
 #include "c4DocInternal.hh"
+#include "SecureRandomize.hh"
 
 #include "forestdb.h"
 
 using namespace cbforest;
-
-
-namespace c4Internal {
-    C4Document* newC4Document(C4Database *db, const Document &doc) {
-        // Doesn't need to lock since Document is already in memory
-        return C4DocumentInternal::newInstance(db, doc);
-    }
-}
 
 
 bool C4DocumentInternal::mustBeSchema(int schema, C4Error *outError) {
@@ -52,8 +45,8 @@ C4Document* c4doc_get(C4Database *database,
 {
     try {
         WITH_LOCK(database);
-        auto doc = C4DocumentInternal::newInstance(database, docID);
-        if (mustExist && !doc->exists()) {
+        auto doc = database->newDocumentInstance(docID);
+        if (mustExist && !internal(doc)->exists()) {
             delete doc;
             doc = NULL;
             recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -72,8 +65,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
 {
     try {
         WITH_LOCK(database);
-        auto doc = C4DocumentInternal::newInstance(database, database->defaultKeyStore().get(sequence));
-        if (!doc->exists()) {
+        auto doc = database->newDocumentInstance(database->defaultKeyStore().get(sequence));
+        if (!internal(doc)->exists()) {
             delete doc;
             doc = NULL;
             recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
@@ -158,15 +151,125 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 }
 
 
-unsigned c4rev_getGeneration(C4Slice revID) {
-    try {
-        return revidBuffer(revID).generation();
-    }catchError(NULL)
-    return 0;
+#pragma mark - SAVING:
+
+
+static alloc_slice createDocUUID() {
+#if SECURE_RANDOMIZE_AVAILABLE
+    static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                                    "0123456789-_";
+    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
+    uint8_t r[kLength];
+    SecureRandomize({r, sizeof(r)});
+
+    alloc_slice docIDSlice(1+kLength);
+    char *docID = (char*)docIDSlice.buf;
+    docID[0] = '-';
+    for (unsigned i = 0; i < kLength; ++i)
+        docID[i+1] = kBase64[r[i] % 64];
+    return docIDSlice;
+#else
+    error::_throw(error::Unimplemented);
+#endif
 }
 
 
-#pragma mark - SAVING:
+// Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
+// After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
+C4Document* c4doc_getForPut(C4Database *database,
+                            C4Slice docID,
+                            C4Slice parentRevID,
+                            bool deleting,
+                            bool allowConflict,
+                            C4Error *outError)
+{
+    if (!database->mustBeInTransaction(outError))
+        return NULL;
+    C4DocumentInternal *idoc = NULL;
+    try {
+        do {
+            alloc_slice newDocID;
+            bool isNewDoc = (!docID.buf);
+            if (isNewDoc) {
+                newDocID = createDocUUID();
+                docID = newDocID;
+            }
+
+            idoc = internal(database->newDocumentInstance(docID));
+
+            if (parentRevID.buf) {
+                // Updating an existing revision; make sure it exists and is a leaf:
+                idoc->selectRevision(parentRevID, false);
+                if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
+                    recordError(CBForestDomain, error::Conflict, outError);
+                    break;
+                }
+            } else {
+                // No parent revision given:
+                if (deleting) {
+                    // Didn't specify a revision to delete: NotFound or a Conflict, depending
+                    recordError(CBForestDomain,
+                                ((idoc->flags & kExists) ?error::Conflict :error::NotFound),
+                                outError);
+                    break;
+                }
+                // If doc exists, current rev must be a deletion or there will be a conflict:
+                if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
+                    recordError(CBForestDomain, error::Conflict, outError);
+                    break;
+                }
+            }
+            return idoc;
+        } while (false); // not a real loop; it's just to allow 'break' statements to exit
+
+    } catchError(outError)
+    delete idoc;
+    return NULL;
+}
+
+
+C4Document* c4doc_put(C4Database *database,
+                      const C4DocPutRequest *rq,
+                      size_t *outCommonAncestorIndex,
+                      C4Error *outError)
+{
+    if (!database->mustBeInTransaction(outError))
+        return nullptr;
+    int commonAncestorIndex;
+    C4Document *doc = nullptr;
+    try {
+        if (rq->existingRevision) {
+            // Existing revision:
+            if (rq->docID.size == 0 || rq->historyCount == 0)
+                error::_throw(error::InvalidParameter);
+            doc = c4doc_get(database, rq->docID, false, outError);
+            if (!doc)
+                return NULL;
+            commonAncestorIndex = internal(doc)->putExistingRevision(*rq);
+
+        } else {
+            // New revision:
+            C4Slice parentRevID;
+            if (rq->historyCount == 1)
+                parentRevID = rq->history[0];
+            else if (rq->historyCount > 1)
+                error::_throw(error::InvalidParameter);
+            doc = c4doc_getForPut(database, rq->docID, parentRevID, rq->deletion, rq->allowConflict,
+                                  outError);
+            if (!doc)
+                return nullptr;
+            commonAncestorIndex = internal(doc)->putNewRevision(*rq) ? 1 : 0;
+        }
+
+        if (outCommonAncestorIndex)
+            *outCommonAncestorIndex = commonAncestorIndex;
+        return doc;
+
+    } catchError(outError) {
+        c4doc_free(doc);
+        return NULL;
+    }
+}
 
 
 int32_t c4doc_purgeRevision(C4Document *doc,

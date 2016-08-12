@@ -111,6 +111,8 @@ namespace cbforest {
 
         void reset();
 
+        explicit operator bool() const                      {return count() > 0;}
+
         size_t count() const                                {return _vers.size();}
         const Version& operator[] (size_t i) const          {return _vers[i];}
         const Version& current() const                      {return _vers.at(0);}

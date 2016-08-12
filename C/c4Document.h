@@ -208,6 +208,7 @@ extern "C" {
     typedef struct {
         C4Slice body;               ///< Revision's body
         C4Slice docID;              ///< Document ID
+        C4Slice docType;            ///< Document type if any (used by indexer)
         bool deletion;              ///< Is this revision a deletion?
         bool hasAttachments;        ///< Does this revision have attachments?
         bool existingRevision;      ///< Is this an already-existing rev coming from replication?

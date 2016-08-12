@@ -21,7 +21,6 @@
 #include "SQLiteDatabase.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
-#include "VersionedDocument.hh"
 
 
 using namespace cbforest;
@@ -135,7 +134,10 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError)
 {
     try {
-        return (new c4Database((std::string)path, flags, encryptionKey))->retain();
+        if (flags & kC4DB_V2Format)
+            return (new c4DatabaseV2((std::string)path, flags, encryptionKey))->retain();
+        else
+            return (new c4DatabaseV1((std::string)path, flags, encryptionKey))->retain();
     }catchError(outError);
     return NULL;
 }
@@ -175,7 +177,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
     WITH_LOCK(database);
     try {
         if (database->refCount() > 1) {
-            recordError(ForestDBDomain, FDB_RESULT_FILE_IS_BUSY, outError);
+            recordError(error::Busy, outError);
         }
         database->db()->deleteDatabase();
         return true;
@@ -259,10 +261,10 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
         opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(database->defaultKeyStore(), cbforest::slice::null, cbforest::slice::null, opts);
+        for (DocEnumerator e(database->defaultKeyStore(), slice::null, slice::null, opts);
                 e.next(); ) {
-            VersionedDocument vdoc(database->defaultKeyStore(), e.doc());
-            if (!vdoc.isDeleted())
+            C4DocumentFlags flags;
+            if (database->readDocMeta(e.doc(), &flags) && !(flags & kDeleted))
                 ++count;
         }
         return count;
@@ -318,7 +320,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
         if (database->defaultKeyStore().del(docID, *database->transaction()))
             return true;
         else
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(error::NotFound, outError);
     } catchError(outError)
     return false;
 }
@@ -340,12 +342,13 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
 }
 
 bool c4_shutdown(C4Error *outError) {
-    fdb_status err = fdb_shutdown();
-    if (err) {
-        recordError(ForestDBDomain, err, outError);
+    try {
+        ForestDatabase::shutdown();
+        SQLiteDatabase::shutdown();
+        return true;
+    } catchError(NULL) {
         return false;
     }
-    return true;
 }
 
 #pragma mark - RAW DOCUMENTS:
@@ -371,7 +374,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         KeyStore& localDocs = database->getKeyStore((std::string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(error::NotFound, outError);
             return NULL;
         }
         auto rawDoc = new C4RawDocument;

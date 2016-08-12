@@ -106,17 +106,23 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->docID, kDocID);
         Assert(doc->revID.buf == 0);
         Assert(doc->selectedRev.revID.buf == 0);
+        c4doc_free(doc);
 
         {
             TransactionHelper t(db);
-
-            AssertEqual(c4doc_insertRevision(doc, kRevID, kBody, false, false, false, &error), 1);
-
+            C4DocPutRequest rq = {};
+            rq.existingRevision = true;
+            rq.docID = kDocID;
+            rq.history = &kRevID;
+            rq.historyCount = 1;
+            rq.body = kBody;
+            rq.save = true;
+            doc = c4doc_put(db, &rq, NULL, &error);
+            Assert(doc != NULL);
             AssertEqual(doc->revID, kRevID);
             AssertEqual(doc->selectedRev.revID, kRevID);
-            AssertEqual(doc->selectedRev.flags, (C4RevisionFlags)(kRevNew | kRevLeaf));
+            AssertEqual(doc->selectedRev.flags, (C4RevisionFlags)kRevLeaf);
             AssertEqual(doc->selectedRev.body, kBody);
-            Assert(c4doc_save(doc, 20, &error));
             c4doc_free(doc);
         }
 
@@ -161,38 +167,40 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)2);
         AssertEqual(doc->selectedRev.body, kBody2);
 
-        // Select 1st revision:
-        Assert(c4doc_selectParentRevision(doc));
-        AssertEqual(doc->selectedRev.revID, kRevID);
-        AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
-        if (isForestDB())
-            AssertEqual(doc->selectedRev.body, kC4SliceNull);
-        Assert(c4doc_hasRevisionBody(doc));
-        Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        AssertEqual(doc->selectedRev.body, kBody);
-        Assert(!c4doc_selectParentRevision(doc));
-        c4doc_free(doc);
+        if (schemaVersion() == 1) {
+            // Select 1st revision:
+            Assert(c4doc_selectParentRevision(doc));
+            AssertEqual(doc->selectedRev.revID, kRevID);
+            AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
+            if (isForestDB())
+                AssertEqual(doc->selectedRev.body, kC4SliceNull);
+            Assert(c4doc_hasRevisionBody(doc));
+            Assert(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
+            AssertEqual(doc->selectedRev.body, kBody);
+            Assert(!c4doc_selectParentRevision(doc));
+            c4doc_free(doc);
 
-        // Compact database:
-        Assert(c4db_compact(db, &error));
+            // Compact database:
+            Assert(c4db_compact(db, &error));
 
-        doc = c4doc_get(db, kDocID, true, &error);
-        Assert(doc != NULL);
-        Assert(c4doc_selectParentRevision(doc));
-        AssertEqual(doc->selectedRev.revID, kRevID);
-        AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
-        if (!isSQLite()) {
-            AssertEqual(doc->selectedRev.body, kC4SliceNull);
-            Assert(!c4doc_hasRevisionBody(doc));
-            Assert(!c4doc_loadRevisionBody(doc, &error));
-        }
+            doc = c4doc_get(db, kDocID, true, &error);
+            Assert(doc != NULL);
+            Assert(c4doc_selectParentRevision(doc));
+            AssertEqual(doc->selectedRev.revID, kRevID);
+            AssertEqual(doc->selectedRev.sequence, (C4SequenceNumber)1);
+            if (!isSQLite()) {
+                AssertEqual(doc->selectedRev.body, kC4SliceNull);
+                Assert(!c4doc_hasRevisionBody(doc));
+                Assert(!c4doc_loadRevisionBody(doc, &error));
+            }
 
-        // Purge doc
-        {
-            TransactionHelper t(db);
-            int nPurged = c4doc_purgeRevision(doc, kRev2ID, &error);
-            AssertEqual(nPurged, 2);
-            Assert(c4doc_save(doc, 20, &error));
+            // Purge doc
+            {
+                TransactionHelper t(db);
+                int nPurged = c4doc_purgeRevision(doc, kRev2ID, &error);
+                AssertEqual(nPurged, 2);
+                Assert(c4doc_save(doc, 20, &error));
+            }
         }
         c4doc_free(doc);
     }
@@ -280,47 +288,6 @@ class C4DatabaseTest : public C4Test {
     }
 
 
-    void testInsertRevisionWithHistory() {
-        const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-        createRev(kDocID, kRevID, kBody);
-        createRev(kDocID, kRev2ID, kBody2);
-
-        // Reload the doc:
-        C4Error error;
-        C4Document *doc = c4doc_get(db, kDocID, true, &error);
-
-        // Add 18 revisions; the last two entries in the history repeat the two existing revs:
-        const unsigned kHistoryCount = 20;
-        std::vector<std::string> revIDs;
-        revIDs.reserve(kHistoryCount);
-        for (unsigned i = kHistoryCount - 1; i >= 2; i--) {
-            char buf[20];
-            sprintf(buf, "%u-%08lx", i+1, (unsigned long)random());
-            std::string str(buf);
-            revIDs.push_back(str);
-        }
-        revIDs.push_back(toString(kRev2ID));
-        revIDs.push_back(toString(kRevID));
-
-        C4Slice history[kHistoryCount];
-        for (unsigned i = 0; i < kHistoryCount; i++) {
-            history[i] = c4str(revIDs[i].c_str());
-        }
-
-        int n;
-        {
-            TransactionHelper t(db);
-            n = c4doc_insertRevisionWithHistory(doc, c4str("{\"foo\":true}"),
-                                                false, false,
-                                                history, kHistoryCount, &error);
-        }
-        if (n < 0)
-            std::cerr << "Error(" << error.domain << "," << error.code << ")\n";
-        AssertEqual(n, (int)(kHistoryCount-2));
-        c4doc_free(doc);
-    }
-
-
     void testPut() {
         C4Error error;
         TransactionHelper t(db);
@@ -384,6 +351,8 @@ class C4DatabaseTest : public C4Test {
         setupAllDocs();
         C4Error error;
         C4DocEnumerator* e;
+
+        AssertEqual(c4db_getDocumentCount(db), 99ull);
 
         // No start or end ID:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -642,7 +611,6 @@ class C4DatabaseTest : public C4Test {
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
     CPPUNIT_TEST( testCreateMultipleRevisions );
-    CPPUNIT_TEST( testInsertRevisionWithHistory );
     CPPUNIT_TEST( testAllDocs );
     CPPUNIT_TEST( testAllDocsInfo );
     CPPUNIT_TEST( testAllDocsIncludeDeleted );
@@ -653,6 +621,18 @@ class C4DatabaseTest : public C4Test {
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(C4DatabaseTest);
+
+
+
+class C4VersionVectorDatabaseTest : public C4DatabaseTest {
+
+    virtual int schemaVersion() const override     {return 2;}
+
+    CPPUNIT_TEST_SUB_SUITE( C4VersionVectorDatabaseTest, C4DatabaseTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(C4VersionVectorDatabaseTest);
 
 
 
