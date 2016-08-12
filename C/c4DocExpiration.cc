@@ -115,16 +115,12 @@ struct C4ExpiryEnumerator
 {
 public:
     C4ExpiryEnumerator(C4Database *database) :
-    _db(database->retain()),
+    _db(database),
     _e(_db->getKeyStore("expiry"), slice::null, slice::null),
     _reader(slice::null)
     {
         _endTimestamp = time(NULL);
         reset();
-    }
-
-    ~C4ExpiryEnumerator() {
-        _db->release();
     }
 
     bool next() {
@@ -173,7 +169,7 @@ public:
     }
     
 private:
-    C4Database *_db;
+    Retained<C4Database> _db;
     DocEnumerator _e;
     alloc_slice _current;
     CollatableReader _reader;

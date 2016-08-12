@@ -19,31 +19,31 @@ class C4DocumentV1;
 class C4DocumentV2;
 
 
-class C4DocumentInternal : public C4Document, c4Internal::InstanceCounted {
+class C4DocumentInternal : public C4Document, InstanceCounted {
 public:
     alloc_slice _revIDBuf;
     alloc_slice _selectedRevIDBuf;
     alloc_slice _loadedBody;
 
-    virtual ~C4DocumentInternal() {
-        _db->release();
-    }
-
     C4DocumentInternal(C4Database* database, C4Slice docID)
-    :_db(database->retain())
+    :_db(database)
     { }
 
     C4DocumentInternal(C4Database *database, const Document &doc)
-    :_db(database->retain())
+    :_db(database)
     { }
 
-    bool mustBeSchema(int schema, C4Error *outError);
+    virtual ~C4DocumentInternal() { }
 
-    C4Database* database()    {return _db;}
+    bool mustBeSchema(int schema, C4Error *outError) {
+        return _db->mustBeSchema(schema, outError);
+    }
 
     bool mustBeInTransaction(C4Error *outError) {
         return _db->mustBeInTransaction(outError);
     }
+
+    C4Database* database()    {return _db;}
 
     virtual const Document& document() =0;
 
@@ -91,10 +91,9 @@ public:
         error::_throw(error::Unimplemented);
     }
 
-
 protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
-    static C4DocumentInternal* newV2Instance(C4Database* database, const Document &doc);
+    static C4DocumentInternal* newV2Instance(C4Database* database, const Document&);
 
     void clearSelectedRevision() {
         _selectedRevIDBuf = slice::null;
@@ -105,7 +104,7 @@ protected:
         _loadedBody = slice::null;
     }
 
-    C4Database* const _db;
+    Retained<C4Database> _db;
 };
 
 

@@ -43,14 +43,14 @@ static inline C4KeyReader asKeyReader(const CollatableReader &r) {
 #pragma mark - VIEWS:
 
 
-struct c4View : public c4Internal::RefCounted<c4View> {
+struct c4View : public RefCounted<c4View> {
     c4View(C4Database *sourceDB,
            C4Slice path,
            C4Slice viewName,
            C4Slice version,
            C4DatabaseFlags flags,
            const C4EncryptionKey *encryptionKey)
-    :_sourceDB(sourceDB->retain()),
+    :_sourceDB(sourceDB),
      _viewDB(c4Database::newDatabase((std::string)path, flags, encryptionKey, false)),
      _index(_viewDB->getKeyStore((std::string)viewName), *sourceDB->db())
     {
@@ -73,17 +73,12 @@ struct c4View : public c4Internal::RefCounted<c4View> {
         _viewDB->close();
     }
 
-    C4Database *_sourceDB;
+    Retained<C4Database> _sourceDB;
     std::unique_ptr<Database> _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
     std::mutex _mutex;
 #endif
-
-private:
-    ~c4View() {
-        _sourceDB->release();
-    }
 };
 
 
@@ -222,7 +217,7 @@ static void initTokenizer() {
 }
 
 
-struct c4Indexer : public MapReduceIndexer, c4Internal::InstanceCounted {
+struct c4Indexer : public MapReduceIndexer, InstanceCounted {
     c4Indexer(C4Database *db)
     :MapReduceIndexer(),
      _db(db)
@@ -401,9 +396,9 @@ static DocEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
 }
 
 
-struct C4QueryEnumInternal : public C4QueryEnumerator, c4Internal::InstanceCounted {
+struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
     C4QueryEnumInternal(C4View *view)
-    :_view(view->retain())
+    :_view(view)
 #if C4DB_THREADSAFE
      ,_mutex(view->_mutex)
 #endif
@@ -411,9 +406,7 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, c4Internal::InstanceCount
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
     }
 
-    virtual ~C4QueryEnumInternal() {
-        _view->release();
-    }
+    virtual ~C4QueryEnumInternal() { }
 
     virtual bool next() {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // clear public fields
@@ -422,7 +415,7 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, c4Internal::InstanceCount
 
     virtual void close() { }
 
-    C4View* _view;
+    Retained<C4View> _view;
 #if C4DB_THREADSAFE
     std::mutex &_mutex;
 #endif

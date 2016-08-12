@@ -324,6 +324,8 @@
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
 		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
+		27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
+		27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
@@ -918,6 +920,8 @@
 		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
 		27F7A0BD1D5E2BAB00447BC6 /* c4DatabaseInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4DatabaseInternal.hh; sourceTree = "<group>"; };
 		27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4KeyInternal.hh; sourceTree = "<group>"; };
+		27F7A0C21D5E646000447BC6 /* RefCounted.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
+		27F7A0C31D5E657C00447BC6 /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/cbforest/View.java; sourceTree = "<group>"; };
 		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
 		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/cbforest/QueryIterator.java; sourceTree = "<group>"; };
@@ -1259,6 +1263,8 @@
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
+				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
+				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
@@ -2356,6 +2362,7 @@
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDatabase.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
+				27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
@@ -2429,6 +2436,7 @@
 				279794A71D307626001D0F3A /* RevisionStore.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
+				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* c4Document2.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,

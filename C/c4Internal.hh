@@ -11,6 +11,7 @@
 
 #include "Base.hh"
 #include "Error.hh"
+#include "RefCounted.hh"
 #include <functional>
 
 
@@ -82,50 +83,6 @@ namespace c4Internal {
     // Should only need to be used internally, for the view indexer's enumerator.
     static const uint16_t kC4IncludePurged = 0x8000;
 
-
-    // BASE CLASSES:
-
-    /** Base class that keeps track of the total instance count of all subclasses,
-        which is returned by c4_getObjectCount(). */
-    class InstanceCounted {
-    public:
-        static std::atomic_int gObjectCount;
-        InstanceCounted()   {++gObjectCount;}
-        ~InstanceCounted()  {--gObjectCount;}
-    };
-
-
-    /** Simple thread-safe ref-counting implementation.
-        Note: The ref-count starts at 0, so you must call retain() on an instance right after
-        constructing it. */
-    template <typename SELF>
-    struct RefCounted : InstanceCounted {
-
-        int refCount() const { return _refCount; }
-
-        SELF* retain() {
-            ++_refCount;
-            return (SELF*)this;
-        }
-
-        void release() {
-            int newref = --_refCount;
-            CBFAssert(newref >= 0);
-            if (newref == 0) {
-                delete this;
-            }
-        }
-
-    protected:
-        /** Destructor is accessible only so that it can be overridden.
-            Never call delete, only release! */
-        virtual ~RefCounted() {
-            CBFAssert(_refCount == 0);
-        }
-
-    private:
-        std::atomic_int _refCount {0};
-    };
 }
 
 using namespace c4Internal;

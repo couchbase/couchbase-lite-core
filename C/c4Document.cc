@@ -28,12 +28,6 @@
 using namespace cbforest;
 
 
-bool C4DocumentInternal::mustBeSchema(int schema, C4Error *outError) {
-    return _db->mustBeSchema(schema, outError);
-}
-
-
-
 void c4doc_free(C4Document *doc) {
     delete (C4DocumentInternal*)doc;
 }

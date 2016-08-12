@@ -28,8 +28,6 @@ using namespace cbforest;
 
 namespace c4Internal {
 
-    std::atomic_int InstanceCounted::gObjectCount;
-
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
         if (outError) {
             outError->domain = domain;
