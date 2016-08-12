@@ -84,7 +84,8 @@ namespace cbforest {
         /** Returns the error equivalent to a given runtime_error. Uses RTTI to discover if the
             error is already an `error` instance; otherwise tries to convert some other known
             exception types like SQLite::Exception. */
-        static error convertRuntimeError(const std::runtime_error &re);
+        static error convertRuntimeError(const std::runtime_error&);
+        static error convertException(const std::exception&);
 
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;

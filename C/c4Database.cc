@@ -316,7 +316,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
     if (!database->mustBeInTransaction(outError))
         return false;
     try {
-        if (database->defaultKeyStore().del(docID, *database->transaction()))
+        if (database->defaultKeyStore().del(docID, database->transaction()))
             return true;
         else
             recordError(CBForestDomain, kC4ErrorNotFound, outError);
@@ -399,7 +399,7 @@ bool c4raw_put(C4Database* database,
     try {
         WITH_LOCK(database);
         KeyStore &localDocs = database->getKeyStore((std::string)storeName);
-        auto &t = *database->transaction();
+        auto &t = database->transaction();
         if (body.buf || meta.buf)
             localDocs.set(key, meta, body, t);
         else

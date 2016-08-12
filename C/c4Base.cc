@@ -35,40 +35,13 @@ namespace c4Internal {
         }
     }
 
-    static void recordError(const error &e, C4Error* outError) {
+    void recordException(const std::exception &e, C4Error* outError) {
         static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
-        recordError(domainMap[e.domain], e.code, outError);
+        error err = error::convertException(e);
+        recordError(domainMap[err.domain], err.code, outError);
     }
 
-    void recordException(const std::exception &e, C4Error* outError) {
-        auto err = dynamic_cast<const error*>(&e);
-        if (err) {
-            recordError(*err, outError);
-            return;
-        }
-
-        auto rterr = dynamic_cast<const std::runtime_error*>(&e);
-        if (rterr) {
-            recordError(error::convertRuntimeError(*rterr), outError);
-            return;
-        }
-
-        // Get the actual exception class name using RTTI.
-        // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
-        const char *exceptionName =  typeid(e).name();
-        while (isalpha(*exceptionName)) ++exceptionName;
-        while (isdigit(*exceptionName)) ++exceptionName;
-
-        Warn("Unexpected C++ %s(\"%s\") exception thrown from CBForest",
-            exceptionName, e.what());
-        recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
-    }
-
-    void recordUnknownException(C4Error* outError) {
-        Warn("Unexpected C++ exception thrown from CBForest");
-        recordError(CBForestDomain, kC4ErrorUnexpectedError, outError);
-    }
 }
 
 

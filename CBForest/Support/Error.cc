@@ -193,6 +193,17 @@ namespace cbforest {
     }
 
 
+    static error unexpectedException(const std::exception &x) {
+        // Get the actual exception class name using RTTI.
+        // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
+        const char *name =  typeid(x).name();
+        while (isalpha(*name)) ++name;
+        while (isdigit(*name)) ++name;
+        Warn("Caught unexpected C++ %s(\"%s\")", name, x.what());
+        return error(error::CBForest, error::UnexpectedError);
+    }
+
+
     error error::convertRuntimeError(const std::runtime_error &re) {
         auto e = dynamic_cast<const error*>(&re);
         if (e)
@@ -200,10 +211,16 @@ namespace cbforest {
         auto se = dynamic_cast<const SQLite::Exception*>(&re);
         if (se)
             return error(SQLite, se->getErrorCode());
-        Warn("Caught unexpected C++ runtime_error: %s", re.what());
-        return error(CBForest, UnexpectedError);
+        return unexpectedException(re);
     }
-    
+
+    error error::convertException(const std::exception &x) {
+        auto re = dynamic_cast<const std::runtime_error*>(&x);
+        if (re)
+            return convertRuntimeError(*re);
+        return unexpectedException(x);
+    }
+
     
     void error::_throw(Domain domain, int code ) {
         CBFDebugAssert(code != 0);

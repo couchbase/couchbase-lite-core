@@ -205,7 +205,7 @@ namespace c4Internal {
             _versionedDoc.prune(maxRevTreeDepth);
             {
                 WITH_LOCK(_db);
-                _versionedDoc.save(*_db->transaction());
+                _versionedDoc.save(_db->transaction());
             }
             sequence = _versionedDoc.sequence();
             selectedRev.flags &= ~kRevNew;

@@ -41,9 +41,9 @@ struct c4Database : public RefCounted<c4Database> {
 
     bool mustBeSchema(int schema, C4Error*);
 
-    Transaction* transaction() {
+    Transaction& transaction() {
         CBFAssert(_transaction);
-        return _transaction;
+        return *_transaction;
     }
 
     // Transaction methods below acquire _transactionMutex. Do not call them if

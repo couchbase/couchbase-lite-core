@@ -188,7 +188,7 @@ namespace c4Internal {
             VersionVector vers(rq.history[0]);
             Revision::BodyParams bodyParams {rq.body, rq.docType, rq.deletion, rq.hasAttachments};
             shared_ptr<Revision> newRev(new Revision(rq.docID, vers, bodyParams, true));
-            switch(_store.insert(*newRev, *_db->transaction())) {
+            switch(_store.insert(*newRev, _db->transaction())) {
                 case kNewer:
                     selectNewRev(newRev);
                     return 1;
@@ -204,7 +204,7 @@ namespace c4Internal {
         virtual bool putNewRevision(const C4DocPutRequest &rq) override {
             Revision::BodyParams bodyParams {rq.body, rq.docType, rq.deletion, rq.hasAttachments};
             shared_ptr<Revision> newRev = _store.create(rq.docID, _selected->version(), bodyParams,
-                                                        *_db->transaction());
+                                                        _db->transaction());
             if (!newRev)
                 return false;
             selectNewRev(newRev);

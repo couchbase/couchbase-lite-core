@@ -47,7 +47,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
         alloc_slice tsValue(SizeOfVarInt(timestamp));
         PutUVarInt((void *)tsValue.buf, timestamp);
 
-        Transaction &t = *db->transaction();
+        Transaction &t = db->transaction();
         KeyStore& expiry = db->getKeyStore("expiry");
         Document existingDoc = expiry.get(docId);
         if (existingDoc.exists()) {
@@ -210,7 +210,7 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
     try {
         WITH_LOCK(e->getDatabase());
         e->reset();
-        Transaction &t = *e->getDatabase()->transaction();
+        Transaction &t = e->getDatabase()->transaction();
         KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");
         while(e->next()) {
             expiry.del(e->key(), t);

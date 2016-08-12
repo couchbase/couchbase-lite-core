@@ -60,7 +60,6 @@ namespace c4Internal {
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError);
     void recordException(const std::exception &e, C4Error* outError);
-    void recordUnknownException(C4Error* outError);
     static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
 
     #define catchError(OUTERR) \
