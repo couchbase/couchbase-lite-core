@@ -66,7 +66,9 @@ namespace cbforest {
 #pragma mark - DATABASE:
 
 
-    const Database::Options Database::Options::defaults = Database::Options {{true, true}, true, true};
+    const Database::Options Database::Options::defaults = Database::Options {
+        {true, true, false},
+        true, true};
 
 
     Database::Database(const string &path, const Database::Options *options)

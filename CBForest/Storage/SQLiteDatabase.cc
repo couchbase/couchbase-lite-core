@@ -153,8 +153,12 @@ namespace cbforest {
         beganCompacting();
         {
             Transaction t(this);
-            for (auto& name : allKeyStoreNames())
+            for (auto& name : allKeyStoreNames()) {
                 _sqlDb->exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
+                if (options().keyStores.getByOffset) {
+                    _sqlDb->exec(string("DELETE FROM kvold_")+name);
+                }
+            }
             updatePurgeCount(t);
         }
         _sqlDb->exec(string("VACUUM"));     // Vacuum can't be called in a transaction
@@ -188,8 +192,8 @@ namespace cbforest {
     }
 
 
-    SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Capabilities options)
-    :KeyStore(db, name, options)
+    SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Capabilities capabilities)
+    :KeyStore(db, name, capabilities)
     {
         if (!db.keyStoreExists(name)) {
             // Create the sequence and deleted columns regardless of options, otherwise it's too
@@ -197,6 +201,12 @@ namespace cbforest {
             db.exec(string("CREATE TABLE IF NOT EXISTS kv_"+name+
                                         " (key BLOB PRIMARY KEY, meta BLOB, body BLOB,"
                                         " sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+            if (capabilities.getByOffset) {
+                // shadow table for overwritten docs
+                db.exec(string("CREATE TABLE IF NOT EXISTS kvold_"+name+
+                               " (sequence INTEGER PRIMARY KEY,"
+                               "  key BLOB, meta BLOB, body BLOB)"));
+            }
         }
     }
 
@@ -206,10 +216,12 @@ namespace cbforest {
         _getByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
         _getBySeqStmt.reset();
+        _getByOffStmt.reset();
         _getMetaBySeqStmt.reset();
         _setStmt.reset();
         _delByKeyStmt.reset();
         _delBySeqStmt.reset();
+        _backupStmt.reset();
         KeyStore::close();
     }
 
@@ -250,6 +262,7 @@ namespace cbforest {
         else
             doc.setBody(columnAsSlice(stmt.getColumn(4)));
     }
+    
 
     bool SQLiteKeyStore::read(Document &doc, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
@@ -261,7 +274,10 @@ namespace cbforest {
         if (!stmt.executeStep())
             return false;
 
-        updateDoc(doc, (int64_t)stmt.getColumn(0), 0, (int)stmt.getColumn(1));
+        sequence seq = (int64_t)stmt.getColumn(0);
+        uint64_t offset = _capabilities.getByOffset ? seq : 0;
+        bool deleted = (int)stmt.getColumn(1);
+        updateDoc(doc, seq, offset, deleted);
         setDocMetaAndBody(doc, stmt, options);
         stmt.reset();
         return !doc.deleted();
@@ -281,7 +297,9 @@ namespace cbforest {
                            " WHERE sequence=?");
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
-            updateDoc(doc, seq, 0, (int)stmt.getColumn(1));
+            uint64_t offset = _capabilities.getByOffset ? seq : 0;
+            bool deleted = (int)stmt.getColumn(1);
+            updateDoc(doc, seq, offset, deleted);
             doc.setKey(columnAsSlice(stmt.getColumn(2)));
             setDocMetaAndBody(doc, stmt, options);
             stmt.reset();
@@ -290,7 +308,38 @@ namespace cbforest {
     }
 
 
+    Document SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+        Document doc;
+        if (!_capabilities.getByOffset)
+            return doc;
+
+        auto &stmt = db().compile(_getByOffStmt, string("SELECT key, meta, body FROM kvold_")+
+                                                  name()+" WHERE sequence=?");
+        stmt.bind(1, (int64_t)seq);
+        if (stmt.executeStep()) {
+            updateDoc(doc, seq, seq);
+            doc.setKey(columnAsSlice(stmt.getColumn(0)));
+            doc.setMeta(columnAsSlice(stmt.getColumn(1)));
+            doc.setBody(columnAsSlice(stmt.getColumn(2)));
+            stmt.reset();
+        }
+        return doc;
+    }
+
+
+    void SQLiteKeyStore::backupReplacedDoc(slice key) {
+        db().compile(_backupStmt,
+                     string("INSERT INTO kvold_")+name()+" (sequence, key, meta, body)"
+                            " SELECT sequence, key, meta, body FROM kv_"+name()+" WHERE key=?");
+        _backupStmt->bindNoCopy(1, key.buf, (int)key.size);
+        _backupStmt->exec();
+    }
+
+
     sequence SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+        if (_capabilities.getByOffset)
+            backupReplacedDoc(key);
+
         db().compile(_setStmt,
                     string("INSERT OR REPLACE INTO kv_")+name()
                         +" (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");

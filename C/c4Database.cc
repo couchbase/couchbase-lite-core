@@ -34,7 +34,10 @@ Database* c4Database::newDatabase(std::string path,
                                   bool isMainDB)
 {
     Database::Options options { };
-    options.keyStores.sequences = options.keyStores.softDeletes = isMainDB;
+    if (isMainDB) {
+        options.keyStores.sequences = options.keyStores.softDeletes = true;
+        options.keyStores.getByOffset = (flags & kC4DB_V2Format) == 0;
+    }
     options.create = (flags & kC4DB_Create) != 0;
     options.writeable = (flags & kC4DB_ReadOnly) == 0;
     if (encryptionKey) {

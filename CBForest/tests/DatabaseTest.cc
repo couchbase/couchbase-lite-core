@@ -532,3 +532,14 @@ void testRekey() {
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(DatabaseTest);
+
+
+class DatabaseSQLiteTest : public DatabaseTest {
+    
+    virtual bool isForestDB() const             {return false;}
+
+    CPPUNIT_TEST_SUB_SUITE( DatabaseSQLiteTest, DatabaseTest );
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DatabaseSQLiteTest);

@@ -51,7 +51,7 @@ public:
     Database* newDatabase(std::string path, Database::Options* =nullptr);
     void reopenDatabase(Database::Options *newOptions =nullptr);
 
-    bool isForestDB() const             {return true;}
+    virtual bool isForestDB() const             {return true;}
 
     virtual void setUp() override;
 

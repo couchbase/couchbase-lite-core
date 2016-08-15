@@ -342,9 +342,10 @@ namespace cbforest {
     }
 
 
-    ForestKeyStore::ForestKeyStore(ForestDatabase &db, const string &name, KeyStore::Capabilities options)
-    :KeyStore(db, name, options)
+    ForestKeyStore::ForestKeyStore(ForestDatabase &db, const string &name, KeyStore::Capabilities capabilities)
+    :KeyStore(db, name, capabilities)
     {
+        capabilities.getByOffset = true;
         reopen();
     }
 

@@ -79,6 +79,7 @@ namespace cbforest {
 
         Document get(sequence, ContentOptions) const override;
         bool read(Document &doc, ContentOptions options) const override;
+        Document getByOffsetNoErrors(uint64_t offset, sequence) const override;
 
         sequence set(slice key, slice meta, slice value, Transaction&) override;
 
@@ -100,11 +101,12 @@ namespace cbforest {
         SQLiteDatabase& db() const                    {return (SQLiteDatabase&)database();}
         stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(stringstream &sql, DocEnumerator::Options &options);
+        void backupReplacedDoc(slice key);
 
         unique_ptr<SQLite::Statement> _docCountStmt;
-        unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt;
+        unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
         unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
-        unique_ptr<SQLite::Statement> _setStmt, _delByKeyStmt, _delBySeqStmt;
+        unique_ptr<SQLite::Statement> _setStmt, _backupStmt, _delByKeyStmt, _delBySeqStmt;
         bool                          _createdKeyIndex {false};     // Created by-key index yet?
         bool                          _createdSeqIndex {false};     // Created by-seq index yet?
     };
