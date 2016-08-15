@@ -21,7 +21,6 @@
 #include "DocEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"
-#include "forestdb.h"
 #include <stdint.h>
 #include <ctime>
 
@@ -33,7 +32,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 {
     try {
         if (!db->defaultKeyStore().get(docId, kMetaOnly).exists()) {
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(CBForestDomain, kC4ErrorNotFound, outError);
             return false;
         }
 

@@ -68,6 +68,7 @@ namespace cbforest {
             TransactionNotClosed,
             IndexBusy,
             UnsupportedOperation,
+            NotADatabaseFile,
 
             NumCBForestErrors
         };
@@ -80,6 +81,8 @@ namespace cbforest {
 
         /** Returns an equivalent error in the CBForest or POSIX domain. */
         error standardized() const;
+
+        bool isUnremarkable() const;
 
         /** Returns the error equivalent to a given runtime_error. Uses RTTI to discover if the
             error is already an `error` instance; otherwise tries to convert some other known

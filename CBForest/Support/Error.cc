@@ -49,6 +49,7 @@ namespace cbforest {
         {FDB_RESULT_CHECKSUM_ERROR,     error::CBForest,    error::CorruptData},
         {FDB_RESULT_FILE_CORRUPTION,    error::CBForest,    error::CorruptData},
         {FDB_RESULT_INVALID_HANDLE,     error::CBForest,    error::NotOpen},
+        {FDB_RESULT_NO_DB_HEADERS,      error::CBForest,    error::NotADatabaseFile},
 
         {FDB_RESULT_EPERM,              error::POSIX,       EPERM},
         {FDB_RESULT_EIO,                error::POSIX,       EIO},
@@ -85,7 +86,7 @@ namespace cbforest {
         {SQLITE_CORRUPT,                error::CBForest,    error::CorruptData},
         {SQLITE_FULL,                   error::POSIX,       ENOSPC},
         {SQLITE_CANTOPEN,               error::CBForest,    error::CantOpenFile},
-        {SQLITE_NOTADB,                 error::CBForest,    error::CantOpenFile},
+        {SQLITE_NOTADB,                 error::CBForest,    error::NotADatabaseFile},
         {SQLITE_PERM,                   error::CBForest,    error::NotWriteable},
         {0, /*must end with err=0*/     error::CBForest,    0},
     };
@@ -138,6 +139,7 @@ namespace cbforest {
             "transaction not closed",
             "index busy; can't close view",
             "unsupported operation for this database type",
+            "file is not a database (or encryption key is invalid/missing)",
         };
         const char *str = nullptr;
         if (code < sizeof(kCBForestMessages)/sizeof(char*))
@@ -221,11 +223,25 @@ namespace cbforest {
         return unexpectedException(x);
     }
 
+
+    bool error::isUnremarkable() const {
+        if (code == 0)
+            return true;
+        switch (domain) {
+            case CBForest:
+                return code == NotFound || code == Deleted;
+            case ForestDB:
+                return code == FDB_RESULT_KEY_NOT_FOUND || code == FDB_RESULT_NO_DB_HEADERS;
+            default:
+                return false;
+        }
+    }
+
     
     void error::_throw(Domain domain, int code ) {
         CBFDebugAssert(code != 0);
         error err{domain, code};
-        if (sWarnOnError) {
+        if (sWarnOnError && !err.isUnremarkable()) {
             WarnError("CBForest throwing %s error %d: %s",
                       kDomainNames[domain], code, err.what());
         }

@@ -271,6 +271,7 @@ namespace cbforest {
      _inclusiveStart(true),
      _inclusiveEnd(true),
      _keyRanges(keyRanges),
+     _currentKeyIndex(0),
      _dbEnum(enumeratorForIndex(0))
     {
 #if DEBUG
@@ -279,7 +280,9 @@ namespace cbforest {
             Debug("    key range: %s -- %s (%d)", r.start.toJSON().c_str(), r.end.toJSON().c_str(), r.inclusiveEnd);
 #endif
         index.addUser();
-        nextKeyRange();
+        if (_keyRanges.size() == 0)
+            _dbEnum.close();
+
     }
 
     bool IndexEnumerator::read() {
@@ -357,6 +360,9 @@ namespace cbforest {
     }
 
     DocEnumerator IndexEnumerator::enumeratorForIndex(int i) {
+        if (i >= _keyRanges.size()) {
+            return DocEnumerator(_index._store);
+        }
         Collatable& startKey = _keyRanges[i].start;
         Collatable& endKey = _keyRanges[i].end;
         Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());

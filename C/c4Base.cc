@@ -38,7 +38,7 @@ namespace c4Internal {
     void recordException(const std::exception &e, C4Error* outError) {
         static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
-        error err = error::convertException(e);
+        error err = error::convertException(e).standardized();
         recordError(domainMap[err.domain], err.code, outError);
     }
 

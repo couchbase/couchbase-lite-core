@@ -23,8 +23,6 @@
 #include "c4DocInternal.hh"
 #include "SecureRandomize.hh"
 
-#include "forestdb.h"
-
 using namespace cbforest;
 
 
@@ -44,7 +42,7 @@ C4Document* c4doc_get(C4Database *database,
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(CBForestDomain, kC4ErrorNotFound, outError);
         }
         
         
@@ -64,7 +62,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
         if (!internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, outError);
+            recordError(CBForestDomain, kC4ErrorNotFound, outError);
         }
         return doc;
     } catchError(outError);
@@ -91,8 +89,9 @@ bool c4doc_selectRevision(C4Document* doc,
                           C4Error *outError)
 {
     try {
-        internal(doc)->selectRevision(revID, withBody);
-        return true;
+        if (internal(doc)->selectRevision(revID, withBody))
+            return true;
+        recordError(CBForestDomain, kC4ErrorNotFound, outError);
     } catchError(outError);
     return false;
 }
@@ -108,7 +107,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
     try {
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
             return true;
-        recordError(CBForestDomain, error::Deleted, outError);
+        recordError(CBForestDomain, kC4ErrorDeleted, outError);
     } catchError(outError);
     return false;
 }
@@ -194,9 +193,12 @@ C4Document* c4doc_getForPut(C4Database *database,
 
             if (parentRevID.buf) {
                 // Updating an existing revision; make sure it exists and is a leaf:
-                idoc->selectRevision(parentRevID, false);
+                if (!idoc->selectRevision(parentRevID, false)) {
+                    recordError(CBForestDomain, kC4ErrorNotFound, outError);
+                    break;
+                }
                 if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
-                    recordError(CBForestDomain, error::Conflict, outError);
+                    recordError(CBForestDomain, kC4ErrorConflict, outError);
                     break;
                 }
             } else {
@@ -204,13 +206,13 @@ C4Document* c4doc_getForPut(C4Database *database,
                 if (deleting) {
                     // Didn't specify a revision to delete: NotFound or a Conflict, depending
                     recordError(CBForestDomain,
-                                ((idoc->flags & kExists) ?error::Conflict :error::NotFound),
+                                ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound),
                                 outError);
                     break;
                 }
                 // If doc exists, current rev must be a deletion or there will be a conflict:
                 if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
-                    recordError(CBForestDomain, error::Conflict, outError);
+                    recordError(CBForestDomain, kC4ErrorConflict, outError);
                     break;
                 }
             }

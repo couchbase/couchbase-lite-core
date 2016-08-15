@@ -53,7 +53,7 @@ public:
     virtual bool exists() =0;
     virtual void loadRevisions() =0;
     virtual bool revisionsLoaded() const =0;
-    virtual void selectRevision(C4Slice revID, bool withBody) =0;
+    virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
 
     virtual bool selectCurrentRevision() {    // should not throw
         // By default just fill in what we know about the current revision:

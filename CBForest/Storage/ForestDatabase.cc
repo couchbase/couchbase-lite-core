@@ -70,6 +70,7 @@ namespace cbforest {
             sDefaultConfig.wal_flush_before_commit = true;
             sDefaultConfig.seqtree_opt = FDB_SEQTREE_USE;
             sDefaultConfig.purging_interval = 1;
+            sDefaultConfig.compaction_mode = FDB_COMPACTION_AUTO;
             sDefaultConfig.compaction_cb_mask = FDB_CS_BEGIN | FDB_CS_COMPLETE;
 
             sDefaultConfigInitialized = true;

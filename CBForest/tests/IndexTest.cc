@@ -141,6 +141,14 @@ void testBasics() {
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
     AssertEqual(nRows, 3ull);
+
+    // Empty vector:
+    ranges.clear();
+    nRows = 0;
+    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
+        nRows++;
+    }
+    AssertEqual(nRows, 0ull);
 }
 
 void testDuplicateKeys() {

@@ -138,17 +138,18 @@ namespace c4Internal {
             }
         }
 
-        void selectRevision(C4Slice revID, bool withBody) override {
+        bool selectRevision(C4Slice revID, bool withBody) override {
             if (revID.buf) {
                 loadRevisions();
                 const Rev *rev = _versionedDoc[revidBuffer(revID)];
                 if (!selectRevision(rev))
-                    error::_throw(error::NotFound);
+                    return false;
                 if (withBody)
                     loadSelectedRevBody();
             } else {
                 selectRevision(NULL);
             }
+            return true;
         }
 
         bool selectCurrentRevision() override { // doesn't throw

@@ -109,6 +109,7 @@ enum {
     kC4ErrorTransactionNotClosed,   // Database can't be closed while a transaction is open
     kC4ErrorIndexBusy,              // View can't be closed while index is enumerating
     kC4ErrorUnsupported,            // Operation not supported in this database
+    kC4ErrorNotADatabaseFile,       // File is not a database, or encryption key is wrong
 };
 
 

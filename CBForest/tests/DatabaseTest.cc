@@ -10,8 +10,6 @@
 #include "DocEnumerator.hh"
 #include "Error.hh"
 
-#include "forestdb.h" //FIX
-
 #include "CBForestTest.hh"
 
 using namespace cbforest;

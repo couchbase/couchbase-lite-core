@@ -120,15 +120,16 @@ namespace c4Internal {
         }
 
 
-        virtual void selectRevision(C4Slice revID, bool withBody) override {
+        virtual bool selectRevision(C4Slice revID, bool withBody) override {
             if (revID.buf) {
                 shared_ptr<Revision> rev = _store.get(docID, revID,
                                                         (withBody ? kDefaultContent : kMetaOnly));
                 if (!selectRevision(rev))
-                    error::_throw(error::NotFound);
+                    return false;
             } else {
                 selectRevision(NULL);
             }
+            return true;
         }
 
 

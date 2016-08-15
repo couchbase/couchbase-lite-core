@@ -10,11 +10,13 @@
 //  which you can install using 'brew' or 'apt_get' or whatever.
 
 #include "c4Test.hh"
-#include "forestdb.h"
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4ExpiryEnumerator.h"
 #include <cmath>
+
+#include "forestdb.h"
+#include "sqlite3.h"
 
 #ifdef _MSC_VER
 #define random() rand()
@@ -50,6 +52,7 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(buf[0], '\0');
 
         assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
+        assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
         assertMessage(CBForestDomain, 15, "invalid parameter");
         assertMessage(POSIXDomain, ENOENT, "No such file or directory");
         assertMessage(CBForestDomain, kC4ErrorIndexBusy, "index busy; can't close view");
@@ -86,7 +89,12 @@ class C4DatabaseTest : public C4Test {
         AssertEqual(doc->meta, meta);
         AssertEqual(doc->body, kBody);
         c4raw_free(doc);
-    }
+
+        // Nonexistent:
+        AssertEqual(c4raw_get(db, c4str("test"), c4str("bogus"), &error), (C4RawDocument*)nullptr);
+        AssertEqual(error.domain, CBForestDomain);
+        AssertEqual(error.code, (int)kC4ErrorNotFound);
+}
 
 
     void testCreateVersionedDoc() {
@@ -95,8 +103,8 @@ class C4DatabaseTest : public C4Test {
         C4Document* doc;
         doc = c4doc_get(db, kDocID, true, &error);
         Assert(!doc);
-        AssertEqual((uint32_t)error.domain, (uint32_t)ForestDBDomain);
-        AssertEqual(error.code, (int)FDB_RESULT_KEY_NOT_FOUND);
+        AssertEqual((uint32_t)error.domain, (uint32_t)CBForestDomain);
+        AssertEqual(error.code, (int)kC4ErrorNotFound);
         c4doc_free(doc);
 
         // Now get the doc with mustExist=false, which returns an empty doc:
