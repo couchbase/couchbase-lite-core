@@ -68,21 +68,6 @@ public class Document implements Constants{
     public long getSelectedRevFlags() { return _selectedRevFlags; }
 
 
-    public boolean insertRevision(String revID,
-                                  byte[] body,
-                                  boolean deleted,
-                                  boolean hasAttachments,
-                                  boolean allowConflict) throws ForestException {
-        return insertRevision(_handle, revID, body, deleted, hasAttachments, allowConflict);
-    }
-
-    public int insertRevisionWithHistory(byte[] body,
-                                         boolean deleted,
-                                         boolean hasAttachments,
-                                         String[] history) throws ForestException {
-        return insertRevisionWithHistory(_handle, body, deleted, hasAttachments, history);
-    }
-
     public void save(int maxRevTreeDepth) throws ForestException {
         save(_handle, maxRevTreeDepth);
     }

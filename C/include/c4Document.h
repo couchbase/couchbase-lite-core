@@ -114,49 +114,6 @@ extern "C" {
     unsigned c4rev_getGeneration(C4Slice revID);
 
 
-    //////// INSERTING REVISIONS:
-
-
-    /** Adds a new revision to a document, as a child of the currently selected revision
-        (or as a root revision if there is no selected revision.)
-        On success, the new revision will be selected.
-        Must be called within a transaction. Remember to save the document afterwards.
-        @param doc  The document.
-        @param revID  The ID of the revision being inserted.
-        @param body  The (JSON) body of the revision.
-        @param deleted  True if this revision is a deletion (tombstone).
-        @param hasAttachments  True if this revision contains an _attachments dictionary.
-        @param allowConflict  If false, and the parent is not a leaf, a 409 error is returned.
-        @param outError  Error information is stored here.
-        @return The number of revisions added (0 or 1), or -1 on error. */
-        int32_t c4doc_insertRevision(C4Document *doc,
-                                     C4Slice revID,
-                                     C4Slice body,
-                                     bool deleted,
-                                     bool hasAttachments,
-                                     bool allowConflict,
-                                     C4Error *outError);
-
-    /** Adds a revision to a document, plus its ancestors (given in reverse chronological order.)
-        On success, the new revision will be selected.
-        Must be called within a transaction. Remember to save the document afterwards.
-        @param doc  The document.
-        @param body  The (JSON) body of the new revision.
-        @param deleted  True if the new revision is a deletion (tombstone).
-        @param hasAttachments  True if the new revision contains an _attachments dictionary.
-        @param history  The ancestors' revision IDs, starting with the new revision's,
-                        in reverse order.
-        @param historyCount  The number of items in the history array.
-        @param outError  Error information is stored here.
-        @return The number of revisions added to the document, or -1 on error. */
-        int32_t c4doc_insertRevisionWithHistory(C4Document *doc,
-                                                C4Slice body,
-                                                bool deleted,
-                                                bool hasAttachments,
-                                                const C4Slice history[],
-                                                size_t historyCount,
-                                                C4Error *outError);
-
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
         shared with another branch.
@@ -201,7 +158,7 @@ extern "C" {
     uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId);
 
 
-    //////// HIGH-LEVEL:
+    //////// ADDING REVISIONS:
 
 
     /** Parameters for adding a revision using c4doc_put. */

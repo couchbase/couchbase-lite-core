@@ -272,6 +272,7 @@ public interface Constants {
         int kC4ErrorTransactionNotClosed = 26;  // Database can't be closed while a transaction is open
         int kC4ErrorIndexBusy = 27;             // View can't be closed while index is enumerating
         int kC4ErrorUnsupported = 28;           // Operation not supported in this database
+        int kC4ErrorNotADatabaseFile = 29;      // File is not a database, or encryption key is wrong
     }
 
     // The types of tokens in a key.

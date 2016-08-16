@@ -72,17 +72,20 @@ bool cbforest::jni::initDatabase(JNIEnv *env) {
 }
 
 
-jlong JNICALL Java_com_couchbase_cbforest_Database__1open
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1open
 (JNIEnv *env, jobject self, jstring jpath,
  jint flags, jint encryptionAlg, jbyteArray encryptionKey)
 {
     jstringSlice path(env, jpath);
-    C4EncryptionKey key;
-    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
+
+    C4DatabaseConfig config { };
+    config.flags = (C4DatabaseFlags)flags;
+    config.storageEngine = kC4ForestDBStorageEngine;
+    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
         return 0;
 
     C4Error error;
-    C4Database* db = c4db_open(path, (C4DatabaseFlags)flags, &key, &error);
+    C4Database* db = c4db_open(path, &config, &error);
     if (!db)
         throwError(env, error);
 
@@ -196,7 +199,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
     c4log_register((C4LogLevel)level, &logCallback);
 }
 
-#pragma mark - DOCUMENTS:
+#pragma mark - PURGING / EXPIRING:
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
 (JNIEnv *env, jclass clazz, jlong db, jstring jdocID)
@@ -208,6 +211,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
 }
 
 #pragma mark - EXPIRATION:
+
 /*
  * Class:     com_couchbase_cbforest_Database
  * Method:    expirationOfDoc
@@ -289,7 +293,63 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
     return ret;
 }
 
-#pragma mark - RAW DOCUMENTS:
+#pragma mark - DOCUMENTS:
+
+JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1put
+(JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody, jstring jdocType,
+ jboolean deletion, jboolean hasAttachments, jboolean existingRevision, jboolean allowConflict,
+ jobjectArray jhistory, jboolean save, jint maxRevTreeDepth)
+{
+    auto db = (C4Database*)dbHandle;
+    jstringSlice docID(env, jdocID), docType(env, jdocType);
+    C4DocPutRequest rq;
+    rq.docID = docID;
+    rq.docType = docType;
+    rq.deletion = deletion;
+    rq.hasAttachments = hasAttachments;
+    rq.existingRevision = existingRevision;
+    rq.allowConflict = allowConflict;
+    rq.save = save;
+    rq.maxRevTreeDepth = maxRevTreeDepth;
+    C4Document *doc = nullptr;
+    size_t commonAncestorIndex;
+    C4Error error;
+    {
+        // Convert jhistory, a Java String[], to a C array of C4Slice:
+        jsize n = env->GetArrayLength(jhistory);
+        if (env->EnsureLocalCapacity(std::min(n+1, MaxLocalRefsToUse)) < 0)
+            return -1;
+        std::vector<C4Slice> history(n);
+        std::vector<jstringSlice*> historyAlloc;
+        for (jsize i = 0; i < n; i++) {
+            jstring js = (jstring)env->GetObjectArrayElement(jhistory, i);
+            jstringSlice *item = new jstringSlice(env, js);
+            if (i >= MaxLocalRefsToUse)
+                item->copyAndReleaseRef();
+            historyAlloc.push_back(item); // so its memory won't be freed
+            history[i] = *item;
+        }
+        rq.history = history.data();
+        rq.historyCount = history.size();
+
+        {
+            // `body` is a "critical" JNI ref. This is the fastest way to access its bytes, but
+            // it's illegal to make any more JNI calls until the critical ref is released.
+            // We declare it in a nested block, so it'll be released immediately. (java-core#793)
+            jbyteArraySlice body(env, jbody, true);
+            rq.body = body;
+            doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
+        }
+
+        // release memory
+        for (jsize i = 0; i < n; i++)
+            delete historyAlloc.at(i);
+    }
+
+    if (!doc)
+        throwError(env, error);
+    return (jlong)doc;
+}
 
 JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut
 (JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jbyteArray jmeta, jbyteArray jbody)

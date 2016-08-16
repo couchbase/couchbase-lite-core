@@ -86,10 +86,35 @@ public class Database {
 
     //////// DOCUMENTS
 
+    public Document put(String docID,
+                        byte[] body,
+                        String docType,
+                        boolean deletion,
+                        boolean hasAttachments,
+                        boolean existingRevision,
+                        boolean allowConflict,
+                        String[] history,
+                        boolean save,
+                        int maxRevTreeDepth) throws ForestException {
+        return new Document(_put(_handle, docID, body, docType, deletion, hasattachments,
+                                 existingRevision, allowConflict, history, save, maxRevTreeDepth));
+    }
+
     public void purgeDoc(String docID) throws ForestException {
         purgeDoc(_handle, docID);
     }
 
+    private native static long _put(long dbHandle,
+                                    String docID,
+                                    byte[] body,
+                                    String docType,
+                                    boolean deletion,
+                                    boolean hasAttachments,
+                                    boolean existingRevision,
+                                    boolean allowConflict,
+                                    String[] history,
+                                    boolean save,
+                                    int maxRevTreeDepth) throws ForestException;
     private native static void purgeDoc(long dbHandle, String docID) throws ForestException;
 
     //////// EXPIRATION
