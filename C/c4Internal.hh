@@ -67,6 +67,11 @@ namespace c4Internal {
             recordException(x, OUTERR); \
         }
 
+    static inline bool checkParam(bool isValid, C4Error* outError) {
+        if (!isValid)
+            recordError(CBForestDomain, kC4ErrorInvalidParameter, outError);
+        return isValid;
+    }
 
     // DOC ENUMERATORS:
 

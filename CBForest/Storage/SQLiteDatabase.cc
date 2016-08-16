@@ -60,12 +60,6 @@ namespace cbforest {
     }
 
 
-    void SQLiteDatabase::checkOpen() const {
-        if (!_sqlDb)
-            error::_throw(error::NotOpen);
-    }
-
-
     void SQLiteDatabase::close() {
         Database::close(); // closes all the KeyStores
         _getLastSeqStmt.reset();

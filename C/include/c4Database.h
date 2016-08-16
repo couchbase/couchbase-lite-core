@@ -20,17 +20,13 @@ extern "C" {
     //////// DATABASES:
 
 
-    /** Boolean options specified when opening a database or view. */
+    /** Boolean options for C4DatabaseConfig. */
     typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
         kC4DB_Create        = 1,    /**< Create the file if it doesn't exist */
         kC4DB_ReadOnly      = 2,    /**< Open file read-only */
         kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
 
         kC4DB_V2Format      = 0x20, /**< Couchbase Lite 2 format */
-
-        kC4DB_ForestDBStorage   = 0x000,    /**< Use ForestDB storage engine (default) */
-        kC4DB_SQLiteStorage     = 0x100,    /**< Use SQLite 3 storage engine */
-        kC4DB_StorageTypeMask   = 0xF00,    /**< Mask for storage-type bits */
     };
 
     /** Encryption algorithms. */
@@ -39,10 +35,21 @@ extern "C" {
         kC4EncryptionAES256 = 1     /**< AES with 256-bit key */
     };
 
+    /** Encryption key specified in a C4DatabaseConfig. */
     typedef struct C4EncryptionKey {
         C4EncryptionAlgorithm algorithm;
         uint8_t bytes[32];
     } C4EncryptionKey;
+
+    extern const char* const kC4ForestDBStorageEngine;
+    extern const char* const kC4SQLiteStorageEngine;
+
+    /** Main database/view configuration struct. */
+    typedef struct C4DatabaseConfig {
+        C4DatabaseFlags flags;
+        const char *storageEngine;
+        C4EncryptionKey encryptionKey;
+    } C4DatabaseConfig;
 
 
     /** Opaque handle to an opened database. */
@@ -50,8 +57,7 @@ extern "C" {
 
     /** Opens a database. */
     C4Database* c4db_open(C4Slice path,
-                          C4DatabaseFlags flags,
-                          const C4EncryptionKey *encryptionKey,
+                          const C4DatabaseConfig *config,
                           C4Error *outError);
 
     /** Frees a database handle, closing the database first if it's still open. */
@@ -66,7 +72,7 @@ extern "C" {
 
     /** Deletes the file(s) for the database at the given path.
         All C4Databases at that path should be closed first. */
-    bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError);
+    bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
 
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database, C4Error *outError);
@@ -90,8 +96,8 @@ extern "C" {
     /** Returns the path of the database. */
     C4SliceResult c4db_getPath(C4Database*);
 
-    /** Returns the flags the database was opened with. */
-    C4DatabaseFlags c4db_getFlags(C4Database*);
+    /** Returns the configuration the database was opened with. */
+    const C4DatabaseConfig* c4db_getConfig(C4Database*);
 
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database);

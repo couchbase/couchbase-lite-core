@@ -58,6 +58,9 @@ namespace cbforest {
 
         virtual bool isOpen() const =0;
 
+        /** Throws an exception if the database is closed. */
+        void checkOpen() const;
+
         /** Closes the database. Do not call any methods on this object afterwards,
             except isOpen() or mustBeOpen(), before deleting it. */
         virtual void close();

@@ -645,7 +645,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(C4VersionVectorDatabaseTest);
 
 class C4SQLiteDatabaseTest : public C4DatabaseTest {
 
-    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+    virtual const char* storageType() const override     {return kC4SQLiteStorageEngine;}
 
     CPPUNIT_TEST_SUB_SUITE( C4SQLiteDatabaseTest, C4DatabaseTest );
     CPPUNIT_TEST_SUITE_END();

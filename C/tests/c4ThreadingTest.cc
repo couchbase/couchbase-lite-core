@@ -30,7 +30,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getFlags(db), NULL);
+        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
         v = openView(db);
     }
 
@@ -41,7 +41,7 @@ public:
 
 
     C4Database* openDB() {
-        C4Database* database = c4db_open(databasePath(), c4db_getFlags(db), encryptionKey(), NULL);
+        C4Database* database = c4db_open(databasePath(), c4db_getConfig(db), NULL);
         Assert(database);
         return database;
     }
@@ -49,7 +49,7 @@ public:
     C4View* openView(C4Database* onDB) {
         C4View* view = c4view_open(onDB, c4str(kViewIndexPath),
                                    c4str("myview"), c4str("1"),
-                                   c4db_getFlags(db), encryptionKey(), NULL);
+                                   c4db_getConfig(db), NULL);
         Assert(view);
         return view;
     }
@@ -245,7 +245,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(C4ThreadingTest);
 
 class C4SQLiteThreadingTest : public C4ThreadingTest {
 
-    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+    virtual const char* storageType() const override     {return kC4SQLiteStorageEngine;}
 
     CPPUNIT_TEST_SUB_SUITE( C4SQLiteThreadingTest, C4ThreadingTest );
     CPPUNIT_TEST_SUITE_END();

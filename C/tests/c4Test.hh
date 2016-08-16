@@ -65,10 +65,10 @@ public:
 protected:
     C4Database *db;
 
-    virtual C4DatabaseFlags storageType() const     {return kC4DB_ForestDBStorage;}
-    virtual int schemaVersion() const               {return 1;}
-    bool isSQLite() const                           {return storageType() == kC4DB_SQLiteStorage;}
-    bool isForestDB() const                         {return storageType() == kC4DB_ForestDBStorage;}
+    virtual const char* storageType() const     {return kC4ForestDBStorageEngine;}
+    virtual int schemaVersion() const           {return 1;}
+    bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
+    bool isForestDB() const                     {return storageType() == kC4ForestDBStorageEngine;}
 
     virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
 

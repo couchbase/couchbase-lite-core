@@ -4,6 +4,9 @@
 #  Created by Jens Alfke on 9/15/15.
 #  Copyright © 2015 Couchbase. All rights reserved.
 
+_kC4ForestDBStorageEngine
+_kC4SQLiteStorageEngine
+
 _c4SliceEqual
 _c4slice_free
 _c4log_register
@@ -19,7 +22,7 @@ _c4db_deleteAtPath
 _c4db_compact
 _c4db_rekey
 _c4db_getPath
-_c4db_getFlags
+_c4db_getConfig
 _c4db_getDocumentCount
 _c4db_getLastSequence
 _c4db_beginTransaction

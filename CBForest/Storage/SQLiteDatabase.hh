@@ -38,8 +38,6 @@ namespace cbforest {
         void reopen() override;
         void compact() override;
 
-        void checkOpen() const;
-
         static void deleteDatabase(const string &path);
         static void shutdown() { }
 

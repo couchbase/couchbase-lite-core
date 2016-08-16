@@ -93,6 +93,12 @@ namespace cbforest {
     }
 
 
+    void Database::checkOpen() const {
+        if (!isOpen())
+            error::_throw(error::NotOpen);
+    }
+
+
     void Database::deleteDatabase(const string &path) {
 #ifdef _MSC_VER
         static const char kSeparatorChar = '\\';
@@ -154,6 +160,7 @@ namespace cbforest {
     }
 
     KeyStore& Database::getKeyStore(const string &name, KeyStore::Capabilities options) const {
+        checkOpen();
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
             KeyStore &store = *i->second;
@@ -166,6 +173,7 @@ namespace cbforest {
 
     KeyStore& Database::addKeyStore(const string &name, KeyStore::Capabilities options) {
         Debug("Database: open KVS '%s'", name.c_str());
+        checkOpen();
         CBFAssert(!(options.sequences && !_options.keyStores.sequences));
         CBFAssert(!(options.softDeletes && !_options.keyStores.softDeletes));
         KeyStore *store = newKeyStore(name, options);
@@ -183,6 +191,7 @@ namespace cbforest {
     }
 
     KeyStore& Database::defaultKeyStore(KeyStore::Capabilities options) const {
+        checkOpen();
         if (!_defaultKeyStore)
             const_cast<Database*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
                                                                          options);
@@ -231,7 +240,7 @@ namespace cbforest {
 
     void Database::beginTransaction(Transaction* t) {
         CBFAssert(!_inTransaction);
-        CBFAssert(isOpen());
+        checkOpen();
         unique_lock<mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);

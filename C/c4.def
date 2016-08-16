@@ -1,4 +1,6 @@
 EXPORTS
+kC4ForestDBStorageEngine
+kC4SQLiteStorageEngine
 c4SliceEqual
 c4slice_free
 c4log_register
@@ -13,7 +15,7 @@ c4db_deleteAtPath
 c4db_compact
 c4db_rekey
 c4db_getPath
-c4db_getFlags
+c4db_getConfig
 c4db_getDocumentCount
 c4db_getLastSequence
 c4db_beginTransaction

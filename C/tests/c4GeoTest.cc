@@ -30,10 +30,10 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        c4db_deleteAtPath(c4str(kViewIndexPath), kC4DB_Create, NULL);
+        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
-                           c4db_getFlags(db), encryptionKey(), &error);
+                           c4db_getConfig(db), &error);
         Assert(view);
     }
 
@@ -157,7 +157,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(C4GeoTest);
 
 class C4SQLiteGeoTest : public C4GeoTest {
 
-    virtual C4DatabaseFlags storageType() const override     {return kC4DB_SQLiteStorage;}
+    virtual const char* storageType() const override     {return kC4SQLiteStorageEngine;}
 
     CPPUNIT_TEST_SUB_SUITE( C4SQLiteGeoTest, C4GeoTest );
     CPPUNIT_TEST_SUITE_END();

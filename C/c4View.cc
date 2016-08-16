@@ -48,10 +48,9 @@ struct c4View : public RefCounted<c4View> {
            C4Slice path,
            C4Slice viewName,
            C4Slice version,
-           C4DatabaseFlags flags,
-           const C4EncryptionKey *encryptionKey)
+           const C4DatabaseConfig &config)
     :_sourceDB(sourceDB),
-     _viewDB(c4Database::newDatabase((std::string)path, flags, encryptionKey, false)),
+     _viewDB(c4Database::newDatabase((std::string)path, config, false)),
      _index(_viewDB->getKeyStore((std::string)viewName), *sourceDB->db())
     {
         setVersion(version);
@@ -86,12 +85,13 @@ C4View* c4view_open(C4Database* db,
                     C4Slice path,
                     C4Slice viewName,
                     C4Slice version,
-                    C4DatabaseFlags flags,
-                    const C4EncryptionKey *key,
+                    const C4DatabaseConfig *config,
                     C4Error *outError)
 {
+    if (!checkParam(config != nullptr, outError))
+        return nullptr;
     try {
-        return (new c4View(db, path, viewName, version, flags, key))->retain();
+        return (new c4View(db, path, viewName, version, *config))->retain();
     } catchError(outError);
     return NULL;
 }
@@ -152,8 +152,10 @@ bool c4view_delete(C4View *view, C4Error *outError) {
     return false;
 }
 
-bool c4view_deleteAtPath(C4Slice viewPath, C4DatabaseFlags flags, C4Error *outError) {
-    return c4db_deleteAtPath(viewPath, flags, outError);
+bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Error *outError) {
+    if (!checkParam(config != nullptr, outError))
+        return false;
+    return c4db_deleteAtPath(viewPath, config, outError);
 }
 
 

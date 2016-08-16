@@ -28,31 +28,35 @@
 using namespace cbforest;
 
 
+const char* const kC4ForestDBStorageEngine = "ForestDB";
+const char* const kC4SQLiteStorageEngine   = "SQLite";
+
+
 Database* c4Database::newDatabase(std::string path,
-                                  C4DatabaseFlags flags,
-                                  const C4EncryptionKey *encryptionKey,
+                                  const C4DatabaseConfig &config,
                                   bool isMainDB)
 {
     Database::Options options { };
     if (isMainDB) {
         options.keyStores.sequences = options.keyStores.softDeletes = true;
-        options.keyStores.getByOffset = (flags & kC4DB_V2Format) == 0;
+        options.keyStores.getByOffset = (config.flags & kC4DB_V2Format) == 0;
     }
-    options.create = (flags & kC4DB_Create) != 0;
-    options.writeable = (flags & kC4DB_ReadOnly) == 0;
-    if (encryptionKey) {
-        options.encryptionAlgorithm = (Database::EncryptionAlgorithm)encryptionKey->algorithm;
-        options.encryptionKey = alloc_slice(encryptionKey->bytes,
-                                            sizeof(encryptionKey->bytes));
+    options.create = (config.flags & kC4DB_Create) != 0;
+    options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+
+    options.encryptionAlgorithm = (Database::EncryptionAlgorithm)config.encryptionKey.algorithm;
+    if (options.encryptionAlgorithm != Database::kNoEncryption) {
+        options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
+                                            sizeof(config.encryptionKey.bytes));
     }
 
-    switch (flags & kC4DB_StorageTypeMask) {
-        case kC4DB_ForestDBStorage:
-            return new ForestDatabase(path, &options);
-        case kC4DB_SQLiteStorage:
-            return new SQLiteDatabase(path, &options);
-        default:
-            error::_throw(error::Unimplemented);
+    if (config.storageEngine == nullptr ||
+            strcmp(config.storageEngine, kC4ForestDBStorageEngine) == 0) {
+        return new ForestDatabase(path, &options);
+    } else if (strcmp(config.storageEngine, kC4SQLiteStorageEngine) == 0) {
+        return new SQLiteDatabase(path, &options);
+    } else {
+        error::_throw(error::Unimplemented);
     }
 }
 
@@ -61,10 +65,9 @@ Database* c4Database::newDatabase(std::string path,
 
 
 c4Database::c4Database(std::string path,
-                       C4DatabaseFlags flags_,
-                       const C4EncryptionKey *encryptionKey)
-:flags(flags_),
- _db(newDatabase(path, flags_, encryptionKey, true))
+                       const C4DatabaseConfig &inConfig)
+:config(inConfig),
+ _db(newDatabase(path, config, true))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
@@ -146,15 +149,16 @@ bool c4Database::endTransaction(bool commit) {
 
 
 C4Database* c4db_open(C4Slice path,
-                      C4DatabaseFlags flags,
-                      const C4EncryptionKey *encryptionKey,
+                      const C4DatabaseConfig *config,
                       C4Error *outError)
 {
+    if (!checkParam(config != nullptr, outError))
+        return nullptr;
     try {
-        if (flags & kC4DB_V2Format)
-            return (new c4DatabaseV2((std::string)path, flags, encryptionKey))->retain();
+        if (config->flags & kC4DB_V2Format)
+            return (new c4DatabaseV2((std::string)path, *config))->retain();
         else
-            return (new c4DatabaseV1((std::string)path, flags, encryptionKey))->retain();
+            return (new c4DatabaseV1((std::string)path, *config))->retain();
     }catchError(outError);
     return NULL;
 }
@@ -203,7 +207,9 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 }
 
 
-bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError) {
+bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) {
+    if (!checkParam(config != nullptr, outError))
+        return false;
     try {
         Database::deleteDatabase((std::string)dbPath);
         return true;
@@ -251,8 +257,8 @@ C4SliceResult c4db_getPath(C4Database *database) {
 }
 
 
-C4DatabaseFlags c4db_getFlags(C4Database *database) {
-    return database->flags;
+const C4DatabaseConfig* c4db_getConfig(C4Database *database) {
+    return &database->config;
 }
 
 

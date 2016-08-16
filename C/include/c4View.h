@@ -31,14 +31,14 @@ extern "C" {
         @param path  The filesystem path to the view index file.
         @param viewName  The name of the view.
         @param version  The version of the view's map function.
+        @param config  The configuration of the view's own index database
         @param outError  On failure, error info will be stored here.
         @return  The new C4View, or NULL on failure. */
     C4View* c4view_open(C4Database *database,
                         C4Slice path,
                         C4Slice viewName,
                         C4Slice version,
-                        C4DatabaseFlags flags,
-                        const C4EncryptionKey *encryptionKey,
+                        const C4DatabaseConfig *config,
                         C4Error *outError);
 
     /** Frees a view handle, closing it if necessary. */
@@ -59,8 +59,8 @@ extern "C" {
     bool c4view_delete(C4View*, C4Error *outError);
 
     /** Deletes the file(s) for the view at the given path.
-        All C4Databases at that path should be closed first. */
-    bool c4view_deleteAtPath(C4Slice dbPath, C4DatabaseFlags flags, C4Error *outError);
+        All C4Views at that path should be closed first. */
+    bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
 
     /** Sets the persistent version string associated with the map function. If the new value is
         different from the one previously stored, the index is invalidated. */

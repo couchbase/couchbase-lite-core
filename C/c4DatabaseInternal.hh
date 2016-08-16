@@ -24,20 +24,18 @@ namespace c4Internal {
 struct c4Database : public RefCounted<c4Database> {
 
     c4Database(std::string path,
-               C4DatabaseFlags flags,
-               const C4EncryptionKey *encryptionKey);
+               const C4DatabaseConfig &config);
 
     static Database* newDatabase(std::string path,
-                                 C4DatabaseFlags flags,
-                                 const C4EncryptionKey *encryptionKey,
+                                 const C4DatabaseConfig &config,
                                  bool isMainDB);
 
     Database* db()                                      {return _db.get();}
 
-    const C4DatabaseFlags flags;
+    const C4DatabaseConfig config;
 
     // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
-    const uint8_t schema()          {return (flags & kC4DB_V2Format) ? 2 : 1;}
+    const uint8_t schema()          {return (config.flags & kC4DB_V2Format) ? 2 : 1;}
 
     bool mustBeSchema(int schema, C4Error*);
 
@@ -91,8 +89,8 @@ namespace c4Internal {
     // Subclass for old (rev-tree) schema
     class c4DatabaseV1 : public c4Database {
     public:
-        c4DatabaseV1(std::string path, C4DatabaseFlags flags_, const C4EncryptionKey *encryptionKey)
-        :c4Database(path, flags_, encryptionKey)
+        c4DatabaseV1(std::string path, const C4DatabaseConfig &config)
+        :c4Database(path, config)
         { }
         C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
         C4DocumentInternal* newDocumentInstance(const Document&) override;
@@ -106,8 +104,8 @@ namespace c4Internal {
     // Subclass for new (version-vector) schema
     class c4DatabaseV2 : public c4Database {
     public:
-        c4DatabaseV2(std::string path, C4DatabaseFlags flags_, const C4EncryptionKey *encryptionKey)
-        :c4Database(path, flags_, encryptionKey)
+        c4DatabaseV2(std::string path, const C4DatabaseConfig &config)
+        :c4Database(path, config)
         { }
 
         C4DocumentInternal* newDocumentInstance(C4Slice docID) override;

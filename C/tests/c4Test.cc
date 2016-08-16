@@ -59,28 +59,31 @@ void C4Test::setUp() {
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
 
-    C4DatabaseFlags flags = kC4DB_Create | storageType();
+    C4DatabaseConfig config = { };
+    config.flags = kC4DB_Create;
+    config.storageEngine = storageType();
+
     if (schemaVersion() == 1) {
         kRevID = C4STR("1-abcd");
         kRev2ID = C4STR("2-c001d00d");
     } else {
-        flags |= kC4DB_V2Format;
+        config.flags |= kC4DB_V2Format;
         kRevID = C4STR("1@*");
         kRev2ID = C4STR("2@c001d00d");
     }
 
-    static C4DatabaseFlags sLastFlags = (C4DatabaseFlags)-1;
-    if (flags != sLastFlags) {
-        fprintf(stderr, "Using db flags 0x%04x\n", flags);
-        sLastFlags = flags;
+    if (encryptionKey())
+        config.encryptionKey = *encryptionKey();
+
+    static C4DatabaseConfig sLastConfig = { };
+    if (config.flags != sLastConfig.flags || config.storageEngine != config.storageEngine) {
+        fprintf(stderr, "Using db %s storage, flags 0x%04x\n", config.storageEngine, config.flags);
+        sLastConfig = config;
     }
 
     C4Error error;
-    c4db_deleteAtPath(databasePath(), flags, NULL);
-    db = c4db_open(databasePath(),
-                   flags,
-                   encryptionKey(),
-                   &error);
+    c4db_deleteAtPath(databasePath(), &config, NULL);
+    db = c4db_open(databasePath(), &config, &error);
     Assert(db != NULL);
 }
 
