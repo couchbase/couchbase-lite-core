@@ -71,7 +71,8 @@ C4SliceResult c4error_getMessage(C4Error err) {
 char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {
     C4SliceResult msg = c4error_getMessage(error);
     auto len = std::min(msg.size, bufferSize-1);
-    memcpy(buffer, msg.buf, len);
+    if (msg.buf)
+        memcpy(buffer, msg.buf, len);
     buffer[len] = '\0';
     free((void*)msg.buf);
     return buffer;

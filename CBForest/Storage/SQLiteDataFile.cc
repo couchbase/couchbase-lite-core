@@ -472,7 +472,7 @@ namespace cbforest {
                 sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
             }
             if (_capabilities.softDeletes && noDeleted) {
-                if (writeAnd) sql << " AND "; else writeAnd = true;
+                if (writeAnd) sql << " AND "; //else writeAnd = true;
                 sql << "deleted!=1";
             }
         }
