@@ -252,7 +252,7 @@ namespace cbforest {
     {
         doc.setMeta(columnAsSlice(stmt.getColumn(3)));
         if (options & kMetaOnly)
-            doc.setUnloadedBodySize((int64_t)stmt.getColumn(4));
+            doc.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
         else
             doc.setBody(columnAsSlice(stmt.getColumn(4)));
     }
