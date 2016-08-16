@@ -1,5 +1,5 @@
 //
-//  c4AllDocsPerformanceTest.cpp
+//  c4AllDocsPerformanceTest.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 11/16/15.
@@ -32,15 +32,21 @@ public:
         for (unsigned i = 0; i < kNumDocuments; i++) {
             char docID[50];
             sprintf(docID, "doc-%08lx-%08lx-%08lx-%04x", random(), random(), random(), i);
-            C4Document* doc = c4doc_get(db, c4str(docID), false, &error);
-            Assert(doc);
             char revID[50];
             sprintf(revID, "1-deadbeefcafebabe80081e50");
             char json[kSizeOfDocument+100];
             sprintf(json, "{\"content\":\"%s\"}", content);
-            int revs = c4doc_insertRevision(doc, c4str(revID), c4str(json), false, false, false, &error);
-            AssertEqual(revs, 1);
-            Assert(c4doc_save(doc, 20, &error));
+
+            C4Slice history[1] = {c4str(revID)};
+            C4DocPutRequest rq = {};
+            rq.existingRevision = true;
+            rq.docID = c4str(docID);
+            rq.history = history;
+            rq.historyCount = 1;
+            rq.body = c4str(json);
+            rq.save = true;
+            auto doc = c4doc_put(db, &rq, NULL, &error);
+            Assert(doc);
             c4doc_free(doc);
         }
 
