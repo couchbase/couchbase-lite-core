@@ -32,9 +32,15 @@ CLANG_WARN_INT_CONVERSION                          = YES
 CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS         = YES
 CLANG_WARN_OBJC_ROOT_CLASS                         = YES_ERROR
 CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION          = YES
+CLANG_WARN_INFINITE_RECURSION                      = YES;
+CLANG_WARN_SUSPICIOUS_MOVE                         = YES;
+CLANG_WARN_UNREACHABLE_CODE                        = YES;
+
+ENABLE_STRICT_OBJC_MSGSEND                         = YES;
 
 GCC_C_LANGUAGE_STANDARD                            = c99
 GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
+GCC_NO_COMMON_BLOCKS                               = YES;
 GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 GCC_WARN_64_TO_32_BIT_CONVERSION                   = YES

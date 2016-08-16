@@ -2038,7 +2038,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 0730;
+				LastUpgradeCheck = 0800;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
@@ -2640,6 +2640,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C11CBC390700A7A1D7 /* SwiftForest_Debug.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
 			};
 			name = Debug;
 		};
@@ -2647,6 +2648,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C21CBC390700A7A1D7 /* SwiftForest_Release.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
 			};
 			name = Release;
 		};
