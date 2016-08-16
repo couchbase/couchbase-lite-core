@@ -12,17 +12,17 @@
 #include "CBForestTest.hh"
 
 
-class IndexTest : public DatabaseTestFixture {
+class IndexTest : public DataFileTestFixture {
 public:
 
 void setUp() {
-    DatabaseTestFixture::setUp();
+    DataFileTestFixture::setUp();
     index = new Index(db->getKeyStore("index"));
 }
 
 void tearDown() {
     delete index;
-    DatabaseTestFixture::tearDown();
+    DataFileTestFixture::tearDown();
 }
 
 private:

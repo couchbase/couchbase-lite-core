@@ -17,7 +17,7 @@ namespace cbforest {
 
     using namespace std;
 
-    class Database;
+    class DataFile;
     class Document;
     class Transaction;
 
@@ -30,7 +30,7 @@ namespace cbforest {
         reading, to save time/space. There is also a 'sequence' number that's assigned every time
         a value is saved, from an incrementing counter.
         A key, meta and body together are called a Document.
-        This is an abstract class; the Database instance acts as its factory and will instantiate
+        This is an abstract class; the DataFile instance acts as its factory and will instantiate
         the appropriate subclass for the storage engine in use. */
     class KeyStore {
     public:
@@ -44,7 +44,7 @@ namespace cbforest {
         };
 
 
-        Database& database() const                  {return _db;}
+        DataFile& dataFile() const                  {return _db;}
         const string& name() const                  {return _name;}
         Capabilities capabilities() const           {return _capabilities;}
 
@@ -88,7 +88,7 @@ namespace cbforest {
         virtual ~KeyStore()                             { }
 
     protected:
-        KeyStore(Database &db, const string &name, Capabilities capabilities)
+        KeyStore(DataFile &db, const string &name, Capabilities capabilities)
                 :_db(db), _name(name), _capabilities(capabilities) { }
 
         virtual void reopen()                           { }
@@ -106,7 +106,7 @@ namespace cbforest {
             doc.update(seq, offset, deleted);
         }
 
-        Database &          _db;            // The Database I'm contained in
+        DataFile &          _db;            // The DataFile I'm contained in
         const string        _name;          // My name
         const Capabilities  _capabilities;  // Do I support sequences or soft deletes?
 
@@ -114,7 +114,7 @@ namespace cbforest {
         KeyStore(const KeyStore&) = delete;     // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
 
-        friend class Database;
+        friend class DataFile;
         friend class DocEnumerator;
         friend class KeyStoreWriter;
     };

@@ -18,7 +18,7 @@ namespace cbforest {
     class CASRevisionStore : public RevisionStore {
     public:
 
-        explicit CASRevisionStore(Database *db);
+        explicit CASRevisionStore(DataFile *db);
 
         /** Returns the latest known revision from the CAS server. */
         Revision::Ref getLatestCASServerRevision(slice docID, generation &outCAS);

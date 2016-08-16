@@ -18,7 +18,7 @@
 
 #include "c4DatabaseInternal.hh"
 #include "c4DocInternal.hh"
-#include "Database.hh"
+#include "DataFile.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"

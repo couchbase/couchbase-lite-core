@@ -30,9 +30,9 @@ namespace cbforest {
     class MapReduceIndex : public Index {
     public:
         MapReduceIndex(KeyStore&,
-                       Database &sourceDatabase);
+                       DataFile &sourceDataFile);
 
-        KeyStore& sourceStore() const           {return _sourceDatabase.defaultKeyStore();}
+        KeyStore& sourceStore() const           {return _sourceDataFile.defaultKeyStore();}
         void readState();
         int indexType() const                   {return _indexType;}
         
@@ -72,7 +72,7 @@ namespace cbforest {
         void saveState(Transaction& t);
         alloc_slice getSpecialEntry(slice docID, sequence, unsigned fullTextID) const;
 
-        Database& _sourceDatabase;
+        DataFile& _sourceDataFile;
         std::string _mapVersion, _lastMapVersion;
         int _indexType {0};
         sequence _lastSequenceIndexed {0}, _lastSequenceChangedAt {0};

@@ -11,7 +11,7 @@
 #include "CBForestTest.hh"
 
 
-class GeoHashTest : public DatabaseTestFixture {
+class GeoHashTest : public DataFileTestFixture {
 
 
 static void verify_hash(double lat, double lon, int len, const char* expected)

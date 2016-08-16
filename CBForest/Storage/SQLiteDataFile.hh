@@ -1,5 +1,5 @@
 //
-//  SQLiteDatabase.hh
+//  SQLiteDataFile.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 7/21/16.
@@ -9,7 +9,7 @@
 #ifndef SQLiteDatabase_hh
 #define SQLiteDatabase_hh
 
-#include "Database.hh"
+#include "DataFile.hh"
 
 namespace SQLite {
     class Database;
@@ -26,19 +26,19 @@ namespace cbforest {
 
 
     /** SQLite implementation of Database. */
-    class SQLiteDatabase : public Database {
+    class SQLiteDataFile : public DataFile {
     public:
 
-        SQLiteDatabase(const string &path, const Options*);
-        ~SQLiteDatabase();
+        SQLiteDataFile(const string &path, const Options*);
+        ~SQLiteDataFile();
 
         bool isOpen() const override;
         void close() override;
-        void deleteDatabase() override;
+        void deleteDataFile() override;
         void reopen() override;
         void compact() override;
 
-        static void deleteDatabase(const string &path);
+        static void deleteDataFile(const string &path);
         static void shutdown() { }
 
         operator SQLite::Database&() {return *_sqlDb;}
@@ -94,9 +94,9 @@ namespace cbforest {
         void close() override;
 
     private:
-        friend class SQLiteDatabase;
-        SQLiteKeyStore(SQLiteDatabase&, const string &name, KeyStore::Capabilities options);
-        SQLiteDatabase& db() const                    {return (SQLiteDatabase&)database();}
+        friend class SQLiteDataFile;
+        SQLiteKeyStore(SQLiteDataFile&, const string &name, KeyStore::Capabilities options);
+        SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(stringstream &sql, DocEnumerator::Options &options);
         void backupReplacedDoc(slice key);
@@ -112,4 +112,4 @@ namespace cbforest {
 }
 
 
-#endif /* SQLiteDatabase_hh */
+#endif /* SQLiteDataFile_hh */

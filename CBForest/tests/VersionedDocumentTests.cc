@@ -10,7 +10,7 @@
 #include "CBForestTest.hh"
 
 
-class VersionedDocumentTests : public DatabaseTestFixture {
+class VersionedDocumentTests : public DataFileTestFixture {
 
 
 static revidBuffer stringToRev(string str) {

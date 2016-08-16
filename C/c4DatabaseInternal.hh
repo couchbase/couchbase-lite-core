@@ -26,11 +26,11 @@ struct c4Database : public RefCounted<c4Database> {
     c4Database(std::string path,
                const C4DatabaseConfig &config);
 
-    static Database* newDatabase(std::string path,
+    static DataFile* newDataFile(std::string path,
                                  const C4DatabaseConfig &config,
                                  bool isMainDB);
 
-    Database* db()                                      {return _db.get();}
+    DataFile* db()                                      {return _db.get();}
 
     const C4DatabaseConfig config;
 
@@ -62,10 +62,10 @@ struct c4Database : public RefCounted<c4Database> {
                              alloc_slice *revID =nullptr,
                              slice *docType =nullptr) =0;
 
-    static bool rekey(Database* database, const C4EncryptionKey *newKey, C4Error *outError);
+    static bool rekey(DataFile* database, const C4EncryptionKey *newKey, C4Error *outError);
 
 #if C4DB_THREADSAFE
-    // Mutex for synchronizing Database calls. Non-recursive!
+    // Mutex for synchronizing DataFile calls. Non-recursive!
     std::mutex _mutex;
 #endif
 
@@ -73,7 +73,7 @@ protected:
     virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
 
 private:
-    std::unique_ptr<Database>   _db;                    // Underlying Database
+    std::unique_ptr<DataFile>   _db;                    // Underlying DataFile
     Transaction*                _transaction {NULL};    // Current Transaction, or null
     int                         _transactionLevel {0};  // Nesting level of transaction
 #if C4DB_THREADSAFE

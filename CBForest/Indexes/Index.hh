@@ -16,7 +16,7 @@
 #ifndef __CBForest__Index__
 #define __CBForest__Index__
 
-#include "Database.hh"
+#include "DataFile.hh"
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
 #include <atomic>
@@ -53,7 +53,7 @@ namespace cbforest {
                              Collatable key,
                              unsigned emitIndex) const;
 
-        Database& database() const              {return _store.database();}
+        DataFile& dataFile() const              {return _store.dataFile();}
         bool isBusy() const                     {return _userCount > 0;}
 
         /** Used as a placeholder for an index value that's stored out of line, i.e. that

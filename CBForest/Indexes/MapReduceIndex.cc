@@ -28,9 +28,9 @@ namespace cbforest {
     static int64_t kMinFormatVersion = 6;
     static int64_t kCurFormatVersion = 6;
 
-    MapReduceIndex::MapReduceIndex(KeyStore &store, Database &sourceDatabase)
+    MapReduceIndex::MapReduceIndex(KeyStore &store, DataFile &sourceDataFile)
     :Index(store),
-     _sourceDatabase(sourceDatabase)
+     _sourceDataFile(sourceDataFile)
     {
         readState();
     }
@@ -62,7 +62,7 @@ namespace cbforest {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
-        CBFAssert(&_store.database() == &t.database());
+        CBFAssert(&_store.dataFile() == &t.dataFile());
         _lastMapVersion = _mapVersion;
 
         CollatableBuilder stateKey;
@@ -108,7 +108,7 @@ namespace cbforest {
     // if they don't match, the index is invalidated (erased).
     bool MapReduceIndex::checkForPurge() {
         readState();
-        auto dbPurgeCount = _sourceDatabase.purgeCount();
+        auto dbPurgeCount = _sourceDataFile.purgeCount();
         if (dbPurgeCount == _lastPurgeCount)
             return false;
         invalidate();
@@ -377,7 +377,7 @@ namespace cbforest {
     
     void MapReduceIndexer::addIndex(MapReduceIndex &index) {
         index.checkForPurge(); // has to be called before creating the transaction
-        auto writer = new MapReduceIndexWriter(index, new Transaction(index.database()));
+        auto writer = new MapReduceIndexWriter(index, new Transaction(index.dataFile()));
         _writers.push_back(writer);
         if (index.documentType().buf)
             _docTypes.insert(index.documentType());

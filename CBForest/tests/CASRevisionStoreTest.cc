@@ -42,19 +42,19 @@ static const Revision::BodyParams kBody3 {
 };
 
 
-class CASRevisionStoreTest : public DatabaseTestFixture {
+class CASRevisionStoreTest : public DataFileTestFixture {
 public:
     
     CASRevisionStore *store {NULL};
 
     void setUp() {
-        DatabaseTestFixture::setUp();
+        DataFileTestFixture::setUp();
         store = new CASRevisionStore(db);
     }
 
     void tearDown() {
         delete store;
-        DatabaseTestFixture::tearDown();
+        DataFileTestFixture::tearDown();
     }
 
 

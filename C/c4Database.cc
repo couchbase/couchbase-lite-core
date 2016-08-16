@@ -18,8 +18,8 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "ForestDatabase.hh"
-#include "SQLiteDatabase.hh"
+#include "ForestDataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Collatable.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
@@ -32,11 +32,11 @@ const char* const kC4ForestDBStorageEngine = "ForestDB";
 const char* const kC4SQLiteStorageEngine   = "SQLite";
 
 
-Database* c4Database::newDatabase(std::string path,
+DataFile* c4Database::newDataFile(std::string path,
                                   const C4DatabaseConfig &config,
                                   bool isMainDB)
 {
-    Database::Options options { };
+    DataFile::Options options { };
     if (isMainDB) {
         options.keyStores.sequences = options.keyStores.softDeletes = true;
         options.keyStores.getByOffset = (config.flags & kC4DB_V2Format) == 0;
@@ -44,17 +44,17 @@ Database* c4Database::newDatabase(std::string path,
     options.create = (config.flags & kC4DB_Create) != 0;
     options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
 
-    options.encryptionAlgorithm = (Database::EncryptionAlgorithm)config.encryptionKey.algorithm;
-    if (options.encryptionAlgorithm != Database::kNoEncryption) {
+    options.encryptionAlgorithm = (DataFile::EncryptionAlgorithm)config.encryptionKey.algorithm;
+    if (options.encryptionAlgorithm != DataFile::kNoEncryption) {
         options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
                                             sizeof(config.encryptionKey.bytes));
     }
 
     if (config.storageEngine == nullptr ||
             strcmp(config.storageEngine, kC4ForestDBStorageEngine) == 0) {
-        return new ForestDatabase(path, &options);
+        return new ForestDataFile(path, &options);
     } else if (strcmp(config.storageEngine, kC4SQLiteStorageEngine) == 0) {
-        return new SQLiteDatabase(path, &options);
+        return new SQLiteDataFile(path, &options);
     } else {
         error::_throw(error::Unimplemented);
     }
@@ -67,7 +67,7 @@ Database* c4Database::newDatabase(std::string path,
 c4Database::c4Database(std::string path,
                        const C4DatabaseConfig &inConfig)
 :config(inConfig),
- _db(newDatabase(path, config, true))
+ _db(newDataFile(path, config, true))
 { }
 
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
@@ -129,15 +129,15 @@ bool c4Database::endTransaction(bool commit) {
 }
 
 
-/*static*/ bool c4Database::rekey(Database* database, const C4EncryptionKey *newKey,
+/*static*/ bool c4Database::rekey(DataFile* database, const C4EncryptionKey *newKey,
                                   C4Error *outError)
 {
     try {
         if (newKey) {
-            database->rekey((Database::EncryptionAlgorithm)newKey->algorithm,
+            database->rekey((DataFile::EncryptionAlgorithm)newKey->algorithm,
                             slice(newKey->bytes, 32));
         } else {
-            database->rekey(Database::kNoEncryption, slice::null);
+            database->rekey(DataFile::kNoEncryption, slice::null);
         }
         return true;
     } catchError(outError);
@@ -200,7 +200,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
         if (database->refCount() > 1) {
             recordError(CBForestDomain, kC4ErrorBusy, outError);
         }
-        database->db()->deleteDatabase();
+        database->db()->deleteDataFile();
         return true;
     } catchError(outError);
     return false;
@@ -211,7 +211,7 @@ bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *
     if (!checkParam(config != nullptr, outError))
         return false;
     try {
-        Database::deleteDatabase((std::string)dbPath);
+        DataFile::deleteDataFile((std::string)dbPath);
         return true;
     } catchError(outError);
     return false;
@@ -231,7 +231,7 @@ bool c4db_compact(C4Database* database, C4Error *outError) {
 
 
 bool c4db_isCompacting(C4Database *database) {
-    return database ? database->db()->isCompacting() : Database::isAnyCompacting();
+    return database ? database->db()->isCompacting() : DataFile::isAnyCompacting();
 }
 
 void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) {
@@ -351,8 +351,8 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
 
 bool c4_shutdown(C4Error *outError) {
     try {
-        ForestDatabase::shutdown();
-        SQLiteDatabase::shutdown();
+        ForestDataFile::shutdown();
+        SQLiteDataFile::shutdown();
         return true;
     } catchError(NULL) {
         return false;

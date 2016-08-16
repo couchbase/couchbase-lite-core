@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "SQLiteDatabase.hh"
+#include "SQLiteDataFile.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
@@ -25,19 +25,19 @@ using namespace std;
 
 namespace cbforest {
 
-    SQLiteDatabase::SQLiteDatabase(const string &path, const Options *options)
-    :Database(path, options)
+    SQLiteDataFile::SQLiteDataFile(const string &path, const Options *options)
+    :DataFile(path, options)
     {
         reopen();
     }
 
 
-    SQLiteDatabase::~SQLiteDatabase() {
+    SQLiteDataFile::~SQLiteDataFile() {
         close();
     }
 
 
-    void SQLiteDatabase::reopen() {
+    void SQLiteDataFile::reopen() {
         if (options().encryptionAlgorithm != kNoEncryption)
             error::_throw(error::UnsupportedEncryption);
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
@@ -55,43 +55,43 @@ namespace cbforest {
     }
 
 
-    bool SQLiteDatabase::isOpen() const {
+    bool SQLiteDataFile::isOpen() const {
         return _sqlDb != nullptr;
     }
 
 
-    void SQLiteDatabase::close() {
-        Database::close(); // closes all the KeyStores
+    void SQLiteDataFile::close() {
+        DataFile::close(); // closes all the KeyStores
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
         _sqlDb.reset();
     }
 
 
-    KeyStore* SQLiteDatabase::newKeyStore(const string &name, KeyStore::Capabilities options) {
+    KeyStore* SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
         return new SQLiteKeyStore(*this, name, options);
     }
 
-    void SQLiteDatabase::deleteKeyStore(const string &name) {
+    void SQLiteDataFile::deleteKeyStore(const string &name) {
         exec(string("DROP TABLE IF EXISTS kv_") + name);
     }
 
 
-    void SQLiteDatabase::_beginTransaction(Transaction*) {
+    void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
         CBFAssert(_transaction == nullptr);
         _transaction.reset( new SQLite::Transaction(*_sqlDb) );
     }
 
 
-    void SQLiteDatabase::_endTransaction(Transaction *t) {
+    void SQLiteDataFile::_endTransaction(Transaction *t) {
         if (t->state() >= Transaction::kCommit)
             _transaction->commit();
         _transaction.reset(); // destructs the SQLite::Transaction, which does the actual commit
     }
 
 
-    int SQLiteDatabase::exec(const string &sql) {
+    int SQLiteDataFile::exec(const string &sql) {
         checkOpen();
         int result;
         withFileLock([&]{ result = _sqlDb->exec(sql); });
@@ -99,7 +99,7 @@ namespace cbforest {
     }
 
 
-    SQLite::Statement& SQLiteDatabase::compile(const unique_ptr<SQLite::Statement>& ref,
+    SQLite::Statement& SQLiteDataFile::compile(const unique_ptr<SQLite::Statement>& ref,
                                                string sql) const
     {
         checkOpen();
@@ -110,7 +110,7 @@ namespace cbforest {
     }
 
 
-    sequence SQLiteDatabase::lastSequence(const string& keyStoreName) const {
+    sequence SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         compile(_getLastSeqStmt, string("SELECT lastSeq FROM kvmeta WHERE name=?"));
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
         if (_getLastSeqStmt->executeStep()) {
@@ -121,7 +121,7 @@ namespace cbforest {
         return 0;
     }
 
-    void SQLiteDatabase::setLastSequence(SQLiteKeyStore &store, sequence seq) {
+    void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence seq) {
         compile(_setLastSeqStmt,
                 string("INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)"));
         _setLastSeqStmt->bindNoCopy(1, store.name());
@@ -130,19 +130,19 @@ namespace cbforest {
     }
 
 
-    void SQLiteDatabase::deleteDatabase() {
+    void SQLiteDataFile::deleteDataFile() {
         close();
-        deleteDatabase(filename());
+        deleteDataFile(filename());
     }
 
-    void SQLiteDatabase::deleteDatabase(const string &path) {
+    void SQLiteDataFile::deleteDataFile(const string &path) {
         ::unlink(path.c_str());
         ::unlink((path + ".shm").c_str());
         ::unlink((path + ".wal").c_str());
     }
 
 
-    void SQLiteDatabase::compact() {
+    void SQLiteDataFile::compact() {
         checkOpen();
         beganCompacting();
         {
@@ -163,7 +163,7 @@ namespace cbforest {
 #pragma mark - KEY-STORE:
 
 
-    vector<string> SQLiteDatabase::allKeyStoreNames() {
+    vector<string> SQLiteDataFile::allKeyStoreNames() {
         checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
@@ -175,7 +175,7 @@ namespace cbforest {
     }
 
 
-    bool SQLiteDatabase::keyStoreExists(const string &name) {
+    bool SQLiteDataFile::keyStoreExists(const string &name) {
         checkOpen();
         SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
                                                       " WHERE type='table' AND name=?"));
@@ -186,7 +186,7 @@ namespace cbforest {
     }
 
 
-    SQLiteKeyStore::SQLiteKeyStore(SQLiteDatabase &db, const string &name, KeyStore::Capabilities capabilities)
+    SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
     {
         if (!db.keyStoreExists(name)) {

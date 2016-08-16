@@ -15,7 +15,7 @@
 
 #include "KeyStore.hh"
 #include "Document.hh"
-#include "Database.hh"
+#include "DataFile.hh"
 #include "LogInternal.hh"
 
 using namespace std;
@@ -51,7 +51,7 @@ namespace cbforest {
     }
 
     void KeyStore::deleteKeyStore(Transaction& trans) {
-        trans.database().deleteKeyStore(name());
+        trans.dataFile().deleteKeyStore(name());
     }
 
     void KeyStore::write(Document &doc, Transaction &t) {

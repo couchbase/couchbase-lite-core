@@ -22,7 +22,7 @@
 namespace cbforest {
 
 
-    CASRevisionStore::CASRevisionStore(Database *db)
+    CASRevisionStore::CASRevisionStore(DataFile *db)
     :RevisionStore(db, peerID("jens")),
      _casStore(db->getKeyStore("CAS"))
     { }

@@ -42,7 +42,7 @@ namespace cbforest {
     static const char kAuthorDelimiter = ',';
 
 
-    RevisionStore::RevisionStore(Database *db, peerID myPeerID)
+    RevisionStore::RevisionStore(DataFile *db, peerID myPeerID)
     :_currentStore(db->defaultKeyStore()),
      _nonCurrentStore(db->getKeyStore("revs")),
      _myPeerID(myPeerID)

@@ -137,7 +137,7 @@
 		276E74ED1956853B0030ED3D /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
 		276FFD741B2E03910027B51A /* (null) in Sources */ = {isa = PBXBuildFile; };
 		277015001D516CE2008BADD7 /* CollatableTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277014FF1D516CE2008BADD7 /* CollatableTest.cc */; };
-		277015091D523E2E008BADD7 /* DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DatabaseTest.cc */; };
+		277015091D523E2E008BADD7 /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		277015141D5272D1008BADD7 /* IndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015131D5272D1008BADD7 /* IndexTest.cc */; };
 		277015161D528438008BADD7 /* MapReduceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015151D528438008BADD7 /* MapReduceTest.cc */; };
 		277015181D528478008BADD7 /* GeoHashTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015171D528478008BADD7 /* GeoHashTest.cc */; };
@@ -194,12 +194,12 @@
 		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
-		27D74A671D4C16C200D806E0 /* ForestDatabase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDatabase.cc */; };
-		27D74A681D4C16C200D806E0 /* ForestDatabase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDatabase.cc */; };
-		27D74A691D4C16C200D806E0 /* ForestDatabase.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A641D4C16C200D806E0 /* ForestDatabase.hh */; };
-		27D74A6F1D4D3DF500D806E0 /* SQLiteDatabase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDatabase.cc */; };
-		27D74A701D4D3DF500D806E0 /* SQLiteDatabase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDatabase.cc */; };
-		27D74A711D4D3DF500D806E0 /* SQLiteDatabase.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDatabase.hh */; };
+		27D74A671D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
+		27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
+		27D74A691D4C16C200D806E0 /* ForestDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A641D4C16C200D806E0 /* ForestDataFile.hh */; };
+		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
+		27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
+		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
 		27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
 		27D74A7B1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
 		27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A751D4D3F2300D806E0 /* Column.cpp */; };
@@ -229,7 +229,7 @@
 		27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
-		27E48713192171EA007D8940 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		27E4872F1924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
@@ -321,7 +321,7 @@
 		27F7A1341D61F63800447BC6 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
 		27F7A1351D61F7EB00447BC6 /* CBForestTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBForestTest.cc */; };
 		27F7A1361D61F7EB00447BC6 /* CollatableTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277014FF1D516CE2008BADD7 /* CollatableTest.cc */; };
-		27F7A1371D61F7EB00447BC6 /* DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DatabaseTest.cc */; };
+		27F7A1371D61F7EB00447BC6 /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		27F7A1381D61F7EB00447BC6 /* IndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015131D5272D1008BADD7 /* IndexTest.cc */; };
 		27F7A1391D61F7EB00447BC6 /* MapReduceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015151D528438008BADD7 /* MapReduceTest.cc */; };
 		27F7A13A1D61F7EB00447BC6 /* VersionedDocumentTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */; };
@@ -349,7 +349,7 @@
 		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
 		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		720EA40F1BA8D834002B8416 /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* Database.cc */; };
+		720EA40F1BA8D834002B8416 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		720EA4101BA8D834002B8416 /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Document.cc */; };
 		720EA4111BA8D834002B8416 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
 		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
@@ -711,7 +711,7 @@
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VersionedDocument.mm; sourceTree = "<group>"; };
 		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
 		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
-		277015081D523E2E008BADD7 /* DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseTest.cc; sourceTree = "<group>"; };
+		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		277015131D5272D1008BADD7 /* IndexTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexTest.cc; sourceTree = "<group>"; };
 		277015151D528438008BADD7 /* MapReduceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceTest.cc; sourceTree = "<group>"; };
 		277015171D528478008BADD7 /* GeoHashTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GeoHashTest.cc; sourceTree = "<group>"; };
@@ -780,10 +780,10 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27D74A621D4C0FA600D806E0 /* Base.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Base.hh; sourceTree = "<group>"; };
-		27D74A631D4C16C200D806E0 /* ForestDatabase.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ForestDatabase.cc; sourceTree = "<group>"; };
-		27D74A641D4C16C200D806E0 /* ForestDatabase.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ForestDatabase.hh; sourceTree = "<group>"; };
-		27D74A6D1D4D3DF500D806E0 /* SQLiteDatabase.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDatabase.cc; sourceTree = "<group>"; };
-		27D74A6E1D4D3DF500D806E0 /* SQLiteDatabase.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDatabase.hh; sourceTree = "<group>"; };
+		27D74A631D4C16C200D806E0 /* ForestDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ForestDataFile.cc; sourceTree = "<group>"; };
+		27D74A641D4C16C200D806E0 /* ForestDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ForestDataFile.hh; sourceTree = "<group>"; };
+		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
+		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
 		27D74A751D4D3F2300D806E0 /* Column.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Column.cpp; path = src/Column.cpp; sourceTree = "<group>"; };
 		27D74A761D4D3F2300D806E0 /* Database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cpp; path = src/Database.cpp; sourceTree = "<group>"; };
@@ -810,8 +810,8 @@
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/cbforest/Constants.java; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
-		27E48711192171EA007D8940 /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
-		27E48712192171EA007D8940 /* Database.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
+		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
+		27E48712192171EA007D8940 /* DataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DataFile.hh; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* VersionedDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocument.cc; sourceTree = "<group>"; };
@@ -1047,7 +1047,7 @@
 				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
 				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
 				277014FF1D516CE2008BADD7 /* CollatableTest.cc */,
-				277015081D523E2E008BADD7 /* DatabaseTest.cc */,
+				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				277015131D5272D1008BADD7 /* IndexTest.cc */,
 				277015151D528438008BADD7 /* MapReduceTest.cc */,
 				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
@@ -1530,16 +1530,16 @@
 				27D74A621D4C0FA600D806E0 /* Base.hh */,
 				27C319EC1A143F5D00A89EDC /* KeyStore.cc */,
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
-				27E48711192171EA007D8940 /* Database.cc */,
-				27E48712192171EA007D8940 /* Database.hh */,
+				27E48711192171EA007D8940 /* DataFile.cc */,
+				27E48712192171EA007D8940 /* DataFile.hh */,
 				27DF46C21A12CF46007BB4A4 /* Document.cc */,
 				27DF46C31A12CF46007BB4A4 /* Document.hh */,
 				27E609A11951E4C000202B72 /* DocEnumerator.cc */,
 				27E609A41951E53F00202B72 /* DocEnumerator.hh */,
-				27D74A631D4C16C200D806E0 /* ForestDatabase.cc */,
-				27D74A641D4C16C200D806E0 /* ForestDatabase.hh */,
-				27D74A6D1D4D3DF500D806E0 /* SQLiteDatabase.cc */,
-				27D74A6E1D4D3DF500D806E0 /* SQLiteDatabase.hh */,
+				27D74A631D4C16C200D806E0 /* ForestDataFile.cc */,
+				27D74A641D4C16C200D806E0 /* ForestDataFile.hh */,
+				27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */,
+				27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -1820,9 +1820,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
-				27D74A691D4C16C200D806E0 /* ForestDatabase.hh in Headers */,
+				27D74A691D4C16C200D806E0 /* ForestDataFile.hh in Headers */,
 				279794A11D305EC2001D0F3A /* Revision.hh in Headers */,
-				27D74A711D4D3DF500D806E0 /* SQLiteDatabase.hh in Headers */,
+				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
@@ -2147,7 +2147,7 @@
 				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
-				277015091D523E2E008BADD7 /* DatabaseTest.cc in Sources */,
+				277015091D523E2E008BADD7 /* DataFileTest.cc in Sources */,
 				277015001D516CE2008BADD7 /* CollatableTest.cc in Sources */,
 				277015141D5272D1008BADD7 /* IndexTest.cc in Sources */,
 				277015161D528438008BADD7 /* MapReduceTest.cc in Sources */,
@@ -2169,7 +2169,7 @@
 				27F7A0E21D5E865A00447BC6 /* CppUnit_Tests.mm in Sources */,
 				27F7A1351D61F7EB00447BC6 /* CBForestTest.cc in Sources */,
 				27F7A1361D61F7EB00447BC6 /* CollatableTest.cc in Sources */,
-				27F7A1371D61F7EB00447BC6 /* DatabaseTest.cc in Sources */,
+				27F7A1371D61F7EB00447BC6 /* DataFileTest.cc in Sources */,
 				27F7A1381D61F7EB00447BC6 /* IndexTest.cc in Sources */,
 				27F7A1391D61F7EB00447BC6 /* MapReduceTest.cc in Sources */,
 				27F7A13B1D61F7EB00447BC6 /* GeoHashTest.cc in Sources */,
@@ -2362,10 +2362,10 @@
 			files = (
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
-				27E48713192171EA007D8940 /* Database.cc in Sources */,
+				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
-				27D74A6F1D4D3DF500D806E0 /* SQLiteDatabase.cc in Sources */,
+				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
 				27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */,
@@ -2379,7 +2379,7 @@
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
-				27D74A671D4C16C200D806E0 /* ForestDatabase.cc in Sources */,
+				27D74A671D4C16C200D806E0 /* ForestDataFile.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
@@ -2413,11 +2413,11 @@
 				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
 				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
-				27D74A701D4D3DF500D806E0 /* SQLiteDatabase.cc in Sources */,
+				27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				279794A01D305EC2001D0F3A /* Revision.cc in Sources */,
-				720EA40F1BA8D834002B8416 /* Database.cc in Sources */,
+				720EA40F1BA8D834002B8416 /* DataFile.cc in Sources */,
 				279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				275CED461D3ECE9B001DE46C /* c4Document1.cc in Sources */,
@@ -2446,7 +2446,7 @@
 				271057D51D3D70780018247B /* c4Document2.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
-				27D74A681D4C16C200D806E0 /* ForestDatabase.cc in Sources */,
+				27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

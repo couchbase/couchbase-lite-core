@@ -1,5 +1,5 @@
 //
-//  ForestDatabase.cc
+//  ForestDataFile.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 7/25/16.
@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "ForestDatabase.hh"
+#include "ForestDataFile.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
@@ -55,7 +55,7 @@ namespace cbforest {
     static fdb_config sDefaultConfig;
     static atomic<bool> sDefaultConfigInitialized;
 
-    fdb_config ForestDatabase::defaultConfig() {
+    fdb_config ForestDataFile::defaultConfig() {
         if (!sDefaultConfigInitialized) {
             *(fdb_config*)&sDefaultConfig = fdb_get_default_config();
 
@@ -79,20 +79,20 @@ namespace cbforest {
     }
 
 
-    void ForestDatabase::setDefaultConfig(const fdb_config &cfg) {
+    void ForestDataFile::setDefaultConfig(const fdb_config &cfg) {
         check(fdb_init((fdb_config*)&cfg));
         sDefaultConfig = cfg;
     }
 
 
-    static fdb_encryption_key forestEncryptionKey(Database::EncryptionAlgorithm alg,
+    static fdb_encryption_key forestEncryptionKey(DataFile::EncryptionAlgorithm alg,
                                                   slice key) {
         fdb_encryption_key fdbKey;
         switch (alg) {
-            case Database::kNoEncryption:
+            case DataFile::kNoEncryption:
                 fdbKey.algorithm = FDB_ENCRYPTION_NONE;
                 break;
-            case Database::kAES256:
+            case DataFile::kAES256:
                 fdbKey.algorithm = FDB_ENCRYPTION_AES256;
                 CBFAssert(key.buf != NULL);
                 CBFAssert(key.size == sizeof(fdbKey.bytes));
@@ -105,16 +105,16 @@ namespace cbforest {
     }
 
 
-    ForestDatabase::ForestDatabase(const string &path,
-                                   const Database::Options *options)
-    :ForestDatabase(path, options, defaultConfig())
+    ForestDataFile::ForestDataFile(const string &path,
+                                   const DataFile::Options *options)
+    :ForestDataFile(path, options, defaultConfig())
     { }
 
 
-    ForestDatabase::ForestDatabase(const string &path,
-                                   const Database::Options *options,
+    ForestDataFile::ForestDataFile(const string &path,
+                                   const DataFile::Options *options,
                                    const fdb_config& cfg)
-    :Database(path, options),
+    :DataFile(path, options),
      _config(cfg)
     {
         if (options) {
@@ -145,23 +145,23 @@ namespace cbforest {
         reopen();
     }
 
-    ForestDatabase::~ForestDatabase() {
+    ForestDataFile::~ForestDataFile() {
         if (_fileHandle) {
             try {
                 close();
             } catch (...) {
-                Warn("ForestDatabase: Unexpected error while closing");
+                Warn("ForestDataFile: Unexpected error while closing");
             }
         }
     }
 
-    fdb_file_info ForestDatabase::info() const {
+    fdb_file_info ForestDataFile::info() const {
         fdb_file_info i;
         check(fdb_get_file_info(_fileHandle, &i));
         return i;
     }
 
-    void ForestDatabase::shutdown() {
+    void ForestDataFile::shutdown() {
         check(fdb_shutdown());
     }
 
@@ -169,27 +169,27 @@ namespace cbforest {
 #pragma mark - OPEN/CLOSE/DELETE:
 
 
-    bool ForestDatabase::isOpen() const {
+    bool ForestDataFile::isOpen() const {
         return _fileHandle != nullptr;
     }
 
 
-    void ForestDatabase::close() {
-        Database::close(); // closes all the KeyStores
+    void ForestDataFile::close() {
+        DataFile::close(); // closes all the KeyStores
         if (_fileHandle) {
             check(::fdb_close(_fileHandle));
             _fileHandle = NULL;
         }
     }
 
-    void ForestDatabase::reopen() {
+    void ForestDataFile::reopen() {
         CBFAssert(!isOpen());
         const char *cpath = filename().c_str();
-        Debug("ForestDatabase: open %s", cpath);
+        Debug("ForestDataFile: open %s", cpath);
         auto status = ::fdb_open(&_fileHandle, cpath, &_config);
         if (status == FDB_RESULT_INVALID_COMPACTION_MODE
                 && _config.compaction_mode == FDB_COMPACTION_AUTO) {
-            // Database didn't use to have autocompact; open it the old way and update it:
+            // DataFile didn't use to have autocompact; open it the old way and update it:
             auto config = _config;
             config.compaction_mode = FDB_COMPACTION_MANUAL;
             check(fdb_open(&_fileHandle, cpath, &config));
@@ -199,48 +199,48 @@ namespace cbforest {
         }
     }
 
-    void ForestDatabase::deleteDatabase() {
+    void ForestDataFile::deleteDataFile() {
         if (isOpen()) {
             //Transaction t(this, false);
             close();
-            deleteDatabase(filename(), _config);
+            deleteDataFile(filename(), _config);
         } else {
-            deleteDatabase(filename(), _config);
+            deleteDataFile(filename(), _config);
         }
     }
 
-    /*static*/ void ForestDatabase::deleteDatabase(const string &path, const fdb_config &cfg) {
+    /*static*/ void ForestDataFile::deleteDataFile(const string &path, const fdb_config &cfg) {
         auto cfg2 = cfg;
         cfg2.compaction_cb = compactionCallback;
         cfg2.compaction_cb_ctx = NULL;
         check(fdb_destroy(path.c_str(), (fdb_config*)&cfg));
     }
 
-    void ForestDatabase::rekey(EncryptionAlgorithm alg, slice newKey) {
+    void ForestDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
         fdb_encryption_key fdbKey = forestEncryptionKey(alg, newKey);
         check(fdb_rekey(_fileHandle, fdbKey));
         _config.encryption_key = fdbKey;
     }
 
 
-    void ForestDatabase::_beginTransaction(Transaction*) {
+    void ForestDataFile::_beginTransaction(Transaction*) {
         check(fdb_begin_transaction(_fileHandle, FDB_ISOLATION_READ_COMMITTED));
     }
 
 
-    void ForestDatabase::_endTransaction(Transaction *t) {
+    void ForestDataFile::_endTransaction(Transaction *t) {
         fdb_status status = FDB_RESULT_SUCCESS;
         switch (t->state()) {
             case Transaction::kCommit:
-                Log("ForestDatabase: commit transaction");
+                Log("ForestDataFile: commit transaction");
                 status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
                 break;
             case Transaction::kCommitManualWALFlush:
-                Log("ForestDatabase: commit transaction with WAL flush");
+                Log("ForestDataFile: commit transaction with WAL flush");
                 status = fdb_end_transaction(_fileHandle, FDB_COMMIT_MANUAL_WAL_FLUSH);
                 break;
             case Transaction::kAbort:
-                Log("ForestDatabase: abort transaction");
+                Log("ForestDataFile: abort transaction");
                 (void)fdb_abort_transaction(_fileHandle);
                 break;
             case Transaction::kNoOp:
@@ -253,7 +253,7 @@ namespace cbforest {
 #pragma mark - COMPACTION:
 
 
-    void ForestDatabase::compact() {
+    void ForestDataFile::compact() {
         auto status = fdb_compact(_fileHandle, NULL);
         if (status == FDB_RESULT_FILE_IS_BUSY) {
             // This result means there is already a background auto-compact in progress.
@@ -265,7 +265,7 @@ namespace cbforest {
     }
 
     // static
-    fdb_compact_decision ForestDatabase::compactionCallback(fdb_file_handle *fhandle,
+    fdb_compact_decision ForestDataFile::compactionCallback(fdb_file_handle *fhandle,
                                                       fdb_compaction_status status,
                                                       const char *kv_store_name,
                                                       fdb_doc *doc,
@@ -273,14 +273,14 @@ namespace cbforest {
                                                       uint64_t last_newfile_offset,
                                                       void *ctx)
     {
-        if (((ForestDatabase*)ctx)->onCompact(status, kv_store_name, doc,
+        if (((ForestDataFile*)ctx)->onCompact(status, kv_store_name, doc,
                                               last_oldfile_offset, last_newfile_offset))
             return FDB_CS_KEEP_DOC;
         else
             return FDB_CS_DROP_DOC;
     }
 
-    bool ForestDatabase::onCompact(fdb_compaction_status status,
+    bool ForestDataFile::onCompact(fdb_compaction_status status,
                              const char *kv_store_name,
                              fdb_doc *doc,
                              uint64_t last_oldfile_offset,
@@ -288,7 +288,7 @@ namespace cbforest {
     {
         switch (status) {
             case FDB_CS_BEGIN:
-                Log("ForestDatabase %p COMPACTING...", this);
+                Log("ForestDataFile %p COMPACTING...", this);
                 beganCompacting();
                 break;
             case FDB_CS_COMPLETE:
@@ -296,7 +296,7 @@ namespace cbforest {
                     Transaction t(this);
                     updatePurgeCount(t);
                 }
-                Log("ForestDatabase %p END COMPACTING", this);
+                Log("ForestDataFile %p END COMPACTING", this);
                 finishedCompacting();
                 break;
             default:
@@ -305,7 +305,7 @@ namespace cbforest {
         return true;
     }
 
-    bool ForestDatabase::setAutoCompact(bool autoCompact) {
+    bool ForestDataFile::setAutoCompact(bool autoCompact) {
         auto mode = (autoCompact ? FDB_COMPACTION_AUTO : FDB_COMPACTION_MANUAL);
         check(fdb_switch_compaction_mode(_fileHandle, mode, _config.compaction_threshold));
         _config.compaction_mode = mode;
@@ -316,16 +316,16 @@ namespace cbforest {
 #pragma mark - KEY-STORES:
 
 
-    KeyStore* ForestDatabase::newKeyStore(const string &name, KeyStore::Capabilities options) {
+    KeyStore* ForestDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
         return new ForestKeyStore(*this, name, options);
     }
 
-    void ForestDatabase::deleteKeyStore(const string &name) {
+    void ForestDataFile::deleteKeyStore(const string &name) {
         check(fdb_kvs_remove(_fileHandle, name.c_str()));
     }
 
 
-    vector<string> ForestDatabase::allKeyStoreNames() {
+    vector<string> ForestDataFile::allKeyStoreNames() {
         fdb_kvs_name_list list;
         check(fdb_get_kvs_name_list(_fileHandle, &list));
         vector<string> names;
@@ -342,7 +342,7 @@ namespace cbforest {
     }
 
 
-    ForestKeyStore::ForestKeyStore(ForestDatabase &db, const string &name, KeyStore::Capabilities capabilities)
+    ForestKeyStore::ForestKeyStore(ForestDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
     {
         capabilities.getByOffset = true;
@@ -356,7 +356,7 @@ namespace cbforest {
 
     void ForestKeyStore::reopen() {
         if (!_handle) {
-            auto &db = (ForestDatabase&)database();
+            auto &db = (ForestDataFile&)dataFile();
             check(fdb_kvs_open(db._fileHandle, &_handle, name().c_str(),  NULL));
             (void)fdb_set_log_callback(_handle, logCallback, _handle);
         }

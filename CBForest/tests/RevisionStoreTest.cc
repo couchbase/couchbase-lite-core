@@ -28,19 +28,19 @@ static const Revision::BodyParams kBody4 {
 };
 
 
-class RevisionStoreTest : public DatabaseTestFixture {
+class RevisionStoreTest : public DataFileTestFixture {
 public:
     
     RevisionStore *store {NULL};
 
     void setUp() {
-        DatabaseTestFixture::setUp();
+        DataFileTestFixture::setUp();
         store = new RevisionStore(db, peerID("jens"));
     }
 
     void tearDown() {
         delete store;
-        DatabaseTestFixture::tearDown();
+        DataFileTestFixture::tearDown();
     }
 
 

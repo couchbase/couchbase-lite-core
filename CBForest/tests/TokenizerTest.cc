@@ -27,7 +27,7 @@ static std::ostream& operator<< (std::ostream& o, vector<string> v) {
 using namespace fleece;
 
 
-class TokenizerTest : public DatabaseTestFixture {
+class TokenizerTest : public DataFileTestFixture {
 
     unique_ptr<Tokenizer> tokenizer;
 

@@ -15,7 +15,7 @@ using namespace geohash;
 
 static int numMapCalls;
 
-static void updateIndex(Database *indexDB, MapReduceIndex& index) {
+static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
     MapReduceIndexer indexer;
     indexer.addIndex(index);
     auto seq = indexer.startingSequence();
@@ -50,20 +50,20 @@ static void updateIndex(Database *indexDB, MapReduceIndex& index) {
 }
 
 
-class GeoIndexTest : public DatabaseTestFixture {
+class GeoIndexTest : public DataFileTestFixture {
 
 
 MapReduceIndex *index;
 public:
 
 void setUp() {
-    DatabaseTestFixture::setUp();
+    DataFileTestFixture::setUp();
     index = new MapReduceIndex(db->getKeyStore("geo"), *db);
 }
 
 void tearDown() {
     delete index;
-    DatabaseTestFixture::tearDown();
+    DataFileTestFixture::tearDown();
 }
 
 static double randomLat()   {return random() / (double)INT_MAX * 180.0 -  90.0;}

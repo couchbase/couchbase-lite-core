@@ -1,15 +1,15 @@
 //
-//  ForestDatabase.hh
+//  ForestDataFile.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 7/25/16.
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef ForestDatabase_hh
-#define ForestDatabase_hh
+#ifndef ForestDataFile_hh
+#define ForestDataFile_hh
 
-#include "Database.hh"
+#include "DataFile.hh"
 #include "fdb_types.h"
 
 namespace cbforest {
@@ -19,27 +19,27 @@ namespace cbforest {
     class ForestKeyStore;
 
 
-    /** ForestDB implementation of Database */
-    class ForestDatabase : public Database {
+    /** ForestDB implementation of DataFile */
+    class ForestDataFile : public DataFile {
     public:
         static fdb_config defaultConfig();
         static void setDefaultConfig(const fdb_config&);
 
-        ForestDatabase(const string &path, const Options* =nullptr);
-        ForestDatabase(const string &path, const Options*, const fdb_config&);
-        ~ForestDatabase();
+        ForestDataFile(const string &path, const Options* =nullptr);
+        ForestDataFile(const string &path, const Options*, const fdb_config&);
+        ~ForestDataFile();
 
         fdb_file_info info() const;
         fdb_config config() const                   {return _config;}
 
-        static void deleteDatabase(const string &path, const fdb_config&);
+        static void deleteDataFile(const string &path, const fdb_config&);
 
         static void shutdown();
 
         // Inherited methods:
         bool isOpen() const override;
         void close() override;
-        void deleteDatabase() override;
+        void deleteDataFile() override;
         void reopen() override;
         vector<string> allKeyStoreNames() override;
         void compact() override;
@@ -90,7 +90,7 @@ namespace cbforest {
         void erase() override;
 
     protected:
-        ForestKeyStore(ForestDatabase&, const string &name, KeyStore::Capabilities options);
+        ForestKeyStore(ForestDataFile&, const string &name, KeyStore::Capabilities options);
         ~ForestKeyStore();
 
         void reopen() override;
@@ -106,7 +106,7 @@ namespace cbforest {
         DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
 
     private:
-        friend class ForestDatabase;
+        friend class ForestDataFile;
         friend class ForestEnumerator;
 
         fdb_kvs_handle* _handle {nullptr};  // ForestDB key-value store handle
@@ -114,4 +114,4 @@ namespace cbforest {
 }
 
 
-#endif /* ForestDatabase_hh */
+#endif /* ForestDataFile_hh */

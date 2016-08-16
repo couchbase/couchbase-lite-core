@@ -1,5 +1,5 @@
 //
-//  Database.hh
+//  DataFile.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 5/12/14.
@@ -13,8 +13,8 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBNano__Database__
-#define __CBNano__Database__
+#ifndef __CBNano__DataFile__
+#define __CBNano__DataFile__
 #include "KeyStore.hh"
 #include <vector>
 #include <unordered_map>
@@ -32,7 +32,7 @@ namespace cbforest {
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
-    class Database {
+    class DataFile {
     public:
 
         enum EncryptionAlgorithm : uint8_t {
@@ -50,8 +50,8 @@ namespace cbforest {
             static const Options defaults;
         };
 
-        Database(const string &path, const Options* =nullptr);
-        virtual ~Database();
+        DataFile(const string &path, const Options* =nullptr);
+        virtual ~DataFile();
 
         const string& filename() const;
         const Options& options() const              {return _options;}
@@ -69,10 +69,10 @@ namespace cbforest {
         virtual void reopen() =0;
 
         /** Closes the database and deletes its file. */
-        virtual void deleteDatabase() =0;
+        virtual void deleteDataFile() =0;
 
         /** Deletes a database that isn't open. */
-        static void deleteDatabase(const string &path);
+        static void deleteDataFile(const string &path);
 
         virtual void compact() =0;
         bool isCompacting() const;
@@ -93,7 +93,7 @@ namespace cbforest {
 
         static const string kDefaultKeyStoreName;
 
-        /** The Database's default key-value store. */
+        /** The DataFile's default key-value store. */
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
         KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
@@ -118,7 +118,7 @@ namespace cbforest {
         /** Override to commit or abort a database transaction. */
         virtual void _endTransaction(Transaction*) =0;
 
-        /** Is this Database object currently in a transaction? */
+        /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                  {return _inTransaction;}
 
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
@@ -140,8 +140,8 @@ namespace cbforest {
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
 
-        Database(const Database&) = delete;
-        Database& operator=(const Database&) = delete;
+        DataFile(const DataFile&) = delete;
+        DataFile& operator=(const DataFile&) = delete;
 
         void incrementDeletionCount(Transaction &t);
 
@@ -154,10 +154,10 @@ namespace cbforest {
     };
 
 
-    /** Grants exclusive write access to a Database while in scope.
+    /** Grants exclusive write access to a DataFile while in scope.
         The transaction is committed when the object exits scope, unless abort() was called.
         Only one Transaction object can be created on a database file at a time.
-        Not just per Database object; per database _file_. */
+        Not just per DataFile object; per database _file_. */
     class Transaction {
     public:
         enum state {
@@ -167,11 +167,11 @@ namespace cbforest {
             kCommitManualWALFlush
         };
 
-        explicit Transaction(Database*);
-        Transaction(Database &db)               :Transaction(&db) { }
+        explicit Transaction(DataFile*);
+        Transaction(DataFile &db)               :Transaction(&db) { }
         ~Transaction()                          {_db.endTransaction(this);}
 
-        Database& database() const          {return _db;}
+        DataFile& dataFile() const          {return _db;}
         state state() const                 {return _state;}
 
         /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
@@ -181,18 +181,18 @@ namespace cbforest {
         void flushWAL()                     {if (_state == kCommit) _state = kCommitManualWALFlush;}
 
     private:
-        friend class Database;
+        friend class DataFile;
         friend class KeyStore;
 
         void incrementDeletionCount()       {_db.incrementDeletionCount(*this);}
 
-        Transaction(Database*, bool begin);
+        Transaction(DataFile*, bool begin);
         Transaction(const Transaction&) = delete;
 
-        Database&   _db;        // The Database
+        DataFile&   _db;        // The DataFile
         enum state  _state;     // Remembers what action to take on destruct
     };
     
 }
 
-#endif /* defined(__CBNano__Database__) */
+#endif /* defined(__CBNano__DataFile__) */

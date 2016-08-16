@@ -8,7 +8,7 @@
 
 #ifndef RevisionStore_hh
 #define RevisionStore_hh
-#include "Database.hh"
+#include "DataFile.hh"
 #include "Revision.hh"
 #include "VersionVector.hh"
 
@@ -19,11 +19,11 @@ namespace cbforest {
     class Revision;
 
 
-    /** Manages storage of version-vectored document revisions (Revision objects) in a Database. */
+    /** Manages storage of version-vectored document revisions (Revision objects) in a DataFile. */
     class RevisionStore {
     public:
 
-        RevisionStore(Database *db, peerID myPeerID);
+        RevisionStore(DataFile *db, peerID myPeerID);
         virtual ~RevisionStore() { }
 
         const alloc_slice& myPeerID() const                       {return _myPeerID;}

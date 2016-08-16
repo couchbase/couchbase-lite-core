@@ -22,7 +22,7 @@
 #include "c4DocInternal.hh"
 #include "c4KeyInternal.hh"
 
-#include "Database.hh"
+#include "DataFile.hh"
 #include "Collatable.hh"
 #include "MapReduceIndex.hh"
 #include "FullTextIndex.hh"
@@ -50,7 +50,7 @@ struct c4View : public RefCounted<c4View> {
            C4Slice version,
            const C4DatabaseConfig &config)
     :_sourceDB(sourceDB),
-     _viewDB(c4Database::newDatabase((std::string)path, config, false)),
+     _viewDB(c4Database::newDataFile((std::string)path, config, false)),
      _index(_viewDB->getKeyStore((std::string)viewName), *sourceDB->db())
     {
         setVersion(version);
@@ -73,7 +73,7 @@ struct c4View : public RefCounted<c4View> {
     }
 
     Retained<C4Database> _sourceDB;
-    std::unique_ptr<Database> _viewDB;
+    std::unique_ptr<DataFile> _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
     std::mutex _mutex;
@@ -145,7 +145,7 @@ bool c4view_delete(C4View *view, C4Error *outError) {
         WITH_LOCK(view);
         if (!view->checkNotBusy(outError))
             return false;
-        view->_viewDB->deleteDatabase();
+        view->_viewDB->deleteDataFile();
         view->close();
         return true;
     } catchError(outError)

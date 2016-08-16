@@ -43,7 +43,7 @@ namespace cbforest {
     :_index(index),
      _transaction(t)
     {
-        CBFDebugAssert(&t.database() == &index._store.database());
+        CBFDebugAssert(&t.dataFile() == &index._store.dataFile());
         index.addUser();
     }
 

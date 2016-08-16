@@ -17,7 +17,7 @@
 #ifndef CBForest_LogInternal_h
 #define CBForest_LogInternal_h
 
-#include "Database.hh"
+#include "DataFile.hh"
 
 namespace cbforest {
 

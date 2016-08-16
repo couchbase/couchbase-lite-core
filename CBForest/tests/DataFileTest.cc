@@ -1,12 +1,12 @@
 //
-//  Database_Test.cc
+//  DataFile_Test.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 5/13/14.
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#include "Database.hh"
+#include "DataFile.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
 
@@ -16,14 +16,14 @@ using namespace cbforest;
 using namespace std;
 
 
-class DatabaseTest : public DatabaseTestFixture {
+class DataFileTest : public DataFileTestFixture {
 
 void testDbInfo() {
     Assert(db->isOpen());
     Assert(!db->isCompacting());
-    Assert(!Database::isAnyCompacting());
+    Assert(!DataFile::isAnyCompacting());
     AssertEqual(db->purgeCount(), 0ull);
-    AssertEqual(&store->database(), db);
+    AssertEqual(&store->dataFile(), db);
     AssertEqual(store->documentCount(), 0ull);
     AssertEqual(store->lastSequence(), 0ull);
 }
@@ -47,7 +47,7 @@ void testSaveDocs() {
         store->set(slice("a"), slice("A"), t);
     }
 
-    unique_ptr<Database> aliased_db { newDatabase(db->filename()) };
+    unique_ptr<DataFile> aliased_db { newDatabase(db->filename()) };
     AssertEqual(aliased_db->defaultKeyStore().get(slice("a")).body(), alloc_slice("A"));
 
     {
@@ -272,7 +272,7 @@ void testAbortTransaction() {
 
 // Test for MB-12287
 void testTransactionsThenIterate() {
-    unique_ptr<Database> db2 { newDatabase(db->filename()) };
+    unique_ptr<DataFile> db2 { newDatabase(db->filename()) };
 
     const unsigned kNTransactions = 42; // 41 is ok, 42+ fails
     const unsigned kNDocs = 100;
@@ -496,7 +496,7 @@ void testRekey() {
     auto options = db->options();
     createNumberedDocs();
 
-    options.encryptionAlgorithm = Database::kAES256;
+    options.encryptionAlgorithm = DataFile::kAES256;
     options.encryptionKey = alloc_slice(32);
     randomBytes(options.encryptionKey);
 
@@ -510,7 +510,7 @@ void testRekey() {
 
 
 
-    CPPUNIT_TEST_SUITE( DatabaseTest );
+    CPPUNIT_TEST_SUITE( DataFileTest );
     CPPUNIT_TEST( testDbInfo );
     CPPUNIT_TEST( testCreateDoc );
     CPPUNIT_TEST( testSaveDocs );
@@ -531,15 +531,15 @@ void testRekey() {
     CPPUNIT_TEST_SUITE_END();
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(DatabaseTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(DataFileTest);
 
 
-class DatabaseSQLiteTest : public DatabaseTest {
+class DataFileSQLiteTest : public DataFileTest {
     
     virtual bool isForestDB() const             {return false;}
 
-    CPPUNIT_TEST_SUB_SUITE( DatabaseSQLiteTest, DatabaseTest );
+    CPPUNIT_TEST_SUB_SUITE( DataFileSQLiteTest, DataFileTest );
     CPPUNIT_TEST_SUITE_END();
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(DatabaseSQLiteTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(DataFileSQLiteTest);

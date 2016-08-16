@@ -26,7 +26,7 @@ static CollatableBuilder ToCollatable(T t) {
 
 static int numMapCalls;
 
-static void updateIndex(Database *indexDB, MapReduceIndex& index) {
+static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
     MapReduceIndexer indexer;
     indexer.addIndex(index);
     auto seq = indexer.startingSequence();
@@ -61,20 +61,20 @@ static void updateIndex(Database *indexDB, MapReduceIndex& index) {
 
 
 
-class MapReduceTest : public DatabaseTestFixture {
+class MapReduceTest : public DataFileTestFixture {
 public:
 
 MapReduceIndex* index;
 
 void setUp() {
-    DatabaseTestFixture::setUp();
+    DataFileTestFixture::setUp();
     index = new MapReduceIndex(db->getKeyStore("index"), *db);
     Assert(index);
 }
 
 void tearDown() {
     delete index;
-    DatabaseTestFixture::tearDown();
+    DataFileTestFixture::tearDown();
 }
 
 

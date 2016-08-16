@@ -21,7 +21,7 @@
 #endif
 
 #include <CBForest/Collatable.hh>
-#include <CBForest/Database.hh>
+#include <CBForest/DataFile.hh>
 #include <CBForest/Document.hh>
 #include <CBForest/DocEnumerator.hh>
 #include <CBForest/Index.hh>

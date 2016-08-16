@@ -1,5 +1,5 @@
 //
-//  Database.cc
+//  DataFile.cc
 //  CBForest
 //
 //  Created by Jens Alfke on 5/12/14.
@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "Database.hh"
+#include "DataFile.hh"
 #include "Document.hh"
 #include "Error.hh"
 #include "LogInternal.hh"
@@ -35,7 +35,7 @@ namespace cbforest {
 
 #pragma mark - FILE:
 
-    class Database::File {
+    class DataFile::File {
     public:
         static File* forPath(const string &path);
         File(const string &path)      :_path(path) { }
@@ -49,10 +49,10 @@ namespace cbforest {
         static mutex sMutex;
     };
 
-    unordered_map<string, Database::File*> Database::File::sFileMap;
-    mutex Database::File::sMutex;
+    unordered_map<string, DataFile::File*> DataFile::File::sFileMap;
+    mutex DataFile::File::sMutex;
 
-    Database::File* Database::File::forPath(const string &path) {
+    DataFile::File* DataFile::File::forPath(const string &path) {
         unique_lock<mutex> lock(sMutex);
         File* file = sFileMap[path];
         if (!file) {
@@ -66,40 +66,40 @@ namespace cbforest {
 #pragma mark - DATABASE:
 
 
-    const Database::Options Database::Options::defaults = Database::Options {
+    const DataFile::Options DataFile::Options::defaults = DataFile::Options {
         {true, true, false},
         true, true};
 
 
-    Database::Database(const string &path, const Database::Options *options)
+    DataFile::DataFile(const string &path, const DataFile::Options *options)
     :_file(File::forPath(path)),
      _options(options ? *options : Options::defaults)
     { }
 
-    Database::~Database() {
-        Debug("Database: deleting (~Database)");
+    DataFile::~DataFile() {
+        Debug("DataFile: deleting (~DataFile)");
         CBFAssert(!_inTransaction);
     }
 
-    const string& Database::filename() const {
+    const string& DataFile::filename() const {
         return _file->_path;
     }
 
 
-    void Database::close() {
+    void DataFile::close() {
         for (auto& i : _keyStores) {
             i.second->close();
         }
     }
 
 
-    void Database::checkOpen() const {
+    void DataFile::checkOpen() const {
         if (!isOpen())
             error::_throw(error::NotOpen);
     }
 
 
-    void Database::deleteDatabase(const string &path) {
+    void DataFile::deleteDataFile(const string &path) {
 #ifdef _MSC_VER
         static const char kSeparatorChar = '\\';
         static const char* kCurrentDir = ".\\";
@@ -143,7 +143,7 @@ namespace cbforest {
     }
 
 
-    void Database::rekey(EncryptionAlgorithm alg, slice newKey) {
+    void DataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
         if (alg != kNoEncryption)
             error::_throw(error::UnsupportedEncryption);
     }
@@ -152,14 +152,14 @@ namespace cbforest {
 #pragma mark KEY-STORES:
 
 
-    const string Database::kDefaultKeyStoreName{"default"};
+    const string DataFile::kDefaultKeyStoreName{"default"};
 
 
-    KeyStore& Database::getKeyStore(const string &name) const {
+    KeyStore& DataFile::getKeyStore(const string &name) const {
         return getKeyStore(name, _options.keyStores);
     }
 
-    KeyStore& Database::getKeyStore(const string &name, KeyStore::Capabilities options) const {
+    KeyStore& DataFile::getKeyStore(const string &name, KeyStore::Capabilities options) const {
         checkOpen();
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
@@ -167,12 +167,12 @@ namespace cbforest {
             store.reopen();
             return store;
         } else {
-            return const_cast<Database*>(this)->addKeyStore(name, options);
+            return const_cast<DataFile*>(this)->addKeyStore(name, options);
         }
     }
 
-    KeyStore& Database::addKeyStore(const string &name, KeyStore::Capabilities options) {
-        Debug("Database: open KVS '%s'", name.c_str());
+    KeyStore& DataFile::addKeyStore(const string &name, KeyStore::Capabilities options) {
+        Debug("DataFile: open KVS '%s'", name.c_str());
         checkOpen();
         CBFAssert(!(options.sequences && !_options.keyStores.sequences));
         CBFAssert(!(options.softDeletes && !_options.keyStores.softDeletes));
@@ -181,8 +181,8 @@ namespace cbforest {
         return *store;
     }
 
-    void Database::closeKeyStore(const string &name) {
-        Debug("Database: close KVS '%s'", name.c_str());
+    void DataFile::closeKeyStore(const string &name) {
+        Debug("DataFile: close KVS '%s'", name.c_str());
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
             // Never remove a KeyStore from _keyStores: there may be objects pointing to it 
@@ -190,10 +190,10 @@ namespace cbforest {
         }
     }
 
-    KeyStore& Database::defaultKeyStore(KeyStore::Capabilities options) const {
+    KeyStore& DataFile::defaultKeyStore(KeyStore::Capabilities options) const {
         checkOpen();
         if (!_defaultKeyStore)
-            const_cast<Database*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
+            const_cast<DataFile*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
                                                                          options);
         return *_defaultKeyStore;
     }
@@ -214,7 +214,7 @@ namespace cbforest {
         return _endian_decode(count);
     }
 
-    void Database::incrementDeletionCount(Transaction &t) {
+    void DataFile::incrementDeletionCount(Transaction &t) {
         KeyStore &infoStore = getKeyStore(kInfoStoreName);
         Document doc = infoStore.get(slice(kDeletionCountKey));
         uint64_t purgeCount = readCount(doc) + 1;
@@ -223,12 +223,12 @@ namespace cbforest {
         infoStore.write(doc, t);
     }
 
-    uint64_t Database::purgeCount() const {
+    uint64_t DataFile::purgeCount() const {
         KeyStore &infoStore = getKeyStore(kInfoStoreName);
         return readCount( infoStore.get(slice(kPurgeCountKey)) );
     }
 
-    void Database::updatePurgeCount(Transaction &t) {
+    void DataFile::updatePurgeCount(Transaction &t) {
         KeyStore& infoStore = getKeyStore(kInfoStoreName);
         Document purgeCount = infoStore.get(slice(kDeletionCountKey));
         if (purgeCount.exists())
@@ -238,7 +238,7 @@ namespace cbforest {
 
 #pragma mark - TRANSACTION:
 
-    void Database::beginTransaction(Transaction* t) {
+    void DataFile::beginTransaction(Transaction* t) {
         CBFAssert(!_inTransaction);
         checkOpen();
         unique_lock<mutex> lock(_file->_transactionMutex);
@@ -246,14 +246,14 @@ namespace cbforest {
             _file->_transactionCond.wait(lock);
 
         if (t->state() >= Transaction::kCommit) {
-            Log("Database: beginTransaction");
+            Log("DataFile: beginTransaction");
             _beginTransaction(t);
         }
         _file->_transaction = t;
         _inTransaction = true;
     }
 
-    void Database::endTransaction(Transaction* t) {
+    void DataFile::endTransaction(Transaction* t) {
         if (t->state() != Transaction::kNoOp)
             _endTransaction(t);
 
@@ -265,7 +265,7 @@ namespace cbforest {
     }
 
 
-    void Database::withFileLock(function<void(void)> fn) {
+    void DataFile::withFileLock(function<void(void)> fn) {
         if (_inTransaction) {
             fn();
         } else {
@@ -275,14 +275,14 @@ namespace cbforest {
     }
 
 
-    Transaction::Transaction(Database* db)
+    Transaction::Transaction(DataFile* db)
     :_db(*db),
      _state(kCommit)
     {
         _db.beginTransaction(this);
     }
 
-    Transaction::Transaction(Database* db, bool begin)
+    Transaction::Transaction(DataFile* db, bool begin)
     :_db(*db),
      _state(begin ? kCommit : kNoOp)
     {
@@ -296,22 +296,22 @@ namespace cbforest {
     static atomic<uint32_t> sCompactCount;
 
 
-    void Database::beganCompacting() {
+    void DataFile::beganCompacting() {
         ++sCompactCount;
         _file->_isCompacting = true;
         if (_onCompactCallback) _onCompactCallback(true);
     }
-    void Database::finishedCompacting() {
+    void DataFile::finishedCompacting() {
         --sCompactCount;
         _file->_isCompacting = false;
         if (_onCompactCallback) _onCompactCallback(false);
     }
 
-    bool Database::isCompacting() const {
+    bool DataFile::isCompacting() const {
         return _file->_isCompacting;
     }
 
-    bool Database::isAnyCompacting() {
+    bool DataFile::isAnyCompacting() {
         return sCompactCount > 0;
     }
 

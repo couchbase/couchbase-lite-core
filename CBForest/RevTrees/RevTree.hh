@@ -18,7 +18,7 @@
 
 #include "slice.hh"
 #include "RevID.hh"
-#include "Database.hh"
+#include "DataFile.hh"
 #include <vector>
 
 

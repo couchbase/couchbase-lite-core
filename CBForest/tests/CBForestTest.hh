@@ -36,20 +36,20 @@ std::ostream& operator<< (std::ostream& o, slice s);
 
 #include "CppTest.hh"
 
-#include "Database.hh"
+#include "DataFile.hh"
 
 using namespace cbforest;
 using namespace std;
 
 
-class DatabaseTestFixture : public CppUnit::TestFixture {
+class DataFileTestFixture : public CppUnit::TestFixture {
 public:
 
-    Database *db {nullptr};
+    DataFile *db {nullptr};
     KeyStore *store {nullptr};
 
-    Database* newDatabase(std::string path, Database::Options* =nullptr);
-    void reopenDatabase(Database::Options *newOptions =nullptr);
+    DataFile* newDatabase(std::string path, DataFile::Options* =nullptr);
+    void reopenDatabase(DataFile::Options *newOptions =nullptr);
 
     virtual bool isForestDB() const             {return true;}
 

@@ -8,7 +8,7 @@
 
 #ifndef c4DocInternal_h
 #define c4DocInternal_h
-#include "Database.hh"
+#include "DataFile.hh"
 #include "Document.hh"
 #include "LogInternal.hh"
 
