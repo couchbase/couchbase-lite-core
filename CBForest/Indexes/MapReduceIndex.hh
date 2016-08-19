@@ -96,9 +96,6 @@ namespace cbforest {
         /** If set, indexing will only occur if this index needs to be updated. */
         void triggerOnIndex(MapReduceIndex* index)  {_triggerIndex = index;}
 
-        /** Returns true if indexing completed successfully. */
-        void finished()                             {_finished = true;}
-
         /** Determines at which sequence indexing should start.
             Returns UINT64_MAX if no re-indexing is necessary. */
         sequence startingSequence();
@@ -130,11 +127,15 @@ namespace cbforest {
             key/value pairs. */
         void skipDocInView(slice docID, sequence docSequence, unsigned viewNumber);
 
+        /** Call when all documents have been indexed. Pass the last sequence that was enumerated
+            (usually the database's lastSequence).*/
+        void finished(sequence seq =1)       {_finishedSequence = seq;}
+
     private:
         std::vector<MapReduceIndexWriter*> _writers;
         MapReduceIndex* _triggerIndex {nullptr};
         sequence _latestDbSequence {0};
-        bool _finished {false};
+        sequence _finishedSequence {0};
         bool _allDocTypes {false};
         std::set<slice> _docTypes;
 

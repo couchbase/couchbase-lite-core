@@ -243,7 +243,12 @@ struct c4Indexer : public MapReduceIndexer, InstanceCounted {
         addIndex(view->_index);
     }
 
+    void finished() {
+        MapReduceIndexer::finished(_lastSequenceIndexed);
+    }
+
     C4Database* _db;
+    sequence _lastSequenceIndexed {0};
 #if C4DB_THREADSAFE
     std::vector<C4View*> _views;
 #endif
@@ -297,6 +302,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         setEnumFilter(e, [docTypes,indexer](const Document &doc,
                                             C4DocumentFlags flags,
                                             slice docType) {
+            indexer->_lastSequenceIndexed = doc.sequence();
             if ((flags & kExists) && !(flags & kDeleted)
                                   && (!docTypes || docTypes->count(docType) > 0))
                 return true;

@@ -129,7 +129,7 @@ namespace CBForest
     }
 
     /// <summary>
-    /// Helper class for marshalling string <-> C4Slice without creating an extra copy
+    /// Helper class for marshalling string &lt;&gt; C4Slice without creating an extra copy
     /// of the bytes.  Not for storage or long-term use
     /// </summary>
     public struct C4String : IDisposable
@@ -674,7 +674,11 @@ namespace CBForest
             get { return Convert.ToBoolean(_inclusiveEnd); }
             set { _inclusiveEnd = Convert.ToByte(value); }
         }
-        
+
+        /// <summary>
+        /// Whether or not to assign and sort full text results by ranking
+        /// </summary>
+        /// <value>The rank full text.</value>
         public bool rankFullText
         { 
             get { return Convert.ToBoolean(_rankFullText); }
@@ -901,14 +905,39 @@ namespace CBForest
         public byte save;
         public uint maxRevTreeDepth;   
     }
-    
+
+    /// <summary>
+    /// Defines an area for geo search queries
+    /// </summary>
     public struct C4GeoArea
     {
-        public double xmin; 
+        /// <summary>
+        /// The min X of the rectangle
+        /// </summary>
+        public double xmin;
+
+        /// <summary>
+        /// The min Y of the rectangle
+        /// </summary>
         public double ymin;
+
+        /// <summary>
+        /// The max X of the rectangle
+        /// </summary>
         public double xmax;
+
+        /// <summary>
+        /// The max Y of the rectangle
+        /// </summary>
         public double ymax;
-        
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="xmin">The min X of the rectangle.</param>
+        /// <param name="ymin">The min Y of the rectangle.</param>
+        /// <param name="xmax">The max X of the rectangle.</param>
+        /// <param name="ymax">The max Y of the rectangle.</param>
         public C4GeoArea(double xmin, double ymin, double xmax, double ymax)
         {
             this.xmin = xmin;
@@ -938,7 +967,10 @@ namespace CBForest
         /// </summary>
         public uint length;
     }
-    
+
+    /// <summary>
+    /// An opaque struct representing a list of keys and values
+    /// </summary>
     public struct C4KeyValueList
     {
         

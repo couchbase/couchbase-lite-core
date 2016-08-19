@@ -21,6 +21,9 @@
 #include <errno.h>
 #include <string>
 
+#if __ANDROID__
+#include <android/log.h>
+#endif
 
 namespace cbforest {
 
@@ -268,8 +271,13 @@ namespace cbforest {
     static void defaultLogCallback(logLevel level, const char *message) {
         if (!error::sWarnOnError && level >= kError)
             return;
+#ifdef __ANDROID__
+        static const int kLevels[4] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
+        __android_log_write(kLevels[level], "CBForest", message);
+#else
         static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
         fprintf(stderr, "CBForest %s: %s\n", kLevelNames[level], message);
+#endif
     }
 
     logLevel LogLevel = kWarning;

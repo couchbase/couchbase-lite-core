@@ -41,15 +41,6 @@ void _Log(logLevel, const char *message, ...);
     #define Log(MESSAGE, ...)        LogAt(kInfo,    MESSAGE, __VA_ARGS__)
     #define Warn(MESSAGE, ...)       LogAt(kWarning, MESSAGE, __VA_ARGS__)
     #define WarnError(MESSAGE, ...)  LogAt(kError,   MESSAGE, __VA_ARGS__)
-#elif __ANDROID__
-    #include <android/log.h>
-    #define  LOG_TAG "cbforest"
-    #define LogAt(LEVEL, ...) \
-                if (LogLevel <= LEVEL) _Log(LEVEL, MESSAGE, __VA_ARGS__);
-    #define Debug(...)      __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-    #define Log(...)        __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
-    #define Warn( ...)      __android_log_print(ANDROID_LOG_WARN,  LOG_TAG, __VA_ARGS__)
-    #define WarnError(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #else
     #define LogAt(LEVEL, MESSAGE...) \
                 ({if (__builtin_expect(LogLevel <= LEVEL, false)) _Log(LEVEL, MESSAGE);})
