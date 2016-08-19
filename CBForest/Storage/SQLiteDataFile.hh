@@ -62,6 +62,8 @@ namespace cbforest {
     private:
         friend class SQLiteKeyStore;
 
+        bool decrypt();
+
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
         unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;

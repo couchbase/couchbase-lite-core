@@ -486,9 +486,44 @@ void testCompact() {
 }
 
 
+void testEncryption() {
+    DataFile::Options options = db->options();
+    options.encryptionAlgorithm = DataFile::kAES256;
+    options.encryptionKey = slice("12345678901234567890123456789012");
+    std::string dbPath = kTestDir "encrypted.db";
+    DataFile::deleteDataFile(dbPath);
+    {
+        // Create encrypted db:
+        unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
+        Transaction t(*encryptedDB);
+        encryptedDB->defaultKeyStore().set(slice("k"), slice::null, slice("value"), t);
+    }
+    {
+        // Reopen with correct key:
+        unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
+        auto doc = encryptedDB->defaultKeyStore().get(slice("k"));
+        AssertEqual(doc.body(), alloc_slice("value"));
+    }
+    {
+        // Reopen without key:
+        options.encryptionAlgorithm = DataFile::kNoEncryption;
+        bool caughtException = false;
+        try {
+            unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
+        } catch (const error &e) {
+            error ee = e.standardized();
+            AssertEqual(ee.domain, error::CBForest);
+            AssertEqual(ee.code, (int)error::NotADatabaseFile);
+            caughtException = true;
+        }
+        Assert(caughtException);
+    }
+}
+
+
 void testRekey() {
     if (!isForestDB()) {
-        Log("Skipping rekey test: not supported for this DB type");
+        Log("Skipping rekey test: not supported for this DB type"); //TODO: rekey for SQLite
         return;
     }
 
@@ -527,6 +562,7 @@ void testRekey() {
     CPPUNIT_TEST( testKeyStoreAfterClose );
     CPPUNIT_TEST( testReadOnly );
     CPPUNIT_TEST( testCompact );
+    CPPUNIT_TEST( testEncryption );
     CPPUNIT_TEST( testRekey );
     CPPUNIT_TEST_SUITE_END();
 };

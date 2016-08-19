@@ -18,8 +18,9 @@
 #include "DocEnumerator.hh"
 #include "Error.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include <sstream>
 #include <unistd.h>
+#include <sqlite3.h>
+#include <sstream>
 
 using namespace std;
 
@@ -38,13 +39,14 @@ namespace cbforest {
 
 
     void SQLiteDataFile::reopen() {
-        if (options().encryptionAlgorithm != kNoEncryption)
-            error::_throw(error::UnsupportedEncryption);
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
         _sqlDb.reset(new SQLite::Database(filename().c_str(), sqlFlags));
-        
+
+        if (!decrypt())
+            error::_throw(error::UnsupportedEncryption);
+
         withFileLock([this]{
             _sqlDb->exec("PRAGMA mmap_size=50000000");
             _sqlDb->exec("PRAGMA journal_mode=WAL");
@@ -65,6 +67,36 @@ namespace cbforest {
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
         _sqlDb.reset();
+    }
+
+
+    bool SQLiteDataFile::decrypt() {
+        if (options().encryptionAlgorithm != kNoEncryption) {
+            if (options().encryptionAlgorithm != kAES256)
+                return false;
+
+            // Check whether encryption is available:
+            if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0)
+                return false;
+            // Try to determine whether we're using SQLCipher or the SQLite Encryption Extension,
+            // by calling a SQLCipher-specific pragma that returns a number:
+            SQLite::Statement s(*_sqlDb, "PRAGMA cipher_default_kdf_iter");
+            if (!s.executeStep()) {
+                // Oops, this isn't SQLCipher, so we can't use encryption. (SEE requires us to call
+                // another pragma to enable encryption, which takes a license key we don't know.)
+                return false;
+            }
+
+            // Set the encryption key in SQLite:
+            slice key = options().encryptionKey;
+            if(key.buf == NULL || key.size != 32)
+                error::_throw(error::InvalidParameter);
+            _sqlDb->exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
+        }
+
+        // Verify that encryption key is correct (or db is unencrypted, if no key given):
+        _sqlDb->exec("SELECT count(*) FROM sqlite_master");
+        return true;
     }
 
 

@@ -93,9 +93,9 @@ namespace cbforest {
                 fdbKey.algorithm = FDB_ENCRYPTION_NONE;
                 break;
             case DataFile::kAES256:
+                if(key.buf == NULL || key.size != sizeof(fdbKey.bytes))
+                    error::_throw(error::InvalidParameter);
                 fdbKey.algorithm = FDB_ENCRYPTION_AES256;
-                CBFAssert(key.buf != NULL);
-                CBFAssert(key.size == sizeof(fdbKey.bytes));
                 memcpy(fdbKey.bytes, key.buf, sizeof(fdbKey.bytes));
                 break;
             default:
