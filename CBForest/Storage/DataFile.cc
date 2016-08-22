@@ -16,6 +16,7 @@
 #include "DataFile.hh"
 #include "Document.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 #include "LogInternal.hh"
 #include "forestdb_endian.h"
 #include <errno.h>
@@ -100,46 +101,20 @@ namespace cbforest {
 
 
     void DataFile::deleteDataFile(const string &path) {
-#ifdef _MSC_VER
-        static const char kSeparatorChar = '\\';
-        static const char* kCurrentDir = ".\\";
-#else
-        static const char kSeparatorChar = '/';
-        static const char* kCurrentDir = "./";
-#endif
-        // Split path into directory name and base filename:
-        string dirname, basename;
-        auto slash = path.rfind(kSeparatorChar);           //FIX: OS-dependent
-        if (slash == string::npos) {
-            dirname = string(kCurrentDir);
-            basename = path;
-        } else {
-            dirname = path.substr(0, slash+1);
-            basename = path.substr(slash+1);
-        }
+        FilePath(path).forEachMatch([](const FilePath &f) {
+            f.unlink();
+        });
+    }
 
-        // Scan the directory:
-        auto dir = opendir(dirname.c_str());
-        if (!dir)
-            error::_throw(error::POSIX, errno);
-        struct dirent entry, *result;
-        int err;
-        while (1) {
-            err = readdir_r(dir, &entry, &result);
-            if (err || !result)
-                break;
-            if (result->d_type == DT_REG) {
-                string name(result->d_name, result->d_namlen);
-                if (name.find(basename) == 0) {
-                    // Delete a file whose name starts with the basename:
-                    if (::unlink((dirname + name).c_str()) != 0)
-                        error::_throw(error::POSIX, errno);
-                }
-            }
-        }
-        closedir(dir);
-        if (err)
-            error::_throw(error::POSIX, err);
+
+    void DataFile::moveDataFile(const string &from, const string &to) {
+        FilePath fromPath(from), toPath(to);
+        auto fromBaseLen = fromPath.fileName().size();
+
+        fromPath.forEachMatch([&](const FilePath &f) {
+            string toFile = toPath.fileName() + fromPath.fileName().substr(fromBaseLen);
+            f.moveTo(toPath.dirName() + toFile);
+        });
     }
 
 

@@ -256,6 +256,11 @@ namespace cbforest {
         _throw(CBForest, err);
     }
 
+    void error::_throwErrno() {
+        _throw(POSIX, errno);
+    }
+
+
 
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
         if (LogLevel > kError || LogCallback == NULL)

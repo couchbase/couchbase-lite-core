@@ -96,6 +96,7 @@ namespace cbforest {
         /** Constructs and throws an error. */
         [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(CBForestError);
+        [[noreturn]] static void _throwErrno();
 
         /** Throws an assertion failure exception. Called by the CBFAssert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,

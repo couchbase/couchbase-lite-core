@@ -507,26 +507,23 @@ void testEncryption() {
     {
         // Reopen without key:
         options.encryptionAlgorithm = DataFile::kNoEncryption;
-        bool caughtException = false;
+        int code = 0;
         try {
+            Log("NOTE: Expecting a can't-open-file exception to be thrown");
+            error::sWarnOnError = false;
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-        } catch (const error &e) {
-            error ee = e.standardized();
-            AssertEqual(ee.domain, error::CBForest);
-            AssertEqual(ee.code, (int)error::NotADatabaseFile);
-            caughtException = true;
+        } catch (std::runtime_error &x) {
+            error e = error::convertRuntimeError(x).standardized();
+            AssertEqual(e.domain, error::CBForest);
+            code = e.code;
         }
-        Assert(caughtException);
+        error::sWarnOnError = true;
+        AssertEqual(code, (int)error::NotADatabaseFile);
     }
 }
 
 
 void testRekey() {
-    if (!isForestDB()) {
-        Log("Skipping rekey test: not supported for this DB type"); //TODO: rekey for SQLite
-        return;
-    }
-
     auto dbPath = db->filename();
     auto options = db->options();
     createNumberedDocs();

@@ -47,6 +47,7 @@ namespace cbforest {
         bool keyStoreExists(const string &name);
 
     protected:
+        void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
         KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) override;
@@ -62,6 +63,7 @@ namespace cbforest {
     private:
         friend class SQLiteKeyStore;
 
+        bool encryptionEnabled();
         bool decrypt();
 
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object

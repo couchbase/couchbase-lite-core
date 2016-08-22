@@ -74,6 +74,9 @@ namespace cbforest {
         /** Deletes a database that isn't open. */
         static void deleteDataFile(const string &path);
 
+        /** Moves a database that isn't open. */
+        static void moveDataFile(const string &fromPath, const string &toPath);
+
         virtual void compact() =0;
         bool isCompacting() const;
         static bool isAnyCompacting();
@@ -119,7 +122,7 @@ namespace cbforest {
         virtual void _endTransaction(Transaction*) =0;
 
         /** Is this DataFile object currently in a transaction? */
-        bool inTransaction() const                  {return _inTransaction;}
+        bool inTransaction() const                      {return _inTransaction;}
 
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
@@ -130,6 +133,8 @@ namespace cbforest {
 
         void beganCompacting();
         void finishedCompacting();
+
+        void setOptions(const Options &o)               {_options = o;}
 
     private:
         class File;
@@ -146,7 +151,7 @@ namespace cbforest {
         void incrementDeletionCount(Transaction &t);
 
         File* const             _file;                          // Shared state of file (lock)
-        const Options           _options;                       // Option/capability flags
+        Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         unordered_map<string, unique_ptr<KeyStore> > _keyStores;// Opened KeyStores
         bool _inTransaction     {false};                        // Am I in a Transaction?

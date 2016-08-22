@@ -17,6 +17,7 @@
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <unistd.h>
 #include <sqlite3.h>
@@ -70,22 +71,26 @@ namespace cbforest {
     }
 
 
+    bool SQLiteDataFile::encryptionEnabled() {
+        // Check whether encryption is available:
+        if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0)
+            return false;
+        // Try to determine whether we're using SQLCipher or the SQLite Encryption Extension,
+        // by calling a SQLCipher-specific pragma that returns a number:
+        SQLite::Statement s(*_sqlDb, "PRAGMA cipher_default_kdf_iter");
+        if (!s.executeStep()) {
+            // Oops, this isn't SQLCipher, so we can't use encryption. (SEE requires us to call
+            // another pragma to enable encryption, which takes a license key we don't know.)
+            return false;
+        }
+        return true;
+    }
+
+
     bool SQLiteDataFile::decrypt() {
         if (options().encryptionAlgorithm != kNoEncryption) {
-            if (options().encryptionAlgorithm != kAES256)
+            if (options().encryptionAlgorithm != kAES256 || !encryptionEnabled())
                 return false;
-
-            // Check whether encryption is available:
-            if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0)
-                return false;
-            // Try to determine whether we're using SQLCipher or the SQLite Encryption Extension,
-            // by calling a SQLCipher-specific pragma that returns a number:
-            SQLite::Statement s(*_sqlDb, "PRAGMA cipher_default_kdf_iter");
-            if (!s.executeStep()) {
-                // Oops, this isn't SQLCipher, so we can't use encryption. (SEE requires us to call
-                // another pragma to enable encryption, which takes a license key we don't know.)
-                return false;
-            }
 
             // Set the encryption key in SQLite:
             slice key = options().encryptionKey;
@@ -97,6 +102,88 @@ namespace cbforest {
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
         _sqlDb->exec("SELECT count(*) FROM sqlite_master");
         return true;
+    }
+
+
+    void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
+        switch (alg) {
+            case kNoEncryption:
+                break;
+            case kAES256:
+                if(newKey.buf == NULL || newKey.size != 32)
+                    error::_throw(error::InvalidParameter);
+                break;
+            default:
+                error::_throw(error::InvalidParameter);
+        }
+
+        if (!encryptionEnabled())
+            error::_throw(error::UnsupportedEncryption);
+
+        // Get the userVersion of the db:
+        int userVersion = 0;
+        {
+            SQLite::Statement st(*_sqlDb, "PRAGMA user_version");
+            if (st.executeStep())
+                userVersion = st.getColumn(0);
+        }
+
+        // Make a path for a temporary database file:
+        FilePath realPath(filename());
+        FilePath tempPath(realPath.dirName(), "_rekey_temp.sqlite3");
+        DataFile::deleteDataFile(tempPath);
+
+        // Create & attach a temporary database encrypted with the new key:
+        {
+            string sql = "ATTACH DATABASE ? AS rekeyed_db KEY ";
+            if (alg == kNoEncryption)
+                sql += "''";
+            else
+                sql += "\"x'" + newKey.hexString() + "'\"";
+            SQLite::Statement attach(*_sqlDb, sql);
+            attach.bind(1, tempPath);
+            attach.executeStep();
+        }
+
+        try {
+
+            // Export the current database's contents to the new one:
+            // <https://www.zetetic.net/sqlcipher/sqlcipher-api/#sqlcipher_export>
+            {
+                _sqlDb->exec("SELECT sqlcipher_export('rekeyed_db')");
+
+                stringstream sql;
+                sql << "PRAGMA rekeyed_db.user_version = " << userVersion;
+                _sqlDb->exec(sql.str());
+            }
+
+            // Close the old database:
+            close();
+
+            // Replace it with the new one:
+            try {
+                DataFile::deleteDataFile(filename());
+            } catch (const error &e) {
+                // ignore errors deleting old files
+            }
+            DataFile::moveDataFile(tempPath, filename());
+
+        } catch (const exception &x) {
+            // Back out and rethrow:
+            close();
+            DataFile::deleteDataFile(tempPath);
+            reopen();
+            throw;
+        }
+
+        // Update encryption key:
+        auto opts = options();
+        opts.encryptionAlgorithm = alg;
+        opts.encryptionKey = newKey;
+        setOptions(opts);
+
+        // Finally reopen:
+        reopen();
     }
 
 
@@ -211,7 +298,7 @@ namespace cbforest {
         checkOpen();
         SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
                                                       " WHERE type='table' AND name=?"));
-        storeExists.bind(1, std::string("kv_") + name);
+        storeExists.bind(1, string("kv_") + name);
         bool exists = storeExists.executeStep();
         storeExists.reset();
         return exists;

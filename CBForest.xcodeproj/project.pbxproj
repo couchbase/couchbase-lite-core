@@ -243,6 +243,9 @@
 		27E7219B1BB6720A001500DF /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
 		27E721A11BB9BB38001500DF /* crypto_primitives.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E721A01BB9BB38001500DF /* crypto_primitives.h */; };
 		27E721A31BB9BC9E001500DF /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
+		27E89BA61D679542002C32B3 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
+		27E89BA71D679542002C32B3 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
+		27E89BA81D679542002C32B3 /* FilePath.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E89BA51D679542002C32B3 /* FilePath.hh */; };
 		27EF007F1949297F001BF7F3 /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
 		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
@@ -833,6 +836,8 @@
 		27E7218F1BB6404C001500DF /* encryption_aes.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_aes.cc; sourceTree = "<group>"; };
 		27E721981BB66ECD001500DF /* encryption_bogus.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_bogus.cc; sourceTree = "<group>"; };
 		27E721A01BB9BB38001500DF /* crypto_primitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypto_primitives.h; sourceTree = "<group>"; };
+		27E89BA41D679542002C32B3 /* FilePath.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FilePath.cc; sourceTree = "<group>"; };
+		27E89BA51D679542002C32B3 /* FilePath.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FilePath.hh; sourceTree = "<group>"; };
 		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
 		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Collatable.mm; sourceTree = "<group>"; };
@@ -1274,6 +1279,8 @@
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
+				27E89BA41D679542002C32B3 /* FilePath.cc */,
+				27E89BA51D679542002C32B3 /* FilePath.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -1830,6 +1837,7 @@
 				27D74A931D4D3F3400D806E0 /* Exception.h in Headers */,
 				273E9ED71C506DB4003115A6 /* FullTextIndex.hh in Headers */,
 				279794A81D307626001D0F3A /* RevisionStore.hh in Headers */,
+				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
@@ -2387,6 +2395,7 @@
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
+				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
@@ -2417,6 +2426,7 @@
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
 				720EA4131BA8D834002B8416 /* RevID.cc in Sources */,
 				279794A01D305EC2001D0F3A /* Revision.cc in Sources */,
+				27E89BA71D679542002C32B3 /* FilePath.cc in Sources */,
 				720EA40F1BA8D834002B8416 /* DataFile.cc in Sources */,
 				279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
