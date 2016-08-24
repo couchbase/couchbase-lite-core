@@ -9,6 +9,7 @@
 #include "DataFile.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 
 #include "CBForestTest.hh"
 
@@ -47,7 +48,7 @@ void testSaveDocs() {
         store->set(slice("a"), slice("A"), t);
     }
 
-    unique_ptr<DataFile> aliased_db { newDatabase(db->filename()) };
+    unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
     AssertEqual(aliased_db->defaultKeyStore().get(slice("a")).body(), alloc_slice("A"));
 
     {
@@ -272,7 +273,7 @@ void testAbortTransaction() {
 
 // Test for MB-12287
 void testTransactionsThenIterate() {
-    unique_ptr<DataFile> db2 { newDatabase(db->filename()) };
+    unique_ptr<DataFile> db2 { newDatabase(db->filePath()) };
 
     const unsigned kNTransactions = 42; // 41 is ok, 42+ fails
     const unsigned kNDocs = 100;
@@ -490,7 +491,7 @@ void testEncryption() {
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = DataFile::kAES256;
     options.encryptionKey = slice("12345678901234567890123456789012");
-    std::string dbPath = kTestDir "encrypted.db";
+    auto dbPath = databasePath("encrypted");
     DataFile::deleteDataFile(dbPath);
     {
         // Create encrypted db:
@@ -524,7 +525,7 @@ void testEncryption() {
 
 
 void testRekey() {
-    auto dbPath = db->filename();
+    auto dbPath = db->filePath();
     auto options = db->options();
     createNumberedDocs();
 

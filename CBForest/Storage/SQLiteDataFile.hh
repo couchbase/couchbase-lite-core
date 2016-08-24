@@ -29,7 +29,9 @@ namespace cbforest {
     class SQLiteDataFile : public DataFile {
     public:
 
-        SQLiteDataFile(const string &path, const Options*);
+        static const char *kFilenameExtension;
+
+        SQLiteDataFile(const FilePath &path, const Options*);
         ~SQLiteDataFile();
 
         bool isOpen() const override;
@@ -38,7 +40,7 @@ namespace cbforest {
         void reopen() override;
         void compact() override;
 
-        static void deleteDataFile(const string &path);
+        static void deleteDataFile(const FilePath &path);
         static void shutdown() { }
 
         operator SQLite::Database&() {return *_sqlDb;}

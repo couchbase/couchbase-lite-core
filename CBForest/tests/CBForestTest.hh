@@ -14,12 +14,6 @@
 using namespace fleece;
 
 
-#ifdef _MSC_VER
-#define kTestDir "C:\\tmp\\"
-#else
-#define kTestDir "/tmp/"
-#endif
-
 void Log(const char *format, ...) __printflike(1, 2);
 
 std::string stringWithFormat(const char *format, ...);
@@ -48,7 +42,8 @@ public:
     DataFile *db {nullptr};
     KeyStore *store {nullptr};
 
-    DataFile* newDatabase(std::string path, DataFile::Options* =nullptr);
+    FilePath databasePath(const string baseName);
+    DataFile* newDatabase(const FilePath &path, DataFile::Options* =nullptr);
     void reopenDatabase(DataFile::Options *newOptions =nullptr);
 
     virtual bool isForestDB() const             {return true;}

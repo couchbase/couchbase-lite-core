@@ -9,6 +9,7 @@
 #include "CBForestTest.hh"
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
+#include "FilePath.hh"
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -92,7 +93,14 @@ std::ostream& operator<< (std::ostream& o, slice s) {
 }
 
 
-DataFile* DataFileTestFixture::newDatabase(std::string path, DataFile::Options *options) {
+FilePath DataFileTestFixture::databasePath(const string baseName) {
+    auto path = FilePath::tempDirectory()[baseName];
+    return path.addingExtension(isForestDB() ? ForestDataFile::kFilenameExtension
+                                             : SQLiteDataFile::kFilenameExtension);
+}
+
+
+DataFile* DataFileTestFixture::newDatabase(const FilePath &path, DataFile::Options *options) {
     //TODO: Set up options
     if (isForestDB())
         return new ForestDataFile(path, options);
@@ -102,7 +110,7 @@ DataFile* DataFileTestFixture::newDatabase(std::string path, DataFile::Options *
 
 
 void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
-    auto dbPath = db->filename();
+    auto dbPath = db->filePath();
     auto options = db->options();
     Log("//// Closing db");
     delete db;
@@ -116,7 +124,7 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 
 void DataFileTestFixture::setUp() {
     TestFixture::setUp();
-    const char *dbPath = kTestDir "cbforest_temp.db";
+    auto dbPath = databasePath("cbforest_temp");
     DataFile::deleteDataFile(dbPath);
     db = newDatabase(dbPath);
     store = &db->defaultKeyStore();

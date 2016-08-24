@@ -17,6 +17,7 @@
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 #include "LogInternal.hh"
 #include "forestdb.h"
 #include <algorithm>
@@ -50,6 +51,9 @@ namespace cbforest {
         check(status);
         return true;
     }
+
+
+    const char* ForestDataFile::kFilenameExtension = ".forestdb";
 
 
     static fdb_config sDefaultConfig;
@@ -105,13 +109,13 @@ namespace cbforest {
     }
 
 
-    ForestDataFile::ForestDataFile(const string &path,
+    ForestDataFile::ForestDataFile(const FilePath &path,
                                    const DataFile::Options *options)
     :ForestDataFile(path, options, defaultConfig())
     { }
 
 
-    ForestDataFile::ForestDataFile(const string &path,
+    ForestDataFile::ForestDataFile(const FilePath &path,
                                    const DataFile::Options *options,
                                    const fdb_config& cfg)
     :DataFile(path, options),
@@ -184,7 +188,8 @@ namespace cbforest {
 
     void ForestDataFile::reopen() {
         CBFAssert(!isOpen());
-        const char *cpath = filename().c_str();
+        string path = filePath().path();
+        const char *cpath = path.c_str();
         Debug("ForestDataFile: open %s", cpath);
         auto status = ::fdb_open(&_fileHandle, cpath, &_config);
         if (status == FDB_RESULT_INVALID_COMPACTION_MODE
@@ -203,17 +208,17 @@ namespace cbforest {
         if (isOpen()) {
             //Transaction t(this, false);
             close();
-            deleteDataFile(filename(), _config);
+            deleteDataFile(filePath(), _config);
         } else {
-            deleteDataFile(filename(), _config);
+            deleteDataFile(filePath(), _config);
         }
     }
 
-    /*static*/ void ForestDataFile::deleteDataFile(const string &path, const fdb_config &cfg) {
+    /*static*/ void ForestDataFile::deleteDataFile(const FilePath &path, const fdb_config &cfg) {
         auto cfg2 = cfg;
         cfg2.compaction_cb = compactionCallback;
         cfg2.compaction_cb_ctx = NULL;
-        check(fdb_destroy(path.c_str(), (fdb_config*)&cfg));
+        check(fdb_destroy(path.path().c_str(), (fdb_config*)&cfg));
     }
 
     void ForestDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {

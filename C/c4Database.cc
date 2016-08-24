@@ -20,16 +20,71 @@
 
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
-#include "Collatable.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 
-
-using namespace cbforest;
+#include "Collatable.hh"
+#include "FilePath.hh"
 
 
 const char* const kC4ForestDBStorageEngine = "ForestDB";
 const char* const kC4SQLiteStorageEngine   = "SQLite";
+
+static const char* const kForestDatabaseName = "db.forestdb";
+static const char* const kSQLiteDatabaseName = "db.sqlite3";
+
+
+#pragma mark - C4DATABASE CLASS:
+
+
+// `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
+FilePath c4Database::findOrCreateBundle(const std::string &path, C4DatabaseConfig &config) {
+    FilePath bundle {path, ""};
+    bool createdDir = ((config.flags & kC4DB_Create) && bundle.mkdir());
+    if (!createdDir)
+        bundle.mustExistAsDir();
+
+    // Look for the file corresponding to the requested storage engine (defaulting to SQLite):
+    const char *filename;
+    if (!config.storageEngine || 0 == strcmp(config.storageEngine, kC4SQLiteStorageEngine))
+        filename = kSQLiteDatabaseName;
+    else if (0 == strcmp(config.storageEngine, kC4ForestDBStorageEngine))
+        filename = kForestDatabaseName;
+    else
+        error::_throw(error::InvalidParameter);
+
+    FilePath dbFile = bundle[filename];
+    if (createdDir || dbFile.exists()) {
+        if (config.storageEngine == nullptr)
+            config.storageEngine = kC4SQLiteStorageEngine;
+        return dbFile;
+    }
+
+    if (config.storageEngine != nullptr) {
+        // DB exists but not in the format they specified, so fail:
+        error::_throw(error::WrongFormat);
+    }
+
+    // Not found, but they didn't specify a format, so try the non-default (ForestDB) format:
+    dbFile = bundle[kForestDatabaseName];
+    if (!dbFile.exists()) {
+        // Weird; the bundle exists but doesn't contain either type of database, so fail:
+        error::_throw(error::WrongFormat);
+    }
+    config.storageEngine = kC4ForestDBStorageEngine;
+    return dbFile;
+}
+
+
+c4Database* c4Database::newDatabase(std::string pathStr, C4DatabaseConfig config) {
+    FilePath path = (config.flags & kC4DB_Bundled)
+                        ? findOrCreateBundle(pathStr, config)
+                        : FilePath(pathStr);
+    if (config.flags & kC4DB_V2Format)
+        return (new c4DatabaseV2((std::string)path, config))->retain();
+    else
+        return (new c4DatabaseV1((std::string)path, config))->retain();
+}
 
 
 DataFile* c4Database::newDataFile(std::string path,
@@ -59,9 +114,6 @@ DataFile* c4Database::newDataFile(std::string path,
         error::_throw(error::Unimplemented);
     }
 }
-
-
-#pragma mark - C4DATABASE CLASS:
 
 
 c4Database::c4Database(std::string path,
@@ -149,18 +201,15 @@ bool c4Database::endTransaction(bool commit) {
 
 
 C4Database* c4db_open(C4Slice path,
-                      const C4DatabaseConfig *config,
+                      const C4DatabaseConfig *configP,
                       C4Error *outError)
 {
-    if (!checkParam(config != nullptr, outError))
+    if (!checkParam(configP != nullptr, outError))
         return nullptr;
     try {
-        if (config->flags & kC4DB_V2Format)
-            return (new c4DatabaseV2((std::string)path, *config))->retain();
-        else
-            return (new c4DatabaseV1((std::string)path, *config))->retain();
-    }catchError(outError);
-    return NULL;
+        return c4Database::newDatabase((std::string)path, *configP);
+    } catchError(outError);
+    return nullptr;
 }
 
 
@@ -251,7 +300,7 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 
 
 C4SliceResult c4db_getPath(C4Database *database) {
-    slice path(database->db()->filename());
+    slice path(database->db()->filePath());
     path = path.copy();  // C4SliceResult must be malloced & adopted by caller
     return {path.buf, path.size};
 }

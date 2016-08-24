@@ -25,6 +25,7 @@ extern "C" {
         kC4DB_Create        = 1,    /**< Create the file if it doesn't exist */
         kC4DB_ReadOnly      = 2,    /**< Open file read-only */
         kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
+        kC4DB_Bundled       = 8,    /**< Store db (and views) inside a directory */
 
         kC4DB_V2Format      = 0x20, /**< Couchbase Lite 2 format */
     };

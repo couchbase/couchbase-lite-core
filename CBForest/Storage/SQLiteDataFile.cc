@@ -27,7 +27,9 @@ using namespace std;
 
 namespace cbforest {
 
-    SQLiteDataFile::SQLiteDataFile(const string &path, const Options *options)
+    const char* SQLiteDataFile::kFilenameExtension = ".sqlite3";
+
+    SQLiteDataFile::SQLiteDataFile(const FilePath &path, const Options *options)
     :DataFile(path, options)
     {
         reopen();
@@ -43,7 +45,7 @@ namespace cbforest {
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
-        _sqlDb.reset(new SQLite::Database(filename().c_str(), sqlFlags));
+        _sqlDb.reset(new SQLite::Database(filePath().path().c_str(), sqlFlags));
 
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
@@ -129,7 +131,7 @@ namespace cbforest {
         }
 
         // Make a path for a temporary database file:
-        FilePath realPath(filename());
+        const FilePath &realPath = filePath();
         FilePath tempPath(realPath.dirName(), "_rekey_temp.sqlite3");
         DataFile::deleteDataFile(tempPath);
 
@@ -162,11 +164,11 @@ namespace cbforest {
 
             // Replace it with the new one:
             try {
-                DataFile::deleteDataFile(filename());
+                DataFile::deleteDataFile(realPath);
             } catch (const error &e) {
                 // ignore errors deleting old files
             }
-            DataFile::moveDataFile(tempPath, filename());
+            DataFile::moveDataFile(tempPath, realPath);
 
         } catch (const exception &x) {
             // Back out and rethrow:
@@ -251,13 +253,13 @@ namespace cbforest {
 
     void SQLiteDataFile::deleteDataFile() {
         close();
-        deleteDataFile(filename());
+        deleteDataFile(filePath());
     }
 
-    void SQLiteDataFile::deleteDataFile(const string &path) {
-        ::unlink(path.c_str());
-        ::unlink((path + ".shm").c_str());
-        ::unlink((path + ".wal").c_str());
+    void SQLiteDataFile::deleteDataFile(const FilePath &path) {
+        path.del();
+        path.withExtension("shm").del();
+        path.withExtension("wal").del();
     }
 
 

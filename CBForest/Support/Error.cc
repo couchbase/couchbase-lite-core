@@ -143,6 +143,7 @@ namespace cbforest {
             "index busy; can't close view",
             "unsupported operation for this database type",
             "file is not a database (or encryption key is invalid/missing)",
+            "file/data is not in the requested format",
         };
         const char *str = nullptr;
         if (code < sizeof(kCBForestMessages)/sizeof(char*))

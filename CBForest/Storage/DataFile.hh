@@ -27,6 +27,7 @@ namespace cbforest {
 
     using namespace std;
 
+    class FilePath;
     class Transaction;
 
 
@@ -50,10 +51,10 @@ namespace cbforest {
             static const Options defaults;
         };
 
-        DataFile(const string &path, const Options* =nullptr);
+        DataFile(const FilePath &path, const Options* =nullptr);
         virtual ~DataFile();
 
-        const string& filename() const;
+        const FilePath& filePath() const;
         const Options& options() const              {return _options;}
 
         virtual bool isOpen() const =0;
@@ -72,10 +73,10 @@ namespace cbforest {
         virtual void deleteDataFile() =0;
 
         /** Deletes a database that isn't open. */
-        static void deleteDataFile(const string &path);
+        static void deleteDataFile(const FilePath &path);
 
         /** Moves a database that isn't open. */
-        static void moveDataFile(const string &fromPath, const string &toPath);
+        static void moveDataFile(const FilePath &fromPath, const FilePath &toPath);
 
         virtual void compact() =0;
         bool isCompacting() const;

@@ -38,9 +38,10 @@ namespace cbforest {
 
     class DataFile::File {
     public:
-        static File* forPath(const string &path);
-        File(const string &path)      :_path(path) { }
-        const string _path;
+        static File* forPath(const FilePath &path);
+        File(const FilePath &path)      :_path(path) { }
+
+        const FilePath _path;
         mutex _transactionMutex;
         condition_variable _transactionCond;
         Transaction* _transaction {NULL};
@@ -53,12 +54,13 @@ namespace cbforest {
     unordered_map<string, DataFile::File*> DataFile::File::sFileMap;
     mutex DataFile::File::sMutex;
 
-    DataFile::File* DataFile::File::forPath(const string &path) {
+    DataFile::File* DataFile::File::forPath(const FilePath &path) {
         unique_lock<mutex> lock(sMutex);
-        File* file = sFileMap[path];
+        auto pathStr = path.path();
+        File* file = sFileMap[pathStr];
         if (!file) {
             file = new File(path);
-            sFileMap[path] = file;
+            sFileMap[pathStr] = file;
         }
         return file;
     }
@@ -72,7 +74,7 @@ namespace cbforest {
         true, true};
 
 
-    DataFile::DataFile(const string &path, const DataFile::Options *options)
+    DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
     :_file(File::forPath(path)),
      _options(options ? *options : Options::defaults)
     { }
@@ -82,7 +84,7 @@ namespace cbforest {
         CBFAssert(!_inTransaction);
     }
 
-    const string& DataFile::filename() const {
+    const FilePath& DataFile::filePath() const {
         return _file->_path;
     }
 
@@ -100,20 +102,18 @@ namespace cbforest {
     }
 
 
-    void DataFile::deleteDataFile(const string &path) {
+    void DataFile::deleteDataFile(const FilePath &path) {
         FilePath(path).forEachMatch([](const FilePath &f) {
-            f.unlink();
+            f.del();
         });
     }
 
 
-    void DataFile::moveDataFile(const string &from, const string &to) {
-        FilePath fromPath(from), toPath(to);
-        auto fromBaseLen = fromPath.fileName().size();
-
-        fromPath.forEachMatch([&](const FilePath &f) {
-            string toFile = toPath.fileName() + fromPath.fileName().substr(fromBaseLen);
-            f.moveTo(toPath.dirName() + toFile);
+    void DataFile::moveDataFile(const FilePath &from, const FilePath &to) {
+        auto fromBaseLen = from.fileName().size();
+        from.forEachMatch([&](const FilePath &f) {
+            string toFile = to.fileName() + from.fileName().substr(fromBaseLen);
+            f.moveTo(to.dirName() + toFile);
         });
     }
 

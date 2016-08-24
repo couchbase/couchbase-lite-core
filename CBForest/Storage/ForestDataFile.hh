@@ -22,17 +22,20 @@ namespace cbforest {
     /** ForestDB implementation of DataFile */
     class ForestDataFile : public DataFile {
     public:
+        
+        static const char *kFilenameExtension;
+
         static fdb_config defaultConfig();
         static void setDefaultConfig(const fdb_config&);
 
-        ForestDataFile(const string &path, const Options* =nullptr);
-        ForestDataFile(const string &path, const Options*, const fdb_config&);
+        ForestDataFile(const FilePath &path, const Options* =nullptr);
+        ForestDataFile(const FilePath &path, const Options*, const fdb_config&);
         ~ForestDataFile();
 
         fdb_file_info info() const;
         fdb_config config() const                   {return _config;}
 
-        static void deleteDataFile(const string &path, const fdb_config&);
+        static void deleteDataFile(const FilePath &path, const fdb_config&);
 
         static void shutdown();
 

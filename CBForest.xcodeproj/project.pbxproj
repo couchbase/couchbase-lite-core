@@ -1272,6 +1272,8 @@
 				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
+				27E89BA41D679542002C32B3 /* FilePath.cc */,
+				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				276E93B719ECA01100DDD621 /* LogInternal.hh */,
 				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
 				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
@@ -1279,8 +1281,6 @@
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 				2750724418E3E52800A80C5A /* CBForest-Prefix.pch */,
-				27E89BA41D679542002C32B3 /* FilePath.cc */,
-				27E89BA51D679542002C32B3 /* FilePath.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";

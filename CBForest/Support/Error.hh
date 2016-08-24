@@ -69,6 +69,7 @@ namespace cbforest {
             IndexBusy,
             UnsupportedOperation,
             NotADatabaseFile,
+            WrongFormat,                // DB exists but is not in format requested
 
             NumCBForestErrors
         };

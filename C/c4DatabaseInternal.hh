@@ -17,14 +17,17 @@
 namespace c4Internal {
     class C4DocumentInternal;
 }
+namespace cbforest {
+    class FilePath;
+}
 
 
 // c4Database must be in the global namespace because it's forward-declared in the C API.
 
 struct c4Database : public RefCounted<c4Database> {
 
-    c4Database(std::string path,
-               const C4DatabaseConfig &config);
+    static c4Database* newDatabase(std::string pathStr,
+                                   C4DatabaseConfig config);
 
     static DataFile* newDataFile(std::string path,
                                  const C4DatabaseConfig &config,
@@ -53,7 +56,7 @@ struct c4Database : public RefCounted<c4Database> {
     bool endTransaction(bool commit);
 
     KeyStore& defaultKeyStore()                         {return _db->defaultKeyStore();}
-    KeyStore& getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
+    KeyStore& getKeyStore(const std::string &name) const     {return _db->getKeyStore(name);}
 
     virtual C4DocumentInternal* newDocumentInstance(C4Slice docID) =0;
     virtual C4DocumentInternal* newDocumentInstance(const Document&) =0;
@@ -70,7 +73,11 @@ struct c4Database : public RefCounted<c4Database> {
 #endif
 
 protected:
+    c4Database(std::string path,
+               const C4DatabaseConfig &config);
     virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
+
+    static FilePath findOrCreateBundle(const std::string &path, C4DatabaseConfig &config);
 
 private:
     std::unique_ptr<DataFile>   _db;                    // Underlying DataFile
