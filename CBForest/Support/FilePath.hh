@@ -73,8 +73,9 @@ namespace cbforest {
         
         bool mkdir(int mode =0700) const;
 
-        /** Deletes the file, or empty directory, at this path. */
-        void del() const;
+        /** Deletes the file, or empty directory, at this path.
+            If the item doesn't exist, returns false instead of throwing an exception. */
+        bool del() const;
 
         /** Deletes the file or directory tree at this path. */
         void delRecursive() const;

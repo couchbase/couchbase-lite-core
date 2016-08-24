@@ -191,11 +191,13 @@ namespace cbforest {
     }
 
 
-    void FilePath::del() const {
-        if (isDir())
-            check(::rmdir(path().c_str()));
-        else
-            check(::unlink(path().c_str()));
+    bool FilePath::del() const {
+        auto result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
+        if (result == 0)
+            return true;
+        if (errno == ENOENT)
+            return false;
+        error::_throwErrno();
     }
 
 
