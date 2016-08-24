@@ -31,6 +31,7 @@ namespace cbforest {
     class Document;
 }
 
+using namespace std;
 using namespace cbforest;
 
 
@@ -59,11 +60,11 @@ namespace c4Internal {
     // ERRORS & EXCEPTIONS:
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError);
-    void recordException(const std::exception &e, C4Error* outError);
+    void recordException(const exception &e, C4Error* outError);
     static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
 
     #define catchError(OUTERR) \
-        catch (const std::exception &x) { \
+        catch (const exception &x) { \
             recordException(x, OUTERR); \
         }
 
@@ -75,9 +76,9 @@ namespace c4Internal {
 
     // DOC ENUMERATORS:
 
-    typedef std::function<bool(const Document&,
-                               uint32_t documentFlags,  // C4DocumentFlags
-                               slice docType)> EnumFilter;
+    typedef function<bool(const Document&,
+                          uint32_t documentFlags,  // C4DocumentFlags
+                          slice docType)> EnumFilter;
 
     void setEnumFilter(C4DocEnumerator*, EnumFilter);
 

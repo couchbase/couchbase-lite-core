@@ -23,8 +23,8 @@ struct c4Key : public CollatableBuilder, InstanceCounted {
 
 
 struct c4KeyValueList {
-    std::vector<Collatable> keys;
-    std::vector<alloc_slice> values;
+    vector<Collatable> keys;
+    vector<alloc_slice> values;
 };
 
 

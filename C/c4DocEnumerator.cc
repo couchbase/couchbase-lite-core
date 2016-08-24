@@ -24,8 +24,6 @@
 #include "LogInternal.hh"
 #include <set>
 
-using namespace cbforest;
-
 
 #pragma mark - DOC ENUMERATION:
 
@@ -55,7 +53,7 @@ struct C4DocEnumerator: InstanceCounted {
     { }
 
     C4DocEnumerator(C4Database *database,
-                    std::vector<std::string>docIDs,
+                    vector<string>docIDs,
                     const C4EnumeratorOptions &options)
     :_database(database),
      _e(database->defaultKeyStore(), docIDs, allDocOptions(options)),
@@ -181,9 +179,9 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                         C4Error *outError)
 {
     try {
-        std::vector<std::string> docIDStrings;
+        vector<string> docIDStrings;
         for (size_t i = 0; i < docIDsCount; ++i)
-            docIDStrings.push_back((std::string)docIDs[i]);
+            docIDStrings.push_back((string)docIDs[i]);
         WITH_LOCK(database);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);

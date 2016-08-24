@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <ctime>
 
-using namespace cbforest;
+using namespace fleece;
 
 
 // This helper function is meant to be wrapped in a transaction

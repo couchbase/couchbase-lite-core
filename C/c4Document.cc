@@ -23,8 +23,6 @@
 #include "c4DocInternal.hh"
 #include "SecureRandomize.hh"
 
-using namespace cbforest;
-
 
 void c4doc_free(C4Document *doc) {
     delete (C4DocumentInternal*)doc;

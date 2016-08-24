@@ -27,8 +27,6 @@
 #include <ctime>
 #include <algorithm>
 
-using namespace cbforest;
-
 
 static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
@@ -47,7 +45,7 @@ namespace c4Internal {
 
 
         C4DocumentV1(C4Database *database, const Document &doc)
-        :C4DocumentInternal(database, std::move(doc)),
+        :C4DocumentInternal(database, move(doc)),
          _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(NULL)
         {
@@ -277,7 +275,7 @@ int32_t C4DocumentV1::putExistingRevision(const C4DocPutRequest &rq) {
     CBFAssert(rq.historyCount >= 1);
     int32_t commonAncestor = -1;
     loadRevisions();
-    std::vector<revidBuffer> revIDBuffers(rq.historyCount);
+    vector<revidBuffer> revIDBuffers(rq.historyCount);
     for (size_t i = 0; i < rq.historyCount; i++)
         revIDBuffers[i].parse(rq.history[i]);
     commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
@@ -305,7 +303,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
         md5Context ctx;
         md5_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
         if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
             md5_add(&ctx, &revLen, 1);
         md5_add(&ctx, parentRevID.buf, revLen);
@@ -318,7 +316,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
         // SHA-1 digest:
         sha1Context ctx;
         sha1_begin(&ctx);
-        uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
+        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
         sha1_add(&ctx, &revLen, 1);
         sha1_add(&ctx, parentRevID.buf, revLen);
         uint8_t delByte = deleted;

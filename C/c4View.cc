@@ -50,14 +50,14 @@ struct c4View : public RefCounted<c4View> {
            C4Slice version,
            const C4DatabaseConfig &config)
     :_sourceDB(sourceDB),
-     _viewDB(c4Database::newDataFile((std::string)path, config, false)),
-     _index(_viewDB->getKeyStore((std::string)viewName), *sourceDB->db())
+     _viewDB(c4Database::newDataFile((string)path, config, false)),
+     _index(_viewDB->getKeyStore((string)viewName), *sourceDB->db())
     {
         setVersion(version);
     }
 
     void setVersion(C4Slice version) {
-        _index.setup(-1, (std::string)version);
+        _index.setup(-1, (string)version);
     }
 
     bool checkNotBusy(C4Error *outError) {
@@ -73,10 +73,10 @@ struct c4View : public RefCounted<c4View> {
     }
 
     Retained<C4Database> _sourceDB;
-    std::unique_ptr<DataFile> _viewDB;
+    unique_ptr<DataFile> _viewDB;
     MapReduceIndex _index;
 #if C4DB_THREADSAFE
-    std::mutex _mutex;
+    mutex _mutex;
 #endif
 };
 
@@ -250,7 +250,7 @@ struct c4Indexer : public MapReduceIndexer, InstanceCounted {
     C4Database* _db;
     sequence _lastSequenceIndexed {0};
 #if C4DB_THREADSAFE
-    std::vector<C4View*> _views;
+    vector<C4View*> _views;
 #endif
 };
 
@@ -425,7 +425,7 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
 
     Retained<C4View> _view;
 #if C4DB_THREADSAFE
-    std::mutex &_mutex;
+    mutex &_mutex;
 #endif
 };
 
@@ -475,7 +475,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
     { }
 
     C4MapReduceEnumerator(C4View *view,
-                        std::vector<KeyRange> keyRanges,
+                        vector<KeyRange> keyRanges,
                         const DocEnumerator::Options &options)
     :C4QueryEnumInternal(view),
      _enum(view->_index, keyRanges, options)
@@ -521,7 +521,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
                                            c4options->endKeyDocID,
                                            options);
         } else {
-            std::vector<KeyRange> keyRanges;
+            vector<KeyRange> keyRanges;
             for (size_t i = 0; i < c4options->keysCount; i++) {
                 const C4Key* key = c4options->keys[i];
                 if (key)
@@ -619,7 +619,7 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
 
 bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) {
     initTokenizer();
-    Tokenizer::defaultStemmer = std::string(languageName);
+    Tokenizer::defaultStemmer = string(languageName);
     Tokenizer::defaultRemoveDiacritics = stripDiacriticals;
     return true;
 }

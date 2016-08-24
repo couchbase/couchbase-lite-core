@@ -35,7 +35,7 @@ namespace c4Internal {
         }
     }
 
-    void recordException(const std::exception &e, C4Error* outError) {
+    void recordException(const exception &e, C4Error* outError) {
         static const C4ErrorDomain domainMap[] = {CBForestDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
         error err = error::convertException(e).standardized();
@@ -70,7 +70,7 @@ C4SliceResult c4error_getMessage(C4Error err) {
 
 char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {
     C4SliceResult msg = c4error_getMessage(error);
-    auto len = std::min(msg.size, bufferSize-1);
+    auto len = min(msg.size, bufferSize-1);
     if (msg.buf)
         memcpy(buffer, msg.buf, len);
     buffer[len] = '\0';

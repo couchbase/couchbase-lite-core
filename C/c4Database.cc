@@ -38,7 +38,7 @@ static const char* const kSQLiteDatabaseName = "db.sqlite3";
 
 
 // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
-FilePath c4Database::findOrCreateBundle(const std::string &path, C4DatabaseConfig &config) {
+FilePath c4Database::findOrCreateBundle(const string &path, C4DatabaseConfig &config) {
     FilePath bundle {path, ""};
     bool createdDir = ((config.flags & kC4DB_Create) && bundle.mkdir());
     if (!createdDir)
@@ -76,18 +76,18 @@ FilePath c4Database::findOrCreateBundle(const std::string &path, C4DatabaseConfi
 }
 
 
-c4Database* c4Database::newDatabase(std::string pathStr, C4DatabaseConfig config) {
+c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
     FilePath path = (config.flags & kC4DB_Bundled)
                         ? findOrCreateBundle(pathStr, config)
                         : FilePath(pathStr);
     if (config.flags & kC4DB_V2Format)
-        return (new c4DatabaseV2((std::string)path, config))->retain();
+        return (new c4DatabaseV2((string)path, config))->retain();
     else
-        return (new c4DatabaseV1((std::string)path, config))->retain();
+        return (new c4DatabaseV1((string)path, config))->retain();
 }
 
 
-DataFile* c4Database::newDataFile(std::string path,
+DataFile* c4Database::newDataFile(string path,
                                   const C4DatabaseConfig &config,
                                   bool isMainDB)
 {
@@ -116,7 +116,7 @@ DataFile* c4Database::newDataFile(std::string path,
 }
 
 
-c4Database::c4Database(std::string path,
+c4Database::c4Database(string path,
                        const C4DatabaseConfig &inConfig)
 :config(inConfig),
  _db(newDataFile(path, config, true))
@@ -141,7 +141,7 @@ void c4Database::beginTransaction() {
 
 bool c4Database::inTransaction() {
 #if C4DB_THREADSAFE
-    std::lock_guard<std::recursive_mutex> lock(_transactionMutex);
+    lock_guard<recursive_mutex> lock(_transactionMutex);
 #endif
     return _transactionLevel > 0;
 }
@@ -162,7 +162,7 @@ bool c4Database::mustNotBeInTransaction(C4Error *outError) {
 
 bool c4Database::endTransaction(bool commit) {
 #if C4DB_THREADSAFE
-    std::lock_guard<std::recursive_mutex> lock(_transactionMutex);
+    lock_guard<recursive_mutex> lock(_transactionMutex);
 #endif
     if (_transactionLevel == 0)
         return false;
@@ -207,7 +207,7 @@ C4Database* c4db_open(C4Slice path,
     if (!checkParam(configP != nullptr, outError))
         return nullptr;
     try {
-        return c4Database::newDatabase((std::string)path, *configP);
+        return c4Database::newDatabase((string)path, *configP);
     } catchError(outError);
     return nullptr;
 }
@@ -260,7 +260,7 @@ bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *
     if (!checkParam(config != nullptr, outError))
         return false;
     try {
-        DataFile::deleteDataFile((std::string)dbPath);
+        DataFile::deleteDataFile((string)dbPath);
         return true;
     } catchError(outError);
     return false;
@@ -428,7 +428,7 @@ C4RawDocument* c4raw_get(C4Database* database,
 {
     WITH_LOCK(database);
     try {
-        KeyStore& localDocs = database->getKeyStore((std::string)storeName);
+        KeyStore& localDocs = database->getKeyStore((string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
             recordError(CBForestDomain, kC4ErrorNotFound, outError);
@@ -456,7 +456,7 @@ bool c4raw_put(C4Database* database,
     bool commit = false;
     try {
         WITH_LOCK(database);
-        KeyStore &localDocs = database->getKeyStore((std::string)storeName);
+        KeyStore &localDocs = database->getKeyStore((string)storeName);
         auto &t = database->transaction();
         if (body.buf || meta.buf)
             localDocs.set(key, meta, body, t);

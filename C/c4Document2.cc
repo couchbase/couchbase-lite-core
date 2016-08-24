@@ -26,9 +26,6 @@
 
 namespace c4Internal {
 
-    using namespace std;
-
-
     class C4DocumentV2 : public C4DocumentInternal {
     public:
 
