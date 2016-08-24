@@ -16,10 +16,9 @@
 #ifndef __CBForest__RevID__
 #define __CBForest__RevID__
 
-#include "slice.hh"
+#include "Base.hh"
 
 namespace cbforest {
-    using namespace fleece;
 
     enum revidType {
         kDigestType,

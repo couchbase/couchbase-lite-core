@@ -18,11 +18,10 @@
 #include <stdint.h>
 #include <string>
 #include <iostream>
-#include "slice.hh"
+#include "Base.hh"
 #include "Geohash.hh"
 
 namespace cbforest {
-    using namespace fleece;
 
     class CollatableTypes {
     public:

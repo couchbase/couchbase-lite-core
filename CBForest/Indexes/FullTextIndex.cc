@@ -19,6 +19,8 @@
 #include "Fleece.hh"
 #include <algorithm>
 
+using namespace fleece;
+
 namespace cbforest {
 
     static std::vector<KeyRange> keyRangesFor(slice queryString,

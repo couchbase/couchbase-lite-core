@@ -20,9 +20,6 @@
 
 namespace cbforest {
 
-    using namespace std;
-
-
     /** Stores a CBForest document's key, metadata, body and sequence. */
     class Document {
     public:

@@ -20,8 +20,6 @@ namespace SQLite {
 
 namespace cbforest {
 
-    using namespace std;
-
     class SQLiteKeyStore;
 
 
@@ -45,22 +43,22 @@ namespace cbforest {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
-        vector<string> allKeyStoreNames() override;
-        bool keyStoreExists(const string &name);
+        std::vector<std::string> allKeyStoreNames() override;
+        bool keyStoreExists(const std::string &name);
 
     protected:
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
-        KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) override;
-        void deleteKeyStore(const string &name) override;
+        KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
+        void deleteKeyStore(const std::string &name) override;
 
-        sequence lastSequence(const string& keyStoreName) const;
+        sequence lastSequence(const std::string& keyStoreName) const;
         void setLastSequence(SQLiteKeyStore&, sequence);
 
-        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
-                                   string sql) const;
-        int exec(const string &sql);
+        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+                                   std::string sql) const;
+        int exec(const std::string &sql);
 
     private:
         friend class SQLiteKeyStore;
@@ -68,9 +66,9 @@ namespace cbforest {
         bool encryptionEnabled();
         bool decrypt();
 
-        unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
-        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        std::unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
+        std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
     };
 
 
@@ -101,18 +99,18 @@ namespace cbforest {
 
     private:
         friend class SQLiteDataFile;
-        SQLiteKeyStore(SQLiteDataFile&, const string &name, KeyStore::Capabilities options);
+        SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
-        stringstream selectFrom(const DocEnumerator::Options &options);
-        void writeSQLOptions(stringstream &sql, DocEnumerator::Options &options);
+        std::stringstream selectFrom(const DocEnumerator::Options &options);
+        void writeSQLOptions(std::stringstream &sql, DocEnumerator::Options &options);
         void backupReplacedDoc(slice key);
 
-        unique_ptr<SQLite::Statement> _docCountStmt;
-        unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
-        unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
-        unique_ptr<SQLite::Statement> _setStmt, _backupStmt, _delByKeyStmt, _delBySeqStmt;
-        bool                          _createdKeyIndex {false};     // Created by-key index yet?
-        bool                          _createdSeqIndex {false};     // Created by-seq index yet?
+        std::unique_ptr<SQLite::Statement> _docCountStmt;
+        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
+        std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
+        std::unique_ptr<SQLite::Statement> _setStmt, _backupStmt, _delByKeyStmt, _delBySeqStmt;
+        bool _createdKeyIndex {false};     // Created by-key index yet?
+        bool _createdSeqIndex {false};     // Created by-seq index yet?
     };
 
 }

@@ -1,5 +1,5 @@
 //
-//  Base.h
+//  Base.hh
 //  CBForest
 //
 //  Created by Jens Alfke on 7/21/16.
@@ -13,8 +13,8 @@
 
 
 namespace cbforest {
-    typedef fleece::slice slice;
-    typedef fleece::alloc_slice alloc_slice;
+    using fleece::slice;
+    using fleece::alloc_slice;
 
     typedef uint64_t sequence;
 

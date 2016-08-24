@@ -53,7 +53,7 @@ namespace cbforest {
         }
 
         const RawRevision *next() const {
-            return (const RawRevision*)offsetby(this, _dec32(size));
+            return (const RawRevision*)fleece::offsetby(this, _dec32(size));
         }
 
         unsigned count() const {

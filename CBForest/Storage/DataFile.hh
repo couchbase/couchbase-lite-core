@@ -25,8 +25,6 @@
 
 namespace cbforest {
 
-    using namespace std;
-
     class FilePath;
     class Transaction;
 
@@ -82,7 +80,7 @@ namespace cbforest {
         bool isCompacting() const;
         static bool isAnyCompacting();
 
-        typedef function<void(bool compacting)> OnCompactCallback;
+        typedef std::function<void(bool compacting)> OnCompactCallback;
 
         void setOnCompact(OnCompactCallback callback)   {_onCompactCallback = callback;}
 
@@ -95,26 +93,26 @@ namespace cbforest {
 
         //////// KEY-STORES:
 
-        static const string kDefaultKeyStoreName;
+        static const std::string kDefaultKeyStoreName;
 
         /** The DataFile's default key-value store. */
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
         KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
-        KeyStore& getKeyStore(const string &name) const;
-        KeyStore& getKeyStore(const string &name, KeyStore::Capabilities) const;
+        KeyStore& getKeyStore(const std::string &name) const;
+        KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
 
         /** The names of all existing KeyStores (whether opened yet or not) */
-        virtual vector<string> allKeyStoreNames() =0;
+        virtual std::vector<std::string> allKeyStoreNames() =0;
 
-        void closeKeyStore(const string &name);
+        void closeKeyStore(const std::string &name);
 
         /** Permanently deletes a KeyStore. */
-        virtual void deleteKeyStore(const string &name) =0;
+        virtual void deleteKeyStore(const std::string &name) =0;
 
     protected:
         /** Override to instantiate a KeyStore object. */
-        virtual KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) =0;
+        virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
 
         /** Override to begin a database transaction. */
         virtual void _beginTransaction(Transaction*) =0;
@@ -128,7 +126,7 @@ namespace cbforest {
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
             is in a transaction, nor starts a transaction while the function is running. */
-        void withFileLock(function<void(void)> fn);
+        void withFileLock(std::function<void(void)> fn);
 
         void updatePurgeCount(Transaction&);
 
@@ -142,7 +140,7 @@ namespace cbforest {
         friend class KeyStore;
         friend class Transaction;
 
-        KeyStore& addKeyStore(const string &name, KeyStore::Capabilities);
+        KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
         void beginTransaction(Transaction*);
         void endTransaction(Transaction*);
 
@@ -154,7 +152,7 @@ namespace cbforest {
         File* const             _file;                          // Shared state of file (lock)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
-        unordered_map<string, unique_ptr<KeyStore> > _keyStores;// Opened KeyStores
+        std::unordered_map<std::string, std::unique_ptr<KeyStore> > _keyStores;// Opened KeyStores
         bool _inTransaction     {false};                        // Am I in a Transaction?
         OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
     };

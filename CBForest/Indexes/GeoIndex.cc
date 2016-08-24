@@ -84,7 +84,7 @@ namespace cbforest {
 
     bool GeoIndexEnumerator::approve(slice key) {
         // Have we seen this result before?
-        _geoID = (unsigned)Value::fromTrustedData(value())->asUnsigned();
+        _geoID = (unsigned)fleece::Value::fromTrustedData(value())->asUnsigned();
         ItemID item((std::string)docID(), _geoID);
         if (_alreadySeen.find(item) != _alreadySeen.end()) {
             _dups++;

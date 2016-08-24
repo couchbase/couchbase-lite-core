@@ -18,6 +18,8 @@
 #include "Error.hh"
 #include "varint.hh"
 
+using namespace fleece;
+
 
 namespace cbforest {
 

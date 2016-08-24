@@ -14,8 +14,6 @@
 
 namespace cbforest {
 
-    using namespace std;
-
     class ForestKeyStore;
 
 
@@ -44,14 +42,14 @@ namespace cbforest {
         void close() override;
         void deleteDataFile() override;
         void reopen() override;
-        vector<string> allKeyStoreNames() override;
+        std::vector<std::string> allKeyStoreNames() override;
         void compact() override;
         bool setAutoCompact(bool autoCompact) override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
 
     protected:
-        KeyStore* newKeyStore(const string &name, KeyStore::Capabilities) override;
-        void deleteKeyStore(const string &name) override;
+        KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
+        void deleteKeyStore(const std::string &name) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*) override;
 
@@ -93,7 +91,7 @@ namespace cbforest {
         void erase() override;
 
     protected:
-        ForestKeyStore(ForestDataFile&, const string &name, KeyStore::Capabilities options);
+        ForestKeyStore(ForestDataFile&, const std::string &name, KeyStore::Capabilities options);
         ~ForestKeyStore();
 
         void reopen() override;

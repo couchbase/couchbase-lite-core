@@ -18,6 +18,8 @@
 
 namespace cbforest {
 
+    using fleece::nsstring_slice;
+
     VersionedDocument::VersionedDocument(KeyStore &db, NSString* docID)
     :_db(db), _doc(nsstring_slice(docID))
     {

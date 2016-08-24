@@ -18,8 +18,9 @@
 #include "Error.hh"
 
 namespace cbforest {
+    using fleece::nsstring_slice;
 
-     revid::operator NSString*() const {
+    revid::operator NSString*() const {
         char expandedBuf[256];
         cbforest::slice expanded(expandedBuf, sizeof(expandedBuf));
         this->expandInto(expanded);

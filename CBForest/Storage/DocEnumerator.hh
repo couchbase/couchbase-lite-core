@@ -21,8 +21,6 @@
 
 namespace cbforest {
 
-    using namespace std;
-
     class KeyStore;
 
     enum ContentOptions {
@@ -67,11 +65,11 @@ namespace cbforest {
                       sequence end = UINT64_MAX,
                       const Options& options = Options::kDefault);
         DocEnumerator(KeyStore&,
-                      vector<string> docIDs,
+                      std::vector<std::string> docIDs,
                       const Options& options = Options::kDefault);
         ~DocEnumerator();
 
-        DocEnumerator(DocEnumerator&& e)    :_store(e._store) {*this = move(e);}
+        DocEnumerator(DocEnumerator&& e)    :_store(e._store) {*this = std::move(e);}
         DocEnumerator& operator=(DocEnumerator&& e); // move assignment
 
         /** Advances to the next key/document, returning false when it hits the end.
@@ -122,18 +120,18 @@ namespace cbforest {
         friend class KeyStore;
 
         DocEnumerator(KeyStore &store, const Options& options);
-        void setDocIDs(vector<string> docIDs);
+        void setDocIDs(std::vector<std::string> docIDs);
         void initialPosition();
         bool nextFromArray();
         bool getDoc();
 
         KeyStore *      _store;             // The KeyStore I'm enumerating
         Options         _options;           // Enumeration options
-        vector<string>  _docIDs;            // The set of docIDs to enumerate (if any)
+        std::vector<std::string>  _docIDs;  // The set of docIDs to enumerate (if any)
         int             _curDocIndex {0};   // Current index in _docIDs, else -1
         Document        _doc;               // Current document
         bool            _skipStep {false};  // Should next call to next() skip _impl->next()?
-        unique_ptr<Impl> _impl;             // The storage-specific implementation
+        std::unique_ptr<Impl> _impl;        // The storage-specific implementation
     };
 
 }

@@ -15,8 +15,6 @@
 
 namespace cbforest {
 
-    using namespace std;
-
     class DataFile;
     class Document;
     class Transaction;
@@ -45,7 +43,7 @@ namespace cbforest {
 
 
         DataFile& dataFile() const                  {return _db;}
-        const string& name() const                  {return _name;}
+        const std::string& name() const             {return _name;}
         Capabilities capabilities() const           {return _capabilities;}
 
         virtual uint64_t documentCount() const =0;
@@ -56,8 +54,8 @@ namespace cbforest {
         Document get(slice key, ContentOptions = kDefaultContent) const;
         virtual Document get(sequence, ContentOptions = kDefaultContent) const =0;
 
-        virtual void get(slice key, ContentOptions, function<void(const Document&)>);
-        virtual void get(sequence, ContentOptions, function<void(const Document&)>);
+        virtual void get(slice key, ContentOptions, std::function<void(const Document&)>);
+        virtual void get(sequence, ContentOptions, std::function<void(const Document&)>);
 
         /** Reads a document whose key() is already set. */
         virtual bool read(Document &doc, ContentOptions options = kDefaultContent) const =0;
@@ -88,7 +86,7 @@ namespace cbforest {
         virtual ~KeyStore()                             { }
 
     protected:
-        KeyStore(DataFile &db, const string &name, Capabilities capabilities)
+        KeyStore(DataFile &db, const std::string &name, Capabilities capabilities)
                 :_db(db), _name(name), _capabilities(capabilities) { }
 
         virtual void reopen()                           { }
@@ -107,7 +105,7 @@ namespace cbforest {
         }
 
         DataFile &          _db;            // The DataFile I'm contained in
-        const string        _name;          // My name
+        const std::string   _name;          // My name
         const Capabilities  _capabilities;  // Do I support sequences or soft deletes?
 
     private:

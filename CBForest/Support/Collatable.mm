@@ -17,8 +17,9 @@
 #import "Collatable.hh"
 #import "error.hh"
 
-
 namespace cbforest {
+
+    using fleece::nsstring_slice;
 
     CollatableBuilder::CollatableBuilder(__unsafe_unretained id obj)
     :_buf(slice::newBytes(kDefaultSize), kDefaultSize),

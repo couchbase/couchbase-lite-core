@@ -13,7 +13,6 @@
 #include <functional>
 
 namespace cbforest {
-    using namespace std;
 
     /** A simple cross-platform class for working with files and paths.
         An instance represents a filesystem path, with the filename split out from the directory
@@ -21,11 +20,11 @@ namespace cbforest {
     class FilePath {
     public:
         /** Constructs a FilePath from a filesystem path. */
-        FilePath(const string &path)        {tie(_dir, _file) = splitPath(path);}
-        FilePath(const char *path)          {tie(_dir, _file) = splitPath(string(path));}
+        FilePath(const std::string &path)   {tie(_dir, _file) = splitPath(path);}
+        FilePath(const char *path)          {tie(_dir, _file) = splitPath(std::string(path));}
 
         /** Constructs a FilePath from a directory name and a filename in that directory. */
-        FilePath(const string &dirName, const string &fileName);
+        FilePath(const std::string &dirName, const std::string &fileName);
 
         /** Returns the system's temporary-files directory. */
         static FilePath tempDirectory();
@@ -36,35 +35,35 @@ namespace cbforest {
 
         FilePath dir() const                {return FilePath(_dir, "");}
 
-        string dirName() const              {return _dir;}
-        string fileName() const             {return _file;}
-        string path() const                 {return _dir + _file;}
+        std::string dirName() const         {return _dir;}
+        std::string fileName() const        {return _file;}
+        std::string path() const            {return _dir + _file;}
 
-        operator string () const            {return path();}
+        operator std::string () const       {return path();}
 
         /** Simple equality test that requires paths to be identical. */
         bool operator== (const FilePath&) const;
 
         //////// FILENAME EXTENSIONS:
 
-        string unextendedName() const       {return splitExtension(_file).first;}
-        string extension() const            {return splitExtension(_file).second;}
+        std::string unextendedName() const  {return splitExtension(_file).first;}
+        std::string extension() const       {return splitExtension(_file).second;}
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */
-        FilePath addingExtension(const string &ext) const;
+        FilePath addingExtension(const std::string &ext) const;
 
         /** Adds a filename extension only if there is none already. */
-        FilePath withExtensionIfNone(const string &ext) const;
+        FilePath withExtensionIfNone(const std::string &ext) const;
 
         /** Replaces the filename extension, or removes it if `ext` is empty.
             Cannot be called on directories. */
-        FilePath withExtension(const string &ext) const;
+        FilePath withExtension(const std::string &ext) const;
 
         /** Adds a path component to a directory. Can ONLY be called on directories!
             If `name` ends in a separator it is assumed to be a directory, so the result will be
             a directory. */
-        FilePath operator[] (const string &name) const;
+        FilePath operator[] (const std::string &name) const;
 
         /////// FILESYSTEM OPERATIONS:
 
@@ -82,22 +81,22 @@ namespace cbforest {
 
         /** Moves this file to a different path. */
         void moveTo(const FilePath& to) const  {moveTo(to.path());}
-        void moveTo(const string&) const;
+        void moveTo(const std::string&) const;
 
         /** Calls fn for each file in this FilePath's directory. */
-        void forEachFile(function<void(const FilePath&)> fn) const;
+        void forEachFile(std::function<void(const FilePath&)> fn) const;
 
         /** Calls fn for each item in the directory whose name begins with this path's name.
             If this path's name is empty (i.e. the path is a directory), fn is called for every
             item in the directory. */
-        void forEachMatch(function<void(const FilePath&)> fn) const;
+        void forEachMatch(std::function<void(const FilePath&)> fn) const;
 
     private:
-        static pair<string,string> splitPath(const string &path);
-        static pair<string,string> splitExtension(const string &filename);
+        static std::pair<std::string,std::string> splitPath(const std::string &path);
+        static std::pair<std::string,std::string> splitExtension(const std::string &filename);
 
-        string _dir;    // Directory; always non-empty, always ends with separator ('/')
-        string _file;   // Filename, or empty if this represents a directory
+        std::string _dir;    // Directory; always non-empty, always ends with separator ('/')
+        std::string _file;   // Filename, or empty if this represents a directory
     };
 
 }
