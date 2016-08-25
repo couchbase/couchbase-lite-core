@@ -27,8 +27,6 @@ namespace cbforest {
     class SQLiteDataFile : public DataFile {
     public:
 
-        static const char *kFilenameExtension;
-
         SQLiteDataFile(const FilePath &path, const Options*);
         ~SQLiteDataFile();
 
@@ -38,7 +36,6 @@ namespace cbforest {
         void reopen() override;
         void compact() override;
 
-        static void deleteDataFile(const FilePath &path);
         static void shutdown() { }
 
         operator SQLite::Database&() {return *_sqlDb;}
@@ -46,6 +43,16 @@ namespace cbforest {
         std::vector<std::string> allKeyStoreNames() override;
         bool keyStoreExists(const std::string &name);
 
+        class Factory : public DataFile::Factory {
+        public:
+            virtual const char* cname() override {return "SQLite";}
+            virtual std::string filenameExtension() override {return ".sqlite3";}
+            virtual SQLiteDataFile* openFile(const FilePath &, const Options* =nullptr) override;
+            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) override;
+        };
+
+        static Factory& factory();
+        
     protected:
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;

@@ -118,3 +118,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 void c4log_setLevel(C4LogLevel level) {
     LogLevel = (logLevel)level;
 }
+
+void c4log_warnOnErrors(bool warn) {
+    error::sWarnOnError = warn;
+}

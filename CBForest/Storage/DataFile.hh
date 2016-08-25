@@ -16,6 +16,7 @@
 #ifndef __CBNano__DataFile__
 #define __CBNano__DataFile__
 #include "KeyStore.hh"
+#include "FilePath.hh"
 #include <vector>
 #include <unordered_map>
 #include <atomic> // for std::atomic_uint
@@ -25,7 +26,6 @@
 
 namespace cbforest {
 
-    class FilePath;
     class Transaction;
 
 
@@ -70,12 +70,6 @@ namespace cbforest {
         /** Closes the database and deletes its file. */
         virtual void deleteDataFile() =0;
 
-        /** Deletes a database that isn't open. */
-        static void deleteDataFile(const FilePath &path);
-
-        /** Moves a database that isn't open. */
-        static void moveDataFile(const FilePath &fromPath, const FilePath &toPath);
-
         virtual void compact() =0;
         bool isCompacting() const;
         static bool isAnyCompacting();
@@ -109,6 +103,35 @@ namespace cbforest {
 
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string &name) =0;
+
+
+        /** Abstract factory for creating/managing DataFiles. */
+        class Factory {
+        public:
+            std::string name()  {return std::string(cname());}
+            virtual const char* cname() =0;
+            virtual std::string filenameExtension() =0;
+
+            /** Opens a DataFile. */
+            virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
+
+            /** Deletes a non-open file. */
+            virtual bool deleteFile(const FilePath &path, const Options* =nullptr);
+
+            /** Moves a non-open file. */
+            virtual void moveFile(const FilePath &fromPath, const FilePath &toPath);
+
+            /** Does a file exist at this path? */
+            virtual bool fileExists(const FilePath &path);
+            
+        protected:
+            virtual ~Factory() { }
+        };
+
+        static std::vector<Factory*> factories();
+        static Factory* factoryNamed(std::string name);
+        static Factory* factoryNamed(const char *name);
+        static Factory* factoryForFile(const FilePath&);
 
     protected:
         /** Override to instantiate a KeyStore object. */
@@ -196,7 +219,7 @@ namespace cbforest {
         DataFile&   _db;        // The DataFile
         enum state  _state;     // Remembers what action to take on destruct
     };
-    
+
 }
 
 #endif /* defined(__CBNano__DataFile__) */

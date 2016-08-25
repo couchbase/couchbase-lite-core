@@ -192,6 +192,7 @@ namespace cbforest {
 
 
     bool FilePath::del() const {
+        //fprintf(stderr, "DEL %s\n", path().c_str());
         auto result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
         if (result == 0)
             return true;
@@ -200,14 +201,29 @@ namespace cbforest {
         error::_throwErrno();
     }
 
+    bool FilePath::delWithAllExtensions() const {
+        bool deleted = del();
+        FilePath(_dir, _file + ".").forEachMatch([&](const FilePath &f) {
+            if (f.del())
+                deleted = true;
+        });
+        return deleted;
+    }
 
-    void FilePath::delRecursive() const {
-        if (isDir()) {
-            forEachFile([](const FilePath &f) {
+    static void _delRecursive(const FilePath &path) {
+        if (path.isDir()) {
+            path.forEachFile([](const FilePath &f) {
                 f.delRecursive();
             });
         }
-        del();
+        path.del();
+    }
+
+    bool FilePath::delRecursive() const {
+        if (!exists())
+            return false;
+        _delRecursive(*this);
+        return true;
     }
 
     

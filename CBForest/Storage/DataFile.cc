@@ -29,10 +29,63 @@
 #include <asprintf.h>
 #endif
 
+#include "ForestDataFile.hh"
+#include "SQLiteDataFile.hh"
+
 using namespace std;
 
 
 namespace cbforest {
+
+#pragma mark - FACTORY:
+
+    bool DataFile::Factory::deleteFile(const FilePath &path, const Options*) {
+        return path.delWithAllExtensions();
+    }
+
+    void DataFile::Factory::moveFile(const FilePath &from, const FilePath &to) {
+        auto fromBaseLen = from.fileName().size();
+        from.forEachMatch([&](const FilePath &f) {
+            string toFile = to.fileName() + from.fileName().substr(fromBaseLen);
+            f.moveTo(to.dirName() + toFile);
+        });
+    }
+
+    bool DataFile::Factory::fileExists(const FilePath &path) {
+        return path.exists();
+    }
+
+
+    std::vector<DataFile::Factory*> DataFile::factories() {
+        return {&SQLiteDataFile::factory(), &ForestDataFile::factory()};
+    }
+
+
+    DataFile::Factory* DataFile::factoryNamed(std::string name) {
+        auto facs = factories();
+        if (name.empty())
+            return facs[0];
+        for (auto factory : facs)
+            if (name == factory->name())
+                return factory;
+        return nullptr;
+    }
+
+    DataFile::Factory* DataFile::factoryNamed(const char *name) {
+        if (!name)
+            name = "";
+        return factoryNamed(string(name));
+    }
+
+    DataFile::Factory* DataFile::factoryForFile(const FilePath &path) {
+        auto ext = path.extension();
+        for (auto factory : factories())
+            if (ext == factory->filenameExtension())
+                return factory;
+        return nullptr;
+    }
+
+
 
 #pragma mark - FILE:
 
@@ -99,22 +152,6 @@ namespace cbforest {
     void DataFile::checkOpen() const {
         if (!isOpen())
             error::_throw(error::NotOpen);
-    }
-
-
-    void DataFile::deleteDataFile(const FilePath &path) {
-        FilePath(path).forEachMatch([](const FilePath &f) {
-            f.del();
-        });
-    }
-
-
-    void DataFile::moveDataFile(const FilePath &from, const FilePath &to) {
-        auto fromBaseLen = from.fileName().size();
-        from.forEachMatch([&](const FilePath &f) {
-            string toFile = to.fileName() + from.fileName().substr(fromBaseLen);
-            f.moveTo(to.dirName() + toFile);
-        });
     }
 
 

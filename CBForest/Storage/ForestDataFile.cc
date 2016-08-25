@@ -53,7 +53,7 @@ namespace cbforest {
     }
 
 
-    const char* ForestDataFile::kFilenameExtension = ".forestdb";
+#pragma mark - CONFIG:
 
 
     static fdb_config sDefaultConfig;
@@ -109,6 +109,65 @@ namespace cbforest {
     }
 
 
+    static void setConfigOptions(fdb_config &config, const DataFile::Options *options) {
+        if (!options)
+            return;
+        if (options->writeable)
+            config.flags &= ~FDB_OPEN_FLAG_RDONLY;
+        else
+            config.flags |= FDB_OPEN_FLAG_RDONLY;
+        if (options->create)
+            config.flags |= FDB_OPEN_FLAG_CREATE;
+        else
+            config.flags &= ~FDB_OPEN_FLAG_CREATE;
+        config.seqtree_opt = options->keyStores.sequences ? FDB_SEQTREE_USE
+        : FDB_SEQTREE_NOT_USE;
+
+        // If purging_interval is 0, deleted ForestDB docs vanish pretty much instantly (_not_
+        // "at the next replication" as the ForestDB header says.) A value of > 0 makes them
+        // stick around until the next compaction.
+        if (options->keyStores.softDeletes)
+            config.purging_interval = max(config.purging_interval, 1u);
+        else
+            config.purging_interval = 0;
+
+        config.encryption_key = forestEncryptionKey(options->encryptionAlgorithm,
+                                                    options->encryptionKey);
+    }
+
+
+#pragma mark - FACTORY:
+
+
+    ForestDataFile* ForestDataFile::Factory::openFile(const FilePath &path, const Options *options) {
+        return new ForestDataFile(path, options);
+    }
+
+    bool ForestDataFile::Factory::deleteFile(const FilePath &path, const DataFile::Options* options) {
+        fdb_config cfg = ForestDataFile::defaultConfig();
+        setConfigOptions(cfg, options);
+        cfg.compaction_cb = ForestDataFile::compactionCallback;
+        cfg.compaction_cb_ctx = NULL;
+        fdb_status status = fdb_destroy(path.path().c_str(), &cfg);
+        if (status == FDB_RESULT_NO_SUCH_FILE)
+            return false;
+        check(status);
+        return true;
+    }
+
+    bool ForestDataFile::Factory::fileExists(const FilePath &path) {
+        return path.exists() || path.addingExtension(".meta").exists();
+    }
+
+    ForestDataFile::Factory& ForestDataFile::factory() {
+        static ForestDataFile::Factory s;
+        return s;
+    }
+
+
+#pragma mark - DATA FILE:
+
+
     ForestDataFile::ForestDataFile(const FilePath &path,
                                    const DataFile::Options *options)
     :ForestDataFile(path, options, defaultConfig())
@@ -121,29 +180,7 @@ namespace cbforest {
     :DataFile(path, options),
      _config(cfg)
     {
-        if (options) {
-            if (options->writeable)
-                _config.flags &= ~FDB_OPEN_FLAG_RDONLY;
-            else
-                _config.flags |= FDB_OPEN_FLAG_RDONLY;
-            if (options->create)
-                _config.flags |= FDB_OPEN_FLAG_CREATE;
-            else
-                _config.flags &= ~FDB_OPEN_FLAG_CREATE;
-            _config.seqtree_opt = options->keyStores.sequences ? FDB_SEQTREE_USE
-                                                               : FDB_SEQTREE_NOT_USE;
-
-            // If purging_interval is 0, deleted ForestDB docs vanish pretty much instantly (_not_
-            // "at the next replication" as the ForestDB header says.) A value of > 0 makes them
-            // stick around until the next compaction.
-            if (options->keyStores.softDeletes)
-                _config.purging_interval = max(_config.purging_interval, 1u);
-            else
-                _config.purging_interval = 0;
-
-            _config.encryption_key = forestEncryptionKey(options->encryptionAlgorithm,
-                                                         options->encryptionKey);
-        }
+        setConfigOptions(_config, options);
         _config.compaction_cb = compactionCallback;
         _config.compaction_cb_ctx = this;
         reopen();
@@ -205,20 +242,8 @@ namespace cbforest {
     }
 
     void ForestDataFile::deleteDataFile() {
-        if (isOpen()) {
-            //Transaction t(this, false);
-            close();
-            deleteDataFile(filePath(), _config);
-        } else {
-            deleteDataFile(filePath(), _config);
-        }
-    }
-
-    /*static*/ void ForestDataFile::deleteDataFile(const FilePath &path, const fdb_config &cfg) {
-        auto cfg2 = cfg;
-        cfg2.compaction_cb = compactionCallback;
-        cfg2.compaction_cb_ctx = NULL;
-        check(fdb_destroy(path.path().c_str(), (fdb_config*)&cfg));
+        close();
+        factory().deleteFile(filePath(), &options());
     }
 
     void ForestDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {

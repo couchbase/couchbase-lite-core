@@ -78,7 +78,9 @@ namespace cbforest {
         bool del() const;
 
         /** Deletes the file or directory tree at this path. */
-        void delRecursive() const;
+        bool delRecursive() const;
+
+        bool delWithAllExtensions() const;
 
         /** Moves this file to a different path. */
         void moveTo(const FilePath& to) const  {moveTo(to.path());}

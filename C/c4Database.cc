@@ -30,9 +30,6 @@
 const char* const kC4ForestDBStorageEngine = "ForestDB";
 const char* const kC4SQLiteStorageEngine   = "SQLite";
 
-static const char* const kForestDatabaseName = "db.forestdb";
-static const char* const kSQLiteDatabaseName = "db.sqlite3";
-
 
 #pragma mark - C4DATABASE CLASS:
 
@@ -44,19 +41,16 @@ FilePath c4Database::findOrCreateBundle(const string &path, C4DatabaseConfig &co
     if (!createdDir)
         bundle.mustExistAsDir();
 
-    // Look for the file corresponding to the requested storage engine (defaulting to SQLite):
-    const char *filename;
-    if (!config.storageEngine || 0 == strcmp(config.storageEngine, kC4SQLiteStorageEngine))
-        filename = kSQLiteDatabaseName;
-    else if (0 == strcmp(config.storageEngine, kC4ForestDBStorageEngine))
-        filename = kForestDatabaseName;
-    else
+    DataFile::Factory *factory = DataFile::factoryNamed(config.storageEngine);
+    if (!factory)
         error::_throw(error::InvalidParameter);
 
-    FilePath dbFile = bundle[filename];
-    if (createdDir || dbFile.exists()) {
+    // Look for the file corresponding to the requested storage engine (defaulting to SQLite):
+
+    FilePath dbFile = bundle["db"].withExtension(factory->filenameExtension());
+    if (createdDir || factory->fileExists(dbFile)) {
         if (config.storageEngine == nullptr)
-            config.storageEngine = kC4SQLiteStorageEngine;
+            config.storageEngine = factory->cname();
         return dbFile;
     }
 
@@ -65,14 +59,19 @@ FilePath c4Database::findOrCreateBundle(const string &path, C4DatabaseConfig &co
         error::_throw(error::WrongFormat);
     }
 
-    // Not found, but they didn't specify a format, so try the non-default (ForestDB) format:
-    dbFile = bundle[kForestDatabaseName];
-    if (!dbFile.exists()) {
-        // Weird; the bundle exists but doesn't contain either type of database, so fail:
-        error::_throw(error::WrongFormat);
+    // Not found, but they didn't specify a format, so try the other formats:
+    for (auto otherFactory : DataFile::factories()) {
+        if (otherFactory != factory) {
+            dbFile = bundle["db"].withExtension(otherFactory->filenameExtension());
+            if (factory->fileExists(dbFile)) {
+                config.storageEngine = factory->cname();
+                return dbFile;
+            }
+        }
     }
-    config.storageEngine = kC4ForestDBStorageEngine;
-    return dbFile;
+
+    // Weird; the bundle exists but doesn't contain any known type of database, so fail:
+    error::_throw(error::WrongFormat);
 }
 
 
@@ -105,14 +104,10 @@ DataFile* c4Database::newDataFile(string path,
                                             sizeof(config.encryptionKey.bytes));
     }
 
-    if (config.storageEngine == nullptr ||
-            strcmp(config.storageEngine, kC4ForestDBStorageEngine) == 0) {
-        return new ForestDataFile(path, &options);
-    } else if (strcmp(config.storageEngine, kC4SQLiteStorageEngine) == 0) {
-        return new SQLiteDataFile(path, &options);
-    } else {
+    DataFile::Factory *storage = DataFile::factoryNamed((string)(config.storageEngine ?: ""));
+    if (!storage)
         error::_throw(error::Unimplemented);
-    }
+    return storage->openFile(path, &options);
 }
 
 
@@ -245,11 +240,18 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
     if (!database->mustNotBeInTransaction(outError))
         return false;
     WITH_LOCK(database);
+    if (database->refCount() > 1) {
+        recordError(CBForestDomain, kC4ErrorBusy, outError);
+        return false;
+    }
     try {
-        if (database->refCount() > 1) {
-            recordError(CBForestDomain, kC4ErrorBusy, outError);
+        if (database->config.flags & kC4DB_Bundled) {
+            FilePath bundle = database->db()->filePath().dir();
+            database->db()->close();
+            bundle.delRecursive();
+        } else {
+            database->db()->deleteDataFile();
         }
-        database->db()->deleteDataFile();
         return true;
     } catchError(outError);
     return false;
@@ -257,10 +259,23 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
 
 
 bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) {
-    if (!checkParam(config != nullptr, outError))
-        return false;
     try {
-        DataFile::deleteDataFile((string)dbPath);
+        if (config == nullptr) {
+            FilePath((string)dbPath).delWithAllExtensions();
+        } else if (config->flags & kC4DB_Bundled) {
+            FilePath bundle{(string)dbPath, ""};
+            bundle.delRecursive();
+        } else {
+            FilePath path((string)dbPath);
+            DataFile::Factory *factory = nullptr;
+            if (config && config->storageEngine)
+                factory = DataFile::factoryNamed(config->storageEngine);
+            else
+                factory = DataFile::factoryForFile(path);
+            if (!factory)
+                error::_throw(error::WrongFormat);
+            factory->deleteFile(path);
+        }
         return true;
     } catchError(outError);
     return false;
@@ -300,9 +315,11 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 
 
 C4SliceResult c4db_getPath(C4Database *database) {
-    slice path(database->db()->filePath());
-    path = path.copy();  // C4SliceResult must be malloced & adopted by caller
-    return {path.buf, path.size};
+    FilePath path = database->db()->filePath();
+    if (database->config.flags & kC4DB_Bundled)
+        path = path.dir();
+    slice s = slice(path.path()).copy();  // C4SliceResult must be malloced & adopted by caller
+    return {s.buf, s.size};
 }
 
 

@@ -30,7 +30,7 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
+        c4db_deleteAtPath(c4str(kViewIndexPath), NULL, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
                            c4db_getConfig(db), &error);

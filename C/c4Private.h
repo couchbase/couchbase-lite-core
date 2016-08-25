@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+void c4log_warnOnErrors(bool);
+
 C4Document* c4doc_getForPut(C4Database *database,
                             C4Slice docID,
                             C4Slice parentRevID,

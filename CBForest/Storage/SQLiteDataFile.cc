@@ -27,7 +27,23 @@ using namespace std;
 
 namespace cbforest {
 
-    const char* SQLiteDataFile::kFilenameExtension = ".sqlite3";
+
+    SQLiteDataFile::Factory& SQLiteDataFile::factory() {
+        static SQLiteDataFile::Factory s;
+        return s;
+    }
+    
+
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, const Options *options) {
+        return new SQLiteDataFile(path, options);
+    }
+
+
+    bool SQLiteDataFile::Factory::deleteFile(const FilePath &path, const Options*) {
+        return path.del() | path.withExtension("shm").del() | path.withExtension("wal").del();
+        // Note the non-short-circuiting 'or'!
+    }
+
 
     SQLiteDataFile::SQLiteDataFile(const FilePath &path, const Options *options)
     :DataFile(path, options)
@@ -133,7 +149,7 @@ namespace cbforest {
         // Make a path for a temporary database file:
         const FilePath &realPath = filePath();
         FilePath tempPath(realPath.dirName(), "_rekey_temp.sqlite3");
-        DataFile::deleteDataFile(tempPath);
+        factory().deleteFile(tempPath);
 
         // Create & attach a temporary database encrypted with the new key:
         {
@@ -164,16 +180,16 @@ namespace cbforest {
 
             // Replace it with the new one:
             try {
-                DataFile::deleteDataFile(realPath);
+                factory().deleteFile(realPath);
             } catch (const error &e) {
                 // ignore errors deleting old files
             }
-            DataFile::moveDataFile(tempPath, realPath);
+            factory().moveFile(tempPath, realPath);
 
         } catch (const exception &x) {
             // Back out and rethrow:
             close();
-            DataFile::deleteDataFile(tempPath);
+            factory().deleteFile(tempPath);
             reopen();
             throw;
         }
@@ -253,13 +269,7 @@ namespace cbforest {
 
     void SQLiteDataFile::deleteDataFile() {
         close();
-        deleteDataFile(filePath());
-    }
-
-    void SQLiteDataFile::deleteDataFile(const FilePath &path) {
-        path.del();
-        path.withExtension("shm").del();
-        path.withExtension("wal").del();
+        factory().deleteFile(filePath());
     }
 
 

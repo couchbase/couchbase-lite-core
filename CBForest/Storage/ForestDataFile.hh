@@ -21,8 +21,6 @@ namespace cbforest {
     class ForestDataFile : public DataFile {
     public:
         
-        static const char *kFilenameExtension;
-
         static fdb_config defaultConfig();
         static void setDefaultConfig(const fdb_config&);
 
@@ -32,8 +30,6 @@ namespace cbforest {
 
         fdb_file_info info() const;
         fdb_config config() const                   {return _config;}
-
-        static void deleteDataFile(const FilePath &path, const fdb_config&);
 
         static void shutdown();
 
@@ -47,6 +43,17 @@ namespace cbforest {
         bool setAutoCompact(bool autoCompact) override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
 
+        class Factory : public DataFile::Factory {
+        public:
+            virtual const char* cname() override {return "ForestDB";}
+            virtual std::string filenameExtension() override {return ".forestdb";}
+            virtual ForestDataFile* openFile(const FilePath &, const Options* =nullptr) override;
+            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) override;
+            virtual bool fileExists(const FilePath &path) override;
+        };
+
+        static Factory& factory();
+
     protected:
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const std::string &name) override;
@@ -55,6 +62,7 @@ namespace cbforest {
 
     private:
         friend class ForestKeyStore;
+        friend class ForestDataFileStorage;
 
         static fdb_compact_decision compactionCallback(fdb_file_handle *fhandle,
                                                        fdb_compaction_status status,

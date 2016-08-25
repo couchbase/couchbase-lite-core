@@ -60,6 +60,40 @@ class C4DatabaseTest : public C4Test {
         assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
     }
 
+    void testOpenBundle() {
+        auto config = *c4db_getConfig(db);
+        config.flags |= kC4DB_Bundled;
+
+        C4Slice bundlePath = c4str(kTestDir "cbforest_test_bundle");
+        c4db_deleteAtPath(bundlePath, &config, NULL);
+        C4Error error;
+        auto bundle = c4db_open(bundlePath, &config, &error);
+        Assert(bundle);
+        C4Slice path = c4db_getPath(bundle);
+        AssertEqual(path, c4str(kTestDir "cbforest_test_bundle/")); // note trailing '/'
+        Assert(c4db_close(bundle, &error));
+        c4db_free(bundle);
+
+        // Reopen without 'create' flag:
+        config.flags &= ~kC4DB_Create;
+        bundle = c4db_open(bundlePath, &config, &error);
+        Assert(bundle);
+        Assert(c4db_close(bundle, &error));
+        c4db_free(bundle);
+
+        // Reopen with wrong storage type:
+        c4log_warnOnErrors(false);
+        if (config.storageEngine == kC4SQLiteStorageEngine)
+            config.storageEngine = kC4ForestDBStorageEngine;
+        else
+            config.storageEngine = kC4SQLiteStorageEngine;
+        Assert(!c4db_open(bundlePath, &config, &error));
+
+        // Open nonexistent bundle:
+        Assert(!c4db_open(c4str(kTestDir "no_such_bundle"), &config, &error));
+        c4log_warnOnErrors(true);
+    }
+
     void testTransaction() {
         AssertEqual(c4db_getDocumentCount(db), (C4SequenceNumber)0);
         Assert(!c4db_isInTransaction(db));
@@ -614,6 +648,7 @@ class C4DatabaseTest : public C4Test {
 
     CPPUNIT_TEST_SUITE( C4DatabaseTest );
     CPPUNIT_TEST( testErrorMessages );
+    CPPUNIT_TEST( testOpenBundle );
     CPPUNIT_TEST( testTransaction );
     CPPUNIT_TEST( testCreateRawDoc );
     CPPUNIT_TEST( testCreateVersionedDoc );
