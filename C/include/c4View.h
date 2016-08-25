@@ -63,9 +63,14 @@ extern "C" {
         All C4Views at that path should be closed first. */
     bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
 
-    /** Deletes a view given its name and parent database. Its path is assumed to be the same
-        default path as used by c4view_open when no explicit path is given. */
+    /** Deletes the file(s) for a view given its name and parent database.
+        Its path is assumed to be the same default path as used by c4view_open when no explicit
+        path is given. */
     bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError);
+
+
+    //////// ACCESSORS:
+
 
     /** Sets the persistent version string associated with the map function. If the new value is
         different from the one previously stored, the index is invalidated. */
@@ -87,8 +92,7 @@ extern "C" {
     void c4view_setDocumentType(C4View*, C4Slice docType);
 
     /** Registers a callback to be invoked when the view's index db starts or finishes compacting.
-        The callback is likely to be called on a background thread owned by ForestDB, so be
-        careful of thread safety. */
+        May be called on a background thread, so be careful of thread safety. */
     void c4view_setOnCompactCallback(C4View*, C4OnCompactCallback, void *context);
 
 
@@ -177,28 +181,30 @@ extern "C" {
 #define kC4PlaceholderValue ((C4Slice){"*", 1})
 #endif
 
+
     //////// QUERYING:
 
 
     /** Options for view queries. */
     typedef struct {
-        uint64_t skip;
-        uint64_t limit;
-        bool descending;
-        bool inclusiveStart;
-        bool inclusiveEnd;
-        bool rankFullText;
+        uint64_t skip;          ///< Number of initial rows to skip
+        uint64_t limit;         ///< Max number of rows to return (set to UINT_MAX for unlimited)
+        bool descending;        ///< If true, iteration is by descending key
+        bool inclusiveStart;    ///< If true, rows with key equal to startKey are included
+        bool inclusiveEnd;      ///< If true, rows with key equal to endKey are included
+        bool rankFullText;      ///< Should full-text results be ranked by relevance?
 
-        C4Key *startKey;
-        C4Key *endKey;
-        C4Slice startKeyDocID;
-        C4Slice endKeyDocID;
+        C4Key *startKey;        ///< Key to start at (the minimum, or maximum if descending=true)
+        C4Key *endKey;          ///< Key to end at (the maximum, or minimum if descending=true)
+        C4Slice startKeyDocID;  ///< If multiple rows have startKey, start at one with this docID
+        C4Slice endKeyDocID;    ///< If multiple rows have endKey, end at one with this docID
         
-        const C4Key **keys;
-        size_t keysCount;
+        const C4Key **keys;     ///< List of keys to iterate (overrides start/endKey)
+        size_t keysCount;       ///< Number of keys pointed to by `keys`
     } C4QueryOptions;
 
-    /** Default query options. */
+    /** Default query options. Has skip=0, limit=UINT_MAX, inclusiveStart=true,
+        inclusiveEnd=true, rankFullText=true; all others are 0/false/NULL. */
 	CBFOREST_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
     /** Info about a match of a full-text query term */
@@ -243,6 +249,7 @@ extern "C" {
                                     C4Error *outError);
 
     /** Runs a full-text query and returns an enumerator for the results.
+        The enumerator's fields are not valid until you call c4queryenum_next(), though.
         @param view  The view to query.
         @param queryString  A string containing the words to search for, separated by whitespace.
         @param queryStringLanguage  The human language of the query string as an ISO-639 code like
@@ -259,6 +266,7 @@ extern "C" {
                                             C4Error *outError);
 
     /** Runs a geo-query and returns an enumerator for the results.
+        The enumerator's fields are not valid until you call c4queryenum_next(), though.
         @param view  The view to query.
         @param area  The bounding box to search for. Rows intersecting this will be returned.
         @param outError  On failure, error info will be stored here.

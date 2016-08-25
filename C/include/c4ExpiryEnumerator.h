@@ -41,10 +41,10 @@ extern "C" {
     /** Purges the processed entries from the expiration key value store */
     bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError);
 
-    /** Closes the enumeator and disallows further use */
+    /** Closes the enumerator and disallows further use */
     void c4exp_close(C4ExpiryEnumerator *e);
     
-    /** Frees a C4DocEnumerator handle */
+    /** Frees a C4ExpiryEnumerator handle */
     void c4exp_free(C4ExpiryEnumerator *e);
 
         

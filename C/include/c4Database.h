@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-    //////// DATABASES:
+    //////// CONFIGURATION:
 
 
     /** Boolean options for C4DatabaseConfig. */
@@ -47,14 +47,18 @@ extern "C" {
 
     /** Main database/view configuration struct. */
     typedef struct C4DatabaseConfig {
-        C4DatabaseFlags flags;
-        const char *storageEngine;
-        C4EncryptionKey encryptionKey;
+        C4DatabaseFlags flags;          /**< Create, ReadOnly, AutoCompact, Bundled... */
+        const char *storageEngine;      /**< Which storage to use, or NULL for no preference */
+        C4EncryptionKey encryptionKey;  /**< Encryption to use creating/opening the db */
     } C4DatabaseConfig;
 
 
+    //////// DATABASE API:
+
+    
     /** Opaque handle to an opened database. */
     typedef struct c4Database C4Database;
+
 
     /** Opens a database. */
     C4Database* c4db_open(C4Slice path,
@@ -111,7 +115,9 @@ extern "C" {
     bool c4db_beginTransaction(C4Database* database,
                                C4Error *outError);
 
-    /** Commits or aborts a transaction. If there have been multiple calls to beginTransaction, it takes the same number of calls to endTransaction to actually end the transaction; only the last one commits or aborts the ForestDB transaction. */
+    /** Commits or aborts a transaction. If there have been multiple calls to beginTransaction, it
+        takes the same number of calls to endTransaction to actually end the transaction; only the
+        last one commits or aborts the database transaction. */
     bool c4db_endTransaction(C4Database* database,
                              bool commit,
                              C4Error *outError);
@@ -121,13 +127,15 @@ extern "C" {
 
     
     /** Removes all trace of a document and its revisions from the database. */
-    bool c4db_purgeDoc(C4Database *db, C4Slice docID, C4Error *outError);
+    bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError);
 
     /** Returns the timestamp at which the next document expiration should take place. */
     uint64_t c4db_nextDocExpiration(C4Database *database);
 
-    /** Closes down ForestDB state by calling fdb_shutdown(). */
+    /** Closes down the storage engines. Must close all databases first.
+        You don't generally need to do this, but it can be useful in tests. */
     bool c4_shutdown(C4Error *outError);
+
 
     //////// RAW DOCUMENTS (i.e. info or _local)
 
@@ -157,10 +165,10 @@ extern "C" {
                    C4Error *outError);
 
     // Store used for database metadata.
-    #define kC4InfoStore ((C4Slice){"info", 4})
+    #define kC4InfoStore C4STR("info")
 
     // Store used for local (non-replicated) documents.
-    #define kC4LocalDocStore ((C4Slice){"_local", 6})
+    #define kC4LocalDocStore C4STR("_local")
 
 #ifdef __cplusplus
 }
