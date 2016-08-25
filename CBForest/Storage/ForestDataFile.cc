@@ -148,7 +148,14 @@ namespace cbforest {
         setConfigOptions(cfg, options);
         cfg.compaction_cb = ForestDataFile::compactionCallback;
         cfg.compaction_cb_ctx = NULL;
-        fdb_status status = fdb_destroy(path.path().c_str(), &cfg);
+        fdb_status status = FDB_RESULT_SUCCESS;
+        for (int retry = 100; retry > 0; --retry) {
+            status = fdb_destroy(path.path().c_str(), &cfg);
+            if (status == FDB_RESULT_IN_USE_BY_COMPACTOR)
+                usleep(100 * 1000);
+            else
+                break;
+        }
         if (status == FDB_RESULT_NO_SUCH_FILE)
             return false;
         check(status);
