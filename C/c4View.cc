@@ -45,12 +45,12 @@ static inline C4KeyReader asKeyReader(const CollatableReader &r) {
 
 struct c4View : public RefCounted<c4View> {
     c4View(C4Database *sourceDB,
-           C4Slice path,
+           const FilePath &path,
            C4Slice viewName,
            C4Slice version,
            const C4DatabaseConfig &config)
     :_sourceDB(sourceDB),
-     _viewDB(c4Database::newDataFile((string)path, config, false)),
+     _viewDB(c4Database::newDataFile(path, config, false)),
      _index(_viewDB->getKeyStore((string)viewName), *sourceDB->db())
     {
         setVersion(version);
@@ -81,8 +81,15 @@ struct c4View : public RefCounted<c4View> {
 };
 
 
+static FilePath pathForViewNamed(C4Database *db, C4Slice viewName) {
+    FilePath dbPath = db->db()->filePath();
+    string quotedName = FilePath::sanitizedFileName((string)viewName);
+    return dbPath.fileNamed(quotedName).addingExtension("viewindex");
+}
+
+
 C4View* c4view_open(C4Database* db,
-                    C4Slice path,
+                    C4Slice pathSlice,
                     C4Slice viewName,
                     C4Slice version,
                     const C4DatabaseConfig *config,
@@ -91,6 +98,8 @@ C4View* c4view_open(C4Database* db,
     if (!checkParam(config != nullptr, outError))
         return nullptr;
     try {
+        FilePath path = (pathSlice.buf) ? FilePath((string)pathSlice)
+                                        : pathForViewNamed(db, viewName);
         return (new c4View(db, path, viewName, version, *config))->retain();
     } catchError(outError);
     return NULL;
@@ -156,6 +165,12 @@ bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Err
     if (!checkParam(config != nullptr, outError))
         return false;
     return c4db_deleteAtPath(viewPath, config, outError);
+}
+
+
+bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError) {
+    FilePath path = pathForViewNamed(database, viewName);
+    return c4view_deleteAtPath((slice)path.path(), &database->config, outError);
 }
 
 

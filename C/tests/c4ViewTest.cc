@@ -12,9 +12,6 @@
 #include <iostream>
 
 
-static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
-
-
 class C4ViewTest : public C4Test {
 public:
 
@@ -22,9 +19,9 @@ public:
 
     virtual void setUp() {
         C4Test::setUp();
-        c4db_deleteAtPath(c4str(kViewIndexPath), NULL, NULL);
+        c4view_deleteByName(db, c4str("myview"), NULL);
         C4Error error;
-        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
+        view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("1"),
                            c4db_getConfig(db), &error);
         Assert(view);
     }
@@ -132,7 +129,7 @@ public:
         Assert(c4view_close(view, &error));
         c4view_free(view);
 
-        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
+        view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("1"),
                            c4db_getConfig(db), &error);
         Assert(view != NULL);
 
@@ -144,7 +141,7 @@ public:
         Assert(c4view_close(view, &error));
         c4view_free(view);
 
-        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("2"),
+        view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("2"),
                            c4db_getConfig(db), &error);
         Assert(view != NULL);
 

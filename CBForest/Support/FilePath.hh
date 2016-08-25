@@ -23,6 +23,8 @@ namespace cbforest {
         FilePath(const std::string &path)   {tie(_dir, _file) = splitPath(path);}
         FilePath(const char *path)          {tie(_dir, _file) = splitPath(std::string(path));}
 
+        FilePath();
+
         /** Constructs a FilePath from a directory name and a filename in that directory. */
         FilePath(const std::string &dirName, const std::string &fileName);
 
@@ -44,6 +46,10 @@ namespace cbforest {
         /** Simple equality test that requires paths to be identical. */
         bool operator== (const FilePath&) const;
 
+        /** Converts a string to a valid filename by escaping invalid characters,
+            including the directory separator ('/') */
+        static std::string sanitizedFileName(std::string);
+
         //////// FILENAME EXTENSIONS:
 
         std::string unextendedName() const  {return splitExtension(_file).first;}
@@ -60,10 +66,14 @@ namespace cbforest {
             Cannot be called on directories. */
         FilePath withExtension(const std::string &ext) const;
 
+        //////// NAVIGATION:
+
         /** Adds a path component to a directory. Can ONLY be called on directories!
             If `name` ends in a separator it is assumed to be a directory, so the result will be
             a directory. */
         FilePath operator[] (const std::string &name) const;
+
+        FilePath fileNamed(const std::string &filename) const;
 
         /////// FILESYSTEM OPERATIONS:
 

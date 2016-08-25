@@ -24,10 +24,12 @@ namespace cbforest {
 
 #ifdef _MSC_VER
     static const char  kSeparatorChar = '\\';
+    static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
     static const char* kTempDir = "C:\\tmp\\";
 #else
     static const char  kSeparatorChar = '/';
+    static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
     static const char* kTempDir = "/tmp/";
 #endif
@@ -41,6 +43,11 @@ namespace cbforest {
         else if (_dir[_dir.size()-1] != kSeparatorChar)
             _dir += kSeparatorChar;
     }
+
+
+    FilePath::FilePath()
+    :_dir(kCurrentDir), _file()
+    { }
 
 
     pair<string,string> FilePath::splitPath(const string &path) {
@@ -58,6 +65,15 @@ namespace cbforest {
             return {file, ""};
         else
             return {file.substr(0, dot), file.substr(dot+1)};
+    }
+
+
+    string FilePath::sanitizedFileName(string name) {
+        for (auto &c : name) {
+            if (c == kSeparatorChar)
+                c = kQuotedSeparatorChar;
+        }
+        return name;
     }
 
 
@@ -107,6 +123,11 @@ namespace cbforest {
             return FilePath(_dir + name, "");
         else
             return FilePath(_dir, name);
+    }
+
+
+    FilePath FilePath::fileNamed(const std::string &filename) const {
+        return FilePath(_dir, filename);
     }
 
 

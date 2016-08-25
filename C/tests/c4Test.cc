@@ -49,7 +49,10 @@ static void log(C4LogLevel level, C4Slice message) {
 
 
 C4Slice C4Test::databasePath() {
-    return c4str(kTestDir "cbforest_test.db");
+    if (storageType() == kC4SQLiteStorageEngine)
+        return c4str(kTestDir "cbforest_test.sqlite3");
+    else
+        return c4str(kTestDir "cbforest_test.forestdb");
 }
 
 

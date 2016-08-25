@@ -90,6 +90,8 @@ c4view_free
 c4view_close
 c4view_eraseIndex
 c4view_delete
+c4view_deleteAtPath
+c4view_deleteByName
 c4view_getTotalRows
 c4view_getLastSequenceIndexed
 c4view_getLastSequenceChangedAt

@@ -28,7 +28,8 @@ extern "C" {
 
     /** Opens a view, or creates it if the file doesn't already exist.
         @param database  The database the view is associated with.
-        @param path  The filesystem path to the view index file.
+        @param path  The filesystem path to the view index file. If this is null, a default path
+                will be used that's next to the database file, with a name based on the view name.
         @param viewName  The name of the view.
         @param version  The version of the view's map function.
         @param config  The configuration of the view's own index database
@@ -61,6 +62,10 @@ extern "C" {
     /** Deletes the file(s) for the view at the given path.
         All C4Views at that path should be closed first. */
     bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
+
+    /** Deletes a view given its name and parent database. Its path is assumed to be the same
+        default path as used by c4view_open when no explicit path is given. */
+    bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError);
 
     /** Sets the persistent version string associated with the map function. If the new value is
         different from the one previously stored, the index is invalidated. */
