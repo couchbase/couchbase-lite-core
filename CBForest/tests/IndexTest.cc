@@ -15,55 +15,55 @@
 class IndexTest : public DataFileTestFixture {
 public:
 
-void setUp() {
-    DataFileTestFixture::setUp();
-    index = new Index(db->getKeyStore("index"));
-}
-
-void tearDown() {
-    delete index;
-    DataFileTestFixture::tearDown();
-}
-
-private:
-
-    Index* index {nullptr};
-    uint64_t _rowCount {0};
-    
-
-void updateDoc(string docID, vector<string> body, IndexWriter &writer) {
-    std::vector<Collatable> keys;
-    std::vector<alloc_slice> values;
-    for (unsigned i = 1; i < body.size(); i++) {
-        CollatableBuilder key;
-        key << body[i];
-        keys.push_back(key);
-        values.push_back(alloc_slice(body[0]));
+    IndexTest() {
+        index = new Index(db->getKeyStore("index"));
     }
-    bool changed = writer.update(docID, 1, keys, values, _rowCount);
-    Assert(changed);
-}
 
-
-uint64_t doQuery() {
-    uint64_t nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
-                           Collatable(), cbforest::slice::null,
-                           DocEnumerator::Options::kDefault); e.next(); ) {
-        nRows++;
-        alloc_slice keyStr = e.key().readString();
-        slice valueStr = e.value();
-        Log("key = %.*s, value = %.*s, docID = %.*s",
-              (int)keyStr.size, keyStr.buf,
-              (int)valueStr.size, valueStr.buf,
-              (int)e.docID().size, e.docID().buf);
+    ~IndexTest() {
+        delete index;
     }
-    AssertEqual(nRows, _rowCount);
-    return nRows;
-}
+
+    protected:
+
+        Index* index {nullptr};
+        uint64_t _rowCount {0};
+        
+
+    void updateDoc(string docID, vector<string> body, IndexWriter &writer) {
+        std::vector<Collatable> keys;
+        std::vector<alloc_slice> values;
+        for (unsigned i = 1; i < body.size(); i++) {
+            CollatableBuilder key;
+            key << body[i];
+            keys.push_back(key);
+            values.push_back(alloc_slice(body[0]));
+        }
+        bool changed = writer.update(docID, 1, keys, values, _rowCount);
+        REQUIRE(changed);
+    }
 
 
-void testBasics() {
+    uint64_t doQuery() {
+        uint64_t nRows = 0;
+        for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
+                               Collatable(), cbforest::slice::null,
+                               DocEnumerator::Options::kDefault); e.next(); ) {
+            nRows++;
+            alloc_slice keyStr = e.key().readString();
+            slice valueStr = e.value();
+            Log("key = %.*s, value = %.*s, docID = %.*s",
+                  (int)keyStr.size, keyStr.buf,
+                  (int)valueStr.size, valueStr.buf,
+                  (int)e.docID().size, e.docID().buf);
+        }
+        REQUIRE(nRows == _rowCount);
+        return nRows;
+    }
+};
+
+
+
+TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     //LogLevel = kDebug;
     unordered_map<string, vector<string> > docs = {
         {"CA", {"California", "San Jose", "San Francisco", "Cambria"}},
@@ -79,7 +79,7 @@ void testBasics() {
     }
 
     Log("--- First query");
-    AssertEqual(doQuery(), 8ull);
+    REQUIRE(doQuery() == 8);
 
     {
         Transaction trans(db);
@@ -87,7 +87,7 @@ void testBasics() {
         Log("--- Updating OR");
         updateDoc("OR", {"Oregon", "Portland", "Walla Walla", "Salem"}, writer);
     }
-    AssertEqual(doQuery(), 9ull);
+    REQUIRE(doQuery() == 9);
 
     {
         Log("--- Removing CA");
@@ -95,7 +95,7 @@ void testBasics() {
         IndexWriter writer(*index, trans);
         updateDoc("CA", {}, writer);
     }
-    AssertEqual(doQuery(), 6ull);
+    REQUIRE(doQuery() == 6);
 
     Log("--- Reverse enumeration");
     uint64_t nRows = 0;
@@ -109,8 +109,8 @@ void testBasics() {
         Log("key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    AssertEqual(nRows, 6ull);
-    AssertEqual(_rowCount, nRows);
+    REQUIRE(nRows == 6);
+    REQUIRE(_rowCount == nRows);
 
     // Enumerate a vector of keys:
     Log("--- Enumerating a vector of keys");
@@ -126,7 +126,7 @@ void testBasics() {
         Log("key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    AssertEqual(nRows, 2ull);
+    REQUIRE(nRows == 2);
 
     // Enumerate a vector of key ranges:
     Log("--- Enumerating a vector of key ranges");
@@ -140,7 +140,7 @@ void testBasics() {
         Log("key = %.*s, docID = %.*s",
               (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
     }
-    AssertEqual(nRows, 3ull);
+    REQUIRE(nRows == 3);
 
     // Empty vector:
     ranges.clear();
@@ -148,10 +148,11 @@ void testBasics() {
     for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
         nRows++;
     }
-    AssertEqual(nRows, 0ull);
+    REQUIRE(nRows == 0);
 }
 
-void testDuplicateKeys() {
+
+TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
     Log("--- Populate index");
     {
         Transaction trans(db);
@@ -164,11 +165,11 @@ void testDuplicateKeys() {
         keys.push_back(key);
         values.push_back(alloc_slice("red"));
         bool changed = writer.update(slice("doc1"), 1, keys, values, _rowCount);
-        Assert(changed);
-        AssertEqual(_rowCount, 2ull);
+        REQUIRE(changed);
+        REQUIRE(_rowCount == 2);
     }
     Log("--- First query");
-    AssertEqual(doQuery(), 2ull);
+    REQUIRE(doQuery() == 2);
     {
         Transaction trans(db);
         IndexWriter writer(*index, trans);
@@ -182,18 +183,9 @@ void testDuplicateKeys() {
         keys.push_back(CollatableBuilder("Master"));
         values.push_back(alloc_slice("gray"));
         bool changed = writer.update(slice("doc1"), 2, keys, values, _rowCount);
-        Assert(changed);
-        AssertEqual(_rowCount, 3ull);
+        REQUIRE(changed);
+        REQUIRE(_rowCount == 3);
     }
     Log("--- Second query");
-    AssertEqual(doQuery(), 3ull);
+    REQUIRE(doQuery() == 3);
 }
-
-
-    CPPUNIT_TEST_SUITE( IndexTest );
-    CPPUNIT_TEST( testBasics );
-    CPPUNIT_TEST( testDuplicateKeys );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(IndexTest);

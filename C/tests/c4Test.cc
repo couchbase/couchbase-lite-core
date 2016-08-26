@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "slice.hh"
+#include <iostream>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -42,10 +43,30 @@ std::ostream& operator<< (std::ostream& o, C4Slice s) {
 }
 
 
+std::ostream& operator<< (std::ostream &out, C4Error error) {
+    C4SliceResult s = c4error_getMessage(error);
+    out << "C4Error(" << error.domain << ", " << error.code << "): \"" << std::string((const char*)s.buf, s.size) << "\"";
+    c4slice_free(s);
+    return out;
+}
+
+
+// Dumps a C4Key to a C++ string
+std::string toJSON(C4KeyReader r) {
+    C4SliceResult dump = c4key_toJSON(&r);
+    std::string result((char*)dump.buf, dump.size);
+    c4slice_free(dump);
+    return result;
+}
+
+
 static void log(C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
     fprintf(stderr, "CBForest-C %s: %*s\n", kLevelNames[level], (int)message.size, message.buf);
 }
+
+
+#pragma mark - C4TEST CLASS
 
 
 C4Slice C4Test::databasePath() {
@@ -56,7 +77,7 @@ C4Slice C4Test::databasePath() {
 }
 
 
-void C4Test::setUp() {
+C4Test::C4Test() {
     c4_shutdown(NULL);
     
     objectCount = c4_getObjectCount();
@@ -87,17 +108,17 @@ void C4Test::setUp() {
     C4Error error;
     c4db_deleteAtPath(databasePath(), &config, NULL);
     db = c4db_open(databasePath(), &config, &error);
-    Assert(db != NULL);
+    REQUIRE(db != NULL);
 }
 
 
-void C4Test::tearDown() {
+C4Test::~C4Test() {
     C4Error error;
     c4db_delete(db, &error);
     c4db_free(db);
 
     // Check for leaks:
-    AssertEqual(c4_getObjectCount() - objectCount, 0);
+    REQUIRE(c4_getObjectCount() == objectCount);
 }
 
 
@@ -105,7 +126,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     TransactionHelper t(db);
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);
-    Assert(curDoc);
+    REQUIRE(curDoc != nullptr);
 
     C4Slice history[2] = {revID, curDoc->revID};
 
@@ -118,7 +139,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     rq.deletion = (body.buf == nullptr);
     rq.save = true;
     auto doc = c4doc_put(db, &rq, NULL, &error);
-    Assert(doc != NULL);
+    REQUIRE(doc != NULL);
     c4doc_free(doc);
     c4doc_free(curDoc);
 }
@@ -126,12 +147,3 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
-
-
-// Dumps a C4Key to a C++ string
-std::string toJSON(C4KeyReader r) {
-    C4SliceResult dump = c4key_toJSON(&r);
-    std::string result((char*)dump.buf, dump.size);
-    c4slice_free(dump);
-    return result;
-}

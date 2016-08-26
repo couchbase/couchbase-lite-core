@@ -20,9 +20,11 @@ using namespace std;
 void Log(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, format, args);
-    fprintf(stderr, "\n");
+    char *cstr;
+    vasprintf(&cstr, format, args);
     va_end(args);
+    INFO(cstr);
+    free(cstr);
 }
 
 
@@ -79,26 +81,32 @@ void randomBytes(slice dst) {
     arc4random_buf((void*)dst.buf, dst.size);
 }
 
-
-std::ostream& operator<< (std::ostream& o, slice s) {
-    o << "slice[";
-    if (s.buf == NULL)
-        return o << "null]";
-    auto buf = (const uint8_t*)s.buf;
-    for (size_t i = 0; i < s.size; i++) {
-        if (buf[i] < 32 || buf[i] > 126)
-            return o << sliceToHex(s) << "]";
+namespace fleece {
+    std::ostream& operator<< (std::ostream& o, slice s) {
+        o << "slice[";
+        if (s.buf == NULL)
+            return o << "null]";
+        auto buf = (const uint8_t*)s.buf;
+        for (size_t i = 0; i < s.size; i++) {
+            if (buf[i] < 32 || buf[i] > 126)
+                return o << sliceToHex(s) << "]";
+        }
+        return o << "\"" << std::string((char*)s.buf, s.size) << "\"]";
     }
-    return o << "\"" << std::string((char*)s.buf, s.size) << "\"]";
 }
 
 
 FilePath DataFileTestFixture::databasePath(const string baseName) {
     auto path = FilePath::tempDirectory()[baseName];
-    return path.addingExtension(isForestDB() ? ForestDataFile::kFilenameExtension
-                                             : SQLiteDataFile::kFilenameExtension);
+    return path.addingExtension(isForestDB() ? ".forestdb"
+                                             : ".sqlite3");
 }
 
+
+void DataFileTestFixture::deleteDatabase(const FilePath &dbPath) {
+    auto factory = DataFile::factoryForFile(dbPath);
+    factory->deleteFile(dbPath);
+}
 
 DataFile* DataFileTestFixture::newDatabase(const FilePath &path, DataFile::Options *options) {
     //TODO: Set up options
@@ -122,16 +130,14 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 }
 
 
-void DataFileTestFixture::setUp() {
-    TestFixture::setUp();
+DataFileTestFixture::DataFileTestFixture() {
     auto dbPath = databasePath("cbforest_temp");
-    DataFile::deleteDataFile(dbPath);
+    deleteDatabase(dbPath);
     db = newDatabase(dbPath);
     store = &db->defaultKeyStore();
 }
 
 
-void DataFileTestFixture::tearDown() {
+DataFileTestFixture::~DataFileTestFixture() {
     delete db;
-    TestFixture::tearDown();
 }

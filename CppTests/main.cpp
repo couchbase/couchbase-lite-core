@@ -6,14 +6,11 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#include <cppunit/extensions/TestFactoryRegistry.h>
-#include <cppunit/ui/text/TextTestRunner.h>
+// This defines the main entry point of a target that runs 'Catch' unit tests.
 
-using namespace CppUnit;
 
-int main( int argc, char **argv) {
-    TextTestRunner runner;
-    TestFactoryRegistry &registry = TestFactoryRegistry::getRegistry();
-    runner.addTest( registry.makeTest() );
-    return runner.run( "", false ) ? 0 : -1;
-}
+#define CATCH_CONFIG_CONSOLE_WIDTH 120
+#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#include "catch.hpp"
+
+#include "CaseListReporter.hh"

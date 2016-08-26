@@ -9,6 +9,7 @@
 #ifndef CBForestTest_h
 #define CBForestTest_h
 
+#include <iostream>
 #include "slice.hh"
 
 using namespace fleece;
@@ -23,12 +24,14 @@ std::string sliceToHexDump(slice, size_t width = 16);
 
 void randomBytes(slice dst);
 
-// Some operators to make slice work with AssertEqual:
-// (This has to be declared before including cppunit, because C++ sucks)
-std::ostream& operator<< (std::ostream& o, slice s);
+// Some operators to make slice work with unit-testing assertions:
+// (This has to be declared before including catch.hpp, because C++ sucks)
+namespace fleece {
+    std::ostream& operator<< (std::ostream& o, slice s);
+}
 
 
-#include "CppTest.hh"
+#include "catch.hpp"
 
 #include "DataFile.hh"
 
@@ -36,22 +39,24 @@ using namespace cbforest;
 using namespace std;
 
 
-class DataFileTestFixture : public CppUnit::TestFixture {
+class DataFileTestFixture {
 public:
+
+    DataFileTestFixture();
+    ~DataFileTestFixture();
 
     DataFile *db {nullptr};
     KeyStore *store {nullptr};
 
     FilePath databasePath(const string baseName);
+    void deleteDatabase(const FilePath &dbPath);
     DataFile* newDatabase(const FilePath &path, DataFile::Options* =nullptr);
     void reopenDatabase(DataFile::Options *newOptions =nullptr);
 
-    virtual bool isForestDB() const             {return true;}
-
-    virtual void setUp() override;
-
-    virtual void tearDown() override;
+    bool isForestDB() const             {return true;}
 
 };
 
 #endif /* CBForestTest_h */
+
+

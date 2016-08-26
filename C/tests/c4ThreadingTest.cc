@@ -28,21 +28,19 @@ public:
 
     C4View* v {nullptr};
 
-    virtual void setUp() {
-        C4Test::setUp();
+    C4ThreadingTest() {
         c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
         v = openView(db);
     }
 
-    virtual void tearDown() {
+    ~C4ThreadingTest() {
         closeView(v);
-        C4Test::tearDown();
     }
 
 
     C4Database* openDB() {
         C4Database* database = c4db_open(databasePath(), c4db_getConfig(db), NULL);
-        Assert(database);
+        REQUIRE(database);
         return database;
     }
 
@@ -50,7 +48,7 @@ public:
         C4View* view = c4view_open(onDB, c4str(kViewIndexPath),
                                    c4str("myview"), c4str("1"),
                                    c4db_getConfig(db), NULL);
-        Assert(view);
+        REQUIRE(view);
         return view;
     }
 
@@ -62,22 +60,6 @@ public:
     void closeDB(C4Database* database) {
         c4db_close(database, NULL);
         c4db_free(database);
-    }
-
-
-    void testCreateVsEnumerate() {
-        std::cerr << "\nThreading test ";
-
-        std::thread thread1([this]{addDocsTask();});
-        std::thread thread2([this]{updateIndexTask();});
-        std::thread thread3([this]{queryIndexTask();});
-//        std::thread thread4([this]{enumDocsTask();});
-
-        thread1.join();
-        thread2.join();
-        thread3.join();
-//        thread4.join();
-        std::cerr << "Threading test done!\n";
     }
 
 
@@ -109,16 +91,16 @@ public:
             C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
             options.flags |= kC4IncludeBodies;
             auto e = c4db_enumerateChanges(database, 0, &options, &error);
-            Assert(e);
+            REQUIRE(e);
 
             n = 0;
             while (c4enum_next(e, &error)) {
                 auto doc = c4enum_getDocument(e, &error);
-                Assert(doc);
+                REQUIRE(doc);
                 c4doc_free(doc);
                 n++;
             }
-            AssertEqual(error.code, 0);
+            REQUIRE(error.code == 0);
             c4enum_free(e);
             if (kLog) fprintf(stderr, "-- %d docs", n);
         } while (n < kNumDocs);
@@ -146,12 +128,12 @@ public:
         C4SequenceNumber oldLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         C4Error error;
         C4Indexer* ind = c4indexer_begin(updateDB, &view, 1, &error);
-        Assert(ind);
+        REQUIRE(ind);
 
         C4DocEnumerator* e = c4indexer_enumerateDocuments(ind, &error);
         if (!e) {
             c4indexer_end(ind, false, NULL);
-            Assert(error.code == 0);
+            REQUIRE(error.code == 0);
             return;
         }
 
@@ -163,27 +145,27 @@ public:
             // Index 'doc':
             if (kLog) fprintf(stderr, "(#%lld) ", doc->sequence);
             if (lastSeq)
-                AssertEqual(doc->sequence, lastSeq+1);
+                REQUIRE(doc->sequence == lastSeq+1);
             lastSeq = doc->sequence;
             C4Key *keys[1];
             C4Slice values[1];
             keys[0] = c4key_new();
             c4key_addString(keys[0], doc->docID);
             values[0] = c4str("1234");
-            Assert(c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error));
+            REQUIRE(c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error));
             c4key_free(keys[0]);
             c4doc_free(doc);
         }
-        AssertEqual(error.code, 0);
+        REQUIRE(error.code == 0);
         c4enum_free(e);
         if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
-        Assert(c4indexer_end(ind, true, &error));
+        REQUIRE(c4indexer_end(ind, true, &error));
 
         C4SequenceNumber newLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         if (newLastSeqIndexed != lastSeq)
             if (kLog) fprintf(stderr, "BUT view.lastSequenceIndexed=%lld! (Started as %lld) ", newLastSeqIndexed, oldLastSeqIndexed);
-        AssertEqual(newLastSeqIndexed, lastSeq);
-        AssertEqual(c4view_getLastSequenceChangedAt(view), lastSeq);
+        REQUIRE(newLastSeqIndexed == lastSeq);
+        REQUIRE(c4view_getLastSequenceChangedAt(view) == lastSeq);
     }
     
 
@@ -206,7 +188,7 @@ public:
     bool queryIndex(C4View* view) {
         C4Error error;
         auto e = c4view_query(view, NULL, &error);
-        Assert(e);
+        REQUIRE(e);
         if (kLog) fprintf(stderr, "{ ");
 
         C4SequenceNumber i = 0;
@@ -222,33 +204,32 @@ public:
                 continue;
             }
 #else
-            AssertEqual(e->docSequence, i);
+            REQUIRE(e->docSequence == i);
 #endif
-            AssertEqual(toJSON(e->key), std::string(buf));
-            AssertEqual(e->value, c4str("1234"));
+            REQUIRE(toJSON(e->key) == std::string(buf));
+            REQUIRE(e->value == c4str("1234"));
 
         }
         if (kLog) fprintf(stderr, "}queried_to:%llu ", i);
         c4queryenum_free(e);
-        AssertEqual(error.code, 0);
+        REQUIRE(error.code == 0);
         return (i < kNumDocs);
     }
     
-    CPPUNIT_TEST_SUITE( C4ThreadingTest );
-    CPPUNIT_TEST( testCreateVsEnumerate );
-    CPPUNIT_TEST_SUITE_END();
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(C4ThreadingTest);
 
+TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[.broken][Threading][noisy][C]") {
+    std::cerr << "\nThreading test ";
 
+    std::thread thread1([this]{addDocsTask();});
+    std::thread thread2([this]{updateIndexTask();});
+    std::thread thread3([this]{queryIndexTask();});
+    //        std::thread thread4([this]{enumDocsTask();});
 
-class C4SQLiteThreadingTest : public C4ThreadingTest {
-
-    virtual const char* storageType() const override     {return kC4SQLiteStorageEngine;}
-
-    CPPUNIT_TEST_SUB_SUITE( C4SQLiteThreadingTest, C4ThreadingTest );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteThreadingTest);
+    thread1.join();
+    thread2.join();
+    thread3.join();
+    //        thread4.join();
+    std::cerr << "Threading test done!\n";
+}

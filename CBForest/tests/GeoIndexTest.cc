@@ -51,49 +51,48 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
 
 
 class GeoIndexTest : public DataFileTestFixture {
-
-
-MapReduceIndex *index;
 public:
+    MapReduceIndex *index;
 
-void setUp() {
-    DataFileTestFixture::setUp();
-    index = new MapReduceIndex(db->getKeyStore("geo"), *db);
-}
-
-void tearDown() {
-    delete index;
-    DataFileTestFixture::tearDown();
-}
-
-static double randomLat()   {return random() / (double)INT_MAX * 180.0 -  90.0;}
-static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
-
-void addCoords(unsigned n) {
-    Log("==== Adding %u docs...", n);
-    srandom(42);
-    Transaction t(db);
-    IndexWriter writer(*index, t);
-    for (unsigned i = 0; i < n; ++i) {
-        char docID[20];
-        sprintf(docID, "%u", i);
-
-        double lat0 = randomLat(), lon0 = randomLon();
-        double lat1 = std::min(lat0 + 0.5, 90.0), lon1 = std::min(lon0 + 0.5, 180.0);
-        CollatableBuilder body;
-        body << lon0 << lat0 << lon1 << lat1;
-        store->set(slice(docID), body, t);
-        Log("Added %s --> (%+08.4f, %+09.4f)", docID, lat0, lon0);
+    GeoIndexTest() {
+        index = new MapReduceIndex(db->getKeyStore("geo"), *db);
     }
-}
 
-void indexIt() {
-    index->setup(0, "1");
-    Log("==== Indexing...");
-    updateIndex(db, *index);
-}
+    ~GeoIndexTest() {
+        delete index;
+    }
 
-void testGeoIndex() {
+    static double randomLat()   {return random() / (double)INT_MAX * 180.0 -  90.0;}
+    static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
+
+    void addCoords(unsigned n) {
+        Log("==== Adding %u docs...", n);
+        srandom(42);
+        Transaction t(db);
+        IndexWriter writer(*index, t);
+        for (unsigned i = 0; i < n; ++i) {
+            char docID[20];
+            sprintf(docID, "%u", i);
+
+            double lat0 = randomLat(), lon0 = randomLon();
+            double lat1 = std::min(lat0 + 0.5, 90.0), lon1 = std::min(lon0 + 0.5, 180.0);
+            CollatableBuilder body;
+            body << lon0 << lat0 << lon1 << lat1;
+            store->set(slice(docID), body, t);
+            Log("Added %s --> (%+08.4f, %+09.4f)", docID, lat0, lon0);
+        }
+    }
+    
+    void indexIt() {
+        index->setup(0, "1");
+        Log("==== Indexing...");
+        updateIndex(db, *index);
+    }
+    
+};
+
+
+TEST_CASE_METHOD(GeoIndexTest, "GeoIndex", "[GeoIndex],[Index]") {
     addCoords(100);
     auto queryArea = area(coord(10, 10), coord(40, 40));
 
@@ -108,18 +107,10 @@ void testGeoIndex() {
         Log("key = %s = (%g, %g)...(%g, %g) doc = '%s' #%u", e.key().toJSON().c_str(),
               a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max,
               e.docID().cString(), emitID);
-        Assert(a.intersects(queryArea));
+        REQUIRE(a.intersects(queryArea));
         auto geoJSON = e.keyGeoJSON();
         Log("keyGeoJSON = %s", geoJSON.cString());
-        AssertEqual(geoJSON.asString(), string("{\"geo\":true}"));
+        REQUIRE(geoJSON.asString() == string("{\"geo\":true}"));
     }
     Log("Found %u points in the query area", found);
 }
-
-
-    CPPUNIT_TEST_SUITE( GeoIndexTest );
-    CPPUNIT_TEST( testGeoIndex );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(GeoIndexTest);

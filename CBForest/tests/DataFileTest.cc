@@ -17,31 +17,31 @@ using namespace cbforest;
 using namespace std;
 
 
-class DataFileTest : public DataFileTestFixture {
-
-void testDbInfo() {
-    Assert(db->isOpen());
-    Assert(!db->isCompacting());
-    Assert(!DataFile::isAnyCompacting());
-    AssertEqual(db->purgeCount(), 0ull);
-    AssertEqual(&store->dataFile(), db);
-    AssertEqual(store->documentCount(), 0ull);
-    AssertEqual(store->lastSequence(), 0ull);
+TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
+    REQUIRE(db->isOpen());
+    REQUIRE_FALSE(db->isCompacting());
+    REQUIRE_FALSE(DataFile::isAnyCompacting());
+    REQUIRE(db->purgeCount() == 0);
+    REQUIRE(&store->dataFile() == db);
+    REQUIRE(store->documentCount() == 0);
+    REQUIRE(store->lastSequence() == 0);
 }
 
-void testCreateDoc() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
     alloc_slice key("key");
     {
         Transaction t(db);
         store->set(key, slice("value"), t);
     }
-    AssertEqual(store->lastSequence(), 1ull);
+    REQUIRE(store->lastSequence() == 1);
     Document doc = db->defaultKeyStore().get(key);
-    Assert(doc.key() == key);
-    Assert(doc.body() == slice("value"));
+    REQUIRE(doc.key() == key);
+    REQUIRE(doc.body() == slice("value"));
 }
 
-void testSaveDocs() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
     {
         //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
@@ -49,7 +49,7 @@ void testSaveDocs() {
     }
 
     unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
-    AssertEqual(aliased_db->defaultKeyStore().get(slice("a")).body(), alloc_slice("A"));
+    REQUIRE(aliased_db->defaultKeyStore().get(slice("a")).body() == alloc_slice("A"));
 
     {
         Transaction t(db);
@@ -58,51 +58,52 @@ void testSaveDocs() {
         doc.setBody(slice("THIS IS THE BODY"));
         store->write(doc, t);
 
-        AssertEqual(doc.sequence(), 2ull);
-        AssertEqual(store->lastSequence(), 2ull);
+        REQUIRE(doc.sequence() == 2);
+        REQUIRE(store->lastSequence() == 2);
         auto doc_alias = store->get(doc.sequence());
-        AssertEqual(doc_alias.key(), doc.key());
-        AssertEqual(doc_alias.meta(), doc.meta());
-        AssertEqual(doc_alias.body(), doc.body());
+        REQUIRE(doc_alias.key() == doc.key());
+        REQUIRE(doc_alias.meta() == doc.meta());
+        REQUIRE(doc_alias.body() == doc.body());
 
         doc_alias.setBody(slice("NU BODY"));
         store->write(doc_alias, t);
 
-        Assert(store->read(doc));
-        AssertEqual(doc.sequence(), 3ull);
-        Assert(doc.meta() == doc_alias.meta());
-        Assert(doc.body() == doc_alias.body());
+        REQUIRE(store->read(doc));
+        REQUIRE(doc.sequence() == 3);
+        REQUIRE(doc.meta() == doc_alias.meta());
+        REQUIRE(doc.body() == doc_alias.body());
 
         // Doc shouldn't exist outside transaction yet:
-        AssertEqual(aliased_db->defaultKeyStore().get(slice("doc")).sequence(), 0ull);
+        REQUIRE(aliased_db->defaultKeyStore().get(slice("doc")).sequence() == 0);
     }
 
-    AssertEqual(store->get(slice("doc")).sequence(), 3ull);
-    AssertEqual(aliased_db->defaultKeyStore().get(slice("doc")).sequence(), 3ull);
+    REQUIRE(store->get(slice("doc")).sequence() == 3);
+    REQUIRE(aliased_db->defaultKeyStore().get(slice("doc")).sequence() == 3);
 }
 
-void createNumberedDocs() {
-    Transaction t(db);
+static void createNumberedDocs(KeyStore *store) {
+    Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("doc-%03d", i);
         sequence seq = store->set(slice(docID), cbforest::slice::null, slice(docID), t);
-        AssertEqual(seq, (sequence)i);
-        AssertEqual(store->get(slice(docID)).body(), alloc_slice(docID));
+        REQUIRE(seq == (sequence)i);
+        REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
 }
 
-void testEnumerateDocs() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
     {
         Log("Enumerate empty db");
         int i = 0;
         DocEnumerator e(*store);
         for (; e.next(); ++i) {
-            AssertionFailed("Shouldn't have found any docs");
+            FAIL("Shouldn't have found any docs");
         }
-        Assert(!e);
+        REQUIRE_FALSE(e);
     }
 
-    createNumberedDocs();
+    createNumberedDocs(store);
 
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
         Log("Enumerate over all docs (metaOnly=%d)", metaOnly);
@@ -114,40 +115,40 @@ void testEnumerateDocs() {
             DocEnumerator e(*store, slice::null, slice::null, opts);
             for (; e.next(); ++i) {
                 string expectedDocID = stringWithFormat("doc-%03d", i);
-                AssertEqual(e->key(), alloc_slice(expectedDocID));
-                AssertEqual(e->sequence(), (sequence)i);
-                Assert(e->bodySize() > 0); // even metaOnly should set the body size
+                REQUIRE(e->key() == alloc_slice(expectedDocID));
+                REQUIRE(e->sequence() == (sequence)i);
+                REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
                 if (isForestDB())
-                    Assert(e->offset() > 0);
+                    REQUIRE(e->offset() > 0);
             }
-            AssertEqual(i, 101);
-            Assert(!e);
+            REQUIRE(i == 101);
+            REQUIRE_FALSE(e);
         }
 
         Log("Enumerate over range of docs:");
         int i = 24;
         for (DocEnumerator e(*store, slice("doc-024"), slice("doc-029"), opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
-            AssertEqual(e->key(), alloc_slice(expectedDocID));
-            AssertEqual(e->sequence(), (sequence)i);
-            Assert(e->bodySize() > 0); // even metaOnly should set the body length
+            REQUIRE(e->key() == alloc_slice(expectedDocID));
+            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
             if (isForestDB())
-                Assert(e->offset() > 0);
+                REQUIRE(e->offset() > 0);
         }
-        AssertEqual(i, 30);
+        REQUIRE(i == 30);
 
         Log("Enumerate over range of docs without inclusive:");
         opts.inclusiveStart = opts.inclusiveEnd = false;
         i = 25;
         for (DocEnumerator e(*store, slice("doc-024"), slice("doc-029"), opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
-            AssertEqual(e->key(), alloc_slice(expectedDocID));
-            AssertEqual(e->sequence(), (sequence)i);
-            Assert(e->bodySize() > 0); // even metaOnly should set the body length
+            REQUIRE(e->key() == alloc_slice(expectedDocID));
+            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
             if (isForestDB())
-                Assert(e->offset() > 0);
+                REQUIRE(e->offset() > 0);
         }
-        AssertEqual(i, 29);
+        REQUIRE(i == 29);
         opts.inclusiveStart = opts.inclusiveEnd = true;
 
         Log("Enumerate over vector of docs:");
@@ -162,97 +163,107 @@ void testEnumerateDocs() {
         docIDs.push_back("doc-105"); // doesn't exist!
         for (DocEnumerator e(*store, docIDs, opts); e.next(); ++i) {
             Log("key = %s", e->key().cString());
-            AssertEqual((string)e->key(), docIDs[i]);
-            AssertEqual(e->exists(), i < 6);
+            REQUIRE((string)e->key() == docIDs[i]);
+            REQUIRE(e->exists() == i < 6);
             if (i < 6) {
-                Assert(e->bodySize() > 0); // even metaOnly should set the body length
+                REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
                 if (isForestDB())
-                    Assert(e->offset() > 0);
+                    REQUIRE(e->offset() > 0);
             }
         }
-        AssertEqual(i, 7);
+        REQUIRE(i == 7);
     }
 }
 
-void testEnumerateDocsDescending() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
     auto opts = DocEnumerator::Options::kDefault;
     opts.descending = true;
 
-    createNumberedDocs();
-    Log("Enumerate over all docs, descending:");
-    int i = 100;
-    for (DocEnumerator e(*store, slice::null, slice::null, opts); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
-    }
-    AssertEqual(i, 0);
+    createNumberedDocs(store);
 
-    Log("Enumerate over range of docs from max, descending:");
-    i = 100;
-    for (DocEnumerator e(*store, slice::null, slice("doc-090"), opts); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
+    SECTION("Enumerate over all docs, descending:") {
+        int i = 100;
+        for (DocEnumerator e(*store, slice::null, slice::null, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 0);
     }
-    AssertEqual(i, 89);
 
-    Log("Enumerate over range of docs to min, descending:");
-    i = 10;
-    for (DocEnumerator e(*store, slice("doc-010"), slice::null, opts); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
+    SECTION("Enumerate over range of docs from max, descending:") {
+        int i = 100;
+        for (DocEnumerator e(*store, slice::null, slice("doc-090"), opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 89);
     }
-    AssertEqual(i, 0);
 
-    Log("Enumerate over range of docs, descending:");
-    i = 29;
-    for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), opts); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
+    SECTION("Enumerate over range of docs to min, descending:") {
+        int i = 10;
+        for (DocEnumerator e(*store, slice("doc-010"), slice::null, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 0);
     }
-    AssertEqual(i, 23);
 
-    Log("Enumerate over range of docs, descending, max key doesn't exist:");
-    i = 29;
-    for (DocEnumerator e(*store, slice("doc-029b"), slice("doc-024"), opts); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
+    SECTION("Enumerate over range of docs, descending:") {
+        int i = 29;
+        for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 23);
     }
-    AssertEqual(i, 23);
 
-    Log("Enumerate over range of docs without inclusive, descending:");
-    auto optsExcl = opts;
-    optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
-    i = 28;
-    for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), optsExcl); e.next(); --i) {
-        alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
-        AssertEqual(e->key(), expectedDocID);
-        AssertEqual(e->sequence(), (sequence)i);
+    SECTION("Enumerate over range of docs, descending, max key doesn't exist:") {
+        int i = 29;
+        for (DocEnumerator e(*store, slice("doc-029b"), slice("doc-024"), opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 23);
     }
-    AssertEqual(i, 24);
 
-    Log("Enumerate over vector of docs, descending:");
-    vector<string> docIDs;
-    docIDs.push_back("doc-005");
-    docIDs.push_back("doc-029");
-    docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
-    docIDs.push_back("doc-028");
-    docIDs.push_back("doc-098");
-    docIDs.push_back("doc-100");
-    docIDs.push_back("doc-105");
-    i = (int)docIDs.size() - 1;
-    for (DocEnumerator e(*store, docIDs, opts); e.next(); --i) {
-        Log("key = %s", e->key().cString());
-        Assert((string)e->key() == docIDs[i]);
+    SECTION("Enumerate over range of docs without inclusive, descending:") {
+        auto optsExcl = opts;
+        optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
+        int i = 28;
+        for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), optsExcl); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+            REQUIRE(e->key() == expectedDocID);
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        REQUIRE(i == 24);
     }
-    AssertEqual(i, -1);
+
+    SECTION("Enumerate over vector of docs, descending:") {
+        vector<string> docIDs;
+        docIDs.push_back("doc-005");
+        docIDs.push_back("doc-029");
+        docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
+        docIDs.push_back("doc-028");
+        docIDs.push_back("doc-098");
+        docIDs.push_back("doc-100");
+        docIDs.push_back("doc-105");
+        int i = (int)docIDs.size() - 1;
+        for (DocEnumerator e(*store, docIDs, opts); e.next(); --i) {
+            Log("key = %s", e->key().cString());
+            REQUIRE((string)e->key() == docIDs[i]);
+        }
+        REQUIRE(i == -1);
+    }
 }
 
-void testAbortTransaction() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
     // Initial document:
     {
         Transaction t(db);
@@ -262,17 +273,17 @@ void testAbortTransaction() {
         Transaction t(db);
         store->set(slice("x"), slice("X"), t);
         store->set(slice("a"), slice("Z"), t);
-        AssertEqual(store->get(slice("a")).body(), alloc_slice("Z"));
-        AssertEqual(store->get(slice("a")).body(), alloc_slice("Z"));
+        REQUIRE(store->get(slice("a")).body() == alloc_slice("Z"));
+        REQUIRE(store->get(slice("a")).body() == alloc_slice("Z"));
         t.abort();
     }
-    AssertEqual(store->get(slice("a")).body(), alloc_slice("A"));
-    AssertEqual(store->get(slice("x")).sequence(), 0ull);
+    REQUIRE(store->get(slice("a")).body() == alloc_slice("A"));
+    REQUIRE(store->get(slice("x")).sequence() == 0);
 }
 
 
 // Test for MB-12287
-void testTransactionsThenIterate() {
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate", "[DataFile]") {
     unique_ptr<DataFile> db2 { newDatabase(db->filePath()) };
 
     const unsigned kNTransactions = 42; // 41 is ok, 42+ fails
@@ -292,32 +303,35 @@ void testTransactionsThenIterate() {
         //Log("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
         unsigned d = (i % kNDocs) + 1;
-        AssertEqual(key, slice(stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d)));
+        REQUIRE(key == slice(stringWithFormat("%03lu.%03lu",
+                                              (unsigned long)t, (unsigned long)d)));
         i++;
     }
 }
 
-void testDeleteKey() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
         store->set(key, slice("A"), t);
     }
-    AssertEqual(store->lastSequence(), 1ull);
-    AssertEqual(db->purgeCount(), 0ull);
+    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(db->purgeCount() == 0);
     {
         Transaction t(db);
         store->del(key, t);
     }
     Document doc = store->get(key);
-    Assert(!doc.exists());
-    AssertEqual(store->lastSequence(), 2ull);
-    AssertEqual(db->purgeCount(), 0ull); // doesn't increment until after compaction
+    REQUIRE_FALSE(doc.exists());
+    REQUIRE(store->lastSequence() == 2);
+    REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
     db->compact();
-    AssertEqual(db->purgeCount(), 1ull);
+    REQUIRE(db->purgeCount() == 1);
 }
 
-void testDeleteDoc() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
@@ -331,16 +345,17 @@ void testDeleteDoc() {
     }
 
     Document doc = store->get(key);
-    //    Assert(doc.deleted());
-    Assert(!doc.exists());
+    //    REQUIRE(doc.deleted());
+    REQUIRE_FALSE(doc.exists());
     
-    AssertEqual(db->purgeCount(), 0ull); // doesn't increment until after compaction
+    REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
     db->compact();
-    AssertEqual(db->purgeCount(), 1ull);
+    REQUIRE(db->purgeCount() == 1);
 }
+
 
 // Tests workaround for ForestDB bug MB-18753
-void testDeleteDocAndReopen() {
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
@@ -354,42 +369,45 @@ void testDeleteDocAndReopen() {
     }
 
     Document doc = store->get(key);
-    //    Assert(doc.deleted());
-    Assert(!doc.exists());
+    //    REQUIRE(doc.deleted());
+    REQUIRE_FALSE(doc.exists());
 
     reopenDatabase();
 
     Document doc2 = store->get(key);
-    //    Assert(doc2.deleted());
-    Assert(!doc2.exists());
+    //    REQUIRE(doc2.deleted());
+    REQUIRE_FALSE(doc2.exists());
 }
 
-void testKeyStoreInfo() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
-    AssertEqual(s.lastSequence(), 0ull);
-    AssertEqual(s.name(), string("store"));
+    REQUIRE(s.lastSequence() == 0);
+    REQUIRE(s.name() == string("store"));
 
-    AssertEqual(s.documentCount(), 0ull);
-    AssertEqual(s.lastSequence(), 0ull);
+    REQUIRE(s.documentCount() == 0);
+    REQUIRE(s.lastSequence() == 0);
 }
 
-void testKeyStoreWrite() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     {
         Transaction t(db);
         s.set(key, slice("value"), t);
     }
-    AssertEqual(s.lastSequence(), 1ull);
+    REQUIRE(s.lastSequence() == 1);
     Document doc = s.get(key);
-    Assert(doc.key() == key);
-    Assert(doc.body() == slice("value"));
+    REQUIRE(doc.key() == key);
+    REQUIRE(doc.body() == slice("value"));
 
     Document doc2 = store->get(key);
-    Assert(!doc2.exists());
+    REQUIRE_FALSE(doc2.exists());
 }
 
-void testKeyStoreDelete() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
 //    {
@@ -397,12 +415,13 @@ void testKeyStoreDelete() {
 //        t(s).set(key, slice("value"));
 //    }
     s.erase();
-    AssertEqual(s.lastSequence(), 0ull);
+    REQUIRE(s.lastSequence() == 0);
     Document doc = s.get(key);
-    Assert(!doc.exists());
+    REQUIRE_FALSE(doc.exists());
 }
 
-void testKeyStoreAfterClose() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     db->close();
@@ -413,14 +432,15 @@ void testKeyStoreAfterClose() {
     } catch (std::runtime_error &x) {
         error::sWarnOnError = true;
         error e = error::convertRuntimeError(x).standardized();
-        AssertEqual(e.code, (int)error::NotOpen);
+        REQUIRE(e.code == (int)error::NotOpen);
         return;
     }
     error::sWarnOnError = true;
-    Assert(false); // should not reach here
+    FAIL("Should have thrown exception");
 }
 
-void testReadOnly() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
     {
         Transaction t(db);
         store->set(slice("key"), slice("value"), t);
@@ -432,7 +452,7 @@ void testReadOnly() {
     reopenDatabase(&options);
 
     auto doc = store->get(slice("key"));
-    Assert(doc.exists());
+    REQUIRE(doc.exists());
 
     // Attempt to change a doc:
     int code = 0;
@@ -447,7 +467,7 @@ void testReadOnly() {
         code = e.code;
     }
     error::sWarnOnError = true;
-    AssertEqual(code, (int)error::NotWriteable);
+    REQUIRE(code == error::NotWriteable);
 
     // Now try to open a nonexistent db, read-only:
     code = 0;
@@ -460,11 +480,12 @@ void testReadOnly() {
         code = e.code;
     }
     error::sWarnOnError = true;
-    AssertEqual(code, (int)error::CantOpenFile);
+    REQUIRE(code == error::CantOpenFile);
 }
 
-void testCompact() {
-    createNumberedDocs();
+
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
+    createNumberedDocs(store);
 
     {
         Transaction t(db);
@@ -483,16 +504,16 @@ void testCompact() {
     db->compact();
 
     db->setOnCompact(nullptr);
-    AssertEqual(numCompactCalls, 2u);
+    REQUIRE(numCompactCalls == 2u);
 }
 
 
-void testEncryption() {
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = DataFile::kAES256;
     options.encryptionKey = slice("12345678901234567890123456789012");
     auto dbPath = databasePath("encrypted");
-    DataFile::deleteDataFile(dbPath);
+    deleteDatabase(dbPath);
     {
         // Create encrypted db:
         unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
@@ -503,7 +524,7 @@ void testEncryption() {
         // Reopen with correct key:
         unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
         auto doc = encryptedDB->defaultKeyStore().get(slice("k"));
-        AssertEqual(doc.body(), alloc_slice("value"));
+        REQUIRE(doc.body() == alloc_slice("value"));
     }
     {
         // Reopen without key:
@@ -515,19 +536,19 @@ void testEncryption() {
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
         } catch (std::runtime_error &x) {
             error e = error::convertRuntimeError(x).standardized();
-            AssertEqual(e.domain, error::CBForest);
+            REQUIRE(e.domain == error::CBForest);
             code = e.code;
         }
         error::sWarnOnError = true;
-        AssertEqual(code, (int)error::NotADatabaseFile);
+        REQUIRE(code == (int)error::NotADatabaseFile);
     }
 }
 
 
-void testRekey() {
+TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
     auto dbPath = db->filePath();
     auto options = db->options();
-    createNumberedDocs();
+    createNumberedDocs(store);
 
     options.encryptionAlgorithm = DataFile::kAES256;
     options.encryptionKey = alloc_slice(32);
@@ -538,42 +559,5 @@ void testRekey() {
     reopenDatabase(&options);
 
     Document doc = store->get((slice)"doc-001");
-    Assert(doc.exists());
+    REQUIRE(doc.exists());
 }
-
-
-
-    CPPUNIT_TEST_SUITE( DataFileTest );
-    CPPUNIT_TEST( testDbInfo );
-    CPPUNIT_TEST( testCreateDoc );
-    CPPUNIT_TEST( testSaveDocs );
-    CPPUNIT_TEST( testEnumerateDocs );
-    CPPUNIT_TEST( testEnumerateDocsDescending );
-    CPPUNIT_TEST( testAbortTransaction );
-    CPPUNIT_TEST( testTransactionsThenIterate );
-    CPPUNIT_TEST( testDeleteKey );
-    CPPUNIT_TEST( testDeleteDoc );
-    CPPUNIT_TEST( testDeleteDocAndReopen );
-    CPPUNIT_TEST( testKeyStoreInfo );
-    CPPUNIT_TEST( testKeyStoreWrite );
-    CPPUNIT_TEST( testKeyStoreDelete );
-    CPPUNIT_TEST( testKeyStoreAfterClose );
-    CPPUNIT_TEST( testReadOnly );
-    CPPUNIT_TEST( testCompact );
-    CPPUNIT_TEST( testEncryption );
-    CPPUNIT_TEST( testRekey );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(DataFileTest);
-
-
-class DataFileSQLiteTest : public DataFileTest {
-    
-    virtual bool isForestDB() const             {return false;}
-
-    CPPUNIT_TEST_SUB_SUITE( DataFileSQLiteTest, DataFileTest );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(DataFileSQLiteTest);

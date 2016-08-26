@@ -11,20 +11,13 @@
 #include "c4Document.h"
 
 
-class C4KeyTest : public CppUnit::TestFixture {
+class C4KeyTest {
 public:
 
     C4Key *key;
 
-    virtual void setUp() {
+    C4KeyTest() {
         key = c4key_new();
-    }
-
-    virtual void tearDown() {
-        c4key_free(key);
-    }
-
-    void populateKey() {
         c4key_beginArray(key);
         c4key_addNull(key);
         c4key_addBool(key, false);
@@ -38,38 +31,33 @@ public:
         c4key_endArray(key);
     }
 
-    void testCreateKey() {
-        populateKey();
-        AssertEqual(toJSON(key), std::string("[null,false,true,0,12345,-2468,\"foo\",[]]"));
+    ~C4KeyTest() {
+        c4key_free(key);
     }
-
-    void testReadKey() {
-        populateKey();
-        C4KeyReader r = c4key_read(key);
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4Array);
-        c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4Null);
-        c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4Bool);
-        AssertEqual(c4key_readBool(&r), false);
-        AssertEqual(c4key_readBool(&r), true);
-        AssertEqual(c4key_readNumber(&r), 0.0);
-        AssertEqual(c4key_readNumber(&r), 12345.0);
-        AssertEqual(c4key_readNumber(&r), -2468.0);
-        AssertEqual(c4key_readString(&r), c4str("foo"));
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4Array);
-        c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4EndSequence);
-        c4key_skipToken(&r);
-        AssertEqual(c4key_peek(&r), (C4KeyToken)kC4EndSequence);
-        c4key_skipToken(&r);
-    }
-
-
-    CPPUNIT_TEST_SUITE( C4KeyTest );
-    CPPUNIT_TEST( testCreateKey );
-    CPPUNIT_TEST( testReadKey );
-    CPPUNIT_TEST_SUITE_END();
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(C4KeyTest);
+
+TEST_CASE_METHOD(C4KeyTest, "CreateKey", "[Key][C]") {
+    REQUIRE(toJSON(key) == std::string("[null,false,true,0,12345,-2468,\"foo\",[]]"));
+}
+
+TEST_CASE_METHOD(C4KeyTest, "ReadKey", "[Key][C]") {
+    C4KeyReader r = c4key_read(key);
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4Array);
+    c4key_skipToken(&r);
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4Null);
+    c4key_skipToken(&r);
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4Bool);
+    REQUIRE(c4key_readBool(&r) == false);
+    REQUIRE(c4key_readBool(&r) == true);
+    REQUIRE(c4key_readNumber(&r) == 0.0);
+    REQUIRE(c4key_readNumber(&r) == 12345.0);
+    REQUIRE(c4key_readNumber(&r) == -2468.0);
+    REQUIRE(c4key_readString(&r) == c4str("foo"));
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4Array);
+    c4key_skipToken(&r);
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4EndSequence);
+    c4key_skipToken(&r);
+    REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4EndSequence);
+    c4key_skipToken(&r);
+}

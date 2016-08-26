@@ -64,7 +64,7 @@ namespace cbforest {
         if (dot == string::npos)
             return {file, ""};
         else
-            return {file.substr(0, dot), file.substr(dot+1)};
+            return {file.substr(0, dot), file.substr(dot)};
     }
 
 

@@ -13,7 +13,8 @@
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4View.h"
-#include "CppTest.hh"
+
+#include "catch.hpp"
 
 
 #ifdef _MSC_VER
@@ -23,42 +24,46 @@
 #endif
 
 
-// Some operators to make C4Slice work with AssertEqual:
+// Some operators to make C4Slice work with Catch assertions:
 bool operator== (C4Slice s1, C4Slice s2);
 std::ostream& operator<< (std::ostream& o, C4Slice s);
+std::ostream& operator<< (std::ostream &out, C4Error error);
 
-std::string toJSON(C4KeyReader r);
+
+// Dumps a C4Key to a C++ string
+std::string toJSON(C4KeyReader);
+static inline std::string toJSON(C4Key* key)    {return toJSON(c4key_read(key));}
+static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
+
 
 // This helper is necessary because it ends an open transaction if an assertion fails.
 // If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.
 class TransactionHelper {
     public:
-    TransactionHelper(C4Database* db)
-    :_db(NULL)
-    {
+    explicit TransactionHelper(C4Database* db) {
         C4Error error;
-        Assert(c4db_beginTransaction(db, &error));
+        REQUIRE(c4db_beginTransaction(db, &error));
         _db = db;
     }
 
     ~TransactionHelper() {
         if (_db) {
             C4Error error;
-            Assert(c4db_endTransaction(_db, true, &error));
+            REQUIRE(c4db_endTransaction(_db, true, &error));
         }
     }
 
     private:
-    C4Database* _db;
+    C4Database* _db {nullptr};
 };
 
 
 // Handy base class that creates a new empty C4Database in its setUp method,
 // and closes & deletes it in tearDown.
-class C4Test : public CppUnit::TestFixture {
+class C4Test {
 public:
-    virtual void setUp();
-    virtual void tearDown();
+    C4Test();
+    virtual ~C4Test();
 
     C4Slice databasePath();
 
@@ -84,13 +89,5 @@ protected:
 private:
     int objectCount;
 };
-
-
-// Dumps a C4Key to a C++ string
-std::string toJSON(C4KeyReader);
-
-static inline std::string toJSON(C4Key* key)    {return toJSON(c4key_read(key));}
-
-static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
 
 #endif /* c4Test_hh */

@@ -62,75 +62,75 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
 
 
 class MapReduceTest : public DataFileTestFixture {
-public:
+    public:
 
-MapReduceIndex* index;
+    MapReduceIndex* index;
 
-void setUp() {
-    DataFileTestFixture::setUp();
-    index = new MapReduceIndex(db->getKeyStore("index"), *db);
-    Assert(index);
-}
-
-void tearDown() {
-    delete index;
-    DataFileTestFixture::tearDown();
-}
-
-
-void queryExpectingKeys(vector<string> expectedKeys) {
-    updateIndex(db, *index);
-
-    size_t nRows = 0;
-    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
-                           Collatable(), cbforest::slice::null,
-                           DocEnumerator::Options::kDefault); e.next(); ) {
-        CollatableReader keyReader(e.key());
-        alloc_slice keyStr = keyReader.readString();
-        Log("key = %s, docID = %.*s",
-              keyStr.cString(), (int)e.docID().size, e.docID().buf);
-        AssertEqual((string)keyStr, expectedKeys[nRows++]);
+    MapReduceTest() {
+        index = new MapReduceIndex(db->getKeyStore("index"), *db);
+        REQUIRE(index);
     }
-    AssertEqual(nRows, expectedKeys.size());
-    AssertEqual(index->rowCount(), (uint64_t)nRows);
-}
 
-
-void addDoc(string docID, string name, vector<string> cities, Transaction &t) {
-    Encoder e;
-    e.beginDictionary();
-        e.writeKey("name");
-        e.writeString("California");
-        e.writeKey("cities");
-        e.beginArray();
-            for (auto city : cities)
-                e.writeString(city);
-        e.endArray();
-    e.endDictionary();
-    auto data = e.extractOutput();
-
-    store->set(docID, slice::null, data, t);
-}
-
-
-void createDocsAndIndex() {
-    {
-        Transaction t(db);
-        addDoc("CA", "California", {"San Jose", "San Francisco", "Cambria"}, t);
-        addDoc("WA", "Washington", {"Seattle", "Port Townsend", "Skookumchuk"}, t);
-        addDoc("OR", "Oregon",     {"Portland", "Eugene"}, t);
+    ~MapReduceTest() {
+        delete index;
     }
-    index->setup(0, "1");
-}
 
 
-void testMapReduce() {
+    void queryExpectingKeys(vector<string> expectedKeys) {
+        updateIndex(db, *index);
+
+        size_t nRows = 0;
+        for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
+                               Collatable(), cbforest::slice::null,
+                               DocEnumerator::Options::kDefault); e.next(); ) {
+            CollatableReader keyReader(e.key());
+            alloc_slice keyStr = keyReader.readString();
+            Log("key = %s, docID = %.*s",
+                  keyStr.cString(), (int)e.docID().size, e.docID().buf);
+            REQUIRE((string)keyStr == expectedKeys[nRows++]);
+        }
+        REQUIRE(nRows == expectedKeys.size());
+        REQUIRE(index->rowCount() == (uint64_t)nRows);
+    }
+
+
+    void addDoc(string docID, string name, vector<string> cities, Transaction &t) {
+        Encoder e;
+        e.beginDictionary();
+            e.writeKey("name");
+            e.writeString("California");
+            e.writeKey("cities");
+            e.beginArray();
+                for (auto city : cities)
+                    e.writeString(city);
+            e.endArray();
+        e.endDictionary();
+        auto data = e.extractOutput();
+
+        store->set(docID, slice::null, data, t);
+    }
+
+
+    void createDocsAndIndex() {
+        {
+            Transaction t(db);
+            addDoc("CA", "California", {"San Jose", "San Francisco", "Cambria"}, t);
+            addDoc("WA", "Washington", {"Seattle", "Port Townsend", "Skookumchuk"}, t);
+            addDoc("OR", "Oregon",     {"Portland", "Eugene"}, t);
+        }
+        index->setup(0, "1");
+    }
+
+};
+
+
+TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     createDocsAndIndex();
 
     Log("--- First query");
     queryExpectingKeys({"Cambria", "Eugene", "Port Townsend", "Portland",
                                 "San Francisco", "San Jose", "Seattle", "Skookumchuk"});
-    AssertEqual(numMapCalls, 3);
+    REQUIRE(numMapCalls == 3);
 
     Log("--- Updating OR");
     {
@@ -140,7 +140,7 @@ void testMapReduce() {
     queryExpectingKeys({"Cambria", "Port Townsend", "Portland", "Salem",
                                 "San Francisco", "San Jose", "Seattle", "Skookumchuk",
                                 "Walla Walla"});
-    AssertEqual(numMapCalls, 1);
+    REQUIRE(numMapCalls == 1);
 
     // After deleting a doc, updating the index can be done incrementally because the deleted doc
     // will appear in the by-sequence iteration, so the indexer can remove its rows.
@@ -151,13 +151,13 @@ void testMapReduce() {
     }
     queryExpectingKeys({"Port Townsend", "Portland", "Salem",
                         "Seattle", "Skookumchuk", "Walla Walla"});
-    AssertEqual(numMapCalls, 0);
+    REQUIRE(numMapCalls == 0);
 
     Log("--- Updating version");
     index->setup(0, "2");
     queryExpectingKeys({"Port Townsend", "Portland", "Salem",
                         "Seattle", "Skookumchuk", "Walla Walla"});
-    AssertEqual(numMapCalls, 2);
+    REQUIRE(numMapCalls == 2);
 
     // Deletion followed by compaction will purge the deleted docs, so incremental indexing no
     // longer works. The indexer should detect this and rebuild from scratch.
@@ -170,33 +170,25 @@ void testMapReduce() {
     db->compact();
 
     queryExpectingKeys({"Port Townsend", "Seattle", "Skookumchuk"});
-    AssertEqual(numMapCalls, 1);
+    REQUIRE(numMapCalls == 1);
 }
 
-void testReopen() {
+
+TEST_CASE_METHOD (MapReduceTest, "MapReduce Reopen", "[MapReduce]") {
     createDocsAndIndex();
     updateIndex(db, *index);
     sequence lastIndexed = index->lastSequenceIndexed();
     sequence lastChangedAt = index->lastSequenceChangedAt();
-    Assert(lastChangedAt > 0);
-    Assert(lastIndexed >= lastChangedAt);
+    REQUIRE(lastChangedAt > 0);
+    REQUIRE(lastIndexed >= lastChangedAt);
 
     delete index;
     index = NULL;
 
     index = new MapReduceIndex(db->getKeyStore("index"), *db);
-    Assert(index);
+    REQUIRE(index);
 
     index->setup(0, "1");
-    AssertEqual(index->lastSequenceIndexed(), lastIndexed);
-    AssertEqual(index->lastSequenceChangedAt(), lastChangedAt);
+    REQUIRE(index->lastSequenceIndexed() == lastIndexed);
+    REQUIRE(index->lastSequenceChangedAt() == lastChangedAt);
 }
-
-
-    CPPUNIT_TEST_SUITE( MapReduceTest );
-    CPPUNIT_TEST( testMapReduce );
-    CPPUNIT_TEST( testReopen );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(MapReduceTest);

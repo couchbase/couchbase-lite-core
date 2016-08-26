@@ -10,37 +10,35 @@
 #include "CBForestTest.hh"
 
 
-class VersionedDocumentTests : public DataFileTestFixture {
-
-
 static revidBuffer stringToRev(string str) {
     revidBuffer buf(str);
     return buf;
 }
 
 
-void testRevIDs () {
+TEST_CASE("VersionedDocument RevIDs", "[VersionedDocument]") {
     revidBuffer rev(slice("1-f0f0"));
-    AssertEqual((string)rev, string("1-f0f0"));
+    REQUIRE((string)rev == string("1-f0f0"));
     static const uint8_t expectedBytes[] = {0x01, 0xf0, 0xf0};
-    Assert(rev == slice(expectedBytes, sizeof(expectedBytes)));
+    REQUIRE(rev == slice(expectedBytes, sizeof(expectedBytes)));
 
     rev = stringToRev("1234-1234567890abcdef1234567890abcdef");
-    AssertEqual((string)rev, string("1234-1234567890abcdef1234567890abcdef"));
+    REQUIRE((string)rev == string("1234-1234567890abcdef1234567890abcdef"));
     static const uint8_t expectedBytes2[18] = {0xd2, 0x09, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD,
         0xEF, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF};
-    Assert(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
+    REQUIRE(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
 
     // New-style ('clock') revID:
     rev.parseNew(slice("17@snej"));
-    Assert(rev.isClock());
-    AssertEqual(rev.generation(), 17u);
-    AssertEqual(rev.digest(), slice("snej"));
+    REQUIRE(rev.isClock());
+    REQUIRE(rev.generation() == 17u);
+    REQUIRE(rev.digest() == slice("snej"));
     static const uint8_t expectedBytes3[] = {0x00, 0x11, 's', 'n', 'e', 'j'};
-    Assert(rev == slice(expectedBytes3, sizeof(expectedBytes3)));
+    REQUIRE(rev == slice(expectedBytes3, sizeof(expectedBytes3)));
 }
 
-void testBadRevIDs() {
+
+TEST_CASE("VersionedDocument BadRevIDs", "[VersionedDocument]") {
     // Check a bunch of invalid revIDs to make sure they all correctly fail to parse:
     static const char* kBadStrings[] = {
         "",
@@ -63,25 +61,25 @@ void testBadRevIDs() {
     };
     for (int i = 0; i < sizeof(kBadStrings)/sizeof(char*); i++) {
         revidBuffer rev;
-        Assert(!rev.tryParse(slice(kBadStrings[i]), true));
+        REQUIRE_FALSE(rev.tryParse(slice(kBadStrings[i]), true));
     }
 
     // Make sure we don't parse new-style IDs with the old parser:
     revidBuffer rev;
-    Assert(!rev.tryParse(slice("17@snej"), false));
+    REQUIRE_FALSE(rev.tryParse(slice("17@snej"), false));
 }
 
 
-void testEmpty() {
+TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDocument]") {
     VersionedDocument v(*store, slice("foo"));
-    AssertEqual(v.docID(), slice("foo"));
-    AssertEqual(v.revID(), revid());
-    AssertEqual(v.flags(), (VersionedDocument::Flags)0);
-    Assert(v.get(stringToRev("1-aaaa")) == NULL);
+    REQUIRE(v.docID() == slice("foo"));
+    REQUIRE(v.revID() == revid());
+    REQUIRE(v.flags() == (VersionedDocument::Flags)0);
+    REQUIRE(v.get(stringToRev("1-aaaa")) == NULL);
 }
 
 
-void testRevTreeInsert() {
+TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[VersionedDocument]") {
     RevTree tree;
     const Rev* rev;
     revidBuffer rev1ID(cbforest::slice("1-aaaa"));
@@ -89,63 +87,65 @@ void testRevTreeInsert() {
     int httpStatus;
     rev = tree.insert(rev1ID, rev1Data, false, false,
                       revid(), false, httpStatus);
-    Assert(rev);
-    AssertEqual(httpStatus, 201);
-    Assert(rev->revID == rev1ID);
-    Assert(rev->inlineBody() == rev1Data);
-    AssertEqual(rev->parent(), (const Rev*)nullptr);
-    Assert(!rev->isDeleted());
+    REQUIRE(rev);
+    REQUIRE(httpStatus == 201);
+    REQUIRE(rev->revID == rev1ID);
+    REQUIRE(rev->inlineBody() == rev1Data);
+    REQUIRE(rev->parent() == (const Rev*)nullptr);
+    REQUIRE_FALSE(rev->isDeleted());
 
     revidBuffer rev2ID(cbforest::slice("2-bbbb"));
     cbforest::slice rev2Data("second revision");
     auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
-    Assert(rev2);
-    AssertEqual(httpStatus, 201);
-    Assert(rev2->revID == rev2ID);
-    Assert(rev2->inlineBody() == rev2Data);
-    Assert(!rev2->isDeleted());
+    REQUIRE(rev2);
+    REQUIRE(httpStatus == 201);
+    REQUIRE(rev2->revID == rev2ID);
+    REQUIRE(rev2->inlineBody() == rev2Data);
+    REQUIRE_FALSE(rev2->isDeleted());
 
     tree.sort();
     rev = tree.get(rev1ID);
     rev2 = tree.get(rev2ID);
-    Assert(rev);
-    Assert(rev2);
-    AssertEqual(rev2->parent(), rev);
-    Assert(rev->parent() == NULL);
+    REQUIRE(rev);
+    REQUIRE(rev2);
+    REQUIRE(rev2->parent() == rev);
+    REQUIRE(rev->parent() == NULL);
 
-    AssertEqual(tree.currentRevision(), rev2);
-    Assert(!tree.hasConflict());
+    REQUIRE(tree.currentRevision() == rev2);
+    REQUIRE_FALSE(tree.hasConflict());
 
     tree.sort();
-    AssertEqual(tree[0], rev2);
-    AssertEqual(tree[1], rev);
-    AssertEqual(rev->index(), 1u);
-    AssertEqual(rev2->index(), 0u);
+    REQUIRE(tree[0] == rev2);
+    REQUIRE(tree[1] == rev);
+    REQUIRE(rev->index() == 1u);
+    REQUIRE(rev2->index() == 0u);
 
     alloc_slice ext = tree.encode();
 
     RevTree tree2(ext, 12, 1234);
 }
 
-void testAddRevision() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[VersionedDocument]") {
     string revID = "1-fadebead", body = "{\"hello\":true}";
     revidBuffer revIDBuf(revID);
     VersionedDocument v(*store, slice("foo"));
     int httpStatus;
     v.insert(revIDBuf, body, false, false, NULL, false, httpStatus);
-    AssertEqual(httpStatus, 201);
+    REQUIRE(httpStatus == 201);
 
     const Rev* node = v.get(stringToRev(revID));
-    Assert(node);
-    Assert(!node->isDeleted());
-    Assert(node->isLeaf());
-    Assert(node->isActive());
-    AssertEqual(v.size(), 1ul);
-    AssertEqual(v.currentRevisions().size(), 1ul);
-    AssertEqual(v.currentRevisions()[0], v.currentRevision());
+    REQUIRE(node);
+    REQUIRE_FALSE(node->isDeleted());
+    REQUIRE(node->isLeaf());
+    REQUIRE(node->isActive());
+    REQUIRE(v.size() == 1);
+    REQUIRE(v.currentRevisions().size() == 1);
+    REQUIRE(v.currentRevisions()[0] == v.currentRevision());
 }
 
-void testDocType() {
+
+TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
     revidBuffer rev1ID(cbforest::slice("1-aaaa"));
     {
         VersionedDocument v(*store, slice("foo"));
@@ -156,27 +156,14 @@ void testDocType() {
                  revid(), false, httpStatus);
 
         v.setDocType(slice("moose"));
-        AssertEqual(v.docType(), slice("moose"));
+        REQUIRE(v.docType() == slice("moose"));
         Transaction t(db);
         v.save(t);
     }
     {
         VersionedDocument v(*store, slice("foo"));
-        AssertEqual((int)v.flags(), (int)VersionedDocument::kDeleted);
-        AssertEqual(v.revID(), (revid)rev1ID);
-        AssertEqual(v.docType(), slice("moose"));
+        REQUIRE((int)v.flags() == (int)VersionedDocument::kDeleted);
+        REQUIRE(v.revID() == (revid)rev1ID);
+        REQUIRE(v.docType() == slice("moose"));
     }
 }
-
-
-    CPPUNIT_TEST_SUITE( VersionedDocumentTests );
-    CPPUNIT_TEST( testRevIDs );
-    CPPUNIT_TEST( testBadRevIDs );
-    CPPUNIT_TEST( testEmpty );
-    CPPUNIT_TEST( testRevTreeInsert );
-    CPPUNIT_TEST( testAddRevision );
-    CPPUNIT_TEST( testDocType );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(VersionedDocumentTests);

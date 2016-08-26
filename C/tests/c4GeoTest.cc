@@ -26,27 +26,25 @@ static double randomLon() { return random() / (double)RAND_MAX * 360.0 - 180.0; 
 class C4GeoTest : public C4Test {
 public:
 
-    C4View *view;
+    C4View *view {nullptr};
 
-    virtual void setUp() {
-        C4Test::setUp();
+    C4GeoTest() {
         c4db_deleteAtPath(c4str(kViewIndexPath), NULL, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
                            c4db_getConfig(db), &error);
-        Assert(view);
+        REQUIRE(view);
     }
 
-    virtual void tearDown() {
+    ~C4GeoTest() {
         C4Error error;
         if (view && !c4view_delete(view, &error)) {
             char msg[256];
             fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d: %s\n",
                     error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
-            Assert(false);
+            FAIL();
         }
         c4view_free(view);
-        C4Test::tearDown();
     }
 
 
@@ -69,7 +67,7 @@ public:
             rq.save = true;
             C4Error error;
             C4Document *doc = c4doc_put(db, &rq, NULL, &error);
-            Assert(doc != NULL);
+            REQUIRE(doc != NULL);
             if (verbose)
                 fprintf(stderr, "Added %s --> %s\n", docID, body);
             c4doc_free(doc);
@@ -79,10 +77,10 @@ public:
     void createIndex() {
         C4Error error;
         C4Indexer* ind = c4indexer_begin(db, &view, 1, &error);
-        Assert(ind);
+        REQUIRE(ind);
 
         C4DocEnumerator* e = c4indexer_enumerateDocuments(ind, &error);
-        Assert(e);
+        REQUIRE(e);
 
         C4Document *doc;
         while (NULL != (doc = c4enum_nextDocument(e, &error))) {
@@ -91,69 +89,65 @@ public:
             body[doc->selectedRev.body.size] = '\0';
 
             C4GeoArea area;
-            AssertEqual(sscanf(body, "(%lf, %lf, %lf, %lf)",
-                               &area.xmin, &area.ymin, &area.xmax, &area.ymax),
-                        4);
+            REQUIRE(sscanf(body, "(%lf, %lf, %lf, %lf)",
+                           &area.xmin, &area.ymin, &area.xmax, &area.ymax) == 4);
 
             C4Key *keys[1];
             C4Slice values[1];
             keys[0] = c4key_newGeoJSON(c4str("{\"geo\":true}"), area);
             values[0] = c4str("1234");
-            Assert(c4indexer_emit(ind, doc, 0, 1, keys, values, &error));
+            REQUIRE(c4indexer_emit(ind, doc, 0, 1, keys, values, &error));
             c4key_free(keys[0]);
             c4doc_free(doc);
         }
         c4enum_free(e);
-        AssertEqual(error.code, 0);
-        Assert(c4indexer_end(ind, true, &error));
+        REQUIRE(error.code == 0);
+        REQUIRE(c4indexer_end(ind, true, &error));
     }
-
-    void testCreateIndex() {
-        createDocs(100);
-        createIndex();
-    }
-
-    void testQuery() {
-        static const bool verbose = false;
-        createDocs(100, verbose);
-        createIndex();
-
-        C4GeoArea queryArea = {10, 10, 40, 40};
-        C4Error error;
-        C4QueryEnumerator* e = c4view_geoQuery(view, queryArea, &error);
-        Assert(e);
-
-        unsigned found = 0;
-        while (c4queryenum_next(e, &error)) {
-            ++found;
-            C4GeoArea a = e->geoBBox;
-            if (verbose) {
-                fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
-                    (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
-            }
-
-            C4Slice expected = C4STR("1234");
-            AssertEqual(e->value, expected);
-            Assert(a.xmin <= 40 && a.xmax >= 10 && a.ymin <= 40 && a.ymax >= 10);
-
-            expected = C4STR("{\"geo\":true}");
-            AssertEqual(e->geoJSON, expected);
-        }
-        c4queryenum_free(e);
-        AssertEqual(error.code, 0);
-        AssertEqual(found, 2u);
-    }
-
-
-    CPPUNIT_TEST_SUITE( C4GeoTest );
-    CPPUNIT_TEST( testCreateIndex );
-    CPPUNIT_TEST( testQuery );
-    CPPUNIT_TEST_SUITE_END();
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(C4GeoTest);
+
+TEST_CASE_METHOD(C4GeoTest, "Geo CreateIndex", "[Geo][View][C]") {
+    createDocs(100);
+    createIndex();
+}
 
 
+TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
+    static const bool verbose = false;
+    createDocs(100, verbose);
+    createIndex();
+
+    C4GeoArea queryArea = {10, 10, 40, 40};
+    C4Error error;
+    C4QueryEnumerator* e = c4view_geoQuery(view, queryArea, &error);
+    REQUIRE(e);
+
+    unsigned found = 0;
+    while (c4queryenum_next(e, &error)) {
+        ++found;
+        C4GeoArea a = e->geoBBox;
+        if (verbose) {
+            fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
+                (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
+        }
+
+        C4Slice expected = C4STR("1234");
+        REQUIRE(e->value == expected);
+        REQUIRE(a.xmin <= 40);
+        REQUIRE(a.xmax >= 10);
+        REQUIRE(a.ymin <= 40);
+        REQUIRE(a.ymax >= 10);
+
+        expected = C4STR("{\"geo\":true}");
+        REQUIRE(e->geoJSON == expected);
+    }
+    c4queryenum_free(e);
+    REQUIRE(error.code == 0);
+    REQUIRE(found == 2u);
+}
+
+/*
 
 class C4SQLiteGeoTest : public C4GeoTest {
 
@@ -164,3 +158,4 @@ class C4SQLiteGeoTest : public C4GeoTest {
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteGeoTest);
+*/
