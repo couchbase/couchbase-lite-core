@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef VersionVector_hh
-#define VersionVector_hh
+#pragma once
 
 #include "Base.hh"
 #include <vector>
@@ -200,5 +199,3 @@ namespace cbforest {
     }
 
 }
-
-#endif /* VersionVector_hh */

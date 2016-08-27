@@ -6,9 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#ifndef __CBNano__KeyStore__
-#define __CBNano__KeyStore__
-
+#pragma once
 #include "Base.hh"
 #include "DocEnumerator.hh"
 #include <functional>
@@ -118,5 +116,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* defined(__CBNano__KeyStore__) */

@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef RawRevTree_hh
-#define RawRevTree_hh
+#pragma once
 #include "slice.hh"
 #include "RevTree.hh"
 #include "KeyStore.hh"
@@ -69,5 +68,3 @@ namespace cbforest {
     };
     
 }
-
-#endif /* RawRevTree_hh */

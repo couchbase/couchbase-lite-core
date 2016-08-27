@@ -13,9 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__Index__
-#define __CBForest__Index__
-
+#pragma once
 #include "DataFile.hh"
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
@@ -155,5 +153,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* defined(__CBForest__Index__) */

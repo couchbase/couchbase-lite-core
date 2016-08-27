@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef CASRevisionStore_hh
-#define CASRevisionStore_hh
+#pragma once
 #include "RevisionStore.hh"
 
 namespace cbforest {
@@ -74,4 +73,3 @@ namespace cbforest {
     };
 
 }
-#endif /* CASRevisionStore_hh */

@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef SecureDigest_hh
-#define SecureDigest_hh
+#pragma once
 
 
 #if defined(_CRYPTO_CC)
@@ -87,5 +86,3 @@ static inline void sha1_end(sha1Context *ctx, void *outDigest) {
 
 #endif
 
-
-#endif /* SecureDigest_hh */

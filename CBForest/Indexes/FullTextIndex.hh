@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef FullTextIndex_hh
-#define FullTextIndex_hh
+#pragma once
 
 #include "MapReduceIndex.hh"
 #include <map>
@@ -83,5 +82,3 @@ namespace cbforest {
 };
 
 }
-
-#endif /* FullTextIndex_hh */

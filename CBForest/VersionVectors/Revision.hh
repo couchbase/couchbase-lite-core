@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef Revision_hh
-#define Revision_hh
+#pragma once
 #include "Document.hh"
 #include "VersionVector.hh"
 
@@ -87,5 +86,3 @@ namespace cbforest {
 
 }
 
-
-#endif /* Revision_hh */

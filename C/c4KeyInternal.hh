@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef c4KeyInternal_h
-#define c4KeyInternal_h
+#pragma once
 
 #include "c4Internal.hh"
 #include "c4Key.h"
@@ -27,5 +26,3 @@ struct c4KeyValueList {
     vector<alloc_slice> values;
 };
 
-
-#endif /* c4KeyInternal_h */

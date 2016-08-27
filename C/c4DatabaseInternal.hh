@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef c4DatabaseInternal_hh
-#define c4DatabaseInternal_hh
+#pragma once
 
 #include "c4Internal.hh"
 #include "c4Database.h"
@@ -138,5 +137,3 @@ namespace c4Internal {
 #define WITH_LOCK(db) do { } while (0)  // no-op
 #endif
 
-
-#endif /* c4DatabaseInternal_hh */

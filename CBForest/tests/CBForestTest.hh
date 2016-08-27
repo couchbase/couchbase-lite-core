@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef CBForestTest_h
-#define CBForestTest_h
+#pragma once
 
 #include <iostream>
 #include "slice.hh"
@@ -56,7 +55,5 @@ public:
     bool isForestDB() const             {return true;}
 
 };
-
-#endif /* CBForestTest_h */
 
 

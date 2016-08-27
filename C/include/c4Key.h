@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4Key_h
-#define c4Key_h
+#pragma once
 #include "c4Base.h"
 
 #ifdef __cplusplus
@@ -163,5 +162,3 @@ extern "C" {
 #ifdef __cplusplus
     }
 #endif
-
-#endif /* c4Key_h */

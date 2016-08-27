@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef FilePath_hh
-#define FilePath_hh
+#pragma once
 
 #include <string>
 #include <functional>
@@ -113,5 +112,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* FilePath_hh */

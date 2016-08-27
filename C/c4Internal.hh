@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4Internal_h
-#define c4Internal_h
+#pragma once
 
 #include "Base.hh"
 #include "Error.hh"
@@ -92,5 +91,3 @@ namespace c4Internal {
 
 using namespace c4Internal;
 
-
-#endif /* c4Internal_h */

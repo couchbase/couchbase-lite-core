@@ -8,8 +8,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4View_h
-#define c4View_h
+#pragma once
 
 #include "c4Base.h"
 #include "c4Database.h"
@@ -302,5 +301,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* c4View_h */

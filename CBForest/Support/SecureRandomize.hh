@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef SecureRandomize_h
-#define SecureRandomize_h
+#pragma once
 
 
 #if defined(_CRYPTO_CC)
@@ -44,5 +43,3 @@
 
 #endif
 
-
-#endif /* SecureRandomize_h */

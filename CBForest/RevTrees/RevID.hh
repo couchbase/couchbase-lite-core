@@ -13,9 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__RevID__
-#define __CBForest__RevID__
-
+#pragma once
 #include "Base.hh"
 
 namespace cbforest {
@@ -86,5 +84,3 @@ namespace cbforest {
         uint8_t _buffer[42];
     };
 }
-
-#endif /* defined(__CBForest__RevID__) */

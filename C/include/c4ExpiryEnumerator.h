@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef c4ExpiryEnumerator_h
-#define c4ExpiryEnumerator_h
+#pragma once
 
 #include "c4Database.h"
 #include "c4DocEnumerator.h"
@@ -51,5 +50,3 @@ extern "C" {
 #ifdef __cplusplus
     }
 #endif
-
-#endif /* c4ExpiryEnumerator_h */

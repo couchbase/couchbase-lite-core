@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef RevisionStore_hh
-#define RevisionStore_hh
+#pragma once
 #include "DataFile.hh"
 #include "Revision.hh"
 #include "VersionVector.hh"
@@ -122,5 +121,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* RevisionStore_hh */

@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef c4DocInternal_h
-#define c4DocInternal_h
+#pragma once
 #include "DataFile.hh"
 #include "Document.hh"
 #include "LogInternal.hh"
@@ -114,5 +113,3 @@ static inline C4DocumentInternal *internal(C4Document *doc) {
 
 
 } // end namespace
-
-#endif /* c4DocInternal_h */

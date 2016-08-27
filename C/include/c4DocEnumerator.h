@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4DocEnumerator_h
-#define c4DocEnumerator_h
+#pragma once
 
 #include "c4Document.h"
 
@@ -139,5 +138,3 @@ extern "C" {
 #ifdef __cplusplus
     }
 #endif
-
-#endif /* c4DocEnumerator_hh */

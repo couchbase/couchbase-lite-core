@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef RefCounted_hh
-#define RefCounted_hh
+#pragma once
 
 #include "Error.hh"
 #include <atomic>
@@ -73,4 +72,3 @@ namespace cbforest {
     };
 
 }
-#endif /* RefCounted_hh */

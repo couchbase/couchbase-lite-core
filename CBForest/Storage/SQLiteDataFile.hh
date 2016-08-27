@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef SQLiteDatabase_hh
-#define SQLiteDatabase_hh
+#pragma once
 
 #include "DataFile.hh"
 
@@ -122,5 +121,3 @@ namespace cbforest {
 
 }
 
-
-#endif /* SQLiteDataFile_hh */

@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef Base_h
-#define Base_h
+#pragma once
 
 #include "slice.hh"
 
@@ -21,5 +20,3 @@ namespace cbforest {
     typedef sequence sequence_t;    // Sometimes used for disambiguation with a sequence() method
 }
 
-
-#endif /* Base_h */

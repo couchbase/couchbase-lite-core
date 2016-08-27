@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef CBNano_DocEnumerator_hh
-#define CBNano_DocEnumerator_hh
+#pragma once
 
 #include "Document.hh"
 #include <vector>
@@ -135,5 +134,3 @@ namespace cbforest {
     };
 
 }
-
-#endif

@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef CBForest_CBForest_hh
-#define CBForest_CBForest_hh
+#pragma once
 
 #ifndef __cplusplus
 #error C++ only!

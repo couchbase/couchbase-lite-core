@@ -13,9 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__MapReduceIndex__
-#define __CBForest__MapReduceIndex__
-
+#pragma once
 #include "Index.hh"
 #include "Geohash.hh"
 #include <set>
@@ -141,7 +139,5 @@ namespace cbforest {
 
         const std::vector<Collatable> _noKeys;
         const std::vector<alloc_slice> _noValues;
-};
+    };
 }
-
-#endif /* defined(__CBForest__MapReduceIndex__) */

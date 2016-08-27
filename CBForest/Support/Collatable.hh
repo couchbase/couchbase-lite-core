@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__Collatable__
-#define __CBForest__Collatable__
+#pragma once
 #include <stdint.h>
 #include <string>
 #include <iostream>
@@ -208,5 +207,3 @@ namespace cbforest {
 
 
 }
-
-#endif /* defined(__CBForest__Collatable__) */

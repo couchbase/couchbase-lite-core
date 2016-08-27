@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__GeoIndex__
-#define __CBForest__GeoIndex__
+#pragma once
 #include "MapReduceIndex.hh"
 #include "Geohash.hh"
 #include "KeyStore.hh"
@@ -62,5 +61,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* defined(__CBForest__GeoIndex__) */

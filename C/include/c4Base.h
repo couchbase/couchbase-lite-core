@@ -8,8 +8,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4Base_h
-#define c4Base_h
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -217,5 +216,3 @@ int c4_getObjectCount(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* c4Base_h */

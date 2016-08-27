@@ -6,8 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifndef ForestDataFile_hh
-#define ForestDataFile_hh
+#pragma once
 
 #include "DataFile.hh"
 #include "fdb_types.h"
@@ -122,5 +121,3 @@ namespace cbforest {
     };
 }
 
-
-#endif /* ForestDataFile_hh */

@@ -6,9 +6,7 @@
 //  Copyright (c) 2014 Couchbase. All rights reserved.
 //
 
-#ifndef __CBForest__Tokenizer__
-#define __CBForest__Tokenizer__
-
+#pragma once
 #include "slice.hh"
 #include <unordered_map>
 
@@ -96,5 +94,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* defined(__CBForest__Tokenizer__) */

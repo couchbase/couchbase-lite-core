@@ -14,8 +14,7 @@
 //  and limitations under the License.
 
 
-#ifndef __CBForest__Geohash__
-#define __CBForest__Geohash__
+#pragma once
 #include "slice.hh"
 #include <string.h>
 #include <vector>
@@ -181,5 +180,3 @@ namespace geohash {
     }
 
 }
-
-#endif

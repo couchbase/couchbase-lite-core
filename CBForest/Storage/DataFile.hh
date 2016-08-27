@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBNano__DataFile__
-#define __CBNano__DataFile__
+#pragma once
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include <vector>
@@ -221,5 +220,3 @@ namespace cbforest {
     };
 
 }
-
-#endif /* defined(__CBNano__DataFile__) */

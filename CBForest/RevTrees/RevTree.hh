@@ -13,9 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__RevTree__
-#define __CBForest__RevTree__
-
+#pragma once
 #include "slice.hh"
 #include "RevID.hh"
 #include "DataFile.hh"
@@ -165,5 +163,3 @@ namespace cbforest {
     }
 
 }
-
-#endif /* defined(__CBForest__RevTree__) */

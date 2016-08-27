@@ -14,8 +14,7 @@
 //  and limitations under the License.
 
 
-#ifndef CBForest_LogInternal_h
-#define CBForest_LogInternal_h
+#pragma once
 
 #include "DataFile.hh"
 
@@ -61,5 +60,3 @@ void _Log(logLevel, const char *message, ...);
 #endif
 
 }
-
-#endif

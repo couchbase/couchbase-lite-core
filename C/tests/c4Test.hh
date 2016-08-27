@@ -6,8 +6,7 @@
 //  Copyright © 2015 Couchbase. All rights reserved.
 //
 
-#ifndef c4Test_hh
-#define c4Test_hh
+#pragma once
 
 #include "c4Database.h"
 #include "c4Document.h"
@@ -89,5 +88,3 @@ protected:
 private:
     int objectCount;
 };
-
-#endif /* c4Test_hh */

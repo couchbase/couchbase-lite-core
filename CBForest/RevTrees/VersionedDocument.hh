@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef __CBForest__VersionedDocument__
-#define __CBForest__VersionedDocument__
+#pragma once
 #include "RevTree.hh"
 #include "Document.hh"
 
@@ -89,5 +88,3 @@ namespace cbforest {
         alloc_slice _docType;
     };
 }
-
-#endif /* defined(__CBForest__VersionedDocument__) */

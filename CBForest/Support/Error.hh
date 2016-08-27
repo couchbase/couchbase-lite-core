@@ -13,8 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#ifndef CBForest_Error_h
-#define CBForest_Error_h
+#pragma once
 
 #include <exception>
 
@@ -120,5 +119,3 @@ namespace cbforest {
 #endif
 
 }
-
-#endif
