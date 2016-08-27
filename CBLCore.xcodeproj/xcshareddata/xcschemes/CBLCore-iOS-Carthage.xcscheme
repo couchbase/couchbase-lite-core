@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-               BuildableName = "C4Tests"
-               BlueprintName = "C4Tests"
-               ReferencedContainer = "container:CBForest.xcodeproj">
+               BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+               BuildableName = "libCBLCore.a"
+               BlueprintName = "CBLCore static"
+               ReferencedContainer = "container:CBLCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -28,14 +28,24 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "27139B2F18F8E9750021A9A3"
+               BuildableName = "CBLCore Tests.xctest"
+               BlueprintName = "CBLCore Tests"
+               ReferencedContainer = "container:CBLCore.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-            BuildableName = "C4Tests"
-            BlueprintName = "C4Tests"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBLCore.a"
+            BlueprintName = "CBLCore static"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -49,19 +59,17 @@
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
-      enableAddressSanitizer = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-            BuildableName = "C4Tests"
-            BlueprintName = "C4Tests"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBLCore.a"
+            BlueprintName = "CBLCore static"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -71,16 +79,15 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-            BuildableName = "C4Tests"
-            BlueprintName = "C4Tests"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "27EF80F91917EEC600A327B9"
+            BuildableName = "libCBLCore.a"
+            BlueprintName = "CBLCore static"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

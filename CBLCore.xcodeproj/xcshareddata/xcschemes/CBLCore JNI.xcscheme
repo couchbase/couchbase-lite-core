@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-               BuildableName = "libforestdb.a"
-               BlueprintName = "forestdb"
-               ReferencedContainer = "container:CBForest.xcodeproj">
+               BlueprintIdentifier = "274D03D21BA732B000FF7C35"
+               BuildableName = "libCBLCoreJNI.dylib"
+               BlueprintName = "CBLCoreJNI"
+               ReferencedContainer = "container:CBLCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,10 +45,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-            BuildableName = "libforestdb.a"
-            BlueprintName = "forestdb"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "274D03D21BA732B000FF7C35"
+            BuildableName = "libCBLCoreJNI.dylib"
+            BlueprintName = "CBLCoreJNI"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -63,10 +63,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-            BuildableName = "libforestdb.a"
-            BlueprintName = "forestdb"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "274D03D21BA732B000FF7C35"
+            BuildableName = "libCBLCoreJNI.dylib"
+            BlueprintName = "CBLCoreJNI"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>

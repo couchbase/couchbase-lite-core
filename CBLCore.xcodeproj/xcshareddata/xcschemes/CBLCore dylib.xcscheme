@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "27A6579B1CBC190B00A7A1D7"
-               BuildableName = "SwiftForest.framework"
-               BlueprintName = "SwiftForest"
-               ReferencedContainer = "container:CBForest.xcodeproj">
+               BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
+               BuildableName = "libCBLCore-Interop.dylib"
+               BlueprintName = "CBLCore dylib"
+               ReferencedContainer = "container:CBLCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -28,26 +28,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "27A657A41CBC190B00A7A1D7"
-               BuildableName = "SwiftForestTests.xctest"
-               BlueprintName = "SwiftForestTests"
-               ReferencedContainer = "container:CBForest.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27A6579B1CBC190B00A7A1D7"
-            BuildableName = "SwiftForest.framework"
-            BlueprintName = "SwiftForest"
-            ReferencedContainer = "container:CBForest.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -64,10 +45,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27A6579B1CBC190B00A7A1D7"
-            BuildableName = "SwiftForest.framework"
-            BlueprintName = "SwiftForest"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
+            BuildableName = "libCBLCore-Interop.dylib"
+            BlueprintName = "CBLCore dylib"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -82,10 +63,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "27A6579B1CBC190B00A7A1D7"
-            BuildableName = "SwiftForest.framework"
-            BlueprintName = "SwiftForest"
-            ReferencedContainer = "container:CBForest.xcodeproj">
+            BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
+            BuildableName = "libCBLCore-Interop.dylib"
+            BlueprintName = "CBLCore dylib"
+            ReferencedContainer = "container:CBLCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>
