@@ -1,9 +1,9 @@
 //
 //  native_view.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/17/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 #include <vector>
 
 
-using namespace cbforest::jni;
+using namespace CBL_Core::jni;
 
 
 #pragma mark - DATABASE:
@@ -33,7 +33,7 @@ static inline C4View* getViewHandle(JNIEnv *env, jobject self) {
     return (C4View*)env->GetLongField(self, kHandleField);
 }
 
-bool cbforest::jni::initView(JNIEnv *env) {
+bool CBL_Core::jni::initView(JNIEnv *env) {
     jclass viewClass = env->FindClass("com/couchbase/cbforest/View");
     if (!viewClass)
         return false;

@@ -1,9 +1,9 @@
 //
 //  FilePath.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/19/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "FilePath.hh"
@@ -20,7 +20,7 @@
 
 using namespace std;
 
-namespace cbforest {
+namespace CBL_Core {
 
 #ifdef _MSC_VER
     static const char  kSeparatorChar = '\\';

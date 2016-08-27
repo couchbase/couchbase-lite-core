@@ -1,9 +1,9 @@
 //
 //  native_document.cpp
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/11/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -19,8 +19,8 @@
 #include <algorithm>
 #include <vector>
 
-using namespace cbforest;
-using namespace cbforest::jni;
+using namespace CBL_Core;
+using namespace CBL_Core::jni;
 
 
 static jfieldID kField_Flags;
@@ -33,7 +33,7 @@ static jfieldID kField_SelectedSequence;
 static jfieldID kField_SelectedBody;
 
 
-bool cbforest::jni::initDocument(JNIEnv *env) {
+bool CBL_Core::jni::initDocument(JNIEnv *env) {
     jclass documentClass = env->FindClass("com/couchbase/cbforest/Document");
     if (!documentClass)
         return false;
@@ -162,7 +162,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 
 
 static bool isNotFoundError(C4Error error) {
-    return error.domain == CBForestDomain && (error.code == kC4ErrorNotFound ||
+    return error.domain == CBLCoreDomain && (error.code == kC4ErrorNotFound ||
                                               error.code == kC4ErrorDeleted);
 }
 

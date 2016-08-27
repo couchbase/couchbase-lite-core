@@ -1,16 +1,16 @@
 //
 //  CollatableTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/2/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "Collatable.hh"
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 #include <math.h>
 
-using namespace cbforest;
+using namespace CBL_Core;
 
 
 template <typename T>
@@ -27,7 +27,7 @@ static int compareCollated(T1 obj1, T2 obj2) {
     CollatableBuilder c1, c2;
     c1 << obj1;
     c2 << obj2;
-    return sgn(cbforest::slice(c1).compare(cbforest::slice(c2)));
+    return sgn(CBL_Core::slice(c1).compare(CBL_Core::slice(c2)));
 }
 
 static uint64_t randn(uint64_t limit) {
@@ -126,7 +126,7 @@ TEST_CASE( "Collatable RoundTripInts", "[Collatable]" ) {
     for (int bits = 0; bits < 63; ++bits, n<<=1) {
         CollatableBuilder c;
         c << n - 1;
-        alloc_slice encoded((cbforest::slice)c);
+        alloc_slice encoded((CBL_Core::slice)c);
         CollatableReader reader(encoded);
         uint64_t result = reader.readInt();
         //Log("2^%2d - 1: %llx --> %llx", bits, n-1, result);
@@ -178,12 +178,12 @@ TEST_CASE( "Collatable IndexKey", "[Collatable]" ) {
     indexKey << collKey << collatableDocID << (int64_t)1234;
     indexKey.endArray();
 
-    alloc_slice encoded((cbforest::slice)indexKey);
+    alloc_slice encoded((CBL_Core::slice)indexKey);
 
     CollatableReader reader(encoded);
     reader.beginArray();
-    cbforest::slice readKey = reader.read();
-    REQUIRE(readKey == (cbforest::slice)collKey);
+    CBL_Core::slice readKey = reader.read();
+    REQUIRE(readKey == (CBL_Core::slice)collKey);
     alloc_slice readDocID = reader.readString();
     REQUIRE((slice)readDocID == (slice)docID);
     int64_t readSequence = reader.readInt();

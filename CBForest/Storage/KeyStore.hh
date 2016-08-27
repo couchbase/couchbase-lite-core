@@ -1,9 +1,9 @@
 //
 //  KeyStore.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/12/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -11,7 +11,7 @@
 #include "DocEnumerator.hh"
 #include <functional>
 
-namespace cbforest {
+namespace CBL_Core {
 
     class DataFile;
     class Document;

@@ -1,9 +1,9 @@
 //
 //  c4DatabaseTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/14/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 //  Requires CppUnit <http://sourceforge.net/projects/cppunit/>,
@@ -66,9 +66,9 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
 
     assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
     assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
-    assertMessage(CBForestDomain, 15, "invalid parameter");
+    assertMessage(CBLCoreDomain, 15, "invalid parameter");
     assertMessage(POSIXDomain, ENOENT, "No such file or directory");
-    assertMessage(CBForestDomain, kC4ErrorIndexBusy, "index busy; can't close view");
+    assertMessage(CBLCoreDomain, kC4ErrorIndexBusy, "index busy; can't close view");
     assertMessage(ForestDBDomain, -1234, "unknown error");
     assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
 }
@@ -78,13 +78,13 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]"
     auto config = *c4db_getConfig(db);
     config.flags |= kC4DB_Bundled;
 
-    C4Slice bundlePath = c4str(kTestDir "cbforest_test_bundle");
+    C4Slice bundlePath = c4str(kTestDir "cbl_core_test_bundle");
     c4db_deleteAtPath(bundlePath, &config, NULL);
     C4Error error;
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
     C4Slice path = c4db_getPath(bundle);
-    REQUIRE(path == c4str(kTestDir "cbforest_test_bundle/")); // note trailing '/'
+    REQUIRE(path == c4str(kTestDir "cbl_core_test_bundle/")); // note trailing '/'
     REQUIRE(c4db_close(bundle, &error));
     c4db_free(bundle);
 
@@ -140,7 +140,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
 
     // Nonexistent:
     REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == (C4RawDocument*)nullptr);
-    REQUIRE(error.domain == CBForestDomain);
+    REQUIRE(error.domain == CBLCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
 
@@ -151,7 +151,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database][C]")
     C4Document* doc;
     doc = c4doc_get(db, kDocID, true, &error);
     REQUIRE(!doc);
-    REQUIRE((uint32_t)error.domain == (uint32_t)CBForestDomain);
+    REQUIRE((uint32_t)error.domain == (uint32_t)CBLCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
     c4doc_free(doc);
 

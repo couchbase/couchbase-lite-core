@@ -1,9 +1,9 @@
 //
 //  english_stopwords.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/2/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 // Word list downloaded from http://jmlr.org/papers/volume5/lewis04a/a11-smart-stop-list/english.stop

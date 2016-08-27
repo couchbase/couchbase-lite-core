@@ -1,9 +1,9 @@
 //
 //  c4DocInternal.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/18/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once

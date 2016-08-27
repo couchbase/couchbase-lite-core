@@ -1,9 +1,9 @@
 //
 //  c4Key.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/6/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -22,7 +22,7 @@
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
-using namespace cbforest;
+using namespace CBL_Core;
 
 
 C4Key* c4key_new()                              {return new c4Key();}

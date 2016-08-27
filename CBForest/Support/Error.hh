@@ -1,9 +1,9 @@
 //
 //  Error.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 6/15/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -15,11 +15,11 @@
 
 #pragma once
 
-#include <exception>
+#include <stdexcept>
 
 #undef check
 
-namespace cbforest {
+namespace CBL_Core {
 
 #ifdef _MSC_VER
 #define expected(EXPR, VALUE)   (EXPR)
@@ -31,14 +31,14 @@ namespace cbforest {
     struct error : public std::runtime_error {
 
         enum Domain {
-            CBForest,
+            CBLCore,
             POSIX,
             ForestDB,
             SQLite,
         };
 
-        // Error codes in CBForest domain:
-        enum CBForestError {
+        // Error codes in CBLCore domain:
+        enum CBLCoreError {
             AssertionFailed = 1,
             Unimplemented,
             NoSequences,
@@ -70,16 +70,16 @@ namespace cbforest {
             NotADatabaseFile,
             WrongFormat,                // DB exists but is not in format requested
 
-            NumCBForestErrors
+            NumCBLCoreErrors
         };
 
         Domain const domain;
         int const code;
 
         error (Domain d, int c );
-        explicit error (CBForestError e)     :error(CBForest, e) {}
+        explicit error (CBLCoreError e)     :error(CBLCore, e) {}
 
-        /** Returns an equivalent error in the CBForest or POSIX domain. */
+        /** Returns an equivalent error in the CBLCore or POSIX domain. */
         error standardized() const;
 
         bool isUnremarkable() const;
@@ -95,7 +95,7 @@ namespace cbforest {
 
         /** Constructs and throws an error. */
         [[noreturn]] static void _throw(Domain d, int c );
-        [[noreturn]] static void _throw(CBForestError);
+        [[noreturn]] static void _throw(CBLCoreError);
         [[noreturn]] static void _throwErrno();
 
         /** Throws an assertion failure exception. Called by the CBFAssert() macro. */
@@ -108,7 +108,7 @@ namespace cbforest {
 
 // Like C assert() but throws an exception instead of aborting
 #define	CBFAssert(e) \
-    (expected(!(e), 0) ? cbforest::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+    (expected(!(e), 0) ? CBL_Core::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
                        : (void)0)
 
 // CBFDebugAssert is removed from release builds; use when 'e' test is too expensive

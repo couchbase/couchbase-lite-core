@@ -1,13 +1,13 @@
 //
 //  RevisionStoreTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/12/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "RevisionStore.hh"
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 #include "LogInternal.hh"
 
 

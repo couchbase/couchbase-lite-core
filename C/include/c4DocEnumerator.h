@@ -1,9 +1,9 @@
 //
 //  c4DocEnumerator.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 12/16/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -40,7 +40,7 @@ extern "C" {
     /** Default all-docs enumeration options.
         Includes inclusiveStart, inclusiveEnd, includeBodies, includeNonConflicts.
         Does not include descending, skip, includeDeleted. */
-    CBFOREST_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
+    CBL_CORE_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
     
 
     /** Metadata about a document (actually about its current revision.) */

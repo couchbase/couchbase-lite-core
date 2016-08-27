@@ -1,9 +1,9 @@
 //
 //  FilePath.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/19/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -11,7 +11,7 @@
 #include <string>
 #include <functional>
 
-namespace cbforest {
+namespace CBL_Core {
 
     /** A simple cross-platform class for working with files and paths.
         An instance represents a filesystem path, with the filename split out from the directory

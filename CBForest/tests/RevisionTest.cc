@@ -1,14 +1,14 @@
 //
 //  RevisionTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/11/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "Revision.hh"
-#include "CBForestTest.hh"
-using namespace cbforest;
+#include "CBLCoreTest.hh"
+using namespace CBL_Core;
 
 
 const VersionVector kTestVers {slice("2@*,3@$,1@bob")};

@@ -1,9 +1,9 @@
 //
 //  c4ThreadingTest.cpp
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/1/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "c4Test.hh"

@@ -1,9 +1,9 @@
 //
 //  RevisionStore.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/8/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -25,14 +25,14 @@
 
     `_currentStore` (the database's default KeyStore) stores only current revisions.
     The key is the exact document ID; meta contains the flags, version vector and document type;
-    and the body is the document body (JSON or Fleece; CBForest currently doesn't care.)
+    and the body is the document body (JSON or Fleece; CBL Core currently doesn't care.)
  
     `nonCurrentStore` (named "revs") stores non-current revisions. These are usually conflicts,
     but if using CAS this also contains the server ancestor of the current revision.
     The key is the docID plus revID; meta and body are the same as in `_currentStore`.
  */
 
-namespace cbforest {
+namespace CBL_Core {
 
 
     // Separates the docID and the author in the keys of non-current Revisions.
@@ -90,7 +90,7 @@ namespace cbforest {
 
 
     // Make sure a Revision has a body (if it was originally loaded as meta-only)
-    void RevisionStore::readBody(cbforest::Revision &rev) {
+    void RevisionStore::readBody(CBL_Core::Revision &rev) {
         KeyStore &store = rev.isCurrent() ? _currentStore : _nonCurrentStore;
         store.readBody(rev.document());
     }

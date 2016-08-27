@@ -1,9 +1,9 @@
 //
 //  c4Database.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/8/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -120,7 +120,7 @@ c4Database::c4Database(string path,
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
     if (schema() == requiredSchema)
         return true;
-    recordError(CBForestDomain, kC4ErrorUnsupported, outError);
+    recordError(CBLCoreDomain, kC4ErrorUnsupported, outError);
     return false;
 }
 
@@ -144,14 +144,14 @@ bool c4Database::inTransaction() {
 bool c4Database::mustBeInTransaction(C4Error *outError) {
     if (inTransaction())
         return true;
-    recordError(CBForestDomain, kC4ErrorNotInTransaction, outError);
+    recordError(CBLCoreDomain, kC4ErrorNotInTransaction, outError);
     return false;
 }
 
 bool c4Database::mustNotBeInTransaction(C4Error *outError) {
     if (!inTransaction())
         return true;
-    recordError(CBForestDomain, kC4ErrorTransactionNotClosed, outError);
+    recordError(CBLCoreDomain, kC4ErrorTransactionNotClosed, outError);
     return false;
 }
 
@@ -241,7 +241,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     if (database->refCount() > 1) {
-        recordError(CBForestDomain, kC4ErrorBusy, outError);
+        recordError(CBLCoreDomain, kC4ErrorBusy, outError);
         return false;
     }
     try {
@@ -379,7 +379,7 @@ bool c4db_endTransaction(C4Database* database,
     try {
         bool ok = database->endTransaction(commit);
         if (!ok)
-            recordError(CBForestDomain, kC4ErrorNotInTransaction, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotInTransaction, outError);
         return ok;
     } catchError(outError);
     return false;
@@ -394,7 +394,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
         if (database->defaultKeyStore().del(docID, database->transaction()))
             return true;
         else
-            recordError(CBForestDomain, kC4ErrorNotFound, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
     } catchError(outError)
     return false;
 }
@@ -448,7 +448,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         KeyStore& localDocs = database->getKeyStore((string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
-            recordError(CBForestDomain, kC4ErrorNotFound, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
             return NULL;
         }
         auto rawDoc = new C4RawDocument;

@@ -1,4 +1,4 @@
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -236,14 +236,14 @@ public interface Constants {
 
     // Error domains:
     interface C4ErrorDomain {
-        int CBForestDomain = 1;     // code is CBForest-specific code (c4Base.h)
+        int CBLCoreDomain = 1;      // code is CBL Core-specific code (c4Base.h)
         int POSIXDomain = 2;        // code is an errno (errno.h)
         int ForestDBDomain = 3;     // code is a fdb_status (fdb_error.h)
         int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)
     }
 
-    // CBForestDomain error codes:
-    interface CBForestError {
+    // CBLCoreDomain error codes:
+    interface CBLCoreError {
         int kC4ErrorAssertionFailed = 1;        // Internal assertion failure
         int kC4ErrorUnimplemented = 2;          // Oops, an unimplemented API call
         int kC4ErrorNoSequences = 3;            // This KeyStore does not support sequences

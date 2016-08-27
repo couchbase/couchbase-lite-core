@@ -1,9 +1,9 @@
 //
 //  c4ExpiryEnumerator.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jim Borden on 4/13/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once

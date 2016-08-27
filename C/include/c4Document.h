@@ -1,9 +1,9 @@
 //
 //  c4Document.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/6/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -69,7 +69,7 @@ extern "C" {
                                     C4SequenceNumber,
                                     C4Error *outError);
 
-    /** Returns the document type (as set by setDocType.) This value is ignored by CBForest itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
+    /** Returns the document type (as set by setDocType.) This value is ignored by CBL Core itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
     C4SliceResult c4doc_getType(C4Document *doc);
 
 

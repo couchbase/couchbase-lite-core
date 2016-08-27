@@ -1,9 +1,9 @@
 //
 //  native_glue.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/11/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #ifndef native_glue_hpp
@@ -14,7 +14,7 @@
 #include "slice.hh"
 #include <vector>
 
-namespace cbforest {
+namespace CBL_Core {
     namespace jni {
 
     using namespace fleece;
@@ -85,7 +85,7 @@ jstring toJString(JNIEnv*, C4Slice);
 // Creates a Java byte[] from the contents of a C4Slice.
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 
-// Sets a Java exception based on the CBForest error.
+// Sets a Java exception based on the CBLCore error.
 void throwError(JNIEnv*, C4Error);
 
 // Copies an array of handles from a Java long[] to a C++ vector.

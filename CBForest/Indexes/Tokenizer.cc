@@ -1,9 +1,9 @@
 ﻿//
 //  Tokenizer.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 10/17/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -31,7 +31,7 @@ extern "C" {
     #include "fts3_unicodesn.h"
 }
 
-namespace cbforest {
+namespace CBL_Core {
 
     static const struct sqlite3_tokenizer_module* sModule;
     static std::unordered_map<std::string, word_set> sStemmerToStopwords;

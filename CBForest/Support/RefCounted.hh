@@ -1,9 +1,9 @@
 //
 //  RefCounted.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/12/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -11,7 +11,7 @@
 #include "Error.hh"
 #include <atomic>
 
-namespace cbforest {
+namespace CBL_Core {
 
     /** Base class that keeps track of the total instance count of all subclasses,
         which is returned by c4_getObjectCount(). */

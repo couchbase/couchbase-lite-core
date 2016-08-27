@@ -1,9 +1,9 @@
 //
-//  CBForestTest.hh
-//  CBForest
+//  CBLCoreTest.hh
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/24/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -34,7 +34,7 @@ namespace fleece {
 
 #include "DataFile.hh"
 
-using namespace cbforest;
+using namespace CBL_Core;
 using namespace std;
 
 

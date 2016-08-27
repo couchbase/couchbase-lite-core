@@ -1,14 +1,14 @@
 //
 //  GeoHash_Test.m
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/3/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "Geohash.hh"
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 
 static void verify_hash(double lat, double lon, int len, const char* expected)

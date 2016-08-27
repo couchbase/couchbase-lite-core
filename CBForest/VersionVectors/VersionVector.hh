@@ -1,9 +1,9 @@
 //
 //  VersionVector.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/23/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -19,7 +19,7 @@ namespace fleece {
 }
 
 
-namespace cbforest {
+namespace CBL_Core {
 
     class VersionVector;
 

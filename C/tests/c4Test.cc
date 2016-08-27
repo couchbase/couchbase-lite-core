@@ -1,9 +1,9 @@
 //
 //  c4Test.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/16/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #include "c4Test.hh"
@@ -62,7 +62,7 @@ std::string toJSON(C4KeyReader r) {
 
 static void log(C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
-    fprintf(stderr, "CBForest-C %s: %*s\n", kLevelNames[level], (int)message.size, message.buf);
+    fprintf(stderr, "CBLCore-C %s: %*s\n", kLevelNames[level], (int)message.size, message.buf);
 }
 
 
@@ -71,9 +71,9 @@ static void log(C4LogLevel level, C4Slice message) {
 
 C4Slice C4Test::databasePath() {
     if (storageType() == kC4SQLiteStorageEngine)
-        return c4str(kTestDir "cbforest_test.sqlite3");
+        return c4str(kTestDir "cbl_core_test.sqlite3");
     else
-        return c4str(kTestDir "cbforest_test.forestdb");
+        return c4str(kTestDir "cbl_core_test.forestdb");
 }
 
 

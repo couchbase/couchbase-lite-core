@@ -1,9 +1,9 @@
 //
 //  c4ExpiryEnumerator.c
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jim Borden on 4/13/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -32,7 +32,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 {
     try {
         if (!db->defaultKeyStore().get(docId, kMetaOnly).exists()) {
-            recordError(CBForestDomain, kC4ErrorNotFound, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
             return false;
         }
 

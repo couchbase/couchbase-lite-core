@@ -1,11 +1,11 @@
 //
 //  c4View.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  C API for view and query access.
 //
 //  Created by Jens Alfke on 9/10/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -138,7 +138,7 @@ extern "C" {
         indexing. (Even if the view's map function didn't emit anything, the old keys/values need to
         be cleaned up.)
      
-        Values are uninterpreted by CBForest, but by convention are JSON. A special value "*"
+        Values are uninterpreted by CBL Core, but by convention are JSON. A special value "*"
         (a single asterisk) is used as a placeholder for the entire document.
 
         @param indexer  The indexer task.
@@ -204,7 +204,7 @@ extern "C" {
 
     /** Default query options. Has skip=0, limit=UINT_MAX, inclusiveStart=true,
         inclusiveEnd=true, rankFullText=true; all others are 0/false/NULL. */
-	CBFOREST_API extern const C4QueryOptions kC4DefaultQueryOptions;
+	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
     /** Info about a match of a full-text query term */
     typedef struct {

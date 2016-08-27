@@ -1,15 +1,15 @@
 //
 //  Index_Test.m
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/25/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "Index.hh"
 #include "Collatable.hh"
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 
 class IndexTest : public DataFileTestFixture {
@@ -45,8 +45,8 @@ public:
 
     uint64_t doQuery() {
         uint64_t nRows = 0;
-        for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
-                               Collatable(), cbforest::slice::null,
+        for (IndexEnumerator e(*index, Collatable(), CBL_Core::slice::null,
+                               Collatable(), CBL_Core::slice::null,
                                DocEnumerator::Options::kDefault); e.next(); ) {
             nRows++;
             alloc_slice keyStr = e.key().readString();
@@ -101,8 +101,8 @@ TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     uint64_t nRows = 0;
     auto options = DocEnumerator::Options::kDefault;
     options.descending = true;
-    for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
-                           Collatable(), cbforest::slice::null,
+    for (IndexEnumerator e(*index, Collatable(), CBL_Core::slice::null,
+                           Collatable(), CBL_Core::slice::null,
                            options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();

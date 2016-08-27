@@ -1,9 +1,9 @@
 //
 //  native_database.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/10/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -26,8 +26,8 @@
 #include <unistd.h>
 #endif
 
-using namespace cbforest;
-using namespace cbforest::jni;
+using namespace CBL_Core;
+using namespace CBL_Core::jni;
 
 
 #pragma mark - DATABASE:
@@ -41,7 +41,7 @@ static inline C4Database* getDbHandle(JNIEnv *env, jobject self) {
 }
 
 #ifdef DEBUG_TERMINATION
-static void jniCBForestTerminateHandler() {
+static void jniTerminateHandler() {
     fprintf(stderr, "***** CBFOREST UNCAUGHT C++ EXCEPTION *****\n");
     void* addrs[50];
     int n = backtrace(addrs, 50);
@@ -51,9 +51,9 @@ static void jniCBForestTerminateHandler() {
 }
 #endif
 
-bool cbforest::jni::initDatabase(JNIEnv *env) {
+bool CBL_Core::jni::initDatabase(JNIEnv *env) {
 #ifdef DEBUG_TERMINATION
-    std::set_terminate(jniCBForestTerminateHandler);    // TODO: Take this out after debugging
+    std::set_terminate(jniTerminateHandler);    // TODO: Take this out after debugging
 #endif
 
     jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
@@ -266,7 +266,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
         C4Error docErr;
         if (!c4db_purgeDoc((C4Database *) dbHandle, docID, &docErr)) {
             char msg[100];
-            Debug("Unable to purge expired doc: CBForest error %d/%d: %s",
+            Debug("Unable to purge expired doc: CBLCore error %d/%d: %s",
                   docErr.domain, docErr.code, c4error_getMessageC(err, msg, sizeof(msg)));
         }
         docIDs.push_back(strDocID);
@@ -274,7 +274,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
     }
     if(err.code) {
         char msg[100];
-        Debug("Error enumerating expired docs: CBForest error %d/%d",
+        Debug("Error enumerating expired docs: CBLCore error %d/%d",
               err.domain,err.code, c4error_getMessageC(err, msg, sizeof(msg)));
     }
 

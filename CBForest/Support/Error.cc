@@ -1,9 +1,9 @@
 //
 //  Error.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 3/4/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -25,7 +25,7 @@
 #include <android/log.h>
 #endif
 
-namespace cbforest {
+namespace CBL_Core {
 
     using namespace std;
 
@@ -37,22 +37,22 @@ namespace cbforest {
 
     // Maps ForestDB errors (fdb_error.h).
     static const codeMapping kForestDBMapping[] = {
-        {FDB_RESULT_INVALID_ARGS,       error::CBForest,    error::InvalidParameter},
-        {FDB_RESULT_OPEN_FAIL,          error::CBForest,    error::CantOpenFile},
-        {FDB_RESULT_NO_SUCH_FILE,       error::CBForest,    error::CantOpenFile},
-        {FDB_RESULT_WRITE_FAIL,         error::CBForest,    error::IOError},
-        {FDB_RESULT_READ_FAIL,          error::CBForest,    error::IOError},
-        {FDB_RESULT_CLOSE_FAIL,         error::CBForest,    error::IOError},
-        {FDB_RESULT_COMMIT_FAIL,        error::CBForest,    error::CommitFailed},
-        {FDB_RESULT_ALLOC_FAIL,         error::CBForest,    error::MemoryError},
-        {FDB_RESULT_KEY_NOT_FOUND,      error::CBForest,    error::NotFound},
-        {FDB_RESULT_RONLY_VIOLATION,    error::CBForest,    error::NotWriteable},
-        {FDB_RESULT_SEEK_FAIL,          error::CBForest,    error::IOError},
-        {FDB_RESULT_FSYNC_FAIL,         error::CBForest,    error::IOError},
-        {FDB_RESULT_CHECKSUM_ERROR,     error::CBForest,    error::CorruptData},
-        {FDB_RESULT_FILE_CORRUPTION,    error::CBForest,    error::CorruptData},
-        {FDB_RESULT_INVALID_HANDLE,     error::CBForest,    error::NotOpen},
-        {FDB_RESULT_NO_DB_HEADERS,      error::CBForest,    error::NotADatabaseFile},
+        {FDB_RESULT_INVALID_ARGS,       error::CBLCore,    error::InvalidParameter},
+        {FDB_RESULT_OPEN_FAIL,          error::CBLCore,    error::CantOpenFile},
+        {FDB_RESULT_NO_SUCH_FILE,       error::CBLCore,    error::CantOpenFile},
+        {FDB_RESULT_WRITE_FAIL,         error::CBLCore,    error::IOError},
+        {FDB_RESULT_READ_FAIL,          error::CBLCore,    error::IOError},
+        {FDB_RESULT_CLOSE_FAIL,         error::CBLCore,    error::IOError},
+        {FDB_RESULT_COMMIT_FAIL,        error::CBLCore,    error::CommitFailed},
+        {FDB_RESULT_ALLOC_FAIL,         error::CBLCore,    error::MemoryError},
+        {FDB_RESULT_KEY_NOT_FOUND,      error::CBLCore,    error::NotFound},
+        {FDB_RESULT_RONLY_VIOLATION,    error::CBLCore,    error::NotWriteable},
+        {FDB_RESULT_SEEK_FAIL,          error::CBLCore,    error::IOError},
+        {FDB_RESULT_FSYNC_FAIL,         error::CBLCore,    error::IOError},
+        {FDB_RESULT_CHECKSUM_ERROR,     error::CBLCore,    error::CorruptData},
+        {FDB_RESULT_FILE_CORRUPTION,    error::CBLCore,    error::CorruptData},
+        {FDB_RESULT_INVALID_HANDLE,     error::CBLCore,    error::NotOpen},
+        {FDB_RESULT_NO_DB_HEADERS,      error::CBLCore,    error::NotADatabaseFile},
 
         {FDB_RESULT_EPERM,              error::POSIX,       EPERM},
         {FDB_RESULT_EIO,                error::POSIX,       EIO},
@@ -76,22 +76,22 @@ namespace cbforest {
         {FDB_RESULT_ENAMETOOLONG,       error::POSIX,       ENAMETOOLONG},
         {FDB_RESULT_EOVERFLOW,          error::POSIX,       EOVERFLOW},
         {FDB_RESULT_EAGAIN,             error::POSIX,       EAGAIN},
-        {0, /*must end with err=0*/     error::CBForest,    0},
+        {0, /*must end with err=0*/     error::CBLCore,    0},
     };
 
     static const codeMapping kSQLiteMapping[] = {
-        {SQLITE_PERM,                   error::CBForest,    error::NotWriteable},
-        {SQLITE_BUSY,                   error::CBForest,    error::Busy},
-        {SQLITE_LOCKED,                 error::CBForest,    error::Busy},
-        {SQLITE_NOMEM,                  error::CBForest,    error::MemoryError},
-        {SQLITE_READONLY,               error::CBForest,    error::NotWriteable},
-        {SQLITE_IOERR,                  error::CBForest,    error::IOError},
-        {SQLITE_CORRUPT,                error::CBForest,    error::CorruptData},
+        {SQLITE_PERM,                   error::CBLCore,    error::NotWriteable},
+        {SQLITE_BUSY,                   error::CBLCore,    error::Busy},
+        {SQLITE_LOCKED,                 error::CBLCore,    error::Busy},
+        {SQLITE_NOMEM,                  error::CBLCore,    error::MemoryError},
+        {SQLITE_READONLY,               error::CBLCore,    error::NotWriteable},
+        {SQLITE_IOERR,                  error::CBLCore,    error::IOError},
+        {SQLITE_CORRUPT,                error::CBLCore,    error::CorruptData},
         {SQLITE_FULL,                   error::POSIX,       ENOSPC},
-        {SQLITE_CANTOPEN,               error::CBForest,    error::CantOpenFile},
-        {SQLITE_NOTADB,                 error::CBForest,    error::NotADatabaseFile},
-        {SQLITE_PERM,                   error::CBForest,    error::NotWriteable},
-        {0, /*must end with err=0*/     error::CBForest,    0},
+        {SQLITE_CANTOPEN,               error::CBLCore,    error::CantOpenFile},
+        {SQLITE_NOTADB,                 error::CBLCore,    error::NotADatabaseFile},
+        {SQLITE_PERM,                   error::CBLCore,    error::NotWriteable},
+        {0, /*must end with err=0*/     error::CBLCore,    0},
     };
     //TODO: Map the SQLite 'extended error codes' that give more detail about file errors
 
@@ -108,11 +108,11 @@ namespace cbforest {
 
 
     // Indexed by C4ErrorDomain
-    static const char* kDomainNames[] = {"CBForest", "POSIX", "ForestDB", "SQLite"};
+    static const char* kDomainNames[] = {"CBLCore", "POSIX", "ForestDB", "SQLite"};
 
-    static const char* cbforest_errstr(error::CBForestError code) {
-        static const char* kCBForestMessages[error::NumCBForestErrors] = {
-            // These must match up with the codes in the declaration of CBForestError
+    static const char* cbforest_errstr(error::CBLCoreError code) {
+        static const char* kCBLCoreMessages[error::NumCBLCoreErrors] = {
+            // These must match up with the codes in the declaration of CBLCoreError
             "no error", // 0
             "assertion failed",
             "unimplemented function called",
@@ -146,17 +146,17 @@ namespace cbforest {
             "file/data is not in the requested format",
         };
         const char *str = nullptr;
-        if (code < sizeof(kCBForestMessages)/sizeof(char*))
-            str = kCBForestMessages[code];
+        if (code < sizeof(kCBLCoreMessages)/sizeof(char*))
+            str = kCBLCoreMessages[code];
         if (!str)
-            str = "(unknown CBForestError)";
+            str = "(unknown CBLCoreError)";
         return str;
     }
 
     string error::_what(error::Domain domain, int code) noexcept {
         switch (domain) {
-            case CBForest:
-                return cbforest_errstr((CBForestError)code);
+            case CBLCore:
+                return cbforest_errstr((CBLCoreError)code);
             case POSIX:
                 return strerror(code);
             case ForestDB:
@@ -206,7 +206,7 @@ namespace cbforest {
         while (isalpha(*name)) ++name;
         while (isdigit(*name)) ++name;
         Warn("Caught unexpected C++ %s(\"%s\")", name, x.what());
-        return error(error::CBForest, error::UnexpectedError);
+        return error(error::CBLCore, error::UnexpectedError);
     }
 
 
@@ -232,7 +232,7 @@ namespace cbforest {
         if (code == 0)
             return true;
         switch (domain) {
-            case CBForest:
+            case CBLCore:
                 return code == NotFound || code == Deleted;
             case ForestDB:
                 return code == FDB_RESULT_KEY_NOT_FOUND || code == FDB_RESULT_NO_DB_HEADERS;
@@ -246,15 +246,15 @@ namespace cbforest {
         CBFDebugAssert(code != 0);
         error err{domain, code};
         if (sWarnOnError && !err.isUnremarkable()) {
-            WarnError("CBForest throwing %s error %d: %s",
+            WarnError("CBLCore throwing %s error %d: %s",
                       kDomainNames[domain], code, err.what());
         }
         throw err;
     }
 
     
-    void error::_throw(error::CBForestError err) {
-        _throw(CBForest, err);
+    void error::_throw(error::CBLCoreError err) {
+        _throw(CBLCore, err);
     }
 
     void error::_throwErrno() {
@@ -279,10 +279,10 @@ namespace cbforest {
             return;
 #ifdef __ANDROID__
         static const int kLevels[4] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
-        __android_log_write(kLevels[level], "CBForest", message);
+        __android_log_write(kLevels[level], "CBLCore", message);
 #else
         static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
-        fprintf(stderr, "CBForest %s: %s\n", kLevelNames[level], message);
+        fprintf(stderr, "CBLCore %s: %s\n", kLevelNames[level], message);
 #endif
     }
 

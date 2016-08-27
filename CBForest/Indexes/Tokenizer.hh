@@ -1,9 +1,9 @@
 //
 //  Tokenizer.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 10/17/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -13,7 +13,7 @@
 struct sqlite3_tokenizer;
 struct sqlite3_tokenizer_cursor;
 
-namespace cbforest {
+namespace CBL_Core {
 
     class TokenIterator;
     typedef std::unordered_map<std::string, bool> word_set;

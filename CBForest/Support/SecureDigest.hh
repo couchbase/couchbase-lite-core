@@ -1,9 +1,9 @@
 //
 //  SecureDigest.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 12/29/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once

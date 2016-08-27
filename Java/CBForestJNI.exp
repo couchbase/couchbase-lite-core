@@ -1,8 +1,8 @@
-#  CBForestJNI.exp
-#  CBForest
+#  Couchbase Lite CoreJNI.exp
+#  Couchbase Lite Core
 #
 #  Created by Jens Alfke on 9/14/15.
-#  Copyright © 2015 Couchbase. All rights reserved.
+#  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 
 _JNI_OnLoad
 

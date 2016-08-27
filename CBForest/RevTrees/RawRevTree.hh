@@ -1,9 +1,9 @@
 //
 //  RawRevTree.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/25/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -13,7 +13,7 @@
 #include "forestdb_endian.h"
 
 
-namespace cbforest {
+namespace CBL_Core {
 
     // Layout of a single revision in encoded form. Rev tree is stored as a sequence of these
     // followed by a 32-bit zero.

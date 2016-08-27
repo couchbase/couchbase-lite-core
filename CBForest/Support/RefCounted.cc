@@ -1,14 +1,14 @@
 //
 //  RefCounted.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/12/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "RefCounted.hh"
 
-namespace cbforest {
+namespace CBL_Core {
 
     std::atomic_int InstanceCounted::gObjectCount;
 

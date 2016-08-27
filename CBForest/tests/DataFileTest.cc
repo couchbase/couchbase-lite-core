@@ -1,9 +1,9 @@
 //
 //  DataFile_Test.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/13/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "DataFile.hh"
@@ -11,9 +11,9 @@
 #include "Error.hh"
 #include "FilePath.hh"
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
-using namespace cbforest;
+using namespace CBL_Core;
 using namespace std;
 
 
@@ -85,7 +85,7 @@ static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("doc-%03d", i);
-        sequence seq = store->set(slice(docID), cbforest::slice::null, slice(docID), t);
+        sequence seq = store->set(slice(docID), CBL_Core::slice::null, slice(docID), t);
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
@@ -536,7 +536,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throw
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
         } catch (std::runtime_error &x) {
             error e = error::convertRuntimeError(x).standardized();
-            REQUIRE(e.domain == error::CBForest);
+            REQUIRE(e.domain == error::CBLCore);
             code = e.code;
         }
         error::sWarnOnError = true;

@@ -1,14 +1,14 @@
 //
 //  CASRevisionStoreTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/13/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "CASRevisionStore.hh"
 
-using namespace cbforest;
+using namespace CBL_Core;
 
 
 static bool operator== (const CASRevisionStore::ServerState &a, const CASRevisionStore::ServerState &b) {
@@ -25,7 +25,7 @@ std::ostream& operator<< (std::ostream &out, const slice);
 //}
 
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 
 static const slice kDocID("Doc1");

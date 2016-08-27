@@ -1,9 +1,9 @@
 //
 //  native_indexer.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 12/18/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -20,7 +20,7 @@
 #include <vector>
 
 
-using namespace cbforest::jni;
+using namespace CBL_Core::jni;
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_beginIndex

@@ -1,13 +1,13 @@
 //
 //  VersionedDocument_Tests.mm
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/15/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "VersionedDocument.hh"
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 
 static revidBuffer stringToRev(string str) {
@@ -82,8 +82,8 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDoc
 TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[VersionedDocument]") {
     RevTree tree;
     const Rev* rev;
-    revidBuffer rev1ID(cbforest::slice("1-aaaa"));
-    cbforest::slice rev1Data("body of revision");
+    revidBuffer rev1ID(CBL_Core::slice("1-aaaa"));
+    CBL_Core::slice rev1Data("body of revision");
     int httpStatus;
     rev = tree.insert(rev1ID, rev1Data, false, false,
                       revid(), false, httpStatus);
@@ -94,8 +94,8 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[Vers
     REQUIRE(rev->parent() == (const Rev*)nullptr);
     REQUIRE_FALSE(rev->isDeleted());
 
-    revidBuffer rev2ID(cbforest::slice("2-bbbb"));
-    cbforest::slice rev2Data("second revision");
+    revidBuffer rev2ID(CBL_Core::slice("2-bbbb"));
+    CBL_Core::slice rev2Data("second revision");
     auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
     REQUIRE(rev2);
     REQUIRE(httpStatus == 201);
@@ -146,11 +146,11 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[Versio
 
 
 TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
-    revidBuffer rev1ID(cbforest::slice("1-aaaa"));
+    revidBuffer rev1ID(CBL_Core::slice("1-aaaa"));
     {
         VersionedDocument v(*store, slice("foo"));
 
-        cbforest::slice rev1Data("body of revision");
+        CBL_Core::slice rev1Data("body of revision");
         int httpStatus;
         v.insert(rev1ID, rev1Data, true /*deleted*/, false,
                  revid(), false, httpStatus);

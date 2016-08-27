@@ -1,15 +1,15 @@
 //
 //  CASRevisionStore.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/11/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
 #include "RevisionStore.hh"
 
-namespace cbforest {
+namespace CBL_Core {
 
 
     /** RevisionStore that also supports revisions coming from a server that only tags documents

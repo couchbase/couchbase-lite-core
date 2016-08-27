@@ -3,13 +3,13 @@
 //  SwiftForest
 //
 //  Created by Jens Alfke on 6/10/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 import Foundation
 
 
-/** A CBForest database. (This is lower-level than a Couchbase Lite database.) */
+/** A CBL Core database. (This is lower-level than a Couchbase Lite database.) */
 public class Database {
 
     public init(path: String, create: Bool = true) throws {

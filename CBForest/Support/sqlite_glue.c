@@ -1,9 +1,9 @@
 //
 //  sqlite_glue.c
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 10/6/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #include <sqlite3.h>

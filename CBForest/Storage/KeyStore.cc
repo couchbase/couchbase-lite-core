@@ -1,9 +1,9 @@
 //
 //  KeyStore.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/12/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 using namespace std;
 
 
-namespace cbforest {
+namespace CBL_Core {
 
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false, false};
 
@@ -77,7 +77,7 @@ namespace cbforest {
         return ok;
     }
 
-    bool KeyStore::del(const cbforest::Document &doc, Transaction &t) {
+    bool KeyStore::del(const CBL_Core::Document &doc, Transaction &t) {
         return del(doc.key(), t);
     }
 

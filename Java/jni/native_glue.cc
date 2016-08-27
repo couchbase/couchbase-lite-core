@@ -1,9 +1,9 @@
 //
 //  native_glue.cpp
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/11/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #include "fdb_errors.h"
 #include <assert.h>
 
-using namespace cbforest::jni;
+using namespace CBL_Core::jni;
 
 
 // Will be called by JNI when the library is loaded
@@ -40,7 +40,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
 }
 
 
-namespace cbforest {
+namespace CBL_Core {
     namespace jni {
 
         JavaVM *gJVM;

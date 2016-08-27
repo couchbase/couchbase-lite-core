@@ -1,11 +1,11 @@
 //
 //  c4Database.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  C API for database and document access.
 //
 //  Created by Jens Alfke on 9/8/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once

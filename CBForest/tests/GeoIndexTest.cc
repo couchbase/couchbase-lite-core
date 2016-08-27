@@ -1,14 +1,14 @@
 //
 //  GeoIndex_Test.m
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/7/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "GeoIndex.hh"
 #include "DocEnumerator.hh"
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 using namespace geohash;
 

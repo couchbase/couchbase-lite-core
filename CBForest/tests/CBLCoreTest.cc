@@ -1,12 +1,12 @@
 //
-//  CBForestTest.cc
-//  CBForest
+//  CBLCoreTest.cc
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/24/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
@@ -131,7 +131,7 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 
 
 DataFileTestFixture::DataFileTestFixture() {
-    auto dbPath = databasePath("cbforest_temp");
+    auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
     db = newDatabase(dbPath);
     store = &db->defaultKeyStore();

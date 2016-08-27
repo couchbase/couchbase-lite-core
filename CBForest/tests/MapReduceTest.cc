@@ -1,9 +1,9 @@
 //
 //  MapReduce_Test.m
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/27/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 
 #include "MapReduceIndex.hh"
@@ -11,7 +11,7 @@
 #include "Collatable.hh"
 #include "Fleece.hh"
 
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 using namespace fleece;
 
@@ -80,8 +80,8 @@ class MapReduceTest : public DataFileTestFixture {
         updateIndex(db, *index);
 
         size_t nRows = 0;
-        for (IndexEnumerator e(*index, Collatable(), cbforest::slice::null,
-                               Collatable(), cbforest::slice::null,
+        for (IndexEnumerator e(*index, Collatable(), CBL_Core::slice::null,
+                               Collatable(), CBL_Core::slice::null,
                                DocEnumerator::Options::kDefault); e.next(); ) {
             CollatableReader keyReader(e.key());
             alloc_slice keyStr = keyReader.readString();

@@ -1,9 +1,9 @@
 //
 //  c4View.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 9/15/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -30,7 +30,7 @@
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
-using namespace cbforest;
+using namespace CBL_Core;
 
 
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
@@ -62,7 +62,7 @@ struct c4View : public RefCounted<c4View> {
 
     bool checkNotBusy(C4Error *outError) {
         if (_index.isBusy()) {
-            recordError(CBForestDomain, kC4ErrorIndexBusy, outError);
+            recordError(CBLCoreDomain, kC4ErrorIndexBusy, outError);
             return false;
         }
         return true;
@@ -397,7 +397,7 @@ bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) {
 #pragma mark - QUERIES:
 
 
-CBFOREST_API const C4QueryOptions kC4DefaultQueryOptions = {
+CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     0,
     UINT_MAX,
     false,

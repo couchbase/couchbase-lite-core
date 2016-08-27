@@ -1,9 +1,9 @@
 //
 //  Revision.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/8/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -11,9 +11,9 @@
 #include "VersionVector.hh"
 
 
-namespace cbforest {
+namespace CBL_Core {
 
-    /** A revision of a versioned document, which is (confusingly) stored as a separate CBForest
+    /** A revision of a versioned document, which is (confusingly) stored as a separate CBL Core
         document. */
     class Revision {
     public:

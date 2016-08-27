@@ -1,9 +1,9 @@
 //
 //  Index.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/14/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 #include "LogInternal.hh"
 
 
-namespace cbforest {
+namespace CBL_Core {
     using namespace fleece;
 
     const slice Index::kSpecialValue("*", 1);
@@ -345,7 +345,7 @@ namespace cbforest {
 
             // Return it as the next row:
             Debug("IndexEnumerator: found key=%s",
-                    cbforest::CollatableReader(_key).toJSON().c_str());
+                    CBL_Core::CollatableReader(_key).toJSON().c_str());
             return true;
         }
     }

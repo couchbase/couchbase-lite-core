@@ -3,7 +3,7 @@
 //  CppTests
 //
 //  Created by Jens Alfke on 9/14/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 // This defines the main entry point of a target that runs 'Catch' unit tests.

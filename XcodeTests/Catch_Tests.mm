@@ -1,9 +1,9 @@
 //
 //  Catch_Tests.m
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 8/26/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #import <XCTest/XCTest.h>

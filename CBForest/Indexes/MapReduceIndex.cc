@@ -1,9 +1,9 @@
 //
 //  MapReduceIndex.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/15/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -22,7 +22,7 @@
 #include "LogInternal.hh"
 #include <algorithm>
 
-namespace cbforest {
+namespace CBL_Core {
     using namespace fleece;
 
     static int64_t kMinFormatVersion = 6;
@@ -177,7 +177,7 @@ namespace cbforest {
         // Reads data written by emitter::emit(const geohash::area&,...), below
         alloc_slice entry = getSpecialEntry(docID, seq, geoID);
         Array::iterator iter(Value::fromTrustedData(entry)->asArray());
-        outArea = ::cbforest::readGeoArea(iter);
+        outArea = ::CBL_Core::readGeoArea(iter);
         outGeoJSON = outValue = slice::null;
         if (iter.count() > 0) {
             if (iter->type() == kString)

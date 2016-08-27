@@ -1,4 +1,4 @@
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -75,7 +75,7 @@ public class Database {
 
     private native void free();
 
-    /** Sets (or clears) a logging callback for CBForest. */
+    /** Sets (or clears) a logging callback for CBLCore. */
     public native static void setLogger(Logger logger, int level);
 
     private native long _open(String path, int flags,

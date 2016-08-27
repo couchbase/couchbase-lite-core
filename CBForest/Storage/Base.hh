@@ -1,9 +1,9 @@
 //
 //  Base.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/21/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -11,7 +11,7 @@
 #include "slice.hh"
 
 
-namespace cbforest {
+namespace CBL_Core {
     using fleece::slice;
     using fleece::alloc_slice;
 

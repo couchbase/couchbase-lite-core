@@ -1,9 +1,9 @@
 //
 //  c4DocEnumerator.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 12/16/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -27,7 +27,7 @@
 
 #pragma mark - DOC ENUMERATION:
 
-CBFOREST_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
+CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
     0, // skip
     kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies
 };

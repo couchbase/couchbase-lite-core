@@ -35,7 +35,7 @@
 		2708FE551CF4CCCE0022F721 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		2708FE561CF4CD170022F721 /* libCBForest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libCBForest.a */; };
 		2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
-		2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBForestTest.cc */; };
+		2708FE5B1CF4D3370022F721 /* CBLCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBLCoreTest.cc */; };
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
@@ -303,7 +303,7 @@
 		27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27F7A1341D61F63800447BC6 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
-		27F7A1351D61F7EB00447BC6 /* CBForestTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBForestTest.cc */; };
+		27F7A1351D61F7EB00447BC6 /* CBLCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* CBLCoreTest.cc */; };
 		27F7A1421D61F82000447BC6 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		27F7A1431D61F8B700447BC6 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F7A1441D61F8B700447BC6 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
@@ -559,8 +559,8 @@
 		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
 		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
 		2708FE521CF4CC880022F721 /* CBForestCppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CBForestCppTests; sourceTree = BUILT_PRODUCTS_DIR; };
-		2708FE591CF4D0450022F721 /* CBForestTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CBForestTest.hh; sourceTree = "<group>"; };
-		2708FE5A1CF4D3370022F721 /* CBForestTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CBForestTest.cc; sourceTree = "<group>"; };
+		2708FE591CF4D0450022F721 /* CBLCoreTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CBLCoreTest.hh; sourceTree = "<group>"; };
+		2708FE5A1CF4D3370022F721 /* CBLCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CBLCoreTest.cc; sourceTree = "<group>"; };
 		2708FE5C1CF6197D0022F721 /* RawRevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RawRevTree.cc; sourceTree = "<group>"; };
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
 		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
@@ -801,7 +801,6 @@
 		27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VariadicBind.h; path = include/SQLiteCpp/VariadicBind.h; sourceTree = "<group>"; };
 		27D74A981D4D404100D806E0 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		27D74A9E1D4FF65000D806E0 /* c4Base.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Base.cc; sourceTree = "<group>"; };
-		27DD150719354C70009A367D /* CBForest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CBForest.hh; path = ../CBForest/CBForest.hh; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
 		27DF46BF1A119860007BB4A4 /* kv_instance.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kv_instance.cc; sourceTree = "<group>"; };
@@ -1058,8 +1057,8 @@
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
 				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
-				2708FE5A1CF4D3370022F721 /* CBForestTest.cc */,
-				2708FE591CF4D0450022F721 /* CBForestTest.hh */,
+				2708FE5A1CF4D3370022F721 /* CBLCoreTest.cc */,
+				2708FE591CF4D0450022F721 /* CBLCoreTest.hh */,
 				27FA09D71D70F435005888AA /* CaseListReporter.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
 			);
@@ -1569,7 +1568,6 @@
 		27E4871019217187007D8940 /* CBForest */ = {
 			isa = PBXGroup;
 			children = (
-				27DD150719354C70009A367D /* CBForest.hh */,
 				27D74A5F1D4C063A00D806E0 /* Storage */,
 				279794A91D3187E8001D0F3A /* VersionVectors */,
 				273E9F7C1C518678003115A6 /* Rev-Trees */,
@@ -2146,7 +2144,7 @@
 			files = (
 				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
-				2708FE5B1CF4D3370022F721 /* CBForestTest.cc in Sources */,
+				2708FE5B1CF4D3370022F721 /* CBLCoreTest.cc in Sources */,
 				27FA099F1D6F811E005888AA /* CollatableTest.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27FA09A71D6FAE4F005888AA /* VersionedDocumentTests.cc in Sources */,
@@ -2167,7 +2165,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
-				27F7A1351D61F7EB00447BC6 /* CBForestTest.cc in Sources */,
+				27F7A1351D61F7EB00447BC6 /* CBLCoreTest.cc in Sources */,
 				27FA09D41D70EDBF005888AA /* Catch_Tests.mm in Sources */,
 				27FA099E1D6F811D005888AA /* CollatableTest.cc in Sources */,
 				27FA09A11D6FA381005888AA /* DataFileTest.cc in Sources */,

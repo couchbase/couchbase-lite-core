@@ -1,9 +1,9 @@
 //
 //  VersionVectorTest.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/24/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #include "RevID.hh"
@@ -11,10 +11,10 @@
 #include "Fleece.hh"
 #include <iostream>
 using namespace std;
-using namespace cbforest;
+using namespace CBL_Core;
 
 // This has to come last for obscure C++ reasons
-#include "CBForestTest.hh"
+#include "CBLCoreTest.hh"
 
 
 static revidBuffer stringToRev(const char* str) {

@@ -1,9 +1,9 @@
 //
 //  RevisionStore.hh
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/8/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+//  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -13,7 +13,7 @@
 
 class RevisionStoreTest;
 
-namespace cbforest {
+namespace CBL_Core {
 
     class Revision;
 

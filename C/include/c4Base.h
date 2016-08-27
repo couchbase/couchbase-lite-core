@@ -1,11 +1,11 @@
 //
 //  c4Base.h
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Basic types and functions for C API.
 //
 //  Created by Jens Alfke on 9/8/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
 #pragma once
@@ -52,13 +52,13 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-#ifdef CBFOREST_EXPORTS
-#define CBFOREST_API __declspec(dllexport)
+#ifdef CBLCORE_EXPORTS
+#define CBL_CORE_API __declspec(dllexport)
 #else
-#define CBFOREST_API __declspec(dllimport)
+#define CBL_CORE_API __declspec(dllimport)
 #endif
 #else // _MSC_VER
-#define CBFOREST_API
+#define CBL_CORE_API
 #endif
 
 
@@ -70,15 +70,15 @@ typedef uint64_t C4SequenceNumber;
 
 
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
-    CBForestDomain = 1, // code is a CBForest error code (see below)
+    CBLCoreDomain = 1, // code is a CBL Core error code (see below)
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
     SQLiteDomain,       // code is a SQLite error
 };
 
 
-// CBForestDomain error codes:
-// (These are identical to the internal C++ error::CBForestError enum values.)
+// CBLCoreDomain error codes:
+// (These are identical to the internal C++ error::CBLCoreError enum values.)
 enum {
     kC4ErrorAssertionFailed = 1,    // Internal assertion failure
     kC4ErrorUnimplemented,          // Oops, an unimplemented API call

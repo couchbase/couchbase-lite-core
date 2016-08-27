@@ -1,9 +1,9 @@
 //
 //  c4Document.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/6/15.
-//  Copyright © 2015 Couchbase. All rights reserved.
+//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -40,7 +40,7 @@ C4Document* c4doc_get(C4Database *database,
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(CBForestDomain, kC4ErrorNotFound, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
         }
         
         
@@ -60,7 +60,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
         if (!internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(CBForestDomain, kC4ErrorNotFound, outError);
+            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
         }
         return doc;
     } catchError(outError);
@@ -89,7 +89,7 @@ bool c4doc_selectRevision(C4Document* doc,
     try {
         if (internal(doc)->selectRevision(revID, withBody))
             return true;
-        recordError(CBForestDomain, kC4ErrorNotFound, outError);
+        recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
     } catchError(outError);
     return false;
 }
@@ -105,7 +105,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
     try {
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
             return true;
-        recordError(CBForestDomain, kC4ErrorDeleted, outError);
+        recordError(CBLCoreDomain, kC4ErrorDeleted, outError);
     } catchError(outError);
     return false;
 }
@@ -192,25 +192,25 @@ C4Document* c4doc_getForPut(C4Database *database,
             if (parentRevID.buf) {
                 // Updating an existing revision; make sure it exists and is a leaf:
                 if (!idoc->selectRevision(parentRevID, false)) {
-                    recordError(CBForestDomain, kC4ErrorNotFound, outError);
+                    recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
                     break;
                 }
                 if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
-                    recordError(CBForestDomain, kC4ErrorConflict, outError);
+                    recordError(CBLCoreDomain, kC4ErrorConflict, outError);
                     break;
                 }
             } else {
                 // No parent revision given:
                 if (deleting) {
                     // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                    recordError(CBForestDomain,
+                    recordError(CBLCoreDomain,
                                 ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound),
                                 outError);
                     break;
                 }
                 // If doc exists, current rev must be a deletion or there will be a conflict:
                 if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
-                    recordError(CBForestDomain, kC4ErrorConflict, outError);
+                    recordError(CBLCoreDomain, kC4ErrorConflict, outError);
                     break;
                 }
             }

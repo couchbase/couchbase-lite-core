@@ -1,9 +1,9 @@
 //
 //  DataFile.cc
-//  CBForest
+//  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/12/14.
-//  Copyright (c) 2014 Couchbase. All rights reserved.
+//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
@@ -35,7 +35,7 @@
 using namespace std;
 
 
-namespace cbforest {
+namespace CBL_Core {
 
 #pragma mark - FACTORY:
 
