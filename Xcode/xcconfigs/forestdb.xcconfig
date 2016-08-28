@@ -22,6 +22,6 @@ GCC_WARN_UNUSED_FUNCTION                  = NO
 GCC_WARN_UNUSED_VALUE                     = NO
 GCC_WARN_UNUSED_VARIABLE                  = NO
 
-HEADER_SEARCH_PATHS                       = $(inherited) vendor/forestdb/**
+HEADER_SEARCH_PATHS                       = $(inherited) $(SRCROOT)/../vendor/forestdb/**
 
 WARNING_CFLAGS                            = -Wformat-security -Wmissing-declarations -Woverriding-method-mismatch -Wbool-conversion -Wno-arc-retain-cycles
