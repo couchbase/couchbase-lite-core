@@ -25,7 +25,7 @@
 
     `_currentStore` (the database's default KeyStore) stores only current revisions.
     The key is the exact document ID; meta contains the flags, version vector and document type;
-    and the body is the document body (JSON or Fleece; CBL Core currently doesn't care.)
+    and the body is the document body (JSON or Fleece; LiteCore currently doesn't care.)
  
     `nonCurrentStore` (named "revs") stores non-current revisions. These are usually conflicts,
     but if using CAS this also contains the server ancestor of the current revision.

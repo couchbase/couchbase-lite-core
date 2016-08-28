@@ -236,7 +236,7 @@ public interface Constants {
 
     // Error domains:
     interface C4ErrorDomain {
-        int LiteCoreDomain = 1;      // code is CBL Core-specific code (c4Base.h)
+        int LiteCoreDomain = 1;     // code is LiteCore-specific code (c4Base.h)
         int POSIXDomain = 2;        // code is an errno (errno.h)
         int ForestDBDomain = 3;     // code is a fdb_status (fdb_error.h)
         int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)

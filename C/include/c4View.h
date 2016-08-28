@@ -138,7 +138,7 @@ extern "C" {
         indexing. (Even if the view's map function didn't emit anything, the old keys/values need to
         be cleaned up.)
      
-        Values are uninterpreted by CBL Core, but by convention are JSON. A special value "*"
+        Values are uninterpreted by LiteCore, but by convention are JSON. A special value "*"
         (a single asterisk) is used as a placeholder for the entire document.
 
         @param indexer  The indexer task.

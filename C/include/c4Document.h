@@ -69,7 +69,9 @@ extern "C" {
                                     C4SequenceNumber,
                                     C4Error *outError);
 
-    /** Returns the document type (as set by setDocType.) This value is ignored by CBL Core itself; by convention Couchbase Lite sets it to the value of the current revision's "type" property, and uses it as an optimization when indexing a view. */
+    /** Returns the document type (as set by setDocType.) This value is ignored by LiteCore itself;
+        by convention Couchbase Lite sets it to the value of the current revision's "type" property,
+        and uses it as an optimization when indexing a view. */
     C4SliceResult c4doc_getType(C4Document *doc);
 
 
@@ -127,7 +129,8 @@ extern "C" {
                                     C4Slice revID,
                                     C4Error *outError);
 
-    /** Sets a document's docType. (By convention this is the value of the "type" property of the current revision's JSON; this value can be used as optimization when indexing a view.)
+    /** Sets a document's docType. (By convention this is the value of the "type" property of the
+        current revision's JSON; this value can be used as optimization when indexing a view.)
         The change will not be persisted until the document is saved. */
     void c4doc_setType(C4Document *doc, C4Slice docType);
 

@@ -70,7 +70,7 @@ typedef uint64_t C4SequenceNumber;
 
 
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
-    LiteCoreDomain = 1, // code is a CBL Core error code (see below)
+    LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
     SQLiteDomain,       // code is a SQLite error

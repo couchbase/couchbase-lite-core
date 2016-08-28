@@ -9,7 +9,7 @@
 import Foundation
 
 
-/** A CBL Core database. (This is lower-level than a Couchbase Lite database.) */
+/** A Couchbase Lite Core database. (This is lower-level than a Couchbase Lite database.) */
 public class Database {
 
     public init(path: String, create: Bool = true) throws {

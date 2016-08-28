@@ -13,7 +13,7 @@
 
 namespace litecore {
 
-    /** A revision of a versioned document, which is (confusingly) stored as a separate CBL Core
+    /** A revision of a versioned document, which is (confusingly) stored as a separate LiteCore
         document. */
     class Revision {
     public:

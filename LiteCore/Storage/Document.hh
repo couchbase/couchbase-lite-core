@@ -18,7 +18,7 @@
 
 namespace litecore {
 
-    /** Stores a CBL Core document's key, metadata, body and sequence. */
+    /** Stores a Couchbase Lite Core document's key, metadata, body and sequence. */
     class Document {
     public:
         Document()                              { }
