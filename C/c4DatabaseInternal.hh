@@ -16,7 +16,7 @@
 namespace c4Internal {
     class C4DocumentInternal;
 }
-namespace CBL_Core {
+namespace litecore {
     class FilePath;
 }
 

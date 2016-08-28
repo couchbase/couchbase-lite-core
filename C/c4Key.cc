@@ -22,7 +22,7 @@
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
-using namespace CBL_Core;
+using namespace litecore;
 
 
 C4Key* c4key_new()                              {return new c4Key();}

@@ -25,13 +25,13 @@
 
 struct C4DocEnumerator;
 
-namespace CBL_Core {
+namespace litecore {
     class Database;
     class Document;
 }
 
 using namespace std;
-using namespace CBL_Core;
+using namespace litecore;
 
 
 // SLICE STUFF:
@@ -69,7 +69,7 @@ namespace c4Internal {
 
     static inline bool checkParam(bool isValid, C4Error* outError) {
         if (!isValid)
-            recordError(CBLCoreDomain, kC4ErrorInvalidParameter, outError);
+            recordError(LiteCoreDomain, kC4ErrorInvalidParameter, outError);
         return isValid;
     }
 
@@ -83,7 +83,7 @@ namespace c4Internal {
 
 
     // Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted'),
-    // so this is equivalent to CBL_Core::DocEnumerator::includeDeleted.
+    // so this is equivalent to litecore::DocEnumerator::includeDeleted.
     // Should only need to be used internally, for the view indexer's enumerator.
     static const uint16_t kC4IncludePurged = 0x8000;
 

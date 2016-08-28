@@ -13,17 +13,17 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_Indexer.h"
+#include "com_couchbase_litecore_Indexer.h"
 #include "native_glue.hh"
 #include "c4View.h"
 #include <algorithm>
 #include <vector>
 
 
-using namespace CBL_Core::jni;
+using namespace litecore::jni;
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_beginIndex
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Indexer_beginIndex
 (JNIEnv *env, jclass clazz, jlong dbHandle, jlongArray viewHandles)
 {
     auto c4views = handlesToVector<C4View*>(env, viewHandles);
@@ -35,7 +35,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_beginIndex
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_triggerOnView
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Indexer_triggerOnView
   (JNIEnv *env, jclass clazz, jlong indexerHandle, jlong viewHandle)
 {
     auto indexer = (C4Indexer*)indexerHandle;
@@ -44,7 +44,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_triggerOnView
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_iterateDocuments
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Indexer_iterateDocuments
 (JNIEnv *env, jclass clazz, jlong indexerHandle)
 {
     C4Error error;
@@ -55,7 +55,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Indexer_iterateDocuments
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Indexer_shouldIndex
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Indexer_shouldIndex
   (JNIEnv *env, jclass clazz, jlong indexerHandle, jlong docHandle, jint viewNumber)
 {
     auto indexer = (C4Indexer*)indexerHandle;
@@ -64,7 +64,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Indexer_shouldIndex
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Indexer_emit
 (JNIEnv *env, jclass clazz,
  jlong indexerHandle, jlong documentHandler, jint viewNumber, jlongArray jkeys, jobjectArray jvalues)
 {
@@ -89,7 +89,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_emit
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Indexer_endIndex
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Indexer_endIndex
 (JNIEnv *env, jclass clazz, jlong indexerHandle, jboolean commit)
 {
     C4Error error;

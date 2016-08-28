@@ -13,22 +13,22 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_QueryIterator.h"
-#include "com_couchbase_cbforest_FullTextResult.h"
+#include "com_couchbase_litecore_QueryIterator.h"
+#include "com_couchbase_litecore_FullTextResult.h"
 #include "native_glue.hh"
 #include "Collatable.hh"
 #include "c4View.h"
 
 
-using namespace CBL_Core;
-using namespace CBL_Core::jni;
+using namespace litecore;
+using namespace litecore::jni;
 
 
 static jfieldID kHandleField;
 
 
-bool CBL_Core::jni::initQueryIterator(JNIEnv *env) {
-    jclass queryIterClass = env->FindClass("com/couchbase/cbforest/QueryIterator");
+bool litecore::jni::initQueryIterator(JNIEnv *env) {
+    jclass queryIterClass = env->FindClass("com/couchbase/litecore/QueryIterator");
     if (!queryIterClass)
         return false;
     kHandleField = env->GetFieldID(queryIterClass, "_handle", "J");
@@ -36,7 +36,7 @@ bool CBL_Core::jni::initQueryIterator(JNIEnv *env) {
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_QueryIterator_next
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_QueryIterator_next
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     auto e = (C4QueryEnumerator*)handle;
@@ -62,7 +62,7 @@ static jbyteArray toJByteArray(JNIEnv *env, const C4KeyReader &r) {
     return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_keyJSON
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_keyJSON
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -70,7 +70,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_keyJSON
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->key);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_valueJSON
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_valueJSON
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -78,7 +78,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_valueJSON
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->value);
 }
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_QueryIterator_docID
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -86,7 +86,7 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_QueryIterator_docID
     return toJString(env, ((C4QueryEnumerator*)handle)->docID);
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_QueryIterator_sequence
         (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -94,7 +94,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_QueryIterator_sequence
     return ((C4QueryEnumerator*)handle)->docSequence;
 }
 
-JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextID
+JNIEXPORT jint JNICALL Java_com_couchbase_litecore_QueryIterator_fullTextID
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -102,7 +102,7 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextID
     return ((C4QueryEnumerator*)handle)->fullTextID;
 }
 
-JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTerms
+JNIEXPORT jintArray JNICALL Java_com_couchbase_litecore_QueryIterator_fullTextTerms
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -123,7 +123,7 @@ JNIEXPORT jintArray JNICALL Java_com_couchbase_cbforest_QueryIterator_fullTextTe
     return jterms;
 }
 
-JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoBoundingBox
+JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoBoundingBox
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -141,7 +141,7 @@ JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoBoun
     return jbox;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoJSON
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoJSON
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
@@ -150,7 +150,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_QueryIterator_geoJSON
     return toJByteArray(env, e->geoJSON);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_QueryIterator_free
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     C4QueryEnumerator *e = (C4QueryEnumerator*)handle;
@@ -158,7 +158,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_QueryIterator_free
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_FullTextResult_getFullText
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_FullTextResult_getFullText
   (JNIEnv *env, jclass clazz, jlong viewHandle, jstring jdocID, jlong sequence, jint fullTextID)
 {
     if (!viewHandle)

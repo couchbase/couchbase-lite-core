@@ -14,7 +14,7 @@
 #include "slice.hh"
 #include <vector>
 
-namespace CBL_Core {
+namespace litecore {
     namespace jni {
 
     using namespace fleece;
@@ -85,7 +85,7 @@ jstring toJString(JNIEnv*, C4Slice);
 // Creates a Java byte[] from the contents of a C4Slice.
 jbyteArray toJByteArray(JNIEnv*, C4Slice);
 
-// Sets a Java exception based on the CBLCore error.
+// Sets a Java exception based on the LiteCore error.
 void throwError(JNIEnv*, C4Error);
 
 // Copies an array of handles from a Java long[] to a C++ vector.

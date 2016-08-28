@@ -66,9 +66,9 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
 
     assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
     assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
-    assertMessage(CBLCoreDomain, 15, "invalid parameter");
+    assertMessage(LiteCoreDomain, 15, "invalid parameter");
     assertMessage(POSIXDomain, ENOENT, "No such file or directory");
-    assertMessage(CBLCoreDomain, kC4ErrorIndexBusy, "index busy; can't close view");
+    assertMessage(LiteCoreDomain, kC4ErrorIndexBusy, "index busy; can't close view");
     assertMessage(ForestDBDomain, -1234, "unknown error");
     assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
 }
@@ -140,7 +140,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
 
     // Nonexistent:
     REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == (C4RawDocument*)nullptr);
-    REQUIRE(error.domain == CBLCoreDomain);
+    REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
 
@@ -151,7 +151,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database][C]")
     C4Document* doc;
     doc = c4doc_get(db, kDocID, true, &error);
     REQUIRE(!doc);
-    REQUIRE((uint32_t)error.domain == (uint32_t)CBLCoreDomain);
+    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
     c4doc_free(doc);
 

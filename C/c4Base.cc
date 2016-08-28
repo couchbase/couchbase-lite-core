@@ -23,7 +23,7 @@
 #include "SQLiteCpp/Exception.h"
 #include <ctype.h>
 
-using namespace CBL_Core;
+using namespace litecore;
 
 
 namespace c4Internal {
@@ -36,7 +36,7 @@ namespace c4Internal {
     }
 
     void recordException(const exception &e, C4Error* outError) {
-        static const C4ErrorDomain domainMap[] = {CBLCoreDomain, POSIXDomain,
+        static const C4ErrorDomain domainMap[] = {LiteCoreDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
         error err = error::convertException(e).standardized();
         recordError(domainMap[err.domain], err.code, outError);
@@ -61,7 +61,7 @@ C4SliceResult c4error_getMessage(C4Error err) {
     } else if (err.domain < 1 || err.domain > SQLiteDomain) {
         return stringResult("unknown error domain");
     } else {
-        static const error::Domain kDomains[] = {error::CBLCore, error::POSIX,
+        static const error::Domain kDomains[] = {error::LiteCore, error::POSIX,
                                                  error::ForestDB, error::SQLite};
         error e(kDomains[err.domain - 1], err.code);
         return stringResult(e.what());

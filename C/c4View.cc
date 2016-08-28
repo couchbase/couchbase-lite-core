@@ -30,7 +30,7 @@
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
-using namespace CBL_Core;
+using namespace litecore;
 
 
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
@@ -62,7 +62,7 @@ struct c4View : public RefCounted<c4View> {
 
     bool checkNotBusy(C4Error *outError) {
         if (_index.isBusy()) {
-            recordError(CBLCoreDomain, kC4ErrorIndexBusy, outError);
+            recordError(LiteCoreDomain, kC4ErrorIndexBusy, outError);
             return false;
         }
         return true;

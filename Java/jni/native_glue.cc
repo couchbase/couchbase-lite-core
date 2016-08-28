@@ -18,7 +18,7 @@
 #include "fdb_errors.h"
 #include <assert.h>
 
-using namespace CBL_Core::jni;
+using namespace litecore::jni;
 
 
 // Will be called by JNI when the library is loaded
@@ -40,7 +40,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
 }
 
 
-namespace CBL_Core {
+namespace litecore {
     namespace jni {
 
         JavaVM *gJVM;
@@ -119,7 +119,7 @@ namespace CBL_Core {
         void throwError(JNIEnv *env, C4Error error) {
             if (env->ExceptionOccurred())
                 return;
-            jclass xclass = env->FindClass("com/couchbase/cbforest/ForestException");
+            jclass xclass = env->FindClass("com/couchbase/litecore/ForestException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
             jmethodID m = env->GetStaticMethodID(xclass, "throwException",
                                                  "(IILjava/lang/String;)V");

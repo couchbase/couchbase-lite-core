@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_Database.h"
+#include "com_couchbase_litecore_Database.h"
 #include "native_glue.hh"
 #include "c4Database.h"
 #include "c4Document.h"
@@ -26,8 +26,8 @@
 #include <unistd.h>
 #endif
 
-using namespace CBL_Core;
-using namespace CBL_Core::jni;
+using namespace litecore;
+using namespace litecore::jni;
 
 
 #pragma mark - DATABASE:
@@ -51,18 +51,18 @@ static void jniTerminateHandler() {
 }
 #endif
 
-bool CBL_Core::jni::initDatabase(JNIEnv *env) {
+bool litecore::jni::initDatabase(JNIEnv *env) {
 #ifdef DEBUG_TERMINATION
     std::set_terminate(jniTerminateHandler);    // TODO: Take this out after debugging
 #endif
 
-    jclass dbClass = env->FindClass("com/couchbase/cbforest/Database");
+    jclass dbClass = env->FindClass("com/couchbase/litecore/Database");
     if (!dbClass)
         return false;
     kHandleField = env->GetFieldID(dbClass, "_handle", "J");
     if (!kHandleField)
         return false;
-    jclass loggerClass = env->FindClass("com/couchbase/cbforest/Logger");
+    jclass loggerClass = env->FindClass("com/couchbase/litecore/Logger");
     if (!loggerClass)
         return false;
     kLoggerLogMethod = env->GetMethodID(loggerClass, "log", "(ILjava/lang/String;)V");
@@ -72,7 +72,7 @@ bool CBL_Core::jni::initDatabase(JNIEnv *env) {
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1open
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1open
 (JNIEnv *env, jobject self, jstring jpath,
  jint flags, jint encryptionAlg, jbyteArray encryptionKey)
 {
@@ -92,7 +92,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1open
     return (jlong)db;
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_rekey
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_rekey
 (JNIEnv *env, jobject self, jint encryptionAlg, jbyteArray encryptionKey){
     C4EncryptionKey key;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
@@ -104,7 +104,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_rekey
         throwError(env, error);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_close
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_close
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
@@ -113,7 +113,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_close
         throwError(env, error);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_free
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
@@ -122,7 +122,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_free
     // Note: This is called only by the finalizer, so no further calls are possible.
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_compact
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_compact
 (JNIEnv *env, jobject self)
 {
     auto db = getDbHandle(env, self);
@@ -131,21 +131,21 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_compact
         throwError(env, error);
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_getDocumentCount
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_getDocumentCount
 (JNIEnv *env, jobject self)
 {
     return c4db_getDocumentCount(getDbHandle(env, self));
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_getLastSequence
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_getLastSequence
 (JNIEnv *env, jobject self)
 {
     return c4db_getLastSequence(getDbHandle(env, self));
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_beginTransaction
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_beginTransaction
 (JNIEnv *env, jobject self)
 {
     C4Error error;
@@ -154,7 +154,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_beginTransaction
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_endTransaction
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_endTransaction
 (JNIEnv *env, jobject self, jboolean commit)
 {
     C4Error error;
@@ -163,7 +163,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_endTransaction
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Database_isInTransaction
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Database_isInTransaction
 (JNIEnv *env, jobject self) {
     return c4db_isInTransaction(getDbHandle(env, self));
 }
@@ -189,7 +189,7 @@ static void logCallback(C4LogLevel level, C4Slice message) {
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_setLogger
 (JNIEnv *env, jclass klass, jobject logger, jint level)
 {
     jobject oldLoggerRef = sLoggerRef;
@@ -201,7 +201,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setLogger
 
 #pragma mark - PURGING / EXPIRING:
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_purgeDoc
 (JNIEnv *env, jclass clazz, jlong db, jstring jdocID)
 {
     jstringSlice docID(env, jdocID);
@@ -213,11 +213,11 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_purgeDoc
 #pragma mark - EXPIRATION:
 
 /*
- * Class:     com_couchbase_cbforest_Database
+ * Class:     com_couchbase_litecore_Database
  * Method:    expirationOfDoc
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_expirationOfDoc
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_expirationOfDoc
         (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jdocID)
 {
     jstringSlice docID(env, jdocID);
@@ -225,11 +225,11 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_expirationOfDoc
 }
 
 /*
- * Class:     com_couchbase_cbforest_Database
+ * Class:     com_couchbase_litecore_Database
  * Method:    setExpiration
  * Signature: (JLjava/lang/String;J)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setExpiration
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_setExpiration
         (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jdocID, jlong jtimestamp)
 {
     jstringSlice docID(env, jdocID);
@@ -239,17 +239,17 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database_setExpiration
 }
 
 /*
- * Class:     com_couchbase_cbforest_Database
+ * Class:     com_couchbase_litecore_Database
  * Method:    nextDocExpiration
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database_nextDocExpiration
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_nextDocExpiration
         (JNIEnv *env, jclass clazz, jlong dbHandle)
 {
     return c4db_nextDocExpiration((C4Database*)dbHandle);
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpiredDocuments
+JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpiredDocuments
         (JNIEnv *env, jclass clazz, jlong dbHandle)
 {
     C4Error err;
@@ -266,7 +266,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
         C4Error docErr;
         if (!c4db_purgeDoc((C4Database *) dbHandle, docID, &docErr)) {
             char msg[100];
-            Debug("Unable to purge expired doc: CBLCore error %d/%d: %s",
+            Debug("Unable to purge expired doc: LiteCore error %d/%d: %s",
                   docErr.domain, docErr.code, c4error_getMessageC(err, msg, sizeof(msg)));
         }
         docIDs.push_back(strDocID);
@@ -274,7 +274,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
     }
     if(err.code) {
         char msg[100];
-        Debug("Error enumerating expired docs: CBLCore error %d/%d",
+        Debug("Error enumerating expired docs: LiteCore error %d/%d",
               err.domain,err.code, c4error_getMessageC(err, msg, sizeof(msg)));
     }
 
@@ -295,7 +295,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database_purgeExpired
 
 #pragma mark - DOCUMENTS:
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1put
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put
 (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody, jstring jdocType,
  jboolean deletion, jboolean hasAttachments, jboolean existingRevision, jboolean allowConflict,
  jobjectArray jhistory, jboolean save, jint maxRevTreeDepth)
@@ -351,7 +351,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Database__1put
     return (jlong)doc;
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database__1rawPut
 (JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jbyteArray jmeta, jbyteArray jbody)
 {
     jstringSlice    store(env, jstore);
@@ -363,7 +363,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Database__1rawPut
         throwError(env, error);
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_couchbase_cbforest_Database__1rawGet
+JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database__1rawGet
 (JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey) {
     // obtain raw document
     jstringSlice store(env, jstore);

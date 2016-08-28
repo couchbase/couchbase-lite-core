@@ -32,7 +32,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 {
     try {
         if (!db->defaultKeyStore().get(docId, kMetaOnly).exists()) {
-            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return false;
         }
 

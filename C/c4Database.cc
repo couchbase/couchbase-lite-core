@@ -120,7 +120,7 @@ c4Database::c4Database(string path,
 bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
     if (schema() == requiredSchema)
         return true;
-    recordError(CBLCoreDomain, kC4ErrorUnsupported, outError);
+    recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
     return false;
 }
 
@@ -144,14 +144,14 @@ bool c4Database::inTransaction() {
 bool c4Database::mustBeInTransaction(C4Error *outError) {
     if (inTransaction())
         return true;
-    recordError(CBLCoreDomain, kC4ErrorNotInTransaction, outError);
+    recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
     return false;
 }
 
 bool c4Database::mustNotBeInTransaction(C4Error *outError) {
     if (!inTransaction())
         return true;
-    recordError(CBLCoreDomain, kC4ErrorTransactionNotClosed, outError);
+    recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
     return false;
 }
 
@@ -241,7 +241,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) {
         return false;
     WITH_LOCK(database);
     if (database->refCount() > 1) {
-        recordError(CBLCoreDomain, kC4ErrorBusy, outError);
+        recordError(LiteCoreDomain, kC4ErrorBusy, outError);
         return false;
     }
     try {
@@ -379,7 +379,7 @@ bool c4db_endTransaction(C4Database* database,
     try {
         bool ok = database->endTransaction(commit);
         if (!ok)
-            recordError(CBLCoreDomain, kC4ErrorNotInTransaction, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
         return ok;
     } catchError(outError);
     return false;
@@ -394,7 +394,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) {
         if (database->defaultKeyStore().del(docID, database->transaction()))
             return true;
         else
-            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
     } catchError(outError)
     return false;
 }
@@ -448,7 +448,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         KeyStore& localDocs = database->getKeyStore((string)storeName);
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
-            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return NULL;
         }
         auto rawDoc = new C4RawDocument;

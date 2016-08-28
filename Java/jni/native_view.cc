@@ -13,15 +13,15 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_View.h"
-#include "com_couchbase_cbforest_View_TextKey.h"
+#include "com_couchbase_litecore_View.h"
+#include "com_couchbase_litecore_View_TextKey.h"
 #include "native_glue.hh"
 #include "c4View.h"
 #include <algorithm>
 #include <vector>
 
 
-using namespace CBL_Core::jni;
+using namespace litecore::jni;
 
 
 #pragma mark - DATABASE:
@@ -33,8 +33,8 @@ static inline C4View* getViewHandle(JNIEnv *env, jobject self) {
     return (C4View*)env->GetLongField(self, kHandleField);
 }
 
-bool CBL_Core::jni::initView(JNIEnv *env) {
-    jclass viewClass = env->FindClass("com/couchbase/cbforest/View");
+bool litecore::jni::initView(JNIEnv *env) {
+    jclass viewClass = env->FindClass("com/couchbase/litecore/View");
     if (!viewClass)
         return false;
     kHandleField = env->GetFieldID(viewClass, "_handle", "J");
@@ -43,7 +43,7 @@ bool CBL_Core::jni::initView(JNIEnv *env) {
 
 //////// VIEWS:
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View__1open
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View__1open
   (JNIEnv *env, jobject self, jlong dbHandle, jstring jpath,
    jint flags, jint encryptionAlg, jbyteArray encryptionKey,
    jstring jname, jstring jversion)
@@ -63,7 +63,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View__1open
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_close
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_close
   (JNIEnv *env, jobject self)
 {
     C4View* view = getViewHandle(env, self);
@@ -73,14 +73,14 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_close
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeHandle
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_freeHandle
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     c4view_free((C4View*)handle);
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_rekey
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_rekey
 (JNIEnv *env, jobject self, jint encryptionAlg, jbyteArray encryptionKey){
     C4EncryptionKey key;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &key))
@@ -95,7 +95,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_rekey
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_eraseIndex
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_eraseIndex
   (JNIEnv *env, jobject self)
 {
     C4Error error;
@@ -104,7 +104,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_eraseIndex
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_delete
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_delete
   (JNIEnv *env, jobject self)
 {
     C4View* view = getViewHandle(env, self);
@@ -115,21 +115,21 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_delete
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getTotalRows
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_getTotalRows
   (JNIEnv *env, jobject self)
 {
     return c4view_getTotalRows(getViewHandle(env, self));
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getLastSequenceIndexed
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_getLastSequenceIndexed
   (JNIEnv *env, jobject self)
 {
     return c4view_getLastSequenceIndexed(getViewHandle(env, self));
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getLastSequenceChangedAt
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_getLastSequenceChangedAt
   (JNIEnv *env, jobject self)
 {
     return c4view_getLastSequenceChangedAt(getViewHandle(env, self));
@@ -137,7 +137,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_getLastSequenceChangedA
 
 //////// QUERYING:
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__J
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__J
         (JNIEnv *env, jclass clazz, jlong viewHandle)
 {
     C4Error error;
@@ -147,7 +147,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__J
     return (jlong)e;
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZJJLjava_lang_String_2Ljava_lang_String_2
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__JJJZZZJJLjava_lang_String_2Ljava_lang_String_2
   (JNIEnv *env, jclass clazz, jlong viewHandle,
    jlong skip, jlong limit,
    jboolean descending, jboolean inclusiveStart, jboolean inclusiveEnd,
@@ -174,7 +174,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZJJLjava_la
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__JJJZZZ_3J
 (JNIEnv *env, jclass clazz, jlong viewHandle,
  jlong skip, jlong limit,
  jboolean descending, jboolean inclusiveStart, jboolean inclusiveEnd,
@@ -205,7 +205,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JJJZZZ_3J
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JLjava_lang_String_2Ljava_lang_String_2Z
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__JLjava_lang_String_2Ljava_lang_String_2Z
   (JNIEnv *env, jclass clazz, jlong viewHandle,
    jstring jqueryString, jstring jlanguageCode, jboolean ranked)
 {
@@ -223,7 +223,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JLjava_lang_Stri
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JDDDD
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__JDDDD
   (JNIEnv *env, jclass clazz, jlong viewHandle,
    jdouble xmin, jdouble ymin, jdouble xmax, jdouble ymax)
 {
@@ -240,13 +240,13 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_query__JDDDD
 #pragma mark - KEYS:
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newKey
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_newKey
   (JNIEnv *env, jclass clazz)
 {
     return (jlong)c4key_new();
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newFullTextKey
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_newFullTextKey
   (JNIEnv *env, jclass clazz, jstring jtext, jstring jlanguageCode)
 {
     jstringSlice text(env, jtext);
@@ -254,7 +254,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newFullTextKey
     return (jlong)c4key_newFullTextString(text, languageCode);
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newGeoKey
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_newGeoKey
   (JNIEnv *env, jclass clazz, jbyteArray jgeoJSON,
    jdouble xmin, jdouble ymin, jdouble xmax, jdouble ymax)
 {
@@ -263,67 +263,67 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_newGeoKey
     return (jlong)c4key_newGeoJSON(geoJSON, bbox);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeKey
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_freeKey
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_free((C4Key*)jkey);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyAddNull
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyAddNull
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_addNull((C4Key*)jkey);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyAdd__JZ
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyAdd__JZ
   (JNIEnv *env, jclass clazz, jlong jkey, jboolean b)
 {
     c4key_addBool((C4Key*)jkey, b);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyAdd__JD
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyAdd__JD
   (JNIEnv *env, jclass clazz, jlong jkey, jdouble d)
 {
     c4key_addNumber((C4Key*)jkey, d);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyAdd__JLjava_lang_String_2
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyAdd__JLjava_lang_String_2
   (JNIEnv *env, jclass clazz, jlong jkey, jstring s)
 {
     jstringSlice str(env, s);
     c4key_addString((C4Key*)jkey, str);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyBeginArray
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyBeginArray
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_beginArray((C4Key*)jkey);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyEndArray
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyEndArray
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_endArray((C4Key*)jkey);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyBeginMap
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyBeginMap
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_beginMap((C4Key*)jkey);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keyEndMap
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keyEndMap
   (JNIEnv *env, jclass clazz, jlong jkey)
 {
     c4key_endMap((C4Key*)jkey);
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_View_keyReader(JNIEnv *env, jclass clazz, jlong jkey)
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_keyReader(JNIEnv *env, jclass clazz, jlong jkey)
 {
     return (jlong)c4key_newReader((C4Key*)jkey);
 }
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyToJSON(JNIEnv *env, jclass clazz, jlong jkey)
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_View_keyToJSON(JNIEnv *env, jclass clazz, jlong jkey)
 {
     C4KeyReader reader = c4key_read((C4Key*)jkey);
     C4SliceResult dump = c4key_toJSON(&reader);
@@ -332,38 +332,38 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyToJSON(JNIEnv *env
     return result;
 }
 
-JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_View_keyPeek(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT jint JNICALL Java_com_couchbase_litecore_View_keyPeek(JNIEnv *env, jclass clazz, jlong jreader){
     return (jint)c4key_peek((C4KeyReader*)jreader);
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_keySkipToken(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_keySkipToken(JNIEnv *env, jclass clazz, jlong jreader){
     c4key_skipToken((C4KeyReader*)jreader);
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_View_keyReadBool(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_View_keyReadBool(JNIEnv *env, jclass clazz, jlong jreader){
     return (jboolean)c4key_readBool((C4KeyReader*)jreader);
 }
 
 
-JNIEXPORT jdouble JNICALL Java_com_couchbase_cbforest_View_keyReadNumber(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT jdouble JNICALL Java_com_couchbase_litecore_View_keyReadNumber(JNIEnv *env, jclass clazz, jlong jreader){
     return (jdouble)c4key_readNumber((C4KeyReader*)jreader);
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_View_keyReadString(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_View_keyReadString(JNIEnv *env, jclass clazz, jlong jreader){
     C4SliceResult dump = c4key_readString((C4KeyReader*)jreader);
     jstring result = toJString(env, dump);
     c4slice_free(dump);
     return result;
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_freeKeyReader(JNIEnv *env, jclass clazz, jlong jreader){
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_freeKeyReader(JNIEnv *env, jclass clazz, jlong jreader){
     if(jreader != 0) c4key_freeReader((C4KeyReader*)jreader);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_View_00024TextKey_setDefaultLanguageCode
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_View_00024TextKey_setDefaultLanguageCode
   (JNIEnv *env, jclass clazz, jstring jlanguageCode, jboolean ignoreDiacriticals)
 {
     jstringSlice languageCode(env, jlanguageCode);

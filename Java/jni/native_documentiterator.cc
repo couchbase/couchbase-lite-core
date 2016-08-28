@@ -13,15 +13,15 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_DocumentIterator.h"
+#include "com_couchbase_litecore_DocumentIterator.h"
 #include "native_glue.hh"
 #include "c4DocEnumerator.h"
 #include <errno.h>
 #include <vector>
 
-using namespace CBL_Core::jni;
+using namespace litecore::jni;
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateAllDocs
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateAllDocs
         (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
          jint skip, jint optionFlags)
 {
@@ -37,7 +37,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
     return (jlong)e;
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateSomeDocs
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateSomeDocs
         (JNIEnv *env, jclass clazz, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags)
 {
     // Convert jdocIDs, a Java String[], to a C array of C4Slice:
@@ -78,7 +78,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumerateChanges
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateChanges
         (JNIEnv *env, jclass clazz, jlong dbHandle, jlong since, jint optionFlags)
 {
     const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
@@ -91,7 +91,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_initEnumera
     return (jlong)e;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_DocumentIterator_next
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_DocumentIterator_next
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     auto e = (C4DocEnumerator*)handle;
@@ -108,7 +108,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_DocumentIterator_next
     return false;
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocumentHandle
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_getDocumentHandle
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     auto e = (C4DocEnumerator*)handle;
@@ -122,7 +122,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocument
     return (jlong)doc;
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocumentInfo
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_DocumentIterator_getDocumentInfo
 (JNIEnv *env, jclass clazz, jlong handle, jobjectArray ids, jlongArray numbers)
 {
     auto e = (C4DocEnumerator*)handle;
@@ -136,7 +136,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_DocumentIterator_getDocumentI
     env->SetLongArrayRegion(numbers, 0, 2, flagsAndSequence);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_DocumentIterator_free
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_DocumentIterator_free
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     c4enum_free((C4DocEnumerator*)handle);

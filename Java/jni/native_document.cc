@@ -13,14 +13,14 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "com_couchbase_cbforest_Document.h"
+#include "com_couchbase_litecore_Document.h"
 #include "native_glue.hh"
 #include "c4Document.h"
 #include <algorithm>
 #include <vector>
 
-using namespace CBL_Core;
-using namespace CBL_Core::jni;
+using namespace litecore;
+using namespace litecore::jni;
 
 
 static jfieldID kField_Flags;
@@ -33,8 +33,8 @@ static jfieldID kField_SelectedSequence;
 static jfieldID kField_SelectedBody;
 
 
-bool CBL_Core::jni::initDocument(JNIEnv *env) {
-    jclass documentClass = env->FindClass("com/couchbase/cbforest/Document");
+bool litecore::jni::initDocument(JNIEnv *env) {
+    jclass documentClass = env->FindClass("com/couchbase/litecore/Document");
     if (!documentClass)
         return false;
     kField_Flags = env->GetFieldID(documentClass, "_flags", "I");
@@ -84,7 +84,7 @@ static void updateSelection
 }
 
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_init
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Document_init
 (JNIEnv *env, jobject self, jlong dbHandle, jstring jdocID, jboolean mustExist)
 {
     jstringSlice docID(env, jdocID);
@@ -99,7 +99,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_init
     return (jlong)doc;
 }
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_initWithSequence
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Document_initWithSequence
         (JNIEnv *env, jobject self, jlong dbHandle, jlong sequence)
 {
     C4Error error;
@@ -114,7 +114,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_cbforest_Document_initWithSequence
     return (jlong)doc;
 }
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_Document_initWithDocHandle
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
@@ -122,13 +122,13 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_initWithDocHandle
     updateSelection(env, self, doc);
     return toJString(env, doc->docID);
 }
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_hasRevisionBody
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_hasRevisionBody
         (JNIEnv *env, jclass clazz, jlong docHandle)
 {
     return c4doc_hasRevisionBody((C4Document *) docHandle);
 }
 
-JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_purgeRevision
+JNIEXPORT jint JNICALL Java_com_couchbase_litecore_Document_purgeRevision
         (JNIEnv *env, jclass clazz, jlong docHandle, jstring jrevid){
     auto doc = (C4Document *) docHandle;
     jstringSlice revID(env, jrevid);
@@ -140,20 +140,20 @@ JNIEXPORT jint JNICALL Java_com_couchbase_cbforest_Document_purgeRevision
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_free
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_free
 (JNIEnv *env, jclass clazz, jlong docHandle)
 {
     c4doc_free((C4Document*)docHandle);
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_couchbase_cbforest_Document_getType
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_Document_getType
 (JNIEnv *env, jclass clazz, jlong docHandle) {
     return toJString(env, c4doc_getType((C4Document*)docHandle));
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_setType
 (JNIEnv *env, jclass clazz, jlong docHandle, jstring jtype)
 {
     jstringSlice type(env, jtype);
@@ -162,12 +162,12 @@ JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_setType
 
 
 static bool isNotFoundError(C4Error error) {
-    return error.domain == CBLCoreDomain && (error.code == kC4ErrorNotFound ||
+    return error.domain == LiteCoreDomain && (error.code == kC4ErrorNotFound ||
                                               error.code == kC4ErrorDeleted);
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectRevID
 (JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody)
 {
     auto doc = (C4Document*)docHandle;
@@ -183,7 +183,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectRevID
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectCurrentRev
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectCurrentRev
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
@@ -193,7 +193,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectCurrentRev
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectParentRev
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectParentRev
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
@@ -203,7 +203,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectParentRev
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextRev
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextRev
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
@@ -213,7 +213,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextRev
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextLeaf
 (JNIEnv *env, jobject self, jlong docHandle, jboolean includeDeleted, jboolean withBody)
 {
     auto doc = (C4Document*)docHandle;
@@ -227,7 +227,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_cbforest_Document_selectNextLeaf
 }
 
 
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Document_readSelectedBody
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBody
 (JNIEnv *env, jobject self, jlong docHandle)
 {
     auto doc = (C4Document*)docHandle;
@@ -240,7 +240,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_cbforest_Document_readSelectedBo
 }
 
 
-JNIEXPORT void JNICALL Java_com_couchbase_cbforest_Document_save
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_save
 (JNIEnv *env, jobject self, jlong docHandle, jint maxRevTreeDepth) {
     auto doc = (C4Document*)docHandle;
     C4Error error;

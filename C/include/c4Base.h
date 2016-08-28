@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-#ifdef CBLCORE_EXPORTS
+#ifdef LITECORE_EXPORTS
 #define CBL_CORE_API __declspec(dllexport)
 #else
 #define CBL_CORE_API __declspec(dllimport)
@@ -70,15 +70,15 @@ typedef uint64_t C4SequenceNumber;
 
 
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
-    CBLCoreDomain = 1, // code is a CBL Core error code (see below)
+    LiteCoreDomain = 1, // code is a CBL Core error code (see below)
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
     SQLiteDomain,       // code is a SQLite error
 };
 
 
-// CBLCoreDomain error codes:
-// (These are identical to the internal C++ error::CBLCoreError enum values.)
+// LiteCoreDomain error codes:
+// (These are identical to the internal C++ error::LiteCoreError enum values.)
 enum {
     kC4ErrorAssertionFailed = 1,    // Internal assertion failure
     kC4ErrorUnimplemented,          // Oops, an unimplemented API call

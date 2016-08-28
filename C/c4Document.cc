@@ -40,7 +40,7 @@ C4Document* c4doc_get(C4Database *database,
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
         
         
@@ -60,7 +60,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
         if (!internal(doc)->exists()) {
             delete doc;
             doc = NULL;
-            recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
         return doc;
     } catchError(outError);
@@ -89,7 +89,7 @@ bool c4doc_selectRevision(C4Document* doc,
     try {
         if (internal(doc)->selectRevision(revID, withBody))
             return true;
-        recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
     } catchError(outError);
     return false;
 }
@@ -105,7 +105,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
     try {
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
             return true;
-        recordError(CBLCoreDomain, kC4ErrorDeleted, outError);
+        recordError(LiteCoreDomain, kC4ErrorDeleted, outError);
     } catchError(outError);
     return false;
 }
@@ -192,25 +192,25 @@ C4Document* c4doc_getForPut(C4Database *database,
             if (parentRevID.buf) {
                 // Updating an existing revision; make sure it exists and is a leaf:
                 if (!idoc->selectRevision(parentRevID, false)) {
-                    recordError(CBLCoreDomain, kC4ErrorNotFound, outError);
+                    recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
                     break;
                 }
                 if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
-                    recordError(CBLCoreDomain, kC4ErrorConflict, outError);
+                    recordError(LiteCoreDomain, kC4ErrorConflict, outError);
                     break;
                 }
             } else {
                 // No parent revision given:
                 if (deleting) {
                     // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                    recordError(CBLCoreDomain,
+                    recordError(LiteCoreDomain,
                                 ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound),
                                 outError);
                     break;
                 }
                 // If doc exists, current rev must be a deletion or there will be a conflict:
                 if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
-                    recordError(CBLCoreDomain, kC4ErrorConflict, outError);
+                    recordError(LiteCoreDomain, kC4ErrorConflict, outError);
                     break;
                 }
             }
