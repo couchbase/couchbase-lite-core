@@ -2,6 +2,8 @@
 
 All platform implementations of Couchbase Lite 2.0 will be built atop this core, adding replication and higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing, but don't need the higher-level features of Couchbase Lite.
 
+**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE, OR EVEN ALPHA.** This is currently (August 2016) a work in progress. See "Status" section below.
+
 ## Features
 
 * Database CRUD (Create, Read, Update, Delete) operations:
@@ -34,6 +36,10 @@ An earlier version of LiteCore, known as CBForest, has been in use since mid-201
 ## Status
 
 **As of August 2016:** Under heavy development. Watch out for falling I-beams! As the primary development platform is Mac OS, only the Xcode project is likely to build, for the time being. Visual Studio and command-line GCC builds will catch up in the future.
+
+## Authors
+
+Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden)), Hideki Itakura ([@hideki](https://github.com/hideki))
 
 ## License
 
