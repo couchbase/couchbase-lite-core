@@ -6,7 +6,7 @@
 //  Copyright (c) 2016 Couchbase. All rights reserved.
 //
 
-@testable import SwiftForest
+@testable import LiteCoreSwift
 
 
 class DatabaseTests: SwiftForestTestCase {
@@ -56,7 +56,7 @@ class DatabaseTests: SwiftForestTestCase {
         check(db.documentCount) == 0
         check(db.lastSequence) == 0
 
-        var seq: Sequence = 0
+        var seq: UInt64 = 0
         try db.inTransaction {
             let doc = try db.putDoc("mydoc", parentRev: nil, body: mkdata("{\"msg\":\"hello\"}"))
             print ("Doc exists=\(doc.exists). docID=\(doc.docID), revID=\(doc.revID).")
@@ -82,17 +82,18 @@ class DatabaseTests: SwiftForestTestCase {
 
     func test06_CreateMultipleRevs() throws {
         try db.inTransaction {
-            let body1: JSONDict = ["Key": "Value"]
+            let body1: Body = ["Key": Val.string("Value")]
             var rev = try db.newRev("multi", body: body1)
             check(rev.docID) == "multi"
             check(rev.revID) == "1-29ad6c711c8c520131753825727241c7cc680ac3"
-            check(rev.properties as NSDictionary) == body1 as NSDictionary
+            assert(rev.properties == body1)
+            //check(rev.properties) == body1
             check(rev.property("Key")) == "Value"
             let x: Int? = rev.property("X")
             check(x).isNil()
             check(rev.property("X", default: -17)) == -17
 
-            let body2: JSONDict = ["Key": 1337, "something": "else"]
+            let body2: Body = ["Key": 1337, "something": Val.string("else")]
             rev = try rev.update(body2)
             check(rev.revID) == "2-a1efd3b85c63542e1cde47cb7251295f4f126725"
             check(rev.properties as NSDictionary) == body2 as NSDictionary

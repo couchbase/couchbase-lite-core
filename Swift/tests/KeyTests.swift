@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import SwiftForest
+@testable import LiteCoreSwift
 
 
 class KeyTests : XCTestCase {

@@ -14,16 +14,12 @@ import Foundation
 public typealias Sequence = UInt64
 
 
-public typealias JSONDict = [String:AnyObject]
-
-
-extension C4Error: ErrorType {
+extension C4Error: Error {
 }
 
 extension C4Error : CustomStringConvertible {
     public var description: String {
-        let domainNames = ["HTTP", "errno", "ForestDB", "C4"]
-        return "C4Error(\(domainNames[Int(domain.rawValue)]) \(code))"
+        return c4error_getMessage(self).asString()!
     }
 }
 
@@ -31,9 +27,9 @@ extension C4Error : CustomStringConvertible {
 extension C4Slice {
     public init(_ s: String?) {
         if let str = s {
-            let data = str.dataUsingEncoding(NSUTF8StringEncoding)
-            buf = data!.bytes
-            size = data!.length
+            let data = str.data(using: String.Encoding.utf8)
+            buf = (data! as NSData).bytes
+            size = data!.count
         } else {
             buf = nil
             size = 0
@@ -42,38 +38,40 @@ extension C4Slice {
 
     public init(_ s: NSString?) {
         if let str = s {
-            let data = str.dataUsingEncoding(NSUTF8StringEncoding)
-            buf = data!.bytes
-            size = data!.length
+            let data = str.data(using: String.Encoding.utf8.rawValue)
+            buf = (data! as NSData).bytes
+            size = data!.count
         } else {
             buf = nil
             size = 0
         }
     }
 
-    public init(_ data: NSData?) {
+    public init(_ data: Data?) {
         if let d = data {
-            buf = d.bytes
-            size = d.length
+            buf = (d as NSData).bytes
+            size = d.count
         } else {
             buf = nil
             size = 0
         }
     }
 
-    public func asData() -> NSData? {
+    public func asData() -> Data? {
         guard buf != nil else {
             return nil
         }
-        return NSData(bytes: UnsafeMutablePointer(buf), length: size)
+        return Data(bytes: buf, count: size)
     }
 
     // Fast but destructive conversion to NSData. Afterwards the slice will be empty.
-    public mutating func toData() -> NSData? {
+    public mutating func toData() -> Data? {
         guard buf != nil else {
             return nil
         }
-        let data = NSData(bytesNoCopy: UnsafeMutablePointer(buf), length: size)
+        let data = Data(bytesNoCopy: UnsafeMutableRawPointer(mutating:buf),
+                        count: size,
+                        deallocator: .free)
         buf = nil
         size = 0
         return data
@@ -83,7 +81,7 @@ extension C4Slice {
         guard buf != nil else {
             return nil
         }
-        return NSString(bytes: buf, length: size, encoding: NSUTF8StringEncoding)
+        return NSString(bytes: buf, length: size, encoding: String.Encoding.utf8.rawValue)
     }
 
     public func asString() -> String? {

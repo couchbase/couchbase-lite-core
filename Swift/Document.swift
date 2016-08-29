@@ -9,7 +9,10 @@
 import Foundation
 
 
-public class Document {
+public typealias Body = [String:Val]
+
+
+open class Document {
 
     init(handle: UnsafeMutablePointer<C4Document>) {
         doc = handle
@@ -19,17 +22,17 @@ public class Document {
         c4doc_free(doc)
     }
 
-    public var deleted: Bool        {return doc.memory.flags.contains(C4DocumentFlags.Deleted)}
-    public var conflicted: Bool     {return doc.memory.flags.contains(C4DocumentFlags.Conflicted)}
-    public var hasAttachments: Bool {
-        return doc.memory.flags.contains(C4DocumentFlags.HasAttachments)}
-    public var exists: Bool         {return doc.memory.flags.contains(C4DocumentFlags.Exists)}
+    open var deleted: Bool        {return doc.pointee.flags.contains(C4DocumentFlags.deleted)}
+    open var conflicted: Bool     {return doc.pointee.flags.contains(C4DocumentFlags.conflicted)}
+    open var hasAttachments: Bool {
+        return doc.pointee.flags.contains(C4DocumentFlags.hasAttachments)}
+    open var exists: Bool         {return doc.pointee.flags.contains(C4DocumentFlags.exists)}
 
-    public var docID: String        {return doc.memory.docID.asString()!}
-    public var revID: String        {return doc.memory.revID.asString() ?? ""}
-    public var sequence: Sequence   {return doc.memory.sequence}
+    open var docID: String        {return doc.pointee.docID.asString()!}
+    open var revID: String        {return doc.pointee.revID.asString() ?? ""}
+    open var sequence: Sequence   {return doc.pointee.sequence}
 
-    public var docType: String? {
+    open var docType: String? {
         get {
             let t = c4doc_getType(doc)
             let result = t.asString()
@@ -43,26 +46,26 @@ public class Document {
 
     // Selected revision:
 
-    public var selectedRevID: String?            {return doc.memory.selectedRev.revID.asString()}
-    public var selectedRevFlags: C4RevisionFlags {return doc.memory.selectedRev.flags}
-    public var selectedRevSequence: Sequence     {return doc.memory.selectedRev.sequence}
-    public var selectedRevHasBody: Bool          {return c4doc_hasRevisionBody(doc)}
+    open var selectedRevID: String?            {return doc.pointee.selectedRev.revID.asString()}
+    open var selectedRevFlags: C4RevisionFlags {return doc.pointee.selectedRev.flags}
+    open var selectedRevSequence: Sequence     {return doc.pointee.selectedRev.sequence}
+    open var selectedRevHasBody: Bool          {return c4doc_hasRevisionBody(doc)}
 
-    public func selectedRevBody() throws -> NSData? {
-        var body = doc.memory.selectedRev.body
+    open func selectedRevBody() throws -> Data? {
+        var body = doc.pointee.selectedRev.body
         if body.buf == nil {
             var err = C4Error()
             guard c4doc_loadRevisionBody(doc, &err) else {
                 throw err
             }
-            body = doc.memory.selectedRev.body
+            body = doc.pointee.selectedRev.body
         }
         return body.asData()
     }
 
     // Selecting revisions:
 
-    public func selectRevision(revID: String, withBody: Bool = true) throws -> Bool {
+    open func selectRevision(_ revID: String, withBody: Bool = true) throws -> Bool {
         var err = C4Error()
         guard c4doc_selectRevision(doc, C4Slice(revID), withBody,  &err) else {
             if err.code == 404 {
@@ -73,11 +76,11 @@ public class Document {
         return true
     }
 
-    public func selectCurrentRevision() -> Bool {return c4doc_selectCurrentRevision(doc)}
-    public func selectParentRevision() -> Bool  {return c4doc_selectParentRevision(doc)}
-    public func selectNextRevision() -> Bool    {return c4doc_selectNextRevision(doc)}
+    open func selectCurrentRevision() -> Bool {return c4doc_selectCurrentRevision(doc)}
+    open func selectParentRevision() -> Bool  {return c4doc_selectParentRevision(doc)}
+    open func selectNextRevision() -> Bool    {return c4doc_selectNextRevision(doc)}
 
-    public func selectNextLeafRevision(includeDeleted: Bool = false, withBody: Bool = true) throws -> Bool {
+    open func selectNextLeafRevision(_ includeDeleted: Bool = false, withBody: Bool = true) throws -> Bool {
         var err = C4Error()
         guard c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &err) else {
             if err.code == 404 {
@@ -88,33 +91,7 @@ public class Document {
         return true
     }
 
-    // Adding revisions (low-level):
-
-    public func addRevision(revID: String, body: NSData, deleted: Bool = false,
-                            hasAttachments: Bool = false, allowConflict: Bool = false) throws -> Bool
-    {
-        var err = C4Error()
-        let added = c4doc_insertRevision(doc, C4Slice(revID), C4Slice(body), deleted, hasAttachments, allowConflict, &err)
-        guard added >= 0 else {
-            throw err
-        }
-        return added > 0
-    }
-
-    public func insertRevision(body: NSData, deleted: Bool = false,
-                               hasAttachments: Bool = false, history: [String]) throws -> Int
-    {
-        var historySlices = history.map {C4Slice($0)}
-        var err = C4Error()
-        let added = c4doc_insertRevisionWithHistory(doc, C4Slice(body), deleted, hasAttachments,
-            &historySlices, history.count, &err)
-        guard added >= 0 else {
-            throw err
-        }
-        return Int(added)
-    }
-
-    public func purgeRevision(revID: String) throws -> Int {
+    open func purgeRevision(_ revID: String) throws -> Int {
         var err = C4Error()
         let purged = c4doc_purgeRevision(doc, C4Slice(revID), &err)
         guard purged >= 0 else {
@@ -123,7 +100,7 @@ public class Document {
         return Int(purged)
     }
 
-    public func save(maxRevTreeDepth: UInt32 = 20) throws {
+    open func save(_ maxRevTreeDepth: UInt32 = 20) throws {
         var err = C4Error()
         guard c4doc_save(doc, maxRevTreeDepth, &err) else {
             throw err

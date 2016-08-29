@@ -9,19 +9,25 @@
 import Foundation
 
 
-public typealias EmitFunction = (Any, Any?) -> ()
-public typealias MapFunction = (JSONDict, EmitFunction) throws -> ()
+public typealias EmitFunction = (Val, Val?) -> ()
+public typealias MapFunction = (Body, EmitFunction) throws -> ()
 
 
-public class View {
+open class View {
 
     public init(database: Database, path: String, name: String, create: Bool, map: MapFunction, version: String) throws {
-        let flags: C4DatabaseFlags = create ? C4DatabaseFlags.DB_Create : C4DatabaseFlags()
+        var config = C4DatabaseConfig()
+        config.flags = create ? C4DatabaseFlags.db_Create : C4DatabaseFlags()
         var err = C4Error()
         self.database = database
         self.name = name
         self.map = map
-        self.handle = c4view_open(database.dbHandle, C4Slice(path), C4Slice(name), C4Slice(version), flags, nil, &err)
+        self.handle = c4view_open(database.dbHandle,
+                                  C4Slice(path),
+                                  C4Slice(name),
+                                  C4Slice(version),
+                                  &config,
+                                  &err)
         guard handle != nil else {
             throw err
         }
@@ -35,17 +41,17 @@ public class View {
         }
     }
 
-    public let database: Database
-    public let name: String
+    open let database: Database
+    open let name: String
 
-    public func eraseIndex() throws {
+    open func eraseIndex() throws {
         var err = C4Error()
         guard c4view_eraseIndex(handle, &err) else {
             throw err
         }
     }
 
-    public func delete() throws {
+    open func delete() throws {
         var err = C4Error()
         guard c4view_delete(handle, &err) else {
             throw err
@@ -53,22 +59,23 @@ public class View {
         handle = nil
     }
 
-    public class func delete(path: String) throws {
+    open class func delete(_ path: String) throws {
+        var config = C4DatabaseConfig()
         var err = C4Error()
-        guard c4view_deleteAtPath(C4Slice(path), C4DatabaseFlags(), &err) else {
+        guard c4view_deleteAtPath(C4Slice(path), &config, &err) else {
             throw err
         }
     }
 
-    public var totalRows: UInt64                {return c4view_getTotalRows(handle)}
-    public var lastSequenceIndexed: Sequence    {return c4view_getLastSequenceIndexed(handle)}
-    public var lastSequenceChangedAt: Sequence  {return c4view_getLastSequenceChangedAt(handle)}
+    open var totalRows: UInt64                {return c4view_getTotalRows(handle)}
+    open var lastSequenceIndexed: Sequence    {return c4view_getLastSequenceIndexed(handle)}
+    open var lastSequenceChangedAt: Sequence  {return c4view_getLastSequenceChangedAt(handle)}
 
 
-    public var map: MapFunction
+    open var map: MapFunction
 
 
-    var handle: COpaquePointer
+    var handle: OpaquePointer?
 }
 
 
@@ -81,7 +88,7 @@ extension View : CustomStringConvertible {
 
 
 
-public class ViewIndexer {
+open class ViewIndexer {
 
     public init(views: [View]) throws {
         self.views = views
@@ -99,24 +106,14 @@ public class ViewIndexer {
         }
     }
 
-    public func run() throws {
+    open func run() throws {
         // Define the emit function that will be passed to the map function:
         var keys = [Key]()
-        var values = [NSData?]()
-        func emit(keyObj: Any, valueObj: Any?) {
-            do {
-                print("    emit(\(keyObj), \(valueObj))")
-                let key = try Key(keyObj)
-                var value: NSData?
-                if valueObj != nil {
-                    value = try NSJSONSerialization.dataWithJSONObject(valueObj! as! AnyObject, options: [])
-                    //FIX: Allow fragments
-                }
-                keys.append(key)
-                values.append(value)
-            } catch let x {
-                print("WARNING: invalid key or value passed to view emit() function: \(x)")
-            }
+        var values = [Data?]()
+        func emit(_ keyObj: Val, valueObj: Val?) {
+            print("    emit(\(keyObj), \(valueObj))")
+            keys.append(Key(keyObj))
+            values.append(valueObj?.asJSON())
         }
 
         // Enumerate the new revisions:
@@ -126,12 +123,12 @@ public class ViewIndexer {
             guard let body = try doc.selectedRevBody() else {
                 continue
             }
-            let props = try NSJSONSerialization.JSONObjectWithData(body, options: []) as! JSONDict
+            let props = try Val(json: body).asDict()!
 
             var viewNumber: UInt32 = 0
             for view in views {
-                keys.removeAll(keepCapacity: true)
-                values.removeAll(keepCapacity: true)
+                keys.removeAll(keepingCapacity: true)
+                values.removeAll(keepingCapacity: true)
 
                 // Call the map function!
                 do {
@@ -160,7 +157,7 @@ public class ViewIndexer {
         guard ok else { throw err }
     }
 
-    private func enumerator() throws -> DocEnumerator {
+    fileprivate func enumerator() throws -> DocEnumerator {
         var err = C4Error()
         let result = c4indexer_enumerateDocuments(indexer, &err)
         guard result != nil else {
@@ -169,6 +166,6 @@ public class ViewIndexer {
         return DocEnumerator(c4enum: result)
     }
 
-    private let views: [View]
-    private var indexer: COpaquePointer
+    fileprivate let views: [View]
+    fileprivate var indexer: OpaquePointer?
 }

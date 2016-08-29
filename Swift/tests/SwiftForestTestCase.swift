@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import SwiftForest
+@testable import LiteCoreSwift
 
 
 class SwiftForestTestCase: XCTestCase {
@@ -27,15 +27,15 @@ class SwiftForestTestCase: XCTestCase {
     }
 
 
-    func mkdata(str: String) -> NSData {
-        return str.dataUsingEncoding(NSUTF8StringEncoding)!
+    func mkdata(_ str: String) -> Data {
+        return str.data(using: String.Encoding.utf8)!
     }
     
-    func createNumberedDocs(range: Range<Int>) {
+    func createNumberedDocs(_ range: CountableClosedRange<Int>) {
         try! db.inTransaction {
             for i in range {
                 let docID = String(format: "doc-%03d", i)
-                try! db.newRev(docID, body: ["i": i])
+                try! db.newRev(docID, body: ["i": Val.int(i)])
             }
         }
     }

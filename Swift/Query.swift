@@ -9,100 +9,100 @@
 import Foundation
 
 
-public class Query: LazySequenceType {
+open class Query: LazySequenceProtocol {
 
-    public typealias Generator = QueryEnumerator
+    public typealias Iterator = QueryEnumerator
 
     init(_ view: View) {
         self.view = view
     }
 
-    public let view: View
+    open let view: View
 
-    public var skip: UInt64 {
+    open var skip: UInt64 {
         get {return options.skip}
         set {options.skip = newValue}
     }
 
-    public var limit: UInt64 {
+    open var limit: UInt64 {
         get {return options.limit}
         set {options.limit = newValue}
     }
 
-    public var descending: Bool {
+    open var descending: Bool {
         get {return options.descending}
         set {options.descending = newValue}
     }
 
-    public var inclusiveStart: Bool {
+    open var inclusiveStart: Bool {
         get {return options.inclusiveStart}
         set {options.inclusiveStart = newValue}
     }
 
-    public var inclusiveEnd: Bool {
+    open var inclusiveEnd: Bool {
         get {return options.inclusiveEnd}
         set {options.inclusiveEnd = newValue}
     }
 
-    public var startKey: AnyObject? {
+    open var startKey: AnyObject? {
         didSet {
             encodedStartKey = try! Key(startKey)
             options.startKey = encodedStartKey!.handle
         }
     }
 
-    public var endKey: AnyObject? {
+    open var endKey: AnyObject? {
         didSet {
             encodedEndKey = try! Key(endKey)
             options.endKey = encodedEndKey!.handle
         }
     }
 
-    public var startKeyDocID: String?
-    public var endKeyDocID: String?
+    open var startKeyDocID: String?
+    open var endKeyDocID: String?
 
-    public var keys: [AnyObject]? {
+    open var keys: [AnyObject]? {
         didSet {
             encodedKeys = keys?.map {try! Key($0)}
             options.keysCount = keys?.count ?? 0
         }
     }
 
-    public func run() throws -> QueryEnumerator {
+    open func run() throws -> QueryEnumerator {
         options.startKeyDocID = C4Slice(startKeyDocID)
         options.endKeyDocID = C4Slice(endKeyDocID)
 
         var err = C4Error()
-        var enumHandle: UnsafeMutablePointer<C4QueryEnumerator> = nil
+        var enumHandle: UnsafeMutablePointer<C4QueryEnumerator>? = nil
 
         if encodedKeys == nil {
             options.keys = nil
             enumHandle = c4view_query(view.handle, &options, &err)
         } else {
-            var keyHandles: [COpaquePointer] = encodedKeys!.map {$0.handle}
-            withUnsafeMutablePointer(&keyHandles[0]) { keysPtr in
+            var keyHandles: [OpaquePointer?] = encodedKeys!.map {$0.handle}
+            withUnsafeMutablePointer(to: &keyHandles[0]) { keysPtr in
                 options.keys = keysPtr
                 enumHandle = c4view_query(view.handle, &options, &err)
             }
         }
         guard enumHandle != nil else { throw err }
-        return QueryEnumerator(enumHandle)
+        return QueryEnumerator(enumHandle!)
     }
 
-    public func generate() -> QueryEnumerator {
+    open func makeIterator() -> QueryEnumerator {
         return try! run()
     }
 
-    private var options = kC4DefaultQueryOptions
+    fileprivate var options = kC4DefaultQueryOptions
 
     // These properties hold references to the Key objects whose handles are stored in `options`
-    private var encodedStartKey: Key?
-    private var encodedEndKey: Key?
-    private var encodedKeys: [Key]?
+    fileprivate var encodedStartKey: Key?
+    fileprivate var encodedEndKey: Key?
+    fileprivate var encodedKeys: [Key]?
 }
 
 
-public class QueryEnumerator: GeneratorType {
+open class QueryEnumerator: IteratorProtocol {
 
     public typealias Element = QueryRow
 
@@ -114,11 +114,11 @@ public class QueryEnumerator: GeneratorType {
         c4queryenum_free(handle)
     }
 
-    public func next() -> QueryRow? {
+    open func next() -> QueryRow? {
         return try! nextRow()
     }
 
-    public func nextRow() throws -> QueryRow? {
+    open func nextRow() throws -> QueryRow? {
         var err = C4Error()
         guard c4queryenum_next(handle, &err) else {
             if err.code == 0 {
@@ -126,15 +126,15 @@ public class QueryEnumerator: GeneratorType {
             }
             throw err
         }
-        return QueryRow(handle.memory)
+        return QueryRow(handle.pointee)
     }
 
-    private let handle: UnsafeMutablePointer<C4QueryEnumerator>
+    fileprivate let handle: UnsafeMutablePointer<C4QueryEnumerator>
 
 }
 
 
-public class QueryRow {
+open class QueryRow {
 
     init(_ e: C4QueryEnumerator) {
         key = Key.readFrom(e.key)!
@@ -142,16 +142,16 @@ public class QueryRow {
         docID = e.docID.asString()
     }
 
-    public let docID: String?
+    open let docID: String?
 
-    public let key: AnyObject
+    open let key: Val
 
-    public lazy var value: AnyObject? = {
-        guard self.valueJSON != nil else {return nil}
-        let value = try! NSJSONSerialization.JSONObjectWithData(self.valueJSON!, options: [.AllowFragments])
+    open lazy var value: Val? = {
+        guard let json = self.valueJSON else {return nil}
+        let value = try! Val(json: json)
         self.valueJSON = nil
         return value
     }()
 
-    private var valueJSON: NSData?
+    fileprivate var valueJSON: Data?
 }

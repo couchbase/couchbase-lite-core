@@ -7,8 +7,8 @@
 
 #define APPLE 1
 
-FOUNDATION_EXPORT double SwiftForestVersionNumber;
-FOUNDATION_EXPORT const unsigned char SwiftForestVersionString[];
+FOUNDATION_EXPORT double LiteCoreSwiftVersionNumber;
+FOUNDATION_EXPORT const unsigned char LiteCoreSwiftVersionString[];
 
 #include "c4.h"
 #include "c4Database.h"

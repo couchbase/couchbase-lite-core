@@ -9,9 +9,9 @@
 import Foundation
 
 
-public class Revision {
+open class Revision {
 
-    init(database: Database, docID: String, revID: String, flags: C4RevisionFlags, rawBody: NSData?) {
+    init(database: Database, docID: String, revID: String, flags: C4RevisionFlags, rawBody: Data?) {
         self.database = database
         self.docID = docID
         self.revID = revID
@@ -19,29 +19,29 @@ public class Revision {
         self.rawBody = rawBody
     }
 
-    convenience init(database: Database, doc: Document, rawBody: NSData?) {
+    convenience init(database: Database, doc: Document, rawBody: Data?) {
         self.init(database: database, docID: doc.docID, revID: doc.selectedRevID!, flags: doc.selectedRevFlags, rawBody: rawBody)
     }
 
-    public let database: Database
-    public let docID: String
-    public let revID: String
-    public let rawBody: NSData?
+    open let database: Database
+    open let docID: String
+    open let revID: String
+    open let rawBody: Data?
 
-    private let flags: C4RevisionFlags
+    fileprivate let flags: C4RevisionFlags
 
-    public var deleted: Bool        {return flags.contains(C4RevisionFlags.RevDeleted)}
-    public var hasAttachments: Bool {return flags.contains(C4RevisionFlags.RevHasAttachments)}
+    open var deleted: Bool        {return flags.contains(C4RevisionFlags.revDeleted)}
+    open var hasAttachments: Bool {return flags.contains(C4RevisionFlags.revHasAttachments)}
 
-    public var generation: UInt {
-        guard let dash = revID.rangeOfString("-") else {
+    open var generation: UInt {
+        guard let dash = revID.range(of: "-") else {
             return 0
         }
-        return UInt(revID.substringToIndex(dash.startIndex)) ?? 0
+        return UInt(revID.substring(to: dash.lowerBound)) ?? 0
     }
 
-    func update(body: JSONDict, deleted: Bool = false) throws -> Revision {
-        let rawBody = try NSJSONSerialization.dataWithJSONObject(body, options: [])
+    func update(_ body: Body, deleted: Bool = false) throws -> Revision {
+        let rawBody: Data = try Val.withJSONObject(body).asJSON()
         let doc = try database.putDoc(docID, parentRev: revID, body: rawBody, deletion: deleted)
         return Revision(database: database, doc: doc, rawBody: rawBody)
     }
@@ -52,22 +52,21 @@ public class Revision {
 
     // MARK:- PROPERTY ACCESS
 
-    public lazy var properties: JSONDict = {
+    open lazy var properties: Body = {
         do {
-            if let json = self.rawBody,
-                let props = try NSJSONSerialization.JSONObjectWithData(json, options: []) as? JSONDict {
-                return props
+            if let json = self.rawBody, let d = try Val(json: json).asDict() {
+                return d
             }
         } catch { }
         return [:]
     }()
 
-    func property<T>(name: String) -> T? {
-        return properties[name] as? T
+    func property<T>(_ name: String) -> T? {
+        return properties[name]?.unwrap() as? T
     }
 
-    func property<T>(name: String, default: T) -> T {
-        return (properties[name] as? T) ?? `default`
+    func property<T>(_ name: String, default: T) -> T {
+        return (properties[name]?.unwrap() as? T) ?? `default`
     }
 
 }

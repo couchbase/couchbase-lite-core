@@ -11,12 +11,6 @@ import XCTest
 
 // Syntactic sugar for XCTAssert functions:
 public struct check<T> {
-    public init(_ a: T, file: StaticString = #file, line: UInt = #line) {
-        actual = a
-        self.file = file
-        self.line = line
-    }
-
     public init(_ a: T?, file: StaticString = #file, line: UInt = #line) {
         self.actual = a
         self.file = file

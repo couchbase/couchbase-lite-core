@@ -12,7 +12,7 @@ import Foundation
 /** Represents a range of docIDs in a Database, plus other query options.
     Acts as a Swift Sequence that generates a DocEnumerator for the actual enumeration.
     As a Sequence, this type can be directly used in a "for...in..." loop. */
-public struct DocumentRange: LazySequenceType {
+public struct DocumentRange: LazySequenceProtocol {
 
     public init(database: Database) {
         self.database = database
@@ -33,7 +33,7 @@ public struct DocumentRange: LazySequenceType {
     public var flags: EnumeratorFlags = [.InclusiveStart, .InclusiveEnd, .IncludeNonConflicted, .IncludeBodies]
 
     public func enumerateDocs() throws -> DocEnumerator {
-        return try withC4Opts() { (c4opts, inout err: C4Error) in
+        return try withC4Opts() { (c4opts, err: inout C4Error) in
             if docIDs == nil {
                 return c4db_enumerateAllDocs(database.dbHandle, C4Slice(start), C4Slice(end), c4opts, &err)
             } else {
@@ -45,11 +45,11 @@ public struct DocumentRange: LazySequenceType {
 
     // common subroutine for creating enumerators; provides C4EnumeratorOptions, checks errors,
     // and wraps enumerator in a DocEnumerator
-    private func withC4Opts(@noescape block: (UnsafePointer<C4EnumeratorOptions>, inout C4Error)->COpaquePointer) throws -> DocEnumerator {
-        var result: COpaquePointer = nil
+    fileprivate func withC4Opts(_ block: (UnsafePointer<C4EnumeratorOptions>, inout C4Error)->OpaquePointer) throws -> DocEnumerator {
+        var result: OpaquePointer? = nil
         var err = C4Error()
         var c4opt = C4EnumeratorOptions(skip: skip, flags: C4EnumeratorFlags(rawValue: flags.rawValue))
-        withUnsafePointer(&c4opt) { c4optPtr in
+        withUnsafePointer(to: &c4opt) { c4optPtr in
             result = block(c4optPtr, &err)
         }
         guard result != nil else {
@@ -60,34 +60,34 @@ public struct DocumentRange: LazySequenceType {
 
     // SEQUENCETYPE API:
 
-    public typealias Generator = DocEnumerator
+    public typealias Iterator = DocEnumerator
     public typealias Subsequence = DocumentRange
 
-    public func dropFirst(n: Int) -> DocumentRange {
+    public func dropFirst(_ n: Int) -> DocumentRange {
         var r = self
         r.skip = UInt64(Int64(r.skip) + Int64(n))
         return r
     }
 
-    func prefix(maxLength: Int) -> DocumentRange {
+    func prefix(_ maxLength: Int) -> DocumentRange {
         var r = self
-        r.limit = min(r.limit, UInt64(maxLength))
+        r.limit = Swift.min(r.limit, UInt64(maxLength))
         return r
     }
 
-    public func generate() -> DocEnumerator {
+    public func makeIterator() -> DocEnumerator {
         return try! enumerateDocs()     //FIX: Can't throw error
     }
 }
 
 
-public class DocEnumerator: GeneratorType, SequenceType {
+open class DocEnumerator: IteratorProtocol, Swift.Sequence {
 
     public typealias Element = Document
 
-    init(c4enum: COpaquePointer, limit: UInt64 = UInt64.max) {
+    init(c4enum: OpaquePointer?, limit: UInt64 = UInt64.max) {
         assert(c4enum != nil)
-        e = c4enum
+        e = c4enum!
         self.limit = limit
     }
 
@@ -95,7 +95,7 @@ public class DocEnumerator: GeneratorType, SequenceType {
         c4enum_free(e)
     }
 
-    public func next() -> Document? {
+    open func next() -> Document? {
         guard limit > 0 else {
             return nil
         }
@@ -109,7 +109,7 @@ public class DocEnumerator: GeneratorType, SequenceType {
     }
 
     /** The same as next() except that it can throw an error. */
-    public func nextDoc() throws -> Document? {
+    open func nextDoc() throws -> Document? {
         var err = C4Error()
         let c4doc = c4enum_nextDocument(e, &err)
         guard c4doc != nil else {
@@ -119,33 +119,33 @@ public class DocEnumerator: GeneratorType, SequenceType {
             }
             return nil
         }
-        return Document(handle: c4doc)
+        return Document(handle: c4doc!)
     }
 
     /** Check this after next() returns nil, to see if it stopped due to an error. */
-    public var error: C4Error?
+    open var error: C4Error?
 
     /** Throws if next() stopped due to an error. */
-    public func checkError() throws {
+    open func checkError() throws {
         if error != nil {
             throw error!
         }
     }
 
-    private var e: COpaquePointer
-    private var limit: UInt64
+    fileprivate var e: OpaquePointer
+    fileprivate var limit: UInt64
 }
 
 
-public struct EnumeratorFlags : OptionSetType {
+public struct EnumeratorFlags : OptionSet {
     public let rawValue: UInt16
     public init(rawValue: UInt16) { self.rawValue = rawValue }
     init(_ flag: C4EnumeratorFlags) { self.rawValue = flag.rawValue }
 
-    public static let Descending        = EnumeratorFlags(C4EnumeratorFlags.Descending)
-    public static let InclusiveStart    = EnumeratorFlags(C4EnumeratorFlags.InclusiveStart)
-    public static let InclusiveEnd      = EnumeratorFlags(C4EnumeratorFlags.InclusiveEnd)
-    public static let IncludeDeleted    = EnumeratorFlags(C4EnumeratorFlags.IncludeDeleted)
-    public static let IncludeNonConflicted = EnumeratorFlags(C4EnumeratorFlags.IncludeNonConflicted)
-    public static let IncludeBodies     = EnumeratorFlags(C4EnumeratorFlags.IncludeBodies)
+    public static let Descending        = EnumeratorFlags(C4EnumeratorFlags.descending)
+    public static let InclusiveStart    = EnumeratorFlags(C4EnumeratorFlags.inclusiveStart)
+    public static let InclusiveEnd      = EnumeratorFlags(C4EnumeratorFlags.inclusiveEnd)
+    public static let IncludeDeleted    = EnumeratorFlags(C4EnumeratorFlags.includeDeleted)
+    public static let IncludeNonConflicted = EnumeratorFlags(C4EnumeratorFlags.includeNonConflicted)
+    public static let IncludeBodies     = EnumeratorFlags(C4EnumeratorFlags.includeBodies)
 }

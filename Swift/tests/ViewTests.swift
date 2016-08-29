@@ -7,7 +7,7 @@
 //
 
 import Foundation
-@testable import SwiftForest
+@testable import LiteCoreSwift
 
 
 class ViewTests: SwiftForestTestCase {
@@ -22,7 +22,7 @@ class ViewTests: SwiftForestTestCase {
         try! View.delete(ViewTests.kPath)
         let map: MapFunction = {doc, emit in
             print("map(\(doc))")
-            emit(doc["i"] as! Int, nil)
+            emit(doc["i"]!, nil)
         }
         view = try! View(database: db, path: ViewTests.kPath, name: "test", create: true, map: map, version: "1")
     }
@@ -47,7 +47,7 @@ class ViewTests: SwiftForestTestCase {
         for row in Query(view) {
             i += 1
             //print("doc = \(row.docID)   key = \(row.key)   value = \(row.value)")
-            check(row.key as? Int) == i
+            check(row.key) == Val.int(i)
             check(row.value).isNil()
             check(row.docID) == String(format: "doc-%03d", i)
         }

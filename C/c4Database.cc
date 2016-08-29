@@ -22,6 +22,7 @@
 #include "SQLiteDataFile.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
+#include "LogInternal.hh"
 
 #include "Collatable.hh"
 #include "FilePath.hh"
@@ -268,10 +269,15 @@ bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *
         } else {
             FilePath path((string)dbPath);
             DataFile::Factory *factory = nullptr;
-            if (config && config->storageEngine)
+            if (config && config->storageEngine) {
                 factory = DataFile::factoryNamed(config->storageEngine);
-            else
+                if (!factory)
+                    Warn("c4db_deleteAtPath: unknown storage engine '%s'", config->storageEngine);
+            } else {
                 factory = DataFile::factoryForFile(path);
+                if (!factory)
+                    factory = DataFile::factories()[0];
+            }
             if (!factory)
                 error::_throw(error::WrongFormat);
             factory->deleteFile(path);

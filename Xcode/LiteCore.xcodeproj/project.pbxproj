@@ -154,7 +154,7 @@
 		279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore.a */; };
-		27A657A61CBC190B00A7A1D7 /* Swift API.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A6579C1CBC190B00A7A1D7 /* Swift API.framework */; };
+		27A657A61CBC190B00A7A1D7 /* LiteCoreSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A6579C1CBC190B00A7A1D7 /* LiteCoreSwift.framework */; };
 		27A657AB1CBC190B00A7A1D7 /* DatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657AA1CBC190B00A7A1D7 /* DatabaseTests.swift */; };
 		27A657B41CBC19E300A7A1D7 /* libLiteCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore.a */; };
 		27A657B51CBC19FA00A7A1D7 /* Base.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A6578D1CBC189800A7A1D7 /* Base.swift */; };
@@ -344,6 +344,8 @@
 		27FA09CB1D70BA42005888AA /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		27FA09D41D70EDBF005888AA /* Catch_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FA09D31D70EDBF005888AA /* Catch_Tests.mm */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
+		27FCC55C1D73B85600FDC993 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
+		27FCC5601D74A33C00FDC993 /* Val.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27FCC55F1D74A33C00FDC993 /* Val.swift */; };
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
 		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
@@ -768,7 +770,7 @@
 		27A657941CBC189800A7A1D7 /* Revision.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revision.swift; sourceTree = "<group>"; };
 		27A657951CBC189800A7A1D7 /* Swift-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Swift-Bridging-Header.h"; sourceTree = "<group>"; };
 		27A657961CBC189800A7A1D7 /* View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View.swift; sourceTree = "<group>"; };
-		27A6579C1CBC190B00A7A1D7 /* Swift API.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = "Swift API.framework"; sourceTree = BUILT_PRODUCTS_DIR; };
+		27A6579C1CBC190B00A7A1D7 /* LiteCoreSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiteCoreSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A657A51CBC190B00A7A1D7 /* Swift API Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Swift API Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A657AA1CBC190B00A7A1D7 /* DatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseTests.swift; sourceTree = "<group>"; };
 		27A657AC1CBC190B00A7A1D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -946,6 +948,7 @@
 		27FA099A1D6F7C38005888AA /* catch.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = catch.hpp; sourceTree = "<group>"; };
 		27FA09D31D70EDBF005888AA /* Catch_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Catch_Tests.mm; sourceTree = "<group>"; };
 		27FA09D71D70F435005888AA /* CaseListReporter.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CaseListReporter.hh; sourceTree = "<group>"; };
+		27FCC55F1D74A33C00FDC993 /* Val.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Val.swift; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/litecore/View.java; sourceTree = "<group>"; };
 		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
 		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/litecore/QueryIterator.java; sourceTree = "<group>"; };
@@ -1014,6 +1017,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27FCC55C1D73B85600FDC993 /* libsqlite3.tbd in Frameworks */,
 				27A657BF1CBC1A3D00A7A1D7 /* libc++.tbd in Frameworks */,
 				27A657B41CBC19E300A7A1D7 /* libLiteCore.a in Frameworks */,
 			);
@@ -1023,7 +1027,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27A657A61CBC190B00A7A1D7 /* Swift API.framework in Frameworks */,
+				27A657A61CBC190B00A7A1D7 /* LiteCoreSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1238,7 +1242,7 @@
 				274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */,
 				274D04081BA75E1C00FF7C35 /* C4Tests */,
 				720EA3F51BA7EAD9002B8416 /* libLiteCore-Interop.dylib */,
-				27A6579C1CBC190B00A7A1D7 /* Swift API.framework */,
+				27A6579C1CBC190B00A7A1D7 /* LiteCoreSwift.framework */,
 				27A657A51CBC190B00A7A1D7 /* Swift API Tests.xctest */,
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 			);
@@ -1499,6 +1503,7 @@
 			isa = PBXGroup;
 			children = (
 				27A6578D1CBC189800A7A1D7 /* Base.swift */,
+				27FCC55F1D74A33C00FDC993 /* Val.swift */,
 				27A6578E1CBC189800A7A1D7 /* Database.swift */,
 				27A6578F1CBC189800A7A1D7 /* DocEnumerator.swift */,
 				27A657901CBC189800A7A1D7 /* Document.swift */,
@@ -1524,9 +1529,8 @@
 				27A657C71CBDD38A00A7A1D7 /* AssertHelper.swift */,
 				27A657AC1CBC190B00A7A1D7 /* Info.plist */,
 			);
-			name = tests;
-			path = Swift/tests;
-			sourceTree = SOURCE_ROOT;
+			path = tests;
+			sourceTree = "<group>";
 		};
 		27D74A5F1D4C063A00D806E0 /* Storage */ = {
 			isa = PBXGroup;
@@ -1970,7 +1974,7 @@
 			);
 			name = "Swift API";
 			productName = SwiftForest;
-			productReference = 27A6579C1CBC190B00A7A1D7 /* Swift API.framework */;
+			productReference = 27A6579C1CBC190B00A7A1D7 /* LiteCoreSwift.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		27A657A41CBC190B00A7A1D7 /* Swift API Tests */ = {
@@ -2070,9 +2074,11 @@
 					};
 					27A6579B1CBC190B00A7A1D7 = {
 						CreatedOnToolsVersion = 7.3;
+						LastSwiftMigration = 0800;
 					};
 					27A657A41CBC190B00A7A1D7 = {
 						CreatedOnToolsVersion = 7.3;
+						LastSwiftMigration = 0800;
 					};
 				};
 			};
@@ -2313,6 +2319,7 @@
 				27A657B91CBC19FA00A7A1D7 /* Key.swift in Sources */,
 				27A657BD1CBC19FA00A7A1D7 /* View.swift in Sources */,
 				27A657B61CBC19FA00A7A1D7 /* Database.swift in Sources */,
+				27FCC5601D74A33C00FDC993 /* Val.swift in Sources */,
 				27A657B71CBC19FA00A7A1D7 /* DocEnumerator.swift in Sources */,
 				27A657B51CBC19FA00A7A1D7 /* Base.swift in Sources */,
 			);
@@ -2638,6 +2645,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -2645,6 +2653,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -2666,6 +2675,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C11CBC390700A7A1D7 /* Swift_Debug.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -2673,6 +2683,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C21CBC390700A7A1D7 /* Swift_Release.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -2680,6 +2691,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C41CBC390700A7A1D7 /* SwiftTests_Debug.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -2687,6 +2699,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C51CBC390700A7A1D7 /* SwiftTests_Release.xcconfig */;
 			buildSettings = {
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
