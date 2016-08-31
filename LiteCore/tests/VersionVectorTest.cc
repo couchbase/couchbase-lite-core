@@ -127,6 +127,7 @@ TEST_CASE("Compare", "[VersionVector]") {
 
     VersionVector otherV(slice("3@bob"));
     REQUIRE(v.compareTo(otherV) == kConflicting);
+    REQUIRE(otherV.compareTo(v) == kConflicting);
 
     // Compare with single version:
     REQUIRE(v.compareTo(Version(slice("1@jens"))) == kSame);
@@ -138,6 +139,8 @@ TEST_CASE("Compare", "[VersionVector]") {
     REQUIRE(v >= Version(slice("1@bob")));
     REQUIRE(v >= Version(slice("2@bob")));
     REQUIRE_FALSE((v >= Version(slice("3@bob"))));
+
+    REQUIRE(VersionVector(slice("1@*")).compareTo(VersionVector(slice("1@binky"))) == kConflicting);
 }
 
 TEST_CASE("Increment", "[VersionVector]") {

@@ -20,6 +20,7 @@
 
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
+#include "KeyStore.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "LogInternal.hh"
@@ -80,21 +81,22 @@ c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
     FilePath path = (config.flags & kC4DB_Bundled)
                         ? findOrCreateBundle(pathStr, config)
                         : FilePath(pathStr);
-    if (config.flags & kC4DB_V2Format)
-        return (new c4DatabaseV2((string)path, config))->retain();
-    else
-        return (new c4DatabaseV1((string)path, config))->retain();
+    switch (config.versioning) {
+        case kC4VersionVectors: return (new c4DatabaseV2((string)path, config))->retain();
+        case kC4RevisionTrees:  return (new c4DatabaseV1((string)path, config))->retain();
+        default:                error::_throw(error::InvalidParameter);
+    }
 }
 
 
-DataFile* c4Database::newDataFile(string path,
+/*static*/ DataFile* c4Database::newDataFile(string path,
                                   const C4DatabaseConfig &config,
                                   bool isMainDB)
 {
     DataFile::Options options { };
     if (isMainDB) {
         options.keyStores.sequences = options.keyStores.softDeletes = true;
-        options.keyStores.getByOffset = (config.flags & kC4DB_V2Format) == 0;
+        options.keyStores.getByOffset = (config.versioning == kC4RevisionTrees);
     }
     options.create = (config.flags & kC4DB_Create) != 0;
     options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
@@ -116,14 +118,29 @@ c4Database::c4Database(string path,
                        const C4DatabaseConfig &inConfig)
 :config(inConfig),
  _db(newDataFile(path, config, true))
-{ }
+{
+    // Validate that the versioning matches what's used in the database:
+    auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+    Document doc = info.get(slice("versioning"));
+    if (doc.exists()) {
+        if (doc.bodyAsUInt() != (uint64_t)config.versioning)
+            error::_throw(error::WrongFormat);
+    } else if (config.flags & kC4DB_Create) {
+        doc.setBodyAsUInt((uint64_t)config.versioning);
+        Transaction t(*_db);
+        info.write(doc, t);
+    } else if (config.versioning != kC4RevisionTrees) {
+        error::_throw(error::WrongFormat);
+    }
+}
 
-bool c4Database::mustBeSchema(int requiredSchema, C4Error *outError) {
-    if (schema() == requiredSchema)
+bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) {
+    if (config.versioning == requiredVersioning)
         return true;
     recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
     return false;
 }
+
 
 void c4Database::beginTransaction() {
 #if C4DB_THREADSAFE

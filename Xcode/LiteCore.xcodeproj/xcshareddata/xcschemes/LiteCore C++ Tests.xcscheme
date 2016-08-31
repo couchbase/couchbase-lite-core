@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-               BuildableName = "C4Tests"
-               BlueprintName = "C4Tests"
+               BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
+               BuildableName = "LiteCoreCppTests"
+               BlueprintName = "LiteCoreCppTests"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -56,12 +56,22 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-            BuildableName = "C4Tests"
-            BlueprintName = "C4Tests"
+            BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
+            BuildableName = "LiteCoreCppTests"
+            BlueprintName = "LiteCoreCppTests"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "--break"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-r list"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -71,16 +81,6 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "274D04071BA75E1C00FF7C35"
-            BuildableName = "C4Tests"
-            BlueprintName = "C4Tests"
-            ReferencedContainer = "container:LiteCore.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

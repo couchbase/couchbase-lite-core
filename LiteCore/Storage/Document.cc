@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "Document.hh"
+#include "forestdb_endian.h"
 
 using namespace std;
 
@@ -58,5 +59,20 @@ namespace litecore {
         clearMetaAndBody();
         setKey(slice::null);
     }
+
+    uint64_t Document::bodyAsUInt() const {
+        uint64_t count;
+        if (body().size < sizeof(count))
+            return 0;
+        memcpy(&count, body().buf, sizeof(count));
+        return _endian_decode(count);
+    }
+
+    void Document::setBodyAsUInt(uint64_t n) {
+        uint64_t newBody = _endian_encode(n);
+        setBody(slice(&newBody, sizeof(newBody)));
+    }
+
+
 
 }

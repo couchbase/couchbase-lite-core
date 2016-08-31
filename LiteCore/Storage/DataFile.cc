@@ -214,34 +214,26 @@ namespace litecore {
 #pragma mark PURGE/DELETION COUNT:
 
 
-    static const char* const kInfoStoreName = "info";
+    const string DataFile::kInfoKeyStoreName = "info";
+
     static const char* const kDeletionCountKey = "deletionCount";
     static const char* const kPurgeCountKey = "purgeCount";
 
-    static uint64_t readCount(const Document &doc) {
-        uint64_t count;
-        if (doc.body().size < sizeof(count))
-            return 0;
-        memcpy(&count, doc.body().buf, sizeof(count));
-        return _endian_decode(count);
-    }
-
     void DataFile::incrementDeletionCount(Transaction &t) {
-        KeyStore &infoStore = getKeyStore(kInfoStoreName);
+        KeyStore &infoStore = getKeyStore(kInfoKeyStoreName);
         Document doc = infoStore.get(slice(kDeletionCountKey));
-        uint64_t purgeCount = readCount(doc) + 1;
+        uint64_t purgeCount = doc.bodyAsUInt() + 1;
         uint64_t newBody = _endian_encode(purgeCount);
         doc.setBody(slice(&newBody, sizeof(newBody)));
         infoStore.write(doc, t);
     }
 
     uint64_t DataFile::purgeCount() const {
-        KeyStore &infoStore = getKeyStore(kInfoStoreName);
-        return readCount( infoStore.get(slice(kPurgeCountKey)) );
+        return getKeyStore(kInfoKeyStoreName).get(slice(kPurgeCountKey)).bodyAsUInt();
     }
 
     void DataFile::updatePurgeCount(Transaction &t) {
-        KeyStore& infoStore = getKeyStore(kInfoStoreName);
+        KeyStore& infoStore = getKeyStore(kInfoKeyStoreName);
         Document purgeCount = infoStore.get(slice(kDeletionCountKey));
         if (purgeCount.exists())
             infoStore.set(slice(kPurgeCountKey), purgeCount.body(), t);

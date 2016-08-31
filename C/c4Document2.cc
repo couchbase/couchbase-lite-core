@@ -56,20 +56,19 @@ namespace c4Internal {
 
         void init() {
             _selected = _current;
-            docID = _current->docID();
-            flags = (C4DocumentFlags)_current->flags();
-            if (_current->exists())
-                flags = (C4DocumentFlags)(flags | kExists);
-
-            initRevID();
+            currentChanged();
             selectCurrentRevision();
         }
 
 
-        void initRevID() {
+        void currentChanged() {
+            docID = _current->docID();
             _revIDBuf = _current->revID();
             revID = _revIDBuf;
             sequence = _current->sequence();
+            flags = (C4DocumentFlags)_current->flags();
+            if (_current->exists())
+                flags = (C4DocumentFlags)(flags | kExists);
         }
 
 
@@ -186,16 +185,13 @@ namespace c4Internal {
             VersionVector vers(rq.history[0]);
             Revision::BodyParams bodyParams {rq.body, rq.docType, rq.deletion, rq.hasAttachments};
             shared_ptr<Revision> newRev(new Revision(rq.docID, vers, bodyParams, true));
-            switch(_store.insert(*newRev, _db->transaction())) {
-                case kNewer:
-                    selectNewRev(newRev);
-                    return 1;
-                case kOlder:
-                case kSame:
-                    return 0;
-                case kConflicting:
-                    error::_throw(error::Conflict);
-            }
+            auto order = _store.insert(*newRev, _db->transaction());
+            if (order == kOlder || order == kSame)
+                return 0;
+            if (order == kConflicting)
+                _current->setConflicted(true);
+            selectNewRev(newRev);
+            return 1;
         }
 
 
@@ -213,10 +209,10 @@ namespace c4Internal {
         void selectNewRev(shared_ptr<Revision> &newRev) {
             if (newRev->isCurrent()) {
                 _current = newRev;
-                initRevID();
             } else {
                 _revisions.insert(_revisions.begin(), newRev);
             }
+            currentChanged();
             selectRevision(newRev);
         }
 

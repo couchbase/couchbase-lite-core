@@ -30,6 +30,19 @@ bool operator== (C4Slice s1, C4Slice s2) {
     return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
 }
 
+static std::string c4sliceToHex(C4Slice result) {
+    std::string hex;
+    for (size_t i = 0; i < result.size; i++) {
+        char str[4];
+        sprintf(str, "%02X", ((const uint8_t*)result.buf)[i]);
+        hex.append(str);
+        if ((i % 4) == 3 && i != result.size-1)
+            hex.append(" ");
+    }
+    return hex;
+}
+
+
 std::ostream& operator<< (std::ostream& o, C4Slice s) {
     o << "C4Slice[";
     if (s.buf == NULL)
@@ -37,7 +50,7 @@ std::ostream& operator<< (std::ostream& o, C4Slice s) {
     auto buf = (const uint8_t*)s.buf;
     for (size_t i = 0; i < s.size; i++) {
         if (buf[i] < 32 || buf[i] > 126)
-            return o << "binary, " << s.size << " bytes]";
+            return o << c4sliceToHex(s) << "]";
     }
     return o << '"' << std::string((char*)s.buf, s.size) << "\"]";
 }
@@ -77,7 +90,10 @@ C4Slice C4Test::databasePath() {
 }
 
 
-C4Test::C4Test() {
+C4Test::C4Test(int testOption)
+:_storage((testOption & 1) ? kC4ForestDBStorageEngine : kC4SQLiteStorageEngine),
+ _versioning((testOption & 2) ? kC4VersionVectors : kC4RevisionTrees)
+{
     c4_shutdown(NULL);
     
     objectCount = c4_getObjectCount();
@@ -85,23 +101,29 @@ C4Test::C4Test() {
 
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create;
-    config.storageEngine = storageType();
+    config.storageEngine = _storage;
+    config.versioning = _versioning;
 
-    if (schemaVersion() == 1) {
+    if (config.versioning == kC4RevisionTrees) {
         kRevID = C4STR("1-abcd");
         kRev2ID = C4STR("2-c001d00d");
+        kRev3ID = C4STR("3-deadbeef");
     } else {
-        config.flags |= kC4DB_V2Format;
         kRevID = C4STR("1@*");
-        kRev2ID = C4STR("2@c001d00d");
+        kRev2ID = C4STR("2@*");
+        kRev3ID = C4STR("3@*");
     }
-
-    if (encryptionKey())
-        config.encryptionKey = *encryptionKey();
-
+#if 0
+    if (testOption & 4) {
+        config.encryptionKey.algorithm = kC4EncryptionAES256;
+        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", 32);
+    }
+#endif
     static C4DatabaseConfig sLastConfig = { };
-    if (config.flags != sLastConfig.flags || config.storageEngine != config.storageEngine) {
-        fprintf(stderr, "Using db %s storage, flags 0x%04x\n", config.storageEngine, config.flags);
+    if (config.flags != sLastConfig.flags || config.storageEngine != sLastConfig.storageEngine) {
+        fprintf(stderr, "            %s, %s\n",
+                config.storageEngine,
+                (config.versioning==kC4VersionVectors ? "version-vectors" : "rev-trees"));
         sLastConfig = config;
     }
 
@@ -117,8 +139,10 @@ C4Test::~C4Test() {
     c4db_delete(db, &error);
     c4db_free(db);
 
-    // Check for leaks:
-    REQUIRE(c4_getObjectCount() == objectCount);
+    if (!std::current_exception()) {
+        // Check for leaks:
+        REQUIRE(c4_getObjectCount() == objectCount);
+    }
 }
 
 

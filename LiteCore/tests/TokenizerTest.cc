@@ -13,7 +13,7 @@
 #include "LiteCoreTest.hh"
 
 
-class TokenizerTest : public DataFileTestFixture {
+class TokenizerTest {
 public:
     unique_ptr<Tokenizer> tokenizer;
 
@@ -27,7 +27,6 @@ public:
         }
         return tokens;
     }
-
 };
 
 

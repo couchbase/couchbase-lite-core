@@ -17,7 +17,9 @@ public:
 
     C4View *view {nullptr};
 
-    C4ViewTest() {
+    C4ViewTest(int testOption)
+    :C4Test(testOption)
+    {
         c4view_deleteByName(db, c4str("myview"), NULL);
         C4Error error;
         view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("1"),
@@ -81,13 +83,13 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4ViewTest, "View EmptyState", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View EmptyState", "[View][C]") {
     REQUIRE(c4view_getTotalRows(view) == (C4SequenceNumber)0);
     REQUIRE(c4view_getLastSequenceIndexed(view) == (C4SequenceNumber)0);
     REQUIRE(c4view_getLastSequenceChangedAt(view) == (C4SequenceNumber)0);
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View CreateIndex", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View CreateIndex", "[View][C]") {
     createIndex();
 
     REQUIRE(c4view_getTotalRows(view) == (C4SequenceNumber)200);
@@ -95,7 +97,7 @@ TEST_CASE_METHOD(C4ViewTest, "View CreateIndex", "[View][C]") {
     REQUIRE(c4view_getLastSequenceChangedAt(view) == (C4SequenceNumber)100);
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
     createIndex();
 
     C4Error error;
@@ -123,7 +125,7 @@ TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
     REQUIRE(i == 200);
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
     createIndex();
 
     // Reopen view with same version string:
@@ -188,8 +190,8 @@ void C4ViewTest::testDocPurge(bool compactAfterPurge) {
     REQUIRE(i == 198); // 2 rows of doc-023 are gone
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View DocPurge", "[View][C]")             {testDocPurge(false);}
-TEST_CASE_METHOD(C4ViewTest, "View DocPurgeWithCompact", "[View][C]")  {testDocPurge(true);}
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurge", "[View][C]")             {testDocPurge(false);}
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurgeWithCompact", "[View][C]")  {testDocPurge(true);}
 
 
 void C4ViewTest::createFullTextIndex(unsigned docCount) {
@@ -228,11 +230,11 @@ void C4ViewTest::createFullTextIndex(unsigned docCount) {
     REQUIRE(c4indexer_end(ind, true, &error));
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View CreateFullTextIndex", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View CreateFullTextIndex", "[View][C]") {
     createFullTextIndex(100);
 }
 
-TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     createFullTextIndex(3);
 
     // Search for "somewhere":

@@ -70,7 +70,7 @@ TEST_CASE("VersionedDocument BadRevIDs", "[VersionedDocument]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDocument]") {
     VersionedDocument v(*store, slice("foo"));
     REQUIRE(v.docID() == slice("foo"));
     REQUIRE(v.revID() == revid());
@@ -79,7 +79,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDoc
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[VersionedDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[VersionedDocument]") {
     RevTree tree;
     const Rev* rev;
     revidBuffer rev1ID(litecore::slice("1-aaaa"));
@@ -126,7 +126,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[Vers
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[VersionedDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[VersionedDocument]") {
     string revID = "1-fadebead", body = "{\"hello\":true}";
     revidBuffer revIDBuf(revID);
     VersionedDocument v(*store, slice("foo"));
@@ -145,7 +145,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[Versio
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
     revidBuffer rev1ID(litecore::slice("1-aaaa"));
     {
         VersionedDocument v(*store, slice("foo"));

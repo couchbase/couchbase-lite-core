@@ -66,7 +66,9 @@ class MapReduceTest : public DataFileTestFixture {
 
     MapReduceIndex* index;
 
-    MapReduceTest() {
+    MapReduceTest(int testOption)
+    :DataFileTestFixture(testOption)
+    {
         index = new MapReduceIndex(db->getKeyStore("index"), *db);
         REQUIRE(index);
     }
@@ -124,7 +126,7 @@ class MapReduceTest : public DataFileTestFixture {
 };
 
 
-TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
+N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     createDocsAndIndex();
 
     Log("--- First query");
@@ -174,7 +176,7 @@ TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
 }
 
 
-TEST_CASE_METHOD (MapReduceTest, "MapReduce Reopen", "[MapReduce]") {
+N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce Reopen", "[MapReduce]") {
     createDocsAndIndex();
     updateIndex(db, *index);
     sequence lastIndexed = index->lastSequenceIndexed();

@@ -30,7 +30,7 @@ namespace fleece {
 }
 
 
-#include "catch.hpp"
+#include "CatchHelper.hh"
 
 #include "DataFile.hh"
 
@@ -41,9 +41,14 @@ using namespace std;
 class DataFileTestFixture {
 public:
 
-    DataFileTestFixture();
+    static const int numberOfOptions = 2;
+
+    DataFileTestFixture(int testOption);
     ~DataFileTestFixture();
 
+    const bool _isForestDB;
+    bool isForestDB() {return _isForestDB;}
+    
     DataFile *db {nullptr};
     KeyStore *store {nullptr};
 
@@ -52,7 +57,6 @@ public:
     DataFile* newDatabase(const FilePath &path, DataFile::Options* =nullptr);
     void reopenDatabase(DataFile::Options *newOptions =nullptr);
 
-    bool isForestDB() const             {return true;}
 
 };
 

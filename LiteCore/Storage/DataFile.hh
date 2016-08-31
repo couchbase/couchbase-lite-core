@@ -87,6 +87,7 @@ namespace litecore {
         //////// KEY-STORES:
 
         static const std::string kDefaultKeyStoreName;
+        static const std::string kInfoKeyStoreName;
 
         /** The DataFile's default key-value store. */
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}

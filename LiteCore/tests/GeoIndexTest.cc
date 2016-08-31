@@ -54,7 +54,9 @@ class GeoIndexTest : public DataFileTestFixture {
 public:
     MapReduceIndex *index;
 
-    GeoIndexTest() {
+    GeoIndexTest(int testOption)
+    :DataFileTestFixture(testOption)
+    {
         index = new MapReduceIndex(db->getKeyStore("geo"), *db);
     }
 
@@ -92,7 +94,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(GeoIndexTest, "GeoIndex", "[GeoIndex],[Index]") {
+N_WAY_TEST_CASE_METHOD(GeoIndexTest, "GeoIndex", "[GeoIndex],[Index]") {
     addCoords(100);
     auto queryArea = area(coord(10, 10), coord(40, 40));
 

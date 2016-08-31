@@ -28,7 +28,9 @@ public:
 
     C4View* v {nullptr};
 
-    C4ThreadingTest() {
+    C4ThreadingTest(int testOption)
+    :C4Test(testOption)
+    {
         c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
         v = openView(db);
     }
@@ -219,7 +221,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[.broken][Threading][noisy][C]") {
+N_WAY_TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[.broken][Threading][noisy][C]") {
     std::cerr << "\nThreading test ";
 
     std::thread thread1([this]{addDocsTask();});

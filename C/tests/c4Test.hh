@@ -13,7 +13,7 @@
 #include "c4DocEnumerator.h"
 #include "c4View.h"
 
-#include "catch.hpp"
+#include "CatchHelper.hh"
 
 
 #ifdef _MSC_VER
@@ -61,20 +61,22 @@ class TransactionHelper {
 // and closes & deletes it in tearDown.
 class C4Test {
 public:
-    C4Test();
-    virtual ~C4Test();
+    static const int numberOfOptions = 4;
+    
+    C4Test(int testOption);
+    ~C4Test();
 
     C4Slice databasePath();
 
 protected:
     C4Database *db;
 
-    virtual const char* storageType() const     {return kC4ForestDBStorageEngine;}
-    virtual int schemaVersion() const           {return 1;}
+    const C4StorageEngine storageType() const   {return _storage;}
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
     bool isForestDB() const                     {return storageType() == kC4ForestDBStorageEngine;}
-
-    virtual const C4EncryptionKey* encryptionKey()  {return NULL;}
+    C4DocumentVersioning versioning() const     {return _versioning;}
+    bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
+    bool isVersionVectors() const               {return _versioning == kC4VersionVectors;}
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
@@ -83,8 +85,11 @@ protected:
     static const C4Slice kDocID;    // "mydoc"
     C4Slice kRevID;    // "1-abcdef"
     C4Slice kRev2ID;   // "2-d00d3333"
+    C4Slice kRev3ID;
     static const C4Slice kBody;     // "{\"name\":007}"
 
 private:
+    const C4StorageEngine _storage;
+    const C4DocumentVersioning _versioning;
     int objectCount;
 };

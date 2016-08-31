@@ -19,7 +19,9 @@ static const unsigned kNumDocuments = 100000;
 class C4AllDocsPerformanceTest : public C4Test {
 public:
 
-    C4AllDocsPerformanceTest() {
+    C4AllDocsPerformanceTest(int testOption)
+    :C4Test(testOption)
+    {
         char content[kSizeOfDocument];
         memset(content, 'a', sizeof(content)-1);
         content[sizeof(content)-1] = 0;
@@ -57,7 +59,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
+N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
     auto start = clock();
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;

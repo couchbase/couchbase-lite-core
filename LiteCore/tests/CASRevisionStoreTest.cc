@@ -47,7 +47,9 @@ public:
     
     CASRevisionStore *store {NULL};
 
-    CASRevisionStoreTest() {
+    CASRevisionStoreTest(int testOption)
+    :DataFileTestFixture(testOption)
+    {
         store = new CASRevisionStore(db);
     }
 
@@ -65,14 +67,14 @@ public:
 };
 
 
-TEST_CASE_METHOD(CASRevisionStoreTest, "EmptyCASStore", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "EmptyCASStore", "[RevisionStore]") {
     REQUIRE(store->get(kDocID) == nullptr);
     REQUIRE(store->get(kDocID, kRev1ID) == nullptr);
     REQUIRE(store->checkRevision(kDocID, kRev1ID) == kOlder);
 }
 
 
-TEST_CASE_METHOD(CASRevisionStoreTest, "CAS InsertRevs", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS InsertRevs", "[RevisionStore]") {
     // Start with CAS=17:
     Transaction t(db);
     auto rev = store->insertFromServer(kDocID, 17, kBody1, t);
@@ -104,7 +106,7 @@ TEST_CASE_METHOD(CASRevisionStoreTest, "CAS InsertRevs", "[RevisionStore]") {
 }
 
 
-TEST_CASE_METHOD(CASRevisionStoreTest, "CAS AddLocalRevs", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS AddLocalRevs", "[RevisionStore]") {
     // Start with CAS=18:
     Transaction t(db);
     auto rev = store->insertFromServer(kDocID, 18, kBody1, t);
@@ -149,7 +151,7 @@ TEST_CASE_METHOD(CASRevisionStoreTest, "CAS AddLocalRevs", "[RevisionStore]") {
 }
 
 
-TEST_CASE_METHOD(CASRevisionStoreTest, "CAS Conflict", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS Conflict", "[RevisionStore]") {
     // Start with CAS=18:
     Transaction t(db);
     auto rev = store->insertFromServer(kDocID, 18, kBody1, t);

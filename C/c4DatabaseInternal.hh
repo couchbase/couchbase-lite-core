@@ -36,10 +36,7 @@ struct c4Database : public RefCounted<c4Database> {
 
     const C4DatabaseConfig config;
 
-    // The database format/schema -- 1 for Couchbase Lite 1.x, 2 for CBL 2
-    const uint8_t schema()          {return (config.flags & kC4DB_V2Format) ? 2 : 1;}
-
-    bool mustBeSchema(int schema, C4Error*);
+    bool mustUseVersioning(C4DocumentVersioning, C4Error*);
 
     Transaction& transaction() {
         CBFAssert(_transaction);

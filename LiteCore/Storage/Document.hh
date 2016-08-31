@@ -69,6 +69,9 @@ namespace litecore {
         void updateSequence(sequence_t s)       {_sequence = s;}
         void setUnloadedBodySize(size_t size)   {_body = slice::null; _bodySize = size;}
 
+        uint64_t bodyAsUInt() const;
+        void setBodyAsUInt(uint64_t);
+
     private:
         friend class KeyStore;
         friend class KeyStoreWriter;

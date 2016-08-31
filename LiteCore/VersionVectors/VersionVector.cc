@@ -244,8 +244,13 @@ namespace litecore {
             auto othergen = other[v._author];
             if (v._gen < othergen)
                 o |= kOlder;
-            else if (v._gen > othergen)
+            else if (v._gen > othergen) {
                 o |= kNewer;
+                if (othergen == 0) {
+                    if (--countDiff < 0)
+                        o |= kOlder;
+                }
+            }
             else if (o == kSame)
                 break; // first revs are identical so vectors are equal
             if (o == kConflicting)

@@ -33,7 +33,9 @@ public:
     
     RevisionStore *store {NULL};
 
-    RevisionStoreTest() {
+    RevisionStoreTest(int testOption)
+    :DataFileTestFixture(testOption)
+    {
         store = new RevisionStore(db, peerID("jens"));
     }
 
@@ -53,19 +55,19 @@ public:
 };
 
 
-TEST_CASE_METHOD(RevisionStoreTest, "Keys", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "Keys", "[RevisionStore]") {
     testKeys();
 }
 
 
-TEST_CASE_METHOD(RevisionStoreTest, "EmptyStore", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "EmptyStore", "[RevisionStore]") {
     REQUIRE(store->get(kDoc1ID) == nullptr);
     REQUIRE(store->get(kDoc1ID, kRev1ID) == nullptr);
     REQUIRE(store->checkRevision(kDoc1ID, kRev1ID) == kOlder);
 }
 
 
-TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
     // Create a new document:
     Transaction t(db);
     auto rev = store->create(kDoc1ID, VersionVector(), kBody1, t);
@@ -103,7 +105,7 @@ TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
 }
 
 
-TEST_CASE_METHOD(RevisionStoreTest, "InsertRevs", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "InsertRevs", "[RevisionStore]") {
     Transaction t(db);
     Revision rev1(kDoc1ID, VersionVector(slice("5@bob,1@ada")),
                   Revision::BodyParams{kBody1}, true);
@@ -135,7 +137,7 @@ TEST_CASE_METHOD(RevisionStoreTest, "InsertRevs", "[RevisionStore]") {
 }
 
 
-TEST_CASE_METHOD(RevisionStoreTest, "Conflict", "[RevisionStore]") {
+N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "Conflict", "[RevisionStore]") {
     //LogLevel = kDebug;
     // Start with a doc edited by me and Ada:
     Transaction t(db);

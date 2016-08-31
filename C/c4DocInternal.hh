@@ -34,8 +34,8 @@ public:
 
     virtual ~C4DocumentInternal() { }
 
-    bool mustBeSchema(int schema, C4Error *outError) {
-        return _db->mustBeSchema(schema, outError);
+    bool mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) {
+        return _db->mustUseVersioning(requiredVersioning, outError);
     }
 
     bool mustBeInTransaction(C4Error *outError) {

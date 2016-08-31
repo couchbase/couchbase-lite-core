@@ -381,7 +381,7 @@ bool c4doc_save(C4Document *doc,
                 C4Error *outError)
 {
     auto idoc = internal(doc);
-    if (!idoc->mustBeSchema(1, outError))
+    if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
         return -1;
     if (!idoc->mustBeInTransaction(outError))
         return false;

@@ -15,7 +15,9 @@
 class IndexTest : public DataFileTestFixture {
 public:
 
-    IndexTest() {
+    IndexTest(int testOption)
+    :DataFileTestFixture(testOption)
+    {
         index = new Index(db->getKeyStore("index"));
     }
 
@@ -63,7 +65,7 @@ public:
 
 
 
-TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
+N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     //LogLevel = kDebug;
     unordered_map<string, vector<string> > docs = {
         {"CA", {"California", "San Jose", "San Francisco", "Cambria"}},
@@ -152,7 +154,7 @@ TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
 }
 
 
-TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
+N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
     Log("--- Populate index");
     {
         Transaction trans(db);

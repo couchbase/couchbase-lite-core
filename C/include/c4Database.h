@@ -25,8 +25,12 @@ extern "C" {
         kC4DB_ReadOnly      = 2,    /**< Open file read-only */
         kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
         kC4DB_Bundled       = 8,    /**< Store db (and views) inside a directory */
+    };
 
-        kC4DB_V2Format      = 0x20, /**< Couchbase Lite 2 format */
+    /** Document versioning system (also determines database storage schema) */
+    typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
+        kC4RevisionTrees,           /**< CouchDB and Couchbase Mobile 1.x revision trees */
+        kC4VersionVectors,          /**< Couchbase Mobile 2.x version vectors */
     };
 
     /** Encryption algorithms. */
@@ -41,6 +45,7 @@ extern "C" {
         uint8_t bytes[32];
     } C4EncryptionKey;
 
+    /** Underlying storage engines that can be used. */
     typedef const char* C4StorageEngine;
     extern C4StorageEngine const kC4ForestDBStorageEngine;
     extern C4StorageEngine const kC4SQLiteStorageEngine;
@@ -48,7 +53,8 @@ extern "C" {
     /** Main database/view configuration struct. */
     typedef struct C4DatabaseConfig {
         C4DatabaseFlags flags;          /**< Create, ReadOnly, AutoCompact, Bundled... */
-        C4StorageEngine storageEngine;      /**< Which storage to use, or NULL for no preference */
+        C4StorageEngine storageEngine;  /**< Which storage to use, or NULL for no preference */
+        C4DocumentVersioning versioning;/**< Type of document versioning */
         C4EncryptionKey encryptionKey;  /**< Encryption to use creating/opening the db */
     } C4DatabaseConfig;
 

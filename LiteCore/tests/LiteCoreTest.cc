@@ -98,8 +98,7 @@ namespace fleece {
 
 FilePath DataFileTestFixture::databasePath(const string baseName) {
     auto path = FilePath::tempDirectory()[baseName];
-    return path.addingExtension(isForestDB() ? ".forestdb"
-                                             : ".sqlite3");
+    return path.addingExtension(isForestDB() ? ".forestdb" : ".sqlite3");
 }
 
 
@@ -130,7 +129,9 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 }
 
 
-DataFileTestFixture::DataFileTestFixture() {
+DataFileTestFixture::DataFileTestFixture(int testOption)
+:_isForestDB((testOption & 1) != 0)
+{
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
     db = newDatabase(dbPath);

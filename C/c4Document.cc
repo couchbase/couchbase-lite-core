@@ -179,43 +179,39 @@ C4Document* c4doc_getForPut(C4Database *database,
         return NULL;
     C4DocumentInternal *idoc = NULL;
     try {
-        do {
-            alloc_slice newDocID;
-            bool isNewDoc = (!docID.buf);
-            if (isNewDoc) {
-                newDocID = createDocUUID();
-                docID = newDocID;
-            }
+        alloc_slice newDocID;
+        bool isNewDoc = (!docID.buf);
+        if (isNewDoc) {
+            newDocID = createDocUUID();
+            docID = newDocID;
+        }
 
-            idoc = internal(database->newDocumentInstance(docID));
+        idoc = internal(database->newDocumentInstance(docID));
+        int code = 0;
 
-            if (parentRevID.buf) {
-                // Updating an existing revision; make sure it exists and is a leaf:
-                if (!idoc->selectRevision(parentRevID, false)) {
-                    recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-                    break;
-                }
-                if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
-                    recordError(LiteCoreDomain, kC4ErrorConflict, outError);
-                    break;
-                }
-            } else {
-                // No parent revision given:
-                if (deleting) {
-                    // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                    recordError(LiteCoreDomain,
-                                ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound),
-                                outError);
-                    break;
-                }
+        if (parentRevID.buf) {
+            // Updating an existing revision; make sure it exists and is a leaf:
+            if (!idoc->exists())
+                code = kC4ErrorNotFound;
+            else if (!idoc->selectRevision(parentRevID, false))
+                code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
+            else if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf))
+                code = kC4ErrorConflict;
+        } else {
+            // No parent revision given:
+            if (deleting) {
+                // Didn't specify a revision to delete: NotFound or a Conflict, depending
+                code = ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound);
+            } else if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
                 // If doc exists, current rev must be a deletion or there will be a conflict:
-                if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
-                    recordError(LiteCoreDomain, kC4ErrorConflict, outError);
-                    break;
-                }
+                code = kC4ErrorConflict;
             }
+        }
+
+        if (code)
+            recordError(LiteCoreDomain, code, outError);
+        else
             return idoc;
-        } while (false); // not a real loop; it's just to allow 'break' statements to exit
 
     } catchError(outError)
     delete idoc;

@@ -112,7 +112,7 @@ TEST_CASE( "Collatable Floats", "[Collatable]" ) {
 
 TEST_CASE( "Collatable RandomFloats", "[Collatable][slow][noisy]" ) {
     srandomdev();
-    for (int i=0; i< 100000; i++) {
+    for (int i=0; i< 10000; i++) {
         double n1 = randf(), n2 = randf();
         Log("Compare: %g <--> %g", n1, n2);
         REQUIRE(roundTrip(n1).readDouble() == n1);

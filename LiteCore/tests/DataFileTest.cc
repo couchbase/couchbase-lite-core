@@ -17,7 +17,7 @@ using namespace litecore;
 using namespace std;
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
     REQUIRE_FALSE(db->isCompacting());
     REQUIRE_FALSE(DataFile::isAnyCompacting());
@@ -28,7 +28,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
     alloc_slice key("key");
     {
         Transaction t(db);
@@ -41,7 +41,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
     {
         //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
@@ -92,7 +92,7 @@ static void createNumberedDocs(KeyStore *store) {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
     {
         Log("Enumerate empty db");
         int i = 0;
@@ -176,7 +176,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
     auto opts = DocEnumerator::Options::kDefault;
     opts.descending = true;
 
@@ -263,7 +263,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[Dat
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
     // Initial document:
     {
         Transaction t(db);
@@ -283,7 +283,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]"
 
 
 // Test for MB-12287
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate", "[DataFile]") {
     unique_ptr<DataFile> db2 { newDatabase(db->filePath()) };
 
     const unsigned kNTransactions = 42; // 41 is ok, 42+ fails
@@ -310,7 +310,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate", "[Dat
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
@@ -331,7 +331,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
@@ -355,7 +355,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
 
 
 // Tests workaround for ForestDB bug MB-18753
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
     slice key("a");
     {
         Transaction t(db);
@@ -380,7 +380,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     REQUIRE(s.lastSequence() == 0);
     REQUIRE(s.name() == string("store"));
@@ -390,7 +390,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     {
@@ -407,7 +407,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
 //    {
@@ -421,7 +421,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") 
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     db->close();
@@ -440,7 +440,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
     {
         Transaction t(db);
         store->set(slice("key"), slice("value"), t);
@@ -484,7 +484,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     createNumberedDocs(store);
 
     {
@@ -508,7 +508,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = DataFile::kAES256;
     options.encryptionKey = slice("12345678901234567890123456789012");
@@ -545,7 +545,7 @@ TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throw
 }
 
 
-TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
     auto dbPath = db->filePath();
     auto options = db->options();
     createNumberedDocs(store);

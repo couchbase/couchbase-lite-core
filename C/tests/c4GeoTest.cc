@@ -28,7 +28,9 @@ public:
 
     C4View *view {nullptr};
 
-    C4GeoTest() {
+    C4GeoTest(int testOption)
+    :C4Test(testOption)
+    {
         c4db_deleteAtPath(c4str(kViewIndexPath), NULL, NULL);
         C4Error error;
         view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
@@ -107,13 +109,13 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4GeoTest, "Geo CreateIndex", "[Geo][View][C]") {
+N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo CreateIndex", "[Geo][View][C]") {
     createDocs(100);
     createIndex();
 }
 
 
-TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
+N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
     static const bool verbose = false;
     createDocs(100, verbose);
     createIndex();

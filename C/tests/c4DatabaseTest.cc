@@ -31,6 +31,8 @@
 class C4DatabaseTest : public C4Test {
     public:
 
+    C4DatabaseTest(int testOption) :C4Test(testOption) { }
+
     void assertMessage(C4ErrorDomain domain, int code, const char *expectedMsg) {
         C4SliceResult msg = c4error_getMessage({domain, code});
         REQUIRE(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
@@ -54,7 +56,7 @@ class C4DatabaseTest : public C4Test {
 };
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
     C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
     REQUIRE(msg.buf == (const void*)nullptr);
     REQUIRE((unsigned long)msg.size == 0ul);
@@ -74,7 +76,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
     auto config = *c4db_getConfig(db);
     config.flags |= kC4DB_Bundled;
 
@@ -108,7 +110,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]"
     c4log_warnOnErrors(true);
 }
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {
     REQUIRE(c4db_getDocumentCount(db) == (C4SequenceNumber)0);
     REQUIRE(!c4db_isInTransaction(db));
     C4Error(error);
@@ -123,7 +125,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
     const C4Slice key = c4str("key");
     const C4Slice meta = c4str("meta");
     C4Error error;
@@ -145,7 +147,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error error;
     C4Document* doc;
@@ -206,7 +208,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database][C]")
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Database][C]") {
     const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
     createRev(kDocID, kRevID, kBody);
     createRev(kDocID, kRev2ID, kBody2);
@@ -223,7 +225,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Database]
     REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
     REQUIRE(doc->selectedRev.body == kBody2);
 
-    if (schemaVersion() == 1) {
+    if (versioning() == kC4RevisionTrees) {
         // Select 1st revision:
         REQUIRE(c4doc_selectParentRevision(doc));
         REQUIRE(doc->selectedRev.revID == kRevID);
@@ -261,7 +263,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Database]
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
     C4Error error;
     TransactionHelper t(db);
 
@@ -306,7 +308,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
     // Adding new rev, with nonexistent parent:
     doc = c4doc_getForPut(db, kDocID, kRev2ID, false, false, &error);
     REQUIRE(doc == NULL);
-    REQUIRE(error.code == kC4ErrorNotFound);
+    REQUIRE(error.code == kC4ErrorConflict);
 
     // Conflict -- try & fail to update non-current rev:
     const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
@@ -315,12 +317,14 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
     REQUIRE(doc == NULL);
     REQUIRE(error.code == kC4ErrorConflict);
 
-    // Conflict -- force an update of non-current rev:
-    doc = c4doc_getForPut(db, kDocID, kRevID, false, true/*allowConflicts*/, &error);
-    REQUIRE(doc != NULL);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    c4doc_free(doc);
+    if (isRevTrees()) {
+        // Conflict -- force an update of non-current rev:
+        doc = c4doc_getForPut(db, kDocID, kRevID, false, true/*allowConflicts*/, &error);
+        REQUIRE(doc != NULL);
+        REQUIRE(doc->docID == kDocID);
+        REQUIRE(doc->selectedRev.revID == kRevID);
+        c4doc_free(doc);
+    }
 
     // Deleting the doc:
     doc = c4doc_getForPut(db, kDocID, kRev2ID, true/*deleted*/, false, &error);
@@ -328,8 +332,8 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
     REQUIRE(doc->docID == kDocID);
     REQUIRE(doc->selectedRev.revID == kRev2ID);
     c4doc_free(doc);
+    
     // Actually delete it:
-    static const C4Slice kRev3ID= C4STR("3-deadbeef");
     createRev(kDocID, kRev3ID, kC4SliceNull);
 
     // Re-creating the doc (no revID given):
@@ -343,7 +347,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database Put", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Put", "[Database][C]") {
     C4Error error;
     TransactionHelper t(db);
 
@@ -355,7 +359,8 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database Put", "[Database][C]") {
     auto doc = c4doc_put(db, &rq, NULL, &error);
     REQUIRE(doc != NULL);
     REQUIRE(doc->docID == kDocID);
-    C4Slice kExpectedRevID = C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab");
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+                                          : C4STR("1@*");
     REQUIRE(doc->revID == kExpectedRevID);
     REQUIRE(doc->flags == (C4DocumentFlags)kExists);
     REQUIRE(doc->selectedRev.revID == kExpectedRevID);
@@ -369,29 +374,35 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database Put", "[Database][C]") {
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != NULL);
     REQUIRE((unsigned long)commonAncestorIndex == 1ul);
-    C4Slice kExpectedRev2ID = C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b");
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
+                                           : C4STR("2@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->flags == (C4DocumentFlags)kExists);
     REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
     c4doc_free(doc);
 
-    // Insert existing rev:
+    // Insert existing rev that conflicts:
     rq.body = C4STR("{\"from\":\"elsewhere\"}");
     rq.existingRevision = true;
-    C4Slice history[2] = {kRev2ID, kExpectedRevID};
+    C4Slice kConflictRevID = isRevTrees() ? C4STR("2-deadbeef")
+                                          : C4STR("1@binky");
+    C4Slice history[2] = {kConflictRevID, kExpectedRevID};
     rq.history = history;
     rq.historyCount = 2;
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != NULL);
     REQUIRE((unsigned long)commonAncestorIndex == 1ul);
-    REQUIRE(doc->revID == kRev2ID);
+    REQUIRE(doc->selectedRev.revID == kConflictRevID);
     REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kConflicted));
-    REQUIRE(doc->selectedRev.revID == kRev2ID);
+    if (isRevTrees())
+        REQUIRE(doc->revID == kConflictRevID);
+    else
+        REQUIRE(doc->revID == kExpectedRev2ID);
     c4doc_free(doc);
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -466,7 +477,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsIncludeDeleted", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsIncludeDeleted", "[Database][C]") {
     char docID[20];
     setupAllDocs();
 
@@ -494,7 +505,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsIncludeDeleted", "[Database][C
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -520,7 +531,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") {
 }
 
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     char docID[20];
     for (int i = 1; i < 100; i++) {
         sprintf(docID, "doc-%03d", i);
@@ -561,7 +572,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     REQUIRE(seq == (C4SequenceNumber)100);
 }
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kBody);
     time_t expire = time(NULL) + 1;
@@ -626,7 +637,7 @@ TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     REQUIRE(expiredCount == 0);
 }
 
-TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
 {
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kBody);
@@ -689,7 +700,7 @@ class C4EncryptedDatabaseTest : public C4DatabaseTest {
     }
 
 
-    TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][C]") {
+    N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][C]") {
         testCreateRawDoc();
 
         C4Error error;
