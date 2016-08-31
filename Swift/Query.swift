@@ -9,7 +9,7 @@
 import Foundation
 
 
-open class Query: LazySequenceProtocol {
+public final class Query: LazySequenceProtocol {
 
     public typealias Iterator = QueryEnumerator
 
@@ -17,58 +17,58 @@ open class Query: LazySequenceProtocol {
         self.view = view
     }
 
-    open let view: View
+    public let view: View
 
-    open var skip: UInt64 {
+    public var skip: UInt64 {
         get {return options.skip}
         set {options.skip = newValue}
     }
 
-    open var limit: UInt64 {
+    public var limit: UInt64 {
         get {return options.limit}
         set {options.limit = newValue}
     }
 
-    open var descending: Bool {
+    public var descending: Bool {
         get {return options.descending}
         set {options.descending = newValue}
     }
 
-    open var inclusiveStart: Bool {
+    public var inclusiveStart: Bool {
         get {return options.inclusiveStart}
         set {options.inclusiveStart = newValue}
     }
 
-    open var inclusiveEnd: Bool {
+    public var inclusiveEnd: Bool {
         get {return options.inclusiveEnd}
         set {options.inclusiveEnd = newValue}
     }
 
-    open var startKey: AnyObject? {
+    public var startKey: AnyObject? {
         didSet {
             encodedStartKey = try! Key(startKey)
             options.startKey = encodedStartKey!.handle
         }
     }
 
-    open var endKey: AnyObject? {
+    public var endKey: AnyObject? {
         didSet {
             encodedEndKey = try! Key(endKey)
             options.endKey = encodedEndKey!.handle
         }
     }
 
-    open var startKeyDocID: String?
-    open var endKeyDocID: String?
+    public var startKeyDocID: String?
+    public var endKeyDocID: String?
 
-    open var keys: [AnyObject]? {
+    public var keys: [AnyObject]? {
         didSet {
             encodedKeys = keys?.map {try! Key($0)}
             options.keysCount = keys?.count ?? 0
         }
     }
 
-    open func run() throws -> QueryEnumerator {
+    public func run() throws -> QueryEnumerator {
         options.startKeyDocID = C4Slice(startKeyDocID)
         options.endKeyDocID = C4Slice(endKeyDocID)
 
@@ -89,7 +89,7 @@ open class Query: LazySequenceProtocol {
         return QueryEnumerator(enumHandle!)
     }
 
-    open func makeIterator() -> QueryEnumerator {
+    public func makeIterator() -> QueryEnumerator {
         return try! run()
     }
 
@@ -102,7 +102,7 @@ open class Query: LazySequenceProtocol {
 }
 
 
-open class QueryEnumerator: IteratorProtocol {
+public final class QueryEnumerator: IteratorProtocol {
 
     public typealias Element = QueryRow
 
@@ -114,11 +114,11 @@ open class QueryEnumerator: IteratorProtocol {
         c4queryenum_free(handle)
     }
 
-    open func next() -> QueryRow? {
+    public func next() -> QueryRow? {
         return try! nextRow()
     }
 
-    open func nextRow() throws -> QueryRow? {
+    public func nextRow() throws -> QueryRow? {
         var err = C4Error()
         guard c4queryenum_next(handle, &err) else {
             if err.code == 0 {
@@ -134,7 +134,7 @@ open class QueryEnumerator: IteratorProtocol {
 }
 
 
-open class QueryRow {
+public final class QueryRow {
 
     init(_ e: C4QueryEnumerator) {
         key = Key.readFrom(e.key)!
@@ -142,11 +142,11 @@ open class QueryRow {
         docID = e.docID.asString()
     }
 
-    open let docID: String?
+    public let docID: String?
 
-    open let key: Val
+    public let key: Val
 
-    open lazy var value: Val? = {
+    public lazy var value: Val? = {
         guard let json = self.valueJSON else {return nil}
         let value = try! Val(json: json)
         self.valueJSON = nil

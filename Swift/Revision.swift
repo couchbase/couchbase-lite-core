@@ -9,71 +9,102 @@
 import Foundation
 
 
-open class Revision {
+public class Revision : PropertyOwner {
 
-    init(database: Database, docID: String, revID: String, flags: C4RevisionFlags, rawBody: Data?) {
-        self.database = database
-        self.docID = docID
-        self.revID = revID
-        self.flags = flags
-        self.rawBody = rawBody
-    }
-
-    convenience init(database: Database, doc: Document, rawBody: Data?) {
-        self.init(database: database, docID: doc.docID, revID: doc.selectedRevID!, flags: doc.selectedRevFlags, rawBody: rawBody)
-    }
-
-    open let database: Database
-    open let docID: String
-    open let revID: String
-    open let rawBody: Data?
-
-    fileprivate let flags: C4RevisionFlags
-
-    open var deleted: Bool        {return flags.contains(C4RevisionFlags.revDeleted)}
-    open var hasAttachments: Bool {return flags.contains(C4RevisionFlags.revHasAttachments)}
-
-    open var generation: UInt {
-        guard let dash = revID.range(of: "-") else {
-            return 0
+    init?(doc: Document, rev :C4Revision) {
+        guard let revID = rev.revID.asString() else {
+            return nil
         }
-        return UInt(revID.substring(to: dash.lowerBound)) ?? 0
+        self.document = doc
+        self.revID = revID
+        self.flags = rev.flags
+        self.rawBody = rev.body.asData()
     }
 
-    func update(_ body: Body, deleted: Bool = false) throws -> Revision {
-        let rawBody: Data = try Val.withJSONObject(body).asJSON()
-        let doc = try database.putDoc(docID, parentRev: revID, body: rawBody, deletion: deleted)
-        return Revision(database: database, doc: doc, rawBody: rawBody)
+    public let document: Document
+    public let revID: String
+    public let rawBody: Data?
+
+    let flags: C4RevisionFlags
+
+    public var deleted: Bool        {return flags.contains(C4RevisionFlags.revDeleted)}
+    public var hasAttachments: Bool {return flags.contains(C4RevisionFlags.revHasAttachments)}
+
+    public func put(_ body: Body, deleted: Bool = false) throws -> Revision {
+        let rawBody: Data = try Val.withObject(body).asJSON()
+        try document.putDoc(parentRev: revID, body: rawBody, deletion: deleted)
+        let newRev = document.selectedRevision()!
+        document.selectCurrentRevision()
+        return newRev
     }
 
     func delete() throws -> Revision {
-        return try update([:], deleted: true)
+        return try put([:], deleted: true)
     }
 
     // MARK:- PROPERTY ACCESS
 
-    open lazy var properties: Body = {
+    public lazy var properties: Body = {
         do {
-            if let json = self.rawBody, let d = try Val(json: json).asDict() {
-                return d
-            }
-        } catch { }
-        return [:]
+            return try self.getProperties()
+        } catch {
+            return [:]
+        }
     }()
-
-    func property<T>(_ name: String) -> T? {
-        return properties[name]?.unwrap() as? T
-    }
-
-    func property<T>(_ name: String, default: T) -> T {
-        return (properties[name]?.unwrap() as? T) ?? `default`
-    }
 
 }
 
 
 extension Revision : CustomStringConvertible {
     public var description: String {
-        return "{\"\(docID)\" \(revID)}"
+        return "{\"\(document.docID)\" \(revID)}"
     }
+}
+
+
+// Document methods for Revisions
+extension Document {
+
+    public func currentRevision() -> Revision? {
+        // The c4Document is always left with its current revision selected.
+        return selectedRevision()
+    }
+
+    public func revisionWithID(_ revID: String, withBody: Bool = true) throws -> Revision? {
+        var err = C4Error()
+        guard c4doc_selectRevision(doc, C4Slice(revID), withBody,  &err) else {
+            if err.code == 404 {
+                return nil
+            }
+            throw err
+        }
+        defer {selectCurrentRevision()}
+        return selectedRevision()
+    }
+
+    public func leafRevisions(includeDeleted: Bool = false, withBodies: Bool = true) throws -> [Revision] {
+        var revs = [Revision]()
+        var err = C4Error()
+        defer {selectCurrentRevision()}
+        repeat {
+            guard let rev = selectedRevision() else {break}
+            revs.append(rev)
+        } while c4doc_selectNextLeafRevision(doc, includeDeleted, withBodies, &err)
+        if err.code != 0 {
+            throw err
+        }
+        return revs
+    }
+
+    
+    // Internals:
+
+    func selectedRevision() -> Revision? {
+        return Revision(doc: self, rev: doc.pointee.selectedRev)
+    }
+
+    func selectCurrentRevision() {
+        c4doc_selectCurrentRevision(doc)
+    }
+
 }

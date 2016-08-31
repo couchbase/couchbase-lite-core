@@ -23,6 +23,15 @@ extension C4Error : CustomStringConvertible {
     }
 }
 
+extension C4Error {
+    public var isNotFound: Bool {
+        return domain == .LiteCoreDomain && code == Int32(kC4ErrorNotFound)
+    }
+    public var isConflict: Bool {
+        return domain == .LiteCoreDomain && code == Int32(kC4ErrorConflict)
+    }
+}
+
 
 extension C4Slice {
     public init(_ s: String?) {

@@ -28,6 +28,11 @@ public struct check<T> {
     public func isTrue()    {XCTAssertTrue(actual! as! Bool, file: file, line: line)}
 }
 
+//extension check where T: BooleanType {
+//    public func isFalse()   {XCTAssertFalse(actual!, file: file, line: line)}
+//    public func isTrue()    {XCTAssertTrue(actual!.boolValue, file: file, line: line)}
+//}
+
 public func == <T : Equatable> (c: check<T>, expected: T) {
     XCTAssertEqual(c.actual, expected, file: c.file, line: c.line)
 }

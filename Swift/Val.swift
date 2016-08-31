@@ -10,7 +10,7 @@ import Foundation
 
 
 /** A JSON-compatible value. Used as the basic storage type of documents and views. */
-public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, CustomDebugStringConvertible {
+public enum Val : Equatable, CustomStringConvertible {
 
     case null
     case bool   (Bool)
@@ -22,38 +22,11 @@ public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLite
     case dict   ([String:Val])
 
 
-//    public typealias StringLiteralType = String
-//    public typealias UnicodeScalarLiteralType = Character
-//    public init(stringLiteral value: String) {
-//        self = Val.string(value)
-//    }
-//    public init(extendedGraphemeClusterLiteral value: StaticString) {
-//        self = Val.string(value.description)
-//    }
-
-    public init(integerLiteral i: Int) {
-        self = Val.int(i)
-    }
-    
-    public init(arrayLiteral elements: Val...) {
-        self = Val.array(elements)
-    }
-
-    public typealias Key = String
-    public typealias Value = Val
-
-    public init(dictionaryLiteral elements: (String, Val)...) {
-        var dict = [String:Val](minimumCapacity: elements.count)
-        for e in elements {
-            dict[e.0] = e.1
-        }
-        self = Val.dict(dict)
-    }
-
+    // MARK:- INITIALIZATION
 
     public init(json: Data) throws {
         let j = try JSONSerialization.jsonObject(with: json, options: [])
-        try self = Val.withJSONObject(j)
+        try self = Val.withObject(j)
     }
 
 
@@ -62,7 +35,7 @@ public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLite
     }
 
 
-    public static func withJSONObject(_ obj: Any) throws -> Val {
+    public static func withObject(_ obj: Any) throws -> Val {
         switch obj {
         case is NSNull:
             return Val.null
@@ -96,29 +69,32 @@ public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLite
             return Val.string(s)
 
         case let a as [Any]:
-            let va: [Val] = try a.map({try withJSONObject($0)})
+            let va: [Val] = try a.map({try withObject($0)})
             return Val.array(va)
 
         case let a as NSArray:
-            let va: [Val] = try a.map({try withJSONObject($0)})
+            let va: [Val] = try a.map({try withObject($0)})
             return Val.array(va)
 
         case let d as [String:Any]:
-            var dd = [String:Val]()
+            var dd = [String:Val](minimumCapacity: d.count)
             for (k,v) in d {
-                dd[k] = try withJSONObject(v)
+                dd[k] = try withObject(v)
             }
             return Val.dict(dd)
 
         case let d as NSDictionary:
-            var dd = [String:Val]()
+            var dd = [String:Val](minimumCapacity: d.count)
             for (k,v) in d {
                 guard let keyStr = k as? String else {
                     throw C4Error(domain: .LiteCoreDomain, code: Int32(InvalidKey))
                 }
-                dd[keyStr] = try withJSONObject(v)
+                dd[keyStr] = try withObject(v)
             }
             return Val.dict(dd)
+
+        case let v as Val:
+            return v
 
         default:
             throw C4Error(domain: .LiteCoreDomain, code: Int32(InvalidKey))
@@ -126,71 +102,79 @@ public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLite
     }
 
 
+    // MARK:- CONVERSION TO JSON
+
     public func asJSON() -> Data {
         return asJSON().data(using: String.Encoding.utf8)!
     }
 
 
     public func asJSON() -> String {
-        var json: String = ""
-        toJSON(&json)
+        var json = ""
+        writeJSON(&json)
         return json;
     }
 
 
-    private func toJSON(_ json: inout String) {
+    public func writeJSON<T :TextOutputStream>(_ json: inout T) {
         switch self {
         case .null:
-            json += "null"
+            json.write("null")
         case .bool(let b):
-            json += (b ? "true" : "false")
+            json.write(b ? "true" : "false")
         case .int(let i):
-            json += String(i)
+            json.write(String(i))
         case .float(let f):
-            json += String(f)
+            json.write(String(f))
         case .string(let s):
             Val.writeQuotedString(s, to: &json)
         case .data(let d):
-            json += "\"" + d.base64EncodedString() + "\""
+            json.write("\"")
+            json.write(d.base64EncodedString())
+            json.write("\"")
         case .array(let a):
-            json += "["
+            json.write("[")
             var first = true
             for item in a {
                 if first {
                     first = false
                 } else {
-                    json += ","
+                    json.write(",")
                 }
-                item.toJSON(&json)
+                item.writeJSON(&json)
             }
-            json += "]"
+            json.write("]")
         case .dict(let d):
-            json += "{"
+            json.write("{")
             var first = true
             for (k, v) in d {
                 if first {
                     first = false
                 } else {
-                    json += ","
+                    json.write(",")
                 }
                 Val.writeQuotedString(k, to: &json)
-                json += ":"
-                v.toJSON(&json)
+                json.write(":")
+                v.writeJSON(&json)
             }
-            json += "}"
+            json.write("}")
         }
     }
 
 
-    private static func writeQuotedString(_ str :String, to: inout String) {
-        to += "\"" + str + "\""     //FIX: Escape quotes!
+    private static func writeQuotedString<T :TextOutputStream>(_ str :String, to: inout T) {
+        to.write("\"")
+        to.write(str)     //FIX: Escape quotes!
+        to.write("\"")
     }
 
 
-    public var debugDescription: String {
+    public var description: String {
         return asJSON()
     }
 
+
+    // MARK:- EXTRACTING CONTENTS
 
     func asDict() -> [String:Val]? {
         switch self {
@@ -204,46 +188,66 @@ public enum Val : Equatable, ExpressibleByIntegerLiteral, ExpressibleByArrayLite
 
     func unwrap() -> Any {
         switch self {
-        case .null:
-            return NSNull()
-        case .bool(let b):
-            return b
-        case .int(let i):
-            return i
-        case .float(let f):
-            return f
-        case .string(let s):
-            return s
-        case .data(let d):
-            return d
-        case .array(let a):
-            return a
-        case .dict(let d):
-            return d
+        case .null:         return NSNull()
+        case .bool(let b):  return b
+        case .int(let i):   return i
+        case .float(let f): return f
+        case .string(let s):return s
+        case .data(let d):  return d
+        case .array(let a): return a
+        case .dict(let d):  return d
         }
     }
 
 
     public static func == (a: Val, b: Val) -> Bool {
         switch (a, b) {
-        case (.null, .null):
-            return true
-        case let (.bool(b1), .bool(b2)):
-            return b1 == b2
-        case let (.int(b1), .int(b2)):
-            return b1 == b2
-        case let (.float(b1), .float(b2)):
-            return b1 == b2
-        case let (.string(b1), .string(b2)):
-            return b1 == b2
-        case let (.data(b1), .data(b2)):
-            return b1 == b2
-        case let (.array(b1), .array(b2)):
-            return b1 == b2
-        case let (.dict(b1), .dict(b2)):
-            return b1 == b2
-        default:
-            return false
+        case (.null, .null):                return true
+        case let (.bool(b1), .bool(b2)):    return b1 == b2
+        case let (.int(b1), .int(b2)):      return b1 == b2
+        case let (.float(b1), .float(b2)):  return b1 == b2
+        case let (.string(b1), .string(b2)):return b1 == b2
+        case let (.data(b1), .data(b2)):    return b1 == b2
+        case let (.array(b1), .array(b2)):  return b1 == b2
+        case let (.dict(b1), .dict(b2)):    return b1 == b2
+        default:                            return false
         }
+    }
+}
+
+
+extension Val: ExpressibleByIntegerLiteral, ExpressibleByStringLiteral, ExpressibleByArrayLiteral,
+               ExpressibleByDictionaryLiteral
+{
+
+    public init(integerLiteral i: Int) {
+        self = Val.int(i)
+    }
+
+    public init(stringLiteral value: StringLiteralType) {
+        self = Val.string(value)
+    }
+
+    public init(extendedGraphemeClusterLiteral value: StringLiteralType) {
+        self = Val.string(value)
+    }
+
+    public init(unicodeScalarLiteral value: StringLiteralType) {
+        self = Val.string(value)
+    }
+
+    public init(arrayLiteral elements: Val...) {
+        self = Val.array(elements)
+    }
+
+    public typealias Key = String
+    public typealias Value = Val
+
+    public init(dictionaryLiteral elements: (String, Val)...) {
+        var dict = [String:Val](minimumCapacity: elements.count)
+        for e in elements {
+            dict[e.0] = e.1
+        }
+        self = Val.dict(dict)
     }
 }

@@ -55,7 +55,7 @@ public struct DocumentRange: LazySequenceProtocol {
         guard result != nil else {
             throw err
         }
-        return DocEnumerator(c4enum: result, limit: limit)
+        return DocEnumerator(database: database, c4enum: result, limit: limit)
     }
 
     // SEQUENCETYPE API:
@@ -85,8 +85,9 @@ open class DocEnumerator: IteratorProtocol, Swift.Sequence {
 
     public typealias Element = Document
 
-    init(c4enum: OpaquePointer?, limit: UInt64 = UInt64.max) {
+    init(database: Database, c4enum: OpaquePointer?, limit: UInt64 = UInt64.max) {
         assert(c4enum != nil)
+        self.database = database
         e = c4enum!
         self.limit = limit
     }
@@ -119,7 +120,7 @@ open class DocEnumerator: IteratorProtocol, Swift.Sequence {
             }
             return nil
         }
-        return Document(handle: c4doc!)
+        return Document(database: database, handle: c4doc!)
     }
 
     /** Check this after next() returns nil, to see if it stopped due to an error. */
@@ -132,6 +133,7 @@ open class DocEnumerator: IteratorProtocol, Swift.Sequence {
         }
     }
 
+    fileprivate let database: Database
     fileprivate var e: OpaquePointer
     fileprivate var limit: UInt64
 }

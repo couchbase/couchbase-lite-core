@@ -20,11 +20,13 @@ class ViewTests: SwiftForestTestCase {
         super.setUp()
 
         try! View.delete(ViewTests.kPath)
-        let map: MapFunction = {doc, emit in
-            print("map(\(doc))")
-            emit(doc["i"]!, nil)
-        }
-        view = try! View(database: db, path: ViewTests.kPath, name: "test", create: true, map: map, version: "1")
+        view = try! View(database: db,
+                         path: ViewTests.kPath,
+                         name: "test",
+                         version: "1") {
+                            doc, emit in
+                            print("map(\(doc))")
+                            emit(doc["i"]!, nil) }
     }
 
     override func tearDown() {

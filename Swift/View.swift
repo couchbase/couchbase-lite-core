@@ -13,11 +13,17 @@ public typealias EmitFunction = (Val, Val?) -> ()
 public typealias MapFunction = (Body, EmitFunction) throws -> ()
 
 
-open class View {
+public final class View {
 
-    public init(database: Database, path: String, name: String, create: Bool, map: MapFunction, version: String) throws {
-        var config = C4DatabaseConfig()
-        config.flags = create ? C4DatabaseFlags.db_Create : C4DatabaseFlags()
+    public init(database: Database,
+                path: String? = nil,
+                name: String,
+                create: Bool = true,
+                readOnly: Bool = false,
+                version: String,
+                map: MapFunction) throws
+    {
+        var config = C4DatabaseConfig(create: create, readOnly: readOnly)
         var err = C4Error()
         self.database = database
         self.name = name
@@ -28,30 +34,29 @@ open class View {
                                   C4Slice(version),
                                   &config,
                                   &err)
-        guard handle != nil else {
+        guard self.handle != nil else {
             throw err
         }
     }
 
     deinit {
-        print("DEINIT view")//TEMP
         guard c4view_close(handle, nil) else {
             print("WARNING: \(self) is busy, couldn't be closed")
             return
         }
     }
 
-    open let database: Database
-    open let name: String
+    public let database: Database
+    public let name: String
 
-    open func eraseIndex() throws {
+    public func eraseIndex() throws {
         var err = C4Error()
         guard c4view_eraseIndex(handle, &err) else {
             throw err
         }
     }
 
-    open func delete() throws {
+    public func delete() throws {
         var err = C4Error()
         guard c4view_delete(handle, &err) else {
             throw err
@@ -59,7 +64,7 @@ open class View {
         handle = nil
     }
 
-    open class func delete(_ path: String) throws {
+    public class func delete(_ path: String) throws {
         var config = C4DatabaseConfig()
         var err = C4Error()
         guard c4view_deleteAtPath(C4Slice(path), &config, &err) else {
@@ -67,12 +72,12 @@ open class View {
         }
     }
 
-    open var totalRows: UInt64                {return c4view_getTotalRows(handle)}
-    open var lastSequenceIndexed: Sequence    {return c4view_getLastSequenceIndexed(handle)}
-    open var lastSequenceChangedAt: Sequence  {return c4view_getLastSequenceChangedAt(handle)}
+    public var totalRows: UInt64                {return c4view_getTotalRows(handle)}
+    public var lastSequenceIndexed: Sequence    {return c4view_getLastSequenceIndexed(handle)}
+    public var lastSequenceChangedAt: Sequence  {return c4view_getLastSequenceChangedAt(handle)}
 
 
-    open var map: MapFunction
+    public var map: MapFunction
 
 
     var handle: OpaquePointer?
@@ -88,7 +93,7 @@ extension View : CustomStringConvertible {
 
 
 
-open class ViewIndexer {
+public final class ViewIndexer {
 
     public init(views: [View]) throws {
         self.views = views
@@ -106,7 +111,11 @@ open class ViewIndexer {
         }
     }
 
-    open func run() throws {
+    public var database: Database {
+        return views[0].database
+    }
+
+    public func run() throws {
         // Define the emit function that will be passed to the map function:
         var keys = [Key]()
         var values = [Data?]()
@@ -163,7 +172,7 @@ open class ViewIndexer {
         guard result != nil else {
             throw err
         }
-        return DocEnumerator(c4enum: result)
+        return DocEnumerator(database: database, c4enum: result)
     }
 
     fileprivate let views: [View]

@@ -58,7 +58,8 @@ class DatabaseTests: SwiftForestTestCase {
 
         var seq: UInt64 = 0
         try db.inTransaction {
-            let doc = try db.putDoc("mydoc", parentRev: nil, body: mkdata("{\"msg\":\"hello\"}"))
+            let doc = try db.getDoc("mydoc")
+            try doc.put(["msg": "hello"])
             print ("Doc exists=\(doc.exists). docID=\(doc.docID), revID=\(doc.revID).")
             check(doc.exists).isTrue()
             check(doc.docID) == "mydoc"
@@ -70,35 +71,36 @@ class DatabaseTests: SwiftForestTestCase {
         check(db.documentCount) == 1
         check(db.lastSequence) == 1
 
-        var rev = try db.getRev("mydoc")
-        print("rev = \(rev)")
-        check(rev).notNil()
+        let docByID = try db.getDoc("mydoc")
+        print("doc2 = \(docByID)")
+        check(docByID).notNil()
 
-        rev = try db.getRev(seq)
-        print("rev = \(rev)")
-        check(rev).notNil()
-        check(rev?.docID) == "mydoc"
+        let docBySeq = try db.getDoc(seq)
+        print("docBySeq = \(docBySeq)")
+        check(docBySeq).notNil()
+        check(docBySeq?.docID) == "mydoc"
     }
 
     func test06_CreateMultipleRevs() throws {
         try db.inTransaction {
-            let body1: Body = ["Key": Val.string("Value")]
-            var rev = try db.newRev("multi", body: body1)
-            check(rev.docID) == "multi"
-            check(rev.revID) == "1-29ad6c711c8c520131753825727241c7cc680ac3"
-            assert(rev.properties == body1)
-            //check(rev.properties) == body1
-            check(rev.property("Key")) == "Value"
-            let x: Int? = rev.property("X")
+            let body1: Body = ["Key": "Value"]
+            let doc = try db.getDoc("multi")
+            try doc.put(body1)
+            check(doc.docID) == "multi"
+            check(doc.revID) == "1-29ad6c711c8c520131753825727241c7cc680ac3"
+            assert(doc.properties == body1)
+            //check(doc.properties) == body1
+            check(doc.property("Key")) == "Value"
+            let x: Int? = doc.property("X")
             check(x).isNil()
-            check(rev.property("X", default: -17)) == -17
+            check(doc.property("X", default: -17)) == -17
 
-            let body2: Body = ["Key": 1337, "something": Val.string("else")]
-            rev = try rev.update(body2)
-            check(rev.revID) == "2-a1efd3b85c63542e1cde47cb7251295f4f126725"
-            check(rev.properties as NSDictionary) == body2 as NSDictionary
-            check(rev.property("Key")) == 1337
-            check(rev.property("Key", default: -1)) == 1337
+            let body2: Body = ["Key": 1337, "something": "else"]
+            try doc.put(body2)
+            check(doc.revID) == "2-a1efd3b85c63542e1cde47cb7251295f4f126725"
+            assert(doc.properties == body2)
+            check(doc.property("Key")) == 1337
+            check(doc.property("Key", default: -1)) == 1337
         }
     }
 

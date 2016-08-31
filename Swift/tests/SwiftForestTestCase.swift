@@ -35,7 +35,7 @@ class SwiftForestTestCase: XCTestCase {
         try! db.inTransaction {
             for i in range {
                 let docID = String(format: "doc-%03d", i)
-                try! db.newRev(docID, body: ["i": Val.int(i)])
+                try db.getDoc(docID).put(["i": Val.int(i)])
             }
         }
     }
