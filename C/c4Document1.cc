@@ -24,6 +24,7 @@
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "varint.hh"
+#include "fdb_errors.h"
 #include <ctime>
 #include <algorithm>
 
@@ -338,7 +339,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
     }
     return revidBuffer(generation, digest, kDigestType);
 #else
-    error::_throw(FDB_RESULT_CRYPTO_ERROR);
+    error::_throw(error::ForestDB, FDB_RESULT_CRYPTO_ERROR);
 #endif
 }
 

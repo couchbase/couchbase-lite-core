@@ -19,3 +19,4 @@ CSharp/prebuilt/*
 !CSharp/prebuilt/README.txt
 stripopts
 Java/jni/com_couchbase_cbforest_*.h
+*VC.*db

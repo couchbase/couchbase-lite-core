@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\vendor\forestdb\src\api_wrapper.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\avltree.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\bgflusher.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\blockcache.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\breakpad_dummy.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\btree.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\btreeblock.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\btree_fast_str_kv.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\btree_kv.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\btree_str_kv.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\checksum.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\compactor.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\configuration.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\docio.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\encryption.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\encryption_aes.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\encryption_bogus.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\fdb_errors.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\filemgr.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\filemgr_ops.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\filemgr_ops_windows.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\forestdb.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\hash.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\hash_functions.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\hbtrie.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\iterator.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\kv_instance.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\list.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\staleblock.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\superblock.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\transaction.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\version.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\src\wal.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\crc32.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\debug.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\gettimeofday_vs.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\iniparser.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\memleak.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\partiallock.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\system_resource_stats.cc" />
+    <ClCompile Include="..\..\vendor\forestdb\utils\time_utils.cc" />
+    <ClCompile Include="..\..\vendor\snappy\snappy-c.cc" />
+    <ClCompile Include="..\..\vendor\snappy\snappy-sinksource.cc" />
+    <ClCompile Include="..\..\vendor\snappy\snappy.cc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0630D0D9-2127-423E-9611-5C966CB7089B}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>ForestDB</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir)..\..\vendor\forestdb\utils;$(ProjectDir)..\..\vendor\forestdb\option;$(ProjectDir)..\..\vendor\forestdb\src;$(ProjectDir)..\..\vendor\openssl\libs\include;$(ProjectDir)..\..\vendor\forestdb\include;$(ProjectDir)..\..\vendor\snappy;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\..\vendor\openssl\libs\windows\x86;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)..\..\vendor\forestdb\utils;$(ProjectDir)..\..\vendor\forestdb\option;$(ProjectDir)..\..\vendor\forestdb\src;$(ProjectDir)..\..\vendor\openssl\libs\include;$(ProjectDir)..\..\vendor\forestdb\include;$(ProjectDir)..\..\vendor\snappy;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\..\vendor\openssl\libs\windows\x86;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir)..\..\vendor\forestdb\utils;$(ProjectDir)..\..\vendor\forestdb\option;$(ProjectDir)..\..\vendor\forestdb\src;$(ProjectDir)..\..\vendor\openssl\libs\include;$(ProjectDir)..\..\vendor\forestdb\include;$(ProjectDir)..\..\vendor\snappy;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\..\vendor\openssl\libs\windows\x86_64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir)..\..\vendor\forestdb\utils;$(ProjectDir)..\..\vendor\forestdb\option;$(ProjectDir)..\..\vendor\forestdb\src;$(ProjectDir)..\..\vendor\openssl\libs\include;$(ProjectDir)..\..\vendor\forestdb\include;$(ProjectDir)..\..\vendor\snappy;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)..\..\vendor\openssl\libs\windows\x86_64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG=1;_LIB;%(PreprocessorDefinitions);_FDB_TOOLS;HAVE_GCC_ATOMICS=1;_DOC_COMP;FORESTDB_VERSION="Internal";_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;DEBUG=1;_LIB;%(PreprocessorDefinitions);WIN32;_FDB_TOOLS;HAVE_GCC_ATOMICS=1;_DOC_COMP;FORESTDB_VERSION="Internal";_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);_FDB_TOOLS;HAVE_GCC_ATOMICS=1;_DOC_COMP;FORESTDB_VERSION="Internal";_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);WIN32;_FDB_TOOLS;HAVE_GCC_ATOMICS=1;_DOC_COMP;FORESTDB_VERSION="Internal";_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>libeay32.lib</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
