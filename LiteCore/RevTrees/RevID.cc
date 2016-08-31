@@ -197,6 +197,14 @@ namespace litecore {
         return *this;
     }
 
+    revidBuffer& revidBuffer::operator= (const revid &other) {
+        CBFAssert(other.size <= sizeof(_buffer));
+        memcpy(_buffer, other.buf, other.size);
+        buf = &_buffer;
+        size = other.size;
+        return *this;
+    }
+
 
     revidBuffer::revidBuffer(unsigned generation, slice digest, revidType type)
     :revid(&_buffer, 0)

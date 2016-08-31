@@ -41,13 +41,14 @@ extern "C" {
         uint8_t bytes[32];
     } C4EncryptionKey;
 
-    extern const char* const kC4ForestDBStorageEngine;
-    extern const char* const kC4SQLiteStorageEngine;
+    typedef const char* C4StorageEngine;
+    extern C4StorageEngine const kC4ForestDBStorageEngine;
+    extern C4StorageEngine const kC4SQLiteStorageEngine;
 
     /** Main database/view configuration struct. */
     typedef struct C4DatabaseConfig {
         C4DatabaseFlags flags;          /**< Create, ReadOnly, AutoCompact, Bundled... */
-        const char *storageEngine;      /**< Which storage to use, or NULL for no preference */
+        C4StorageEngine storageEngine;      /**< Which storage to use, or NULL for no preference */
         C4EncryptionKey encryptionKey;  /**< Encryption to use creating/opening the db */
     } C4DatabaseConfig;
 

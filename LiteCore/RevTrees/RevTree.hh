@@ -118,6 +118,7 @@ namespace litecore {
 
         /** Removes a leaf revision and any of its ancestors that aren't shared with other leaves. */
         int purge(revid);
+        int purgeAll();
 
         void sort();
 

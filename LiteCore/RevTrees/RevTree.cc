@@ -349,6 +349,13 @@ namespace litecore {
         return nPurged;
     }
 
+    int RevTree::purgeAll() {
+        int result = (int)_revs.size();
+        _revs.resize(0);
+        _changed = true;
+        return result;
+    }
+
     void RevTree::compact() {
         // Create a mapping from current to new rev indexes (after removing pruned/purged revs)
 		std::vector<uint16_t> map(_revs.size());

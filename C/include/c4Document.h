@@ -104,7 +104,9 @@ extern "C" {
         This can be used to iterate over all revisions, starting from the current revision. */
     bool c4doc_selectNextRevision(C4Document* doc);
 
-    /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves. */
+    /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
+        To distinguish between the end of the iteration and a failure, check the value of
+        *outError after the function returns false: if there's no error (code==0) it's normal. */
     bool c4doc_selectNextLeafRevision(C4Document* doc,
                                       bool includeDeleted,
                                       bool withBody,
@@ -118,11 +120,12 @@ extern "C" {
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
         shared with another branch.
-        If the document has only one branch (no conflicts), the purge will remove every revision,
-        and saving the document will purge it (remove it completely from the database.)
+        If the document has only one branch (no conflicts), or if the input revID is null, the
+        purge will remove every revision, and saving the document will purge it (remove it
+        completely from the database.)
         Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document.
-        @param revID  The ID of the revision to purge.
+        @param revID  The ID of the revision to purge. If null, all revisions are purged.
         @param outError  Error information is stored here.
         @return  The total number of revisions purged (including ancestors), or -1 on error. */
         int32_t c4doc_purgeRevision(C4Document *doc,

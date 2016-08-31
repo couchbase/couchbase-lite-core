@@ -211,7 +211,11 @@ namespace c4Internal {
         }
 
         int32_t purgeRevision(C4Slice revID) override {
-            int32_t total = _versionedDoc.purge(revidBuffer(revID));
+            int32_t total;
+            if (revID.buf)
+                total = _versionedDoc.purge(revidBuffer(revID));
+            else
+                total = _versionedDoc.purgeAll();
             if (total > 0) {
                 updateMeta();
                 if (_selectedRevIDBuf == revID)

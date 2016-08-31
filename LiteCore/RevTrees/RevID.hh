@@ -67,6 +67,7 @@ namespace litecore {
         revidBuffer(unsigned generation, slice digest, revidType);
         revidBuffer(const revidBuffer&);
         revidBuffer& operator= (const revidBuffer&);
+        revidBuffer& operator= (const revid&);
 
         /** Parses a regular (uncompressed) revID and compresses it.
             Throws BadRevisionID if the revID isn't in the proper format.*/
