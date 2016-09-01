@@ -1,5 +1,5 @@
 //
-//  c4Document1.cc
+//  c4TreeDocument.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/19/16.
@@ -33,9 +33,9 @@ static const uint32_t kDefaultMaxRevTreeDepth = 20;
 
 namespace c4Internal {
 
-    class C4DocumentV1 : public C4DocumentInternal {
+    class C4TreeDocument : public C4DocumentInternal {
     public:
-        C4DocumentV1(C4Database* database, C4Slice docID)
+        C4TreeDocument(C4Database* database, C4Slice docID)
         :C4DocumentInternal(database, docID),
          _versionedDoc(database->defaultKeyStore(), docID),
          _selectedRev(NULL)
@@ -44,7 +44,7 @@ namespace c4Internal {
         }
 
 
-        C4DocumentV1(C4Database *database, const Document &doc)
+        C4TreeDocument(C4Database *database, const Document &doc)
         :C4DocumentInternal(database, move(doc)),
          _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(NULL)
@@ -235,11 +235,11 @@ namespace c4Internal {
 
 
     C4DocumentInternal* c4DatabaseV1::newDocumentInstance(C4Slice docID) {
-        return new C4DocumentV1(this, docID);
+        return new C4TreeDocument(this, docID);
     }
 
     C4DocumentInternal* c4DatabaseV1::newDocumentInstance(const Document &doc) {
-        return new C4DocumentV1(this, doc);
+        return new C4TreeDocument(this, doc);
     }
 
 
@@ -275,7 +275,7 @@ namespace c4Internal {
 #pragma mark - INSERTING REVISIONS
 
 
-int32_t C4DocumentV1::putExistingRevision(const C4DocPutRequest &rq) {
+int32_t C4TreeDocument::putExistingRevision(const C4DocPutRequest &rq) {
     CBFAssert(rq.historyCount >= 1);
     int32_t commonAncestor = -1;
     loadRevisions();
@@ -343,7 +343,7 @@ static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool dele
 }
 
 
-bool C4DocumentV1::putNewRevision(const C4DocPutRequest &rq) {
+bool C4TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
     revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, rq.deletion);
     int httpStatus;
     auto newRev = _versionedDoc.insert(encodedRevID,
@@ -386,7 +386,7 @@ bool c4doc_save(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
-        ((C4DocumentV1*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
+        ((C4TreeDocument*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
         return true;
     } catchError(outError)
     return false;

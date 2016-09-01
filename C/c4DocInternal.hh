@@ -14,8 +14,8 @@
 namespace c4Internal {
 
 
-class C4DocumentV1;
-class C4DocumentV2;
+class C4TreeDocument;
+class C4VectorDocument;
 
 
 class C4DocumentInternal : public C4Document, InstanceCounted {

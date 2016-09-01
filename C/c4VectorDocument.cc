@@ -1,5 +1,5 @@
 //
-//  c4Document2.cc
+//  c4VectorDocument.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/18/16.
@@ -26,10 +26,10 @@
 
 namespace c4Internal {
 
-    class C4DocumentV2 : public C4DocumentInternal {
+    class C4VectorDocument : public C4DocumentInternal {
     public:
 
-        C4DocumentV2(c4DatabaseV2* database, C4Slice docID)
+        C4VectorDocument(c4DatabaseV2* database, C4Slice docID)
         :C4DocumentInternal(database, docID),
          _store(database->revisionStore()),
          _current(_store.get(docID))
@@ -42,7 +42,7 @@ namespace c4Internal {
         }
 
 
-        C4DocumentV2(c4DatabaseV2 *database, const Document &doc)
+        C4VectorDocument(c4DatabaseV2 *database, const Document &doc)
         :C4DocumentInternal(database, move(doc)),
          _store(database->revisionStore()),
          _current(new Revision(doc))
@@ -51,7 +51,7 @@ namespace c4Internal {
         }
 
 
-        ~C4DocumentV2();
+        ~C4VectorDocument();
 
 
         void init() {
@@ -226,7 +226,7 @@ namespace c4Internal {
     };
 
 
-    C4DocumentV2::~C4DocumentV2() {
+    C4VectorDocument::~C4VectorDocument() {
     }
 
 
@@ -238,11 +238,11 @@ namespace c4Internal {
 
 
     C4DocumentInternal* c4DatabaseV2::newDocumentInstance(C4Slice docID) {
-        return new C4DocumentV2(this, docID);
+        return new C4VectorDocument(this, docID);
     }
 
     C4DocumentInternal* c4DatabaseV2::newDocumentInstance(const Document &doc) {
-        return new C4DocumentV2(this, doc);
+        return new C4VectorDocument(this, doc);
     }
 
 
