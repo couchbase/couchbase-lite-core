@@ -184,6 +184,16 @@ namespace litecore {
     }
 
     
+    int64_t FilePath::dataSize() const {
+        struct stat s;
+        if (::stat(path().c_str(), &s) != 0) {
+            if (errno == ENOENT)
+                return -1;
+            error::_throwErrno();
+        }
+        return s.st_size;
+    }
+
     bool FilePath::exists() const {
         struct stat s;
         return ::stat(path().c_str(), &s) == 0;
@@ -209,6 +219,20 @@ namespace litecore {
             return false;
         }
         return true;
+    }
+
+
+    FilePath FilePath::mkTempFile(const string &suffix, FILE* *outHandle) const {
+        char templ[1024]; // MAXPATHLEN
+        sprintf(templ, "%sXXXXXX%s", path().c_str(), suffix.c_str());
+        int fd = mkstemps(templ, (int)suffix.length());
+        if (fd < 0)
+            error::_throwErrno();
+        if (outHandle)
+            *outHandle = fdopen(fd, "w");
+        else
+            close(fd);
+        return FilePath(templ);
     }
 
 

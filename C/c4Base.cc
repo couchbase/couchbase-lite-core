@@ -42,16 +42,16 @@ namespace c4Internal {
         recordError(domainMap[err.domain], err.code, outError);
     }
 
-}
 
-
-static C4SliceResult stringResult(const char *str) {
-    if (str) {
-        slice result = alloc_slice(str, strlen(str)).dontFree();
-        return {result.buf, result.size};
-    } else {
-        return {nullptr, 0};
+    C4SliceResult stringResult(const char *str) {
+        if (str) {
+            slice result = alloc_slice(str, strlen(str)).dontFree();
+            return {result.buf, result.size};
+        } else {
+            return {nullptr, 0};
+        }
     }
+
 }
 
 

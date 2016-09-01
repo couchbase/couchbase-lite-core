@@ -68,7 +68,7 @@ namespace litecore {
             IndexBusy,
             UnsupportedOperation,
             NotADatabaseFile,
-            WrongFormat,                // DB exists but is not in format requested
+            WrongFormat,                // data exists but not in format requested, or data given is in unusable format
 
             NumLiteCoreErrors
         };

@@ -18,5 +18,11 @@ namespace litecore {
     typedef uint64_t sequence;
 
     typedef sequence sequence_t;    // Sometimes used for disambiguation with a sequence() method
+
+    enum EncryptionAlgorithm : uint8_t {
+        kNoEncryption = 0,      /**< No encryption (default) */
+        kAES256                 /**< AES with 256-bit key */
+    };
+
 }
 

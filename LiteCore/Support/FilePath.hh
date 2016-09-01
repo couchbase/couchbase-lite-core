@@ -79,8 +79,17 @@ namespace litecore {
         bool exists() const;
         bool existsAsDir() const;
         void mustExistAsDir() const;
-        
+
+        /** Returns the size of the file in bytes, or -1 if the file does not exist. */
+        int64_t dataSize() const;
+
+        /** Creates a directory at this path. */
         bool mkdir(int mode =0700) const;
+
+        /** Creates an empty temporary file by appending a random 6-letter/digit string and a
+            suffix to this file/directory's path.
+            If the `outHandle` parameter is non-null, it will be set to a writeable file handle. */
+        FilePath mkTempFile(const std::string &suffix ="", FILE* *outHandle =nullptr) const;
 
         /** Deletes the file, or empty directory, at this path.
             If the item doesn't exist, returns false instead of throwing an exception. */

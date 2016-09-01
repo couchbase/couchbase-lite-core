@@ -6,9 +6,6 @@
 //  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 //
 
-//  Requires CppUnit <http://sourceforge.net/projects/cppunit/>,
-//  which you can install using 'brew' or 'apt_get' or whatever.
-
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "c4DocEnumerator.h"

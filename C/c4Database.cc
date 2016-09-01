@@ -101,8 +101,8 @@ c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
     options.create = (config.flags & kC4DB_Create) != 0;
     options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
 
-    options.encryptionAlgorithm = (DataFile::EncryptionAlgorithm)config.encryptionKey.algorithm;
-    if (options.encryptionAlgorithm != DataFile::kNoEncryption) {
+    options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
+    if (options.encryptionAlgorithm != kNoEncryption) {
         options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
                                             sizeof(config.encryptionKey.bytes));
     }
@@ -199,10 +199,10 @@ bool c4Database::endTransaction(bool commit) {
 {
     try {
         if (newKey) {
-            database->rekey((DataFile::EncryptionAlgorithm)newKey->algorithm,
+            database->rekey((EncryptionAlgorithm)newKey->algorithm,
                             slice(newKey->bytes, 32));
         } else {
-            database->rekey(DataFile::kNoEncryption, slice::null);
+            database->rekey(kNoEncryption, slice::null);
         }
         return true;
     } catchError(outError);

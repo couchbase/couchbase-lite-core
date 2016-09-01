@@ -33,11 +33,6 @@ namespace litecore {
     class DataFile {
     public:
 
-        enum EncryptionAlgorithm : uint8_t {
-            kNoEncryption = 0,      /**< No encryption (default) */
-            kAES256                 /**< AES with 256-bit key */
-        };
-
         struct Options {
             KeyStore::Capabilities keyStores;
             bool create         :1;     //< Should the db be created if it doesn't exist?

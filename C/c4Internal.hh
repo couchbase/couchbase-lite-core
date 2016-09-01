@@ -73,6 +73,8 @@ namespace c4Internal {
         return isValid;
     }
 
+    C4SliceResult stringResult(const char *str);
+
     // DOC ENUMERATORS:
 
     typedef function<bool(const Document&,

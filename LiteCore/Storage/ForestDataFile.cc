@@ -89,14 +89,14 @@ namespace litecore {
     }
 
 
-    static fdb_encryption_key forestEncryptionKey(DataFile::EncryptionAlgorithm alg,
+    static fdb_encryption_key forestEncryptionKey(EncryptionAlgorithm alg,
                                                   slice key) {
         fdb_encryption_key fdbKey;
         switch (alg) {
-            case DataFile::kNoEncryption:
+            case kNoEncryption:
                 fdbKey.algorithm = FDB_ENCRYPTION_NONE;
                 break;
-            case DataFile::kAES256:
+            case kAES256:
                 if(key.buf == NULL || key.size != sizeof(fdbKey.bytes))
                     error::_throw(error::InvalidParameter);
                 fdbKey.algorithm = FDB_ENCRYPTION_AES256;

@@ -15,5 +15,5 @@ EXPORTED_SYMBOLS_FILE       = $(SRCROOT)/../C/c4.exp
 GCC_NO_COMMON_BLOCKS        = YES
 GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
-HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/forestdb/include/** $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ /usr/local/include
+HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/forestdb/include/** $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/
 PRODUCT_NAME                = LiteCore-Interop

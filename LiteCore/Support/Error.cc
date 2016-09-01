@@ -79,6 +79,10 @@ namespace litecore {
         {0, /*must end with err=0*/     error::LiteCore,    0},
     };
 
+    static const codeMapping kPOSIXMapping[] = {
+        {ENOENT,                        error::LiteCore,    error::NotFound},
+    };
+
     static const codeMapping kSQLiteMapping[] = {
         {SQLITE_PERM,                   error::LiteCore,    error::NotWriteable},
         {SQLITE_BUSY,                   error::LiteCore,    error::Busy},
@@ -186,6 +190,9 @@ namespace litecore {
         Domain d = domain;
         int c = code;
         switch (domain) {
+            case POSIX:
+                mapError(d, c, kPOSIXMapping);
+                break;
             case ForestDB:
                 mapError(d, c, kForestDBMapping);
                 break;
@@ -234,6 +241,8 @@ namespace litecore {
         switch (domain) {
             case LiteCore:
                 return code == NotFound || code == Deleted;
+            case POSIX:
+                return code == ENOENT;
             case ForestDB:
                 return code == FDB_RESULT_KEY_NOT_FOUND || code == FDB_RESULT_NO_DB_HEADERS;
             default:
