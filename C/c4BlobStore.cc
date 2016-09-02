@@ -20,21 +20,12 @@ public:
 };
 
 
-static inline const blobKey& internal(const C4BlobKey &key) {
-    return *(blobKey*)&key;
-}
-
-static inline const C4BlobKey& external(const blobKey &key) {
-    return *(C4BlobKey*)&key;
-}
-
-static ReadStream* internal(C4ReadStream* s) {
-    return (ReadStream*)s;
-}
-
-static inline C4ReadStream* external(ReadStream* s) {
-    return (C4ReadStream*)s;
-}
+static inline const blobKey& internal(const C4BlobKey &key) {return *(blobKey*)&key;}
+static inline const C4BlobKey& external(const blobKey &key) {return *(C4BlobKey*)&key;}
+static ReadStream* internal(C4ReadStream* s)                {return (ReadStream*)s;}
+static inline C4ReadStream* external(ReadStream* s)         {return (C4ReadStream*)s;}
+static BlobWriteStream* internal(C4WriteStream* s)          {return (BlobWriteStream*)s;}
+static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStream*)s;}
 
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) {
@@ -159,3 +150,42 @@ void c4stream_close(C4ReadStream* stream) {
 }
 
 
+#pragma mark - STREAMING WRITES:
+
+
+C4WriteStream* c4blob_createWithStream(C4BlobStore* store, C4Error* outError) {
+    try {
+        return external(new BlobWriteStream(*store));
+    } catchError(outError)
+    return nullptr;
+}
+
+
+bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4Error* outError) {
+    try {
+        internal(stream)->write(slice(bytes, length));
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
+C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) {
+    return external( internal(stream)->computeKey() );
+}
+
+
+bool c4stream_install(C4WriteStream* stream, C4Error *outError) {
+    try {
+        internal(stream)->install();
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
+void c4stream_closeWriter(C4WriteStream* stream) {
+    try {
+        delete internal(stream);
+    } catchError(nullptr)
+}

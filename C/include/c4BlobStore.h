@@ -83,9 +83,9 @@ extern "C" {
 
     C4BlobKey c4stream_computeBlobKey(C4WriteStream*);
 
-    void c4Stream_finish(C4WriteStream*);
+    bool c4stream_install(C4WriteStream*, C4Error*);
 
-    void c4Stream_cancel(C4WriteStream*);
+    void c4stream_closeWriter(C4WriteStream*);
 
 
 #ifdef __cplusplus

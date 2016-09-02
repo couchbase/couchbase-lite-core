@@ -9,6 +9,7 @@
 #pragma once
 #include "Base.hh"
 #include "FilePath.hh"
+#include "SecureDigest.hh"
 
 
 namespace litecore {
@@ -62,10 +63,31 @@ namespace litecore {
 
     private:
         friend class BlobStore;
+        friend class BlobWriteStream;
+        
         Blob(const BlobStore&, const blobKey&);
 
         FilePath _path;
         const blobKey _key;
+    };
+
+
+    /** A simple write-only stream interface. */
+    class BlobWriteStream {
+    public:
+        BlobWriteStream(BlobStore&);
+        ~BlobWriteStream();
+        BlobWriteStream& write(slice);
+        blobKey computeKey();
+        Blob install();
+    private:
+        BlobStore &_store;
+        FilePath _tmpPath;
+        FILE *_file {nullptr};
+        sha1Context _sha1ctx;
+        blobKey _key;
+        bool _computedKey {false};
+        bool _installed {false};
     };
 
 
@@ -94,7 +116,7 @@ namespace litecore {
         const Blob get(const blobKey &key) const    {return Blob(*this, key);}
         Blob get(const blobKey &key)                {return Blob(*this, key);}
 
-        Blob put(slice data);
+        Blob put(slice data)            {return BlobWriteStream(*this).write(data).install();}
 
     private:
         FilePath const          _dir;                           // Location

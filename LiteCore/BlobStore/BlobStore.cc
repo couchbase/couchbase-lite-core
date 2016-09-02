@@ -10,7 +10,6 @@
 #include "FilePath.hh"
 #include "Error.hh"
 #include "Writer.hh"
-#include "SecureDigest.hh"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -82,6 +81,12 @@ namespace litecore {
     { }
 
 
+    static void checkErr(FILE *file) {
+        int err = ferror(file);
+        if (err)
+            error::_throw(error::POSIX, err);
+    }
+
     class BlobReadStream : public ReadStream {
     public:
         BlobReadStream(const Blob &blob) {
@@ -95,12 +100,6 @@ namespace litecore {
                 fclose(_file);
         }
 
-        void checkErr() const {
-            int err = ferror(_file);
-            if (err)
-                error::_throw(error::POSIX, err);
-        }
-
         bool atEOF() const override {
             return feof(_file) != 0;
         }
@@ -110,18 +109,18 @@ namespace litecore {
             fseek(_file, 0, SEEK_END);
             uint64_t fileSize = ftell(_file);
             fseek(_file, curPos, SEEK_SET);
-            checkErr();
+            checkErr(_file);
             return fileSize;
         }
 
         void seek(uint64_t pos) override {
             fseek(_file, pos, SEEK_SET);
-            checkErr();
+            checkErr(_file);
         }
 
         size_t read(void *dst, size_t count) override {
             size_t bytesRead = fread(dst, 1, count, _file);
-            checkErr();
+            checkErr(_file);
             return bytesRead;
         }
 
@@ -145,6 +144,52 @@ namespace litecore {
     }
 
 
+#pragma mark - BLOB WRITING:
+
+
+    BlobWriteStream::BlobWriteStream(BlobStore &store)
+    :_store(store)
+    {
+        _tmpPath = store.dir()["incoming_"].mkTempFile("tmp", &_file);
+        sha1_begin(&_sha1ctx);
+    }
+
+
+    BlobWriteStream::~BlobWriteStream() {
+        if (_file)
+            fclose(_file);
+        if (!_installed)
+            _tmpPath.del();
+    }
+
+
+    BlobWriteStream& BlobWriteStream::write(slice data) {
+        CBFAssert(!_computedKey);
+        if (fwrite(data.buf, 1, data.size, _file) < data.size)
+            checkErr(_file);
+        sha1_add(&_sha1ctx, data.buf, data.size);
+        return *this;
+    }
+
+    blobKey BlobWriteStream::computeKey() {
+        if (!_computedKey) {
+            sha1_end(&_sha1ctx, &_key.bytes);
+            _computedKey = true;
+        }
+        return _key;
+    }
+
+
+    Blob BlobWriteStream::install() {
+        fclose(_file);
+        _file = nullptr;
+        Blob blob(_store, computeKey());
+        _tmpPath.moveTo(blob.path());
+        _installed = true;
+        return blob;
+    }
+
+
 #pragma mark - BLOBSTORE:
 
 
@@ -164,28 +209,6 @@ namespace litecore {
             if (!_options.create)
                 error::_throw(error::NotFound);
             _dir.mkdir();
-        }
-    }
-
-
-    Blob BlobStore::put(slice data) {
-        auto key = blobKey::computeFrom(data);
-        Blob blob(*this, key);
-        if (blob.exists())
-            return blob;
-        FILE *out;
-        FilePath tmp = _dir["incoming_"].mkTempFile("tmp", &out);
-        try {
-            auto n = fwrite(data.buf, 1, data.size, out);
-            int err = ferror(out);
-            fclose(out);
-            if (n < data.size)
-                error::_throw(error::POSIX, err);
-            tmp.moveTo(blob.path());
-            return blob;
-        } catch (...) {
-            tmp.del();
-            throw;
         }
     }
 

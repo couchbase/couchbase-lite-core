@@ -128,3 +128,45 @@ TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     c4stream_close(stream);
     c4stream_close(nullptr); // this should be a no-op, not a crash
 }
+
+
+TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
+    // Write the blob:
+    C4Error error;
+    C4WriteStream *stream = c4blob_createWithStream(store, &error);
+    CHECK(stream);
+
+    for (int i = 0; i < 1000; i++) {
+        char buf[100];
+        sprintf(buf, "This is line %d.\n", i);
+        CHECK(c4stream_write(stream, buf, strlen(buf), &error));
+    }
+
+    // Get the blob key, and install it:
+    C4BlobKey key = c4stream_computeBlobKey(stream);
+    CHECK(c4stream_install(stream, &error));
+    c4stream_closeWriter(stream);
+    c4stream_closeWriter(nullptr);
+
+    C4SliceResult keyStr = c4blob_keyToString(key);
+    CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-Qids3Q4Zl2GBJIGm/QEunp8KcqQ=");
+    c4slice_free(keyStr);
+
+    // Read it back using the key:
+    C4SliceResult contents = c4blob_getContents(store, key, &error);
+    CHECK(contents.size == 17890);
+    c4slice_free(contents);
+}
+
+
+TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][C]") {
+    // Write the blob:
+    C4Error error;
+    C4WriteStream *stream = c4blob_createWithStream(store, &error);
+    CHECK(stream);
+
+    const char *buf = "This is line oops\n";
+    CHECK(c4stream_write(stream, buf, strlen(buf), &error));
+
+    c4stream_closeWriter(stream);
+}
