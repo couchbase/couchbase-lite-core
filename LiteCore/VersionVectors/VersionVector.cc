@@ -233,25 +233,27 @@ namespace litecore {
 
 
     versionOrder VersionVector::compareTo(const VersionVector &other) const {
+        //OPT: This is O(n^2), since the `for` loop calls `other[ ]`, which is a linear search.
         int o = kSame;
         ssize_t countDiff = count() - other.count();
         if (countDiff < 0)
-            o = kOlder;
+            o = kOlder;             // other must have versions from authors I don't have
         else if (countDiff > 0)
-            o = kNewer;
+            o = kNewer;             // I must have versions from authors other doesn't have
 
         for (auto &v : _vers) {
             auto othergen = other[v._author];
-            if (v._gen < othergen)
+            if (v._gen < othergen) {
                 o |= kOlder;
-            else if (v._gen > othergen) {
+            } else if (v._gen > othergen) {
                 o |= kNewer;
                 if (othergen == 0) {
+                    // other doesn't have this author, which makes its remaining entries more likely
+                    // to have authors I don't have; when that becomes certainty, set 'older' flag:
                     if (--countDiff < 0)
                         o |= kOlder;
                 }
-            }
-            else if (o == kSame)
+            } else if (o == kSame)
                 break; // first revs are identical so vectors are equal
             if (o == kConflicting)
                 break;
