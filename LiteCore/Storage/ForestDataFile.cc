@@ -22,9 +22,7 @@
 #include "forestdb.h"
 #include <algorithm>
 #include <thread>
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
+
 
 // This constant is used by fdb_get_byoffset but not exposed in fdb_types.h.
 #define SEQNUM_NOT_USED (fdb_seqnum_t)(-1ll)

@@ -21,9 +21,7 @@
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 #include <sstream>
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
+#ifdef _MSC_VER
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif

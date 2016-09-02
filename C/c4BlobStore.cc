@@ -79,7 +79,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) {
         store->deleteStore();
         delete store;
         return true;
-    } catchError(nullptr)
+    } catchError(outError)
     return false;
 }
 

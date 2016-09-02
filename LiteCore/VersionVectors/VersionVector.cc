@@ -83,11 +83,11 @@ namespace litecore {
 
     alloc_slice Version::asString() const {
         if (isMerge()) {
-            std::vector<char> buf(2 + _author.size);
-            return alloc_slice(buf.data(), sprintf(buf.data(), "^%.*s", (int)_author.size, _author.buf));
+            char buf[2 + kMaxAuthorSize];
+            return alloc_slice(buf, sprintf(buf, "^%.*s", (int)_author.size, _author.buf));
         } else {
-            std::vector<char> buf(30 + _author.size);
-            return alloc_slice(buf.data(), sprintf(buf.data(), "%llu@%.*s", _gen, (int)_author.size, _author.buf));
+            char buf[30 + kMaxAuthorSize];
+            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", _gen, (int)_author.size, _author.buf));
         }
     }
 
@@ -401,7 +401,7 @@ namespace litecore {
         Version mergeVers(0, copyAuthor(mergeID));
         _vers.insert(_vers.begin(), mergeVers);
 #else
-        error::_throw(error::ForestDB, FDB_RESULT_CRYPTO_ERROR);
+        error::_throw(error::Unimplemented);
 #endif
     }
 
