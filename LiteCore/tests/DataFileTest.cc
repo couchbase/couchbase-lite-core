@@ -510,7 +510,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = DataFile::kAES256;
+    options.encryptionAlgorithm = kAES256;
     options.encryptionKey = slice("12345678901234567890123456789012");
     auto dbPath = databasePath("encrypted");
     deleteDatabase(dbPath);
@@ -528,7 +528,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
     }
     {
         // Reopen without key:
-        options.encryptionAlgorithm = DataFile::kNoEncryption;
+        options.encryptionAlgorithm = kNoEncryption;
         int code = 0;
         try {
             Log("NOTE: Expecting a can't-open-file exception to be thrown");
@@ -550,7 +550,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
     auto options = db->options();
     createNumberedDocs(store);
 
-    options.encryptionAlgorithm = DataFile::kAES256;
+    options.encryptionAlgorithm = kAES256;
     options.encryptionKey = alloc_slice(32);
     randomBytes(options.encryptionKey);
 
