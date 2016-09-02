@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4BlobStore.h"
+#include "C4Private.h"
 
 using namespace std;
 
@@ -19,6 +20,8 @@ public:
         C4Error error;
         store = c4blob_openStore(c4str(kTestDir "cbl_blob_test/"), kC4DB_Create, nullptr, &error);
         CHECK(store != nullptr);
+
+        memset(bogusKey.bytes, 0x55, sizeof(bogusKey.bytes));
     }
 
     ~BlobStoreTest() {
@@ -27,10 +30,12 @@ public:
     }
 
     C4BlobStore *store {nullptr};
+
+    C4BlobKey bogusKey;
 };
 
 
-TEST_CASE("parse blob keys", "[blob]") {
+TEST_CASE("parse blob keys", "[blob][C]") {
     C4BlobKey key1;
     memset(key1.bytes, 0x55, sizeof(key1.bytes));
     C4SliceResult str = c4blob_keyToString(key1);
@@ -42,10 +47,19 @@ TEST_CASE("parse blob keys", "[blob]") {
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob]") {
-    C4BlobKey bogusKey;
-    memset(bogusKey.bytes, 0x55, sizeof(bogusKey.bytes));
+TEST_CASE("parse invalid blob keys", "[blob][C][!throws]") {
+    c4log_warnOnErrors(false);
+    C4BlobKey key2;
+    CHECK_FALSE(c4blob_keyFromString(C4STR(""), &key2));
+    CHECK_FALSE(c4blob_keyFromString(C4STR("rot13-xxxx"), &key2));
+    CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-"), &key2));
+    CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-VVVVVVVVVVVVVVVVVVVVVV"), &key2));
+    CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU"), &key2));
+    c4log_warnOnErrors(true);
+}
 
+
+TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
     CHECK(c4blob_getSize(store, bogusKey) == -1);
 
     C4Error error;
@@ -56,7 +70,7 @@ TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob]") {
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob]") {
+TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
     C4Slice blobToStore = C4STR("This is a blob to store in the store!");
 
     // Add blob to the store:
@@ -79,4 +93,38 @@ TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob]") {
     C4BlobKey key2;
     CHECK(c4blob_create(store, blobToStore, &key2, &error));
     CHECK(memcmp(&key2, &key, sizeof(key2)) == 0);
+}
+
+
+TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
+    string blob = "This is a blob to store in the store!";
+
+    // Add blob to the store:
+    C4BlobKey key;
+    C4Error error;
+    CHECK(c4blob_create(store, {blob.data(), blob.size()}, &key, &error));
+
+    CHECK( c4blob_openStream(store, bogusKey, &error) == nullptr);
+
+    auto stream = c4blob_openStream(store, key, &error);
+    CHECK(stream);
+
+    // Read it back, 6 bytes at a time:
+    string readBack;
+    char buf[6];
+    size_t bytesRead;
+    do {
+        bytesRead = c4stream_read(stream, buf, sizeof(buf), &error);
+        readBack.append(buf, bytesRead);
+    } while (bytesRead == sizeof(buf));
+    CHECK(error.code == 0);
+    CHECK(readBack == blob);
+
+    // Try seeking:
+    CHECK(c4stream_seek(stream, 10, &error));
+    CHECK(c4stream_read(stream, buf, 4, &error) == 4);
+    CHECK(memcmp(buf, "blob", 4) == 0);
+
+    c4stream_close(stream);
+    c4stream_close(nullptr); // this should be a no-op, not a crash
 }

@@ -27,23 +27,36 @@ namespace litecore {
         operator slice() const          {return slice(bytes, sizeof(bytes));}
         std::string hexString() const   {return operator slice().hexString();}
         std::string base64String() const;
+        std::string filename() const;
 
         static blobKey computeFrom(slice data);
+    };
+
+
+    /** A simple read-only stream interface. */
+    class ReadStream {
+    public:
+        virtual ~ReadStream() = default;
+        virtual bool atEOF() const =0;
+        virtual uint64_t getLength() const =0;
+        virtual size_t read(void *dst, size_t count) =0;
+        virtual void seek(uint64_t pos) =0;
+        alloc_slice readAll();
     };
 
 
     /** Represents a blob stored in a BlobStore. */
     class Blob {
     public:
-        bool exists() const;
+        bool exists() const             {return _path.exists();}
 
         blobKey key() const             {return _key;}
         FilePath path() const           {return _path;}
         int64_t contentLength() const   {return path().dataSize();}
 
-        alloc_slice contents() const;
+        alloc_slice contents() const    {return read()->readAll();}
 
-        FILE* read() const;
+        std::unique_ptr<ReadStream> read() const;
 
         void del()                      {_path.del();}
 

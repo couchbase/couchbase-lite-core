@@ -11,8 +11,7 @@
 #include "Error.hh"
 #include "Writer.hh"
 #include "SecureDigest.hh"
-#include <libb64/encode.h>
-#include <libb64/decode.h>
+#include <stdint.h>
 #include <stdio.h>
 
 
@@ -33,14 +32,14 @@ namespace litecore {
     }
 
     blobKey::blobKey(const string &str) {
-        const char *data = str.data();
-        if (str.size() == kBlobKeyStringLength && 0 == memcmp(data, "sha1-", 5)) {
-            base64::decoder dec;
-            uint8_t buf[33];    // have to use intermediate buf because decoder writes to 33rd byte :(
-            auto decoded = dec.decode(&data[5], str.size() - 5, buf);
-            CBFDebugAssert(decoded <= sizeof(bytes));
-            if (decoded == sizeof(bytes)) {
-                memcpy(bytes, buf, sizeof(bytes));
+        slice data = slice(str);
+        if (data.size == kBlobKeyStringLength && 0 == memcmp(data.buf, "sha1-", 5)) {
+            data.moveStart(5);
+            // Decoder always writes a multiple of 3 bytes, so round up:
+            uint8_t buf[21];
+            slice result = data.readBase64Into(slice(buf, sizeof(buf)));
+            if (result.size == 20) {
+                memcpy(bytes, result.buf, result.size);
                 return;
             }
         }
@@ -49,17 +48,15 @@ namespace litecore {
 
 
     string blobKey::base64String() const {
-        // Result is "sha1-" plus base64-encoded key bytes:
-        string result = "sha1-";
-        result.resize(kBlobKeyStringLength);
-        char *dst = &result[5];
-        base64::encoder enc;
-        enc.set_chars_per_line(0);
-        size_t written = enc.encode(bytes, sizeof(bytes), dst);
-        written += enc.encode_end(dst + written);
-        CBFAssert(written == kBlobKeyStringLength - 5);
-        return result;
-}
+        return string("sha1-") + slice(bytes, sizeof(bytes)).base64String();
+    }
+
+
+    string blobKey::filename() const {
+        string str = slice(bytes, sizeof(bytes)).base64String();
+        replace(str.begin(), str.end(), '/', '_');
+        return str + ".blob";
+    }
 
 
     /*static*/ blobKey blobKey::computeFrom(slice data) {
@@ -80,39 +77,71 @@ namespace litecore {
     
     
     Blob::Blob(const BlobStore &store, const blobKey &key)
-    :_path(store.dir(), key.hexString() + ".blob"),
+    :_path(store.dir(), key.filename()),
      _key(key)
     { }
 
 
-    bool Blob::exists() const {
-        return path().exists();
+    class BlobReadStream : public ReadStream {
+    public:
+        BlobReadStream(const Blob &blob) {
+            _file = fopen(blob.path().path().c_str(), "r");
+            if (!_file)
+                error::_throwErrno();
+        }
+
+        ~BlobReadStream() {
+            if (_file)
+                fclose(_file);
+        }
+
+        void checkErr() const {
+            int err = ferror(_file);
+            if (err)
+                error::_throw(error::POSIX, err);
+        }
+
+        bool atEOF() const override {
+            return feof(_file) != 0;
+        }
+
+        uint64_t getLength() const override {
+            uint64_t curPos = ftell(_file);
+            fseek(_file, 0, SEEK_END);
+            uint64_t fileSize = ftell(_file);
+            fseek(_file, curPos, SEEK_SET);
+            checkErr();
+            return fileSize;
+        }
+
+        void seek(uint64_t pos) override {
+            fseek(_file, pos, SEEK_SET);
+            checkErr();
+        }
+
+        size_t read(void *dst, size_t count) override {
+            size_t bytesRead = fread(dst, 1, count, _file);
+            checkErr();
+            return bytesRead;
+        }
+
+    private:
+        FILE* _file {nullptr};
+    };
+
+
+    alloc_slice ReadStream::readAll() {
+        uint64_t length = getLength();
+        if (length > SIZE_MAX)    // overflow check for 32-bit
+            throw bad_alloc();
+        auto contents = alloc_slice((size_t)length);
+        contents.size = read((void*)contents.buf, length);
+        return contents;
     }
-    
-
-    alloc_slice Blob::contents() const {
-        fleece::Writer out;
-        char buf[32768];
-        auto in = read();
-        size_t n;
-        do {
-            n = fread(buf, 1, sizeof(buf), in);
-            if (n > 0)
-                out.write(buf, n);
-        } while (n == sizeof(buf));
-        int err = ferror(in);
-        fclose(in);
-        if (err)
-            error::_throw(error::POSIX, err);
-        return out.extractOutput();
-    }
 
 
-    FILE* Blob::read() const {
-        FILE *in = fopen(path().path().c_str(), "r");
-        if (!in)
-            error::_throwErrno();
-        return in;
+    unique_ptr<ReadStream> Blob::read() const {
+        return unique_ptr<ReadStream>{ new BlobReadStream(*this) };
     }
 
 

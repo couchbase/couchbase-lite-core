@@ -28,6 +28,14 @@ static inline const C4BlobKey& external(const blobKey &key) {
     return *(C4BlobKey*)&key;
 }
 
+static ReadStream* internal(C4ReadStream* s) {
+    return (ReadStream*)s;
+}
+
+static inline C4ReadStream* external(ReadStream* s) {
+    return (C4ReadStream*)s;
+}
+
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) {
     try {
@@ -112,3 +120,42 @@ bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
     } catchError(outError)
     return false;
 }
+
+
+#pragma mark - STREAMING READS:
+
+
+C4ReadStream* c4blob_openStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
+    try {
+        unique_ptr<ReadStream> stream = store->get(internal(key)).read();
+        return external(stream.release());
+    } catchError(outError)
+    return nullptr;
+}
+
+
+size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Error* outError) {
+    try {
+        clearError(outError);
+        return internal(stream)->read(buffer, maxBytes);
+    } catchError(outError)
+    return 0;
+}
+
+
+bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) {
+    try {
+        internal(stream)->seek(position);
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
+void c4stream_close(C4ReadStream* stream) {
+    try {
+        delete internal(stream);
+    } catchError(nullptr)
+}
+
+

@@ -61,25 +61,31 @@ extern "C" {
     bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error*);
 
 
-#if 0
     // STREAMING API:
 
-    typedef struct c4Stream C4Stream;
+    typedef struct c4ReadStream C4ReadStream;
 
-    C4Stream* c4blob_open(C4BlobStore*, C4BlobKey, C4Error*);
+    C4ReadStream* c4blob_openStream(C4BlobStore*, C4BlobKey, C4Error*);
 
-    C4Stream* c4blob_createWithStream(C4BlobStore*, C4Error*);
+    
+    size_t c4stream_read(C4ReadStream*, void *buffer, size_t maxBytes, C4Error*);
 
-    size_t c4stream_read(C4Stream*, void *buffer, size_t maxBytes, C4Error*);
+    bool c4stream_seek(C4ReadStream*, uint64_t position, C4Error*);
 
-    bool c4stream_write(C4Stream*, const void *bytes, size_t length, C4Error*);
+    void c4stream_close(C4ReadStream*);
 
-    C4BlobKey c4stream_getBlobKey(C4Stream*);
 
-    bool c4stream_close(C4Stream*, C4Error*);
+    typedef struct c4WriteStream C4WriteStream;
 
-    void c4Stream_cancel(C4Stream*);
-#endif
+    C4WriteStream* c4blob_createWithStream(C4BlobStore*, C4Error*);
+
+    bool c4stream_write(C4WriteStream*, const void *bytes, size_t length, C4Error*);
+
+    C4BlobKey c4stream_computeBlobKey(C4WriteStream*);
+
+    void c4Stream_finish(C4WriteStream*);
+
+    void c4Stream_cancel(C4WriteStream*);
 
 
 #ifdef __cplusplus
