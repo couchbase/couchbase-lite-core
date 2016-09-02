@@ -19,9 +19,14 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include <unistd.h>
 #include <sqlite3.h>
 #include <sstream>
+#ifndef _MSC_VER
+#include <unistd.h>
+#else
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 using namespace std;
 

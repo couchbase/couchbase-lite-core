@@ -15,6 +15,12 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #include <sys/stat.h>
+#define MKDIR(PATH, MODE) ::mkdir(PATH, (mode_t)MODE)
+#else
+#include <direct.h>
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#define MKDIR(PATH, MODE) ::mkdir(PATH)
 #endif
 
 
@@ -144,11 +150,11 @@ namespace litecore {
         if (!dir)
             error::_throwErrno();
         try {
-            struct dirent entry, *result;
+            struct dirent *result;
             while (1) {
-                int err = readdir_r(dir, &entry, &result);
-                if (err)
-                    error::_throw(error::POSIX, err);
+                result = readdir(dir);
+                if (!result && errno)
+                    error::_throwErrno();
                 else if (!result)
                     break;
                 string name(result->d_name, result->d_namlen);
@@ -213,7 +219,7 @@ namespace litecore {
 
 
     bool FilePath::mkdir(int mode) const {
-        if (::mkdir(path().c_str(), (mode_t)mode) != 0) {
+        if (MKDIR(path().c_str(), mode) != 0) {
             if (errno != EEXIST)
                 error::_throwErrno();
             return false;

@@ -23,6 +23,8 @@
 
 #if __ANDROID__
 #include <android/log.h>
+#elif defined(_MSC_VER)
+#include "asprintf.h"
 #endif
 
 namespace litecore {

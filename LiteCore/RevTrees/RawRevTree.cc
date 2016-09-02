@@ -17,6 +17,9 @@
 #include "RevTree.hh"
 #include "Error.hh"
 #include "varint.hh"
+#ifdef _MSC_VER
+#include <WinSock2.h>
+#endif
 
 using namespace fleece;
 

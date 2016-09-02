@@ -20,6 +20,11 @@
 #include "varint.hh"
 #include <sstream>
 #include <unordered_map>
+#include <algorithm>
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 
 namespace litecore {
@@ -78,11 +83,11 @@ namespace litecore {
 
     alloc_slice Version::asString() const {
         if (isMerge()) {
-            char buf[2 + _author.size];
-            return alloc_slice(buf, sprintf(buf, "^%.*s", (int)_author.size, _author.buf));
+            std::vector<char> buf(2 + _author.size);
+            return alloc_slice(buf.data(), sprintf(buf.data(), "^%.*s", (int)_author.size, _author.buf));
         } else {
-            char buf[30 + _author.size];
-            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", _gen, (int)_author.size, _author.buf));
+            std::vector<char> buf(30 + _author.size);
+            return alloc_slice(buf.data(), sprintf(buf.data(), "%llu@%.*s", _gen, (int)_author.size, _author.buf));
         }
     }
 
@@ -124,7 +129,10 @@ namespace litecore {
             error::_throw(error::BadVersionVector);
 
         while (string.size > 0) {
-            const void *comma = string.findByte(',') ?: string.end();
+            const void *comma = string.findByte(',');
+            if (comma == nullptr) {
+                comma = string.end();
+            }
             _vers.push_back( Version(string.upTo(comma), false) );
             string = string.from(comma);
             if (string.size > 0)
@@ -377,6 +385,7 @@ namespace litecore {
 
 
     void VersionVector::insertMergeRevID(peerID myPeerID, slice revisionBody) {
+#if SECURE_DIGEST_AVAILABLE
         // Merge ID is base64 of SHA-1 digest of version vector + nul byte + revision body
         sha1Context ctx;
         sha1_begin(&ctx);
@@ -391,6 +400,9 @@ namespace litecore {
         // Prepend a version representing the merge:
         Version mergeVers(0, copyAuthor(mergeID));
         _vers.insert(_vers.begin(), mergeVers);
+#else
+        error::_throw(error::ForestDB, FDB_RESULT_CRYPTO_ERROR);
+#endif
     }
 
 

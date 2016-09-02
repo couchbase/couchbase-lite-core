@@ -21,7 +21,10 @@
 #include "LogInternal.hh"
 #include "forestdb.h"
 #include <algorithm>
+#include <thread>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 // This constant is used by fdb_get_byoffset but not exposed in fdb_types.h.
 #define SEQNUM_NOT_USED (fdb_seqnum_t)(-1ll)
@@ -152,7 +155,7 @@ namespace litecore {
         for (int retry = 100; retry > 0; --retry) {
             status = fdb_destroy(path.path().c_str(), &cfg);
             if (status == FDB_RESULT_IN_USE_BY_COMPACTOR)
-                usleep(100 * 1000);
+                std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
             else
                 break;
         }
@@ -295,7 +298,7 @@ namespace litecore {
         if (status == FDB_RESULT_FILE_IS_BUSY) {
             // This result means there is already a background auto-compact in progress.
             while (isCompacting())
-                ::usleep(100 * 1000);
+                std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
         } else {
             check(status);
         }
@@ -465,7 +468,10 @@ namespace litecore {
             fdoc.offset = doc.offset();
             fdoc.key = (void*)existingKey.buf;
             fdoc.keylen = existingKey.size;
-            fdoc.seqnum = doc.sequence() ?: SEQNUM_NOT_USED;
+            fdoc.seqnum = doc.sequence();
+            if (!fdoc.seqnum) {
+                fdoc.seqnum = SEQNUM_NOT_USED;
+            }
             
             check(fdb_get_byoffset(_handle, &fdoc));
 

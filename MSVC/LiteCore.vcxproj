@@ -1,0 +1,240 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="asprintf.c" />
+    <ClCompile Include="memmem.cc" />
+    <ClCompile Include="vasprintf-msvc.c" />
+    <ClCompile Include="..\C\c4Base.cc" />
+    <ClCompile Include="..\C\c4Database.cc" />
+    <ClCompile Include="..\C\c4DocEnumerator.cc" />
+    <ClCompile Include="..\C\c4DocExpiration.cc" />
+    <ClCompile Include="..\C\c4Document.cc" />
+    <ClCompile Include="..\C\c4Document1.cc" />
+    <ClCompile Include="..\C\c4Document2.cc" />
+    <ClCompile Include="..\C\c4Key.cc" />
+    <ClCompile Include="..\C\c4View.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\FullTextIndex.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\Geohash.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\GeoIndex.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\Index.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\MapReduceIndex.cc" />
+    <ClCompile Include="..\LiteCore\Indexes\Tokenizer.cc" />
+    <ClCompile Include="..\LiteCore\RevTrees\RawRevTree.cc" />
+    <ClCompile Include="..\LiteCore\RevTrees\RevID.cc" />
+    <ClCompile Include="..\LiteCore\RevTrees\RevTree.cc" />
+    <ClCompile Include="..\LiteCore\RevTrees\VersionedDocument.cc" />
+    <ClCompile Include="..\LiteCore\Storage\DataFile.cc" />
+    <ClCompile Include="..\LiteCore\Storage\DocEnumerator.cc" />
+    <ClCompile Include="..\LiteCore\Storage\Document.cc" />
+    <ClCompile Include="..\LiteCore\Storage\ForestDataFile.cc" />
+    <ClCompile Include="..\LiteCore\Storage\KeyStore.cc" />
+    <ClCompile Include="..\LiteCore\Storage\SQLiteDataFile.cc" />
+    <ClCompile Include="..\LiteCore\Support\Collatable.cc" />
+    <ClCompile Include="..\LiteCore\Support\Error.cc" />
+    <ClCompile Include="..\LiteCore\Support\FilePath.cc" />
+    <ClCompile Include="..\LiteCore\Support\RefCounted.cc" />
+    <ClCompile Include="..\LiteCore\VersionVectors\CASRevisionStore.cc" />
+    <ClCompile Include="..\LiteCore\VersionVectors\Revision.cc" />
+    <ClCompile Include="..\LiteCore\VersionVectors\RevisionStore.cc" />
+    <ClCompile Include="..\LiteCore\VersionVectors\VersionVector.cc" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\fts3_unicode2.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\fts3_unicodesn.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\runtime\api_sq3.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\runtime\utilities_sq3.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_danish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_dutch.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_english.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_finnish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_french.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_german.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_hungarian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_italian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_norwegian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_porter.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_portuguese.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_spanish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_1_swedish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_ISO_8859_2_romanian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_KOI8_R_russian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_danish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_dutch.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_english.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_finnish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_french.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_german.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_hungarian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_italian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_norwegian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_porter.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_portuguese.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_romanian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_russian.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_spanish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_swedish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\src_c\stem_UTF_8_turkish.c" />
+    <ClCompile Include="..\vendor\sqlite3-unicodesn\sqlite3_unicodesn_tokenizer.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\vendor\fleece\MSVC\Fleece\Fleece.vcxproj">
+      <Project>{d881259a-20af-4261-92b1-24f622b7d2f4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vendor\SQLiteCpp\MSVC\SQLiteCpp\SQLiteCpp.vcxproj">
+      <Project>{60c96cf0-8429-4732-be01-4af60229ed95}</Project>
+    </ProjectReference>
+    <ProjectReference Include="ForestDB\ForestDB.vcxproj">
+      <Project>{0630d0d9-2127-423e-9611-5c966cb7089b}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{67EA3C1F-D9E7-45EE-B722-B703EFA743F5}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>LiteCore</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\vendor\fleece\Fleece;$(ProjectDir)..\LiteCore\Support;$(ProjectDir)..\LiteCore\Storage;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\vendor\SQLiteCpp\include;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\C\include;$(ProjectDir)..\LiteCore\VersionVectors;$(ProjectDir)..\LiteCore\Indexes;$(ProjectDir)..\LiteCore\RevTrees;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\vendor\fleece\Fleece;$(ProjectDir)..\LiteCore\Support;$(ProjectDir)..\LiteCore\Storage;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\vendor\SQLiteCpp\include;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\C\include;$(ProjectDir)..\LiteCore\VersionVectors;$(ProjectDir)..\LiteCore\Indexes;$(ProjectDir)..\LiteCore\RevTrees;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\vendor\fleece\Fleece;$(ProjectDir)..\LiteCore\Support;$(ProjectDir)..\LiteCore\Storage;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\vendor\SQLiteCpp\include;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\C\include;$(ProjectDir)..\LiteCore\VersionVectors;$(ProjectDir)..\LiteCore\Indexes;$(ProjectDir)..\LiteCore\RevTrees;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)..\vendor\fleece\Fleece;$(ProjectDir)..\LiteCore\Support;$(ProjectDir)..\LiteCore\Storage;$(ProjectDir)..\vendor\openssl\libs\include;$(ProjectDir)..\vendor\SQLiteCpp\include;$(ProjectDir)..\vendor\sqlite3-unicodesn;$(ProjectDir)..\vendor\sqlite3-unicodesn\libstemmer_c\runtime;$(ProjectDir)..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\C\include;$(ProjectDir)..\LiteCore\VersionVectors;$(ProjectDir)..\LiteCore\Indexes;$(ProjectDir)..\LiteCore\RevTrees;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LITECORE_EXPORTS;%(PreprocessorDefinitions);_USE_MATH_DEFINES;SQLITE_ENABLE_FTS4_UNICODE61;SQLITE_ENABLE_FTS4;_FDB_TOOLS;_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LITECORE_EXPORTS;%(PreprocessorDefinitions);_USE_MATH_DEFINES;SQLITE_ENABLE_FTS4_UNICODE61;SQLITE_ENABLE_FTS4;_FDB_TOOLS;_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LITECORE_EXPORTS;%(PreprocessorDefinitions);_USE_MATH_DEFINES;SQLITE_ENABLE_FTS4_UNICODE61;SQLITE_ENABLE_FTS4;_FDB_TOOLS;_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LITECORE_EXPORTS;%(PreprocessorDefinitions);_USE_MATH_DEFINES;SQLITE_ENABLE_FTS4_UNICODE61;SQLITE_ENABLE_FTS4;_FDB_TOOLS;_CRYPTO_OPENSSL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

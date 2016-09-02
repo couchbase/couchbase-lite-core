@@ -107,7 +107,12 @@ c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
                                             sizeof(config.encryptionKey.bytes));
     }
 
-    DataFile::Factory *storage = DataFile::factoryNamed((string)(config.storageEngine ?: ""));
+    const char *storageEngine = config.storageEngine;
+    if (!storageEngine) {
+        storageEngine = "";
+    }
+
+    DataFile::Factory *storage = DataFile::factoryNamed((string)(storageEngine));
     if (!storage)
         error::_throw(error::Unimplemented);
     return storage->openFile(path, &options);

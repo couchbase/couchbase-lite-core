@@ -24,9 +24,10 @@
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
 #include <dirent.h>
-#include <unistd.h>
 #ifdef _MSC_VER
 #include <asprintf.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "ForestDataFile.hh"
