@@ -16,10 +16,26 @@ using namespace std;
 class BlobStoreTest {
 public:
     
-    BlobStoreTest() {
+    static const int numberOfOptions = 2;       // 0 = unencrypted, 1 = encrypted
+
+    BlobStoreTest(int option)
+    :encrypted(option == 1)
+    {
+        c4log_setLevel(kC4LogDebug);//TEMP
+        C4EncryptionKey crypto, *encryption=nullptr;
+        if (encrypted) {
+            fprintf(stderr, "        ...encrypted\n");
+            crypto.algorithm = kC4EncryptionAES256;
+            memset(&crypto.bytes, 0xCC, sizeof(crypto.bytes));
+            encryption = &crypto;
+        }
+
         C4Error error;
-        store = c4blob_openStore(c4str(kTestDir "cbl_blob_test/"), kC4DB_Create, nullptr, &error);
-        CHECK(store != nullptr);
+        store = c4blob_openStore(c4str(kTestDir "cbl_blob_test/"),
+                                 kC4DB_Create,
+                                 encryption,
+                                 &error);
+        REQUIRE(store != nullptr);
 
         memset(bogusKey.bytes, 0x55, sizeof(bogusKey.bytes));
     }
@@ -30,6 +46,7 @@ public:
     }
 
     C4BlobStore *store {nullptr};
+    const bool encrypted;
 
     C4BlobKey bogusKey;
 };
@@ -59,7 +76,7 @@ TEST_CASE("parse invalid blob keys", "[blob][C][!throws]") {
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
     CHECK(c4blob_getSize(store, bogusKey) == -1);
 
     C4Error error;
@@ -70,44 +87,51 @@ TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
     C4Slice blobToStore = C4STR("This is a blob to store in the store!");
 
     // Add blob to the store:
     C4BlobKey key;
     C4Error error;
-    CHECK(c4blob_create(store, blobToStore, &key, &error));
+    REQUIRE(c4blob_create(store, blobToStore, &key, &error));
 
     auto str = c4blob_keyToString(key);
     CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
 
     // Read it back and compare
-    CHECK(c4blob_getSize(store, key) == blobToStore.size);
+    int64_t blobSize = c4blob_getSize(store, key);
+    CHECK(blobSize >= blobToStore.size);
+    if (encrypted)
+        CHECK(blobSize <= blobToStore.size + 16);   // getSize is approximate in an encrypted store
+    else
+        CHECK(blobSize == blobToStore.size);
     
     auto gotBlob = c4blob_getContents(store, key, &error);
-    CHECK(gotBlob.buf != nullptr);
-    CHECK(gotBlob.size == blobToStore.size);
+    REQUIRE(gotBlob.buf != nullptr);
+    REQUIRE(gotBlob.size == blobToStore.size);
     CHECK(memcmp(gotBlob.buf, blobToStore.buf, gotBlob.size) == 0);
 
     // Try storing it again
     C4BlobKey key2;
-    CHECK(c4blob_create(store, blobToStore, &key2, &error));
+    REQUIRE(c4blob_create(store, blobToStore, &key2, &error));
     CHECK(memcmp(&key2, &key, sizeof(key2)) == 0);
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     string blob = "This is a blob to store in the store!";
 
     // Add blob to the store:
     C4BlobKey key;
     C4Error error;
-    CHECK(c4blob_create(store, {blob.data(), blob.size()}, &key, &error));
+    REQUIRE(c4blob_create(store, {blob.data(), blob.size()}, &key, &error));
 
     CHECK( c4blob_openStream(store, bogusKey, &error) == nullptr);
 
     auto stream = c4blob_openStream(store, key, &error);
-    CHECK(stream);
+    REQUIRE(stream);
+
+    CHECK(c4stream_getLength(stream, &error) == blob.size());
 
     // Read it back, 6 bytes at a time:
     string readBack;
@@ -117,12 +141,12 @@ TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
         bytesRead = c4stream_read(stream, buf, sizeof(buf), &error);
         readBack.append(buf, bytesRead);
     } while (bytesRead == sizeof(buf));
-    CHECK(error.code == 0);
+    REQUIRE(error.code == 0);
     CHECK(readBack == blob);
 
     // Try seeking:
-    CHECK(c4stream_seek(stream, 10, &error));
-    CHECK(c4stream_read(stream, buf, 4, &error) == 4);
+    REQUIRE(c4stream_seek(stream, 10, &error));
+    REQUIRE(c4stream_read(stream, buf, 4, &error) == 4);
     CHECK(memcmp(buf, "blob", 4) == 0);
 
     c4stream_close(stream);
@@ -130,16 +154,16 @@ TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
     // Write the blob:
     C4Error error;
     C4WriteStream *stream = c4blob_createWithStream(store, &error);
-    CHECK(stream);
+    REQUIRE(stream);
 
     for (int i = 0; i < 1000; i++) {
         char buf[100];
-        sprintf(buf, "This is line %d.\n", i);
-        CHECK(c4stream_write(stream, buf, strlen(buf), &error));
+        sprintf(buf, "This is line %03d.\n", i);
+        REQUIRE(c4stream_write(stream, buf, strlen(buf), &error));
     }
 
     // Get the blob key, and install it:
@@ -149,21 +173,37 @@ TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
     c4stream_closeWriter(nullptr);
 
     C4SliceResult keyStr = c4blob_keyToString(key);
-    CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-Qids3Q4Zl2GBJIGm/QEunp8KcqQ=");
+    CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
     c4slice_free(keyStr);
 
     // Read it back using the key:
     C4SliceResult contents = c4blob_getContents(store, key, &error);
-    CHECK(contents.size == 17890);
+    CHECK(contents.size == 18000);
     c4slice_free(contents);
+
+    // Read it back random-access:
+    C4ReadStream *reader = c4blob_openStream(store, key, &error);
+    REQUIRE(reader);
+    static const int increment = 3*3*3*3;
+    int line = increment;
+    for (uint64_t i = 0; i < 1000; i++) {
+        line = (line + increment) % 1000;
+        char buf[100], readBuf[100];
+        sprintf(buf, "This is line %03d.\n", line);
+        REQUIRE(c4stream_seek(reader, 18*line, &error));
+        REQUIRE(c4stream_read(reader, readBuf, 18, &error) == 18);
+        readBuf[18] = '\0';
+        REQUIRE(string(readBuf) == string(buf));
+    }
+    c4stream_close(reader);
 }
 
 
-TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][C]") {
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][C]") {
     // Write the blob:
     C4Error error;
     C4WriteStream *stream = c4blob_createWithStream(store, &error);
-    CHECK(stream);
+    REQUIRE(stream);
 
     const char *buf = "This is line oops\n";
     CHECK(c4stream_write(stream, buf, strlen(buf), &error));

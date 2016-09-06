@@ -69,7 +69,8 @@ namespace litecore {
             UnsupportedOperation,
             NotADatabaseFile,
             WrongFormat,                // data exists but not in format requested, or data given is in unusable format
-
+            CryptoError,
+            
             NumLiteCoreErrors
         };
 

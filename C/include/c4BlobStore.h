@@ -46,7 +46,8 @@ extern "C" {
     bool c4blob_deleteStore(C4BlobStore*, C4Error*);
 
 
-    /** Gets the content size of a blob given its key. Returns -1 if it doesn't exist. */
+    /** Gets the content size of a blob given its key. Returns -1 if it doesn't exist.
+        WARNING: If blob is encrypted, the size is approximate and may be off by +/- 16 bytes. */
     int64_t c4blob_getSize(C4BlobStore*, C4BlobKey);
 
     /** Reads the entire contents of a blob into memory. Caller is responsible for freeing it. */
@@ -69,6 +70,8 @@ extern "C" {
 
     
     size_t c4stream_read(C4ReadStream*, void *buffer, size_t maxBytes, C4Error*);
+
+    int64_t c4stream_getLength(C4ReadStream*, C4Error*);
 
     bool c4stream_seek(C4ReadStream*, uint64_t position, C4Error*);
 

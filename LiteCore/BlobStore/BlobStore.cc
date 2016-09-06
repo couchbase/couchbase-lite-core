@@ -9,7 +9,7 @@
 #include "BlobStore.hh"
 #include "FilePath.hh"
 #include "Error.hh"
-#include "Writer.hh"
+#include "EncryptedStream.hh"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -72,75 +72,34 @@ namespace litecore {
     }
 
 
-#pragma mark - BLOB:
+#pragma mark - BLOB READING:
     
     
     Blob::Blob(const BlobStore &store, const blobKey &key)
     :_path(store.dir(), key.filename()),
-     _key(key)
+     _key(key),
+     _store(store)
     { }
 
 
-    static void checkErr(FILE *file) {
-        int err = ferror(file);
-        if (err)
-            error::_throw(error::POSIX, err);
-    }
-
-    class BlobReadStream : public ReadStream {
-    public:
-        BlobReadStream(const Blob &blob) {
-            _file = fopen(blob.path().path().c_str(), "r");
-            if (!_file)
-                error::_throwErrno();
-        }
-
-        ~BlobReadStream() {
-            if (_file)
-                fclose(_file);
-        }
-
-        bool atEOF() const override {
-            return feof(_file) != 0;
-        }
-
-        uint64_t getLength() const override {
-            uint64_t curPos = ftell(_file);
-            fseek(_file, 0, SEEK_END);
-            uint64_t fileSize = ftell(_file);
-            fseek(_file, curPos, SEEK_SET);
-            checkErr(_file);
-            return fileSize;
-        }
-
-        void seek(uint64_t pos) override {
-            fseek(_file, pos, SEEK_SET);
-            checkErr(_file);
-        }
-
-        size_t read(void *dst, size_t count) override {
-            size_t bytesRead = fread(dst, 1, count, _file);
-            checkErr(_file);
-            return bytesRead;
-        }
-
-    private:
-        FILE* _file {nullptr};
-    };
-
-
-    alloc_slice ReadStream::readAll() {
-        uint64_t length = getLength();
-        if (length > SIZE_MAX)    // overflow check for 32-bit
-            throw bad_alloc();
-        auto contents = alloc_slice((size_t)length);
-        contents.size = read((void*)contents.buf, length);
-        return contents;
+    int64_t Blob::contentLength() const {
+        int64_t length = path().dataSize();
+        if (length >= 0 && _store.options().encryptionAlgorithm != kNoEncryption)
+            length -= EncryptedReadStream::kFileSizeOverhead;
+        return length;
     }
 
 
-    unique_ptr<ReadStream> Blob::read() const {
-        return unique_ptr<ReadStream>{ new BlobReadStream(*this) };
+
+    unique_ptr<SeekableReadStream> Blob::read() const {
+        SeekableReadStream *reader = new FileReadStream(_path);
+        auto &options = _store.options();
+        if (options.encryptionAlgorithm != kNoEncryption) {
+            reader = new EncryptedReadStream(reader,
+                                             options.encryptionAlgorithm,
+                                             options.encryptionKey);
+        }
+        return unique_ptr<SeekableReadStream>{reader};
     }
 
 
@@ -150,25 +109,34 @@ namespace litecore {
     BlobWriteStream::BlobWriteStream(BlobStore &store)
     :_store(store)
     {
-        _tmpPath = store.dir()["incoming_"].mkTempFile("tmp", &_file);
+        FILE *file;
+        _tmpPath = store.dir()["incoming_"].mkTempFile("tmp", &file);
+        _writer = new FileWriteStream(file);
+        auto &options = _store.options();
+        if (options.encryptionAlgorithm != kNoEncryption) {
+            _writer = new EncryptedWriteStream(_writer,
+                                               options.encryptionAlgorithm,
+                                               options.encryptionKey);
+        }
         sha1_begin(&_sha1ctx);
     }
 
 
     BlobWriteStream::~BlobWriteStream() {
-        if (_file)
-            fclose(_file);
         if (!_installed)
             _tmpPath.del();
+        delete _writer;
     }
 
 
-    BlobWriteStream& BlobWriteStream::write(slice data) {
+    void BlobWriteStream::write(slice data) {
         CBFAssert(!_computedKey);
-        if (fwrite(data.buf, 1, data.size, _file) < data.size)
-            checkErr(_file);
+        _writer->write(data);
         sha1_add(&_sha1ctx, data.buf, data.size);
-        return *this;
+    }
+
+    void BlobWriteStream::close() {
+        _writer->close();
     }
 
     blobKey BlobWriteStream::computeKey() {
@@ -181,8 +149,7 @@ namespace litecore {
 
 
     Blob BlobWriteStream::install() {
-        fclose(_file);
-        _file = nullptr;
+        close();
         Blob blob(_store, computeKey());
         _tmpPath.moveTo(blob.path());
         _installed = true;
@@ -200,9 +167,6 @@ namespace litecore {
     :_dir(dir),
      _options(options ? *options : Options::defaults)
     {
-        if (_options.encryptionAlgorithm != kNoEncryption)
-            error::_throw(error::UnsupportedEncryption);        //TODO: Implement encryption
-
         if (_dir.exists()) {
             _dir.mustExistAsDir();
         } else {
@@ -210,6 +174,13 @@ namespace litecore {
                 error::_throw(error::NotFound);
             _dir.mkdir();
         }
+    }
+
+
+    Blob BlobStore::put(slice data) {
+        BlobWriteStream stream(*this);
+        stream.write(data);
+        return stream.install();
     }
 
 }

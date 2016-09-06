@@ -22,7 +22,7 @@ public:
 
 static inline const blobKey& internal(const C4BlobKey &key) {return *(blobKey*)&key;}
 static inline const C4BlobKey& external(const blobKey &key) {return *(C4BlobKey*)&key;}
-static ReadStream* internal(C4ReadStream* s)                {return (ReadStream*)s;}
+static SeekableReadStream* internal(C4ReadStream* s)        {return (SeekableReadStream*)s;}
 static inline C4ReadStream* external(ReadStream* s)         {return (C4ReadStream*)s;}
 static BlobWriteStream* internal(C4WriteStream* s)          {return (BlobWriteStream*)s;}
 static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStream*)s;}
@@ -54,6 +54,10 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
         BlobStore::Options options = {};
         options.create = (flags & kC4DB_Create) != 0;
         options.writeable = !(flags & kC4DB_ReadOnly);
+        if (key) {
+            options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
+            options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
+        }
         return new c4BlobStore(FilePath((string)dirPath), &options);
     } catchError(outError)
     return nullptr;
@@ -118,7 +122,7 @@ bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
 
 C4ReadStream* c4blob_openStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
     try {
-        unique_ptr<ReadStream> stream = store->get(internal(key)).read();
+        unique_ptr<SeekableReadStream> stream = store->get(internal(key)).read();
         return external(stream.release());
     } catchError(outError)
     return nullptr;
@@ -131,6 +135,14 @@ size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Erro
         return internal(stream)->read(buffer, maxBytes);
     } catchError(outError)
     return 0;
+}
+
+
+int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) {
+    try {
+        return internal(stream)->getLength();
+    } catchError(outError)
+    return -1;
 }
 
 

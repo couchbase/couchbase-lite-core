@@ -143,6 +143,7 @@ _c4blob_delete
 _c4blob_createWithStream
 
 _c4stream_read
+_c4stream_getLength
 _c4stream_seek
 _c4stream_close
 

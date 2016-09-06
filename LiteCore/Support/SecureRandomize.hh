@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "slice.hh"
 
 
 #if defined(_CRYPTO_CC)
@@ -15,7 +16,7 @@
     #include <CommonCrypto/CommonCryptor.h>
     #include <CommonCrypto/CommonRandom.h>
 
-    static inline void SecureRandomize(slice s) {
+    static inline void SecureRandomize(fleece::slice s) {
         CCRandomGenerateBytes((void*)s.buf, s.size);
     }
 
@@ -31,7 +32,7 @@
 
     #include <openssl/rand.h>
 
-    static inline void SecureRandomize(slice s) {
+    static inline void SecureRandomize(fleece::slice s) {
         RAND_bytes((unsigned char *)s.buf, s.size);
     }
 

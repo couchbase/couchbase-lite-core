@@ -9,6 +9,7 @@
 #pragma once
 #include "Base.hh"
 #include "FilePath.hh"
+#include "Stream.hh"
 #include "SecureDigest.hh"
 
 
@@ -34,18 +35,6 @@ namespace litecore {
     };
 
 
-    /** A simple read-only stream interface. */
-    class ReadStream {
-    public:
-        virtual ~ReadStream() = default;
-        virtual bool atEOF() const =0;
-        virtual uint64_t getLength() const =0;
-        virtual size_t read(void *dst, size_t count) =0;
-        virtual void seek(uint64_t pos) =0;
-        alloc_slice readAll();
-    };
-
-
     /** Represents a blob stored in a BlobStore. */
     class Blob {
     public:
@@ -53,11 +42,11 @@ namespace litecore {
 
         blobKey key() const             {return _key;}
         FilePath path() const           {return _path;}
-        int64_t contentLength() const   {return path().dataSize();}
+        int64_t contentLength() const;      // An overestimate, if blob is encrypted
 
         alloc_slice contents() const    {return read()->readAll();}
 
-        std::unique_ptr<ReadStream> read() const;
+        std::unique_ptr<SeekableReadStream> read() const;
 
         void del()                      {_path.del();}
 
@@ -69,21 +58,31 @@ namespace litecore {
 
         FilePath _path;
         const blobKey _key;
+        const BlobStore &_store;
     };
 
 
-    /** A simple write-only stream interface. */
-    class BlobWriteStream {
+    /** A stream for writing a new Blob. */
+    class BlobWriteStream : public WriteStream {
     public:
         BlobWriteStream(BlobStore&);
         ~BlobWriteStream();
-        BlobWriteStream& write(slice);
+
+        void write(slice) override;
+        void close() override;
+
+        /** Derives the blobKey from the digest of the file data.
+            No more data can be written after this is called. */
         blobKey computeKey();
+
+        /** Adds the blob to the store and returns a Blob referring to it.
+            No more data can be written after this is called. */
         Blob install();
+
     private:
         BlobStore &_store;
         FilePath _tmpPath;
-        FILE *_file {nullptr};
+        WriteStream *_writer {nullptr};
         sha1Context _sha1ctx;
         blobKey _key;
         bool _computedKey {false};
@@ -99,6 +98,7 @@ namespace litecore {
             bool writeable      :1;     //< If false, opened read-only
             EncryptionAlgorithm encryptionAlgorithm;
             alloc_slice encryptionKey;
+            
             static const Options defaults;
         };
 
@@ -116,7 +116,7 @@ namespace litecore {
         const Blob get(const blobKey &key) const    {return Blob(*this, key);}
         Blob get(const blobKey &key)                {return Blob(*this, key);}
 
-        Blob put(slice data)            {return BlobWriteStream(*this).write(data).install();}
+        Blob put(slice data);
 
     private:
         FilePath const          _dir;                           // Location
