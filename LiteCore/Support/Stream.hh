@@ -18,7 +18,6 @@ namespace litecore {
     class ReadStream {
     public:
         virtual ~ReadStream() = default;
-        virtual bool atEOF() const =0;
         virtual uint64_t getLength() const =0;
         virtual size_t read(void *dst, size_t count) =0;
         virtual void close() =0;
@@ -58,7 +57,6 @@ namespace litecore {
         FileReadStream(FILE *file)                  :_file(file) { }
         virtual ~FileReadStream();
 
-        virtual bool atEOF() const override;
         virtual uint64_t getLength() const override;
         virtual void seek(uint64_t pos) override;
         virtual size_t read(void *dst, size_t count) override;

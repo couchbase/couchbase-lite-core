@@ -21,7 +21,7 @@ public:
     BlobStoreTest(int option)
     :encrypted(option == 1)
     {
-        c4log_setLevel(kC4LogDebug);//TEMP
+        //c4log_setLevel(kC4LogDebug);
         C4EncryptionKey crypto, *encryption=nullptr;
         if (encrypted) {
             fprintf(stderr, "        ...encrypted\n");
@@ -196,6 +196,40 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
         REQUIRE(string(readBuf) == string(buf));
     }
     c4stream_close(reader);
+}
+
+
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][C]") {
+    // The interesting sizes for encrypted blobs are right around the file block size (4096)
+    // and the cipher block size (16).
+    const vector<uint64_t> kSizes = {0, 1, 15, 16, 17, 4095, 4096, 4097,
+                                     4096+15, 4096+16, 4096+17, 8191, 8192, 8193};
+    for (size_t size : kSizes) {
+        //fprintf(stderr, "---- %lu-byte blob\n", size);
+        INFO("Testing " << size << "-byte blob");
+        // Write the blob:
+        C4Error error;
+        C4WriteStream *stream = c4blob_createWithStream(store, &error);
+        REQUIRE(stream);
+
+        const char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXY";
+        for (int i = 0; i < size; i++) {
+            int c = i % strlen(chars);
+            REQUIRE(c4stream_write(stream, &chars[c], 1, &error));
+        }
+
+        // Get the blob key, and install it:
+        C4BlobKey key = c4stream_computeBlobKey(stream);
+        CHECK(c4stream_install(stream, &error));
+        c4stream_closeWriter(stream);
+
+        // Read it back using the key:
+        C4SliceResult contents = c4blob_getContents(store, key, &error);
+        CHECK(contents.size == size);
+        for (int i = 0; i < size; i++)
+            CHECK(((const char*)contents.buf)[i] == chars[i % strlen(chars)]);
+        c4slice_free(contents);
+    }
 }
 
 

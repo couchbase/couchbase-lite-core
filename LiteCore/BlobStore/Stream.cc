@@ -50,11 +50,6 @@ namespace litecore {
     }
 
 
-    bool FileReadStream::atEOF() const {
-        return feof(_file) != 0;
-    }
-
-
     uint64_t FileReadStream::getLength() const {
         uint64_t curPos = ftell(_file);
         fseek(_file, 0, SEEK_END);

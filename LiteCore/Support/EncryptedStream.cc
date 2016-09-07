@@ -81,18 +81,17 @@ namespace litecore {
         memcpy(&_buffer[_bufferPos], plaintext.buf, capacity);
         _bufferPos += capacity;
         plaintext.moveStart(capacity);
-        if (plaintext.size == 0)
-            return; // done; didn't overflow buffer
+        if (_bufferPos < sizeof(_buffer))
+            return; // done; didn't fill buffer
 
         // Write the completed buffer:
         writeBlock(slice(_buffer, kFileBlockSize), false);
 
         // Write entire blocks:
-        while (plaintext.size > kFileBlockSize)
+        while (plaintext.size >= kFileBlockSize)
             writeBlock(plaintext.read(kFileBlockSize), false);
 
-        // Save remainder in the buffer. This might be an entire block, because we don't know if
-        // that's the last block, and we need to write the last block specially (padded).
+        // Save remainder (if any) in the buffer.
         memcpy(_buffer, plaintext.buf, plaintext.size);
         _bufferPos = plaintext.size;
     }
@@ -100,7 +99,7 @@ namespace litecore {
 
     void EncryptedWriteStream::close() {
         if (_output) {
-            // Write the final (possibly partial) block with PKCS7 padding:
+            // Write the final (partial or empty) block with PKCS7 padding:
             writeBlock(slice(_buffer, _bufferPos), true);
             delete _output;
             _output = nullptr;
@@ -199,11 +198,6 @@ namespace litecore {
     }
 
 
-    bool EncryptedReadStream::atEOF() const {
-        return _blockID > _finalBlockID && _bufferPos == _bufferSize;
-    }
-
-
     uint64_t EncryptedReadStream::getLength() const {
         if (_cleartextLength == UINT64_MAX)
             (const_cast<EncryptedReadStream*>(this))->findLength();
@@ -220,7 +214,6 @@ namespace litecore {
 
     
     void EncryptedReadStream::seek(uint64_t pos) {
-        //TODO: Optimize for case where pos is within the current _buffer
         if (pos > _inputLength)
             pos = _inputLength;
         uint64_t blockID = pos / kFileBlockSize;
