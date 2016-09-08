@@ -8,7 +8,6 @@
 
 #include "c4Test.hh"
 #ifdef _MSC_VER
-#define random() rand()
 #include <chrono>
 #endif
 

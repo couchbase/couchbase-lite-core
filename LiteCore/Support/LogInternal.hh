@@ -15,8 +15,7 @@
 
 
 #pragma once
-
-#include "DataFile.hh"
+#include "Base.hh"
 
 namespace litecore {
 
@@ -42,7 +41,7 @@ void _Log(logLevel, const char *message, ...);
     #define WarnError(MESSAGE, ...)  LogAt(kError,   MESSAGE, __VA_ARGS__)
 #else
     #define LogAt(LEVEL, MESSAGE...) \
-                ({if (__builtin_expect(LogLevel <= LEVEL, false)) _Log(LEVEL, MESSAGE);})
+                ({if (_usuallyFalse(LogLevel <= LEVEL)) _Log(LEVEL, MESSAGE);})
     #define Debug(MESSAGE...)      LogAt(kDebug,   MESSAGE)
     #define Log(MESSAGE...)        LogAt(kInfo,    MESSAGE)
     #define Warn(MESSAGE...)       LogAt(kWarning, MESSAGE)

@@ -16,11 +16,8 @@
 #include "RevID.hh"
 #include "Error.hh"
 #include "varint.hh"
+#include "MSVC_Compat.hh"
 #include <math.h>
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
 
 
 #if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)

@@ -16,7 +16,6 @@
 #include "sqlite3.h"
 
 #ifdef _MSC_VER
-#define random() rand()
 #include <ctime>
 #include "Windows.h"
 #define sleep(sec) Sleep((sec)*1000)

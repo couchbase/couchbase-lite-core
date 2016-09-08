@@ -7,6 +7,7 @@
 //
 
 #include "FilePath.hh"
+#include "Base.hh"
 #include "LogInternal.hh"
 #include "Error.hh"
 #include <dirent.h>
@@ -19,7 +20,6 @@
 #else
 #include <direct.h>
 #include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
 #define MKDIR(PATH, MODE) ::mkdir(PATH)
 #endif
 
@@ -186,7 +186,7 @@ namespace litecore {
 
 
     static inline void check(int result) {
-        if (result != 0)
+        if (_usuallyFalse(result != 0))
             error::_throwErrno();
     }
 

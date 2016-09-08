@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "Tokenizer.hh"
+#include "Base.hh"
 #include "english_stopwords.h"
 #include "LogInternal.hh"
 #include "Error.hh"

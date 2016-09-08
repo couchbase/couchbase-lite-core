@@ -28,7 +28,7 @@ namespace litecore {
     
     static void checkErr(FILE *file) {
         int err = ferror(file);
-        if (err)
+        if (_usuallyFalse(err != 0))
             error::_throw(error::POSIX, err);
     }
 

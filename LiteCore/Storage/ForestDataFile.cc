@@ -42,7 +42,7 @@ namespace litecore {
     static const uint64_t kAutoCompactInterval = (5*60);
 
     static inline void check(fdb_status status) {
-        if (expected(status != FDB_RESULT_SUCCESS, false))
+        if (_usuallyFalse(status != FDB_RESULT_SUCCESS))
             error::_throw(error::ForestDB, status);
     }
 

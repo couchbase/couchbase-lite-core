@@ -9,6 +9,7 @@
 #pragma once
 
 #include "slice.hh"
+#include "MSVC_Compat.hh"
 
 
 namespace litecore {

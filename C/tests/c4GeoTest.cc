@@ -10,13 +10,7 @@
 #include "c4View.h"
 #include "c4DocEnumerator.h"
 #include <iostream>
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
-#define random() rand()
-#define srandom(seed) srand(seed)
 #include <algorithm>
-#endif
 
 static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
 

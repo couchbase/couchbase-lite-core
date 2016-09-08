@@ -25,8 +25,6 @@ namespace litecore {
                            slice nonce);
         virtual ~EncryptedStream();
 
-        void checkErr() const;
-
         uint8_t _key[32];
         uint8_t _nonce[32];
         uint8_t _buffer[kFileBlockSize];    // stores partially read/written blocks across calls

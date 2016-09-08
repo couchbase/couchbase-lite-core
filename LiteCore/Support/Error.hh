@@ -15,17 +15,12 @@
 
 #pragma once
 
+#include "Base.hh"
 #include <stdexcept>
 
 #undef check
 
 namespace litecore {
-
-#ifdef _MSC_VER
-#define expected(EXPR, VALUE)   (EXPR)
-#else
-#define expected __builtin_expect
-#endif
 
     /** Most API calls can throw this. */
     struct error : public std::runtime_error {
@@ -109,8 +104,8 @@ namespace litecore {
 
 // Like C assert() but throws an exception instead of aborting
 #define	CBFAssert(e) \
-    (expected(!(e), 0) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
-                       : (void)0)
+    (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+                         : (void)0)
 
 // CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifdef NDEBUG

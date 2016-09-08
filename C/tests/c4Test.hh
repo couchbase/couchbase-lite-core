@@ -14,6 +14,7 @@
 #include "c4View.h"
 
 #include "CatchHelper.hh"
+#include "MSVC_Compat.hh"
 
 
 #ifdef _MSC_VER

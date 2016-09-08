@@ -21,10 +21,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <algorithm>
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
 
 
 namespace litecore {
