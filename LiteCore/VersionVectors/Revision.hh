@@ -45,7 +45,7 @@ namespace litecore {
                  BodyParams,
                  bool current);
 
-        Revision(Revision&&);
+        Revision(Revision&&) noexcept;
 
         slice docID() const;
         alloc_slice revID() const           {return _vers ? _vers.current().asString()

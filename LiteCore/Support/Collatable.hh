@@ -144,8 +144,8 @@ namespace litecore {
         static const size_t kMinSize = 32;
         static const size_t kDefaultSize = 128;
 
-        CollatableBuilder(const CollatableBuilder& c);
-        CollatableBuilder& operator= (const CollatableBuilder &c);
+        CollatableBuilder(const CollatableBuilder& c) =delete;
+        CollatableBuilder& operator= (const CollatableBuilder &c) =delete;
 
         uint8_t* reserve(size_t amt);
         void add(slice);

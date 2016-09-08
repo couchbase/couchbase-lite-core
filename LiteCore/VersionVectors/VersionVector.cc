@@ -148,7 +148,7 @@ namespace litecore {
         *this = v;
     }
 
-    VersionVector::VersionVector(VersionVector &&oldv)
+    VersionVector::VersionVector(VersionVector &&oldv) noexcept
     :_string(std::move(oldv._string)),
      _vers(std::move(oldv._vers)),
      _addedAuthors(std::move(oldv._addedAuthors))

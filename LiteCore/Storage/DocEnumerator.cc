@@ -108,7 +108,7 @@ namespace litecore {
     }
 
     // Assignment from a temporary
-    DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) {
+    DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) noexcept {
         _store = e._store;
         _impl = move(e._impl);
         _docIDs = e._docIDs;

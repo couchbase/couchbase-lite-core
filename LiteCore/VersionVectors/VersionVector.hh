@@ -101,7 +101,7 @@ namespace litecore {
         explicit VersionVector(const fleece::Value*);
 
         VersionVector(const VersionVector&);
-        VersionVector(VersionVector&&);
+        VersionVector(VersionVector&&) noexcept;
         VersionVector& operator=(const VersionVector&);
 
         /** Populates an empty vector from a Fleece value. */

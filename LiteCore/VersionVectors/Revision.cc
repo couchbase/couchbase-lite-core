@@ -50,7 +50,7 @@ namespace litecore {
     }
 
 
-    Revision::Revision(Revision &&old)
+    Revision::Revision(Revision &&old) noexcept
     :_doc(std::move(old._doc)),
      _flags(old._flags),
      _vers(std::move(old._vers)),

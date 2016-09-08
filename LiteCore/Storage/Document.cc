@@ -37,7 +37,7 @@ namespace litecore {
      _exists(d._exists)
     { }
 
-    Document::Document(Document &&d)
+    Document::Document(Document &&d) noexcept
     :_key(move(d._key)),
      _meta(move(d._meta)),
      _body(move(d._body)),

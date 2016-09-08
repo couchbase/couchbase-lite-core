@@ -68,8 +68,8 @@ namespace litecore {
                       const Options& options = Options::kDefault);
         ~DocEnumerator();
 
-        DocEnumerator(DocEnumerator&& e)    :_store(e._store) {*this = std::move(e);}
-        DocEnumerator& operator=(DocEnumerator&& e); // move assignment
+        DocEnumerator(DocEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
+        DocEnumerator& operator=(DocEnumerator&& e) noexcept; // move assignment
 
         /** Advances to the next key/document, returning false when it hits the end.
             next() must be called *before* accessing the first document! */

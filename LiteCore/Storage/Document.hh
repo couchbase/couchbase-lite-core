@@ -24,7 +24,7 @@ namespace litecore {
         Document()                              { }
         explicit Document(slice key);
         Document(const Document&);
-        Document(Document&&);
+        Document(Document&&) noexcept;
         Document& operator=(const Document&);
 
         const alloc_slice& key() const          {return _key;}
