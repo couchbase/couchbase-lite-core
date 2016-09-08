@@ -120,7 +120,7 @@ bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
 #pragma mark - STREAMING READS:
 
 
-C4ReadStream* c4blob_openStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
+C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
     try {
         unique_ptr<SeekableReadStream> stream = store->get(internal(key)).read();
         return external(stream.release());
@@ -197,7 +197,10 @@ bool c4stream_install(C4WriteStream* stream, C4Error *outError) {
 
 
 void c4stream_closeWriter(C4WriteStream* stream) {
+    if (!stream)
+        return;
     try {
+        internal(stream)->close();
         delete internal(stream);
     } catchError(nullptr)
 }

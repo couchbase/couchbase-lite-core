@@ -82,7 +82,7 @@ namespace litecore {
     private:
         BlobStore &_store;
         FilePath _tmpPath;
-        WriteStream *_writer {nullptr};
+        std::shared_ptr<WriteStream> _writer;
         sha1Context _sha1ctx;
         blobKey _key;
         bool _computedKey {false};

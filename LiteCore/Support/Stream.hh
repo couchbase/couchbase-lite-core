@@ -69,7 +69,7 @@ namespace litecore {
     };
 
 
-    /** Concrete WriteStream that writes to a file. */
+    /** Concrete WriteStream that writes to a file. (It can also read.) */
     class FileWriteStream : public virtual FileReadStream, public virtual ReadWriteStream {
     public:
         FileWriteStream(const FilePath& path, const char *mode) :FileReadStream(path, mode) {}

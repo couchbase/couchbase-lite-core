@@ -10,6 +10,7 @@
 #include "FilePath.hh"
 #include "Error.hh"
 #include "EncryptedStream.hh"
+#include "LogInternal.hh"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -95,7 +96,7 @@ namespace litecore {
         SeekableReadStream *reader = new FileReadStream(_path);
         auto &options = _store.options();
         if (options.encryptionAlgorithm != kNoEncryption) {
-            reader = new EncryptedReadStream(reader,
+            reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
                                              options.encryptionAlgorithm,
                                              options.encryptionKey);
         }
@@ -110,22 +111,28 @@ namespace litecore {
     :_store(store)
     {
         FILE *file;
-        _tmpPath = store.dir()["incoming_"].mkTempFile("tmp", &file);
-        _writer = new FileWriteStream(file);
+        _tmpPath = store.dir()["incoming_"].mkTempFile("_~", &file);
+        _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
         auto &options = _store.options();
         if (options.encryptionAlgorithm != kNoEncryption) {
-            _writer = new EncryptedWriteStream(_writer,
-                                               options.encryptionAlgorithm,
-                                               options.encryptionKey);
+            _writer = shared_ptr<WriteStream> {new EncryptedWriteStream(_writer,
+                                                                    options.encryptionAlgorithm,
+                                                                    options.encryptionKey)};
         }
         sha1_begin(&_sha1ctx);
     }
 
 
     BlobWriteStream::~BlobWriteStream() {
-        if (!_installed)
-            _tmpPath.del();
-        delete _writer;
+        if (!_installed) {
+            try {
+                _tmpPath.del();
+            } catch (...) {
+                // destructor is not allowed to throw exceptions
+                Warn("BlobWriteStream: unable to delete temporary file %s",
+                     _tmpPath.path().c_str());
+            }
+        }
     }
 
 
@@ -136,7 +143,10 @@ namespace litecore {
     }
 
     void BlobWriteStream::close() {
-        _writer->close();
+        if (_writer) {
+            _writer->close();
+            _writer = nullptr;
+        }
     }
 
     blobKey BlobWriteStream::computeKey() {
@@ -151,6 +161,7 @@ namespace litecore {
     Blob BlobWriteStream::install() {
         close();
         Blob blob(_store, computeKey());
+        _tmpPath.setReadOnly(true);
         _tmpPath.moveTo(blob.path());
         _installed = true;
         return blob;

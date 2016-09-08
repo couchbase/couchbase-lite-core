@@ -126,9 +126,9 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     C4Error error;
     REQUIRE(c4blob_create(store, {blob.data(), blob.size()}, &key, &error));
 
-    CHECK( c4blob_openStream(store, bogusKey, &error) == nullptr);
+    CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
 
-    auto stream = c4blob_openStream(store, key, &error);
+    auto stream = c4blob_openReadStream(store, key, &error);
     REQUIRE(stream);
 
     CHECK(c4stream_getLength(stream, &error) == blob.size());
@@ -139,6 +139,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     size_t bytesRead;
     do {
         bytesRead = c4stream_read(stream, buf, sizeof(buf), &error);
+        REQUIRE(bytesRead > 0);
         readBack.append(buf, bytesRead);
     } while (bytesRead == sizeof(buf));
     REQUIRE(error.code == 0);
@@ -182,12 +183,13 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
     c4slice_free(contents);
 
     // Read it back random-access:
-    C4ReadStream *reader = c4blob_openStream(store, key, &error);
+    C4ReadStream *reader = c4blob_openReadStream(store, key, &error);
     REQUIRE(reader);
     static const int increment = 3*3*3*3;
     int line = increment;
     for (uint64_t i = 0; i < 1000; i++) {
         line = (line + increment) % 1000;
+        INFO("Reading line " << line << " at offset " << 18*line);
         char buf[100], readBuf[100];
         sprintf(buf, "This is line %03d.\n", line);
         REQUIRE(c4stream_seek(reader, 18*line, &error));

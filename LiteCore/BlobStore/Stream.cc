@@ -8,6 +8,8 @@
 
 #include "Stream.hh"
 #include "Error.hh"
+#include "LogInternal.hh"
+#include <errno.h>
 #include <memory>
 
 namespace litecore {
@@ -39,14 +41,19 @@ namespace litecore {
 
 
     void FileReadStream::close() {
-        fclose(_file);
+        auto file = _file;
         _file = nullptr;
+        if (fclose(file) != 0)
+            error::_throwErrno();
     }
 
 
     FileReadStream::~FileReadStream() {
-        if (_file)
-            fclose(_file);
+        if (_file) {
+            // Destructor cannot throw exceptions, so just warn if there was an error:
+            if (fclose(_file) < 0)
+                Warn("FileStream destructor: fclose got error %d", errno);
+        }
     }
 
 

@@ -14,7 +14,33 @@
 #include "forestdb_endian.h"
 
 
-static const size_t kCipherBufSize = 32768;
+/*
+    Implementing a random-access encrypted stream is actually kind of tricky.
+ 
+    First, we generate a random nonce the size of an AES key (32 bytes). The given encryption key
+    is XORed with the nonce, giving a new key that's used for the actual encryption. (The nonce
+    will be appended to the file after all the data is written, so the reader can recover the key.)
+
+    The data is divided into blocks of size kFileBlockSize (4kbytes), which are numbered starting
+    at 0.
+
+    Each block is encrypted with AES256 using CBC; the IV is simply the block number (big-endian.)
+    This allows any block to be read and decrypted without having to read the prior blocks.
+
+    All blocks except the last are of course full of data, so their size is kFileBlockSize. They
+    are encrypted without padding, so the ciphertext is the same size as the plaintext. (This
+    avoids bloating the size of the file, and ensures that the encrypted blocks are aligned with
+    filesystem blocks for more efficient access.)
+ 
+    The last block is special: it's partial, so it's encrypted using PKCS7 padding to preserve its
+    true length.
+ 
+    As a special case, if the data length is an exact multiple of the block size, an extra
+    zero-length block is added. This is because, if the final block were the size of a full block,
+    the PKCS7 padding would increase its length, making it overflow.
+ 
+    Finally, the nonce is appended to the end of the stream.
+ */
 
 
 namespace litecore {
@@ -27,7 +53,8 @@ namespace litecore {
     {
         if (alg != kAES256)
             error::_throw(error::UnsupportedEncryption);
-        memcpy(&_key, encryptionKey.buf, encryptionKey.size);
+        memcpy(&_key, encryptionKey.buf, kAESKeySize);
+        memcpy(&_nonce, nonce.buf, kAESKeySize);
     }
 
 
@@ -38,7 +65,7 @@ namespace litecore {
 #pragma mark - WRITER:
 
 
-    EncryptedWriteStream::EncryptedWriteStream(WriteStream *output,
+    EncryptedWriteStream::EncryptedWriteStream(std::shared_ptr<WriteStream> output,
                                                EncryptionAlgorithm alg,
                                                slice encryptionKey)
     :_output(output)
@@ -47,20 +74,19 @@ namespace litecore {
         uint8_t buf[kAESKeySize];
         slice nonce(buf, sizeof(buf));
         SecureRandomize(nonce);
-        _output->write(nonce);
-
         initEncryptor(alg, encryptionKey, nonce);
     }
 
 
     EncryptedWriteStream::~EncryptedWriteStream() {
-        close();
+        // Destructors aren't allowed to throw exceptions, so it's not safe to call close().
+        if (_output)
+            Warn("EncryptedWriteStream was not closed");
     }
 
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
-        CBFAssert(plaintext.size <= kFileBlockSize);
-        CBFDebugAssert(plaintext.size <= kCipherBufSize);
+        CBFDebugAssert(plaintext.size <= kFileBlockSize);
         uint64_t iv[2] = {0, _endian_encode(_blockID++)};
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
         slice ciphertext(cipherBuf, sizeof(cipherBuf));
@@ -101,7 +127,9 @@ namespace litecore {
         if (_output) {
             // Write the final (partial or empty) block with PKCS7 padding:
             writeBlock(slice(_buffer, _bufferPos), true);
-            delete _output;
+            // End with the nonce:
+            _output->write(slice(_nonce, kAESKeySize));
+            _output->close();
             _output = nullptr;
         }
     }
@@ -110,24 +138,21 @@ namespace litecore {
 #pragma mark - READER:
 
 
-    EncryptedReadStream::EncryptedReadStream(SeekableReadStream *input,
+    EncryptedReadStream::EncryptedReadStream(std::shared_ptr<SeekableReadStream> input,
                                              EncryptionAlgorithm alg,
                                              slice encryptionKey)
     :_input(input),
      _inputLength(_input->getLength() - kFileSizeOverhead),
      _finalBlockID((_inputLength - 1) / kFileBlockSize)
     {
-        // Read the random nonce from the file:
+        // Read the random nonce from the end of the file:
+        _input->seek(_input->getLength() - kFileSizeOverhead);
         uint8_t buf[kAESKeySize];
         if (_input->read(buf, sizeof(buf)) < sizeof(buf))
             error::_throw(error::CorruptData);
+        _input->seek(0);
 
         initEncryptor(alg, encryptionKey, slice(buf, sizeof(buf)));
-    }
-
-
-    EncryptedReadStream::~EncryptedReadStream() {
-        close();
     }
 
 
@@ -141,11 +166,12 @@ namespace litecore {
 
     // Reads & decrypts the next block from the file into `output`
     size_t EncryptedReadStream::readBlockFromFile(slice output) {
+        CBFAssert(_blockID <= _finalBlockID);
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
         bool finalBlock = (_blockID == _finalBlockID);
         size_t readSize = kFileBlockSize;
         if (finalBlock)
-            readSize += kAESBlockSize;
+            readSize = _inputLength - (_blockID * kFileBlockSize);  // don't read trailer
         size_t bytesRead = _input->read(blockBuf, readSize);
 
         uint64_t iv[2] = {0, _endian_encode(_blockID++)};
@@ -216,11 +242,11 @@ namespace litecore {
     void EncryptedReadStream::seek(uint64_t pos) {
         if (pos > _inputLength)
             pos = _inputLength;
-        uint64_t blockID = pos / kFileBlockSize;
+        uint64_t blockID = min(pos / kFileBlockSize, _finalBlockID);
         uint64_t blockPos = blockID * kFileBlockSize;
         if (blockID != _bufferBlockID) {
             Log("SEEK %lu (block %lu + %lu bytes)", pos, blockID, pos - blockPos);
-            _input->seek(kFileSizeOverhead + blockPos);
+            _input->seek(blockPos);
             _blockID = blockID;
             fillBuffer();
         }

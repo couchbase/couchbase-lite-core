@@ -104,6 +104,8 @@ namespace litecore {
         void moveTo(const FilePath& to) const  {moveTo(to.path());}
         void moveTo(const std::string&) const;
 
+        void setReadOnly(bool readOnly) const;
+
         /** Calls fn for each file in this FilePath's directory. */
         void forEachFile(std::function<void(const FilePath&)> fn) const;
 

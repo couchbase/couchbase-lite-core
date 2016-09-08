@@ -283,4 +283,10 @@ namespace litecore {
         check(::rename(path().c_str(), to.c_str()));
     }
 
+
+    void FilePath::setReadOnly(bool readOnly) const {
+        chmod(path().c_str(), (readOnly ? 0400 : 0600));
+    }
+
+
 }
