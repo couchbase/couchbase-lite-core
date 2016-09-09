@@ -12,6 +12,8 @@
 #include "Error.hh"
 #include <dirent.h>
 #include <errno.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -20,7 +22,10 @@
 #else
 #include <direct.h>
 #include <BaseTsd.h>
-#define MKDIR(PATH, MODE) ::mkdir(PATH)
+#include <io.h>
+#define MKDIR(PATH, MODE) ::_mkdir(PATH)
+#define chmod ::_chmod
+#define fdopen ::_fdopen
 #endif
 
 
@@ -33,6 +38,24 @@ namespace litecore {
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
     static const char* kTempDir = "C:\\tmp\\";
+
+    static int mkstemps(char *tmplate, int length)
+    {
+        errno_t err = _mktemp_s(tmplate, length);
+        if (err != 0) {
+            _set_errno(err);
+            return -1;
+        }
+
+        int fd = -1;
+        err = _sopen_s(&fd, tmplate, _O_WRONLY | _O_CREAT | _O_TRUNC, SH_DENYNO, 0);
+        if (err != 0) {
+            _set_errno(err);
+            return -1;
+        }
+
+        return fd;
+    }
 #else
     static const char  kSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';

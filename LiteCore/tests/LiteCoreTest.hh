@@ -11,6 +11,10 @@
 #include <iostream>
 #include "slice.hh"
 
+#ifdef _MSC_VER
+#define __printflike(A, B) 
+#endif
+
 using namespace fleece;
 
 

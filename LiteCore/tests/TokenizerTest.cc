@@ -1,3 +1,5 @@
+﻿#pragma execution_character_set("utf-8")
+
 //
 //  Tokenizer_Test.m
 //  Couchbase Lite Core
