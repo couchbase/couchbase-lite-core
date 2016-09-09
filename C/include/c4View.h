@@ -19,11 +19,20 @@
 extern "C" {
 #endif
 
+    /** \defgroup Views
+        @{ */
+
+
     //////// VIEWS:
 
 
     /** Opaque handle to an opened view. */
     typedef struct c4View C4View;
+
+
+    /** \name Lifecycle
+        @{ */
+
 
     /** Opens a view, or creates it if the file doesn't already exist.
         @param database  The database the view is associated with.
@@ -67,8 +76,14 @@ extern "C" {
         path is given. */
     bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError);
 
+    /** @} */
+
 
     //////// ACCESSORS:
+
+
+    /** \name Accessors
+        @{ */
 
 
     /** Sets the persistent version string associated with the map function. If the new value is
@@ -94,8 +109,14 @@ extern "C" {
         May be called on a background thread, so be careful of thread safety. */
     void c4view_setOnCompactCallback(C4View*, C4OnCompactCallback, void *context);
 
+    /** @} */
+
 
     //////// INDEXING:
+
+
+    /** \name Indexing
+        @{ */
 
 
     /** Opaque reference to an indexing task. */
@@ -180,8 +201,14 @@ extern "C" {
 #define kC4PlaceholderValue ((C4Slice){"*", 1})
 #endif
 
+    /** @} */
+    /** @} */
 
     //////// QUERYING:
+
+
+    /** \defgroup Queries Queries
+        @{ */
 
 
     /** Options for view queries. */
@@ -219,21 +246,21 @@ extern "C" {
         The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
     typedef struct {
         // All query types:
-        C4Slice docID;                              ///< ID of doc that emitted this row
-        C4SequenceNumber docSequence;               ///< Sequence number of doc that emitted row
-        C4Slice value;                              ///< Encoded emitted value
+        C4Slice docID;                       ///< ID of doc that emitted this row
+        C4SequenceNumber docSequence;        ///< Sequence number of doc that emitted row
+        C4Slice value;                       ///< Encoded emitted value
 
         // Map/reduce only:
-        C4KeyReader key;                            ///< Encoded emitted key
+        C4KeyReader key;                     ///< Encoded emitted key
 
         // Full-text only:
-        unsigned fullTextID;                        ///< cookie for getting the full text string
-        uint32_t fullTextTermCount;                 ///< The number of terms that were matched
-        const C4FullTextTerm *fullTextTerms;        ///< Array of terms that were matched
+        unsigned fullTextID;                 ///< opaque 'cookie' for getting the full text string
+        uint32_t fullTextTermCount;          ///< The number of terms that were matched
+        const C4FullTextTerm *fullTextTerms; ///< Array of terms that were matched
 
         // Geo-query only:
-        C4GeoArea geoBBox;                          ///< Bounding box of emitted geoJSON shape
-        C4Slice geoJSON;                            ///< GeoJSON description of the shape
+        C4GeoArea geoBBox;                   ///< Bounding box of emitted geoJSON shape
+        C4Slice geoJSON;                     ///< GeoJSON description of the shape
     } C4QueryEnumerator;
 
 
@@ -298,6 +325,8 @@ extern "C" {
     /** Frees a query enumerator. */
     void c4queryenum_free(C4QueryEnumerator *e);
 
+
+    /** @} */
 #ifdef __cplusplus
 }
 #endif

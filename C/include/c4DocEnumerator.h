@@ -14,15 +14,19 @@
 extern "C" {
 #endif
 
+    /** \defgroup Document Enumeration
+        @{ */
+
+
     //////// DOCUMENT ENUMERATION (ALL_DOCS):
 
 
     typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
-        kC4Descending           = 0x01, /**< If true, iteration goes by descending document IDs. */
-        kC4InclusiveStart       = 0x02, /**< If false, iteration starts just _after_ startDocID. */
-        kC4InclusiveEnd         = 0x04, /**< If false, iteration stops just _before_ endDocID. */
-        kC4IncludeDeleted       = 0x08, /**< If true, include deleted documents. */
-        kC4IncludeNonConflicted = 0x10, /**< If false, include _only_ documents in conflict. */
+        kC4Descending           = 0x01, ///< If true, iteration goes by descending document IDs.
+        kC4InclusiveStart       = 0x02, ///< If false, iteration starts just _after_ startDocID.
+        kC4InclusiveEnd         = 0x04, ///< If false, iteration stops just _before_ endDocID.
+        kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.
+        kC4IncludeNonConflicted = 0x10, ///< If false, include _only_ documents in conflict.
         kC4IncludeBodies        = 0x20  /**< If false, document bodies will not be preloaded, just
                                    metadata (docID, revID, sequence, flags.) This is faster if you
                                    don't need to access the revision tree or revision bodies. You
@@ -33,8 +37,8 @@ extern "C" {
 
     /** Options for enumerating over all documents. */
     typedef struct {
-        uint64_t          skip;     /**< The number of initial results to skip. */
-        C4EnumeratorFlags flags;    /**< Option flags */
+        uint64_t          skip;     ///< The number of initial results to skip. */
+        C4EnumeratorFlags flags;    ///< Option flags */
     } C4EnumeratorOptions;
 
     /** Default all-docs enumeration options.
@@ -45,10 +49,10 @@ extern "C" {
 
     /** Metadata about a document (actually about its current revision.) */
     typedef struct {
-        C4DocumentFlags flags;      /**< Document flags */
-        C4Slice docID;              /**< Document ID */
-        C4Slice revID;              /**< RevID of current revision */
-        C4SequenceNumber sequence;  /**< Sequence at which doc was last updated */
+        C4DocumentFlags flags;      ///< Document flags
+        C4Slice docID;              ///< Document ID
+        C4Slice revID;              ///< RevID of current revision
+        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
     } C4DocumentInfo;
 
 
@@ -135,6 +139,7 @@ extern "C" {
     struct C4Document* c4enum_nextDocument(C4DocEnumerator *e,
                                            C4Error *outError);
 
+    /** @} */
 #ifdef __cplusplus
     }
 #endif

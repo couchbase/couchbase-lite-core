@@ -16,27 +16,34 @@
 extern "C" {
 #endif
 
+    /** \defgroup Database Databases
+        @{ */
+
+
     //////// CONFIGURATION:
+
+    /** \name Configuration
+        @{ */
 
 
     /** Boolean options for C4DatabaseConfig. */
     typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
-        kC4DB_Create        = 1,    /**< Create the file if it doesn't exist */
-        kC4DB_ReadOnly      = 2,    /**< Open file read-only */
-        kC4DB_AutoCompact   = 4,    /**< Enable auto-compaction */
-        kC4DB_Bundled       = 8,    /**< Store db (and views) inside a directory */
+        kC4DB_Create        = 1,    ///< Create the file if it doesn't exist
+        kC4DB_ReadOnly      = 2,    ///< Open file read-only
+        kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
+        kC4DB_Bundled       = 8,    ///< Store db (and views) inside a directory
     };
 
     /** Document versioning system (also determines database storage schema) */
     typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
-        kC4RevisionTrees,           /**< CouchDB and Couchbase Mobile 1.x revision trees */
-        kC4VersionVectors,          /**< Couchbase Mobile 2.x version vectors */
+        kC4RevisionTrees,           ///< CouchDB and Couchbase Mobile 1.x revision trees
+        kC4VersionVectors,          ///< Couchbase Mobile 2.x version vectors
     };
 
     /** Encryption algorithms. */
     typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
-        kC4EncryptionNone = 0,      /**< No encryption (default) */
-        kC4EncryptionAES256 = 1     /**< AES with 256-bit key */
+        kC4EncryptionNone = 0,      ///< No encryption (default)
+        kC4EncryptionAES256 = 1     ///< AES with 256-bit key
     };
 
     /** Encryption key specified in a C4DatabaseConfig. */
@@ -52,16 +59,21 @@ extern "C" {
 
     /** Main database/view configuration struct. */
     typedef struct C4DatabaseConfig {
-        C4DatabaseFlags flags;          /**< Create, ReadOnly, AutoCompact, Bundled... */
-        C4StorageEngine storageEngine;  /**< Which storage to use, or NULL for no preference */
-        C4DocumentVersioning versioning;/**< Type of document versioning */
-        C4EncryptionKey encryptionKey;  /**< Encryption to use creating/opening the db */
+        C4DatabaseFlags flags;          ///< Create, ReadOnly, AutoCompact, Bundled...
+        C4StorageEngine storageEngine;  ///< Which storage to use, or NULL for no preference
+        C4DocumentVersioning versioning;///< Type of document versioning
+        C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig;
 
+
+    /** @} */
 
     //////// DATABASE API:
 
     
+    /** \name Lifecycle
+        @{ */
+
     /** Opaque handle to an opened database. */
     typedef struct c4Database C4Database;
 
@@ -85,6 +97,43 @@ extern "C" {
         All C4Databases at that path should be closed first. */
     bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
 
+
+    /** Changes a database's encryption key (removing encryption if it's NULL.) */
+    bool c4db_rekey(C4Database* database,
+                    const C4EncryptionKey *newKey,
+                    C4Error *outError);
+
+    /** Closes down the storage engines. Must close all databases first.
+        You don't generally need to do this, but it can be useful in tests. */
+    bool c4_shutdown(C4Error *outError);
+
+
+    /** @} */
+    /** \name Accessors
+        @{ */
+
+
+    /** Returns the path of the database. */
+    C4SliceResult c4db_getPath(C4Database*);
+
+    /** Returns the configuration the database was opened with. */
+    const C4DatabaseConfig* c4db_getConfig(C4Database*);
+
+    /** Returns the number of (undeleted) documents in the database. */
+    uint64_t c4db_getDocumentCount(C4Database* database);
+
+    /** Returns the latest sequence number allocated to a revision. */
+    C4SequenceNumber c4db_getLastSequence(C4Database* database);
+
+    /** Returns the timestamp at which the next document expiration should take place. */
+    uint64_t c4db_nextDocExpiration(C4Database *database);
+
+
+    /** @} */
+    /** \name Compaction
+        @{ */
+
+
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database, C4Error *outError);
 
@@ -99,25 +148,14 @@ extern "C" {
         careful of thread safety. */
     void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context);
 
-    /** Changes a database's encryption key (removing encryption if it's NULL.) */
-    bool c4db_rekey(C4Database* database,
-                    const C4EncryptionKey *newKey,
-                    C4Error *outError);
 
-    /** Returns the path of the database. */
-    C4SliceResult c4db_getPath(C4Database*);
+    /** @} */
+    /** \name Transactions
+        @{ */
 
-    /** Returns the configuration the database was opened with. */
-    const C4DatabaseConfig* c4db_getConfig(C4Database*);
-
-    /** Returns the number of (undeleted) documents in the database. */
-    uint64_t c4db_getDocumentCount(C4Database* database);
-
-    /** Returns the latest sequence number allocated to a revision. */
-    C4SequenceNumber c4db_getLastSequence(C4Database* database);
 
     /** Begins a transaction.
-        Transactions can nest; only the first call actually creates a ForestDB transaction. */
+        Transactions can nest; only the first call actually creates a database transaction. */
     bool c4db_beginTransaction(C4Database* database,
                                C4Error *outError);
 
@@ -132,25 +170,22 @@ extern "C" {
     bool c4db_isInTransaction(C4Database* database);
 
     
-    /** Removes all trace of a document and its revisions from the database. */
-    bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError);
-
-    /** Returns the timestamp at which the next document expiration should take place. */
-    uint64_t c4db_nextDocExpiration(C4Database *database);
-
-    /** Closes down the storage engines. Must close all databases first.
-        You don't generally need to do this, but it can be useful in tests. */
-    bool c4_shutdown(C4Error *outError);
+    /** @} */
+    /** @} */
 
 
     //////// RAW DOCUMENTS (i.e. info or _local)
 
 
-    /** Describes a raw document. */
+    /** \defgroup RawDocs Raw Documents
+        @{ */
+
+
+    /** Contents of a raw document. */
     typedef struct {
-        C4Slice key;
-        C4Slice meta;
-        C4Slice body;
+        C4Slice key;    ///< The key (document ID)
+        C4Slice meta;   ///< Metadata (usage is up to the caller)
+        C4Slice body;   ///< Body data
     } C4RawDocument;
 
     /** Frees the storage occupied by a raw document. */
@@ -176,6 +211,7 @@ extern "C" {
     // Store used for local (non-replicated) documents.
     #define kC4LocalDocStore C4STR("_local")
 
+    /** @} */
 #ifdef __cplusplus
 }
 #endif

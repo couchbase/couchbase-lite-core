@@ -15,6 +15,10 @@
 extern "C" {
 #endif
     
+    /** \defgroup Expiration
+        @{ */
+
+
     /** Opaque handle to an enumerator that iterates through expired documents. */
     typedef struct C4ExpiryEnumerator C4ExpiryEnumerator;
     
@@ -46,7 +50,8 @@ extern "C" {
     /** Frees a C4ExpiryEnumerator handle */
     void c4exp_free(C4ExpiryEnumerator *e);
 
-        
+
+    /** @} */
 #ifdef __cplusplus
     }
 #endif

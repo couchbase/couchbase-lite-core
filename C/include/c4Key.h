@@ -13,6 +13,10 @@
 extern "C" {
 #endif
 
+    /** \defgroup Keys View and Query Keys
+        @{ */
+
+
     // Language code denoting "the default language"
     #define kC4LanguageDefault  kC4SliceNull
 
@@ -26,6 +30,10 @@ extern "C" {
 
 
     //////// KEYS:
+
+
+    /** \name Creating Keys
+        @{ */
 
 
     /** An opaque value used as a key or value in a view index. The data types that can be stored
@@ -57,10 +65,10 @@ extern "C" {
     /** Frees a C4Key. */
     void c4key_free(C4Key*);
 
-    void c4key_addNull(C4Key*);             /**< Adds a JSON null value to a C4Key. */
-    void c4key_addBool(C4Key*, bool);       /**< Adds a boolean value to a C4Key. */
-    void c4key_addNumber(C4Key*, double);   /**< Adds a number to a C4Key. */
-    void c4key_addString(C4Key*, C4Slice);  /**< Adds a UTF-8 string to a C4Key. */
+    void c4key_addNull(C4Key*);             ///< Adds a JSON null value to a C4Key. */
+    void c4key_addBool(C4Key*, bool);       ///< Adds a boolean value to a C4Key. */
+    void c4key_addNumber(C4Key*, double);   ///< Adds a number to a C4Key. */
+    void c4key_addString(C4Key*, C4Slice);  ///< Adds a UTF-8 string to a C4Key. */
 
     /** Adds an array to a C4Key.
         Subsequent values added will go into the array, until c4key_endArray is called. */
@@ -89,8 +97,14 @@ extern "C" {
         @return  True if the languageName was recognized, false if not. */
     bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals);
 
+    /** @} */
+
 
     //////// KEY READERS:
+
+
+    /** \name Parsing Keys
+        @{ */
 
 
     /** A struct pointing to the raw data of an encoded key. The functions that operate
@@ -118,10 +132,11 @@ extern "C" {
         Warning: Adding to the C4Key will invalidate the reader. */
     C4KeyReader c4key_read(const C4Key *key);
 
-    /** for java binding */
+    /** Same as c4key_read, but allocates the C4KeyReader on the heap.
+        (Used by the Java binding.) */
     C4KeyReader* c4key_newReader(const C4Key *key);
 
-    /** Free a C4KeyReader */
+    /** Frees a C4KeyReader allocated by c4key_newReader. */
     void c4key_freeReader(C4KeyReader*);
 
     /** Returns the type of the next item in the key, or kC4Error at the end of the key or if the
@@ -133,15 +148,21 @@ extern "C" {
         now be positioned at the first item of the collection. */
     void c4key_skipToken(C4KeyReader*);
 
-    bool c4key_readBool(C4KeyReader*);              /**< Reads a boolean value. */
-    double c4key_readNumber(C4KeyReader*);          /**< Reads a numeric value. */
-    C4SliceResult c4key_readString(C4KeyReader*);   /**< Reads a string (remember to free it!) */
+    bool c4key_readBool(C4KeyReader*);              ///< Reads a boolean value.
+    double c4key_readNumber(C4KeyReader*);          ///< Reads a numeric value.
+    C4SliceResult c4key_readString(C4KeyReader*);   ///< Reads a string (remember to free it!)
 
     /** Converts a C4KeyReader to JSON. Remember to free the result. */
     C4SliceResult c4key_toJSON(const C4KeyReader*);
 
+    /** @} */
+
 
     //////// KEY/VALUE LISTS:
+
+
+    /** \name Key/Value Lists
+        @{ */
 
 
     /** An opaque list of key/value pairs, used when indexing a view. */
@@ -159,6 +180,8 @@ extern "C" {
     /** Frees all storage used by a list (including its copied keys and values.) */
     void c4kv_free(C4KeyValueList *kv);
 
+    /* @} */
+    /* @} */
 #ifdef __cplusplus
     }
 #endif

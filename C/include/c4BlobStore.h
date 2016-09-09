@@ -14,7 +14,13 @@
 extern "C" {
 #endif
 
-    // BLOB KEYS:
+    /** \defgroup Blobs Blobs
+        @{ */
+
+    //////// BLOB KEYS:
+
+    /** \name Blob Keys
+        @{ */
 
     /** A raw SHA-1 digest used as the unique identifier of a blob. */
     typedef struct C4BlobKey {
@@ -32,15 +38,25 @@ extern "C" {
     /** Opaque handle for an object that manages storage of blobs. */
     typedef struct c4BlobStore C4BlobStore;
 
+    /** @} */
 
-    // BLOB STORE API:
+
+    //////// BLOB STORE API:
+
+    /** \name Blob Store API
+        @{ */
 
     /** Opens a BlobStore in a directory. If the flags allow creating, the directory will be
-        created if necessary. */
+        created if necessary.
+        @param dirPath  The filesystem path of the directory holding the attachments.
+        @param flags  Specifies options like create, read-only
+        @param encryptionKey  Optional encryption algorithm & key
+        @param outError  Error is returned here
+        @return  The BlobStore reference, or NULL on error */
     C4BlobStore* c4blob_openStore(C4Slice dirPath,
-                                  C4DatabaseFlags,
-                                  const C4EncryptionKey*,
-                                  C4Error*);
+                                  C4DatabaseFlags flags,
+                                  const C4EncryptionKey* encryptionKey,
+                                  C4Error* outError);
 
     /** Closes/frees a BlobStore. (A NULL parameter is allowed.) */
     void c4blob_freeStore(C4BlobStore*);
@@ -48,14 +64,19 @@ extern "C" {
     /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object. */
     bool c4blob_deleteStore(C4BlobStore*, C4Error*);
 
+    /** @} */
+
+
+    /** \name Blob API
+        @{ */
 
     /** Gets the content size of a blob given its key. Returns -1 if it doesn't exist.
-        WARNING: If blob is encrypted, the size is approximate and may be off by +/- 16 bytes. */
+        WARNING: If the blob is encrypted, the return value is a conservative estimate that may
+        be up to 16 bytes larger than the actual size. */
     int64_t c4blob_getSize(C4BlobStore*, C4BlobKey);
 
     /** Reads the entire contents of a blob into memory. Caller is responsible for freeing it. */
     C4SliceResult c4blob_getContents(C4BlobStore*, C4BlobKey, C4Error*);
-
 
     /** Stores a blob. The associated key will be written to `outKey`. */
     bool c4blob_create(C4BlobStore*, C4Slice contents, C4BlobKey *outKey, C4Error*);
@@ -64,8 +85,13 @@ extern "C" {
     /** Deletes a blob from the store given its key. */
     bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error*);
 
+    /** @} */
 
-    // STREAMING API:
+
+    //////// STREAMING API:
+
+    /** \name Streamed Reads
+        @{ */
 
     /** An open stream for reading data from a blob. */
     typedef struct c4ReadStream C4ReadStream;
@@ -73,8 +99,13 @@ extern "C" {
     /** Opens a blob for reading, as a random-access byte stream. */
     C4ReadStream* c4blob_openReadStream(C4BlobStore*, C4BlobKey, C4Error*);
 
-    /** Reads from an open stream, returning the actual number of bytes read, or zero on error. */
-    size_t c4stream_read(C4ReadStream*, void *buffer, size_t maxBytesToRead, C4Error*);
+    /** Reads from an open stream.
+        @param stream  The open stream to read from
+        @param buffer  Where to copy the read data to
+        @param maxBytesToRead  The maximum number of bytes to read to the buffer
+        @param error  Error is returned here 
+        @return  The actual number of bytes read, or 0 if an error occurred */
+    size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytesToRead, C4Error* error);
 
     /** Returns the exact length in bytes of the stream. */
     int64_t c4stream_getLength(C4ReadStream*, C4Error*);
@@ -86,6 +117,11 @@ extern "C" {
     /** Closes a read-stream. (A NULL parameter is allowed.) */
     void c4stream_close(C4ReadStream*);
 
+    /** @} */
+
+
+    /** \name Streamed Writes
+        @{ */
 
     /** An open stream for writing data to a blob. */
     typedef struct c4WriteStream C4WriteStream;
@@ -112,6 +148,9 @@ extern "C" {
         will be deleted without adding the blob to the store. (A NULL parameter is allowed.) */
     void c4stream_closeWriter(C4WriteStream*);
 
+
+    /** @} */
+    /** @} */
 
 #ifdef __cplusplus
 }

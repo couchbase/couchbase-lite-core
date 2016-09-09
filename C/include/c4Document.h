@@ -15,21 +15,25 @@ extern "C" {
 #endif
 
 
+    /** \defgroup Documents Documents
+        @{ */
+
+
     /** Flags describing a document. */
     typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
-        kDeleted        = 0x01,     /**< The document's current revision is deleted. */
-        kConflicted     = 0x02,     /**< The document is in conflict. */
-        kHasAttachments = 0x04,     /**< The document's current revision has attachments. */
+        kDeleted        = 0x01,     ///< The document's current revision is deleted.
+        kConflicted     = 0x02,     ///< The document is in conflict.
+        kHasAttachments = 0x04,     ///< The document's current revision has attachments.
 
-        kExists         = 0x1000    /**< The document exists (i.e. has revisions.) */
+        kExists         = 0x1000    ///< The document exists (i.e. has revisions.)
     }; // Note: Superset of VersionedDocument::Flags
 
     /** Flags that apply to a revision. */
     typedef C4_OPTIONS(uint8_t, C4RevisionFlags) {
-        kRevDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
-        kRevLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
-        kRevNew            = 0x04, /**< Has this rev been inserted since the doc was read? */
-        kRevHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
+        kRevDeleted        = 0x01, ///< Is this revision a deletion/tombstone?
+        kRevLeaf           = 0x02, ///< Is this revision a leaf (no children?)
+        kRevNew            = 0x04, ///< Has this rev been inserted since the doc was read?
+        kRevHasAttachments = 0x08  ///< Does this rev's body contain attachments?
     }; // Note: Same as Revision::Flags
 
 
@@ -43,16 +47,18 @@ extern "C" {
 
     /** Describes a version-controlled document. */
     typedef struct C4Document {
-        C4DocumentFlags flags;      /**< Document flags */
-        C4Slice docID;              /**< Document ID */
-        C4Slice revID;              /**< RevID of current revision */
-        C4SequenceNumber sequence;  /**< Sequence at which doc was last updated */
+        C4DocumentFlags flags;      ///< Document flags
+        C4Slice docID;              ///< Document ID
+        C4Slice revID;              ///< RevID of current revision
+        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
 
         C4Revision selectedRev;
     } C4Document;
 
-    /** Frees a C4Document. */
-    void c4doc_free(C4Document *doc);
+
+    /** \name Lifecycle
+        @{ */
+
 
     /** Gets a document from the database. If there's no such document, the behavior depends on
         the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
@@ -74,8 +80,29 @@ extern "C" {
         and uses it as an optimization when indexing a view. */
     C4SliceResult c4doc_getType(C4Document *doc);
 
+    /** Sets a document's docType. (By convention this is the value of the "type" property of the
+        current revision's JSON; this value can be used as optimization when indexing a view.)
+        The change will not be persisted until the document is saved. */
+    void c4doc_setType(C4Document *doc, C4Slice docType);
+
+    /** Saves changes to a C4Document.
+        Must be called within a transaction.
+        The revision history will be pruned to the maximum depth given. */
+    bool c4doc_save(C4Document *doc,
+                    uint32_t maxRevTreeDepth,
+                    C4Error *outError);
+
+    /** Frees a C4Document. */
+    void c4doc_free(C4Document *doc);
+
+    /** @} */
+    
 
     //////// REVISIONS:
+
+
+    /** \name Revisions
+        @{ */
 
 
     /** Selects a specific revision of a document (or no revision, if revID is NULL.) */
@@ -132,19 +159,20 @@ extern "C" {
                                     C4Slice revID,
                                     C4Error *outError);
 
-    /** Sets a document's docType. (By convention this is the value of the "type" property of the
-        current revision's JSON; this value can be used as optimization when indexing a view.)
-        The change will not be persisted until the document is saved. */
-    void c4doc_setType(C4Document *doc, C4Slice docType);
+    /** @} */
 
-    /** Saves changes to a C4Document.
-        Must be called within a transaction.
-        The revision history will be pruned to the maximum depth given. */
-    bool c4doc_save(C4Document *doc,
-                    uint32_t maxRevTreeDepth,
-                    C4Error *outError);
+    
+    //////// PURGING & EXPIRATION:
         
-        
+
+    /** \name Purging and Expiration
+        @{ */
+
+
+    /** Removes all trace of a document and its revisions from the database. */
+    bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError);
+
+
     /** Sets an expiration date on a document.  After this time the
         document will be purged from the database.
         @param db The database to set the expiration date in
@@ -162,8 +190,14 @@ extern "C" {
     /** Returns the expiration time of a document, if one has been set, else 0. */
     uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId);
 
+    /** @} */
+
 
     //////// ADDING REVISIONS:
+
+
+    /** \name Creating and Updating Documents
+        @{ */
 
 
     /** Parameters for adding a revision using c4doc_put. */
@@ -206,6 +240,8 @@ extern "C" {
         are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
     void c4doc_generateOldStyleRevID(bool generateOldStyle);
 
+    /** @} */
+    /** @} */
 #ifdef __cplusplus
 }
 #endif
