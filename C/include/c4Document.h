@@ -37,11 +37,12 @@ extern "C" {
     }; // Note: Same as Revision::Flags
 
 
+    /** Describes a revision of a document. A sub-struct of C4Document. */
     typedef struct {
-        C4Slice revID;
-        C4RevisionFlags flags;
-        C4SequenceNumber sequence;
-        C4Slice body;
+        C4Slice revID;              ///< Revision ID
+        C4RevisionFlags flags;      ///< Flags (deleted?, leaf?, new? hasAttachments?)
+        C4SequenceNumber sequence;  ///< Sequence number in database
+        C4Slice body;               ///< The raw body, or NULL if not loaded yet
     } C4Revision;
 
 
@@ -49,10 +50,10 @@ extern "C" {
     typedef struct C4Document {
         C4DocumentFlags flags;      ///< Document flags
         C4Slice docID;              ///< Document ID
-        C4Slice revID;              ///< RevID of current revision
+        C4Slice revID;              ///< Revision ID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
 
-        C4Revision selectedRev;
+        C4Revision selectedRev;     ///< Describes the currently-selected revision
     } C4Document;
 
 

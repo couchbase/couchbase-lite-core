@@ -130,20 +130,25 @@ typedef struct {
 
 #ifndef C4_IMPL
 
-/** A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string.
-    A "null slice" has chars==NULL and length==0.
-    A slice with length==0 is not necessarily null; if chars!=NULL it's an empty string.
-    A slice as a function parameter is temporary and read-only: the function will not alter or free
-    the bytes, and the pointer won't be accessed after the function returns.
-    A slice _returned from_ a function points to newly-allocated memory and must be freed by the
-    caller, with c4slice_free(). */
-typedef struct {
-    const void *buf;
-    size_t size;
-} C4Slice;
+#ifdef FL_SLICE_DEFINED
+    typedef FLSlice C4Slice;
+    typedef FLSliceResult C4SliceResult;
+#else
+    /** A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string.
+        A "null slice" has chars==NULL and length==0.
+        A slice with length==0 is not necessarily null; if chars!=NULL it's an empty string.
+        A slice as a function parameter is temporary and read-only: the function will not alter or free
+        the bytes, and the pointer won't be accessed after the function returns.
+        A slice _returned from_ a function points to newly-allocated memory and must be freed by the
+        caller, with c4slice_free(). */
+    typedef struct {
+        const void *buf;
+        size_t size;
+    } C4Slice;
 
-/** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
-typedef C4Slice C4SliceResult;
+    /** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
+    typedef C4Slice C4SliceResult;
+#endif
 
 /** Creates a slice pointing to the contents of a C string. */
 static CBINLINE C4Slice c4str(const char *str) {

@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-    /** \defgroup Views
+    /** \defgroup Views Views
         @{ */
 
 

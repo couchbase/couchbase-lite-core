@@ -15,7 +15,7 @@
 extern "C" {
 #endif
     
-    /** \defgroup Expiration
+    /** \defgroup Expiration Document Expiration
         @{ */
 
 
