@@ -16,20 +16,8 @@
 #include <unistd.h>
 #else
 #include "asprintf.h"
-#include <windows.h>
+#include "arc4random.h"
 #undef min
-
-static HCRYPTPROV _rngProv = 0;
-
-static void arc4random_buf(void *buffer, int size)
-{
-    if (_rngProv == 0) {
-        REQUIRE(CryptAcquireContext(&_rngProv, nullptr, nullptr, PROV_RSA_FULL, 0));
-    }
-
-    REQUIRE(CryptGenRandom(_rngProv, size, (BYTE *)buffer));
-}
-
 #endif
 
 

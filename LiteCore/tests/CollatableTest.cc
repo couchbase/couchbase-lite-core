@@ -10,10 +10,7 @@
 #include "LiteCoreTest.hh"
 #include <math.h>
 #include <float.h>
-#ifdef _MSC_VER
-#define srandomdev() 
-#define MAXFLOAT FLT_MAX
-#endif
+#include "MSVC_Compat.hh"
 
 using namespace litecore;
 

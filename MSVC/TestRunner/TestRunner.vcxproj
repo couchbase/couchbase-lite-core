@@ -33,6 +33,7 @@
     <ClCompile Include="..\..\LiteCore\tests\TokenizerTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\VersionedDocumentTests.cc" />
     <ClCompile Include="..\..\LiteCore\tests\VersionVectorTest.cc" />
+    <ClCompile Include="..\arc4random.cc" />
     <ClCompile Include="..\asprintf.c" />
     <ClCompile Include="..\vasprintf-msvc.c" />
   </ItemGroup>
