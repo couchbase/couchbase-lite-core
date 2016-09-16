@@ -413,9 +413,14 @@ namespace litecore {
     }
 
 
+    void MapReduceIndexer::finished(sequence seq) {
+        for (auto writer = _writers.begin(); writer != _writers.end(); ++writer) {
+            (*writer)->finish(seq);
+        }
+    }
+
     MapReduceIndexer::~MapReduceIndexer() {
         for (auto writer : _writers) {
-            writer->finish(_finishedSequence);
             delete writer;
         }
     }
