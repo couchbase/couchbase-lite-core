@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Error.hh"
+#include "LogInternal.hh"
 #include <atomic>
 
 namespace litecore {
@@ -31,27 +32,37 @@ namespace litecore {
 
         int refCount() const { return _refCount; }
 
-        SELF* retain() {
+        inline SELF* retain() noexcept {
             ++_refCount;
             return (SELF*)this;
         }
 
-        void release() {
-            int newref = --_refCount;
-            CBFAssert(newref >= 0);
-            if (newref == 0) {
-                delete this;
-            }
+        inline void release() noexcept {
+            if (--_refCount <= 0)
+                dealloc();
         }
 
     protected:
         /** Destructor is accessible only so that it can be overridden.
             Never call delete, only release! */
         virtual ~RefCounted() {
-            CBFAssert(_refCount == 0);
+            if (_refCount > 0) {
+                Warn("FATAL: RefCounted object at %p destructed while it still has a refCount of %d",
+                     this, (int)_refCount);
+                abort();
+            }
         }
 
     private:
+        void dealloc() noexcept {
+            int newref = _refCount;
+            if (newref == 0)
+                delete this;
+            else if (newref < 0)
+                Warn("RefCounted object at %p released too many times; refcount now %d",
+                     this, (int)_refCount);
+        }
+
         std::atomic_int _refCount {0};
     };
 
