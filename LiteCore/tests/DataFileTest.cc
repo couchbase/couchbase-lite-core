@@ -33,6 +33,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
     {
         Transaction t(db);
         store->set(key, slice("value"), t);
+        t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
     Document doc = db->defaultKeyStore().get(key);
@@ -46,6 +47,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
         store->set(slice("a"), slice("A"), t);
+        t.commit();
     }
 
     unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
@@ -75,6 +77,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
 
         // Doc shouldn't exist outside transaction yet:
         REQUIRE(aliased_db->defaultKeyStore().get(slice("doc")).sequence() == 0);
+        t.commit();
     }
 
     REQUIRE(store->get(slice("doc")).sequence() == 3);
@@ -89,6 +92,7 @@ static void createNumberedDocs(KeyStore *store) {
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
+    t.commit();
 }
 
 
@@ -268,6 +272,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[Data
     {
         Transaction t(db);
         store->set(slice("a"), slice("A"), t);
+        t.commit();
     }
     {
         Transaction t(db);
@@ -295,6 +300,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
             string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
             store->set(slice(docID), slice::null, slice("some document content goes here"), trans);
         }
+        trans.commit();
     }
 
     int i = 0;
@@ -315,12 +321,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
     {
         Transaction t(db);
         store->set(key, slice("A"), t);
+        t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
     REQUIRE(db->purgeCount() == 0);
     {
         Transaction t(db);
         store->del(key, t);
+        t.commit();
     }
     Document doc = store->get(key);
     REQUIRE_FALSE(doc.exists());
@@ -336,12 +344,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
     {
         Transaction t(db);
         store->set(key, slice("A"), t);
+        t.commit();
     }
 
     {
         Transaction t(db);
         Document doc = store->get(key);
         store->del(doc, t);
+        t.commit();
     }
 
     Document doc = store->get(key);
@@ -360,12 +370,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[Da
     {
         Transaction t(db);
         store->set(key, slice("A"), t);
+        t.commit();
     }
 
     {
         Transaction t(db);
         Document doc = store->get(key);
         store->del(doc, t);
+        t.commit();
     }
 
     Document doc = store->get(key);
@@ -396,6 +408,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
     {
         Transaction t(db);
         s.set(key, slice("value"), t);
+        t.commit();
     }
     REQUIRE(s.lastSequence() == 1);
     Document doc = s.get(key);
@@ -413,6 +426,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
 //    {
 //        Transaction t(db);
 //        t(s).set(key, slice("value"));
+//        t.commit();
 //    }
     s.erase();
     REQUIRE(s.lastSequence() == 0);
@@ -444,6 +458,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     {
         Transaction t(db);
         store->set(slice("key"), slice("value"), t);
+        t.commit();
     }
     // Reopen db as read-only:
     auto options = db->options();
@@ -462,6 +477,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
         Log("NOTE: Expecting a read-only exception to be thrown");
         error::sWarnOnError = false;
         store->set(slice("key"), slice("somethingelse"), t);
+        t.commit();
     } catch (std::runtime_error &x) {
         error e = error::convertRuntimeError(x).standardized();
         code = e.code;
@@ -494,6 +510,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
             Document doc = store->get((slice)docID);
             store->del(doc, t);
         }
+        t.commit();
     }
 
     unsigned numCompactCalls = 0;
@@ -519,6 +536,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
         unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
         Transaction t(*encryptedDB);
         encryptedDB->defaultKeyStore().set(slice("k"), slice::null, slice("value"), t);
+        t.commit();
     }
     {
         // Reopen with correct key:

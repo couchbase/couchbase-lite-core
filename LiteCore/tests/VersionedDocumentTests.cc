@@ -159,6 +159,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[Vers
         REQUIRE(v.docType() == slice("moose"));
         Transaction t(db);
         v.save(t);
+        t.commit();
     }
     {
         VersionedDocument v(*store, slice("foo"));

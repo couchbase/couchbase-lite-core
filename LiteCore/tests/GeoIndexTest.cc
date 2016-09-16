@@ -83,6 +83,7 @@ public:
             store->set(slice(docID), body, t);
             Log("Added %s --> (%+08.4f, %+09.4f)", docID, lat0, lon0);
         }
+        t.commit();
     }
     
     void indexIt() {

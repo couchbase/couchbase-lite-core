@@ -78,6 +78,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
         IndexWriter writer(*index, trans);
         for (auto i : docs)
             updateDoc(i.first, i.second, writer);
+        trans.commit();
     }
 
     Log("--- First query");
@@ -88,6 +89,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
         IndexWriter writer(*index, trans);
         Log("--- Updating OR");
         updateDoc("OR", {"Oregon", "Portland", "Walla Walla", "Salem"}, writer);
+        trans.commit();
     }
     REQUIRE(doQuery() == 9);
 
@@ -96,6 +98,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
         Transaction trans(db);
         IndexWriter writer(*index, trans);
         updateDoc("CA", {}, writer);
+        trans.commit();
     }
     REQUIRE(doQuery() == 6);
 
@@ -169,6 +172,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         bool changed = writer.update(slice("doc1"), 1, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 2);
+        trans.commit();
     }
     Log("--- First query");
     REQUIRE(doQuery() == 2);
@@ -187,6 +191,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         bool changed = writer.update(slice("doc1"), 2, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 3);
+        trans.commit();
     }
     Log("--- Second query");
     REQUIRE(doQuery() == 3);

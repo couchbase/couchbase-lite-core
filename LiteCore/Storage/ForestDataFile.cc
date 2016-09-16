@@ -266,25 +266,14 @@ namespace litecore {
     }
 
 
-    void ForestDataFile::_endTransaction(Transaction *t) {
-        fdb_status status = FDB_RESULT_SUCCESS;
-        switch (t->state()) {
-            case Transaction::kCommit:
-                Log("ForestDataFile: commit transaction");
-                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL);
-                break;
-            case Transaction::kCommitManualWALFlush:
-                Log("ForestDataFile: commit transaction with WAL flush");
-                status = fdb_end_transaction(_fileHandle, FDB_COMMIT_MANUAL_WAL_FLUSH);
-                break;
-            case Transaction::kAbort:
-                Log("ForestDataFile: abort transaction");
-                (void)fdb_abort_transaction(_fileHandle);
-                break;
-            case Transaction::kNoOp:
-                break;
+    void ForestDataFile::_endTransaction(Transaction *t, bool commit) {
+        if (commit) {
+            Log("ForestDataFile: commit transaction");
+            check(fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL));
+        } else {
+            Log("ForestDataFile: abort transaction");
+            (void)fdb_abort_transaction(_fileHandle);
         }
-        check(status);
     }
 
 
@@ -333,6 +322,7 @@ namespace litecore {
                 {
                     Transaction t(this);
                     updatePurgeCount(t);
+                    t.commit();
                 }
                 Log("ForestDataFile %p END COMPACTING", this);
                 finishedCompacting();

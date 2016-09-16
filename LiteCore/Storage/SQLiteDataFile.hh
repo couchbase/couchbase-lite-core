@@ -55,7 +55,7 @@ namespace litecore {
     protected:
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
-        void _endTransaction(Transaction*) override;
+        void _endTransaction(Transaction*, bool commit) override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const std::string &name) override;
 

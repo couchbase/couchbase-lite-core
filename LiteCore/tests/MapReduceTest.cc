@@ -119,6 +119,7 @@ class MapReduceTest : public DataFileTestFixture {
             addDoc("CA", "California", {"San Jose", "San Francisco", "Cambria"}, t);
             addDoc("WA", "Washington", {"Seattle", "Port Townsend", "Skookumchuk"}, t);
             addDoc("OR", "Oregon",     {"Portland", "Eugene"}, t);
+            t.commit();
         }
         index->setup(0, "1");
     }
@@ -138,6 +139,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     {
         Transaction t(db);
         addDoc("OR", "Oregon", {"Portland", "Walla Walla", "Salem"}, t);
+        t.commit();
     }
     queryExpectingKeys({"Cambria", "Port Townsend", "Portland", "Salem",
                                 "San Francisco", "San Jose", "Seattle", "Skookumchuk",
@@ -150,6 +152,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     {
         Transaction t(db);
         store->del(slice("CA"), t);
+        t.commit();
     }
     queryExpectingKeys({"Port Townsend", "Portland", "Salem",
                         "Seattle", "Skookumchuk", "Walla Walla"});
@@ -167,6 +170,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     {
         Transaction t(db);
         store->del(slice("OR"), t);
+        t.commit();
     }
     Log("--- Compacting db");
     db->compact();

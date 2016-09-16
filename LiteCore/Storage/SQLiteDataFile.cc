@@ -220,10 +220,10 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::_endTransaction(Transaction *t) {
-        if (t->state() >= Transaction::kCommit)
+    void SQLiteDataFile::_endTransaction(Transaction *t, bool commit) {
+        if (commit)
             _transaction->commit();
-        _transaction.reset(); // destructs the SQLite::Transaction, which does the actual commit
+        _transaction.reset(); // destruct SQLite::Transaction, which will rollback if not committed
     }
 
 
@@ -284,6 +284,7 @@ namespace litecore {
                 }
             }
             updatePurgeCount(t);
+            t.commit();
         }
         _sqlDb->exec(string("VACUUM"));     // Vacuum can't be called in a transaction
         finishedCompacting();
@@ -522,6 +523,7 @@ namespace litecore {
         Transaction t(db());
         db()._sqlDb->exec(string("DELETE FROM kv_"+name()));
         db().setLastSequence(*this, 0);
+        t.commit();
     }
 
 

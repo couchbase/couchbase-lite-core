@@ -136,7 +136,7 @@ namespace litecore {
         virtual void _beginTransaction(Transaction*) =0;
 
         /** Override to commit or abort a database transaction. */
-        virtual void _endTransaction(Transaction*) =0;
+        virtual void _endTransaction(Transaction*, bool commit) =0;
 
         /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                      {return _inTransaction;}
@@ -159,8 +159,8 @@ namespace litecore {
         friend class Transaction;
 
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
-        void beginTransaction(Transaction*);
-        void endTransaction(Transaction*);
+        void beginTransactionScope(Transaction*);
+        void endTransactionScope(Transaction*);
 
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
@@ -182,25 +182,14 @@ namespace litecore {
         Not just per DataFile object; per database _file_. */
     class Transaction {
     public:
-        enum state {
-            kNoOp,
-            kAbort,
-            kCommit,
-            kCommitManualWALFlush
-        };
-
         explicit Transaction(DataFile*);
         Transaction(DataFile &db)               :Transaction(&db) { }
-        ~Transaction()                          {_db.endTransaction(this);}
+        ~Transaction();
 
         DataFile& dataFile() const          {return _db;}
-        state state() const                 {return _state;}
 
-        /** Tells the Transaction that it should rollback, not commit, when exiting scope. */
-        void abort()                        {if (_state != kNoOp) _state = kAbort;}
-
-        /** Force the database write-ahead log to be completely flushed on commit. */
-        void flushWAL()                     {if (_state == kCommit) _state = kCommitManualWALFlush;}
+        void commit();
+        void abort();
 
     private:
         friend class DataFile;
@@ -212,7 +201,7 @@ namespace litecore {
         Transaction(const Transaction&) = delete;
 
         DataFile&   _db;        // The DataFile
-        enum state  _state;     // Remembers what action to take on destruct
+        bool _active;           // Is there an open transaction at the db level?
     };
 
 }

@@ -103,6 +103,7 @@ N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS InsertRevs", "[RevisionStore]"
     REQUIRE(rev != nullptr);
     REQUIRE(rev->version() == VersionVector(slice("2@$")));
     REQUIRE(cas == (generation)18);
+    t.commit();
 }
 
 
@@ -148,6 +149,7 @@ N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS AddLocalRevs", "[RevisionStore
 
     // Ancestor revision 18 is gone:
     CHECK(store->get(kDocID, slice("1@$")).get() == nullptr);
+    t.commit();
 }
 
 
@@ -194,4 +196,5 @@ N_WAY_TEST_CASE_METHOD(CASRevisionStoreTest, "CAS Conflict", "[RevisionStore]") 
 
     // Push the resolved version:
     pushRev(*resolved, t, 77, 99);
+    t.commit();
 }

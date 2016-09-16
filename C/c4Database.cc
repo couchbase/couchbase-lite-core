@@ -134,6 +134,7 @@ c4Database::c4Database(string path,
         doc.setBodyAsUInt((uint64_t)config.versioning);
         Transaction t(*_db);
         info.write(doc, t);
+        t.commit();
     } else if (config.versioning != kC4RevisionTrees) {
         error::_throw(error::WrongFormat);
     }
@@ -188,9 +189,11 @@ bool c4Database::endTransaction(bool commit) {
         WITH_LOCK(this);
         auto t = _transaction;
         _transaction = NULL;
-        if (!commit)
+        if (commit)
+            t->commit();
+        else
             t->abort();
-        delete t; // this commits/aborts the transaction
+        delete t;
     }
 #if C4DB_THREADSAFE
     _transactionMutex.unlock(); // undoes lock in beginTransaction()

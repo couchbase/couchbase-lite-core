@@ -363,6 +363,7 @@ namespace litecore {
                 index._lastSequenceIndexed = std::max(index._lastSequenceIndexed,
                                                       finalSequence);
                 index.saveState(*_transaction);
+                _transaction->commit();
             } else {
                 _transaction->abort();
             }

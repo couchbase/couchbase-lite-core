@@ -102,6 +102,7 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
     REQUIRE(store->checkRevision(kDoc1ID, kRev1ID) == kOlder);
     REQUIRE(store->checkRevision(kDoc1ID, slice("2@*")) == kSame);
     REQUIRE(store->checkRevision(kDoc1ID, slice("1@bob")) == kNewer);
+    t.commit();
 }
 
 
@@ -134,6 +135,7 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "InsertRevs", "[RevisionStore]") {
     REQUIRE(store->checkRevision(kDoc1ID, slice("3@ada")) == kNewer);
     REQUIRE(store->checkRevision(kDoc1ID, slice("6@bob")) == kNewer);
     REQUIRE(store->checkRevision(kDoc1ID, slice("1@tim")) == kNewer);
+    t.commit();
 }
 
 
@@ -180,4 +182,5 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "Conflict", "[RevisionStore]") {
 
     REQUIRE(store->get(kDoc1ID, current->revID()).get() == nullptr);
     REQUIRE(store->get(kDoc1ID, getRevC->revID()).get() == nullptr);
+    t.commit();
 }

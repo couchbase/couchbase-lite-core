@@ -243,25 +243,17 @@ namespace litecore {
 
 #pragma mark - TRANSACTION:
 
-    void DataFile::beginTransaction(Transaction* t) {
+    void DataFile::beginTransactionScope(Transaction* t) {
         CBFAssert(!_inTransaction);
         checkOpen();
         unique_lock<mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != NULL)
             _file->_transactionCond.wait(lock);
-
-        if (t->state() >= Transaction::kCommit) {
-            Log("DataFile: beginTransaction");
-            _beginTransaction(t);
-        }
         _file->_transaction = t;
         _inTransaction = true;
     }
 
-    void DataFile::endTransaction(Transaction* t) {
-        if (t->state() != Transaction::kNoOp)
-            _endTransaction(t);
-
+    void DataFile::endTransactionScope(Transaction* t) {
         unique_lock<mutex> lock(_file->_transactionMutex);
         CBFAssert(_file->_transaction == t);
         _file->_transaction = NULL;
@@ -281,19 +273,46 @@ namespace litecore {
 
 
     Transaction::Transaction(DataFile* db)
+    :Transaction(db, true)
+    { }
+
+    Transaction::Transaction(DataFile* db, bool active)
     :_db(*db),
-     _state(kCommit)
+     _active(false)
     {
-        _db.beginTransaction(this);
+        _db.beginTransactionScope(this);
+        if (active) {
+            Log("DataFile: beginTransaction");
+            _db._beginTransaction(this);
+            _active = true;
+        }
     }
 
-    Transaction::Transaction(DataFile* db, bool begin)
-    :_db(*db),
-     _state(begin ? kCommit : kNoOp)
-    {
-        _db.beginTransaction(this);
+
+    void Transaction::commit() {
+        CBFAssert(_active);
+        _active = false;
+        Log("DataFile: commit transaction");
+        _db._endTransaction(this, true);
     }
 
+
+    void Transaction::abort() {
+        CBFAssert(_active);
+        _active = false;
+        Log("DataFile: abort transaction");
+        _db._endTransaction(this, false);
+    }
+
+
+    Transaction::~Transaction() {
+        if (_active) {
+            Log("DataFile: Transaction exiting scope without explicit commit; aborting");
+            _db._endTransaction(this, false);
+        }
+        _db.endTransactionScope(this);
+    }
+    
 
 #pragma mark - COMPACTION:
 
