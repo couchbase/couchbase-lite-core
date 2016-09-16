@@ -78,8 +78,8 @@ namespace c4Internal {
 
 
         virtual bool exists() override              {return _current->exists();}
-        virtual slice type() override               {return _current->docType();}
-        virtual void setType(slice type) override   {/* Not applicable */}
+        virtual slice type() noexcept override      {return _current->docType();}
+        virtual void setType(slice type) noexcept override   {/* Not applicable */}
 
 
         virtual void loadRevisions() override {
@@ -90,7 +90,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool revisionsLoaded() const override   {
+        virtual bool revisionsLoaded() const noexcept override   {
             return _revisionsLoaded;
         }
 
@@ -129,7 +129,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool selectCurrentRevision() override {
+        virtual bool selectCurrentRevision() noexcept override {
             if (_current->body().buf) {
                 selectRevision(_current);
                 return true;
@@ -139,18 +139,18 @@ namespace c4Internal {
         }
 
 
-        virtual bool selectParentRevision() override {
+        virtual bool selectParentRevision() noexcept override {
             // TODO: Implement this for the current revision if the CAS ancestor is available
             return false;
         }
 
 
         virtual bool selectNextRevision() override {
-            return selectNextLeafRevision(false, false);
+            return selectNextLeafRevision(false);
         }
 
 
-        virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody) override {
+        virtual bool selectNextLeafRevision(bool includeDeleted) override {
             loadRevisions();
             if (_revisions.size() == 0)
                 return false;
@@ -167,7 +167,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool hasRevisionBody() override {
+        virtual bool hasRevisionBody() noexcept override {
             return _selected != nullptr;
         }
 
@@ -178,6 +178,11 @@ namespace c4Internal {
             _store.readBody(*_selected);
             selectedRev.body = _selected->body();
             return true;
+        }
+
+
+        alloc_slice detachSelectedRevBody() override {
+            return alloc_slice(_selected->body().copy());    // FIX: Always copies
         }
 
 

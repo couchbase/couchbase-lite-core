@@ -124,7 +124,7 @@ void c4view_free(C4View* view) {
         c4view_close(view, NULL);
         try {
             view->release();
-        } catchError(NULL);
+        } catchExceptions();
     }
 }
 
@@ -178,7 +178,7 @@ void c4view_setMapVersion(C4View *view, C4Slice version) {
     try {
         WITH_LOCK(view);
         view->setVersion(version);
-    } catchError(NULL);
+    } catchExceptions();
 }
 
 
@@ -186,7 +186,7 @@ uint64_t c4view_getTotalRows(C4View *view) {
     try {
         WITH_LOCK(view);
         return view->_index.rowCount();
-    } catchError(NULL);
+    } catchExceptions();
     return 0;
 }
 
@@ -194,7 +194,7 @@ C4SequenceNumber c4view_getLastSequenceIndexed(C4View *view) {
     try {
         WITH_LOCK(view);
         return view->_index.lastSequenceIndexed();
-    } catchError(NULL);
+    } catchExceptions();
     return 0;
 }
 
@@ -202,7 +202,7 @@ C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) {
     try {
         WITH_LOCK(view);
         return view->_index.lastSequenceChangedAt();
-    } catchError(NULL);
+    } catchExceptions();
     return 0;
 }
 
@@ -336,16 +336,19 @@ bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                    unsigned viewNumber,
                                    C4Document *doc)
 {
-    auto idoc = c4Internal::internal(doc);
-    if (!indexer->shouldMapDocIntoView(idoc->document(), viewNumber))
-        return false;
-    else if (indexer->shouldMapDocTypeIntoView(idoc->type(), viewNumber))
-        return true;
-    else {
-        // We're skipping this doc, but we do have to update the index to _remove_ it
-        indexer->skipDocInView(idoc->document().key(), idoc->sequence, viewNumber);
-        return false;
-    }
+    try {
+        auto idoc = c4Internal::internal(doc);
+        if (!indexer->shouldMapDocIntoView(idoc->document(), viewNumber))
+            return false;
+        else if (indexer->shouldMapDocTypeIntoView(idoc->type(), viewNumber))
+            return true;
+        else {
+            // We're skipping this doc, but we do have to update the index to _remove_ it
+            indexer->skipDocInView(idoc->document().key(), idoc->sequence, viewNumber);
+            return false;
+        }
+    } catchExceptions()
+    return true;
 }
 
 
@@ -436,7 +439,7 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
         return false;
     }
 
-    virtual void close() { }
+    virtual void close() noexcept { }
 
     Retained<C4View> _view;
 #if C4DB_THREADSAFE
@@ -462,18 +465,14 @@ bool c4queryenum_next(C4QueryEnumerator *e,
 
 void c4queryenum_close(C4QueryEnumerator *e) {
     if (e) {
-        try {
-            WITH_LOCK(asInternal(e));
-            asInternal(e)->close();
-        } catchError(NULL);
+        WITH_LOCK(asInternal(e));
+        asInternal(e)->close();
     }
 }
 
 void c4queryenum_free(C4QueryEnumerator *e) {
-    try {
-        c4queryenum_close(e);
-        delete asInternal(e);
-    } catchError(NULL);
+    c4queryenum_close(e);
+    delete asInternal(e);
 }
 
 
@@ -506,7 +505,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
-    virtual void close() override {
+    virtual void close() noexcept override {
         _enum.close();
     }
 
@@ -580,7 +579,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
         return _enum.match()->matchedText();
     }
 
-    virtual void close() override {
+    virtual void close() noexcept override {
         _enum.close();
     }
 
@@ -627,7 +626,7 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
     try {
         slice result = ((C4FullTextEnumerator*)e)->fullTextMatched().dontFree();
         return {result.buf, result.size};
-    } catchError(NULL);
+    } catchExceptions();
     return {NULL, 0};
 }
 
@@ -664,7 +663,7 @@ struct C4GeoEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
-    virtual void close() override {
+    virtual void close() noexcept override {
         _enum.close();
     }
 

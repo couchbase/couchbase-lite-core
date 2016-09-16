@@ -101,6 +101,13 @@ bool c4doc_selectCurrentRevision(C4Document* doc)
 }
 
 
+C4SliceResult c4doc_detachRevisionBody(C4Document* doc) {
+    alloc_slice result = internal(doc)->detachSelectedRevBody();
+    result.dontFree();
+    return {result.buf, result.size};
+}
+
+
 bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
     try {
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
@@ -114,7 +121,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
 bool c4doc_hasRevisionBody(C4Document* doc) {
     try {
         return internal(doc)->hasRevisionBody();
-    } catchError(NULL);
+    } catchExceptions();
     return false;
 }
 
@@ -125,7 +132,10 @@ bool c4doc_selectParentRevision(C4Document* doc) {
 
 
 bool c4doc_selectNextRevision(C4Document* doc) {
-    return internal(doc)->selectNextRevision();
+    try {
+        return internal(doc)->selectNextRevision();
+    } catchExceptions();
+    return false;
 }
 
 
@@ -135,8 +145,11 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
                                   C4Error *outError)
 {
     try {
-        if (internal(doc)->selectNextLeafRevision(includeDeleted, withBody))
+        if (internal(doc)->selectNextLeafRevision(includeDeleted)) {
+            if (withBody)
+                internal(doc)->loadSelectedRevBody();
             return true;
+        }
         clearError(outError); // normal failure
     } catchError(outError);
     return false;

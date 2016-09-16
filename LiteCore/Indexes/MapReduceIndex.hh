@@ -104,9 +104,9 @@ namespace litecore {
 
         /** Returns true if the given document should be indexed by the given view,
             i.e. if the view has not yet indexed this doc's sequence. */
-        bool shouldMapDocIntoView(const Document &doc, unsigned viewNumber);
+        bool shouldMapDocIntoView(const Document &doc, unsigned viewNumber) noexcept;
 
-        bool shouldMapDocTypeIntoView(slice docType, unsigned viewNumber);
+        bool shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) noexcept;
 
         /** Writes a set of key/value pairs into a view's index, associated with a doc/sequence.
             This must be called even if there are no pairs to index, so that obsolete index rows

@@ -218,7 +218,7 @@ namespace litecore {
 #pragma mark - OPEN/CLOSE/DELETE:
 
 
-    bool ForestDataFile::isOpen() const {
+    bool ForestDataFile::isOpen() const noexcept {
         return _fileHandle != nullptr;
     }
 

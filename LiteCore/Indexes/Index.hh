@@ -124,7 +124,7 @@ namespace litecore {
 
         bool next();
 
-        void close()                            {_dbEnum.close();}
+        void close() noexcept                   {_dbEnum.close();}
 
     protected:
         bool nextKeyRange();

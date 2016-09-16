@@ -73,11 +73,11 @@ namespace c4Internal {
             sequence = _versionedDoc.sequence();
         }
 
-        slice type() override {
+        slice type() noexcept override {
             return _versionedDoc.docType();
         }
 
-        void setType(C4Slice docType) override {
+        void setType(C4Slice docType) noexcept override {
             _versionedDoc.setDocType(docType);
         }
 
@@ -89,7 +89,7 @@ namespace c4Internal {
             return _versionedDoc.exists();
         }
 
-        bool revisionsLoaded() const override {
+        bool revisionsLoaded() const noexcept override {
             return _versionedDoc.revsAvailable();
         }
 
@@ -101,7 +101,7 @@ namespace c4Internal {
             }
         }
 
-        bool hasRevisionBody() override {
+        bool hasRevisionBody() noexcept override {
             if (!revisionsLoaded())
                 Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
             WITH_LOCK(database());
@@ -120,7 +120,7 @@ namespace c4Internal {
             return true;
         }
 
-        bool selectRevision(const Rev *rev) {   // doesn't throw
+        bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
             _selectedRev = rev;
             _loadedBody = slice::null;
             if (rev) {
@@ -150,7 +150,7 @@ namespace c4Internal {
             return true;
         }
 
-        bool selectCurrentRevision() override { // doesn't throw
+        bool selectCurrentRevision() noexcept override { // doesn't throw
             if (_versionedDoc.revsAvailable()) {
                 selectRevision(_versionedDoc.currentRevision());
                 return true;
@@ -161,7 +161,7 @@ namespace c4Internal {
             }
         }
 
-        bool selectParentRevision() override {
+        bool selectParentRevision() noexcept override {
             if (!revisionsLoaded())
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             if (_selectedRev)
@@ -169,7 +169,7 @@ namespace c4Internal {
             return _selectedRev != NULL;
         }
 
-        bool selectNextRevision() override {    // does not throw
+        bool selectNextRevision() noexcept override {    // does not throw
             if (!revisionsLoaded())
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             if (_selectedRev)
@@ -177,7 +177,7 @@ namespace c4Internal {
             return _selectedRev != NULL;
         }
 
-        bool selectNextLeafRevision(bool includeDeleted, bool withBody) override {
+        bool selectNextLeafRevision(bool includeDeleted) noexcept override {
             if (!revisionsLoaded())
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             auto rev = _selectedRev;
@@ -189,8 +189,6 @@ namespace c4Internal {
                     return false;
             } while (!rev->isLeaf() || (!includeDeleted && rev->isDeleted()));
             selectRevision(rev);
-            if (withBody)
-                loadSelectedRevBody();
             return true;
         }
 
@@ -401,7 +399,7 @@ C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool delete
 unsigned c4rev_getGeneration(C4Slice revID) {
     try {
         return revidBuffer(revID).generation();
-    }catchError(NULL)
+    }catchExceptions()
     return 0;
 }
 

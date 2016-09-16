@@ -165,8 +165,8 @@ namespace litecore {
         slice data() const                  {return _data;}
         bool atEnd() const                  {return _data.size == 0;}
         
-        Tag peekTag() const;
-        void skipTag()                      {if (_data.size > 0) _skipTag();}
+        Tag peekTag() const noexcept;
+        void skipTag() noexcept             {if (_data.size > 0) _skipTag();}
 
         int64_t readInt();
         double readDouble();

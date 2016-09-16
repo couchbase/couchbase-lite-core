@@ -102,11 +102,6 @@ namespace litecore {
         // (this mode doesn't actually create an fdb_iterator)
     }
 
-    DocEnumerator::~DocEnumerator() {
-        //Debug("enum: ~DocEnumerator(%p)", this);
-        close();
-    }
-
     // Assignment from a temporary
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) noexcept {
         _store = e._store;
@@ -119,7 +114,7 @@ namespace litecore {
     }
 
 
-    void DocEnumerator::close() {
+    void DocEnumerator::close() noexcept {
         _doc.clear();
         _impl.reset();
     }

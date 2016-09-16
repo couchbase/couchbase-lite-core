@@ -138,7 +138,7 @@ namespace litecore {
         CBFAssert(!_inTransaction);
     }
 
-    const FilePath& DataFile::filePath() const {
+    const FilePath& DataFile::filePath() const noexcept {
         return _file->_path;
     }
 
@@ -331,11 +331,11 @@ namespace litecore {
         if (_onCompactCallback) _onCompactCallback(false);
     }
 
-    bool DataFile::isCompacting() const {
+    bool DataFile::isCompacting() const noexcept {
         return _file->_isCompacting;
     }
 
-    bool DataFile::isAnyCompacting() {
+    bool DataFile::isAnyCompacting() noexcept {
         return sCompactCount > 0;
     }
 

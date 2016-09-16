@@ -91,18 +91,15 @@ void c4key_skipToken(C4KeyReader* r) {
 }
 
 bool c4key_readBool(C4KeyReader* r) {
-    bool result = false;
-    try {
-        result = ((CollatableReader*)r)->peekTag() >= CollatableReader::kTrue;
-        ((CollatableReader*)r)->skipTag();
-    } catchError(NULL)
+    bool result = ((CollatableReader*)r)->peekTag() >= CollatableReader::kTrue;
+    ((CollatableReader*)r)->skipTag();
     return result;
 }
 
 double c4key_readNumber(C4KeyReader* r) {
     try {
-    return ((CollatableReader*)r)->readDouble();
-    } catchError(NULL)
+        return ((CollatableReader*)r)->readDouble();
+    } catchExceptions()
     return nan("err");  // ????
 }
 
@@ -110,7 +107,7 @@ C4SliceResult c4key_readString(C4KeyReader* r) {
     slice s;
     try {
         s = ((CollatableReader*)r)->readString().dontFree();
-    } catchError(NULL)
+    } catchExceptions()
     return {s.buf, s.size};
 }
 

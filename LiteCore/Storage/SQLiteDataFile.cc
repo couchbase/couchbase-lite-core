@@ -75,7 +75,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::isOpen() const {
+    bool SQLiteDataFile::isOpen() const noexcept {
         return _sqlDb != nullptr;
     }
 

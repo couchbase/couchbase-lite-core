@@ -66,7 +66,6 @@ namespace litecore {
         DocEnumerator(KeyStore&,
                       std::vector<std::string> docIDs,
                       const Options& options = Options::kDefault);
-        ~DocEnumerator();
 
         DocEnumerator(DocEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
         DocEnumerator& operator=(DocEnumerator&& e) noexcept; // move assignment
@@ -75,11 +74,11 @@ namespace litecore {
             next() must be called *before* accessing the first document! */
         bool next();
 
-        bool atEnd() const                  {return _doc.key().buf == nullptr;}
+        bool atEnd() const noexcept         {return _doc.key().buf == nullptr;}
 
         /** Stops the enumerator and frees its resources. (You only need to call this if the
             destructor might not be called soon enough.) */
-        void close();
+        void close() noexcept;
 
         /** The current document. */
         const Document& doc() const         {return _doc;}
@@ -99,8 +98,8 @@ namespace litecore {
             Iter& operator++ ()             {_enum->next(); return *this;}
             operator const Document* ()     {return _enum ? (const Document*)(*_enum) : nullptr;}
         };
-        Iter begin()    {next(); return Iter{this};}
-        Iter end()      {return Iter{nullptr};}
+        Iter begin() noexcept    {next(); return Iter{this};}
+        Iter end() noexcept      {return Iter{nullptr};}
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {

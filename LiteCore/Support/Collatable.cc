@@ -162,7 +162,7 @@ namespace litecore {
     }
 
 
-    CollatableReader::Tag CollatableReader::peekTag() const {
+    CollatableReader::Tag CollatableReader::peekTag() const noexcept {
         return _data.size ? (Tag)_data[0] : kEndSequence;
     }
 
@@ -170,23 +170,23 @@ namespace litecore {
     void CollatableReader::expectTag(Tag tag) {
         slice tagSlice = _data.read(1);
         if (tagSlice.size == 0)
-            throw error(error::CorruptIndexData); // unexpected end of collatable data
+            error::_throw(error::CorruptIndexData); // unexpected end of collatable data
         else if (tagSlice[0] != tag)
-            throw error(error::CorruptIndexData); // unexpected tag"
+            error::_throw(error::CorruptIndexData); // unexpected tag
     }
 
     int64_t CollatableReader::readInt() {
         double d = readDouble();
         int64_t i = (int64_t)d;
         if (i != d)
-            throw("non-integer");
+            error::_throw(error::CorruptIndexData); // not an integer
         return i;
     }
 
     double CollatableReader::readDouble() {
         slice tagSlice = _data.read(1);
         if (tagSlice[0] != kNegative && tagSlice[0] != kPositive)
-            throw error(error::CorruptIndexData); // unexpected tag
+            error::_throw(error::CorruptIndexData); // unexpected tag
         swappedDouble swapped;
         _data.readInto(slice(&swapped, sizeof(swapped)));
         if (tagSlice[0] == kNegative)
@@ -202,7 +202,7 @@ namespace litecore {
         expectTag(tag);
         const void* end = _data.findByte(0);
         if (!end)
-            throw error(error::CorruptIndexData); // malformed string
+            error::_throw(error::CorruptIndexData); // malformed string
         size_t nBytes = _data.offsetOf(end);
 
         alloc_slice result(nBytes);
@@ -243,7 +243,7 @@ namespace litecore {
             case kGeohash: {
                 const void* end = _data.findByte(0);
                 if (!end)
-                    throw error(error::CorruptIndexData); // malformed string
+                    error::_throw(error::CorruptIndexData); // malformed string
                 _data.moveStart(_data.offsetOf(end)+1);
                 break;
             }
@@ -264,7 +264,7 @@ namespace litecore {
             case kSpecial:
                 break;
             default:
-                throw error(error::CorruptIndexData); // Unexpected tag in read()
+                error::_throw(error::CorruptIndexData); // Unexpected tag in read()
         }
         return slice(start, _data.buf);
     }

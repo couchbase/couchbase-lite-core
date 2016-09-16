@@ -140,7 +140,7 @@ c4Database::c4Database(string path,
     }
 }
 
-bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) {
+bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) noexcept{
     if (config.versioning == requiredVersioning)
         return true;
     recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
@@ -158,21 +158,21 @@ void c4Database::beginTransaction() {
     }
 }
 
-bool c4Database::inTransaction() {
+bool c4Database::inTransaction() noexcept {
 #if C4DB_THREADSAFE
     lock_guard<recursive_mutex> lock(_transactionMutex);
 #endif
     return _transactionLevel > 0;
 }
 
-bool c4Database::mustBeInTransaction(C4Error *outError) {
+bool c4Database::mustBeInTransaction(C4Error *outError) noexcept {
     if (inTransaction())
         return true;
     recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
     return false;
 }
 
-bool c4Database::mustNotBeInTransaction(C4Error *outError) {
+bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
     if (!inTransaction())
         return true;
     recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
@@ -203,7 +203,7 @@ bool c4Database::endTransaction(bool commit) {
 
 
 /*static*/ bool c4Database::rekey(DataFile* database, const C4EncryptionKey *newKey,
-                                  C4Error *outError)
+                                  C4Error *outError) noexcept
 {
     try {
         if (newKey) {
@@ -257,7 +257,7 @@ bool c4db_free(C4Database* database) {
     try {
         database->release();
         return true;
-    } catchError(NULL);
+    } catchExceptions();
     return false;
 }
 
@@ -373,7 +373,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
                 ++count;
         }
         return count;
-    } catchError(NULL);
+    } catchExceptions();
     return 0;
 }
 
@@ -382,7 +382,7 @@ C4SequenceNumber c4db_getLastSequence(C4Database* database) {
     WITH_LOCK(database);
     try {
         return database->defaultKeyStore().lastSequence();
-    } catchError(NULL);
+    } catchExceptions();
     return 0;
 }
 
@@ -442,7 +442,7 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
             r.beginArray();
             return (uint64_t)r.readInt();
         }
-    } catchError(NULL)
+    } catchExceptions()
     return 0ul;
 }
 
@@ -451,9 +451,8 @@ bool c4_shutdown(C4Error *outError) {
         ForestDataFile::shutdown();
         SQLiteDataFile::shutdown();
         return true;
-    } catchError(NULL) {
-        return false;
-    }
+    } catchExceptions()
+    return false;
 }
 
 #pragma mark - RAW DOCUMENTS:

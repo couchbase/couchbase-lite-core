@@ -58,16 +58,19 @@ namespace c4Internal {
 
     // ERRORS & EXCEPTIONS:
 
-    void recordError(C4ErrorDomain domain, int code, C4Error* outError);
-    void recordException(const exception &e, C4Error* outError);
-    static inline void clearError(C4Error* outError) {if (outError) outError->code = 0;}
+    void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept;
+    void recordException(const exception &e, C4Error* outError) noexcept;
+    static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}
 
     #define catchError(OUTERR) \
         catch (const exception &x) { \
             recordException(x, OUTERR); \
         }
 
-    static inline bool checkParam(bool isValid, C4Error* outError) {
+    #define catchExceptions() \
+        catch (const exception &x) { }
+
+    static inline bool checkParam(bool isValid, C4Error* outError) noexcept {
         if (!isValid)
             recordError(LiteCoreDomain, kC4ErrorInvalidParameter, outError);
         return isValid;

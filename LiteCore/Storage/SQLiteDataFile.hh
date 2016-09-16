@@ -29,7 +29,7 @@ namespace litecore {
         SQLiteDataFile(const FilePath &path, const Options*);
         ~SQLiteDataFile();
 
-        bool isOpen() const override;
+        bool isOpen() const noexcept override;
         void close() override;
         void deleteDataFile() override;
         void reopen() override;

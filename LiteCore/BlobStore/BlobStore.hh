@@ -73,7 +73,7 @@ namespace litecore {
 
         /** Derives the blobKey from the digest of the file data.
             No more data can be written after this is called. */
-        blobKey computeKey();
+        blobKey computeKey() noexcept;
 
         /** Adds the blob to the store and returns a Blob referring to it.
             No more data can be written after this is called. */

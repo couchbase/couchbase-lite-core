@@ -46,15 +46,15 @@ public:
 
     virtual const Document& document() =0;
 
-    virtual slice type() =0;    // should not throw
-    virtual void setType(slice) =0;    // should not throw
+    virtual slice type() noexcept =0;    // should not throw
+    virtual void setType(slice) noexcept =0;    // should not throw
 
     virtual bool exists() =0;
     virtual void loadRevisions() =0;
-    virtual bool revisionsLoaded() const =0;
+    virtual bool revisionsLoaded() const noexcept =0;
     virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
 
-    virtual bool selectCurrentRevision() {    // should not throw
+    virtual bool selectCurrentRevision() noexcept {    // should not throw
         // By default just fill in what we know about the current revision:
         selectedRev.revID = revID;
         selectedRev.sequence = sequence;
@@ -71,17 +71,29 @@ public:
         return false;
     }
 
-    virtual bool selectParentRevision() =0;     // should not throw
+    virtual bool selectParentRevision() noexcept =0;     // should not throw
     virtual bool selectNextRevision() =0;
-    virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody) =0;
+    virtual bool selectNextLeafRevision(bool includeDeleted) =0;
 
-    virtual bool hasRevisionBody() =0;
+    virtual bool hasRevisionBody() noexcept =0;
     virtual bool loadSelectedRevBodyIfAvailable() =0; // can throw; returns false if compacted away
 
     void loadSelectedRevBody() {
         if (!loadSelectedRevBodyIfAvailable())
             error::_throw(error::Deleted);      // body has been compacted away
     }
+
+    virtual alloc_slice detachSelectedRevBody() {
+        auto result = _loadedBody;
+        if (result.buf)
+            _loadedBody = slice::null;
+        else
+            result = selectedRev.body; // will copy
+        selectedRev.body = slice::null;
+        return result;
+    }
+
+
 
     virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
     virtual bool putNewRevision(const C4DocPutRequest&) =0;
@@ -94,7 +106,7 @@ protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
     static C4DocumentInternal* newV2Instance(C4Database* database, const Document&);
 
-    void clearSelectedRevision() {
+    void clearSelectedRevision() noexcept {
         _selectedRevIDBuf = slice::null;
         selectedRev.revID = slice::null;
         selectedRev.flags = (C4RevisionFlags)0;

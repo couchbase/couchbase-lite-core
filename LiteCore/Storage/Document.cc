@@ -48,19 +48,19 @@ namespace litecore {
      _exists(d._exists)
     { }
 
-    void Document::clearMetaAndBody() {
+    void Document::clearMetaAndBody() noexcept {
         setMeta(slice::null);
         setBody(slice::null);
         _bodySize = _sequence = _offset = 0;
         _exists = _deleted = false;
     }
 
-    void Document::clear() {
+    void Document::clear() noexcept {
         clearMetaAndBody();
         setKey(slice::null);
     }
 
-    uint64_t Document::bodyAsUInt() const {
+    uint64_t Document::bodyAsUInt() const noexcept {
         uint64_t count;
         if (body().size < sizeof(count))
             return 0;
@@ -68,7 +68,7 @@ namespace litecore {
         return _endian_decode(count);
     }
 
-    void Document::setBodyAsUInt(uint64_t n) {
+    void Document::setBodyAsUInt(uint64_t n) noexcept {
         uint64_t newBody = _endian_encode(n);
         setBody(slice(&newBody, sizeof(newBody)));
     }

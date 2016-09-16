@@ -36,7 +36,7 @@ struct c4Database : public RefCounted<c4Database> {
 
     const C4DatabaseConfig config;
 
-    bool mustUseVersioning(C4DocumentVersioning, C4Error*);
+    bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
 
     Transaction& transaction() {
         CBFAssert(_transaction);
@@ -46,9 +46,9 @@ struct c4Database : public RefCounted<c4Database> {
     // Transaction methods below acquire _transactionMutex. Do not call them if
     // _mutex is already locked, or deadlock may occur!
     void beginTransaction();
-    bool inTransaction();
-    bool mustBeInTransaction(C4Error *outError);
-    bool mustNotBeInTransaction(C4Error *outError);
+    bool inTransaction() noexcept;
+    bool mustBeInTransaction(C4Error *outError) noexcept;
+    bool mustNotBeInTransaction(C4Error *outError) noexcept;
     bool endTransaction(bool commit);
 
     KeyStore& defaultKeyStore()                         {return _db->defaultKeyStore();}
@@ -61,7 +61,7 @@ struct c4Database : public RefCounted<c4Database> {
                              alloc_slice *revID =nullptr,
                              slice *docType =nullptr) =0;
 
-    static bool rekey(DataFile* database, const C4EncryptionKey *newKey, C4Error *outError);
+    static bool rekey(DataFile* database, const C4EncryptionKey *newKey, C4Error*) noexcept;
 
 #if C4DB_THREADSAFE
     // Mutex for synchronizing DataFile calls. Non-recursive!

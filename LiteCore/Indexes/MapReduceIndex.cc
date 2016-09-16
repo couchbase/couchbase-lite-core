@@ -330,11 +330,11 @@ namespace litecore {
 
         MapReduceIndex & index;
 
-        bool shouldIndexDocument(const Document& doc) const {
+        bool shouldIndexDocument(const Document& doc) const noexcept {
             return doc.sequence() > index._lastSequenceIndexed;
         }
 
-        bool shouldIndexDocumentType(slice docType) {
+        bool shouldIndexDocumentType(slice docType) noexcept {
             return _documentType.buf == NULL || _documentType == docType;
         }
         
@@ -425,11 +425,11 @@ namespace litecore {
         }
     }
 
-    bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) {
+    bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) noexcept {
         return _writers[viewNumber]->shouldIndexDocument(doc);
     }
 
-    bool MapReduceIndexer::shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) {
+    bool MapReduceIndexer::shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) noexcept {
         return _writers[viewNumber]->shouldIndexDocumentType(docType);
     }
 

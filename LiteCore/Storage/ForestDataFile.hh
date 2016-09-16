@@ -33,7 +33,7 @@ namespace litecore {
         static void shutdown();
 
         // Inherited methods:
-        bool isOpen() const override;
+        bool isOpen() const noexcept override;
         void close() override;
         void deleteDataFile() override;
         void reopen() override;

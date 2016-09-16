@@ -29,14 +29,14 @@ using namespace litecore;
 
 namespace c4Internal {
 
-    void recordError(C4ErrorDomain domain, int code, C4Error* outError) {
+    void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
         if (outError) {
             outError->domain = domain;
             outError->code = code;
         }
     }
 
-    void recordException(const exception &e, C4Error* outError) {
+    void recordException(const exception &e, C4Error* outError) noexcept {
         static const C4ErrorDomain domainMap[] = {LiteCoreDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain};
         error err = error::convertException(e).standardized();

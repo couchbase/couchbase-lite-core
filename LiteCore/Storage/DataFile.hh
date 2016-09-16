@@ -46,10 +46,10 @@ namespace litecore {
         DataFile(const FilePath &path, const Options* =nullptr);
         virtual ~DataFile();
 
-        const FilePath& filePath() const;
-        const Options& options() const              {return _options;}
+        const FilePath& filePath() const noexcept;
+        const Options& options() const noexcept              {return _options;}
 
-        virtual bool isOpen() const =0;
+        virtual bool isOpen() const noexcept =0;
 
         /** Throws an exception if the database is closed. */
         void checkOpen() const;
@@ -65,12 +65,12 @@ namespace litecore {
         virtual void deleteDataFile() =0;
 
         virtual void compact() =0;
-        bool isCompacting() const;
-        static bool isAnyCompacting();
+        bool isCompacting() const noexcept;
+        static bool isAnyCompacting() noexcept;
 
         typedef std::function<void(bool compacting)> OnCompactCallback;
 
-        void setOnCompact(OnCompactCallback callback)   {_onCompactCallback = callback;}
+        void setOnCompact(OnCompactCallback callback) noexcept  {_onCompactCallback = callback;}
 
         virtual bool setAutoCompact(bool autoCompact)   {return false;}
 

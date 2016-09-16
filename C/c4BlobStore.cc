@@ -33,7 +33,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) {
         blobKey key(string((char*)str.buf, str.size));
         *outKey = external(key);
         return true;
-    } catchError(nullptr)
+    } catchExceptions()
     return false;
 }
 
@@ -82,7 +82,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) {
 int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) {
     try {
         return store->get(internal(key)).contentLength();
-    } catchError(nullptr)
+    } catchExceptions()
     return -1;
 }
 
@@ -156,9 +156,7 @@ bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) {
 
 
 void c4stream_close(C4ReadStream* stream) {
-    try {
-        delete internal(stream);
-    } catchError(nullptr)
+    delete internal(stream);
 }
 
 
@@ -202,5 +200,5 @@ void c4stream_closeWriter(C4WriteStream* stream) {
     try {
         internal(stream)->close();
         delete internal(stream);
-    } catchError(nullptr)
+    } catchExceptions()
 }

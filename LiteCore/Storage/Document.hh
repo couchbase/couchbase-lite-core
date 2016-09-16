@@ -61,16 +61,16 @@ namespace litecore {
         const alloc_slice& resizeMeta(size_t newSize)        {_meta.resize(newSize); return _meta;}
 
         /** Clears/frees everything. */
-        void clear();
+        void clear() noexcept;
 
         /** Clears everything but the key. */
-        void clearMetaAndBody();
+        void clearMetaAndBody() noexcept;
 
         void updateSequence(sequence_t s)       {_sequence = s;}
         void setUnloadedBodySize(size_t size)   {_body = slice::null; _bodySize = size;}
 
-        uint64_t bodyAsUInt() const;
-        void setBodyAsUInt(uint64_t);
+        uint64_t bodyAsUInt() const noexcept;
+        void setBodyAsUInt(uint64_t) noexcept;
 
     private:
         friend class KeyStore;

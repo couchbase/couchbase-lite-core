@@ -121,6 +121,11 @@ extern "C" {
     bool c4doc_loadRevisionBody(C4Document* doc,
                                 C4Error *outError);
 
+    /** Transfers ownership of the document's `selectedRev.body` to the caller, without copying.
+        The C4Document's field is cleared, and the value returned from this function. As witt
+        all C4SliceResult values, the caller is responsible for freeing it when finished. */
+    C4SliceResult c4doc_detachRevisionBody(C4Document* doc);
+
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc);

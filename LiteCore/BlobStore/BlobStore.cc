@@ -149,7 +149,7 @@ namespace litecore {
         }
     }
 
-    blobKey BlobWriteStream::computeKey() {
+    blobKey BlobWriteStream::computeKey() noexcept {
         if (!_computedKey) {
             sha1_end(&_sha1ctx, &_key.bytes);
             _computedKey = true;
