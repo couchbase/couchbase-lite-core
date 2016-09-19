@@ -55,6 +55,6 @@ GCC_WARN_UNINITIALIZED_AUTOS                       = YES_AGGRESSIVE
 GCC_WARN_UNUSED_FUNCTION                           = YES
 GCC_WARN_UNUSED_VARIABLE                           = YES
 
-WARNING_CFLAGS                                     = -Wall -Wformat-security -Wmissing-declarations -Woverriding-method-mismatch -Wbool-conversion -Wno-arc-retain-cycles -Weffc++
+WARNING_CFLAGS                                     = -Wformat-security -Wmissing-declarations -Woverriding-method-mismatch -Wbool-conversion -Wno-arc-retain-cycles -Weffc++
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
