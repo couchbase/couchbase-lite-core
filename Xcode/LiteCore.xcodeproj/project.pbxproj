@@ -30,6 +30,8 @@
 		2701C22D1C4DA76B006D7A99 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
 		2705154D1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */; };
 		2705154E1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */; };
+		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
 		2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
@@ -588,6 +590,7 @@
 		2701993A19F1972E00FDC239 /* Tokenizer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Tokenizer.hh; sourceTree = "<group>"; };
 		2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewQuery.cc; sourceTree = "<group>"; };
 		270515511D8CBEBD00D62D05 /* c4ViewInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ViewInternal.hh; sourceTree = "<group>"; };
+		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		2708FE361CF3A0F10022F721 /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
 		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
 		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
@@ -1083,6 +1086,8 @@
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
 				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
 				27FA09C11D70AE24005888AA /* libsqlite3.tbd in Frameworks */,
+				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
+				2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1281,6 +1286,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				270515581D907F6200D62D05 /* CoreFoundation.framework */,
 				27E89BAB1D6A611D002C32B3 /* libsqlcipher.0.dylib */,
 				27D74A981D4D404100D806E0 /* libsqlite3.tbd */,
 				27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */,

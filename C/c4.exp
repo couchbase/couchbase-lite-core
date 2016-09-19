@@ -212,3 +212,14 @@ _FLEncoder_EndDict
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage
+
+# Fleece CF/Obj-C:
+_FLEncoder_WriteCFObject
+_FLValue_CopyCFObject
+_FLDict_GetWithCFString
+_FLEncoder_WriteNSObject
+_FLValue_GetNSObject
+_FLDict_GetWithNSString
+.objc_class_name_FleeceDocument
+.objc_class_name_FleeceDictionary
+.objc_class_name_FleeceArray
