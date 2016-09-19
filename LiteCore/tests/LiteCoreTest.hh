@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include "slice.hh"
+#include "MSVC_Compat.hh"
 
 using namespace fleece;
 

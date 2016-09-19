@@ -21,3 +21,5 @@ stripopts
 Java/jni/com_couchbase_cbforest_*.h
 *VC.*db
 /C/Documentation
+Debug_Static/
+Release_Static/

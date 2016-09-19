@@ -9,6 +9,8 @@
 #include "Collatable.hh"
 #include "LiteCoreTest.hh"
 #include <math.h>
+#include <float.h>
+#include "MSVC_Compat.hh"
 
 using namespace litecore;
 

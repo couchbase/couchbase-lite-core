@@ -12,15 +12,16 @@
 #include "Error.hh"
 #include <dirent.h>
 #include <errno.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
 #include <sys/stat.h>
-#define MKDIR(PATH, MODE) ::mkdir(PATH, (mode_t)MODE)
 #else
 #include <direct.h>
-#include <BaseTsd.h>
-#define MKDIR(PATH, MODE) ::mkdir(PATH)
+#include <io.h>
+#include "mkstemps.h"
 #endif
 
 

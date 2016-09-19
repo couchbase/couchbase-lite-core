@@ -11,7 +11,14 @@
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
 #include <stdlib.h>
+#include <stdarg.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include "asprintf.h"
+#include "arc4random.h"
+#undef min
+#endif
 
 
 using namespace std;

@@ -86,6 +86,7 @@ namespace litecore {
 
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
+#if AES256_AVAILABLE
         CBFDebugAssert(plaintext.size <= kFileBlockSize);
         uint64_t iv[2] = {0, _endian_encode(_blockID++)};
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
@@ -98,6 +99,9 @@ namespace litecore {
         _output->write(ciphertext);
         Log("WRITE #%2lu: %lu bytes, final=%d --> %lu bytes ciphertext",
             _blockID-1, plaintext.size, finalBlock, ciphertext.size);
+#else
+        error::_throw(error::Unimplemented);
+#endif
     }
 
 
@@ -166,6 +170,7 @@ namespace litecore {
 
     // Reads & decrypts the next block from the file into `output`
     size_t EncryptedReadStream::readBlockFromFile(slice output) {
+#if AES256_AVAILABLE
         CBFAssert(_blockID <= _finalBlockID);
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
         bool finalBlock = (_blockID == _finalBlockID);
@@ -183,6 +188,9 @@ namespace litecore {
         Log("READ  #%2lu: %lu bytes, final=%d --> %lu bytes ciphertext",
             _blockID-1, bytesRead, finalBlock, outputSize);
         return outputSize;
+#else
+        error::_throw(error::Unimplemented);
+#endif
     }
 
 

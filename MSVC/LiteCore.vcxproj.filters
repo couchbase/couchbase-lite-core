@@ -123,23 +123,11 @@
     <ClCompile Include="..\C\c4Document.cc">
       <Filter>Source Files\C API</Filter>
     </ClCompile>
-    <ClCompile Include="..\C\c4Document1.cc">
-      <Filter>Source Files\C API</Filter>
-    </ClCompile>
-    <ClCompile Include="..\C\c4Document2.cc">
-      <Filter>Source Files\C API</Filter>
-    </ClCompile>
     <ClCompile Include="..\C\c4Key.cc">
       <Filter>Source Files\C API</Filter>
     </ClCompile>
     <ClCompile Include="..\C\c4View.cc">
       <Filter>Source Files\C API</Filter>
-    </ClCompile>
-    <ClCompile Include="..\CBForest.VS2015\asprintf.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\CBForest.VS2015\vasprintf-msvc.c">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\vendor\sqlite3-unicodesn\fts3_unicode2.c">
       <Filter>Source Files\Unicodesn</Filter>
@@ -249,7 +237,25 @@
     <ClCompile Include="..\vendor\sqlite3-unicodesn\libstemmer_c\runtime\utilities_sq3.c">
       <Filter>Source Files\Unicodesn</Filter>
     </ClCompile>
-    <ClCompile Include="..\CBForest.VS2015\memmem.cc">
+    <ClCompile Include="asprintf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memmem.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vasprintf-msvc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Support\EncryptedStream.cc">
+      <Filter>Source Files\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4TreeDocument.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4VectorDocument.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="mkstemps.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
