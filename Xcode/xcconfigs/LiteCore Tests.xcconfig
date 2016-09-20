@@ -5,10 +5,11 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "Tests.xcconfig"
+
 FRAMEWORK_SEARCH_PATHS       = $(DEVELOPER_FRAMEWORKS_DIR) $(inherited)
 GCC_PRECOMPILE_PREFIX_HEADER = YES
 GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
-GCC_WARN_UNKNOWN_PRAGMAS     = NO
 HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece /usr/local/include
 INFOPLIST_FILE               = XcodeTests/LiteCore Tests-Info.plist
 LIBRARY_SEARCH_PATHS         = $(inherited) /usr/local/lib

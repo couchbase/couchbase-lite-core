@@ -70,11 +70,8 @@ namespace c4Internal {
     #define catchExceptions() \
         catch (const exception &x) { }
 
-    static inline bool checkParam(bool isValid, C4Error* outError) noexcept {
-        if (!isValid)
-            recordError(LiteCoreDomain, kC4ErrorInvalidParameter, outError);
-        return isValid;
-    }
+    #define checkParam(TEST, OUTERROR) \
+        ((TEST) || (recordError(LiteCoreDomain, kC4ErrorInvalidParameter, OUTERROR), false))
 
     C4SliceResult stringResult(const char *str);
 

@@ -489,7 +489,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsIncludeDeleted", "[Datab
         auto doc = c4enum_getDocument(e, &error);
         REQUIRE(doc);
         if (i == 6)
-            strcpy(docID, "doc-005DEL");
+            strncpy(docID, "doc-005DEL", sizeof(docID));
         else
             sprintf(docID, "doc-%03d", i - (i>=6));
         REQUIRE(doc->docID == c4str(docID));

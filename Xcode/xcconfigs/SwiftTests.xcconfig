@@ -5,6 +5,8 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "Tests.xcconfig"
+
 ALWAYS_SEARCH_USER_PATHS           = NO
 CLANG_ANALYZER_NONNULL             = YES
 CLANG_CXX_LANGUAGE_STANDARD        = gnu++0x

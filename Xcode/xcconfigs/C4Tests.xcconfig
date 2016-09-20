@@ -5,10 +5,10 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "Tests.xcconfig"
+
 SDKROOT                     = macosx
 SUPPORTED_PLATFORMS         = macosx
-
-GCC_WARN_UNKNOWN_PRAGMAS    = NO
 
 HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece /usr/local/include/
 LIBRARY_SEARCH_PATHS        = $(inherited) /usr/local/lib

@@ -9,6 +9,7 @@
 
 EXECUTABLE_PREFIX                         = lib
 
+CLANG_WARN_DOCUMENTATION_COMMENTS         = NO
 CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO
 CLANG_WARN_UNREACHABLE_CODE               = NO;
 
@@ -24,4 +25,4 @@ GCC_WARN_UNUSED_VARIABLE                  = NO
 
 HEADER_SEARCH_PATHS                       = $(inherited) $(SRCROOT)/../vendor/forestdb/**
 
-WARNING_CFLAGS                            = -Wformat-security -Wmissing-declarations -Woverriding-method-mismatch -Wbool-conversion -Wno-arc-retain-cycles
+RUN_CLANG_STATIC_ANALYZER                 = NO

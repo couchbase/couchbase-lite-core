@@ -591,6 +591,8 @@
 		2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewQuery.cc; sourceTree = "<group>"; };
 		270515511D8CBEBD00D62D05 /* c4ViewInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ViewInternal.hh; sourceTree = "<group>"; };
 		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
+		2705155F1D90A29F00D62D05 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
 		2708FE361CF3A0F10022F721 /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
 		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
 		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
@@ -1197,6 +1199,9 @@
 		273E9FA41C519A1B003115A6 /* xcconfigs */ = {
 			isa = PBXGroup;
 			children = (
+				2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */,
+				2705155F1D90A29F00D62D05 /* Tests.xcconfig */,
+				2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */,
 				273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */,
 				273E9FAD1C519A1B003115A6 /* LiteCore Tests.xcconfig */,
 				273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */,
@@ -1206,7 +1211,6 @@
 				273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */,
 				273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */,
 				273E9FBC1C519A1B003115A6 /* Project.xcconfig */,
-				2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */,
 				27A657C31CBC390700A7A1D7 /* Swift.xcconfig */,
 				27A657C11CBC390700A7A1D7 /* Swift_Debug.xcconfig */,
 				27A657C21CBC390700A7A1D7 /* Swift_Release.xcconfig */,

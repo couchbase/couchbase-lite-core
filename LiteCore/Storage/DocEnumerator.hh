@@ -39,13 +39,13 @@ namespace litecore {
     class DocEnumerator {
     public:
         struct Options {
-            unsigned                 skip;              //< Number of results to skip
-            unsigned                 limit;             //< Max number of results to return
-            bool                     descending     :1; //< Reverse order? (Start must be >= end)
-            bool                     inclusiveStart :1; //< Include the start key/seq?
-            bool                     inclusiveEnd   :1; //< Include the end key/seq?
-            bool                     includeDeleted :1; //< Include deleted documents?
-            ContentOptions           contentOptions :4; //< Load document bodies?
+            unsigned                 skip;              ///< Number of results to skip
+            unsigned                 limit;             ///< Max number of results to return
+            bool                     descending     :1; ///< Reverse order? (Start must be >= end)
+            bool                     inclusiveStart :1; ///< Include the start key/seq?
+            bool                     inclusiveEnd   :1; ///< Include the end key/seq?
+            bool                     includeDeleted :1; ///< Include deleted documents?
+            ContentOptions           contentOptions :4; ///< Load document bodies?
 
             /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */
             static const Options kDefault;

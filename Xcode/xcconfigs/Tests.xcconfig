@@ -1,0 +1,11 @@
+//
+//  Tests.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 9/19/16.
+//  Copyright © 2016 Couchbase. All rights reserved.
+//
+
+CLANG_WARN__EXIT_TIME_DESTRUCTORS           = NO
+GCC_WARN_UNKNOWN_PRAGMAS                    = NO
+CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND    = NO

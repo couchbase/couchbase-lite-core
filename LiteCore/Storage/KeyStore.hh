@@ -32,9 +32,9 @@ namespace litecore {
     public:
 
         struct Capabilities {
-            bool sequences      :1;     //< Documents have sequences & can be enumerated by sequence
-            bool softDeletes    :1;     //< Deleted documents have sequence numbers (until compact)
-            bool getByOffset    :1;     //< getByOffset can retrieve overwritten docs
+            bool sequences      :1;     ///< Documents have sequences & can be enumerated by sequence
+            bool softDeletes    :1;     ///< Deleted documents have sequence numbers (until compact)
+            bool getByOffset    :1;     ///< getByOffset can retrieve overwritten docs
 
             static const Capabilities defaults;
         };

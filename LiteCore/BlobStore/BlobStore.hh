@@ -94,8 +94,8 @@ namespace litecore {
     class BlobStore {
     public:
         struct Options {
-            bool create         :1;     //< Should the store be created if it doesn't exist?
-            bool writeable      :1;     //< If false, opened read-only
+            bool create         :1;     ///< Should the store be created if it doesn't exist?
+            bool writeable      :1;     ///< If false, opened read-only
             EncryptionAlgorithm encryptionAlgorithm;
             alloc_slice encryptionKey;
             

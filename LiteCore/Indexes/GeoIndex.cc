@@ -53,7 +53,7 @@ namespace litecore {
             geohash::hash lastHash = h.last();
             Log("GeoIndexEnumerator: query add '%s' ... '%s'",
                 (const char*)h.first(), (const char*)lastHash);
-            strcat(lastHash.string, "Z"); // so the string range includes everything inside lastHash
+            strlcat(lastHash.string, "Z", sizeof(lastHash.string)); // so the string range includes everything inside lastHash
             ranges.push_back(KeyRange(CollatableBuilder(h.first()), CollatableBuilder(lastHash)));
 
             // Also need to look for all _exact_ parent hashes. For example, if the hashRange

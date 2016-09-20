@@ -59,7 +59,7 @@ namespace litecore {
             beginMap();
             for (NSString* key in obj) {
                 *this << nsstring_slice(key);
-                *this << [obj objectForKey: key];
+                *this << [(NSDictionary*)obj objectForKey: key];
             }
             endMap();
         } else if ([obj isKindOfClass: [NSNull class]]) {

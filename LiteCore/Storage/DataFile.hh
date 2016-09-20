@@ -35,8 +35,8 @@ namespace litecore {
 
         struct Options {
             KeyStore::Capabilities keyStores;
-            bool create         :1;     //< Should the db be created if it doesn't exist?
-            bool writeable      :1;     //< If false, db is opened read-only
+            bool create         :1;     ///< Should the db be created if it doesn't exist?
+            bool writeable      :1;     ///< If false, db is opened read-only
             EncryptionAlgorithm encryptionAlgorithm;
             alloc_slice encryptionKey;
 
