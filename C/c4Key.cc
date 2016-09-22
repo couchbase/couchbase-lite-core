@@ -27,6 +27,7 @@ using namespace litecore;
 
 C4Key* c4key_new()                              {return new c4Key();}
 C4Key* c4key_withBytes(C4Slice bytes)           {return new c4Key(bytes);}
+void c4key_reset(C4Key *key)                    {key->reset();}
 void c4key_free(C4Key *key)                     {delete key;}
 void c4key_addNull(C4Key *key)                  {key->addNull();}
 void c4key_addBool(C4Key *key, bool b)          {key->addBool(b);}

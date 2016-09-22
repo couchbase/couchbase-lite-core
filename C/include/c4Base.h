@@ -89,7 +89,7 @@ enum {
     kC4ErrorBadVersionVector,       // Invalid version vector syntax
     kC4ErrorCorruptRevisionData,    // Revision contains corrupted/unreadable data
     kC4ErrorCorruptIndexData,       // Index contains corrupted/unreadable data
-    kC4ErrorTokenizerError,         // can't create text tokenizer for FTS
+    kC4ErrorTokenizerError, /*10*/  // can't create text tokenizer for FTS
     kC4ErrorNotOpen,                // Database/KeyStore/index is not open
     kC4ErrorNotFound,               // Document not found
     kC4ErrorDeleted,                // Document has been deleted
@@ -99,7 +99,7 @@ enum {
     kC4ErrorUnexpectedError,        // Internal unexpected C++ exception
     kC4ErrorCantOpenFile,           // Database file can't be opened; may not exist
     kC4ErrorIOError,                // File I/O error
-    kC4ErrorCommitFailed,           // Transaction commit failed
+    kC4ErrorCommitFailed, /*20*/    // Transaction commit failed
     kC4ErrorMemoryError,            // Memory allocation failed (out of memory?)
     kC4ErrorNotWriteable,           // File is not writeable
     kC4ErrorCorruptData,            // Data is corrupted
@@ -109,7 +109,7 @@ enum {
     kC4ErrorIndexBusy,              // View can't be closed while index is enumerating
     kC4ErrorUnsupported,            // Operation not supported in this database
     kC4ErrorNotADatabaseFile,       // File is not a database, or encryption key is wrong
-    kC4ErrorWrongFormat,            // Database exists but not in the format/storage requested
+    kC4ErrorWrongFormat, /*30*/     // Database exists but not in the format/storage requested
 };
 
 

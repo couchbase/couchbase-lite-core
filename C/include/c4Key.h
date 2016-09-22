@@ -62,6 +62,9 @@ extern "C" {
         @return  A new C4Key for the shape. */
     C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox);
 
+    /** Resets a C4Key to the empty state so it can be reused. */
+    void c4key_reset(C4Key*);
+
     /** Frees a C4Key. */
     void c4key_free(C4Key*);
 

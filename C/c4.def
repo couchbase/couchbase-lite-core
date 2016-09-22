@@ -68,6 +68,7 @@ c4key_new
 c4key_newFullTextString
 c4key_newGeoJSON
 c4key_withBytes
+c4key_reset
 c4key_free
 c4key_addNull
 c4key_addBool
@@ -133,6 +134,7 @@ c4stream_closeWriter
 c4doc_getForPut
 c4_getObjectCount
 c4_shutdown
+FLSlice_Compare
 FLSlice_Free
 FLValue_FromData
 FLValue_FromTrustedData
@@ -165,6 +167,7 @@ FLDictIterator_GetKey
 FLDictIterator_GetValue
 FLDictIterator_Next
 FLDictKey_Init
+FLDictKey_GetString
 FLDict_GetWithKey
 FLDict_GetWithKeys
 FLEncoder_New
@@ -184,6 +187,7 @@ FLEncoder_EndArray
 FLEncoder_BeginDict
 FLEncoder_WriteKey
 FLEncoder_EndDict
+FLEncoder_WriteValue
 FLEncoder_Finish
 FLEncoder_GetError
 FLEncoder_GetErrorMessage

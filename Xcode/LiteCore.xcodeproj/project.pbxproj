@@ -32,6 +32,7 @@
 		2705154E1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */; };
 		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
 		2707DEA51ABDF3FE00A34C57 /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
 		2707DEA71ABDF43F00A34C57 /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
 		2707DEA91ABE0A3900A34C57 /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
@@ -593,6 +594,7 @@
 		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		2705155F1D90A29F00D62D05 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
+		270515601D91C2AE00D62D05 /* c4PerfTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4PerfTest.cc; sourceTree = "<group>"; };
 		2708FE361CF3A0F10022F721 /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
 		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
 		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
@@ -1244,11 +1246,12 @@
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
-				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */,
 				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
 				273E9EC71C506CB4003115A6 /* c4GeoTest.cc */,
+				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
+				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
 			);
 			path = tests;
@@ -2310,6 +2313,7 @@
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
+				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,

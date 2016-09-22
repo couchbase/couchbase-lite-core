@@ -7,6 +7,7 @@
 //
 
 #include "c4Test.hh"
+#include "Benchmark.hh"
 #ifdef _MSC_VER
 #include <chrono>
 #endif
@@ -37,7 +38,8 @@ public:
             char json[kSizeOfDocument+100];
             sprintf(json, "{\"content\":\"%s\"}", content);
 
-            C4Slice history[1] = {c4str(revID)};
+            C4Slice history[1] = {isRevTrees() ? c4str("1-deadbeefcafebabe80081e50")
+                                               : c4str("1@deadbeefcafebabe80081e50")};
             C4DocPutRequest rq = {};
             rq.existingRevision = true;
             rq.docID = c4str(docID);
@@ -58,8 +60,8 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
-    auto start = clock();
+N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[xPerf][.slow][C]") {
+    Stopwatch st;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
@@ -75,7 +77,6 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     c4enum_free(e);
     REQUIRE(i == kNumDocuments);
 
-    double elapsed = (clock() - start) / (double)CLOCKS_PER_SEC;
-    fprintf(stderr, "Enumerating %u docs took %.3f ms (%.3f ms/doc)\n",
-            i, elapsed*1000.0, elapsed/i*1000.0);
+    double elapsed = st.elapsedMS();
+    fprintf(stderr, "Enumerating %u docs took %.3f ms (%.3f ms/doc)\n", i, elapsed, elapsed/i);
 }

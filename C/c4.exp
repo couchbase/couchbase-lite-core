@@ -82,6 +82,7 @@ _c4key_new
 _c4key_newFullTextString
 _c4key_newGeoJSON
 _c4key_withBytes
+_c4key_reset
 _c4key_free
 _c4key_addNull
 _c4key_addBool
@@ -158,6 +159,7 @@ _c4_getObjectCount
 _c4_shutdown
 
 # Fleece:
+_FLSlice_Compare
 _FLSlice_Free
 _FLValue_FromData
 _FLValue_FromTrustedData
@@ -190,6 +192,7 @@ _FLDictIterator_GetKey
 _FLDictIterator_GetValue
 _FLDictIterator_Next
 _FLDictKey_Init
+_FLDictKey_GetString
 _FLDict_GetWithKey
 _FLDict_GetWithKeys
 _FLEncoder_New
@@ -204,6 +207,7 @@ _FLEncoder_WriteFloat
 _FLEncoder_WriteDouble
 _FLEncoder_WriteString
 _FLEncoder_WriteData
+_FLEncoder_WriteValue
 _FLEncoder_BeginArray
 _FLEncoder_EndArray
 _FLEncoder_BeginDict

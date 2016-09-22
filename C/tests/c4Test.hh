@@ -92,5 +92,6 @@ protected:
 private:
     const C4StorageEngine _storage;
     const C4DocumentVersioning _versioning;
+    const bool _bundled;
     int objectCount;
 };

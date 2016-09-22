@@ -128,6 +128,8 @@ namespace litecore {
             return alloc_slice::adopt(result);
         }
 
+        void reset();
+
         CollatableBuilder(CollatableBuilder&& c) {
             _buf = c._buf;
             _available = c._available;

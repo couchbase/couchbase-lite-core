@@ -150,6 +150,12 @@ namespace litecore {
         return CollatableReader(*this).toJSON();
     }
 
+    void CollatableBuilder::reset() {
+        if (!_buf.buf)
+            _buf = {slice::newBytes(kDefaultSize), kDefaultSize};
+        _available = _buf;
+    }
+
 
 
 #pragma mark - READER:

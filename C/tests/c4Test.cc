@@ -83,7 +83,9 @@ static void log(C4LogLevel level, C4Slice message) {
 
 
 C4Slice C4Test::databasePath() {
-    if (storageType() == kC4SQLiteStorageEngine)
+    if (_bundled)
+        return c4str(kTestDir "cbl_core_test");
+    else if (storageType() == kC4SQLiteStorageEngine)
         return c4str(kTestDir "cbl_core_test.sqlite3");
     else
         return c4str(kTestDir "cbl_core_test.forestdb");
@@ -92,7 +94,8 @@ C4Slice C4Test::databasePath() {
 
 C4Test::C4Test(int testOption)
 :_storage((testOption & 1) ? kC4ForestDBStorageEngine : kC4SQLiteStorageEngine),
- _versioning((testOption & 2) ? kC4VersionVectors : kC4RevisionTrees)
+ _versioning((testOption & 2) ? kC4VersionVectors : kC4RevisionTrees),
+ _bundled(true)
 {
     c4_shutdown(NULL);
     
@@ -103,6 +106,9 @@ C4Test::C4Test(int testOption)
     config.flags = kC4DB_Create;
     config.storageEngine = _storage;
     config.versioning = _versioning;
+
+    if (_bundled)
+        config.flags |= kC4DB_Bundled;
 
     if (config.versioning == kC4RevisionTrees) {
         kRevID = C4STR("1-abcd");

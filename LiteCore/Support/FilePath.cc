@@ -155,7 +155,7 @@ namespace litecore {
             while (1) {
                 result = readdir(dir);
                 if (!result) {
-                    if (errno == 0 || errno == ENOENT)
+                    if (errno == 0 || errno == ENOENT || errno == EINVAL)
                         break;
                     error::_throwErrno();
                 }
@@ -265,9 +265,18 @@ namespace litecore {
 
     static void _delRecursive(const FilePath &path) {
         if (path.isDir()) {
+#if 1
             path.forEachFile([](const FilePath &f) {
                 f.delRecursive();
             });
+#else
+            vector<FilePath> children;
+            path.forEachFile([&](const FilePath &f) {
+                children.push_back(f);
+            });
+            for (auto child : children)
+                child.delRecursive();
+#endif
         }
         path.del();
     }
