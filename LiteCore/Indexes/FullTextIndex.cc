@@ -44,7 +44,7 @@ namespace litecore {
                                                      slice queryString,
                                                      slice queryStringLanguage,
                                                      bool ranked,
-                                                     const DocEnumerator::Options &options)
+                                                     const IndexEnumerator::Options &options)
     :_tokens(),
      _e(index, keyRangesFor(queryString, std::string(queryStringLanguage), _tokens), options),
      _ranked(ranked),

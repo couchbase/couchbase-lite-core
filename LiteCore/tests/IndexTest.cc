@@ -48,8 +48,7 @@ public:
     uint64_t doQuery() {
         uint64_t nRows = 0;
         for (IndexEnumerator e(*index, Collatable(), litecore::slice::null,
-                               Collatable(), litecore::slice::null,
-                               DocEnumerator::Options::kDefault); e.next(); ) {
+                               Collatable(), litecore::slice::null); e.next(); ) {
             nRows++;
             alloc_slice keyStr = e.key().readString();
             slice valueStr = e.value();
@@ -104,7 +103,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
 
     Log("--- Reverse enumeration");
     uint64_t nRows = 0;
-    auto options = DocEnumerator::Options::kDefault;
+    IndexEnumerator::Options options;
     options.descending = true;
     for (IndexEnumerator e(*index, Collatable(), litecore::slice::null,
                            Collatable(), litecore::slice::null,
@@ -125,7 +124,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     keys.push_back((Collatable)CollatableBuilder("Portland"));
     keys.push_back((Collatable)CollatableBuilder("Skookumchuk"));
     nRows = 0;
-    for (IndexEnumerator e(*index, keys, DocEnumerator::Options::kDefault); e.next(); ) {
+    for (IndexEnumerator e(*index, keys); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         Log("key = %.*s, docID = %.*s",
@@ -139,7 +138,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder("Port\uFFFE")));
     ranges.push_back(KeyRange(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti")));
     nRows = 0;
-    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
+    for (IndexEnumerator e(*index, ranges); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
         Log("key = %.*s, docID = %.*s",
@@ -150,7 +149,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     // Empty vector:
     ranges.clear();
     nRows = 0;
-    for (IndexEnumerator e(*index, ranges, DocEnumerator::Options::kDefault); e.next(); ) {
+    for (IndexEnumerator e(*index, ranges); e.next(); ) {
         nRows++;
     }
     REQUIRE(nRows == 0);

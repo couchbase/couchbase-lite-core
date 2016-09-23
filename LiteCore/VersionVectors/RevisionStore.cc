@@ -246,18 +246,11 @@ namespace litecore {
 #pragma mark - ENUMERATION:
 
 
-    static const DocEnumerator::Options kRevEnumOptions = {
-        0,
-        UINT_MAX,
-        false,
-        false,  // no inclusiveStart
-        false,  // no inclusiveEnd
-        false,
-        kMetaOnly
-    };
-
-
     DocEnumerator RevisionStore::enumerateRevisions(slice docID, slice author) {
+        static DocEnumerator::Options kRevEnumOptions;
+        kRevEnumOptions.inclusiveStart = kRevEnumOptions.inclusiveEnd = false;
+        kRevEnumOptions.contentOptions = kMetaOnly;
+        
         return DocEnumerator(_nonCurrentStore,
                              startKeyFor(docID, author),
                              endKeyFor(docID, author),

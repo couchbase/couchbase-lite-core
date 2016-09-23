@@ -49,10 +49,10 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     true
 };
 
-static DocEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
+static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
     if (!c4options)
         c4options = &kC4DefaultQueryOptions;
-    DocEnumerator::Options options = DocEnumerator::Options::kDefault;
+    IndexEnumerator::Options options;
     options.skip = (unsigned)c4options->skip;
     options.limit = (unsigned)c4options->limit;
     options.descending = c4options->descending;
@@ -123,14 +123,14 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
     C4MapReduceEnumerator(C4View *view,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
-                        const DocEnumerator::Options &options)
+                        const IndexEnumerator::Options &options)
     :C4QueryEnumInternal(view),
      _enum(view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
 
     C4MapReduceEnumerator(C4View *view,
                         vector<KeyRange> keyRanges,
-                        const DocEnumerator::Options &options)
+                        const IndexEnumerator::Options &options)
     :C4QueryEnumInternal(view),
      _enum(view->_index, keyRanges, options)
     { }
@@ -162,7 +162,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
         WITH_LOCK(view);
         if (!c4options)
             c4options = &kC4DefaultQueryOptions;
-        DocEnumerator::Options options = convertOptions(c4options);
+        IndexEnumerator::Options options = convertOptions(c4options);
 
         if (c4options->keysCount == 0 && c4options->keys == NULL) {
             Collatable noKey;
@@ -196,7 +196,7 @@ struct C4FullTextEnumerator : public C4QueryEnumInternal {
                          slice queryString,
                          slice queryStringLanguage,
                          bool ranked,
-                         const DocEnumerator::Options &options)
+                         const IndexEnumerator::Options &options)
     :C4QueryEnumInternal(view),
      _enum(view->_index, queryString, queryStringLanguage, ranked, options)
     { }

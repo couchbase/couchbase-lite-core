@@ -151,14 +151,10 @@ namespace litecore {
         if (!dir)
             error::_throwErrno();
         try {
-            struct dirent *result;
             while (1) {
-                result = readdir(dir);
-                if (!result) {
-                    if (errno == 0 || errno == ENOENT || errno == EINVAL)
-                        break;
-                    error::_throwErrno();
-                }
+                struct dirent *result = readdir(dir);
+                if (!result)
+                    break;
                 string name(result->d_name, result->d_namlen);
                 if (_file.empty() || name.find(_file) == 0) {
                     if (result->d_type == DT_DIR) {

@@ -362,7 +362,7 @@ const C4DatabaseConfig* c4db_getConfig(C4Database *database) {
 uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
         WITH_LOCK(database);
-        auto opts = DocEnumerator::Options::kDefault;
+        DocEnumerator::Options opts;
         opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;

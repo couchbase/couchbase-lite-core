@@ -77,8 +77,7 @@ namespace litecore {
     GeoIndexEnumerator::GeoIndexEnumerator(MapReduceIndex &index,
                                            geohash::area searchArea)
     :IndexEnumerator(index,
-                     keyRangesFor(searchArea),
-                     DocEnumerator::Options::kDefault),
+                     keyRangesFor(searchArea)),
      _searchArea(searchArea)
     { }
 

@@ -62,7 +62,7 @@ namespace litecore {
                                 slice queryString,
                                 slice queryStringLanguage,
                                 bool ranked,
-                                const DocEnumerator::Options&);
+                                const IndexEnumerator::Options&);
 
         bool next();
         void close()                                        {_e.close();}

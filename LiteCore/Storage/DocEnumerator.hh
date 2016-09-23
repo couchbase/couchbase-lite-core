@@ -39,33 +39,32 @@ namespace litecore {
     class DocEnumerator {
     public:
         struct Options {
-            unsigned                 skip;              ///< Number of results to skip
-            unsigned                 limit;             ///< Max number of results to return
-            bool                     descending     :1; ///< Reverse order? (Start must be >= end)
-            bool                     inclusiveStart :1; ///< Include the start key/seq?
-            bool                     inclusiveEnd   :1; ///< Include the end key/seq?
-            bool                     includeDeleted :1; ///< Include deleted documents?
-            ContentOptions           contentOptions :4; ///< Load document bodies?
+            unsigned       skip    {0};         ///< Number of results to skip
+            unsigned       limit   {UINT_MAX};  ///< Max number of results to return
+            bool           descending     :1;   ///< Reverse order? (Start must be
+            bool           inclusiveStart :1;   ///< Include the start key/seq?
+            bool           inclusiveEnd   :1;   ///< Include the end key/seq?
+            bool           includeDeleted :1;   ///< Include deleted documents?
+            ContentOptions contentOptions :4;   ///< Load document bodies?
 
             /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */
-            static const Options kDefault;
+            Options();
 
             bool inclusiveMin() const {return descending ? inclusiveEnd : inclusiveStart;}
             bool inclusiveMax() const {return descending ? inclusiveStart : inclusiveEnd;}
-
         };
 
         DocEnumerator(KeyStore&,
                       slice startKey = slice::null,
                       slice endKey = slice::null,
-                      const Options& options = Options::kDefault);
+                      const Options& options = Options());
         DocEnumerator(KeyStore&,
                       sequence start,
                       sequence end = UINT64_MAX,
-                      const Options& options = Options::kDefault);
+                      const Options& options = Options());
         DocEnumerator(KeyStore&,
                       std::vector<std::string> docIDs,
-                      const Options& options = Options::kDefault);
+                      const Options& options = Options());
 
         DocEnumerator(DocEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
         DocEnumerator& operator=(DocEnumerator&& e) noexcept; // move assignment

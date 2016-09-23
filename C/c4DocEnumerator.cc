@@ -65,7 +65,7 @@ struct C4DocEnumerator: InstanceCounted {
     }
 
     static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
-        auto options = DocEnumerator::Options::kDefault;
+        DocEnumerator::Options options;
         options.skip = (unsigned)c4options.skip;
         options.descending = (c4options.flags & kC4Descending) != 0;
         options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;

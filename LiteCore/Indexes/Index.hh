@@ -18,6 +18,7 @@
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
 #include <atomic>
+#include <functional>
 
 namespace litecore {
     
@@ -99,17 +100,32 @@ namespace litecore {
     };
 
 
+    class ReduceFunction {
+    public:
+        virtual ~ReduceFunction() { };
+        virtual void operator() (CollatableReader key, slice value) =0;
+        virtual alloc_slice reducedValue() =0;
+    };
+
+
     /** Index query enumerator. */
     class IndexEnumerator {
     public:
+        struct Options : public DocEnumerator::Options {
+            ReduceFunction *reduce  {nullptr};
+            unsigned groupLevel     {0};
+
+            Options() {}
+        };
+
         IndexEnumerator(Index&,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
-                        const DocEnumerator::Options&);
+                        const Options& =Options());
 
         IndexEnumerator(Index&,
                         std::vector<KeyRange> keyRanges,
-                        const DocEnumerator::Options&);
+                        const Options& =Options());
 
         virtual ~IndexEnumerator()              {_index.removeUser();}
 
@@ -133,11 +149,15 @@ namespace litecore {
         void setValue(slice value)              {_value = value;}
         DocEnumerator enumeratorForIndex(int keyRangeIndex);
 
+        void computeGroupedKey();
+        bool accumulateRow();
+        bool createReducedRow();
+
     private:
         friend class Index;
 
         Index&                  _index;                 // The index
-        DocEnumerator::Options  _options;               // Enumeration options
+        Options                 _options;               // Enumeration options
         alloc_slice             _startKey;              // Key to start at
         alloc_slice             _endKey;                // Key to end at
         bool                    _inclusiveStart;        // Include the startKey?
@@ -150,6 +170,11 @@ namespace litecore {
         slice                   _value;                 // Current value
         alloc_slice             _docID;                 // Current docID
         sequence_t              _sequence;              // Current sequence
+
+        bool                    _reducing {false};
+        alloc_slice             _groupedKey;
+        alloc_slice             _reducedKey;
+        alloc_slice             _reducedValue;
     };
 
 }

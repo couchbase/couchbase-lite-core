@@ -234,9 +234,9 @@ namespace litecore {
         return realKey;
     }
 
-    static DocEnumerator::Options docOptions(DocEnumerator::Options options) {
-        options.limit = DocEnumerator::Options::kDefault.limit;
-        options.skip = DocEnumerator::Options::kDefault.skip;
+    static DocEnumerator::Options docOptions(IndexEnumerator::Options options) {
+        options.limit = UINT_MAX;
+        options.skip = 0;
         options.includeDeleted = false;
         options.contentOptions = kDefaultContent; // read() method needs the doc bodies
         return options;
@@ -245,7 +245,7 @@ namespace litecore {
     IndexEnumerator::IndexEnumerator(Index& index,
                                      Collatable startKey, slice startKeyDocID,
                                      Collatable endKey,   slice endKeyDocID,
-                                     const DocEnumerator::Options& options)
+                                     const Options& options)
     :_index(index),
      _options(options),
      _inclusiveStart(options.inclusiveStart),
@@ -265,7 +265,7 @@ namespace litecore {
 
     IndexEnumerator::IndexEnumerator(Index& index,
                                      std::vector<KeyRange> keyRanges,
-                                     const DocEnumerator::Options& options)
+                                     const Options& options)
     :_index(index),
      _options(options),
      _inclusiveStart(true),
@@ -332,6 +332,15 @@ namespace litecore {
                 continue;
             }
 
+            // If reducing/grouping, either accumulate this row, or generate a reduced row:
+            if (_options.reduce) {
+                if (accumulateRow()) {
+                    _dbEnum.next();
+                    continue;
+                }
+                createReducedRow();
+            }
+
             // OK, this is a candidate. First honor the skip and limit:
             if (_options.skip > 0) {
                 --_options.skip;
@@ -374,7 +383,86 @@ namespace litecore {
 
     bool IndexEnumerator::next() {
         _dbEnum.next();
-        return read();
+        if (read()) {
+            return true;
+        } else if (_options.reduce && createReducedRow()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+#pragma mark - REDUCE:
+
+
+    // Accumulates the current row into the reduce, if appropriate; else returns false.
+    bool IndexEnumerator::accumulateRow() {
+        if (_options.groupLevel > 0) {
+            if (!_reducing) {
+                // First row: find the key we're grouping on:
+                computeGroupedKey();
+            } else if (_key.size < _groupedKey.size ||
+                        0 != memcmp(_key.buf, _groupedKey.buf, _groupedKey.size)) {
+                // If the current key doesn't have the current grouped key prefix, don't accumulate:
+                return false;
+            }
+        }
+        // Feed the row into the reduce function:
+        (*_options.reduce)(_key, _value);
+        _reducing = true;
+        return true;
+    }
+
+
+    // Gets the accumulated reduced value from the reducer and stores it in _value.
+    // Stores the current grouped key [prefix] into _key.
+    // If not at the end of the iteration, starts a new reduce with the current row.
+    bool IndexEnumerator::createReducedRow() {
+        if (!_reducing)
+            return false;
+        // Compute the reduced key/value of the preceding rows:
+        _reducedKey = _groupedKey;
+        if (_reducedKey.size == 0) {
+            uint8_t defaultKey[1] = {CollatableTypes::kNull};
+            _reducedKey = slice(defaultKey, 1);
+        } else if (_reducedKey[0] == Collatable::kArray) {
+            uint8_t suffix[1] = {CollatableTypes::kEndSequence};
+            _reducedKey.append(slice(suffix, 1));
+        }
+        _reducedValue = _options.reduce->reducedValue();
+        _reducing = false;
+
+        if (_dbEnum && _options.groupLevel > 0) {
+            // Get the new grouped (prefix) key:
+            computeGroupedKey();
+
+            // Start a new reduce from the current row:
+            (*_options.reduce)(_key, _value);
+            _reducing = true;
+        }
+
+        // Expose the reduced key & value:
+        _key = _reducedKey;
+        _value = _reducedValue;
+        return true;
+    }
+
+
+    // Set _groupedKey equal to the key or key-prefix that's being grouped on.
+    void IndexEnumerator::computeGroupedKey() {
+        CollatableReader keyReader = key();
+        if (keyReader.peekTag() == CollatableTypes::kArray) {
+            keyReader.skipTag();
+            for (unsigned level = 0; level < _options.groupLevel; ++level) {
+                if (keyReader.atEnd())
+                    break;
+                (void)keyReader.read();
+            }
+            _groupedKey = alloc_slice(_key.buf, keyReader.data().buf);
+        } else {
+            _groupedKey = _key;
+        }
     }
 
 }

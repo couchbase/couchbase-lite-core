@@ -111,7 +111,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
         Log("Enumerate over all docs (metaOnly=%d)", metaOnly);
-        auto opts = DocEnumerator::Options::kDefault;
+        DocEnumerator::Options opts;
         opts.contentOptions = metaOnly ? kMetaOnly : kDefaultContent;
 
         {
@@ -181,7 +181,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
-    auto opts = DocEnumerator::Options::kDefault;
+    DocEnumerator::Options opts;
     opts.descending = true;
 
     createNumberedDocs(store);

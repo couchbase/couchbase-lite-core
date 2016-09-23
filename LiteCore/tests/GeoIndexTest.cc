@@ -21,7 +21,7 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
     auto seq = indexer.startingSequence();
     numMapCalls = 0;
 
-    auto options = DocEnumerator::Options::kDefault;
+    DocEnumerator::Options options;
     options.includeDeleted = true;
     DocEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {

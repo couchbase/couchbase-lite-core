@@ -28,15 +28,15 @@ namespace litecore {
 #pragma mark - ENUMERATION:
 
 
-    const DocEnumerator::Options DocEnumerator::Options::kDefault = {
-        0,
-        UINT_MAX,
-        false,
-        true,
-        true,
-        false,
-        kDefaultContent,
-    };
+    DocEnumerator::Options::Options()
+    :skip(0),
+     limit(UINT_MAX),
+     descending(false),
+     inclusiveStart(true),
+     inclusiveEnd(true),
+     includeDeleted(false),
+     contentOptions(kDefaultContent)
+    { }
 
 
     DocEnumerator::DocEnumerator(KeyStore &store, const Options& options)
