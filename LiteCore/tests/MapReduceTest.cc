@@ -199,18 +199,20 @@ class CountReduce : public ReduceFunction {
 public:
     void operator() (CollatableReader key, slice value) override {
         Log("    CountReduce: key = %s", key.toJSON().c_str());
-        ++count;
+        ++_count;
     }
-    alloc_slice reducedValue() override {
-        Log("    CountReduce: reduced value = %u", count);
+    slice reducedValue() override {
+        Log("    CountReduce: reduced value = %u", _count);
         Encoder e;
-        e << count;
-        count = 0;
-        return e.extractOutput();
+        e << _count;
+        _reduced = e.extractOutput();
+        _count = 0;
+        return _reduced;
     }
 
 private:
-    unsigned count {0};
+    unsigned _count {0};
+    alloc_slice _reduced;
 };
 
 

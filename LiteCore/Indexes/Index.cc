@@ -430,7 +430,7 @@ namespace litecore {
             uint8_t suffix[1] = {CollatableTypes::kEndSequence};
             _reducedKey.append(slice(suffix, 1));
         }
-        _reducedValue = _options.reduce->reducedValue();
+        slice reducedValue = _options.reduce->reducedValue();
         _reducing = false;
 
         if (_dbEnum && _options.groupLevel > 0) {
@@ -444,7 +444,7 @@ namespace litecore {
 
         // Expose the reduced key & value:
         _key = _reducedKey;
-        _value = _reducedValue;
+        _value = reducedValue;
         return true;
     }
 

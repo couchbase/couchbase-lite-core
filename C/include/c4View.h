@@ -211,6 +211,22 @@ extern "C" {
         @{ */
 
 
+    /** Defines a "reduce function" that aggregates multiple index rows into a single value. */
+    typedef struct {
+        /** Callback that receives a key/value pair from the index and accumulates it into the
+            ongoing reduced result. */
+        void (*accumulate)(void *context, C4Key *key, C4Slice value);
+        /** Callback that returns reduced result as encoded data.
+            The data must remain valid until the next call to the reduce() callback!
+            This function should also clear the internal accumulation state, in preparation for
+            subsequent calls to the `accumulate` callback. */
+        C4Slice (*reduce)(void *context);
+        /** Arbitrary pointer to caller-supplied storage space for the accumulation state.
+            This value is passed to the callbacks for their use. */
+        void *context;
+    } C4ReduceFunction;
+
+
     /** Options for view queries. */
     typedef struct {
         uint64_t skip;          ///< Number of initial rows to skip
@@ -227,17 +243,23 @@ extern "C" {
         
         const C4Key **keys;     ///< List of keys to iterate (overrides start/endKey)
         size_t keysCount;       ///< Number of keys pointed to by `keys`
+
+        const C4ReduceFunction *reduce; ///< Reduce function, or NULL for no reducing
+        uint32_t groupLevel;            ///< Key grouping level, or 0 for no grouping
     } C4QueryOptions;
+
 
     /** Default query options. Has skip=0, limit=UINT_MAX, inclusiveStart=true,
         inclusiveEnd=true, rankFullText=true; all others are 0/false/NULL. */
 	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
+    
     /** Info about a match of a full-text query term */
     typedef struct {
         uint32_t termIndex;                 ///< Index of the search term in the tokenized query
         uint32_t start, length;             ///< *Byte* range of word in query string
     } C4FullTextTerm;
+
 
     /** A view query result enumerator. Created by c4view_query, c4view_fullTextQuery, or
         c4view_geoQuery. Must be freed with c4queryenum_free.

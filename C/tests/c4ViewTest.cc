@@ -27,6 +27,10 @@ public:
         REQUIRE(view);
     }
 
+    C4ViewTest()
+    :C4ViewTest(0)
+    { }
+
     ~C4ViewTest() {
         if (view) {
             C4Error error;
@@ -97,34 +101,6 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View CreateIndex", "[View][C]") {
     REQUIRE(c4view_getLastSequenceChangedAt(view) == (C4SequenceNumber)100);
 }
 
-N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
-    createIndex();
-
-    C4Error error;
-    auto e = c4view_query(view, NULL, &error);
-    REQUIRE(e);
-
-    int i = 0;
-    while (c4queryenum_next(e, &error)) {
-        ++i;
-        //std::cerr << "Key: " << toJSON(e->key) << "  Value: " << toJSON(e->value) << "\n";
-        char buf[20];
-        if (i <= 100) {
-            sprintf(buf, "%d", i);
-            REQUIRE(e->docSequence == (C4SequenceNumber)i);
-        } else {
-            sprintf(buf, "\"doc-%03d\"", i - 100);
-            REQUIRE(e->docSequence == (C4SequenceNumber)(i - 100));
-        }
-        REQUIRE(toJSON(e->key) == std::string(buf));
-        REQUIRE(e->value == c4str("1234"));
-
-    }
-    c4queryenum_free(e);
-    REQUIRE(error.code == 0);
-    REQUIRE(i == 200);
-}
-
 N_WAY_TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
     createIndex();
 
@@ -153,6 +129,88 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
     REQUIRE(c4view_getLastSequenceIndexed(view) == (C4SequenceNumber)0);
     REQUIRE(c4view_getLastSequenceChangedAt(view) == (C4SequenceNumber)0);
 }
+
+N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
+    createIndex();
+
+    C4Error error;
+    auto e = c4view_query(view, NULL, &error);
+    REQUIRE(e);
+
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        ++i;
+        //std::cerr << "Key: " << toJSON(e->key) << "  Value: " << toJSON(e->value) << "\n";
+        char buf[20];
+        if (i <= 100) {
+            sprintf(buf, "%d", i);
+            REQUIRE(e->docSequence == (C4SequenceNumber)i);
+        } else {
+            sprintf(buf, "\"doc-%03d\"", i - 100);
+            REQUIRE(e->docSequence == (C4SequenceNumber)(i - 100));
+        }
+        REQUIRE(toJSON(e->key) == std::string(buf));
+        REQUIRE(e->value == c4str("1234"));
+
+    }
+    c4queryenum_free(e);
+    REQUIRE(error.code == 0);
+    REQUIRE(i == 200);
+}
+
+
+
+#pragma mark - GROUP / REDUCE:
+
+
+struct countContext {
+    uint32_t count;
+    char value[15];
+};
+
+// accumulate function that simply counts rows. `context` must point to a countContext.
+static void count_accumulate(void *context, C4Key *key, C4Slice value) {
+    auto ctx = (countContext*)context;
+    ++ctx->count;
+}
+
+// reduce function that returns the row count. `context` must point to a countContext.
+static C4SliceResult count_reduce (void *context) {
+    auto ctx = (countContext*)context;
+    sprintf(ctx->value, "%u", ctx->count);
+    ctx->count = 0;
+    return {ctx->value, strlen(ctx->value)};
+}
+
+
+TEST_CASE_METHOD(C4ViewTest, "View ReduceAll", "[View][C]") {
+    createIndex();
+
+    C4QueryOptions options = kC4DefaultQueryOptions;
+    countContext context {};
+    C4ReduceFunction reduce = {count_accumulate, count_reduce, &context};
+    options.reduce = &reduce;
+
+    C4Error error;
+    auto e = c4view_query(view, &options, &error);
+    REQUIRE(e);
+
+    // First row:
+    REQUIRE(c4queryenum_next(e, &error));
+    std::string valueStr((char*)e->value.buf, e->value.size);
+    std::cerr << "Key: " << toJSON(e->key) << "  Value: " << valueStr << "\n";
+    REQUIRE(toJSON(e->key) == "null");
+    REQUIRE(valueStr == "200");
+
+    // No more rows:
+    REQUIRE(!c4queryenum_next(e, &error));
+    c4queryenum_free(e);
+    REQUIRE(error.code == 0);
+}
+
+
+#pragma mark - PURGING:
+
 
 void C4ViewTest::testDocPurge(bool compactAfterPurge) {
     createIndex();
@@ -192,6 +250,9 @@ void C4ViewTest::testDocPurge(bool compactAfterPurge) {
 
 N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurge", "[View][C]")             {testDocPurge(false);}
 N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurgeWithCompact", "[View][C]")  {testDocPurge(true);}
+
+
+#pragma mark - FULL-TEXT:
 
 
 void C4ViewTest::createFullTextIndex(unsigned docCount) {
@@ -292,16 +353,3 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     REQUIRE(error.code == 0);
     c4queryenum_free(e);
 }
-
-
-/*
-class C4SQLiteViewTest : public C4ViewTest {
-
-    virtual const char* storageType() const override     {return kC4SQLiteStorageEngine;}
-
-    CPPUNIT_TEST_SUB_SUITE( C4SQLiteViewTest, C4ViewTest );
-    CPPUNIT_TEST_SUITE_END();
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(C4SQLiteViewTest);
-*/

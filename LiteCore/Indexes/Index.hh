@@ -104,7 +104,7 @@ namespace litecore {
     public:
         virtual ~ReduceFunction() { };
         virtual void operator() (CollatableReader key, slice value) =0;
-        virtual alloc_slice reducedValue() =0;
+        virtual slice reducedValue() =0;    // Result must remain valid until next call
     };
 
 
@@ -174,7 +174,6 @@ namespace litecore {
         bool                    _reducing {false};
         alloc_slice             _groupedKey;
         alloc_slice             _reducedKey;
-        alloc_slice             _reducedValue;
     };
 
 }

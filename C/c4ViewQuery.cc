@@ -49,6 +49,27 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     true
 };
 
+
+class C4ReduceAdapter : public ReduceFunction {
+public:
+    C4ReduceAdapter(const C4ReduceFunction *callback)
+    :_callback(*callback)
+    { }
+
+    void operator() (CollatableReader key, slice value) override {
+        c4Key k(key.data());
+        _callback.accumulate(_callback.context, &k, value);
+    }
+
+    slice reducedValue() override {
+        return _callback.reduce(_callback.context);
+    }
+
+private:
+    C4ReduceFunction _callback;
+};
+
+
 static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
     if (!c4options)
         c4options = &kC4DefaultQueryOptions;
@@ -58,6 +79,9 @@ static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) 
     options.descending = c4options->descending;
     options.inclusiveStart = c4options->inclusiveStart;
     options.inclusiveEnd = c4options->inclusiveEnd;
+    if (c4options->reduce)
+        options.reduce = new C4ReduceAdapter(c4options->reduce);    // must be freed afterwards
+    options.groupLevel = c4options->groupLevel;
     return options;
 }
 
@@ -125,6 +149,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
                         Collatable endKey, slice endKeyDocID,
                         const IndexEnumerator::Options &options)
     :C4QueryEnumInternal(view),
+     _reduce(options.reduce),
      _enum(view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
 
@@ -132,8 +157,13 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
                         vector<KeyRange> keyRanges,
                         const IndexEnumerator::Options &options)
     :C4QueryEnumInternal(view),
+     _reduce(options.reduce),
      _enum(view->_index, keyRanges, options)
     { }
+
+    virtual ~C4MapReduceEnumerator() {
+        delete _reduce;
+    }
 
     virtual bool next() override {
         if (!_enum.next())
@@ -150,6 +180,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
     }
 
 private:
+    ReduceFunction *_reduce {nullptr};
     IndexEnumerator _enum;
 };
 
