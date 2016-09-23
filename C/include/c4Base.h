@@ -177,7 +177,7 @@ const C4Slice kC4SliceNull = { NULL, 0 };
 bool c4SliceEqual(C4Slice a, C4Slice b);
 
 /** Frees the memory of a heap-allocated slice by calling free(buf). */
-void c4slice_free(C4Slice);
+void c4slice_free(C4SliceResult);
 
 
 /** Returns an error message describing a C4Error. Remember to free the result. */

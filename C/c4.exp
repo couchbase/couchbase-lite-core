@@ -160,7 +160,7 @@ _c4_shutdown
 
 # Fleece:
 _FLSlice_Compare
-_FLSlice_Free
+_FLSliceResult_Free
 _FLValue_FromData
 _FLValue_FromTrustedData
 _FLData_ConvertJSON

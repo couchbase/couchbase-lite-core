@@ -90,8 +90,8 @@ bool c4SliceEqual(C4Slice a, C4Slice b) {
 }
 
 
-void c4slice_free(C4Slice slice) {
-    slice.free();
+void c4slice_free(C4SliceResult slice) {
+    free((void*)slice.buf);
 }
 
 

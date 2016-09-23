@@ -460,9 +460,9 @@ bool c4_shutdown(C4Error *outError) {
 
 void c4raw_free(C4RawDocument* rawDoc) {
     if (rawDoc) {
-        c4slice_free(rawDoc->key);
-        c4slice_free(rawDoc->meta);
-        c4slice_free(rawDoc->body);
+        rawDoc->key.free();
+        rawDoc->meta.free();
+        rawDoc->body.free();
         delete rawDoc;
     }
 }

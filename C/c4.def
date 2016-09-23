@@ -135,7 +135,7 @@ c4doc_getForPut
 c4_getObjectCount
 c4_shutdown
 FLSlice_Compare
-FLSlice_Free
+FLSliceResult_Free
 FLValue_FromData
 FLValue_FromTrustedData
 FLData_ConvertJSON

@@ -6,8 +6,8 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
+#include "Fleece.h"     // including this before c4 makes FLSlice and C4Slice compatible
 #include "c4Test.hh"
-#include "Fleece.h"
 #include "Base.hh"
 #include "Benchmark.hh"
 #include <fcntl.h>
@@ -106,12 +106,13 @@ public:
             // Save document:
             C4Error c4err;
             C4DocPutRequest rq = {};
-            rq.docID = {trackID.buf, trackID.size};
-            rq.body = {body.buf, body.size};
+            rq.docID = trackID;
+            rq.body = (C4Slice)body;
             rq.save = true;
             C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
             c4doc_free(doc);
+            FLSliceResult_Free(body);
             ++numDocs;
         }
         
@@ -150,8 +151,7 @@ public:
         REQUIRE(e);
         while (c4enum_next(e, &error)) {
             auto doc = c4enum_getDocument(e, &error);
-            FLDict body = FLValue_AsDict( FLValue_FromTrustedData({doc->selectedRev.body.buf,
-                                                                   doc->selectedRev.body.size}) );
+            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
             REQUIRE(body);
 
 
@@ -171,7 +171,7 @@ public:
             FLSliceResult fval = FLEncoder_Finish(enc, &flError);
             FLEncoder_Reset(enc);
             REQUIRE(fval.buf);
-            C4SliceResult value = {fval.buf, fval.size};
+            auto value = (C4Slice)fval;
 
             // Emit to artists view:
             unsigned nKeys = 0;
@@ -179,13 +179,13 @@ public:
                 nKeys = 1;
                 // Generate key:
                 c4key_beginArray(key);
-                c4key_addString(key, {artist.buf, artist.size});
+                c4key_addString(key, artist);
                 if (album.buf)
-                    c4key_addString(key, {album.buf, album.size});
+                    c4key_addString(key, album);
                 else
                     c4key_addNull(key);
                 c4key_addNumber(key, trackNo);
-                c4key_addString(key, {name.buf, name.size});
+                c4key_addString(key, name);
                 c4key_addNumber(key, 1);
                 c4key_endArray(key);
             }
@@ -198,22 +198,22 @@ public:
                 nKeys = 1;
                 // Generate key:
                 c4key_beginArray(key);
-                c4key_addString(key, {album.buf, album.size});
+                c4key_addString(key, album);
                 if (artist.buf)
-                    c4key_addString(key, {artist.buf, artist.size});
+                    c4key_addString(key, artist);
                 else
                     c4key_addNull(key);
                 c4key_addNumber(key, trackNo);
                 if (!name.buf)
                     name = FLSTR("");
-                c4key_addString(key, {name.buf, name.size});
+                c4key_addString(key, name);
                 c4key_addNumber(key, 1);
                 c4key_endArray(key);
             }
             REQUIRE(c4indexer_emit(indexer, doc, 1, nKeys, &key, &value, &error));
             c4key_reset(key);
 
-            c4slice_free(value);
+            FLSliceResult_Free(fval);
             c4doc_free(doc);
         }
         c4enum_free(e);
@@ -237,9 +237,10 @@ public:
             C4KeyReader key = query->key;
             REQUIRE(c4key_peek(&key) == kC4Array);
             c4key_skipToken(&key);
-            C4Slice artistSlice = c4key_readString(&key);
+            C4SliceResult artistSlice = c4key_readString(&key);
             REQUIRE(artistSlice.buf);
             allArtists.push_back(std::string((const char*)artistSlice.buf, artistSlice.size));
+            c4slice_free(artistSlice);
         }
         c4queryenum_free(query);
         return (unsigned) allArtists.size();
@@ -254,8 +255,8 @@ public:
 N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
     auto jsonData = readFile(kJSONFilePath);
     FLError error;
-    auto fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
-    FLArray root = FLValue_AsArray(FLValue_FromTrustedData({fleeceData.buf, fleeceData.size}));
+    FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
+    FLArray root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     unsigned numDocs;
 
     {
@@ -265,7 +266,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
         fprintf(stderr, "Writing %u docs took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
                 numDocs, ms, ms/numDocs*1000.0, numDocs/ms*1000);
     }
-    FLSlice_Free(fleeceData);
+    FLSliceResult_Free(fleeceData);
     {
         Stopwatch st;
         indexViews();
