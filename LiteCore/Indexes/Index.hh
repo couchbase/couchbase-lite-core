@@ -17,6 +17,7 @@
 #include "DataFile.hh"
 #include "DocEnumerator.hh"
 #include "Collatable.hh"
+#include "Encoder.hh"
 #include <atomic>
 #include <functional>
 
@@ -76,7 +77,7 @@ namespace litecore {
     /** Updates an index, within a Transaction. */
     class IndexWriter {
     public:
-        IndexWriter(Index& index, Transaction& t);
+        IndexWriter(Index& index, Transaction& t, bool wasEmpty =false);
         ~IndexWriter();
 
         /** Updates the index entry for a document with the given keys and values.
@@ -97,6 +98,9 @@ namespace litecore {
 
         Index &         _index;             // The Index being written to
         Transaction &   _transaction;       // The Transaction enabling the write
+        const bool      _wasEmpty;          // Was the index empty beforehand?
+        fleece::Encoder _encoder;           // Reuseable encoder, an optimization for update()
+        CollatableBuilder _realKey;         // Reuseable builder, an optimization for update()
     };
 
 
@@ -171,9 +175,9 @@ namespace litecore {
         alloc_slice             _docID;                 // Current docID
         sequence_t              _sequence;              // Current sequence
 
-        bool                    _reducing {false};
-        alloc_slice             _groupedKey;
-        alloc_slice             _reducedKey;
+        bool                    _reducing {false};      // Am I accumulating reduced rows?
+        alloc_slice             _groupedKey;            // Current key prefix being grouped
+        alloc_slice             _reducedKey;            // Owns _key for a reduced row
     };
 
 }

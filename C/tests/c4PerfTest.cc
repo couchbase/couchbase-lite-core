@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
 
 #ifdef NDEBUG
 #undef REQUIRE  // it slows down the tests significantly
@@ -25,6 +26,30 @@ using namespace fleece;
 
 static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 
+
+
+struct totalContext {
+    double total;
+    char value[30];
+};
+
+// accumulate function that simply totals numeric values. `context` must point to a totalContext.
+static void total_accumulate(void *context, C4Key *key, C4Slice value) {
+    auto ctx = (totalContext*)context;
+    FLValue v = FLValue_FromTrustedData(value);
+    REQUIRE(FLValue_GetType(v) == kFLNumber);
+    ctx->total += FLValue_AsDouble(v);
+}
+
+// reduce function that returns the row total. `context` must point to a totalContext.
+static C4Slice total_reduce (void *context) {
+    auto ctx = (totalContext*)context;
+    sprintf(ctx->value, "%g", ctx->total);
+    ctx->total = 0.0;
+    return {ctx->value, strlen(ctx->value)};
+}
+
+
 class PerfTest : public C4Test {
 public:
     PerfTest(int variation) :C4Test(variation) { }
@@ -32,11 +57,13 @@ public:
     ~PerfTest() {
         c4view_free(artistsView);
         c4view_free(albumsView);
+        c4view_free(tracksView);
     }
-    
+
+    // Reads a file into memory.
     alloc_slice readFile(const char *path) {
         int fd = ::open(path, O_RDONLY);
-        assert(fd != -1);
+        REQUIRE(fd != -1);
         struct stat stat;
         fstat(fd, &stat);
         alloc_slice data(stat.st_size);
@@ -47,6 +74,7 @@ public:
     }
 
 
+    // Copies a Fleece dictionary key/value to an encoder
     static bool copyValue(FLDict srcDict, FLDictKey *key, FLEncoder enc) {
         FLValue value = FLDict_GetWithKey(srcDict, key);
         if (!value)
@@ -225,12 +253,55 @@ public:
     }
 
 
-    unsigned queryTracks() {
+    void indexTracksView() {
+        FLDictKey nameKey   = FLDictKey_Init(FLSTR("Name"), true);
+        auto key = c4key_new();
+
+        C4Error error;
+        if (!tracksView) {
+            tracksView = c4view_open(db, kC4SliceNull, C4STR("Tracks"),
+                                     C4STR("1"), c4db_getConfig(db), &error);
+            REQUIRE(tracksView);
+        }
+        C4View* views[1] = {tracksView};
+        C4Indexer *indexer = c4indexer_begin(db, views, 1, &error);
+        REQUIRE(indexer);
+        auto e = c4indexer_enumerateDocuments(indexer, &error);
+        REQUIRE(e);
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            REQUIRE(body);
+            auto name    = FLValue_AsString( FLDict_GetWithKey(body, &nameKey) );
+
+            c4key_reset(key);
+            c4key_addString(key, name);
+
+            C4Slice value = kC4SliceNull;
+            REQUIRE(c4indexer_emit(indexer, doc, 0, 1, &key, &value, &error));
+            c4key_reset(key);
+
+            c4doc_free(doc);
+        }
+        c4enum_free(e);
+        REQUIRE(error.code == 0);
+
+        REQUIRE(c4indexer_end(indexer, true, &error));
+        c4key_free(key);
+    }
+
+
+    unsigned queryAllArtists() {
+        const bool verbose = false;
         std::vector<std::string> allArtists;
         allArtists.reserve(1200);
 
+        totalContext context = {};
+        C4ReduceFunction reduce = {total_accumulate, total_reduce, &context};
+
         C4QueryOptions options = kC4DefaultQueryOptions;
-        //options.groupLevel = 1;   //TODO: Implement grouping :)
+        options.reduce = &reduce;
+        options.groupLevel = 1;
         C4Error error;
         auto query = c4view_query(artistsView, &options, &error);
         while (c4queryenum_next(query, &error)) {
@@ -239,16 +310,20 @@ public:
             c4key_skipToken(&key);
             C4SliceResult artistSlice = c4key_readString(&key);
             REQUIRE(artistSlice.buf);
-            allArtists.push_back(std::string((const char*)artistSlice.buf, artistSlice.size));
+            std::string artist((const char*)artistSlice.buf, artistSlice.size);
+            if (verbose) std::cerr << artist << "  ";
+            allArtists.push_back(artist);
             c4slice_free(artistSlice);
         }
         c4queryenum_free(query);
+        if (verbose) std::cerr << "\n";
         return (unsigned) allArtists.size();
     }
 
 
     C4View *artistsView {nullptr};
     C4View *albumsView {nullptr};
+    C4View *tracksView {nullptr};
 };
 
 
@@ -262,23 +337,42 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
     {
         Stopwatch st;
         numDocs = insertDocs(root);
+        CHECK(numDocs == 12188);
+#ifdef NDEBUG
         double ms = st.elapsedMS();
         fprintf(stderr, "Writing %u docs took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
                 numDocs, ms, ms/numDocs*1000.0, numDocs/ms*1000);
+#endif
     }
     FLSliceResult_Free(fleeceData);
     {
         Stopwatch st;
         indexViews();
+#ifdef NDEBUG
         double ms = st.elapsedMS();
-        fprintf(stderr, "Indexing %u docs took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
-                numDocs, ms, ms/numDocs*1000.0, numDocs/ms*1000);
+        fprintf(stderr, "Indexing Artist/Album views took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
+                ms, ms/numDocs*1000.0, numDocs/ms*1000);
+#endif
     }
     {
         Stopwatch st;
-        queryTracks();
+        indexTracksView();
+#ifdef NDEBUG
         double ms = st.elapsedMS();
-        fprintf(stderr, "Querying %u tracks took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
-                numDocs, ms, ms/numDocs*1000.0, numDocs/ms*1000);
+        fprintf(stderr, "Indexing Tracks view took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
+                ms, ms/numDocs*1000.0, numDocs/ms*1000);
+#endif
+    }
+    {
+        Stopwatch st;
+        auto numArtists = queryAllArtists();
+        CHECK(numArtists == 1141);
+#ifdef NDEBUG
+        double ms = st.elapsedMS();
+        fprintf(stderr, "All-artists query, %u artists, took %.3f ms (%.3f us/doc, or %.0f docs/sec) (%.3f us/artist, or %.0f artists/sec)\n",
+                numArtists, ms,
+                ms/numDocs*1000.0, numDocs/ms*1000,
+                ms/numArtists*1000.0, numArtists/ms*1000);
+#endif
     }
 }

@@ -39,9 +39,10 @@ namespace litecore {
         if (isBusy()) Warn("Index %p being destructed during enumeration", this);
     }
 
-    IndexWriter::IndexWriter(Index& index, Transaction& t)
+    IndexWriter::IndexWriter(Index& index, Transaction& t, bool wasEmpty)
     :_index(index),
-     _transaction(t)
+     _transaction(t),
+     _wasEmpty(wasEmpty)
     {
         CBFDebugAssert(&t.dataFile() == &index._store.dataFile());
         index.addUser();
@@ -60,31 +61,33 @@ namespace litecore {
     }
 
     void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
-        Document doc = _index._store.get(docID);
-        if (doc.body().size > 0) {
-            auto keyArray = Value::fromTrustedData(doc.body())->asArray();
-            Array::iterator iter(keyArray);
-            hash = (uint32_t)iter->asUnsigned();
-            ++iter;
-            keys.reserve(iter.count());
-            for (; iter; ++iter) {
-                keys.push_back( Collatable::withData(iter->asString()) );
+        if (!_wasEmpty) {
+            Document doc = _index._store.get(docID);
+            if (doc.body().size > 0) {
+                auto keyArray = Value::fromTrustedData(doc.body())->asArray();
+                Array::iterator iter(keyArray);
+                hash = (uint32_t)iter->asUnsigned();
+                ++iter;
+                keys.reserve(iter.count());
+                for (; iter; ++iter) {
+                    keys.push_back( Collatable::withData(iter->asString()) );
+                }
+                return;
             }
-        } else {
-            hash = kInitialHash;
         }
+        hash = kInitialHash;
     }
 
     void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash) {
         if (keys.size() > 0) {
-            Encoder enc;
-            enc.beginArray();
-            enc.writeUInt(hash);
+            _encoder.reset();
+            _encoder.beginArray();
+            _encoder.writeUInt(hash);
             for (auto &key : keys)
-                enc.writeData(key);
-            enc.endArray();
-            _index._store.set(docID, enc.extractOutput(), _transaction);
-        } else {
+                _encoder.writeData(key);
+            _encoder.endArray();
+            _index._store.set(docID, _encoder.extractOutput(), _transaction);
+        } else if (!_wasEmpty) {
             _index._store.del(docID, _transaction);
         }
     }
@@ -94,6 +97,9 @@ namespace litecore {
                              const std::vector<alloc_slice> &values,
                              uint64_t &rowCount)
     {
+        if (_wasEmpty && keys.empty())
+            return false;
+
         CollatableBuilder collatableDocID;
         collatableDocID << docID;
 
@@ -126,11 +132,11 @@ namespace litecore {
         auto oldKey = oldStoredKeys.begin();
         for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
             // Create a key for the index db by combining the emitted key, doc ID, and emit#:
-            CollatableBuilder realKey;
-            realKey.beginArray() << *key << collatableDocID;
+            _realKey.reset();
+            _realKey.beginArray() << *key << collatableDocID;
             if (emitIndex > 0)
-                realKey << emitIndex;
-            realKey.endArray();
+                _realKey << emitIndex;
+            _realKey.endArray();
 
             // Is this a key that was previously emitted last time we indexed this document?
             if (keysChanged || oldKey == oldStoredKeys.end() || !(*oldKey == *key)) {
@@ -141,7 +147,7 @@ namespace litecore {
                 ++oldKey;
                 if (valuesMightBeUnchanged) {
                     // read the old row so we can compare the value too:
-                    Document oldRow = _index._store.get(realKey);
+                    Document oldRow = _index._store.get(_realKey);
                     if (oldRow.exists()) {
                         if (oldRow.body() == *value) {
                             Log("Old k/v pair (%s, %s) unchanged",
@@ -157,21 +163,21 @@ namespace litecore {
 
             // Store the key & value:
             Log("**** Index: realKey = %s  value = %s",
-                realKey.toJSON().c_str(), (*value).hexString().c_str());
-            _index._store.set(realKey, meta, *value, _transaction);
+                _realKey.toJSON().c_str(), (*value).hexString().c_str());
+            _index._store.set(_realKey, meta, *value, _transaction);
             newStoredKeys.push_back(*key);
             ++rowsAdded;
         }
 
         // If there are any old keys that weren't emitted this time, we need to delete those rows:
         for (; oldKey != oldStoredKeys.end(); ++oldKey) {
-            CollatableBuilder realKey;
-            realKey.beginArray() << *oldKey << collatableDocID;
+            _realKey.reset();
+            _realKey.beginArray() << *oldKey << collatableDocID;
             auto oldEmitIndex = oldKey - oldStoredKeys.begin();
             if (oldEmitIndex > 0)
-                realKey << oldEmitIndex;
-            realKey.endArray();
-            bool deleted = _index._store.del(realKey, _transaction);
+                _realKey << oldEmitIndex;
+            _realKey.endArray();
+            bool deleted = _index._store.del(_realKey, _transaction);
             if (!deleted) {
                 Warn("Failed to delete old emitted k/v pair");
             }

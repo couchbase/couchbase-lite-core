@@ -63,7 +63,7 @@ namespace litecore {
         void setLastSequence(SQLiteKeyStore&, sequence);
 
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
-                                   std::string sql) const;
+                                   const char *sql) const;
         int exec(const std::string &sql);
 
     private:
@@ -83,7 +83,7 @@ namespace litecore {
     class SQLiteKeyStore : public KeyStore {
     public:
         uint64_t documentCount() const override;
-        sequence lastSequence() const override              {return db().lastSequence(_name);}
+        sequence lastSequence() const override;
 
         Document get(sequence, ContentOptions) const override;
         bool read(Document &doc, ContentOptions options) const override;
@@ -101,6 +101,11 @@ namespace litecore {
         DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;
         DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
 
+        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+                                   const char *sql) const;
+
+        void transactionWillEnd(bool commit);
+
         void close() override;
 
     private:
@@ -110,13 +115,15 @@ namespace litecore {
         std::stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, DocEnumerator::Options &options);
         void backupReplacedDoc(slice key);
+        void setLastSequence(sequence seq);
 
         std::unique_ptr<SQLite::Statement> _docCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _backupStmt, _delByKeyStmt, _delBySeqStmt;
-        bool _createdKeyIndex {false};     // Created by-key index yet?
         bool _createdSeqIndex {false};     // Created by-seq index yet?
+        bool _lastSequenceChanged {false};
+        int64_t _lastSequence {-1};
     };
 
 }

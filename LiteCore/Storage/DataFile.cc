@@ -211,6 +211,12 @@ namespace litecore {
         return *_defaultKeyStore;
     }
 
+    void DataFile::forOpenKeyStores(std::function<void(KeyStore&)> fn) {
+        for (auto& ks : _keyStores)
+            fn(*ks.second);
+    }
+
+
 
 #pragma mark PURGE/DELETION COUNT:
 

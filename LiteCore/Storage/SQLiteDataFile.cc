@@ -221,6 +221,12 @@ namespace litecore {
 
 
     void SQLiteDataFile::_endTransaction(Transaction *t, bool commit) {
+        // Notify key-stores so they can save state:
+        forOpenKeyStores([commit](KeyStore &ks) {
+            ((SQLiteKeyStore&)ks).transactionWillEnd(commit);
+        });
+
+        // Now commit:
         if (commit)
             _transaction->commit();
         _transaction.reset(); // destruct SQLite::Transaction, which will rollback if not committed
@@ -236,30 +242,31 @@ namespace litecore {
 
 
     SQLite::Statement& SQLiteDataFile::compile(const unique_ptr<SQLite::Statement>& ref,
-                                               string sql) const
+                                               const char *sql) const
     {
         checkOpen();
         if (ref == nullptr)
-            const_cast<unique_ptr<SQLite::Statement>&>(ref).reset(new SQLite::Statement(*_sqlDb, sql));
+            const_cast<unique_ptr<SQLite::Statement>&>(ref).reset(
+                                                      new SQLite::Statement(*_sqlDb, sql));
         ref->reset();  // prepare statement to be run again
         return *ref.get();
     }
 
 
     sequence SQLiteDataFile::lastSequence(const string& keyStoreName) const {
-        compile(_getLastSeqStmt, string("SELECT lastSeq FROM kvmeta WHERE name=?"));
+        sequence seq = 0;
+        compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
         if (_getLastSeqStmt->executeStep()) {
-            auto seq = (int64_t)_getLastSeqStmt->getColumn(0);
+            seq = (int64_t)_getLastSeqStmt->getColumn(0);
             _getLastSeqStmt->reset();
-            return seq;
         }
-        return 0;
+        return seq;
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence seq) {
         compile(_setLastSeqStmt,
-                string("INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)"));
+                "INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)");
         _setLastSeqStmt->bindNoCopy(1, store.name());
         _setLastSeqStmt->bind(2, (int64_t)seq);
         _setLastSeqStmt->exec();
@@ -351,18 +358,67 @@ namespace litecore {
     }
 
     
+    SQLite::Statement& SQLiteKeyStore::compile(const unique_ptr<SQLite::Statement>& ref,
+                                               const char *sqlTemplate) const
+    {
+        if (ref != nullptr) {
+            db().checkOpen();
+            ref->reset();  // prepare statement to be run again
+            return *ref.get();
+        } else {
+            string sql(sqlTemplate);
+            size_t pos;
+            while(string::npos != (pos = sql.find('@')))
+                sql.replace(pos, 1, name());
+            return db().compile(ref, sql.c_str());
+        }
+    }
+
+
     uint64_t SQLiteKeyStore::documentCount() const {
-        stringstream sql;
-        sql << "SELECT count(*) FROM kv_" << _name;
-        if (_capabilities.softDeletes)
-            sql << " WHERE deleted!=1";
-        db().compile(_docCountStmt, sql.str());
+        if (_docCountStmt) {
+            _docCountStmt->reset();
+        } else {
+            stringstream sql;
+            sql << "SELECT count(*) FROM kv_" << _name;
+            if (_capabilities.softDeletes)
+                sql << " WHERE deleted!=1";
+            compile(_docCountStmt, sql.str().c_str());
+        }
         if (_docCountStmt->executeStep()) {
             auto count = (int64_t)_docCountStmt->getColumn(0);
             _docCountStmt->reset();
             return count;
         }
         return 0;
+    }
+
+
+    sequence SQLiteKeyStore::lastSequence() const {
+        if (_lastSequence >= 0)
+            return _lastSequence;
+        sequence seq = db().lastSequence(_name);
+        if (db().inTransaction())
+            const_cast<SQLiteKeyStore*>(this)->_lastSequence = seq;
+        return seq;
+    }
+
+    
+    void SQLiteKeyStore::setLastSequence(sequence seq) {
+        if (_capabilities.sequences) {
+            _lastSequence = seq;
+            _lastSequenceChanged = true;
+        }
+    }
+
+
+    void SQLiteKeyStore::transactionWillEnd(bool commit) {
+        if (_lastSequenceChanged) {
+            if (commit)
+                db().setLastSequence(*this, _lastSequence);
+            _lastSequenceChanged = false;
+        }
+        _lastSequence = -1;
     }
 
 
@@ -391,10 +447,10 @@ namespace litecore {
 
     bool SQLiteKeyStore::read(Document &doc, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
-            ? db().compile(_getMetaByKeyStmt,
-                          string("SELECT sequence, deleted, 0, meta, length(body) FROM kv_")+name()+" WHERE key=?")
-            : db().compile(_getByKeyStmt,
-                          string("SELECT sequence, deleted, 0, meta, body FROM kv_")+name()+" WHERE key=?");
+            ? compile(_getMetaByKeyStmt,
+                      "SELECT sequence, deleted, 0, meta, length(body) FROM kv_@ WHERE key=?")
+            : compile(_getByKeyStmt,
+                      "SELECT sequence, deleted, 0, meta, body FROM kv_@ WHERE key=?");
         stmt.bindNoCopy(1, doc.key().buf, (int)doc.key().size);
         if (!stmt.executeStep())
             return false;
@@ -414,12 +470,10 @@ namespace litecore {
             error::_throw(error::NoSequences);
         Document doc;
         auto &stmt = (options & kMetaOnly)
-            ? db().compile(_getMetaBySeqStmt,
-                          string("SELECT 0, deleted, key, meta, length(body) FROM kv_")+name()+
-                           " WHERE sequence=?")
-            : db().compile(_getBySeqStmt,
-                          string("SELECT 0, deleted, key, meta, body FROM kv_")+name()+
-                           " WHERE sequence=?");
+            ? compile(_getMetaBySeqStmt,
+                          "SELECT 0, deleted, key, meta, length(body) FROM kv_@ WHERE sequence=?")
+            : compile(_getBySeqStmt,
+                           "SELECT 0, deleted, key, meta, body FROM kv_@ WHERE sequence=?");
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
             uint64_t offset = _capabilities.getByOffset ? seq : 0;
@@ -438,8 +492,7 @@ namespace litecore {
         if (!_capabilities.getByOffset)
             return doc;
 
-        auto &stmt = db().compile(_getByOffStmt, string("SELECT key, meta, body FROM kvold_")+
-                                                  name()+" WHERE sequence=?");
+        auto &stmt = compile(_getByOffStmt, "SELECT key, meta, body FROM kvold_@ WHERE sequence=?");
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
             updateDoc(doc, seq, seq);
@@ -453,9 +506,9 @@ namespace litecore {
 
 
     void SQLiteKeyStore::backupReplacedDoc(slice key) {
-        db().compile(_backupStmt,
-                     string("INSERT INTO kvold_")+name()+" (sequence, key, meta, body)"
-                            " SELECT sequence, key, meta, body FROM kv_"+name()+" WHERE key=?");
+        compile(_backupStmt,
+                "INSERT INTO kvold_@ (sequence, key, meta, body)"
+                " SELECT sequence, key, meta, body FROM kv_@ WHERE key=?");
         _backupStmt->bindNoCopy(1, key.buf, (int)key.size);
         _backupStmt->exec();
     }
@@ -465,9 +518,8 @@ namespace litecore {
         if (_capabilities.getByOffset)
             backupReplacedDoc(key);
 
-        db().compile(_setStmt,
-                    string("INSERT OR REPLACE INTO kv_")+name()
-                        +" (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
+        compile(_setStmt,
+                "INSERT OR REPLACE INTO kv_@ (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
         _setStmt->bindNoCopy(1, key.buf, (int)key.size);
         _setStmt->bindNoCopy(2, meta.buf, (int)meta.size);
         _setStmt->bindNoCopy(3, body.buf, (int)body.size);
@@ -480,7 +532,7 @@ namespace litecore {
             _setStmt->bind(4);
         }
         _setStmt->exec();
-        db().setLastSequence(*this, seq);
+        setLastSequence(seq);
         return seq;
     }
 
@@ -490,14 +542,14 @@ namespace litecore {
         if (!stmt) {
             stringstream sql;
             if (_capabilities.softDeletes) {
-                sql << "UPDATE kv_" << name() << " SET deleted=1, meta=null, body=null";
+                sql << "UPDATE kv_@ SET deleted=1, meta=null, body=null";
                 if (_capabilities.sequences)
                     sql << ", sequence=? ";
             } else {
-                sql << "DELETE FROM kv_" << name();
+                sql << "DELETE FROM kv_@";
             }
             sql << (delSeq ? " WHERE sequence=?" : " WHERE key=?");
-            db().compile(stmt, sql.str());
+            compile(stmt, sql.str().c_str());
         }
 
         sequence newSeq = 0;
@@ -513,7 +565,7 @@ namespace litecore {
 
         bool ok = stmt->exec() > 0;
         if (ok && newSeq > 0)
-            db().setLastSequence(*this, newSeq);
+            setLastSequence(newSeq);
         stmt->reset();
         return ok;
     }
@@ -522,7 +574,7 @@ namespace litecore {
     void SQLiteKeyStore::erase() {
         Transaction t(db());
         db()._sqlDb->exec(string("DELETE FROM kv_"+name()));
-        db().setLastSequence(*this, 0);
+        setLastSequence(0);
         t.commit();
     }
 
@@ -584,12 +636,6 @@ namespace litecore {
     DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
                                                            DocEnumerator::Options &options)
     {
-        if (!_createdKeyIndex) {
-            db().exec(string("CREATE INDEX IF NOT EXISTS kv_"+name()+"_keys"
-                                          " ON kv_"+name()+" (key)"));
-            _createdKeyIndex = true;
-        }
-
         stringstream sql = selectFrom(options);
         bool noDeleted = _capabilities.softDeletes && !options.includeDeleted;
         if (minKey.buf || maxKey.buf || noDeleted) {

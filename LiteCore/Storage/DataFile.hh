@@ -153,6 +153,8 @@ namespace litecore {
 
         void setOptions(const Options &o)               {_options = o;}
 
+        void forOpenKeyStores(std::function<void(KeyStore&)> fn);
+
     private:
         class File;
         friend class KeyStore;

@@ -175,7 +175,7 @@ static void count_accumulate(void *context, C4Key *key, C4Slice value) {
 }
 
 // reduce function that returns the row count. `context` must point to a countContext.
-static C4SliceResult count_reduce (void *context) {
+static C4Slice count_reduce (void *context) {
     auto ctx = (countContext*)context;
     sprintf(ctx->value, "%u", ctx->count);
     ctx->count = 0;

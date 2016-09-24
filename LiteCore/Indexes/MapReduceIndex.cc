@@ -322,7 +322,7 @@ namespace litecore {
     class MapReduceIndexWriter: IndexWriter {
     public:
         MapReduceIndexWriter(MapReduceIndex &idx, Transaction *t)
-        :IndexWriter(idx, *t),
+        :IndexWriter(idx, *t, (idx.rowCount() == 0)),
          index(idx),
          _documentType(index.documentType()),
          _transaction(t)
