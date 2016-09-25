@@ -74,7 +74,7 @@ namespace litecore {
               << _rowCount << kCurFormatVersion << _lastPurgeCount;
         state.endArray();
 
-        _stateReadAt = _store.set(stateKey, state, t);
+        _stateReadAt = _store.set(stateKey, state, t).seq;
         Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }

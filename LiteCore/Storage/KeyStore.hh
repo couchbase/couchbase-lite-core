@@ -19,7 +19,7 @@ namespace litecore {
 
     /** A sequence number in a KeyStore. */
     typedef uint64_t sequence;
-
+    typedef uint64_t docOffset;
 
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
@@ -62,13 +62,15 @@ namespace litecore {
             Does nothing if the document's body is non-null. */
         virtual void readBody(Document &doc) const;
 
-        virtual Document getByOffsetNoErrors(uint64_t offset, sequence) const
+        virtual Document getByOffsetNoErrors(docOffset, sequence) const
                 {return Document();}
 
         //////// Writing:
 
-        virtual sequence set(slice key, slice meta, slice value, Transaction&) =0;
-        sequence set(slice key, slice value, Transaction &t)
+        struct setResult {sequence seq; docOffset off;};
+
+        virtual setResult set(slice key, slice meta, slice value, Transaction&) =0;
+        setResult set(slice key, slice value, Transaction &t)
                                                         {return set(key, slice::null, value, t);}
         void write(Document&, Transaction&);
 
@@ -98,7 +100,7 @@ namespace litecore {
         virtual DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
                                                        DocEnumerator::Options&) =0;
 
-        void updateDoc(Document &doc, sequence seq, uint64_t offset =0, bool deleted = false) const {
+        void updateDoc(Document &doc, sequence seq, docOffset offset =0, bool deleted = false) const {
             doc.update(seq, offset, deleted);
         }
 

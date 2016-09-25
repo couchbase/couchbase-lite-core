@@ -93,7 +93,7 @@ namespace litecore {
         void readBody(Document &doc) const override;
         Document getByOffsetNoErrors(uint64_t offset, sequence seq) const override;
 
-        sequence set(slice key, slice meta, slice value, Transaction&) override;
+        setResult set(slice key, slice meta, slice value, Transaction&) override;
 
         void erase() override;
 

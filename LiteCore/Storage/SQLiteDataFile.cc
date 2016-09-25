@@ -210,6 +210,7 @@ namespace litecore {
 
     void SQLiteDataFile::deleteKeyStore(const string &name) {
         exec(string("DROP TABLE IF EXISTS kv_") + name);
+        exec(string("DROP TABLE IF EXISTS kvold_") + name);
     }
 
 
@@ -330,14 +331,16 @@ namespace litecore {
         if (!db.keyStoreExists(name)) {
             // Create the sequence and deleted columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
-            db.exec(string("CREATE TABLE IF NOT EXISTS kv_"+name+
-                                        " (key BLOB PRIMARY KEY, meta BLOB, body BLOB,"
-                                        " sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+            db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ (key BLOB PRIMARY KEY, meta BLOB, "
+                          "body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
             if (capabilities.getByOffset) {
                 // shadow table for overwritten docs
-                db.exec(string("CREATE TABLE IF NOT EXISTS kvold_"+name+
-                               " (sequence INTEGER PRIMARY KEY,"
-                               "  key BLOB, meta BLOB, body BLOB)"));
+                db.exec(subst("CREATE TABLE IF NOT EXISTS kvold_@ ("
+                              "sequence INTEGER PRIMARY KEY, key BLOB, meta BLOB, body BLOB)"));
+                db.exec("PRAGMA recursive_triggers = 1");
+                db.exec(subst("CREATE TRIGGER backup_@ BEFORE DELETE ON kv_@ BEGIN "
+                              "  INSERT INTO kvold_@ (sequence, key, meta, body) "
+                              "    VALUES (OLD.sequence, OLD.key, OLD.meta, OLD.body); END"));
             }
         }
     }
@@ -357,7 +360,16 @@ namespace litecore {
         KeyStore::close();
     }
 
-    
+
+    string SQLiteKeyStore::subst(const char *sqlTemplate) const {
+        string sql(sqlTemplate);
+        size_t pos;
+        while(string::npos != (pos = sql.find('@')))
+            sql.replace(pos, 1, name());
+        return sql;
+    }
+
+
     SQLite::Statement& SQLiteKeyStore::compile(const unique_ptr<SQLite::Statement>& ref,
                                                const char *sqlTemplate) const
     {
@@ -366,11 +378,7 @@ namespace litecore {
             ref->reset();  // prepare statement to be run again
             return *ref.get();
         } else {
-            string sql(sqlTemplate);
-            size_t pos;
-            while(string::npos != (pos = sql.find('@')))
-                sql.replace(pos, 1, name());
-            return db().compile(ref, sql.c_str());
+            return db().compile(ref, subst(sqlTemplate).c_str());
         }
     }
 
@@ -488,6 +496,7 @@ namespace litecore {
 
 
     Document SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+        CBFAssert(offset == seq);
         Document doc;
         if (!_capabilities.getByOffset)
             return doc;
@@ -500,24 +509,15 @@ namespace litecore {
             doc.setMeta(columnAsSlice(stmt.getColumn(1)));
             doc.setBody(columnAsSlice(stmt.getColumn(2)));
             stmt.reset();
+            return doc;
+        } else {
+            // Maybe the sequence is still current...
+            return get(seq, kDefaultContent);
         }
-        return doc;
     }
 
 
-    void SQLiteKeyStore::backupReplacedDoc(slice key) {
-        compile(_backupStmt,
-                "INSERT INTO kvold_@ (sequence, key, meta, body)"
-                " SELECT sequence, key, meta, body FROM kv_@ WHERE key=?");
-        _backupStmt->bindNoCopy(1, key.buf, (int)key.size);
-        _backupStmt->exec();
-    }
-
-
-    sequence SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
-        if (_capabilities.getByOffset)
-            backupReplacedDoc(key);
-
+    KeyStore::setResult SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
         compile(_setStmt,
                 "INSERT OR REPLACE INTO kv_@ (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
         _setStmt->bindNoCopy(1, key.buf, (int)key.size);
@@ -533,7 +533,7 @@ namespace litecore {
         }
         _setStmt->exec();
         setLastSequence(seq);
-        return seq;
+        return {seq, (_capabilities.getByOffset ? seq : 0)};
     }
 
 

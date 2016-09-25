@@ -156,7 +156,8 @@ namespace litecore {
         if (currentRevision()) {
             // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
             // the existing body buffer.
-            _doc.updateSequence( _db.set(_doc.key(), _doc.meta(), encode(), transaction) );
+            auto result = _db.set(_doc.key(), _doc.meta(), encode(), transaction);
+            _doc.updateSequence(result.seq);
         } else {
             _db.del(_doc.key(), transaction);
         }

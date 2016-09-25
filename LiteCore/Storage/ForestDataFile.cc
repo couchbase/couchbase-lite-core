@@ -503,7 +503,7 @@ namespace litecore {
 
 
 
-    sequence ForestKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+    KeyStore::setResult ForestKeyStore::set(slice key, slice meta, slice body, Transaction&) {
         fdb_doc fdoc = {
             key.size, meta.size, body.size, 0,
             (void*)key.buf,
@@ -513,7 +513,7 @@ namespace litecore {
             0
         };
         check(fdb_set(_handle, &fdoc));
-        return fdoc.seqnum;
+        return {fdoc.seqnum, fdoc.offset};
     }
 
 

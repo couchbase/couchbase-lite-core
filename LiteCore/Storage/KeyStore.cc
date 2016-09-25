@@ -58,8 +58,8 @@ namespace litecore {
         if (doc.deleted()) {
             del(doc, t);
         } else {
-            sequence seq = set(doc.key(), doc.meta(), doc.body(), t);
-            updateDoc(doc, seq);
+            auto result = set(doc.key(), doc.meta(), doc.body(), t);
+            updateDoc(doc, result.seq, result.off);
         }
     }
 

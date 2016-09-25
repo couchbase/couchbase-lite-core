@@ -88,7 +88,7 @@ static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("doc-%03d", i);
-        sequence seq = store->set(slice(docID), litecore::slice::null, slice(docID), t);
+        sequence seq = store->set(slice(docID), litecore::slice::null, slice(docID), t).seq;
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
@@ -432,6 +432,55 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
     REQUIRE(s.lastSequence() == 0);
     Document doc = s.get(key);
     REQUIRE_FALSE(doc.exists());
+}
+
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[DataFile]") {
+    auto cap = KeyStore::Capabilities::defaults;
+    cap.getByOffset = cap.sequences = true;
+    KeyStore &s = db->getKeyStore("store", cap);
+    alloc_slice key("key");
+    docOffset offset1;
+    // Create a doc:
+    {
+        Transaction t(db);
+        Document doc(key);
+        doc.setBody(slice("value1"));
+        s.write(doc, t);
+        offset1 = doc.offset();
+        CHECK(offset1 > 0);
+        t.commit();
+    }
+    // Get it by offset:
+    Document doc1 = s.getByOffsetNoErrors(offset1, 1);
+    REQUIRE(doc1.key() == key);
+    REQUIRE(doc1.body() == slice("value1"));
+    REQUIRE(doc1.sequence() == 1);
+    REQUIRE(doc1.offset() == offset1);
+
+    // Update doc:
+    docOffset offset2;
+    {
+        Transaction t(db);
+        auto result = s.set(key, slice("value2"), t);
+        offset2 = result.off;
+        CHECK(offset2 > 0);
+        CHECK(result.seq == 2);
+        t.commit();
+    }
+    // Get it by offset:
+    Document doc2 = s.getByOffsetNoErrors(offset2, 2);
+    REQUIRE(doc2.key() == key);
+    REQUIRE(doc2.body() == slice("value2"));
+    REQUIRE(doc2.sequence() == 2);
+    REQUIRE(doc2.offset() == offset2);
+
+    // Get old version (Seq 1) by offset:
+    Document doc1again = s.getByOffsetNoErrors(offset1, 1);
+    REQUIRE(doc1again.key() == key);
+    REQUIRE(doc1again.body() == slice("value1"));
+    REQUIRE(doc1again.sequence() == 1);
+    REQUIRE(doc1again.offset() == offset1);
 }
 
 

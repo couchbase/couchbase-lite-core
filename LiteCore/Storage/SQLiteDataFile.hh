@@ -89,7 +89,7 @@ namespace litecore {
         bool read(Document &doc, ContentOptions options) const override;
         Document getByOffsetNoErrors(uint64_t offset, sequence) const override;
 
-        sequence set(slice key, slice meta, slice value, Transaction&) override;
+        setResult set(slice key, slice meta, slice value, Transaction&) override;
 
         void erase() override;
 
@@ -112,9 +112,9 @@ namespace litecore {
         friend class SQLiteDataFile;
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
+        std::string subst(const char *sqlTemplate) const;
         std::stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, DocEnumerator::Options &options);
-        void backupReplacedDoc(slice key);
         void setLastSequence(sequence seq);
 
         std::unique_ptr<SQLite::Statement> _docCountStmt;
