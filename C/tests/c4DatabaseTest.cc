@@ -81,8 +81,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     C4Error error;
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
-    C4Slice path = c4db_getPath(bundle);
+    C4SliceResult path = c4db_getPath(bundle);
     REQUIRE(path == c4str(kTestDir "cbl_core_test_bundle/")); // note trailing '/'
+    c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
     c4db_free(bundle);
 
@@ -593,8 +594,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     
     int expiredCount = 0;
     while(c4exp_next(e, NULL)) {
-        C4Slice existingDocID = c4exp_getDocID(e);
-        REQUIRE(!c4SliceEqual(existingDocID, docID3));
+        C4SliceResult existingDocID = c4exp_getDocID(e);
+        REQUIRE(existingDocID != docID3);
         c4slice_free(existingDocID);
         expiredCount++;
     }
@@ -610,8 +611,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     
     expiredCount = 0;
     while(c4exp_next(e, NULL)) {
-        C4Slice existingDocID = c4exp_getDocID(e);
-        REQUIRE(!c4SliceEqual(existingDocID, docID3));
+        C4SliceResult existingDocID = c4exp_getDocID(e);
+        REQUIRE(existingDocID != docID3);
         c4slice_free(existingDocID);
         expiredCount++;
     }

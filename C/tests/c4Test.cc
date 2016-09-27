@@ -9,15 +9,19 @@
 #include "c4Test.hh"
 #include "slice.hh"
 #include <iostream>
+#include <fstream>
+#include <stdio.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+
+using namespace std;
 
 
 // Debugging utility to print a slice -- in LLDB enter "call ps(___)"
 void ps(C4Slice s);
 void ps(C4Slice s) {
-    std::cerr << s << "\n";
+    cerr << s << "\n";
 }
 
 void ps(fleece::slice s);
@@ -30,8 +34,8 @@ bool operator== (C4Slice s1, C4Slice s2) {
     return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
 }
 
-static std::string c4sliceToHex(C4Slice result) {
-    std::string hex;
+static string c4sliceToHex(C4Slice result) {
+    string hex;
     for (size_t i = 0; i < result.size; i++) {
         char str[4];
         sprintf(str, "%02X", ((const uint8_t*)result.buf)[i]);
@@ -43,7 +47,7 @@ static std::string c4sliceToHex(C4Slice result) {
 }
 
 
-std::ostream& operator<< (std::ostream& o, C4Slice s) {
+ostream& operator<< (ostream& o, C4Slice s) {
     o << "C4Slice[";
     if (s.buf == NULL)
         return o << "null]";
@@ -52,22 +56,22 @@ std::ostream& operator<< (std::ostream& o, C4Slice s) {
         if (buf[i] < 32 || buf[i] > 126)
             return o << c4sliceToHex(s) << "]";
     }
-    return o << '"' << std::string((char*)s.buf, s.size) << "\"]";
+    return o << '"' << string((char*)s.buf, s.size) << "\"]";
 }
 
 
-std::ostream& operator<< (std::ostream &out, C4Error error) {
+ostream& operator<< (ostream &out, C4Error error) {
     C4SliceResult s = c4error_getMessage(error);
-    out << "C4Error(" << error.domain << ", " << error.code << "): \"" << std::string((const char*)s.buf, s.size) << "\"";
+    out << "C4Error(" << error.domain << ", " << error.code << "): \"" << string((const char*)s.buf, s.size) << "\"";
     c4slice_free(s);
     return out;
 }
 
 
 // Dumps a C4Key to a C++ string
-std::string toJSON(C4KeyReader r) {
+string toJSON(C4KeyReader r) {
     C4SliceResult dump = c4key_toJSON(&r);
-    std::string result((char*)dump.buf, dump.size);
+    string result((char*)dump.buf, dump.size);
     c4slice_free(dump);
     return result;
 }
@@ -145,7 +149,7 @@ C4Test::~C4Test() {
     c4db_delete(db, &error);
     c4db_free(db);
 
-    if (!std::current_exception()) {
+    if (!current_exception()) {
         // Check for leaks:
         REQUIRE(c4_getObjectCount() == objectCount);
     }
@@ -172,6 +176,40 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     REQUIRE(doc != NULL);
     c4doc_free(doc);
     c4doc_free(curDoc);
+}
+
+
+// Reads a file into memory.
+FLSliceResult C4Test::readFile(const char *path) {
+    FILE *fd = fopen(path, "r");
+    REQUIRE(fd != NULL);
+    fseek(fd, 0, SEEK_END);
+    size_t size = ftello(fd);
+    fseek(fd, 0, SEEK_SET);
+    void* data = malloc(size);
+    REQUIRE(data);
+    ssize_t bytesRead = fread((void*)data, 1, size, fd);
+    REQUIRE(bytesRead == size);
+    fclose(fd);
+    return FLSliceResult{data, size};
+}
+
+
+bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback) {
+    fstream fd(path, ios_base::in);
+    char buf[10000];
+    while (fd.good()) {
+        fd.getline(buf, sizeof(buf));
+        auto len = fd.gcount();
+        if (len <= 0)
+            break;
+        if (buf[len-1] == '\0')
+            --len;
+        if (!callback({buf, (size_t)len}))
+            return false;
+    }
+    REQUIRE(fd.eof());
+    return true;
 }
 
 

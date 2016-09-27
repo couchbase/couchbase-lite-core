@@ -181,7 +181,7 @@ namespace litecore {
 
 
     void VersionVector::writeTo(fleece::Encoder &encoder) const {
-        encoder.beginArray();
+        encoder.beginArray(2*_vers.size());
         for (auto v : _vers) {
             encoder << v._gen;
             encoder << v._author;

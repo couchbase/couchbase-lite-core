@@ -53,7 +53,9 @@ TEST_CASE_METHOD(C4KeyTest, "ReadKey", "[Key][C]") {
     REQUIRE(c4key_readNumber(&r) == 0.0);
     REQUIRE(c4key_readNumber(&r) == 12345.0);
     REQUIRE(c4key_readNumber(&r) == -2468.0);
-    REQUIRE(c4key_readString(&r) == c4str("foo"));
+    C4SliceResult str = c4key_readString(&r);
+    REQUIRE(str == c4str("foo"));
+    c4slice_free(str);
     REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4Array);
     c4key_skipToken(&r);
     REQUIRE(c4key_peek(&r) == (C4KeyToken)kC4EndSequence);

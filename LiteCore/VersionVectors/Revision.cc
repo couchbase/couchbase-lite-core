@@ -60,7 +60,7 @@ namespace litecore {
 
     void Revision::writeMeta(const VersionVector &vers) {
         fleece::Encoder enc;
-        enc.beginArray();
+        enc.beginArray(3);
         enc << _flags;
         enc << vers;
         enc << _docType;

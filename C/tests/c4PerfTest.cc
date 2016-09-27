@@ -60,20 +60,6 @@ public:
         c4view_free(tracksView);
     }
 
-    // Reads a file into memory.
-    alloc_slice readFile(const char *path) {
-        int fd = ::open(path, O_RDONLY);
-        REQUIRE(fd != -1);
-        struct stat stat;
-        fstat(fd, &stat);
-        alloc_slice data(stat.st_size);
-        ssize_t bytesRead = ::read(fd, (void*)data.buf, data.size);
-        REQUIRE(bytesRead == data.size);
-        ::close(fd);
-        return data;
-    }
-
-
     // Copies a Fleece dictionary key/value to an encoder
     static bool copyValue(FLDict srcDict, FLDictKey *key, FLEncoder enc) {
         FLValue value = FLDict_GetWithKey(srcDict, key);
@@ -321,6 +307,50 @@ public:
     }
 
 
+    void importJSONLines(const char *path, double timeout =5.0) {
+        fprintf(stderr, "Reading %s ...  ", path);
+        unsigned numDocs = 0;
+        Stopwatch st;
+
+        {
+            TransactionHelper t(db);
+            FLEncoder encoder = FLEncoder_New();
+            readFileByLines(path, [&](FLSlice line)
+            {
+                FLError error;
+                FLEncoder_ConvertJSON(encoder, {line.buf, line.size});
+                FLSliceResult body = FLEncoder_Finish(encoder, &error);
+                REQUIRE(body.buf);
+                FLEncoder_Reset(encoder);
+
+                char docID[20];
+                sprintf(docID, "%07u", numDocs+1);
+
+                // Save document:
+                C4Error c4err;
+                C4DocPutRequest rq = {};
+                rq.docID = c4str(docID);
+                rq.body = (C4Slice)body;
+                rq.save = true;
+                C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+                REQUIRE(doc != nullptr);
+                c4doc_free(doc);
+                FLSliceResult_Free(body);
+                ++numDocs;
+                if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
+                    fprintf(stderr, "Stopping after %.3f sec  ", st.elapsed());
+                    return false;
+                }
+                if (numDocs % 100000 == 0)
+                    fprintf(stderr, "%u  ", numDocs);
+                return true;
+            });
+            fprintf(stderr, "Committing...\n");
+        }
+        st.printReport("Importing", numDocs, "doc");
+    }
+
+
     C4View *artistsView {nullptr};
     C4View *albumsView {nullptr};
     C4View *tracksView {nullptr};
@@ -331,6 +361,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
     auto jsonData = readFile(kJSONFilePath);
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
+    FLSliceResult_Free(jsonData);
     FLArray root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     unsigned numDocs;
 
@@ -375,4 +406,13 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
                 ms/numArtists*1000.0, numArtists/ms*1000);
 #endif
     }
+}
+
+
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
+    importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json");
+}
+
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
+    importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json");
 }

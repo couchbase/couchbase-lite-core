@@ -187,6 +187,7 @@ FLEncoder_EndArray
 FLEncoder_BeginDict
 FLEncoder_WriteKey
 FLEncoder_EndDict
+FLEncoder_ConvertJSON
 FLEncoder_WriteValue
 FLEncoder_Finish
 FLEncoder_GetError

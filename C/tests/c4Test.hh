@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "Fleece.h"
+
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
@@ -26,8 +28,18 @@
 
 // Some operators to make C4Slice work with Catch assertions:
 bool operator== (C4Slice s1, C4Slice s2);
+static bool operator!= (C4Slice s1, C4Slice s2) {return !(s1 == s2);}
+
+static inline bool operator== (C4SliceResult sr, C4Slice s) {
+    return C4Slice{sr.buf, sr.size} == s;
+}
+static inline bool operator!= (C4SliceResult sr, C4Slice s) {
+    return C4Slice{sr.buf, sr.size} != s;
+}
+
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 std::ostream& operator<< (std::ostream &out, C4Error error);
+
 
 
 // Dumps a C4Key to a C++ string
@@ -81,6 +93,9 @@ protected:
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
+
+    FLSliceResult readFile(const char *path);
+    bool readFileByLines(const char *path, std::function<bool(FLSlice)>);
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"

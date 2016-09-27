@@ -104,7 +104,8 @@ namespace litecore {
         VersionVector(VersionVector&&) noexcept;
         VersionVector& operator=(const VersionVector&);
 
-        /** Populates an empty vector from a Fleece value. */
+        /** Populates an empty vector from a Fleece value.
+            The vector will contain pointers into the Fleece data! */
         void readFrom(const fleece::Value*);
 
         /** Sets the vector to empty. */

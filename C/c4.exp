@@ -213,6 +213,7 @@ _FLEncoder_EndArray
 _FLEncoder_BeginDict
 _FLEncoder_WriteKey
 _FLEncoder_EndDict
+_FLEncoder_ConvertJSON
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage
