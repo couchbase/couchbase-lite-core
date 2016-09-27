@@ -28,6 +28,26 @@ static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 
 
 
+struct countContext {
+    uint64_t count;
+    char value[30];
+};
+
+// accumulate function that simply totals numeric values. `context` must point to a totalContext.
+static void count_accumulate(void *context, C4Key *key, C4Slice value) {
+    auto ctx = (countContext*)context;
+    ++ctx->count;
+}
+
+// reduce function that returns the row count. `context` must point to a countContext.
+static C4Slice count_reduce (void *context) {
+    auto ctx = (countContext*)context;
+    sprintf(ctx->value, "%llu", ctx->count);
+    ctx->count = 0.0;
+    return {ctx->value, strlen(ctx->value)};
+}
+
+
 struct totalContext {
     double total;
     char value[30];
@@ -58,6 +78,7 @@ public:
         c4view_free(artistsView);
         c4view_free(albumsView);
         c4view_free(tracksView);
+        c4view_free(likesView);
     }
 
     // Copies a Fleece dictionary key/value to an encoder
@@ -277,27 +298,76 @@ public:
     }
 
 
-    unsigned queryAllArtists() {
-        const bool verbose = false;
+    unsigned indexLikesView() {
+        FLDictKey likesKey   = FLDictKey_Init(FLSTR("likes"), true);
+        C4Key *keys[3] = {c4key_new(), c4key_new(), c4key_new()};
+        C4Slice values[3] = {};
+        unsigned totalLikes = 0;
+
+        C4Error error;
+        if (!likesView) {
+            likesView = c4view_open(db, kC4SliceNull, C4STR("likes"),
+                                    C4STR("1"), c4db_getConfig(db), &error);
+            REQUIRE(likesView);
+        }
+        C4View* views[1] = {likesView};
+        C4Indexer *indexer = c4indexer_begin(db, views, 1, &error);
+        REQUIRE(indexer);
+        auto e = c4indexer_enumerateDocuments(indexer, &error);
+        REQUIRE(e);
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            REQUIRE(body);
+            auto likes = FLValue_AsArray( FLDict_GetWithKey(body, &likesKey) );
+
+            FLArrayIterator iter;
+            FLArrayIterator_Begin(likes, &iter);
+            unsigned nLikes;
+            for (nLikes = 0; nLikes < 3 && FLArrayIterator_Next(&iter); ++nLikes) {
+                FLSlice like = FLValue_AsString(FLArrayIterator_GetValue(&iter));
+                c4key_reset(keys[nLikes]);
+                c4key_addString(keys[nLikes], like);
+            }
+            totalLikes += nLikes;
+
+            REQUIRE(c4indexer_emit(indexer, doc, 0, nLikes, keys, values, &error));
+
+            c4doc_free(doc);
+        }
+        c4enum_free(e);
+        REQUIRE(error.code == 0);
+
+        REQUIRE(c4indexer_end(indexer, true, &error));
+
+        for (unsigned i = 0; i < 3; i++)
+            c4key_free(keys[i]);
+        return totalLikes;
+    }
+
+
+    unsigned queryAll(C4View *view, C4ReduceFunction reduce, bool verbose =false) {
         std::vector<std::string> allArtists;
         allArtists.reserve(1200);
-
-        totalContext context = {};
-        C4ReduceFunction reduce = {total_accumulate, total_reduce, &context};
 
         C4QueryOptions options = kC4DefaultQueryOptions;
         options.reduce = &reduce;
         options.groupLevel = 1;
         C4Error error;
-        auto query = c4view_query(artistsView, &options, &error);
+        auto query = c4view_query(view, &options, &error);
+        C4SliceResult artistSlice;
         while (c4queryenum_next(query, &error)) {
             C4KeyReader key = query->key;
-            REQUIRE(c4key_peek(&key) == kC4Array);
-            c4key_skipToken(&key);
-            C4SliceResult artistSlice = c4key_readString(&key);
+            if (c4key_peek(&key) == kC4Array) {
+                c4key_skipToken(&key);
+                artistSlice = c4key_readString(&key);
+            } else {
+                REQUIRE(c4key_peek(&key) == kC4String);
+                artistSlice = c4key_readString(&key);
+            }
             REQUIRE(artistSlice.buf);
             std::string artist((const char*)artistSlice.buf, artistSlice.size);
-            if (verbose) std::cerr << artist << "  ";
+            if (verbose) std::cerr << artist << " (" << std::string((char*)query->value.buf, query->value.size) << ")  ";
             allArtists.push_back(artist);
             c4slice_free(artistSlice);
         }
@@ -307,7 +377,8 @@ public:
     }
 
 
-    void importJSONLines(const char *path, double timeout =5.0) {
+    // Read a file that contains a JSON document per line. Every line becomes a document.
+    unsigned importJSONLines(const char *path, double timeout =5.0) {
         fprintf(stderr, "Reading %s ...  ", path);
         unsigned numDocs = 0;
         Stopwatch st;
@@ -348,12 +419,14 @@ public:
             fprintf(stderr, "Committing...\n");
         }
         st.printReport("Importing", numDocs, "doc");
+        return numDocs;
     }
 
 
     C4View *artistsView {nullptr};
     C4View *albumsView {nullptr};
     C4View *tracksView {nullptr};
+    C4View *likesView {nullptr};
 };
 
 
@@ -370,9 +443,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
         numDocs = insertDocs(root);
         CHECK(numDocs == 12188);
 #ifdef NDEBUG
-        double ms = st.elapsedMS();
-        fprintf(stderr, "Writing %u docs took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
-                numDocs, ms, ms/numDocs*1000.0, numDocs/ms*1000);
+        st.printReport("Writing docs", numDocs, "doc");
 #endif
     }
     FLSliceResult_Free(fleeceData);
@@ -380,30 +451,23 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
         Stopwatch st;
         indexViews();
 #ifdef NDEBUG
-        double ms = st.elapsedMS();
-        fprintf(stderr, "Indexing Artist/Album views took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
-                ms, ms/numDocs*1000.0, numDocs/ms*1000);
+        st.printReport("Indexing Artist/Album views", numDocs, "doc");
 #endif
     }
     {
         Stopwatch st;
         indexTracksView();
 #ifdef NDEBUG
-        double ms = st.elapsedMS();
-        fprintf(stderr, "Indexing Tracks view took %.3f ms (%.3f us/doc, or %.0f docs/sec)\n",
-                ms, ms/numDocs*1000.0, numDocs/ms*1000);
+        st.printReport("Indexing Tracks view", numDocs, "doc");
 #endif
     }
     {
         Stopwatch st;
-        auto numArtists = queryAllArtists();
+        totalContext context = {};
+        auto numArtists = queryAll(artistsView, {total_accumulate, total_reduce, &context});
         CHECK(numArtists == 1141);
 #ifdef NDEBUG
-        double ms = st.elapsedMS();
-        fprintf(stderr, "All-artists query, %u artists, took %.3f ms (%.3f us/doc, or %.0f docs/sec) (%.3f us/artist, or %.0f artists/sec)\n",
-                numArtists, ms,
-                ms/numDocs*1000.0, numDocs/ms*1000,
-                ms/numArtists*1000.0, numArtists/ms*1000);
+        st.printReport("Grouped query of Artist view", numDocs, "doc");
 #endif
     }
 }
@@ -414,5 +478,25 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
-    importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json");
+    // Docs look like:
+    // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
+
+    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json", 5.0);
+    {
+        Stopwatch st;
+        auto totalLikes = indexLikesView();
+        fprintf(stderr, "Total of %u likes\n", totalLikes);
+#ifdef NDEBUG
+        st.printReport("Indexing Likes view", numDocs, "doc");
+#endif
+    }
+    {
+        Stopwatch st;
+        countContext context = {};
+        auto numLikes = queryAll(likesView, {count_accumulate, count_reduce, &context}, true);
+        //CHECK(numArtists == 1141);
+#ifdef NDEBUG
+        st.printReport("Querying all likes", numLikes, "like");
+#endif
+    }
 }
