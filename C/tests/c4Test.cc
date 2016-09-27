@@ -86,7 +86,7 @@ static void log(C4LogLevel level, C4Slice message) {
 #pragma mark - C4TEST CLASS
 
 
-C4Slice C4Test::databasePath() {
+C4Slice C4Test::databasePath() const {
     if (_bundled)
         return c4str(kTestDir "cbl_core_test");
     else if (storageType() == kC4SQLiteStorageEngine)
@@ -153,6 +153,17 @@ C4Test::~C4Test() {
         // Check for leaks:
         REQUIRE(c4_getObjectCount() == objectCount);
     }
+}
+
+
+void C4Test::reopenDB() {
+    auto config = *c4db_getConfig(db);
+    C4Error error;
+    REQUIRE(c4db_close(db, &error));
+    c4db_free(db);
+    db = nullptr;
+    db = c4db_open(databasePath(), &config, &error);
+    REQUIRE(db);
 }
 
 

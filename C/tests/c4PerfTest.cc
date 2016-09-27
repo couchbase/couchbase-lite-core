@@ -474,28 +474,48 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
-    importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json");
+    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json");
+    reopenDB();
+    {
+        Stopwatch st;
+        auto readNo = 0;
+        for (; readNo < 100000; ++readNo) {
+            char docID[30];
+            sprintf(docID, "%07u", ((unsigned)random() % numDocs) + 1);
+            C4Error error;
+            auto doc = c4doc_get(db, c4str(docID), true, &error);
+            REQUIRE(doc);
+            REQUIRE(doc->selectedRev.body.size > 10);
+            c4doc_free(doc);
+        }
+        st.printReport("Reading random docs", readNo, "doc");
+    }
+    sleep(1);//TEMP
 }
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
     // Docs look like:
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
-    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json", 5.0);
+    __unused auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json");
+#ifdef NDEBUG
+    CHECK(numDocs == 300000);
+#endif
     {
         Stopwatch st;
         auto totalLikes = indexLikesView();
         fprintf(stderr, "Total of %u likes\n", totalLikes);
 #ifdef NDEBUG
+        CHECK(totalLikes == 141147);
         st.printReport("Indexing Likes view", numDocs, "doc");
 #endif
     }
     {
         Stopwatch st;
         countContext context = {};
-        auto numLikes = queryAll(likesView, {count_accumulate, count_reduce, &context}, true);
-        //CHECK(numArtists == 1141);
+        __unused auto numLikes = queryAll(likesView, {count_accumulate, count_reduce, &context}, true);
 #ifdef NDEBUG
+        CHECK(numLikes == 14);
         st.printReport("Querying all likes", numLikes, "like");
 #endif
     }

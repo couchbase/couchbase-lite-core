@@ -79,7 +79,7 @@ public:
     C4Test(int testOption);
     ~C4Test();
 
-    C4Slice databasePath();
+    C4Slice databasePath() const;
 
 protected:
     C4Database *db;
@@ -90,6 +90,8 @@ protected:
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
     bool isVersionVectors() const               {return _versioning == kC4VersionVectors;}
+
+    void reopenDB();
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
