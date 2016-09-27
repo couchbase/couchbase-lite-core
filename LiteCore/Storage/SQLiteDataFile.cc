@@ -27,6 +27,26 @@ using namespace std;
 namespace litecore {
 
 
+    // Little helper class that makes sure Statement objects get reset on exit
+    class UsingStatement {
+    public:
+        UsingStatement(SQLite::Statement &stmt) noexcept
+        :_stmt(stmt)
+        { }
+
+        UsingStatement(const unique_ptr<SQLite::Statement> &stmt) noexcept
+        :UsingStatement(*stmt.get())
+        { }
+
+        ~UsingStatement() {
+            _stmt.reset();
+        }
+    private:
+        SQLite::Statement &_stmt;
+    };
+
+
+
     SQLiteDataFile::Factory& SQLiteDataFile::factory() {
         static SQLiteDataFile::Factory s;
         return s;
@@ -249,7 +269,6 @@ namespace litecore {
         if (ref == nullptr)
             const_cast<unique_ptr<SQLite::Statement>&>(ref).reset(
                                                       new SQLite::Statement(*_sqlDb, sql));
-        ref->reset();  // prepare statement to be run again
         return *ref.get();
     }
 
@@ -257,17 +276,17 @@ namespace litecore {
     sequence SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence seq = 0;
         compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
+        UsingStatement u(_getLastSeqStmt);
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
-        if (_getLastSeqStmt->executeStep()) {
+        if (_getLastSeqStmt->executeStep())
             seq = (int64_t)_getLastSeqStmt->getColumn(0);
-            _getLastSeqStmt->reset();
-        }
         return seq;
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence seq) {
         compile(_setLastSeqStmt,
                 "INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)");
+        UsingStatement u(_setLastSeqStmt);
         _setLastSeqStmt->bindNoCopy(1, store.name());
         _setLastSeqStmt->bind(2, (int64_t)seq);
         _setLastSeqStmt->exec();
@@ -384,18 +403,16 @@ namespace litecore {
 
 
     uint64_t SQLiteKeyStore::documentCount() const {
-        if (_docCountStmt) {
-            _docCountStmt->reset();
-        } else {
+        if (!_docCountStmt) {
             stringstream sql;
             sql << "SELECT count(*) FROM kv_" << _name;
             if (_capabilities.softDeletes)
                 sql << " WHERE deleted!=1";
             compile(_docCountStmt, sql.str().c_str());
         }
+        UsingStatement u(_docCountStmt);
         if (_docCountStmt->executeStep()) {
             auto count = (int64_t)_docCountStmt->getColumn(0);
-            _docCountStmt->reset();
             return count;
         }
         return 0;
@@ -460,6 +477,7 @@ namespace litecore {
             : compile(_getByKeyStmt,
                       "SELECT sequence, deleted, 0, meta, body FROM kv_@ WHERE key=?");
         stmt.bindNoCopy(1, doc.key().buf, (int)doc.key().size);
+        UsingStatement u(stmt);
         if (!stmt.executeStep())
             return false;
 
@@ -468,7 +486,6 @@ namespace litecore {
         bool deleted = (int)stmt.getColumn(1);
         updateDoc(doc, seq, offset, deleted);
         setDocMetaAndBody(doc, stmt, options);
-        stmt.reset();
         return !doc.deleted();
     }
 
@@ -482,6 +499,7 @@ namespace litecore {
                           "SELECT 0, deleted, key, meta, length(body) FROM kv_@ WHERE sequence=?")
             : compile(_getBySeqStmt,
                            "SELECT 0, deleted, key, meta, body FROM kv_@ WHERE sequence=?");
+        UsingStatement u(stmt);
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
             uint64_t offset = _capabilities.getByOffset ? seq : 0;
@@ -489,7 +507,6 @@ namespace litecore {
             updateDoc(doc, seq, offset, deleted);
             doc.setKey(columnAsSlice(stmt.getColumn(2)));
             setDocMetaAndBody(doc, stmt, options);
-            stmt.reset();
         }
         return doc;
     }
@@ -502,13 +519,13 @@ namespace litecore {
             return doc;
 
         auto &stmt = compile(_getByOffStmt, "SELECT key, meta, body FROM kvold_@ WHERE sequence=?");
+        UsingStatement u(stmt);
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
             updateDoc(doc, seq, seq);
             doc.setKey(columnAsSlice(stmt.getColumn(0)));
             doc.setMeta(columnAsSlice(stmt.getColumn(1)));
             doc.setBody(columnAsSlice(stmt.getColumn(2)));
-            stmt.reset();
             return doc;
         } else {
             // Maybe the sequence is still current...
@@ -531,6 +548,7 @@ namespace litecore {
         } else {
             _setStmt->bind(4);
         }
+        UsingStatement u(_setStmt);
         _setStmt->exec();
         setLastSequence(seq);
         return {seq, (_capabilities.getByOffset ? seq : 0)};
@@ -563,10 +581,10 @@ namespace litecore {
         else
             stmt->bindNoCopy(param++, key.buf, (int)key.size);
 
+        UsingStatement u(stmt);
         bool ok = stmt->exec() > 0;
         if (ok && newSeq > 0)
             setLastSequence(newSeq);
-        stmt->reset();
         return ok;
     }
 

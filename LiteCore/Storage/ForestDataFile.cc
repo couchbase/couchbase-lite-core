@@ -66,7 +66,7 @@ namespace litecore {
 
             // Global configuration:
             sDefaultConfig.buffercache_size = kDBBufferCacheSize;
-            sDefaultConfig.compress_document_body = true;
+//            sDefaultConfig.compress_document_body = true; // Disabled: it hurts performance
             sDefaultConfig.compactor_sleep_duration = kAutoCompactInterval;
             sDefaultConfig.num_compactor_threads = 1;
             sDefaultConfig.num_bgflusher_threads = 1;
