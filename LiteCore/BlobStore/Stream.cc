@@ -21,7 +21,7 @@ namespace litecore {
         if (length > SIZE_MAX)    // overflow check for 32-bit
             throw bad_alloc();
         auto contents = alloc_slice((size_t)length);
-        contents.size = read((void*)contents.buf, length);
+        contents.size = read((void*)contents.buf, contents.size);
         return contents;
     }
 
@@ -58,17 +58,17 @@ namespace litecore {
 
 
     uint64_t FileReadStream::getLength() const {
-        uint64_t curPos = ftell(_file);
-        fseek(_file, 0, SEEK_END);
-        uint64_t fileSize = ftell(_file);
-        fseek(_file, curPos, SEEK_SET);
+        uint64_t curPos = ftello(_file);
+        fseeko(_file, 0, SEEK_END);
+        uint64_t fileSize = ftello(_file);
+        fseeko(_file, curPos, SEEK_SET);
         checkErr(_file);
         return fileSize;
     }
 
 
     void FileReadStream::seek(uint64_t pos) {
-        fseek(_file, pos, SEEK_SET);
+        fseeko(_file, pos, SEEK_SET);
         checkErr(_file);
     }
 

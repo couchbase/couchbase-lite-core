@@ -194,9 +194,9 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
 FLSliceResult C4Test::readFile(const char *path) {
     FILE *fd = fopen(path, "r");
     REQUIRE(fd != NULL);
-    fseek(fd, 0, SEEK_END);
+    fseeko(fd, 0, SEEK_END);
     size_t size = ftello(fd);
-    fseek(fd, 0, SEEK_SET);
+    fseeko(fd, 0, SEEK_SET);
     void* data = malloc(size);
     REQUIRE(data);
     ssize_t bytesRead = fread((void*)data, 1, size, fd);

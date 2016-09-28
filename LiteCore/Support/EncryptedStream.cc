@@ -176,7 +176,7 @@ namespace litecore {
         bool finalBlock = (_blockID == _finalBlockID);
         size_t readSize = kFileBlockSize;
         if (finalBlock)
-            readSize = _inputLength - (_blockID * kFileBlockSize);  // don't read trailer
+            readSize = (size_t)(_inputLength - (_blockID * kFileBlockSize));  // don't read trailer
         size_t bytesRead = _input->read(blockBuf, readSize);
 
         uint64_t iv[2] = {0, _endian_encode(_blockID++)};
