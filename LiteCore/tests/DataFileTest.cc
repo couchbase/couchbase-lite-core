@@ -10,6 +10,8 @@
 #include "DocEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
+#include "Fleece.hh"
+#include "Benchmark.hh"
 
 #include "LiteCoreTest.hh"
 
@@ -263,6 +265,49 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
             REQUIRE((string)e->key() == docIDs[i]);
         }
         REQUIRE(i == -1);
+    }
+}
+
+
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]") {
+    // Write 100 docs with Fleece bodies of the form {"num":n} where n is the doc #
+    Transaction t(store->dataFile());
+    for (int i = 1; i <= 100; i++) {
+        string docID = stringWithFormat("doc-%03d", i);
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("num");
+        enc.writeInt(i);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        sequence seq = store->set(slice(docID), litecore::slice::null, body, t).seq;
+        REQUIRE(seq == (sequence)i);
+    }
+    t.commit();
+
+    // Use a (SQL) query based on the Fleece "num" property:
+    for (int pass = 0; pass < 2; ++pass) {
+        Stopwatch st;
+        DocEnumerator::Options opts;
+        int i = 30;
+        DocEnumerator e(*store, "$.num between 30 and 40", opts);
+        for (; e.next(); ++i) {
+            string expectedDocID = stringWithFormat("doc-%03d", i);
+            REQUIRE(e->key() == alloc_slice(expectedDocID));
+            REQUIRE(e->sequence() == (sequence)i);
+        }
+        st.printReport("Query of $.num", i, "row");
+        REQUIRE(i == 41);
+        REQUIRE_FALSE(e);
+
+        // Add an index after the first pass:
+        if (pass == 0) {
+            Stopwatch st2;
+            store->addIndex("$.num");
+            st2.printReport("Index on $.num", 1, "index");
+        }
     }
 }
 

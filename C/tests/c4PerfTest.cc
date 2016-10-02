@@ -79,6 +79,7 @@ public:
         c4view_free(albumsView);
         c4view_free(tracksView);
         c4view_free(likesView);
+        c4view_free(statesView);
     }
 
     // Copies a Fleece dictionary key/value to an encoder
@@ -324,10 +325,13 @@ public:
             FLArrayIterator iter;
             FLArrayIterator_Begin(likes, &iter);
             unsigned nLikes;
-            for (nLikes = 0; nLikes < 3 && FLArrayIterator_Next(&iter); ++nLikes) {
+            for (nLikes = 0; nLikes < 3; ++nLikes) {
                 FLSlice like = FLValue_AsString(FLArrayIterator_GetValue(&iter));
+                if (!like.buf)
+                    break;
                 c4key_reset(keys[nLikes]);
                 c4key_addString(keys[nLikes], like);
+                FLArrayIterator_Next(&iter);
             }
             totalLikes += nLikes;
 
@@ -346,39 +350,114 @@ public:
     }
 
 
-    unsigned queryAll(C4View *view, C4ReduceFunction reduce, bool verbose =false) {
-        std::vector<std::string> allArtists;
-        allArtists.reserve(1200);
+    unsigned indexStatesView() {
+        FLDictKey contactKey = FLDictKey_Init(FLSTR("contact"), true);
+        FLDictKey addressKey = FLDictKey_Init(FLSTR("address"), true);
+        FLDictKey stateKey   = FLDictKey_Init(FLSTR("state"), true);
+        C4Key *key = c4key_new();
+        C4Slice values[3] = {};
+        unsigned totalStates = 0;
 
+        C4Error error;
+        if (!statesView) {
+            statesView = c4view_open(db, kC4SliceNull, C4STR("states"),
+                                    C4STR("1"), c4db_getConfig(db), &error);
+            REQUIRE(statesView);
+        }
+        C4View* views[1] = {statesView};
+        C4Indexer *indexer = c4indexer_begin(db, views, 1, &error);
+        REQUIRE(indexer);
+        auto e = c4indexer_enumerateDocuments(indexer, &error);
+        REQUIRE(e);
+        while (c4enum_next(e, &error)) {
+            auto doc = c4enum_getDocument(e, &error);
+            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            REQUIRE(body);
+            auto contact = FLValue_AsDict( FLDict_GetWithKey(body, &contactKey) );
+            auto address = FLValue_AsDict( FLDict_GetWithKey(contact, &addressKey) );
+            auto state = FLValue_AsString( FLDict_GetWithKey(address, &stateKey) );
+
+            unsigned nStates = 0;
+            if (state.buf) {
+                c4key_reset(key);
+                c4key_addString(key, state);
+                nStates = 1;
+                totalStates++;
+            }
+            C4Slice value = kC4SliceNull;
+
+            REQUIRE(c4indexer_emit(indexer, doc, 0, nStates, &key, &value, &error));
+
+            c4doc_free(doc);
+        }
+        c4enum_free(e);
+        REQUIRE(error.code == 0);
+
+        REQUIRE(c4indexer_end(indexer, true, &error));
+
+        c4key_free(key);
+        return totalStates;
+    }
+
+
+    unsigned queryGrouped(C4View *view, C4ReduceFunction reduce, bool verbose =false) {
         C4QueryOptions options = kC4DefaultQueryOptions;
         options.reduce = &reduce;
         options.groupLevel = 1;
+        return runQuery(view, options, verbose);
+    }
+
+    unsigned runQuery(C4View *view, C4QueryOptions &options, bool verbose =false) {
+        std::vector<std::string> allKeys;
+        allKeys.reserve(1200);
         C4Error error;
         auto query = c4view_query(view, &options, &error);
-        C4SliceResult artistSlice;
+        C4SliceResult keySlice;
         while (c4queryenum_next(query, &error)) {
             C4KeyReader key = query->key;
             if (c4key_peek(&key) == kC4Array) {
                 c4key_skipToken(&key);
-                artistSlice = c4key_readString(&key);
+                keySlice = c4key_readString(&key);
             } else {
                 REQUIRE(c4key_peek(&key) == kC4String);
-                artistSlice = c4key_readString(&key);
+                keySlice = c4key_readString(&key);
             }
-            REQUIRE(artistSlice.buf);
-            std::string artist((const char*)artistSlice.buf, artistSlice.size);
-            if (verbose) std::cerr << artist << " (" << std::string((char*)query->value.buf, query->value.size) << ")  ";
-            allArtists.push_back(artist);
-            c4slice_free(artistSlice);
+            REQUIRE(keySlice.buf);
+            std::string keyStr((const char*)keySlice.buf, keySlice.size);
+            if (verbose) std::cerr << keyStr << " (" << std::string((char*)query->value.buf, query->value.size) << ")  ";
+            allKeys.push_back(keyStr);
+            c4slice_free(keySlice);
         }
         c4queryenum_free(query);
         if (verbose) std::cerr << "\n";
-        return (unsigned) allArtists.size();
+        return (unsigned) allKeys.size();
+    }
+
+
+    unsigned queryWhere(const char *whereStr, bool verbose =false) {
+        std::vector<std::string> docIDs;
+        docIDs.reserve(1200);
+
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags &= ~kC4IncludeBodies;
+        C4Error error;
+        auto e = c4db_enumerateDocsWhere(db, c4str(whereStr), &options, &error);
+        C4SliceResult artistSlice;
+        while (c4enum_next(e, &error)) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            std::string artist((const char*)info.docID.buf, info.docID.size);
+            if (verbose) std::cerr << artist << "  ";
+            docIDs.push_back(artist);
+        }
+        c4enum_free(e);
+        if (verbose) std::cerr << "\n";
+        return (unsigned) docIDs.size();
     }
 
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
-    unsigned importJSONLines(const char *path, double timeout =5.0) {
+    unsigned importJSONLines(const char *path, double timeout =15.0) {
         fprintf(stderr, "Reading %s ...  ", path);
         unsigned numDocs = 0;
         Stopwatch st;
@@ -427,6 +506,7 @@ public:
     C4View *albumsView {nullptr};
     C4View *tracksView {nullptr};
     C4View *likesView {nullptr};
+    C4View *statesView {nullptr};
 };
 
 
@@ -442,33 +522,25 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
         Stopwatch st;
         numDocs = insertDocs(root);
         CHECK(numDocs == 12188);
-#ifdef NDEBUG
         st.printReport("Writing docs", numDocs, "doc");
-#endif
     }
     FLSliceResult_Free(fleeceData);
     {
         Stopwatch st;
         indexViews();
-#ifdef NDEBUG
         st.printReport("Indexing Artist/Album views", numDocs, "doc");
-#endif
     }
     {
         Stopwatch st;
         indexTracksView();
-#ifdef NDEBUG
         st.printReport("Indexing Tracks view", numDocs, "doc");
-#endif
     }
     {
         Stopwatch st;
         totalContext context = {};
-        auto numArtists = queryAll(artistsView, {total_accumulate, total_reduce, &context});
+        auto numArtists = queryGrouped(artistsView, {total_accumulate, total_reduce, &context});
         CHECK(numArtists == 1141);
-#ifdef NDEBUG
         st.printReport("Grouped query of Artist view", numDocs, "doc");
-#endif
     }
 }
 
@@ -498,25 +570,53 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
     __unused auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json");
+    const bool complete = (numDocs == 300000);
 #ifdef NDEBUG
-    CHECK(numDocs == 300000);
+    REQUIRE(numDocs == 300000);
 #endif
     {
         Stopwatch st;
         auto totalLikes = indexLikesView();
         fprintf(stderr, "Total of %u likes\n", totalLikes);
-#ifdef NDEBUG
-        CHECK(totalLikes == 141147);
         st.printReport("Indexing Likes view", numDocs, "doc");
-#endif
+        if (complete) CHECK(totalLikes == 345986);
     }
     {
         Stopwatch st;
         countContext context = {};
-        __unused auto numLikes = queryAll(likesView, {count_accumulate, count_reduce, &context}, true);
-#ifdef NDEBUG
-        CHECK(numLikes == 14);
+        auto numLikes = queryGrouped(likesView, {count_accumulate, count_reduce, &context}, true);
         st.printReport("Querying all likes", numLikes, "like");
-#endif
+        if (complete) CHECK(numLikes == 15);
+    }
+    {
+        Stopwatch st;
+        auto total = indexStatesView();
+        st.printReport("Indexing States view", numDocs, "doc");
+        if (complete) CHECK(total == 300000);
+    }
+    {
+        C4QueryOptions options = kC4DefaultQueryOptions;
+        C4Key *key = c4key_new();
+        c4key_addString(key, C4STR("WA"));
+        options.startKey = options.endKey = key;
+        Stopwatch st;
+        auto total = runQuery(statesView, options);
+        c4key_free(key);
+        st.printReport("Querying States view", total, "row");
+        if (complete) CHECK(total == 5053);
+    }
+    if (isSQLite() && !isRevTrees()) {
+        for (int pass = 0; pass < 2; ++pass) {
+            Stopwatch st;
+            auto n = queryWhere("$.contact.address.state = 'WA'");
+            st.printReport("SQL query of state", n, "doc");
+            if (complete) CHECK(n == 5053);
+            if (pass == 0) {
+                Stopwatch st2;
+                C4Error error;
+                REQUIRE(c4db_createIndex(db, C4STR("$.contact.address.state"), &error));
+                st2.printReport("Creating SQL index of state", 1, "index");
+            }
+        }
     }
 }

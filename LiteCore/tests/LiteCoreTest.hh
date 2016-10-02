@@ -44,6 +44,7 @@ public:
 
     static const int numberOfOptions = 2;
 
+    DataFileTestFixture()   :DataFileTestFixture(0) { }     // defaults to SQLite, rev-trees
     DataFileTestFixture(int testOption);
     ~DataFileTestFixture();
 

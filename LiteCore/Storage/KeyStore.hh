@@ -78,6 +78,10 @@ namespace litecore {
         bool del(sequence s, Transaction&);
         bool del(const Document&, Transaction&);
 
+        virtual bool supportsIndexes() const                        {return false;}
+        virtual void createIndex(const std::string &propertyPath);
+        virtual void deleteIndex(const std::string &propertyPath);
+
         virtual void erase() =0;
 
         void deleteKeyStore(Transaction&);
@@ -99,6 +103,8 @@ namespace litecore {
                                                        DocEnumerator::Options&) =0;
         virtual DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
                                                        DocEnumerator::Options&) =0;
+        virtual DocEnumerator::Impl* newEnumeratorImpl(const std::string &query,
+                                                       DocEnumerator::Options&);
 
         void updateDoc(Document &doc, sequence seq, docOffset offset =0, bool deleted = false) const {
             doc.update(seq, offset, deleted);

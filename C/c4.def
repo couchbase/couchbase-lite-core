@@ -51,6 +51,7 @@ c4db_enumerateChanges
 c4db_enumerateAllDocs
 c4db_enumerateSomeDocs
 c4db_enumerateExpired
+c4db_enumerateDocsWhere
 c4enum_next
 c4enum_nextDocument
 c4enum_getDocumentInfo

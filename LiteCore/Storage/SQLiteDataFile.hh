@@ -93,6 +93,10 @@ namespace litecore {
 
         void erase() override;
 
+        bool supportsIndexes() const override               {return true;}
+        void createIndex(const std::string &propertyPath) override;
+        void deleteIndex(const std::string &propertyPath) override;
+
     protected:
         bool _del(slice key, Transaction &t) override       {return _del(key, 0, t);}
         bool _del(sequence s, Transaction &t) override      {return _del(slice::null, s, t);}
@@ -100,6 +104,7 @@ namespace litecore {
 
         DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;
         DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
+        DocEnumerator::Impl* newEnumeratorImpl(const std::string &query, DocEnumerator::Options&) override;
 
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
@@ -116,6 +121,8 @@ namespace litecore {
         std::stringstream selectFrom(const DocEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, DocEnumerator::Options &options);
         void setLastSequence(sequence seq);
+        void writeSQLIndexName(const std::string &propertyPath, std::stringstream &sql);
+        void rewriteQueryExprAsSQL(const std::string &query, std::stringstream &sql);
 
         std::unique_ptr<SQLite::Statement> _docCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "SQLiteDataFile.hh"
+#include "SQLiteFleeceFunctions.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
@@ -39,7 +40,9 @@ namespace litecore {
         { }
 
         ~UsingStatement() {
-            _stmt.reset();
+            try {
+                _stmt.reset();
+            } catch (...) { }
         }
     private:
         SQLite::Statement &_stmt;
@@ -84,6 +87,8 @@ namespace litecore {
 
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
+
+        RegisterFleeceFunctions(_sqlDb->getHandle());
 
         withFileLock([this]{
             _sqlDb->exec("PRAGMA mmap_size=50000000");
@@ -597,6 +602,31 @@ namespace litecore {
     }
 
 
+    void SQLiteKeyStore::writeSQLIndexName(const string &propertyPath, stringstream &sql) {
+        sql << "'" << name() << "::" << propertyPath << "'";
+    }
+
+
+    void SQLiteKeyStore::createIndex(const string &propertyExpression) {
+        stringstream sql;
+        sql << "CREATE INDEX IF NOT EXISTS ";
+        writeSQLIndexName(propertyExpression, sql);
+        sql << " ON kv_" << name() << " (";
+        rewriteQueryExprAsSQL(propertyExpression, sql);
+        sql << ")";
+        db()._sqlDb->exec(sql.str());
+    }
+
+
+    void SQLiteKeyStore::deleteIndex(const string &propertyPath) {
+        stringstream sql;
+        sql << "DROP INDEX ";
+        writeSQLIndexName(propertyPath, sql);
+        db()._sqlDb->exec(sql.str());
+
+    }
+
+
 #pragma mark - ITERATOR:
 
 
@@ -711,6 +741,41 @@ namespace litecore {
         if (max < INT64_MAX)
             st->bind(2, (int64_t)max);
         return new SQLiteIterator(st, options.descending, options.contentOptions);
+    }
+
+    // iterate by query:
+    DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(const string &query,
+                                                           DocEnumerator::Options &options)
+    {
+        stringstream sql = selectFrom(options);
+        sql << " WHERE (";
+        rewriteQueryExprAsSQL(query, sql);
+        sql << ") ORDER BY key";
+        writeSQLOptions(sql, options);
+        auto st = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
+        return new SQLiteIterator(st, options.descending, options.contentOptions);
+    }
+
+
+    // Append the query string, rewriting Fleece paths as SQL function calls:
+    void SQLiteKeyStore::rewriteQueryExprAsSQL(const string &query, stringstream &sql) {
+        string::size_type pos = 0, next;
+        do {
+            next = query.find("$", pos);
+            if (next == string::npos)
+                next = query.size();
+            sql << query.substr(pos, next-pos);
+            pos = next;
+            if (pos < query.size()) {
+                do {
+                    ++next;
+                } while (next < query.size() && (isalnum(query[next]) || query[next] == '-' ||
+                                                 query[next] == '.'));
+                string path = query.substr(pos, next-pos);
+                sql << "fl_value(body,'" << path << "')";
+                pos = next;
+            }
+        } while (pos < query.size());
     }
 
 }

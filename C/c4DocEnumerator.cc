@@ -60,6 +60,14 @@ struct C4DocEnumerator: InstanceCounted {
      _options(options)
     { }
 
+    C4DocEnumerator(C4Database *database,
+                    const string &where,
+                    const C4EnumeratorOptions &options)
+    :_database(database),
+     _e(database->defaultKeyStore(), where, allDocOptions(options)),
+     _options(options)
+    { }
+
     void close() {
         _e.close();
     }
@@ -188,6 +196,47 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
     } catchError(outError);
     return NULL;
 }
+
+
+C4DocEnumerator* c4db_enumerateDocsWhere(C4Database *database,
+                                         C4Slice whereQueryString,
+                                         const C4EnumeratorOptions *c4options,
+                                         C4Error *outError)
+{
+    try {
+        WITH_LOCK(database);
+        return new C4DocEnumerator(database, (string)whereQueryString,
+                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
+    } catchError(outError);
+    return NULL;
+}
+
+bool c4db_createIndex(C4Database *database,
+                      C4Slice expression,
+                      C4Error *outError)
+{
+    try {
+        WITH_LOCK(database);
+        database->defaultKeyStore().createIndex((string)expression);
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+bool c4db_deleteIndex(C4Database *database,
+                      C4Slice expression,
+                      C4Error *outError)
+{
+    try {
+        WITH_LOCK(database);
+        database->defaultKeyStore().deleteIndex((string)expression);
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
+
 
 namespace c4Internal {
     void setEnumFilter(C4DocEnumerator *e, EnumFilter f) {
