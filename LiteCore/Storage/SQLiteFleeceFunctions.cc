@@ -6,7 +6,7 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#include "SQLiteFleeceFunctions.hh"
+#include "SQLite_Internal.hh"
 #include "Fleece.hh"
 #include "Path.hh"
 #include <sqlite3.h>
@@ -17,6 +17,7 @@ using namespace std;
 namespace litecore {
 
 
+    // fl_value(fleeceData, propertyPath) -> propertyValue
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         try {
             // Now get the Fleece data last, to ensure it stays valid w/o having to copy:
