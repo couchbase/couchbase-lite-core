@@ -129,7 +129,7 @@ extern "C" {
     /** Opens a write stream for creating a new blob. You should then call c4stream_write to
         write the data, ending with c4stream_install to compute the blob's key and add it to
         the store, and then c4stream_closeWriter. */
-    C4WriteStream* c4blob_createWithStream(C4BlobStore*, C4Error*);
+    C4WriteStream* c4blob_openWriteStream(C4BlobStore*, C4Error*);
 
     /** Writes data to a stream. */
     bool c4stream_write(C4WriteStream*, const void *bytes, size_t length, C4Error*);

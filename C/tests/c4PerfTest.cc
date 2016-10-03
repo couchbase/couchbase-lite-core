@@ -566,6 +566,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
+    if (!(isSQLite() && !isRevTrees())) return;//TEMP
     // Docs look like:
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 

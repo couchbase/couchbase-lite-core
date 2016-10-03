@@ -158,7 +158,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
     // Write the blob:
     C4Error error;
-    C4WriteStream *stream = c4blob_createWithStream(store, &error);
+    C4WriteStream *stream = c4blob_openWriteStream(store, &error);
     REQUIRE(stream);
 
     for (int i = 0; i < 1000; i++) {
@@ -211,7 +211,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][C]") 
         INFO("Testing " << size << "-byte blob");
         // Write the blob:
         C4Error error;
-        C4WriteStream *stream = c4blob_createWithStream(store, &error);
+        C4WriteStream *stream = c4blob_openWriteStream(store, &error);
         REQUIRE(stream);
 
         const char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXY";
@@ -238,7 +238,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][C]") 
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][C]") {
     // Write the blob:
     C4Error error;
-    C4WriteStream *stream = c4blob_createWithStream(store, &error);
+    C4WriteStream *stream = c4blob_openWriteStream(store, &error);
     REQUIRE(stream);
 
     const char *buf = "This is line oops\n";

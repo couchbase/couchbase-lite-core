@@ -163,7 +163,7 @@ void c4stream_close(C4ReadStream* stream) {
 #pragma mark - STREAMING WRITES:
 
 
-C4WriteStream* c4blob_createWithStream(C4BlobStore* store, C4Error* outError) {
+C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) {
     try {
         return external(new BlobWriteStream(*store));
     } catchError(outError)
