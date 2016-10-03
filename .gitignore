@@ -23,3 +23,5 @@ Java/jni/com_couchbase_cbforest_*.h
 /C/Documentation
 Debug_Static/
 Release_Static/
+CSharp/.vscode
+CSharp/test/LiteCore.Tests/.vscode
