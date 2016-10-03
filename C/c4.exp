@@ -228,6 +228,3 @@ _FLDict_GetWithCFString
 _FLEncoder_WriteNSObject
 _FLValue_GetNSObject
 _FLDict_GetWithNSString
-.objc_class_name_FleeceDocument
-.objc_class_name_FleeceDictionary
-.objc_class_name_FleeceArray
