@@ -9,43 +9,45 @@ namespace LiteCore.Tests
 {
     public unsafe class Test
     {
-        private const string TestDir = "/tmp";
+        public const string TestDir = "/tmp";
+        protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
         public static readonly int NumberOfOptions = 4;
 
         private C4DocumentVersioning _versioning;
         private string _storage;
+        private bool _bundled = true;
 
         protected C4Database* _db { get; private set; }
 
-        protected string RevID
+        protected C4Slice RevID
         {
             get {
-                return isRevTrees() ? "1-abcd" : "1@*";
+                return isRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
             }
         }
 
-        protected string Rev2ID
+        protected C4Slice Rev2ID
         {
             get {
-                return isRevTrees() ? "2-c001d00d" : "2@*";
+                return isRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
             }
         }
 
-        protected string Rev3ID
+        protected C4Slice Rev3ID
         {
             get {
-                return isRevTrees() ? "3-deadbeef" : "3@*";
+                return isRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
             }
         }
 
         public Test()
         {
-            //Native.c4log_register(C4LogLevel.Warning, Log);
+            Native.c4log_setLevel(C4LogLevel.Warning);
         }
 
         protected void RunTestVariants(Action a)
         {
-            for(int i = 0; i < 1; i++) {
+            for(int i = 0; i < NumberOfOptions; i++) {
                 OpenDatabase(i);
                 SetupVariant(i);
                 try {
@@ -90,6 +92,10 @@ namespace LiteCore.Tests
             config.flags = C4DatabaseFlags.Create;
             config.versioning = _versioning;
 
+            if(_bundled) {
+                config.flags |= C4DatabaseFlags.Bundled;
+            }
+
             Console.WriteLine($"Opening {_storage} database using {_versioning}");
 
             C4Error err;
@@ -112,7 +118,9 @@ namespace LiteCore.Tests
 
         private string databasePath()
         {
-            if(_storage == "SQLite") {
+            if(_bundled) {
+                return Path.Combine(TestDir, "cbl_core_test");
+            } else if(_storage == C4StorageEngine.SQLite) {
                 return Path.Combine(TestDir, "cbl_core_test.sqlite3");
             } else {
                 return Path.Combine(TestDir, "cbl_core_test.forestdb");

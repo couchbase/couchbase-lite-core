@@ -118,6 +118,11 @@ namespace LiteCore.Interop
             this._size = new UIntPtr(size);
         }
 
+        public static C4Slice Constant(string input)
+        {
+            return (C4Slice)FLSlice.Constant(input);
+        }
+
         private bool Equals(C4Slice other)
         {
             return Native.c4SliceEqual(this, other);
@@ -265,6 +270,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4log_setLevel(C4LogLevel level);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4log_warnOnErrors([MarshalAs(UnmanagedType.U1)]bool warn);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int c4_getObjectCount();

@@ -18,17 +18,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-using C4StorageEngine = System.String;
 
 namespace LiteCore
 {
     internal static class Constants
     {
         internal const string DllName = "LiteCore";
-
-        public static readonly C4StorageEngine ForestDBStorageEngine = "ForestDB";
-
-        public static readonly C4StorageEngine SQLiteStorageEngine = "SQLite";
 
         public static readonly string C4InfoStore = "info";
 

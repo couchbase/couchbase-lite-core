@@ -25,3 +25,4 @@ Debug_Static/
 Release_Static/
 CSharp/.vscode
 CSharp/test/LiteCore.Tests/.vscode
+CSharp/native

@@ -277,7 +277,6 @@ namespace LiteCore.Interop
     public unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
         public static extern C4Document* c4doc_get(C4Database* database,
                                                    C4Slice docID,
                                                    [MarshalAs(UnmanagedType.U1)]bool mustExist,

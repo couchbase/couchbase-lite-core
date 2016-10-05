@@ -27,7 +27,41 @@ namespace LiteCore.Interop
 {
     public unsafe struct C4BlobKey
     {
-        public fixed byte bytes[20];
+        public static readonly int Size = _Size;
+        private const int _Size = 20;
+        public fixed byte bytes[_Size];
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            unchecked {
+                fixed(byte* b = bytes) {
+                    for(int i = 0; i < _Size; i++) {
+                        hash = hash * 23 + b[i];
+                    }
+                }
+            }
+
+            return hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if(!(obj is C4BlobKey)) {
+                return false;
+            }
+
+            var other = (C4BlobKey)obj;
+            fixed(byte* b = bytes) {
+                for(int i = 0; i < _Size; i++) {
+                    if(b[i] != other.bytes[i]) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
     }
 
     public struct C4BlobStore
@@ -81,10 +115,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern long c4blob_getSize(C4BlobStore* store, C4BlobKey key);
 
-        public static string c4blob_getContents(C4BlobStore *store, C4BlobKey key, C4Error *outError)
+        public static byte[] c4blob_getContents(C4BlobStore *store, C4BlobKey key, C4Error *outError)
         {
             using(var retVal = NativeRaw.c4blob_getContents(store, key, outError)) {
-                return ((C4Slice)retVal).CreateString();
+                return ((C4Slice)retVal).ToArrayFast();
             }
         }
 
@@ -108,6 +142,11 @@ namespace LiteCore.Interop
             return NativeRaw.c4stream_read(stream, buffer, (UIntPtr)buffer.Length, outError).ToInt64();
         }
 
+        public static long c4stream_read(C4ReadStream *stream, byte[] buffer, int count, C4Error *outError)
+        {
+            return NativeRaw.c4stream_read(stream, buffer, (UIntPtr)count, outError).ToInt64();
+        }
+
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern long c4stream_getLength(C4ReadStream* stream, C4Error* outError);
 
@@ -119,7 +158,7 @@ namespace LiteCore.Interop
         public static extern void c4stream_close(C4ReadStream* stream);
 
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
-        public static extern C4WriteStream* c4blob_createWithStream(C4BlobStore* store, C4Error* outError);
+        public static extern C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError);
 
         public static bool c4stream_write(C4WriteStream *stream, byte[] bytes, C4Error *outError)
         {

@@ -24,6 +24,16 @@ using C4SequenceNumber = System.Int64;
 
 using LiteCore.Util;
 
+namespace LiteCore
+{
+    public struct C4StorageEngine
+    {
+        public static readonly string SQLite = "SQLite";
+
+        public static readonly string ForestDB = "ForestDB";
+    }
+}
+
 namespace LiteCore.Interop
 {
     [Flags]
@@ -49,8 +59,12 @@ namespace LiteCore.Interop
 
     public unsafe struct C4EncryptionKey
     {
+        private const int _Size = 32;
+
+        public static readonly int Size = 32;
+
         public C4EncryptionAlgorithm algorithm;
-        public fixed byte bytes[32];
+        public fixed byte bytes[_Size];
     }
 
     public unsafe struct C4DatabaseConfig

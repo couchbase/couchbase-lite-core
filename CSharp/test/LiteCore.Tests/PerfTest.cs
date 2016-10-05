@@ -287,7 +287,7 @@ namespace LiteCore.Tests
 
         private void IndexTracksView()
         {
-            var nameKey = Native.FLDictKey_Init("Name", true);
+            var nameKey = NativeRaw.FLDictKey_Init(FLSlice.Constant("Name"), true);
             var key = Native.c4key_new();
 
             C4Error error;
