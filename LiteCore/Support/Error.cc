@@ -30,6 +30,7 @@
 #if __APPLE__   // For logBacktrace:
 #include <execinfo.h>   // Not available in Linux or Windows?
 #include <unistd.h>
+#include <cxxabi.h>
 #endif
 
 namespace litecore {
@@ -297,8 +298,31 @@ namespace litecore {
 #if __APPLE__
         ++skip;     // skip the logBacktrace frame itself
         void* addrs[50];
-        int n = backtrace(addrs, 50);
-        backtrace_symbols_fd(&addrs[skip], n - skip, STDERR_FILENO);
+        int n = backtrace(addrs, 50) - skip;
+        if (n <= 0)
+            return;
+        char** lines = backtrace_symbols(&addrs[skip], n);
+        char* unmangled = nullptr;
+        size_t unmangledLen = 0;
+
+        for (int i = 0; i < n; ++i) {
+            char library[101], functionBuf[201];
+            size_t pc;
+            int offset;
+            if (sscanf(lines[i], "%*d %100s %zi %200s + %i",
+                       library, &pc, functionBuf, &offset) == 4) {
+                const char *function = functionBuf;
+                int status;
+                unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);
+                if (unmangled && status == 0)
+                    function = unmangled;
+                fprintf(stderr, "%2d  %-25s %s + %d\n", i, library, function, offset);
+            } else {
+                fprintf(stderr, "%s\n", lines[i]);
+            }
+        }
+        free(unmangled);
+        free(lines);
 #endif
     }
 
