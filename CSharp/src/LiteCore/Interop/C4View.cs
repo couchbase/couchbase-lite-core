@@ -39,8 +39,12 @@ namespace LiteCore.Interop
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public unsafe delegate void AccumulateDelegate(void* context, C4Key* key, C4Slice value);
 
+    public unsafe delegate void ManagedAccumulateDelegate(object context, C4Key* key, C4Slice value);
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public unsafe delegate C4Slice ReduceDelegate(void* context);
+
+    public unsafe delegate string ManagedReduceDelegate(object context);
 
     public unsafe struct C4ReduceFunction
     {
@@ -56,9 +60,63 @@ namespace LiteCore.Interop
         }
     }
 
+    public sealed class C4ManagedReduceFunction : IDisposable
+    {
+        private object _context;
+        private readonly ManagedAccumulateDelegate _accumulate;
+
+        private readonly ManagedReduceDelegate _reduce;
+
+        private C4String _lastReturn;
+
+        private GCHandle _nativeHandle;
+
+        public C4ReduceFunction Native 
+        {
+            get {
+                return (C4ReduceFunction)_nativeHandle.Target;
+            }
+        }
+
+        public unsafe C4ManagedReduceFunction(ManagedAccumulateDelegate accumulate, ManagedReduceDelegate reduce, object context)
+        {
+            _accumulate = accumulate;
+            _reduce = reduce;
+            _context = context;
+            _nativeHandle = GCHandle.Alloc(new C4ReduceFunction(Accumulate, Reduce, null), GCHandleType.Pinned);
+        }
+
+        private unsafe void Accumulate(void* context, C4Key* key, C4Slice value)
+        {
+            _accumulate?.Invoke(_context, key, value);
+        }
+
+        private unsafe C4Slice Reduce(void* context)
+        {
+            if(_reduce == null) {
+                return C4Slice.Null;
+            }
+
+            _lastReturn.Dispose();
+            _lastReturn = new C4String(_reduce(_context));
+            return _lastReturn.AsC4Slice();
+        }
+
+        public void Dispose()
+        {
+            _lastReturn.Dispose();
+            _nativeHandle.Free();
+        }
+    }
+
     public unsafe struct C4QueryOptions
     {
-        public static readonly C4QueryOptions Default;
+        public static readonly C4QueryOptions Default = new C4QueryOptions {
+            limit = UInt64.MaxValue,
+            inclusiveStart = true,
+            inclusiveEnd = true,
+            rankFullText = true
+        };
 
         public ulong skip;
         public ulong limit;
@@ -75,7 +133,7 @@ namespace LiteCore.Interop
         public C4Key** keys;
         private UIntPtr _keysCount;
 
-        public C4ReduceFunction reduce;
+        public C4ReduceFunction* reduce;
         public uint groupLevel;
 
         public bool descending 
@@ -291,7 +349,7 @@ namespace LiteCore.Interop
         public static string c4queryenum_fullTextMatched(C4QueryEnumerator* e)
         {
             using(var retVal = NativeRaw.c4queryenum_fullTextMatched(e)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -303,7 +361,7 @@ namespace LiteCore.Interop
         {
             using(var docID_ = new C4String(docID)) {
                 using(var retVal = NativeRaw.c4view_fullTextMatched(view, docID_.AsC4Slice(), seq, fullTextID, outError)) {
-                    return retVal.CreateString();
+                    return ((C4Slice)retVal).CreateString();
                 }
             }
         }
@@ -364,10 +422,10 @@ namespace LiteCore.Interop
                                                                      C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4queryenum_fullTextMatched(C4QueryEnumerator* e);
+        public static extern C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator* e);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4view_fullTextMatched(C4View* view,
+        public static extern C4SliceResult c4view_fullTextMatched(C4View* view,
                                                             C4Slice docID,
                                                             C4SequenceNumber seq,
                                                             uint fullTextID,

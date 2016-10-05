@@ -20,7 +20,6 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace LiteCore.Interop
@@ -215,7 +214,7 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(err.Domain == C4ErrorDomain.ForestDB && err.Code == (int)ForestDBStatus.HandleBusy) {
+            if(err.Domain == C4ErrorDomain.LiteCore && err.Code == (int)LiteCoreError.Busy) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }

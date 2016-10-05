@@ -18,7 +18,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-using System;
 using System.Runtime.InteropServices;
 
 namespace LiteCore.Interop
@@ -40,7 +39,7 @@ namespace LiteCore.Interop
         public static string c4exp_getDocID(C4ExpiryEnumerator* e)
         {
             using(var retVal = NativeRaw.c4exp_getDocID(e)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -58,6 +57,6 @@ namespace LiteCore.Interop
     public unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4exp_getDocID(C4ExpiryEnumerator* e);
+        public static extern C4SliceResult c4exp_getDocID(C4ExpiryEnumerator* e);
     }
 }

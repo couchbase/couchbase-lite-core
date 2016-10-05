@@ -19,7 +19,6 @@
 // limitations under the License.
 //
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
 using LiteCore.Util;
@@ -58,7 +57,7 @@ namespace LiteCore.Interop
         public static string c4blob_keyToString(C4BlobKey key)
         {
             using(var retVal = NativeRaw.c4blob_keyToString(key)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -85,7 +84,7 @@ namespace LiteCore.Interop
         public static string c4blob_getContents(C4BlobStore *store, C4BlobKey key, C4Error *outError)
         {
             using(var retVal = NativeRaw.c4blob_getContents(store, key, outError)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -145,7 +144,7 @@ namespace LiteCore.Interop
         public static extern bool c4blob_keyFromString(C4Slice str, C4BlobKey* key);
 
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
-        public static extern C4Slice c4blob_keyToString(C4BlobKey key);
+        public static extern C4SliceResult c4blob_keyToString(C4BlobKey key);
 
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern C4BlobStore* c4blob_openStore(C4Slice dirPath,
@@ -154,7 +153,7 @@ namespace LiteCore.Interop
                                                            C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
-        public static extern C4Slice c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError);
+        public static extern C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

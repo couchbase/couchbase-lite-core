@@ -95,9 +95,9 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4Slice : IEnumerable<byte>, IDisposable
+    public unsafe struct C4Slice : IEnumerable<byte>
     {
-        public static readonly C4Slice Null = new C4Slice();
+        public static readonly C4Slice Null = new C4Slice(null, 0);
 
         public void* buf;
         private UIntPtr _size;
@@ -135,11 +135,30 @@ namespace LiteCore.Interop
                 return null;
             }
 
+            var bytes = ToArrayFast();
+            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+        }
+
+        public byte[] ToArrayFast()
+        {
+            if(buf == null) {
+                return null;
+            }
 
             var tmp = new IntPtr(buf);
             var bytes = new byte[size];
             Marshal.Copy(tmp, bytes, 0, bytes.Length);
-            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            return bytes;
+        }
+
+        public static explicit operator C4Slice(FLSlice input)
+        {
+            return new C4Slice(input.buf, input.size);
+        }
+
+        public static explicit operator FLSlice(C4Slice input)
+        {
+            return new FLSlice(input.buf, input.size);
         }
 
         #pragma warning disable 1591
@@ -174,11 +193,6 @@ namespace LiteCore.Interop
             }
         }
 
-        public void Dispose()
-        {
-            Native.c4slice_free(this);
-        }
-
         public IEnumerator<byte> GetEnumerator()
         {
             return new C4SliceEnumerator(buf, (int)size);
@@ -189,6 +203,32 @@ namespace LiteCore.Interop
             return GetEnumerator();
         }
 #pragma warning restore 1591
+    }
+
+    public unsafe struct C4SliceResult : IDisposable
+    {
+        public void* buf;
+        private UIntPtr _size;
+
+        public ulong size
+        {
+            get {
+                return _size.ToUInt64();
+            }
+            set {
+                _size = (UIntPtr)value;
+            }
+        }
+
+        public static implicit operator C4Slice(C4SliceResult input)
+        {
+            return new C4Slice(input.buf, input.size);
+        }
+
+        public void Dispose()
+        {
+            Native.c4slice_free(this);
+        }
     }
 
     public enum C4LogLevel : byte
@@ -204,7 +244,7 @@ namespace LiteCore.Interop
 
     public unsafe static partial class Native
     {
-        private static readonly char[] _ErrorBuf = new char[50];
+        private static readonly byte[] _ErrorBuf = new byte[50];
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -215,7 +255,9 @@ namespace LiteCore.Interop
 
         public static string c4error_getMessage(C4Error err)
         {
-            return NativeRaw.c4error_getMessageC(err, _ErrorBuf, new IntPtr(_ErrorBuf.Length));
+            using(var retVal = NativeRaw.c4error_getMessage(err)) {
+                return ((C4Slice)retVal).CreateString();
+            }
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -231,12 +273,7 @@ namespace LiteCore.Interop
     public unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4error_getMessage(C4Error error);
-
-        [DllImport(Constants.DllName, CharSet = CharSet.Ansi, CallingConvention=CallingConvention.Cdecl)]
-        public static extern string c4error_getMessageC(C4Error error, [Out]char[] buffer, IntPtr bufferSize);
-
-
+        public static extern C4SliceResult c4error_getMessage(C4Error error);
     }
 
 }

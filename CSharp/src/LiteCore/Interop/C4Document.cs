@@ -151,7 +151,7 @@ namespace LiteCore.Interop
         public static string c4doc_getType(C4Document* doc)
         {
             using(var retVal = NativeRaw.c4doc_getType(doc)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -187,7 +187,7 @@ namespace LiteCore.Interop
         public static string c4doc_detachRevisionBody(C4Document* doc)
         {
             using(var retVal = NativeRaw.c4doc_detachRevisionBody(doc)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -264,7 +264,7 @@ namespace LiteCore.Interop
             using(var body_ = new C4String(body))
             using(var parentRevID_ = new C4String(parentRevID)) {
                 using(var retVal = NativeRaw.c4doc_generateRevID(body_.AsC4Slice(), parentRevID_.AsC4Slice(), deletion)) {
-                    return retVal.CreateString();
+                    return ((C4Slice)retVal).CreateString();
                 }
             }
         }
@@ -284,7 +284,7 @@ namespace LiteCore.Interop
                                                    C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4doc_getType(C4Document* doc);
+        public static extern C4SliceResult c4doc_getType(C4Document* doc);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4doc_setType(C4Document* doc, C4Slice docType);
@@ -297,7 +297,7 @@ namespace LiteCore.Interop
                                                        C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4doc_detachRevisionBody(C4Document* doc);
+        public static extern C4SliceResult c4doc_detachRevisionBody(C4Document* doc);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint c4rev_getGeneration(C4Slice revID);
@@ -326,6 +326,6 @@ namespace LiteCore.Interop
                                                    C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4doc_generateRevID(C4Slice body, C4Slice parentRevID, [MarshalAs(UnmanagedType.U1)]bool deletion);
+        public static extern C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, [MarshalAs(UnmanagedType.U1)]bool deletion);
     }
 }

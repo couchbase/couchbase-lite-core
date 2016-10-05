@@ -56,7 +56,7 @@ namespace LiteCore.Interop
     public unsafe struct C4DatabaseConfig
     {
         public C4DatabaseFlags flags;
-        public char *storageEngine;
+        public byte *storageEngine;
         public C4DocumentVersioning versioning;
         public C4EncryptionKey encryptionKey;
     }
@@ -115,7 +115,7 @@ namespace LiteCore.Interop
         public static string c4db_getPath(C4Database *database)
         {
             using(var retVal = NativeRaw.c4db_getPath(database)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -194,7 +194,7 @@ namespace LiteCore.Interop
         public static extern bool c4db_deleteAtPath(C4Slice dbPath, C4DatabaseConfig* config, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4db_getPath(C4Database* database);
+        public static extern C4SliceResult c4db_getPath(C4Database* database);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4RawDocument* c4raw_get(C4Database* database, C4Slice storeName, C4Slice docID, C4Error* outError);

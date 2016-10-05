@@ -170,14 +170,14 @@ namespace LiteCore.Interop
         public static string c4key_readString(C4KeyReader* reader)
         {
             using(var retVal = NativeRaw.c4key_readString(reader)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
         public static string c4key_toJSON(C4KeyReader* reader)
         {
             using(var retVal = NativeRaw.c4key_toJSON(reader)) {
-                return retVal.CreateString();
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -220,10 +220,10 @@ namespace LiteCore.Interop
         public static extern bool c4key_setDefaultFullTextLanguage(C4Slice languageName, [MarshalAs(UnmanagedType.U1)]bool stripDiacriticals);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4key_readString(C4KeyReader* reader);
+        public static extern C4SliceResult c4key_readString(C4KeyReader* reader);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Slice c4key_toJSON(C4KeyReader* reader);
+        public static extern C4SliceResult c4key_toJSON(C4KeyReader* reader);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4kv_add(C4KeyValueList* kv, C4Key* key, C4Slice value);

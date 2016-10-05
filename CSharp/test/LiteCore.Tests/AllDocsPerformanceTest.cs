@@ -8,7 +8,7 @@ using LiteCore.Interop;
 using LiteCore.Util;
 using Xunit;
 
-namespace Tests
+namespace LiteCore.Tests
 {
     public unsafe class AllDocsPerformanceTest : Test
     {
