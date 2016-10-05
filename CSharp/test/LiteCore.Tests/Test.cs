@@ -7,11 +7,17 @@ using LiteCore.Interop;
 
 namespace LiteCore.Tests
 {
-    public unsafe class Test
+    public unsafe class Test : TestBase
     {
         public const string TestDir = "/tmp";
         protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
-        public static readonly int NumberOfOptions = 4;
+        
+        protected override int NumberOfOptions
+        {
+            get {
+                return 4;
+            }
+        }
 
         private C4DocumentVersioning _versioning;
         private string _storage;
@@ -45,36 +51,19 @@ namespace LiteCore.Tests
             Native.c4log_setLevel(C4LogLevel.Warning);
         }
 
-        protected void RunTestVariants(Action a)
-        {
-            for(int i = 0; i < NumberOfOptions; i++) {
-                OpenDatabase(i);
-                SetupVariant(i);
-                try {
-                    a();
-                } finally {
-                    try {
-                        CloseAndDelete(i);
-                    } catch(Exception e) {
-                        Console.WriteLine($"Warning: error closing / deleting DB {e}");
-                    }
-                }
-            }
-        }
-
         protected bool isRevTrees()
         {
             return _versioning == C4DocumentVersioning.RevisionTrees;
         }
 
-        protected virtual void SetupVariant(int options)
+        protected override void SetupVariant(int option)
         {
-            
+            OpenDatabase(option);
         }
 
-        protected virtual void TeardownVariant(int options)
+        protected override void TeardownVariant(int option)
         {
-
+            CloseAndDelete(option);
         }
 
         private void Log(C4LogLevel level, C4Slice s)
@@ -110,7 +99,6 @@ namespace LiteCore.Tests
 
         private void CloseAndDelete(int options)
         {
-            TeardownVariant(options);
             LiteCoreBridge.Check(err => Native.c4db_delete(_db, err));
             Native.c4db_free(_db);
             _db = null;

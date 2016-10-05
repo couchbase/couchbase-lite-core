@@ -349,8 +349,10 @@ namespace LiteCore.Tests
             return true;
         }
 
-        protected override void TeardownVariant(int options)
+        protected override void TeardownVariant(int option)
         {
+            base.TeardownVariant(option);
+
             if(_artistsView != null) {
                 LiteCoreBridge.Check(err => Native.c4view_close(_artistsView, err));
                 LiteCoreBridge.Check(err => Native.c4view_delete(_artistsView, err));

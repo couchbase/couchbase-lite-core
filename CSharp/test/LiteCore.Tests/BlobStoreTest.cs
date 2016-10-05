@@ -10,9 +10,14 @@ using Xunit;
 
 namespace LiteCore.Tests
 {
-    public unsafe class BlobStoreTest
+    public unsafe class BlobStoreTest : TestBase
     {
-        private const int NumberOfOptions = 2;
+        protected override int NumberOfOptions
+        {
+            get {
+                return 2;
+            }
+        }
 
         private bool _encrypted;
         private C4BlobStore* _store;
@@ -235,23 +240,7 @@ namespace LiteCore.Tests
             });
         }
 
-        private void RunTestVariants(Action a)
-        {
-            for(int i = 0; i < NumberOfOptions; i++) {
-                SetupVariant(i);
-                try {
-                    a();
-                } finally {
-                    try {
-                        TeardownVariant(i);
-                    } catch(Exception e) {
-                        Console.WriteLine($"Warning: error deleting blob store {e}");
-                    }
-                }
-            }
-        }
-
-        private void SetupVariant(int options)
+        protected override void SetupVariant(int options)
         {
             _encrypted = options == 1;
             C4EncryptionKey crypto = new C4EncryptionKey();
@@ -274,7 +263,7 @@ namespace LiteCore.Tests
             }
         }
 
-        private void TeardownVariant(int options)
+        protected override void TeardownVariant(int options)
         {
             LiteCoreBridge.Check(err => Native.c4blob_deleteStore(_store, err));
         }

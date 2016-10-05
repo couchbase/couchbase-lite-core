@@ -40,8 +40,10 @@ namespace LiteCore.Tests
             });
         }
 
-        protected override void SetupVariant(int options)
+        protected override void SetupVariant(int option)
         {
+            base.SetupVariant(option);
+
             var c = new List<char>(Enumerable.Repeat('a', SizeOfDocument));
             c.Add((char)0);
             var content = new string(c.ToArray());
