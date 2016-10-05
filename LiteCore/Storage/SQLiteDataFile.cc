@@ -47,7 +47,7 @@ namespace litecore {
 
 
     bool SQLiteDataFile::Factory::deleteFile(const FilePath &path, const Options*) {
-        return path.del() | path.withExtension("shm").del() | path.withExtension("wal").del();
+        return path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'!
     }
 

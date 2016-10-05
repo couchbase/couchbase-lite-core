@@ -147,5 +147,10 @@ DataFileTestFixture::DataFileTestFixture(int testOption)
 
 
 DataFileTestFixture::~DataFileTestFixture() {
-    delete db;
+    if (db) {
+        try {
+            db->deleteDataFile();
+        } catch (...) { }
+        delete db;
+    }
 }

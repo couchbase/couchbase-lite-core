@@ -30,6 +30,16 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
+    auto path = db->filePath();
+    db->deleteDataFile();
+    db = nullptr;
+    path.forEachMatch([](const FilePath &file) {
+        FAIL("Leftover file(s) '" << file.path() << "' after deleting database");
+    });
+}
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
     alloc_slice key("key");
     {
@@ -625,35 +635,41 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
     options.encryptionKey = slice("12345678901234567890123456789012");
     auto dbPath = databasePath("encrypted");
     deleteDatabase(dbPath);
-    {
-        // Create encrypted db:
-        unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-        Transaction t(*encryptedDB);
-        encryptedDB->defaultKeyStore().set(slice("k"), slice::null, slice("value"), t);
-        t.commit();
-    }
-    {
-        // Reopen with correct key:
-        unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-        auto doc = encryptedDB->defaultKeyStore().get(slice("k"));
-        REQUIRE(doc.body() == alloc_slice("value"));
-    }
-    {
-        // Reopen without key:
-        options.encryptionAlgorithm = kNoEncryption;
-        int code = 0;
-        try {
-            Log("NOTE: Expecting a can't-open-file exception to be thrown");
-            error::sWarnOnError = false;
+    try {
+        {
+            // Create encrypted db:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-        } catch (std::runtime_error &x) {
-            error e = error::convertRuntimeError(x).standardized();
-            REQUIRE(e.domain == error::LiteCore);
-            code = e.code;
+            Transaction t(*encryptedDB);
+            encryptedDB->defaultKeyStore().set(slice("k"), slice::null, slice("value"), t);
+            t.commit();
         }
-        error::sWarnOnError = true;
-        REQUIRE(code == (int)error::NotADatabaseFile);
+        {
+            // Reopen with correct key:
+            unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
+            auto doc = encryptedDB->defaultKeyStore().get(slice("k"));
+            REQUIRE(doc.body() == alloc_slice("value"));
+        }
+        {
+            // Reopen without key:
+            options.encryptionAlgorithm = kNoEncryption;
+            int code = 0;
+            try {
+                Log("NOTE: Expecting a can't-open-file exception to be thrown");
+                error::sWarnOnError = false;
+                unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
+            } catch (std::runtime_error &x) {
+                error e = error::convertRuntimeError(x).standardized();
+                REQUIRE(e.domain == error::LiteCore);
+                code = e.code;
+            }
+            error::sWarnOnError = true;
+            REQUIRE(code == (int)error::NotADatabaseFile);
+        }
+    } catch (...) {
+        deleteDatabase(dbPath);
+        throw;
     }
+    deleteDatabase(dbPath);
 }
 
 

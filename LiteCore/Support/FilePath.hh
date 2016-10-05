@@ -65,6 +65,8 @@ namespace litecore {
             Cannot be called on directories. */
         FilePath withExtension(const std::string &ext) const;
 
+        FilePath appendingToName(const std::string &suffix) const;
+
         //////// NAVIGATION:
 
         /** Adds a path component to a directory. Can ONLY be called on directories!

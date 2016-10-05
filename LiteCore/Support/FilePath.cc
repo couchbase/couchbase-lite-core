@@ -121,7 +121,15 @@ namespace litecore {
             return FilePath(_dir, addExtension(_file, ext));
     }
 
-    
+
+    FilePath FilePath::appendingToName(const std::string &suffix) const {
+        if (isDir())
+            return FilePath(_dir + suffix, _file);
+        else
+            return FilePath(_dir, _file + suffix);
+    }
+
+
     FilePath FilePath::operator[] (const string &name) const {
         CBFAssert(isDir());
         if (name.empty())
