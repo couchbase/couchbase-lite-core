@@ -126,7 +126,7 @@ namespace litecore {
 
         auto tok = tokenizer.getTokenizer();
         if (!tok)
-            throw error(error::TokenizerError);
+            error::_throw(error::TokenizerError);
         __unused int err = sModule->xOpen(tok, (const char*)text.buf, (int)text.size, &_cursor);
         CBFAssert(!err);
         _cursor->pTokenizer = tok; // module expects sqlite3 to have initialized this

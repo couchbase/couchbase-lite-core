@@ -87,7 +87,7 @@ namespace litecore {
             expectTag(kString);
         const void* end = _data.findByte(0);
         if (!end)
-            throw error(error::CorruptIndexData); // malformed string
+            error::_throw(error::CorruptIndexData); // malformed string
         size_t nBytes = _data.offsetOf(end);
 
         if (nBytes > 1024) {
@@ -138,9 +138,9 @@ namespace litecore {
                 return result;
             }
             case kSpecial:
-                throw error(error::CorruptIndexData); // can't convert Special tag to NSObject
+                error::_throw(error::CorruptIndexData); // can't convert Special tag to NSObject
             default:
-                throw error(error::CorruptIndexData); // invalid tag in Collatable data
+                error::_throw(error::CorruptIndexData); // invalid tag in Collatable data
         }
     }
 

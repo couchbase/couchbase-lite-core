@@ -101,7 +101,7 @@ namespace litecore {
         digest = skipFlag();
         uint64_t gen;
         if (!ReadUVarInt(&digest, &gen))
-            throw error(error::CorruptRevisionData); // buffer too short!
+            error::_throw(error::CorruptRevisionData); // buffer too short!
         return gen;
     }
 
@@ -155,7 +155,7 @@ namespace litecore {
     unsigned revid::generation() const {
         uint64_t gen;
         if (GetUVarInt(skipFlag(), &gen) == 0)
-            throw error(error::CorruptRevisionData); // buffer too short!
+            error::_throw(error::CorruptRevisionData); // buffer too short!
         return (unsigned) gen;
     }
 
@@ -163,7 +163,7 @@ namespace litecore {
         uint64_t gen;
         slice digest = skipFlag();
         if (!ReadUVarInt(&digest, &gen))
-            throw error(error::CorruptRevisionData); // buffer too short!
+            error::_throw(error::CorruptRevisionData); // buffer too short!
         return digest;
     }
 
@@ -212,19 +212,19 @@ namespace litecore {
         dst += PutUVarInt(dst, generation);
         size = dst + digest.size - _buffer;
         if (size > sizeof(_buffer))
-            throw error(error::CorruptRevisionData); // digest too long!
+            error::_throw(error::CorruptRevisionData); // digest too long!
         memcpy(dst, digest.buf, digest.size);
     }
 
 
     void revidBuffer::parse(slice s, bool allowClock) {
         if (!tryParse(s, allowClock))
-            throw error(error::BadRevisionID);
+            error::_throw(error::BadRevisionID);
     }
 
     void revidBuffer::parseNew(slice s) {
         if (!tryParse(s, true))
-            throw error(error::BadRevisionID);
+            error::_throw(error::BadRevisionID);
     }
 
     bool revidBuffer::tryParse(slice ascii, bool allowClock) {

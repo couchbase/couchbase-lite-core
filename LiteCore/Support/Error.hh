@@ -99,6 +99,8 @@ namespace litecore {
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr);
 
+        static void logBacktrace(unsigned skipFrames =0);
+
         static bool sWarnOnError;
     };
 

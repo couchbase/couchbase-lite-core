@@ -56,7 +56,7 @@ namespace litecore {
         if (_doc.exists()) {
             slice docType;
             if (!readMeta(_doc, _flags, _revID, docType))
-                throw error(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData);
             _docType = docType; // allocate buf for it
         } else {
             _flags = 0;
@@ -73,11 +73,11 @@ namespace litecore {
         uint8_t length = meta.read(1)[0];
         revID = revid(meta.read(length));
         if (!revID.buf)
-            throw error(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData);
         if (meta.size > 0) {
             uint64_t docTypeLength;
             if (!ReadUVarInt(&meta, &docTypeLength))
-                throw error(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData);
             docType = meta.read((size_t)docTypeLength);
         } else {
             docType = slice::null;

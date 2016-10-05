@@ -27,6 +27,11 @@
 #include "asprintf.h"
 #endif
 
+#if __APPLE__   // For logBacktrace:
+#include <execinfo.h>   // Not available in Linux or Windows?
+#include <unistd.h>
+#endif
+
 namespace litecore {
 
     using namespace std;
@@ -261,6 +266,8 @@ namespace litecore {
         if (sWarnOnError && !err.isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s",
                       kDomainNames[domain], code, err.what());
+            if (LogLevel <= kError)
+                logBacktrace(1);
         }
         throw err;
     }
@@ -280,7 +287,19 @@ namespace litecore {
         if (LogLevel > kError || LogCallback == NULL)
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
         WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+        if (LogLevel <= kError)
+            logBacktrace(1);
         throw error(error::AssertionFailed);
+    }
+
+
+    /*static*/ void error::logBacktrace(unsigned skip) {
+#if __APPLE__
+        ++skip;     // skip the logBacktrace frame itself
+        void* addrs[50];
+        int n = backtrace(addrs, 50);
+        backtrace_symbols_fd(&addrs[skip], n - skip, STDERR_FILENO);
+#endif
     }
 
 
@@ -312,5 +331,5 @@ namespace litecore {
             LogCallback(level, formatted);
         }
     }
-    
+
 }

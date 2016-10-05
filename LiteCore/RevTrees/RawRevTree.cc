@@ -30,7 +30,7 @@ namespace litecore {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
-            throw error(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData);
         std::vector<Rev> revs(count);
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
@@ -41,7 +41,7 @@ namespace litecore {
             rev++;
         }
         if ((uint8_t*)rawRev != (uint8_t*)raw_tree.end() - sizeof(uint32_t)) {
-            throw error(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData);
         }
         return revs;
     }
