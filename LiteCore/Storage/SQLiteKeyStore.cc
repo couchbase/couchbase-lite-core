@@ -9,6 +9,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
+#include "QueryParser.hh"
 #include "Document.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
@@ -296,6 +297,7 @@ namespace litecore {
     }
 
 
+    // Writes a SQL string containing a unique name for the index with the given path.
     void SQLiteKeyStore::writeSQLIndexName(const string &propertyPath, stringstream &sql) {
         sql << "'" << name() << "::" << propertyPath << "'";
     }
@@ -306,8 +308,9 @@ namespace litecore {
         sql << "CREATE INDEX IF NOT EXISTS ";
         writeSQLIndexName(propertyExpression, sql);
         sql << " ON kv_" << name() << " (";
-        rewriteQueryExprAsSQL(propertyExpression, sql);
+        QueryParser(sql).writePropertyGetter(propertyExpression);
         sql << ")";
+        // TODO: Add 'WHERE' clause for use with SQLite 3.15+
         db()._sqlDb->exec(sql.str());
     }
 

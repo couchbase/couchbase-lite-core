@@ -292,7 +292,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         Stopwatch st;
         DocEnumerator::Options opts;
         int i = 30;
-        DocEnumerator e(*store, "$.num between 30 and 40", opts);
+        DocEnumerator e(*store, "{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}", opts);
         for (; e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
@@ -305,7 +305,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         // Add an index after the first pass:
         if (pass == 0) {
             Stopwatch st2;
-            store->addIndex("$.num");
+            store->createIndex("$.num");
             st2.printReport("Index on $.num", 1, "index");
         }
     }

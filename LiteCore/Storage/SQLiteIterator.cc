@@ -8,12 +8,15 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
+#include "QueryParser.hh"
 #include "DocEnumerator.hh"
 #include "Error.hh"
+#include "Fleece.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore {
 
@@ -136,33 +139,11 @@ namespace litecore {
     {
         stringstream sql = selectFrom(options);
         sql << " WHERE (";
-        rewriteQueryExprAsSQL(query, sql);
+        QueryParser::parseJSON(query, sql);
         sql << ") ORDER BY key";
         writeSQLOptions(sql, options);
         auto st = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
         return new SQLiteIterator(st, options.descending, options.contentOptions);
-    }
-
-
-    // Append the query string, rewriting Fleece paths as SQL function calls:
-    void SQLiteKeyStore::rewriteQueryExprAsSQL(const string &query, stringstream &sql) {
-        string::size_type pos = 0, next;
-        do {
-            next = query.find("$", pos);
-            if (next == string::npos)
-                next = query.size();
-            sql << query.substr(pos, next-pos);
-            pos = next;
-            if (pos < query.size()) {
-                do {
-                    ++next;
-                } while (next < query.size() && (isalnum(query[next]) || query[next] == '-' ||
-                                                 query[next] == '.'));
-                string path = query.substr(pos, next-pos);
-                sql << "fl_value(body,'" << path << "')";
-                pos = next;
-            }
-        } while (pos < query.size());
     }
 
 }

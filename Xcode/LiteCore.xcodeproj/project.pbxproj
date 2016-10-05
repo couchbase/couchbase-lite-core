@@ -122,6 +122,10 @@
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
 		274EDDF21DA2F63C003AD158 /* SQLiteIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */; };
 		274EDDF31DA2F63C003AD158 /* SQLiteIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */; };
+		274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF41DA30B43003AD158 /* QueryParser.cc */; };
+		274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF41DA30B43003AD158 /* QueryParser.cc */; };
+		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
+		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		275072C718E4AA5000A80C5A /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
 		275072C818E4AA5000A80C5A /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
 		275072C918E4AA5000A80C5A /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
@@ -762,6 +766,9 @@
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
 		274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteIterator.cc; sourceTree = "<group>"; };
+		274EDDF41DA30B43003AD158 /* QueryParser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryParser.cc; sourceTree = "<group>"; };
+		274EDDF51DA30B43003AD158 /* QueryParser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = QueryParser.hh; sourceTree = "<group>"; };
+		274EDDF91DA322D4003AD158 /* QueryParserTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryParserTest.cc; sourceTree = "<group>"; };
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
@@ -1200,6 +1207,7 @@
 				277015171D528478008BADD7 /* GeoHashTest.cc */,
 				2770151D1D5284C4008BADD7 /* GeoIndexTest.cc */,
 				277015191D528491008BADD7 /* TokenizerTest.cc */,
+				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
 				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
@@ -1741,6 +1749,8 @@
 				274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */,
 				274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */,
 				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
+				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
+				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */,
 			);
 			path = Storage;
@@ -2046,6 +2056,7 @@
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
 				27D74A931D4D3F3400D806E0 /* Exception.h in Headers */,
+				274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */,
 				273E9ED71C506DB4003115A6 /* FullTextIndex.hh in Headers */,
 				274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */,
 				279794A81D307626001D0F3A /* RevisionStore.hh in Headers */,
@@ -2446,6 +2457,7 @@
 				27FA09A21D6FACC2005888AA /* IndexTest.cc in Sources */,
 				27FA09A51D6FADAE005888AA /* MapReduceTest.cc in Sources */,
 				27FA09AB1D6FB16C005888AA /* TokenizerTest.cc in Sources */,
+				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27FA09A91D6FAEE9005888AA /* GeoHashTest.cc in Sources */,
 				27FA09AD1D6FB581005888AA /* GeoIndexTest.cc in Sources */,
 				27FA09AF1D6FB616005888AA /* VersionVectorTest.cc in Sources */,
@@ -2722,6 +2734,7 @@
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
+				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				271057D41D3D70780018247B /* c4VectorDocument.cc in Sources */,
@@ -2777,6 +2790,7 @@
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
 				274EDDF31DA2F63C003AD158 /* SQLiteIterator.cc in Sources */,
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
+				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,

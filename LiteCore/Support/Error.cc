@@ -150,6 +150,8 @@ namespace litecore {
             "unsupported operation for this database type",
             "file is not a database (or encryption key is invalid/missing)",
             "file/data is not in the requested format",
+            "encryption/decryption error",
+            "query syntax error",
         };
         const char *str = nullptr;
         if (code < sizeof(kLiteCoreMessages)/sizeof(char*))

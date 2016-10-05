@@ -9,6 +9,9 @@
 #pragma once
 #include "KeyStore.hh"
 
+namespace fleece {
+    class Value;
+}
 namespace SQLite {
     class Column;
     class Statement;
@@ -70,7 +73,6 @@ namespace litecore {
         void writeSQLOptions(std::stringstream &sql, DocEnumerator::Options &options);
         void setLastSequence(sequence seq);
         void writeSQLIndexName(const std::string &propertyPath, std::stringstream &sql);
-        void rewriteQueryExprAsSQL(const std::string &query, std::stringstream &sql);
 
         std::unique_ptr<SQLite::Statement> _docCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

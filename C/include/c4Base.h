@@ -110,6 +110,8 @@ enum {
     kC4ErrorUnsupported,            // Operation not supported in this database
     kC4ErrorNotADatabaseFile,       // File is not a database, or encryption key is wrong
     kC4ErrorWrongFormat, /*30*/     // Database exists but not in the format/storage requested
+    kC4ErrorCrypto,                 // Encryption/decryption error
+    kC4ErrorInvalidQuery,           // Invalid query
 };
 
 

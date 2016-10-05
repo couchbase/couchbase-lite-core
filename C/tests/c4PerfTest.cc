@@ -609,13 +609,13 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
     if (isSQLite() && !isRevTrees()) {
         for (int pass = 0; pass < 2; ++pass) {
             Stopwatch st;
-            auto n = queryWhere("$.contact.address.state = 'WA'");
+            auto n = queryWhere("{\"contact.address.state\": \"WA\"}");
             st.printReport("SQL query of state", n, "doc");
             if (complete) CHECK(n == 5053);
             if (pass == 0) {
                 Stopwatch st2;
                 C4Error error;
-                REQUIRE(c4db_createIndex(db, C4STR("$.contact.address.state"), &error));
+                REQUIRE(c4db_createIndex(db, C4STR("contact.address.state"), &error));
                 st2.printReport("Creating SQL index of state", 1, "index");
             }
         }
