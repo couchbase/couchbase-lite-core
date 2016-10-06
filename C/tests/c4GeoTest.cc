@@ -25,9 +25,9 @@ public:
     C4GeoTest(int testOption)
     :C4Test(testOption)
     {
-        c4db_deleteAtPath(c4str(kViewIndexPath), NULL, NULL);
+        c4view_deleteByName(db, c4str("geoview"), NULL);
         C4Error error;
-        view = c4view_open(db, c4str(kViewIndexPath), c4str("myview"), c4str("1"),
+        view = c4view_open(db, kC4SliceNull, c4str("geoview"), c4str("1"),
                            c4db_getConfig(db), &error);
         REQUIRE(view);
     }

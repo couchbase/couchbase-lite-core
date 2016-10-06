@@ -49,6 +49,8 @@ C4View* c4view_open(C4Database* db,
 {
     if (!checkParam(config != nullptr, outError))
         return nullptr;
+    if (!checkParam(pathSlice.buf == nullptr || !(config->flags & kC4DB_Bundled), outError))
+        return nullptr;
     try {
         FilePath path = (pathSlice.buf) ? FilePath((string)pathSlice)
                                         : pathForViewNamed(db, viewName);
@@ -115,6 +117,8 @@ bool c4view_delete(C4View *view, C4Error *outError) {
 
 bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Error *outError) {
     if (!checkParam(config != nullptr, outError))
+        return false;
+    if (!checkParam(!(config->flags & kC4DB_Bundled), outError))
         return false;
     return c4db_deleteAtPath(viewPath, config, outError);
 }

@@ -31,7 +31,6 @@ public:
     C4ThreadingTest(int testOption)
     :C4Test(testOption)
     {
-        c4db_deleteAtPath(c4str(kViewIndexPath), c4db_getConfig(db), NULL);
         v = openView(db);
     }
 
