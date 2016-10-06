@@ -253,12 +253,8 @@ bool c4db_free(C4Database* database) {
         return true;
     if (!database->mustNotBeInTransaction(NULL))
         return false;
-    WITH_LOCK(database);
-    try {
-        database->release();
-        return true;
-    } catchExceptions();
-    return false;
+    database->release();
+    return true;
 }
 
 
