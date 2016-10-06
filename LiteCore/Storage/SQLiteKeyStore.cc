@@ -89,6 +89,11 @@ namespace litecore {
     }
 
 
+    SQLite::Statement* SQLiteKeyStore::compile(const string &sql) const {
+        return new SQLite::Statement(db(), sql);
+    }
+
+
     SQLite::Statement& SQLiteKeyStore::compile(const unique_ptr<SQLite::Statement>& ref,
                                                const char *sqlTemplate) const
     {

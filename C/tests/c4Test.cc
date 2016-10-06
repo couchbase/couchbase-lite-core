@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "slice.hh"
+#include "Benchmark.hh"
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -221,6 +222,51 @@ bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback)
     }
     REQUIRE(fd.eof());
     return true;
+}
+
+
+// Read a file that contains a JSON document per line. Every line becomes a document.
+unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose) {
+    if (verbose) fprintf(stderr, "Reading %s ...  ", path);
+    Stopwatch st;
+    unsigned numDocs = 0;
+    {
+        TransactionHelper t(db);
+        FLEncoder encoder = FLEncoder_New();
+        readFileByLines(path, [&](FLSlice line)
+        {
+            FLError error;
+            FLEncoder_ConvertJSON(encoder, {line.buf, line.size});
+            FLSliceResult body = FLEncoder_Finish(encoder, &error);
+            REQUIRE(body.buf);
+            FLEncoder_Reset(encoder);
+
+            char docID[20];
+            sprintf(docID, "%07u", numDocs+1);
+
+            // Save document:
+            C4Error c4err;
+            C4DocPutRequest rq = {};
+            rq.docID = c4str(docID);
+            rq.body = (C4Slice)body;
+            rq.save = true;
+            C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+            REQUIRE(doc != nullptr);
+            c4doc_free(doc);
+            FLSliceResult_Free(body);
+            ++numDocs;
+            if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
+                fprintf(stderr, "Stopping JSON import after %.3f sec  ", st.elapsed());
+                return false;
+            }
+            if (verbose && numDocs % 100000 == 0)
+                fprintf(stderr, "%u  ", numDocs);
+            return true;
+        });
+        if (verbose) fprintf(stderr, "Committing...\n");
+    }
+    if (verbose) st.printReport("Importing", numDocs, "doc");
+    return numDocs;
 }
 
 

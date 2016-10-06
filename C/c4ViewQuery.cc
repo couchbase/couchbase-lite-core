@@ -15,12 +15,14 @@
 
 #include "c4Internal.hh"
 #include "c4View.h"
+#include "c4DBQuery.h"
 
 #include "c4ViewInternal.hh"
 #include "c4DatabaseInternal.hh"
 #include "c4KeyInternal.hh"
 
 #include "DataFile.hh"
+#include "Query.hh"
 #include "Collatable.hh"
 #include "FullTextIndex.hh"
 #include "GeoIndex.hh"
@@ -87,10 +89,9 @@ static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) 
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
-    C4QueryEnumInternal(C4View *view)
-    :_view(view)
+    C4QueryEnumInternal(mutex &m)
 #if C4DB_THREADSAFE
-     ,_mutex(view->_mutex)
+    :_mutex(m)
 #endif
     {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
@@ -105,7 +106,6 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
 
     virtual void close() noexcept { }
 
-    Retained<C4View> _view;
 #if C4DB_THREADSAFE
     mutex &_mutex;
 #endif
@@ -140,15 +140,26 @@ void c4queryenum_free(C4QueryEnumerator *e) {
 }
 
 
+struct C4ViewQueryEnumInternal : public C4QueryEnumInternal {
+    C4ViewQueryEnumInternal(C4View *view)
+    :C4QueryEnumInternal(view->_mutex),
+     _view(view)
+    { }
+
+    Retained<C4View> _view;
+};
+
+
+
 #pragma mark MAP/REDUCE QUERIES:
 
 
-struct C4MapReduceEnumerator : public C4QueryEnumInternal {
+struct C4MapReduceEnumerator : public C4ViewQueryEnumInternal {
     C4MapReduceEnumerator(C4View *view,
                         Collatable startKey, slice startKeyDocID,
                         Collatable endKey, slice endKeyDocID,
                         const IndexEnumerator::Options &options)
-    :C4QueryEnumInternal(view),
+    :C4ViewQueryEnumInternal(view),
      _reduce(options.reduce),
      _enum(view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
     { }
@@ -156,7 +167,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
     C4MapReduceEnumerator(C4View *view,
                         vector<KeyRange> keyRanges,
                         const IndexEnumerator::Options &options)
-    :C4QueryEnumInternal(view),
+    :C4ViewQueryEnumInternal(view),
      _reduce(options.reduce),
      _enum(view->_index, keyRanges, options)
     { }
@@ -167,7 +178,7 @@ struct C4MapReduceEnumerator : public C4QueryEnumInternal {
 
     virtual bool next() override {
         if (!_enum.next())
-            return C4QueryEnumInternal::next();
+            return C4ViewQueryEnumInternal::next();
         key = asKeyReader(_enum.key());
         value = _enum.value();
         docID = _enum.docID();
@@ -222,13 +233,13 @@ C4QueryEnumerator* c4view_query(C4View *view,
 #pragma mark FULL-TEXT QUERIES:
 
 
-struct C4FullTextEnumerator : public C4QueryEnumInternal {
+struct C4FullTextEnumerator : public C4ViewQueryEnumInternal {
     C4FullTextEnumerator(C4View *view,
                          slice queryString,
                          slice queryStringLanguage,
                          bool ranked,
                          const IndexEnumerator::Options &options)
-    :C4QueryEnumInternal(view),
+    :C4ViewQueryEnumInternal(view),
      _enum(view->_index, queryString, queryStringLanguage, ranked, options)
     { }
 
@@ -305,15 +316,15 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
 #pragma mark GEO-QUERIES:
 
 
-struct C4GeoEnumerator : public C4QueryEnumInternal {
+struct C4GeoEnumerator : public C4ViewQueryEnumInternal {
     C4GeoEnumerator(C4View *view, const geohash::area &bbox)
-    :C4QueryEnumInternal(view),
+    :C4ViewQueryEnumInternal(view),
      _enum(view->_index, bbox)
     { }
 
     virtual bool next() override {
         if (!_enum.next())
-            return C4QueryEnumInternal::next();
+            return C4ViewQueryEnumInternal::next();
         docID = _enum.docID();
         docSequence = _enum.sequence();
         value = _enum.value();
@@ -346,4 +357,109 @@ C4QueryEnumerator* c4view_geoQuery(C4View *view,
         return new C4GeoEnumerator(view, ga);
     } catchError(outError);
     return NULL;
+}
+
+
+#pragma mark EXPRESSION-BASED QUERIES:
+
+
+// This is the same as C4Query
+struct c4Query : InstanceCounted {
+    c4Query(C4Database *db, C4Slice queryExpression, C4Slice sortExpression)
+    :_database(db),
+     _query(db->defaultKeyStore().compileQuery(queryExpression, sortExpression))
+    { }
+
+    C4Database* database() const    {return _database;}
+    Query* query() const            {return _query.get();}
+
+private:
+    Retained<C4Database> _database;
+    unique_ptr<Query> _query;
+};
+
+
+C4Query* c4query_new(C4Database *database,
+                     C4Slice queryExpression,
+                     C4Slice sortExpression,
+                     C4Error *outError)
+{
+    try {
+        return new c4Query(database, queryExpression, sortExpression);
+    } catchError(outError);
+    return nullptr;
+}
+
+
+void c4query_free(C4Query *query) {
+    delete query;
+}
+
+
+struct C4DBQueryEnumerator : public C4QueryEnumInternal {
+    C4DBQueryEnumerator(C4Query *query,
+                        const QueryEnumerator::Options *options)
+    :C4QueryEnumInternal(query->database()->_mutex),
+     _enum(query->query(), options)
+    { }
+
+    virtual bool next() override {
+        if (!_enum.next())
+            return C4QueryEnumInternal::next();
+        docID = _enum.docID();
+        docSequence = _enum.sequence();
+        return true;
+    }
+
+    virtual void close() noexcept override {
+        _enum.close();
+    }
+
+private:
+    QueryEnumerator _enum;
+};
+
+
+C4QueryEnumerator* c4query_run(C4Query *query,
+                               const C4QueryOptions *options,
+                               C4Slice encodedParameters,
+                               C4Error *outError)
+{
+    try {
+        WITH_LOCK(query->database());
+        QueryEnumerator::Options qeOpts;
+        if (options) {
+            qeOpts.skip = options->skip;
+            qeOpts.limit = options->limit;
+        }
+        qeOpts.paramBindings = encodedParameters;
+        return new C4DBQueryEnumerator(query, &qeOpts);
+    } catchError(outError);
+    return nullptr;
+}
+
+
+bool c4db_createIndex(C4Database *database,
+                      C4Slice expression,
+                      C4Error *outError)
+{
+    try {
+        WITH_LOCK(database);
+        database->defaultKeyStore().createIndex((string)expression);
+        return true;
+    } catchError(outError);
+    return false;
+}
+
+
+bool c4db_deleteIndex(C4Database *database,
+                      C4Slice expression,
+                      C4Error *outError)
+{
+    try {
+        WITH_LOCK(database);
+        database->defaultKeyStore().deleteIndex((string)expression);
+        return true;
+    } catchError(outError);
+    return false;
 }

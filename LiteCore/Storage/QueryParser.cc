@@ -92,19 +92,13 @@ namespace litecore {
     public:
         Delimiter(ostream &out, const string &word)
         :_out(out), _word(word)
-        {
-            //_out << "(";
-        }
+        { }
 
         void next() {
             if (_first)
                 _first = false;
             else
                 _out << _word;
-        }
-
-        ~Delimiter() {
-            //_out << ")";
         }
     private:
         ostream &_out;
@@ -310,6 +304,23 @@ namespace litecore {
             case kString:
                 writeSQLString(literal->asString());
                 break;
+            case kArray: {
+                // An array containing an integer is a placeholder.
+                auto a = literal->asArray();
+                if (a->count() != 1)
+                    fail();
+                const Value *ident = a->get(0);
+                if (ident->isInteger()) {
+                    _sql << ":_" << ident->asInt();
+                } else {
+                    slice str = ident->asString();
+                    if (!str.buf)
+                        fail();
+                    // TODO: Check that str is a valid identifier
+                    _sql << ":_" << (string)str;
+                }
+                break;
+            }
             default:
                 fail();
         }

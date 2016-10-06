@@ -141,22 +141,6 @@ extern "C" {
 
     /** @} */
 
-
-    //////// EXPERIMENTAL QUERY API:
-
-    bool c4db_createIndex(C4Database *database,
-                          C4Slice expression,
-                          C4Error *error);
-
-    bool c4db_deleteIndex(C4Database *database,
-                          C4Slice expression,
-                          C4Error *error);
-
-    C4DocEnumerator* c4db_enumerateDocsWhere(C4Database *database,
-                                             C4Slice whereQueryString,
-                                             const C4EnumeratorOptions *options,
-                                             C4Error *outError);
-
 #ifdef __cplusplus
     }
 #endif

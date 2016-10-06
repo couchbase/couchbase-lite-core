@@ -16,6 +16,7 @@ namespace litecore {
     class DataFile;
     class Document;
     class Transaction;
+    class Query;
 
     /** A sequence number in a KeyStore. */
     typedef uint64_t sequence;
@@ -65,6 +66,9 @@ namespace litecore {
         virtual Document getByOffsetNoErrors(docOffset, sequence) const
                 {return Document();}
 
+        /** Creates a database query object. */
+        virtual Query* compileQuery(slice selectExpr, slice sortExpr);
+
         //////// Writing:
 
         struct setResult {sequence seq; docOffset off;};
@@ -103,8 +107,6 @@ namespace litecore {
                                                        DocEnumerator::Options&) =0;
         virtual DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
                                                        DocEnumerator::Options&) =0;
-        virtual DocEnumerator::Impl* newEnumeratorImpl(const std::string &query,
-                                                       DocEnumerator::Options&);
 
         void updateDoc(Document &doc, sequence seq, docOffset offset =0, bool deleted = false) const {
             doc.update(seq, offset, deleted);
@@ -121,6 +123,7 @@ namespace litecore {
         friend class DataFile;
         friend class DocEnumerator;
         friend class KeyStoreWriter;
+        friend class Query;
     };
 
 }

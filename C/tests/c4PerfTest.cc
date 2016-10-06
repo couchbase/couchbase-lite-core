@@ -438,67 +438,20 @@ public:
         std::vector<std::string> docIDs;
         docIDs.reserve(1200);
 
-        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.flags &= ~kC4IncludeBodies;
         C4Error error;
-        auto e = c4db_enumerateDocsWhere(db, c4str(whereStr), &options, &error);
+        C4Query *query = c4query_new(db, c4str(whereStr), kC4SliceNull, &error);
+        REQUIRE(query);
+        auto e = c4query_run(query, nullptr, kC4SliceNull, &error);
         C4SliceResult artistSlice;
-        while (c4enum_next(e, &error)) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            std::string artist((const char*)info.docID.buf, info.docID.size);
+        while (c4queryenum_next(e, &error)) {
+            std::string artist((const char*)e->docID.buf, e->docID.size);
             if (verbose) std::cerr << artist << "  ";
             docIDs.push_back(artist);
         }
-        c4enum_free(e);
+        c4queryenum_free(e);
+        c4query_free(query);
         if (verbose) std::cerr << "\n";
         return (unsigned) docIDs.size();
-    }
-
-
-    // Read a file that contains a JSON document per line. Every line becomes a document.
-    unsigned importJSONLines(const char *path, double timeout =15.0) {
-        fprintf(stderr, "Reading %s ...  ", path);
-        unsigned numDocs = 0;
-        Stopwatch st;
-
-        {
-            TransactionHelper t(db);
-            FLEncoder encoder = FLEncoder_New();
-            readFileByLines(path, [&](FLSlice line)
-            {
-                FLError error;
-                FLEncoder_ConvertJSON(encoder, {line.buf, line.size});
-                FLSliceResult body = FLEncoder_Finish(encoder, &error);
-                REQUIRE(body.buf);
-                FLEncoder_Reset(encoder);
-
-                char docID[20];
-                sprintf(docID, "%07u", numDocs+1);
-
-                // Save document:
-                C4Error c4err;
-                C4DocPutRequest rq = {};
-                rq.docID = c4str(docID);
-                rq.body = (C4Slice)body;
-                rq.save = true;
-                C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
-                REQUIRE(doc != nullptr);
-                c4doc_free(doc);
-                FLSliceResult_Free(body);
-                ++numDocs;
-                if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
-                    fprintf(stderr, "Stopping after %.3f sec  ", st.elapsed());
-                    return false;
-                }
-                if (numDocs % 100000 == 0)
-                    fprintf(stderr, "%u  ", numDocs);
-                return true;
-            });
-            fprintf(stderr, "Committing...\n");
-        }
-        st.printReport("Importing", numDocs, "doc");
-        return numDocs;
     }
 
 
@@ -545,8 +498,9 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
-    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json");
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
+    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json",
+                                   15.0, true);
     reopenDB();
     {
         Stopwatch st;
@@ -565,12 +519,11 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C]") {
     sleep(1);//TEMP
 }
 
-N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C]") {
-    if (!(isSQLite() && !isRevTrees())) return;//TEMP
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     // Docs look like:
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
-    __unused auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json");
+    __unused auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json", 15.0, true);
     const bool complete = (numDocs == 300000);
 #ifdef NDEBUG
     REQUIRE(numDocs == 300000);

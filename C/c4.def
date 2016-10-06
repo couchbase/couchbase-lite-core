@@ -51,7 +51,6 @@ c4db_enumerateChanges
 c4db_enumerateAllDocs
 c4db_enumerateSomeDocs
 c4db_enumerateExpired
-c4db_enumerateDocsWhere
 c4enum_next
 c4enum_nextDocument
 c4enum_getDocumentInfo
@@ -109,6 +108,9 @@ c4view_query
 c4view_fullTextQuery
 c4view_geoQuery
 c4view_fullTextMatched
+c4query_new
+c4query_free
+c4query_run
 c4queryenum_next
 c4queryenum_fullTextMatched
 c4queryenum_close

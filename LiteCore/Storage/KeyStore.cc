@@ -82,17 +82,15 @@ namespace litecore {
         return del(doc.key(), t);
     }
 
-    DocEnumerator::Impl* KeyStore::newEnumeratorImpl(const std::string &query,
-                                                     DocEnumerator::Options&)
-    {
-        error::_throw(error::Unimplemented);
-    }
-
     void KeyStore::createIndex(const std::string &propertyPath) {
         error::_throw(error::Unimplemented);
     }
 
     void KeyStore::deleteIndex(const std::string &propertyPath) {
+        error::_throw(error::Unimplemented);
+    }
+
+    Query* KeyStore::compileQuery(slice selectorExpression, slice sortExpression) {
         error::_throw(error::Unimplemented);
     }
 

@@ -63,7 +63,6 @@ _c4db_enumerateChanges
 _c4db_enumerateAllDocs
 _c4db_enumerateSomeDocs
 _c4db_enumerateExpired
-_c4db_enumerateDocsWhere
 _c4db_createIndex
 _c4db_deleteIndex
 _c4enum_next
@@ -133,6 +132,10 @@ _c4queryenum_next
 _c4queryenum_fullTextMatched
 _c4queryenum_close
 _c4queryenum_free
+
+_c4query_new
+_c4query_free
+_c4query_run
 
 _c4blob_keyFromString
 _c4blob_keyToString

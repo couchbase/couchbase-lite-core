@@ -66,4 +66,9 @@ TEST_CASE("QueryParser simple", "[Query]") {
           == "fl_contains(body, 'tags', 1, 'mind-bending', 'heartwarming')");
     CHECK(parse("{`tags`: {`$any`: [`mind-bending`, `heartwarming`]}}")
           == "fl_contains(body, 'tags', 0, 'mind-bending', 'heartwarming')");
+
+    CHECK(parse("{`name`: [1]}")
+          == "fl_value(body, 'name') = :_1");
+    CHECK(parse("{`name`: [`name`]}")
+          == "fl_value(body, 'name') = :_name");
 }

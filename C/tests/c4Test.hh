@@ -10,10 +10,7 @@
 
 #include "Fleece.h"
 
-#include "c4Database.h"
-#include "c4Document.h"
-#include "c4DocEnumerator.h"
-#include "c4View.h"
+#include "c4.h"
 
 #include "CatchHelper.hh"
 #include "MSVC_Compat.hh"
@@ -98,7 +95,8 @@ protected:
 
     FLSliceResult readFile(const char *path);
     bool readFileByLines(const char *path, std::function<bool(FLSlice)>);
-
+    unsigned importJSONLines(const char *path, double timeout =15.0, bool verbose =false);
+    
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
     C4Slice kRevID;    // "1-abcdef"

@@ -21,6 +21,7 @@
 namespace litecore {
 
     class KeyStore;
+    class Query;
 
     enum ContentOptions {
         kDefaultContent = 0,
@@ -66,10 +67,8 @@ namespace litecore {
                       std::vector<std::string> docIDs,
                       const Options& options = Options());
 
-        // Experimental query support
-        DocEnumerator(KeyStore&,
-                      const std::string& query,
-                      const Options& options = Options());
+        DocEnumerator(Query&,
+                      slice paramValuesEncoded);
 
         DocEnumerator(DocEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
         DocEnumerator& operator=(DocEnumerator&& e) noexcept; // move assignment
@@ -130,7 +129,6 @@ namespace litecore {
         KeyStore *      _store;             // The KeyStore I'm enumerating
         Options         _options;           // Enumeration options
         std::vector<std::string>  _docIDs;  // The set of docIDs to enumerate (if any)
-        std::string     _query;             // Query string [experimental]
         int             _curDocIndex {0};   // Current index in _docIDs, else -1
         Document        _doc;               // Current document
         bool            _skipStep {false};  // Should next call to next() skip _impl->next()?

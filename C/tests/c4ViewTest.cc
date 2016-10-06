@@ -353,3 +353,53 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     REQUIRE(error.code == 0);
     c4queryenum_free(e);
 }
+
+
+class QueryTest : public C4Test {
+public:
+    QueryTest() :C4Test(2) {  // always use SQLite + version vectors
+        importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_100.json");
+    }
+
+    ~QueryTest() {
+        c4query_free(query);
+    }
+
+    C4Query* compile(const char *expr) {
+        C4Error error;
+        c4query_free(query);
+        query = c4query_new(db, c4str("{\"contact.address.state\": \"CA\"}"),
+                                     kC4SliceNull, &error);
+        REQUIRE(query);
+        return query;
+    }
+
+    std::vector<std::string> run(uint64_t skip =0, uint64_t limit =UINT64_MAX) {
+        REQUIRE(query);
+        std::vector<std::string> docIDs;
+        C4QueryOptions options = kC4DefaultQueryOptions;
+        options.skip = skip;
+        options.limit = limit;
+        C4Error error;
+        auto e = c4query_run(query, &options, kC4SliceNull, &error);
+        REQUIRE(e);
+        while (c4queryenum_next(e, &error)) {
+            std::string docID((const char*)e->docID.buf, e->docID.size);
+            docIDs.push_back(docID);
+        }
+        CHECK(error.code == 0);
+        c4queryenum_free(e);
+        return docIDs;
+    }
+
+private:
+    C4Query *query {nullptr};
+};
+
+
+TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
+    compile("{\"contact.address.state\": \"CA\"}");
+    CHECK(run().size() == 8);
+    CHECK(run(1, 8).size() == 7);
+    CHECK(run(1, 4).size() == 4);
+}

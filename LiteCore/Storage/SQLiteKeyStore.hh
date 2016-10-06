@@ -48,10 +48,11 @@ namespace litecore {
 
         DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;
         DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
-        DocEnumerator::Impl* newEnumeratorImpl(const std::string &query, DocEnumerator::Options&) override;
+        Query* compileQuery(slice selectorExpression, slice sortExpression) override;
 
+        SQLite::Statement* compile(const std::string &sql) const;
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
-                                   const char *sql) const;
+                                   const char *sqlTemplate) const;
 
         void transactionWillEnd(bool commit);
 
@@ -65,6 +66,7 @@ namespace litecore {
     private:
         friend class SQLiteDataFile;
         friend class SQLiteIterator;
+        friend class SQLiteQuery;
         
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}

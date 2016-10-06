@@ -60,7 +60,7 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[xPerf][.slow][C]") {
+N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
     Stopwatch st;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;

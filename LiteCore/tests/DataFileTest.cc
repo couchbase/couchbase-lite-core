@@ -8,6 +8,7 @@
 
 #include "DataFile.hh"
 #include "DocEnumerator.hh"
+#include "Query.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Fleece.hh"
@@ -297,20 +298,19 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
     }
     t.commit();
 
+    unique_ptr<Query> query{ store->compileQuery(slice("{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}"), slice::null) };
+
     // Use a (SQL) query based on the Fleece "num" property:
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
-        DocEnumerator::Options opts;
         int i = 30;
-        DocEnumerator e(*store, "{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}", opts);
-        for (; e.next(); ++i) {
+        for (QueryEnumerator e(query.get()); e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
-            REQUIRE(e->key() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e.docID() == alloc_slice(expectedDocID));
+            REQUIRE(e.sequence() == (sequence)i);
         }
         st.printReport("Query of $.num", i, "row");
         REQUIRE(i == 41);
-        REQUIRE_FALSE(e);
 
         // Add an index after the first pass:
         if (pass == 0) {

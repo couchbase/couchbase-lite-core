@@ -268,6 +268,9 @@
 		27E487331924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
 		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* DocEnumerator.cc */; };
+		27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6DFEE1DA5AFF3008EB681 /* Query.cc */; };
+		27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6DFEE1DA5AFF3008EB681 /* Query.cc */; };
+		27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E6DFEF1DA5AFF3008EB681 /* Query.hh */; };
 		27E7218B1BB634F1001500DF /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
 		27E7218D1BB634F1001500DF /* encryption.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E7218A1BB634F1001500DF /* encryption.h */; };
 		27E721921BB65C8C001500DF /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
@@ -957,6 +960,9 @@
 		27E4873919255EA8007D8940 /* MapReduceIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceIndex.hh; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* DocEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DocEnumerator.hh; sourceTree = "<group>"; };
+		27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DBQuery.h; sourceTree = "<group>"; };
+		27E6DFEE1DA5AFF3008EB681 /* Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Query.cc; sourceTree = "<group>"; };
+		27E6DFEF1DA5AFF3008EB681 /* Query.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Query.hh; sourceTree = "<group>"; };
 		27E721831BB609CD001500DF /* bgflusher.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bgflusher.cc; sourceTree = "<group>"; };
 		27E721841BB609CD001500DF /* bgflusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bgflusher.h; sourceTree = "<group>"; };
 		27E721851BB609CD001500DF /* checksum.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = checksum.cc; sourceTree = "<group>"; };
@@ -1735,6 +1741,8 @@
 				27D74A621D4C0FA600D806E0 /* Base.hh */,
 				27C319EC1A143F5D00A89EDC /* KeyStore.cc */,
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
+				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
+				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				27E48711192171EA007D8940 /* DataFile.cc */,
 				27E48712192171EA007D8940 /* DataFile.hh */,
 				27DF46C21A12CF46007BB4A4 /* Document.cc */,
@@ -1946,6 +1954,7 @@
 				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				274A698F1BED3E0500D16D37 /* c4Key.h */,
 				275607781BA21DAB00F58218 /* c4View.h */,
+				27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -2054,6 +2063,7 @@
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
+				27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */,
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
 				27D74A931D4D3F3400D806E0 /* Exception.h in Headers */,
 				274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */,
@@ -2732,6 +2742,7 @@
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
+				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
@@ -2792,6 +2803,7 @@
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
+				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */,

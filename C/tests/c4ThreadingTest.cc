@@ -46,9 +46,9 @@ public:
     }
 
     C4View* openView(C4Database* onDB) {
-        C4View* view = c4view_open(onDB, c4str(kViewIndexPath),
+        C4View* view = c4view_open(onDB, kC4SliceNull,
                                    c4str("myview"), c4str("1"),
-                                   c4db_getConfig(db), NULL);
+                                   c4db_getConfig(onDB), NULL);
         REQUIRE(view);
         return view;
     }

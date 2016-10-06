@@ -102,17 +102,6 @@ namespace litecore {
         // (this mode doesn't actually create an fdb_iterator)
     }
 
-    // Query constructor
-    DocEnumerator::DocEnumerator(KeyStore &store,
-                  const std::string& query,
-                  const Options& options)
-    :DocEnumerator(store, options)
-    {
-        _query = query;
-        _impl.reset(_store->newEnumeratorImpl(_query, _options));
-        _skipStep = _impl->shouldSkipFirstStep();
-    }
-
     // Assignment from a temporary
     DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) noexcept {
         _store = e._store;
