@@ -93,6 +93,21 @@ namespace LiteCore.Interop
             _code = code;
             _domain = domain;
         }
+
+        public C4Error(ForestDBStatus code) : this(C4ErrorDomain.ForestDB, (int)code)
+        {
+            
+        }
+
+        public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLite, (int)code)
+        {
+            
+        }
+
+        public C4Error(LiteCoreError code) : this(C4ErrorDomain.LiteCore, (int)code)
+        {
+            
+        }
     }
 
     public unsafe struct C4Slice : IEnumerable<byte>

@@ -208,7 +208,7 @@ namespace LiteCore.Interop
             }
 
             var err = default(C4Error);
-            if(block(&err)) {
+            if(block(&err) || err.Code == 0) {
                 Exception = null;
                 return true;
             }
@@ -231,7 +231,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal != null) {
+            if(retVal != null || err.Code == 0) {
                 Exception = null;
                 return retVal;
             }
@@ -254,7 +254,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal >= 0) {
+            if(retVal >= 0 || err.Code == 0) {
                 Exception = null;
                 return retVal;
             }
@@ -277,7 +277,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal.buf != null) {
+            if(retVal.buf != null || err.Code == 0) {
                 Exception = null;
                 return retVal;
             }

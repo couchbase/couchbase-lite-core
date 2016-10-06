@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using C4SequenceNumber = System.Int64;
 
 using LiteCore.Util;
+using System.Threading;
 
 namespace LiteCore
 {
@@ -67,12 +68,50 @@ namespace LiteCore.Interop
         public fixed byte bytes[_Size];
     }
 
-    public unsafe struct C4DatabaseConfig
+    public unsafe struct C4DatabaseConfig : IDisposable
     {
         public C4DatabaseFlags flags;
-        public byte *storageEngine;
+        private IntPtr _storageEngine;
         public C4DocumentVersioning versioning;
         public C4EncryptionKey encryptionKey;
+
+        public static C4DatabaseConfig Clone(C4DatabaseConfig *source)
+        {
+            var retVal = new C4DatabaseConfig();
+            retVal.flags = source->flags;
+            retVal.versioning = source->versioning;
+            retVal.encryptionKey = source->encryptionKey;
+            retVal.storageEngine = source->storageEngine;
+
+            return retVal;
+        }
+
+        public static C4DatabaseConfig Get(C4DatabaseConfig *source)
+        {
+            var retVal = new C4DatabaseConfig();
+            retVal.flags = source->flags;
+            retVal.versioning = source->versioning;
+            retVal.encryptionKey = source->encryptionKey;
+            retVal._storageEngine = source->_storageEngine;
+
+            return retVal;
+        }
+
+        public string storageEngine
+        {
+            get {
+                return Marshal.PtrToStringAnsi(_storageEngine);
+            }
+            set {
+                var old = Interlocked.Exchange(ref _storageEngine, Marshal.StringToHGlobalAnsi(value));
+                Marshal.FreeHGlobal(old);
+            }
+        }
+
+        public void Dispose()
+        {
+            storageEngine = null;
+        }
     }
 
     public struct C4Database

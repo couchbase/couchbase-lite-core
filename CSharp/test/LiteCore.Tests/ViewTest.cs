@@ -297,35 +297,6 @@ namespace LiteCore.Tests
             UpdateIndex();
         }
 
-        private void CreateRev(string docID, C4Slice revID, C4Slice body)
-        {
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(_db, err));
-            try {
-                var curDoc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(_db, docID, false, err));
-                var history = new[] { revID, curDoc->revID };
-                fixed(C4Slice* h = history) {
-                    var rq = new C4DocPutRequest {
-                        existingRevision = true,
-                        docID = curDoc->docID,
-                        history = h,
-                        historyCount = (ulong)(curDoc->revID.buf != null ? 2 : 1),
-                        body = body,
-                        deletion = body.buf == null,
-                        save = true
-                    };
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => {
-                        var localRq = rq;
-                        return Native.c4doc_put(_db, &localRq, null, err);
-                    });
-
-                    Native.c4doc_free(doc);
-                    Native.c4doc_free(curDoc);
-                }
-            } finally {
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(_db, true, err));
-            }
-        }
-
         private void UpdateIndex()
         {
             var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, 
