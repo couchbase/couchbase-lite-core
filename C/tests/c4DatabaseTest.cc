@@ -429,7 +429,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
         REQUIRE(info.docID == c4str(docID));
-        REQUIRE(doc->revID == kRevID);
+        REQUIRE(info.revID == kRevID);
 
         c4doc_free(doc);
         i++;
