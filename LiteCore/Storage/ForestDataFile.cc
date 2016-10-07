@@ -160,6 +160,7 @@ namespace litecore {
         if (status == FDB_RESULT_NO_SUCH_FILE)
             return false;
         check(status);
+        (void)path.del();     // Delete the path with no extensions too, to make sure (see #9)
         return true;
     }
 
