@@ -9,7 +9,6 @@ namespace LiteCore.Tests
 {
     public unsafe class ThreadingTest : Test
     {
-        private static readonly string ViewIndexPath = Path.Combine(Test.TestDir, "forest_temp.view.index");
         private const bool Log = false;
         private const int NumDocs = 10000;
         private const bool SharedHandle = false; // Use same C4Database on all threads_
@@ -49,7 +48,7 @@ namespace LiteCore.Tests
 
         private void UpdateIndexTask()
         {
-            var database = SharedHandle ? _db : OpenDB();
+            var database = SharedHandle ? Db : OpenDB();
             var view = SharedHandle ? _view : OpenView(database);
 
             int i = 0;
@@ -71,7 +70,7 @@ namespace LiteCore.Tests
 
         private void QueryIndexTask()
         {
-            var database = SharedHandle ? _db : OpenDB();
+            var database = SharedHandle ? Db : OpenDB();
             var view = SharedHandle ? _view : OpenView(database);
 
             int i = 0;
@@ -96,7 +95,7 @@ namespace LiteCore.Tests
                 Console.Write("{ ");
             }
 
-            long i = 0;
+            ulong i = 0;
             C4Error error;
             while(Native.c4queryenum_next(e, &error)) {
                 ++i;
@@ -187,7 +186,7 @@ namespace LiteCore.Tests
         private C4Database* OpenDB()
         {
             var database = (C4Database *)LiteCoreBridge.Check(err => Native.c4db_open(DatabasePath(), 
-                Native.c4db_getConfig(_db), err));
+                Native.c4db_getConfig(Db), err));
             return database;
         }
 
@@ -199,8 +198,8 @@ namespace LiteCore.Tests
 
         private C4View* OpenView(C4Database* onDB)
         {
-            var view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(onDB, ViewIndexPath, "myview", "1",
-                Native.c4db_getConfig(_db), err));
+            var view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(onDB, null, "myview", "1",
+                Native.c4db_getConfig(Db), err));
             return view;
         }
 
@@ -214,15 +213,12 @@ namespace LiteCore.Tests
         {
             base.SetupVariant(option);
 
-            _view = OpenView(_db);
+            _view = OpenView(Db);
         }
 
         protected override void TeardownVariant(int option)
         {
             CloseView(_view);
-            var config = *(Native.c4db_getConfig(_db));
-            config.flags &= ~C4DatabaseFlags.Bundled;
-            Native.c4db_deleteAtPath(ViewIndexPath, &config, null);
 
             base.TeardownVariant(option);
         }

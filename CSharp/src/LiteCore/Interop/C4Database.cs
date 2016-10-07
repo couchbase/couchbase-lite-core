@@ -20,7 +20,7 @@
 //
 using System;
 using System.Runtime.InteropServices;
-using C4SequenceNumber = System.Int64;
+using C4SequenceNumber = System.UInt64;
 
 using LiteCore.Util;
 using System.Threading;

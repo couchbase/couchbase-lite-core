@@ -11,8 +11,6 @@ namespace LiteCore.Tests
     {
         private C4View* _view;
 
-        private static readonly string ViewIndexPath = Path.Combine(Test.TestDir, "forest_temp.view.index");
-
         [Fact]
         public void TestCreateIndex()
         {
@@ -35,7 +33,7 @@ namespace LiteCore.Tests
         private void CreateDocs(uint n, bool verbose = false)
         {
             var rng = new Random(42);
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(_db, err));
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
                 for(uint i = 0; i < n; ++i) {
                     var docID = i.ToString();
@@ -55,7 +53,7 @@ namespace LiteCore.Tests
 
                         var doc = (C4Document *)LiteCoreBridge.Check(err => {
                             var localRq = rq;
-                            return Native.c4doc_put(_db, &localRq, null, err);
+                            return Native.c4doc_put(Db, &localRq, null, err);
                         });
 
                         if(verbose) {
@@ -66,13 +64,13 @@ namespace LiteCore.Tests
                     }
                 }
             } finally {
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(_db, true, err));
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
         }
 
         private void CreateIndex()
         {
-            var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, 
+            var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, 
                 new[] { _view }, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
 
@@ -143,9 +141,9 @@ namespace LiteCore.Tests
         {
             base.SetupVariant(option);
 
-            Native.c4db_deleteAtPath(ViewIndexPath, null, null);
-            _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, ViewIndexPath, "myview", "1",
-                Native.c4db_getConfig(_db), err));
+            Native.c4view_deleteByName(Db, "geoview", null);
+            _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "geoview", "1",
+                Native.c4db_getConfig(Db), err));
         }
 
         protected override void TeardownVariant(int option)

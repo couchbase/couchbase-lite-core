@@ -138,6 +138,18 @@ namespace LiteCore.Interop
             return (C4Slice)FLSlice.Constant(input);
         }
 
+        public static C4Slice Allocate(string input)
+        {
+            return (C4Slice)FLSlice.Allocate(input);
+        }
+
+        public static void Free(C4Slice slice)
+        {
+            FLSlice.Free((FLSlice)slice);
+            slice.buf = null;
+            slice.size = 0;
+        }
+
         private bool Equals(C4Slice other)
         {
             return Native.c4SliceEqual(this, other);

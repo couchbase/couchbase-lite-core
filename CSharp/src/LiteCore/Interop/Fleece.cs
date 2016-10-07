@@ -73,6 +73,7 @@ namespace LiteCore.Interop
 
     public unsafe struct FLSlice
     {
+        public static readonly FLSlice Null = new FLSlice(null, 0);
         public void* buf;
         private UIntPtr _size;
 
@@ -100,11 +101,23 @@ namespace LiteCore.Interop
             // Warning: This creates unmanaged memory that is intended never to be freed
             // You should only use it with constant strings
             return _Constants.GetOrAdd(input, key => {
-                var bytes = Encoding.UTF8.GetBytes(key);
-                var intPtr = Marshal.AllocHGlobal(bytes.Length);
-                Marshal.Copy(bytes, 0, intPtr, bytes.Length);
-                return new FLSlice(intPtr.ToPointer(), (ulong)bytes.Length);
+                return Allocate(key);
             });
+        }
+
+        public static FLSlice Allocate(string input)
+        {
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var intPtr = Marshal.AllocHGlobal(bytes.Length);
+            Marshal.Copy(bytes, 0, intPtr, bytes.Length);
+            return new FLSlice(intPtr.ToPointer(), (ulong)bytes.Length);
+        }
+
+        public static void Free(FLSlice slice)
+        {
+            Marshal.FreeHGlobal(new IntPtr(slice.buf));
+            slice.buf = null;
+            slice.size = 0;
         }
 
         public string CreateString()
@@ -346,11 +359,10 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLDictIterator_Next(FLDictIterator* iterator);
 
+        // Note: Allocates unmanaged heap memory; should only be used with constants
         public static FLDictKey FLDictKey_Init(string str, bool cachePointers)
         {
-            using(var str_ = new C4String(str)) {
-                return NativeRaw.FLDictKey_Init((FLSlice)str_.AsC4Slice(), cachePointers);
-            }
+            return NativeRaw.FLDictKey_Init(FLSlice.Constant(str), cachePointers);
         }
 
         public static string FLDictKey_GetString(FLDictKey* key)

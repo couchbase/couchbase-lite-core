@@ -24,7 +24,7 @@ namespace LiteCore.Tests
                 var options = C4EnumeratorOptions.Default;
                 options.flags &= ~C4EnumeratorFlags.IncludeBodies;
                 C4Error err;
-                var e = Native.c4db_enumerateAlLDocs(_db, null, null, &options, &err);
+                var e = NativeRaw.c4db_enumerateAllDocs(Db, C4Slice.Null, C4Slice.Null, &options, &err);
                 ((long)e).Should().NotBe(0, "because the enumerator should be created successfully");
                 C4Document* doc;
                 uint i = 0;
@@ -49,13 +49,13 @@ namespace LiteCore.Tests
             var content = new string(c.ToArray());
 
             C4Error err;
-            Native.c4db_beginTransaction(_db, &err).Should().BeTrue("because starting a transaction should succeed");
+            Native.c4db_beginTransaction(Db, &err).Should().BeTrue("because starting a transaction should succeed");
             var rng = new Random();
             for(int i = 0; i < NumDocuments; i++) {
                 using(var docID = new C4String($"doc-{rng.Next():D8}-{rng.Next():D8}-{rng.Next():D8}-{i:D4}"))
                 using(var revID = new C4String("1-deadbeefcafebabe80081e50"))
                 using(var json = new C4String("{{\"content\":\"{content}\"}}")) {
-                    var history = isRevTrees() ? new C4String[1] { new C4String("1-deadbeefcafebabe80081e50") }
+                    var history = IsRevTrees() ? new C4String[1] { new C4String("1-deadbeefcafebabe80081e50") }
                         : new C4String[1] { new C4String("1@deadbeefcafebabe80081e50") };
 
                     var rawHistory = history.Select(x => x.AsC4Slice()).ToArray();
@@ -67,16 +67,16 @@ namespace LiteCore.Tests
                         rq.historyCount = 1;
                         rq.body = json.AsC4Slice();
                         rq.save = true;
-                        var doc = Native.c4doc_put(_db, &rq, null, &err);
+                        var doc = Native.c4doc_put(Db, &rq, null, &err);
                         ((long)doc).Should().NotBe(0, $"because otherwise the put failed");
                         Native.c4doc_free(doc);
                     }
                 }
             }
 
-            Native.c4db_endTransaction(_db, true, &err).Should().BeTrue("because otherwise the transaction failed to end");
+            Native.c4db_endTransaction(Db, true, &err).Should().BeTrue("because otherwise the transaction failed to end");
             Console.WriteLine($"Created {NumDocuments} docs");
-            Native.c4db_getDocumentCount(_db).Should().Be(NumDocuments, "because the number of documents should be the number that was just inserted");
+            Native.c4db_getDocumentCount(Db).Should().Be(NumDocuments, "because the number of documents should be the number that was just inserted");
         }
     }
 }

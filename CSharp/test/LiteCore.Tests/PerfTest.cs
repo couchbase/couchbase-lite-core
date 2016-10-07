@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Tests.Util;
@@ -30,8 +30,11 @@ namespace LiteCore.Tests
         {
             var jsonData = File.ReadAllBytes(JsonFilePath);
             FLError error;
-            var fleeceData = Native.FLData_ConvertJSON(jsonData, &error);
-            var root = Native.FLValue_AsArray(Native.FLValue_FromData(fleeceData));
+            var unmanagedData = Marshal.AllocHGlobal(jsonData.Length);
+            Marshal.Copy(jsonData, 0, unmanagedData, jsonData.Length);
+            var slice = new FLSlice(unmanagedData.ToPointer(), (ulong)jsonData.Length);
+            var fleeceData = NativeRaw.FLData_ConvertJSON(slice, &error);
+            var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromData(fleeceData));
 
             RunTestVariants(() => {
                 uint numDocs;
@@ -62,6 +65,8 @@ namespace LiteCore.Tests
                     st.PrintReport("Grouped query of Artist view", numDocs, "doc");
                 }
             });
+
+            Marshal.FreeHGlobal(unmanagedData);
         }
 
         private uint QueryGrouped(C4View* view, C4ReduceFunction reduce, bool verbose = false)
@@ -124,7 +129,7 @@ namespace LiteCore.Tests
             var trackNoKey= NativeRaw.FLDictKey_Init(FLSlice.Constant("Track Number"), true);
             var compKey   = NativeRaw.FLDictKey_Init(FLSlice.Constant("Compilation"), true);
 
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(_db, err));
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
                 var enc = Native.FLEncoder_New();
                 FLArrayIterator iter;
@@ -133,13 +138,13 @@ namespace LiteCore.Tests
                 while(Native.FLArrayIterator_Next(&iter)) {
                     // Check that track is correct type:
                     var track = Native.FLValue_AsDict(Native.FLArrayIterator_GetValue(&iter));
-                    var trackType = Native.FLValue_AsString(Native.FLDict_GetWithKey(track, &typeKey));
-                    if(trackType != "File" && trackType != "Remote") {
+                    var trackType = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(track, &typeKey));
+                    if(!trackType.Equals(FLSlice.Constant("File")) && !trackType.Equals(FLSlice.Constant("Remote"))) {
                         continue;
                     }
 
-                    var trackID = Native.FLValue_AsString(Native.FLDict_GetWithKey(track, &idKey));
-                    trackID.Should().NotBeNull("because otherwise the data was not read correctly");
+                    var trackID = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(track, &idKey));
+                    ((long)trackID.buf).Should().NotBe(0, "because otherwise the data was not read correctly");
 
                     // Encode doc body:
                     Native.FLEncoder_BeginDict(enc, 0);
@@ -153,75 +158,71 @@ namespace LiteCore.Tests
                     CopyValue(track, &compKey, enc);
                     Native.FLEncoder_EndDict(enc);
                     FLError err;
-                    var body = Native.FLEncoder_Finish(enc, &err);
+                    var body = NativeRaw.FLEncoder_Finish(enc, &err);
                     body.Should().NotBeNull("because otherwise the encoding process failed");
                     Native.FLEncoder_Reset(enc);
 
                     // Save Document:
-                    using(var trackID_ = new C4String(trackID)) {
-                        fixed(byte* b = body) {
-                            var rq = new C4DocPutRequest();
-                            rq.docID = trackID_.AsC4Slice();
-                            rq.body = new C4Slice(b, (ulong)body.Length);
-                            rq.save = true;
-                            var doc = (C4Document *)LiteCoreBridge.Check(c4err => {
-                                var localRq = rq;
-                                return Native.c4doc_put(_db, &localRq, null, c4err);
-                            });
-                            
-                            Native.c4doc_free(doc);
-                            ++numDocs;
-                        }
-                    }
+                    var rq = new C4DocPutRequest();
+                    rq.docID = (C4Slice)trackID;
+                    rq.body = body;
+                    rq.save = true;
+                    var doc = (C4Document *)LiteCoreBridge.Check(c4err => {
+                        var localRq = rq;
+                        return Native.c4doc_put(Db, &localRq, null, c4err);
+                    });
+                    
+                    Native.c4doc_free(doc);
+                    ++numDocs;
                 }
 
                 Native.FLEncoder_Free(enc);
                 return numDocs;
             } finally {
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(_db, true, err));
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
         }
 
         private void IndexViews()
         {
-            var nameKey   = NativeRaw.FLDictKey_Init(FLSlice.Constant("Name"), true);
-            var albumKey  = NativeRaw.FLDictKey_Init(FLSlice.Constant("Album"), true);
-            var artistKey = NativeRaw.FLDictKey_Init(FLSlice.Constant("Artist"), true);
-            var timeKey   = NativeRaw.FLDictKey_Init(FLSlice.Constant("Total Time"), true);
-            var trackNoKey= NativeRaw.FLDictKey_Init(FLSlice.Constant("Track Number"), true);
-            var compKey   = NativeRaw.FLDictKey_Init(FLSlice.Constant("Compilation"), true);
+            var nameKey   = Native.FLDictKey_Init("Name", true);
+            var albumKey  = Native.FLDictKey_Init("Album", true);
+            var artistKey = Native.FLDictKey_Init("Artist", true);
+            var timeKey   = Native.FLDictKey_Init("Total Time", true);
+            var trackNoKey= Native.FLDictKey_Init("Track Number", true);
+            var compKey   = Native.FLDictKey_Init("Compilation", true);
 
             var enc = Native.FLEncoder_New();
             var key = Native.c4key_new();
 
             C4Error error;
             if(_artistsView == null) {
-                var config = Native.c4db_getConfig(_db);
-                _artistsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "Artists", "1", 
-                    Native.c4db_getConfig(_db), err));
+                var config = Native.c4db_getConfig(Db);
+                _artistsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Artists", "1", 
+                    Native.c4db_getConfig(Db), err));
             }
 
             if(_albumsView == null) {
-                _albumsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "Albums", "1", 
-                    Native.c4db_getConfig(_db), err));
+                _albumsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Albums", "1", 
+                    Native.c4db_getConfig(Db), err));
             }
 
             var views = new[] { _artistsView, _albumsView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, views, err));
+            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
             while(Native.c4enum_next(e, &error)) {
                 var doc = Native.c4enum_getDocument(e, &error);
                 var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
                 ((long)body).Should().NotBe(0, "because otherwise the data got corrupted somehow");
                 
-                string artist;
+                FLSlice artist;
                 if(Native.FLValue_AsBool(Native.FLDict_GetWithKey(body, &compKey))) {
-                    artist = "-Compilations-";
+                    artist = FLSlice.Constant("-Compilations-");
                 } else {
-                    artist = Native.FLValue_AsString(Native.FLDict_GetWithKey(body, &artistKey));
+                    artist = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(body, &artistKey));
                 }
 
-                var name = Native.FLValue_AsString(Native.FLDict_GetWithKey(body, &nameKey));
+                var name = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(body, &nameKey));
                 var album = Native.FLValue_AsString(Native.FLDict_GetWithKey(body, &albumKey));
                 var trackNo = Native.FLValue_AsInt(Native.FLDict_GetWithKey(body, &trackNoKey));
                 var time = Native.FLDict_GetWithKey(body, &timeKey);
@@ -235,10 +236,12 @@ namespace LiteCore.Tests
                 var value = (C4Slice)fval;
 
                 // Emit to artists view:
-                if(artist != null && name != null) {
+                uint nKeys = 0;
+                if(!artist.Equals(FLSlice.Null) && !name.Equals(FLSlice.Null)) {
+                    nKeys = 1;
                     // Generate key:
                     Native.c4key_beginArray(key);
-                    Native.c4key_addString(key, artist);
+                    NativeRaw.c4key_addString(key, (C4Slice)artist);
                     if(album != null) {
                         Native.c4key_addString(key, album);
                     } else {
@@ -246,31 +249,38 @@ namespace LiteCore.Tests
                     }
 
                     Native.c4key_addNumber(key, trackNo);
-                    Native.c4key_addString(key, name);
+                    NativeRaw.c4key_addString(key, (C4Slice)name);
                     Native.c4key_addNumber(key, 1.0);
                     Native.c4key_endArray(key);
                 }
 
-                Native.c4indexer_emit(indexer, doc, 0, new[] { key }, new[] { value }, &error).Should()
+                Native.c4indexer_emit(indexer, doc, 0, nKeys, new[] { key }, new[] { value }, &error).Should()
                     .BeTrue("because otherwise the emit to the artists view failed");
                 Native.c4key_reset(key);
 
                 // Emit to albums view:
+                nKeys = 0;
                 if(album != null) {
+                    nKeys = 1;
                     Native.c4key_beginArray(key);
                     Native.c4key_addString(key, album);
-                    if(artist != null) {
-                        Native.c4key_addString(key, artist);
+                    if(!artist.Equals(FLSlice.Null)) {
+                        NativeRaw.c4key_addString(key, (C4Slice)artist);
                     } else {
                         Native.c4key_addNull(key);
                     }
 
-                    Native.c4key_addString(key, name);
+                    Native.c4key_addNumber(key, trackNo);
+                    if(name.buf == null) {
+                        name = FLSlice.Constant("");
+                    }
+
+                    NativeRaw.c4key_addString(key, (C4Slice)name);
                     Native.c4key_addNumber(key, 1.0);
                     Native.c4key_endArray(key);
                 }
 
-                Native.c4indexer_emit(indexer, doc, 1, new[] { key }, new[] { value }, &error).Should()
+                Native.c4indexer_emit(indexer, doc, 1, nKeys, new[] { key }, new[] { value }, &error).Should()
                     .BeTrue("because otherwise the emit to the artists view failed");
                 Native.c4key_reset(key);
 
@@ -292,12 +302,12 @@ namespace LiteCore.Tests
 
             C4Error error;
             if(_tracksView == null) {
-                _tracksView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "Tracks", "1",
-                    Native.c4db_getConfig(_db), err));
+                _tracksView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Tracks", "1",
+                    Native.c4db_getConfig(Db), err));
             }
 
             var views = new[] { _tracksView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, views, err));
+            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             try {
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
                 while(Native.c4enum_next(e, &error)) {
@@ -327,14 +337,18 @@ namespace LiteCore.Tests
         {
             var ctx = context as TotalContext;
             var v = NativeRaw.FLValue_FromTrustedData((FLSlice)value);
-            Native.FLValue_GetType(v).Should().Be(FLValueType.Number, "because otherwise invalid data was indexed");
+            Console.WriteLine($"Accumulate (Before) -> {ctx.total}");
             ctx.total += Native.FLValue_AsDouble(v);
+            Console.WriteLine($"Accumulate (After) -> {ctx.total}");
         }
 
         private static string TotalReduce(object context)
         {
             var ctx = context as TotalContext;
-            return ctx.total.ToString();
+            var retVal = ctx.total.ToString("G6");
+            ctx.total = 0.0;
+            Console.WriteLine($"Reduced -> {retVal}");
+            return retVal;
         }
 
         private static bool CopyValue(FLDict* source, FLDictKey* key, FLEncoder* enc)
@@ -351,42 +365,13 @@ namespace LiteCore.Tests
 
         protected override void TeardownVariant(int option)
         {
+            Native.c4view_free(_artistsView);
+            Native.c4view_free(_albumsView);
+            Native.c4view_free(_tracksView);
+            Native.c4view_free(_likesView);
+            Native.c4view_free(_statesView);
+
             base.TeardownVariant(option);
-
-            if(_artistsView != null) {
-                LiteCoreBridge.Check(err => Native.c4view_close(_artistsView, err));
-                LiteCoreBridge.Check(err => Native.c4view_delete(_artistsView, err));
-                Native.c4view_free(_artistsView);
-                _artistsView = null;
-            }
-
-            if(_albumsView != null) {
-                LiteCoreBridge.Check(err => Native.c4view_close(_albumsView, err));
-                LiteCoreBridge.Check(err => Native.c4view_delete(_albumsView, err));
-                Native.c4view_free(_albumsView);
-                _albumsView = null;
-            }
-
-            if(_tracksView != null) {
-                LiteCoreBridge.Check(err => Native.c4view_close(_tracksView, err));
-                LiteCoreBridge.Check(err => Native.c4view_delete(_tracksView, err));
-                Native.c4view_free(_tracksView);
-                _tracksView = null;
-            }
-
-            if(_likesView != null) {
-                LiteCoreBridge.Check(err => Native.c4view_close(_likesView, err));
-                LiteCoreBridge.Check(err => Native.c4view_delete(_likesView, err));
-                Native.c4view_free(_likesView);
-                _likesView = null;
-            }
-
-            if(_statesView != null) {
-                LiteCoreBridge.Check(err => Native.c4view_close(_statesView, err));
-                LiteCoreBridge.Check(err => Native.c4view_delete(_statesView, err));
-                Native.c4view_free(_statesView);
-                _statesView = null;
-            }
         }
     }
 }

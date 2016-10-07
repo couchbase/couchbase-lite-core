@@ -79,7 +79,7 @@ namespace LiteCore
 
             public bool MoveNext()
             {
-                return Native.c4exp_next(_native);
+                return Native.c4exp_next(_native, null);
             }
 
             public void Reset()

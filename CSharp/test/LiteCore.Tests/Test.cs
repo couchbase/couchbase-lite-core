@@ -19,12 +19,12 @@ namespace LiteCore.Tests
                 return 4;
             }
         }
-
-        private C4DocumentVersioning _versioning;
-        private string _storage;
+        
         private bool _bundled = true;
 
-        protected C4Database* _db { get; private set; }
+        protected C4Database* Db { get; private set; }
+        protected C4DocumentVersioning Versioning { get; private set; }
+        protected string Storage { get; private set; }
 
         protected C4Slice DocID
         {
@@ -36,21 +36,21 @@ namespace LiteCore.Tests
         protected C4Slice RevID
         {
             get {
-                return isRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
+                return IsRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
             }
         }
 
         protected C4Slice Rev2ID
         {
             get {
-                return isRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
+                return IsRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
             }
         }
 
         protected C4Slice Rev3ID
         {
             get {
-                return isRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
+                return IsRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
             }
         }
 
@@ -59,9 +59,9 @@ namespace LiteCore.Tests
             Native.c4log_setLevel(C4LogLevel.Warning);
         }
 
-        protected bool isRevTrees()
+        protected bool IsRevTrees()
         {
-            return _versioning == C4DocumentVersioning.RevisionTrees;
+            return Versioning == C4DocumentVersioning.RevisionTrees;
         }
 
         protected override void SetupVariant(int option)
@@ -76,9 +76,9 @@ namespace LiteCore.Tests
 
         protected void CreateRev(string docID, C4Slice revID, C4Slice body, bool isNew = true)
         {
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(_db, err));
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
-                var curDoc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(_db, docID, 
+                var curDoc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, docID, 
                     false, err));
                 var history = new[] { revID, curDoc->revID };
                 fixed(C4Slice* h = history) {
@@ -94,13 +94,13 @@ namespace LiteCore.Tests
 
                     var doc = (C4Document *)LiteCoreBridge.Check(err => {
                         var localRq = rq;
-                        return Native.c4doc_put(_db, &localRq, null, err);
+                        return Native.c4doc_put(Db, &localRq, null, err);
                     });
                     Native.c4doc_free(doc);
                     Native.c4doc_free(curDoc);
                 }
             } finally {
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(_db, true, err));
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
         }
 
@@ -108,7 +108,7 @@ namespace LiteCore.Tests
         {
             if(_bundled) {
                 return Path.Combine(TestDir, "cbl_core_test");
-            } else if(_storage == C4StorageEngine.SQLite) {
+            } else if(Storage == C4StorageEngine.SQLite) {
                 return Path.Combine(TestDir, "cbl_core_test.sqlite3");
             } else {
                 return Path.Combine(TestDir, "cbl_core_test.forestdb");
@@ -122,34 +122,34 @@ namespace LiteCore.Tests
 
         private void OpenDatabase(int options)
         {
-            _storage = (options & 1) != 0 ? C4StorageEngine.ForestDB : C4StorageEngine.SQLite;
-            _versioning = (options & 2) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
+            Storage = (options & 1) != 0 ? C4StorageEngine.ForestDB : C4StorageEngine.SQLite;
+            Versioning = (options & 2) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
             Native.c4_shutdown(null);
 
             var config = new C4DatabaseConfig();
             config.flags = C4DatabaseFlags.Create;
-            config.versioning = _versioning;
+            config.versioning = Versioning;
 
             if(_bundled) {
                 config.flags |= C4DatabaseFlags.Bundled;
             }
 
-            Console.WriteLine($"Opening {_storage} database using {_versioning}");
+            Console.WriteLine($"Opening {Storage} database using {Versioning}");
 
             C4Error err;
-            config.storageEngine = _storage;
+            config.storageEngine = Storage;
             Native.c4db_deleteAtPath(DatabasePath(), &config, null);
-            _db = Native.c4db_open(DatabasePath(), &config, &err);
-            ((long)_db).Should().NotBe(0, "because otherwise the database failed to open");
+            Db = Native.c4db_open(DatabasePath(), &config, &err);
+            ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
         }
 
         private void CloseAndDelete(int options)
         {
-            var config = C4DatabaseConfig.Get(Native.c4db_getConfig(_db));
+            var config = C4DatabaseConfig.Get(Native.c4db_getConfig(Db));
             config.Dispose();
-            LiteCoreBridge.Check(err => Native.c4db_delete(_db, err));
-            Native.c4db_free(_db);
-            _db = null;
+            LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
+            Native.c4db_free(Db);
+            Db = null;
         }
     }
 }

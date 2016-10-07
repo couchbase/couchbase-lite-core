@@ -22,7 +22,7 @@ using System;
 using System.Runtime.InteropServices;
 
 using LiteCore.Util;
-using C4SequenceNumber = System.Int64;
+using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore.Interop
 {
@@ -309,8 +309,20 @@ namespace LiteCore.Interop
                                           C4Slice[] emittedValues,
                                           C4Error* outError)
         {
+            return c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, emittedKeys,
+                emittedValues, outError);
+        }
+
+        public static bool c4indexer_emit(C4Indexer* indexer,
+                                          C4Document* document,
+                                          uint viewNumber,
+                                          uint nKeys,
+                                          C4Key*[] emittedKeys,
+                                          C4Slice[] emittedValues,
+                                          C4Error* outError)
+        {
             fixed(C4Key** p = emittedKeys) {
-                return NativeRaw.c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, p,
+                return NativeRaw.c4indexer_emit(indexer, document, viewNumber, nKeys, p,
                                                 emittedValues, outError);
             }
         }

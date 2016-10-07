@@ -47,8 +47,8 @@ namespace LiteCore.Tests
                 LiteCoreBridge.Check(err => Native.c4view_close(_view, err));
                 Native.c4view_free(_view);
 
-                _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "myview", "1",
-                    Native.c4db_getConfig(_db), err));
+                _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "myview", "1",
+                    Native.c4db_getConfig(Db), err));
                 Native.c4view_getTotalRows(_view).Should().Be(200, "because the view information should survive reopening");
                 Native.c4view_getLastSequenceIndexed(_view).Should().Be(100, "because the view information should survive reopening");
                 Native.c4view_getLastSequenceChangedAt(_view).Should().Be(100, "because the view information should survive reopening");
@@ -57,8 +57,8 @@ namespace LiteCore.Tests
                 LiteCoreBridge.Check(err => Native.c4view_close(_view, err));
                 Native.c4view_free(_view);
 
-                _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "myview", "2",
-                    Native.c4db_getConfig(_db), err));
+                _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "myview", "2",
+                    Native.c4db_getConfig(Db), err));
                 Native.c4view_getTotalRows(_view).Should().Be(0, "because the view information should be erased");
                 Native.c4view_getLastSequenceIndexed(_view).Should().Be(0, "because the view information should be erased");
                 Native.c4view_getLastSequenceChangedAt(_view).Should().Be(0, "because the view information should be erased");
@@ -73,7 +73,7 @@ namespace LiteCore.Tests
 
                 var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_query(_view, null, err));
 
-                int i = 0;
+                ulong i = 0;
                 C4Error error;
                 string buf;
                 while(Native.c4queryenum_next(e, &error)) {
@@ -136,25 +136,25 @@ namespace LiteCore.Tests
             RunTestVariants(() => {
                 CreateIndex();
                 var lastIndexed = Native.c4view_getLastSequenceIndexed(_view);
-                var lastSeq = Native.c4db_getLastSequence(_db);
+                var lastSeq = Native.c4db_getLastSequence(Db);
                 lastIndexed.Should().Be(lastSeq, "because the view should be up to date");
 
                 // Purge one of the indexed docs:
-                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(_db, err));
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
                 try {
-                    LiteCoreBridge.Check(err => Native.c4db_purgeDoc(_db, "doc-023", err));
+                    LiteCoreBridge.Check(err => Native.c4db_purgeDoc(Db, "doc-023", err));
                 } finally {
-                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(_db, true, err));
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
                 }
 
                 if(compact) {
-                    LiteCoreBridge.Check(err => Native.c4db_compact(_db, err));
+                    LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
                 }
 
                 // ForestDB assigns sequences to deletions, so the purge bumped the db's sequence
                 // invalidating the view index:
                 lastIndexed = Native.c4view_getLastSequenceIndexed(_view);
-                lastSeq = Native.c4db_getLastSequence(_db);
+                lastSeq = Native.c4db_getLastSequence(Db);
                 lastIndexed.Should().BeLessThan(lastSeq, "because the new deletion was not yet indexed");
 
                 UpdateIndex();
@@ -265,7 +265,7 @@ namespace LiteCore.Tests
                     CreateRev(docID, RevID, body);
                 }
 
-                var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, 
+                var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, 
                     new[] { _view }, err));
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
 
@@ -299,7 +299,7 @@ namespace LiteCore.Tests
 
         private void UpdateIndex()
         {
-            var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(_db, 
+            var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, 
                 new[] { _view }, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
             C4Document* doc;
@@ -339,9 +339,9 @@ namespace LiteCore.Tests
 
         protected override void SetupVariant(int options)
         {
-            Native.c4view_deleteByName(_db, "myview", null);
-            _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(_db, null, "myview", "1",
-                Native.c4db_getConfig(_db), err));
+            Native.c4view_deleteByName(Db, "myview", null);
+            _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "myview", "1",
+                Native.c4db_getConfig(Db), err));
         }
 
         protected override void TeardownVariant(int options)

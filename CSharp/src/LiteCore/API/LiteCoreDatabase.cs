@@ -22,7 +22,7 @@ using System;
 using System.Collections.Generic;
 
 using LiteCore.Interop;
-using C4SequenceNumber = System.Int64;
+using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore
 {

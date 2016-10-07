@@ -22,7 +22,7 @@ using System;
 using System.Runtime.InteropServices;
 
 using LiteCore.Util;
-using C4SequenceNumber = System.Int64;
+using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore.Interop
 {
@@ -142,6 +142,20 @@ namespace LiteCore.Interop
         {
             using(var docID_ = new C4String(docID)) {
                 return NativeRaw.c4doc_get(database, docID_.AsC4Slice(), mustExist, outError);
+            }
+        }
+
+        public static C4Document* c4doc_getForPut(C4Database *database,
+                                                  string docID,
+                                                  string parentRevID,
+                                                  bool deleting,
+                                                  bool allowConflict,
+                                                  C4Error *outError)
+        {
+            using(var docID_ = new C4String(docID))
+            using(var parentRevID_ = new C4String(parentRevID)) {
+                return NativeRaw.c4doc_getForPut(database, docID_.AsC4Slice(), parentRevID_.AsC4Slice(),
+                    deleting, allowConflict, outError);
             }
         }
 
@@ -281,6 +295,14 @@ namespace LiteCore.Interop
                                                    C4Slice docID,
                                                    [MarshalAs(UnmanagedType.U1)]bool mustExist,
                                                    C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4Document* c4doc_getForPut(C4Database *database,
+                                                        C4Slice docID,
+                                                        C4Slice parentRevID,
+                                                        [MarshalAs(UnmanagedType.U1)]bool deleting,
+                                                        [MarshalAs(UnmanagedType.U1)]bool allowConflict,
+                                                        C4Error *outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_getType(C4Document* doc);

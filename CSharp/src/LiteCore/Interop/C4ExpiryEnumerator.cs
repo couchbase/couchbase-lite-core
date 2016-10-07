@@ -34,7 +34,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4exp_next(C4ExpiryEnumerator* e);
+        public static extern bool c4exp_next(C4ExpiryEnumerator* e, C4Error* outError);
 
         public static string c4exp_getDocID(C4ExpiryEnumerator* e)
         {
