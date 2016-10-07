@@ -18,6 +18,11 @@ namespace LiteCore.Tests
             public double total;
         }
 
+        private class CountContext
+        {
+            public ulong count;
+        }
+
         private const string JsonFilePath = "../../../C/tests/iTunesMusicLibrary.json";
         private C4View *_artistsView;
         private C4View *_albumsView;
@@ -67,6 +72,85 @@ namespace LiteCore.Tests
             });
 
             Marshal.FreeHGlobal(unmanagedData);
+        }
+
+        [Fact]
+        public void TestImportGeoBlocks()
+        {
+            var rng = new Random();
+            RunTestVariants(() => {
+                var numDocs = ImportJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json",
+                    TimeSpan.FromSeconds(15), true);
+                ReopenDB();
+                var st = Stopwatch.StartNew();
+                int readNo = 0;
+                for( ; readNo < 100000; ++readNo) {
+                    var docID = rng.Next(1, (int)numDocs + 1).ToString("D7");
+                    var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, docID,
+                        true, err));
+                    doc->selectedRev.body.size.Should().BeGreaterThan(10);
+                    Native.c4doc_free(doc);
+                }
+
+                st.PrintReport("Reading random docs", (uint)readNo, "doc");
+            });
+        }
+
+        [Fact]
+        public void TestImportNames()
+        {
+            // Docs look like:
+            // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
+
+            RunTestVariants(() => {
+                var numDocs = ImportJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json",
+                    TimeSpan.FromSeconds(15), true);
+                var complete = numDocs == 300000;
+                #if !DEBUG
+                numDocs.Should().Be(300000, "because otherwise the operation was too slow");
+                #endif
+                {
+                    var st = Stopwatch.StartNew();
+                    var totalLikes = IndexLikesView();
+                    Console.WriteLine($"Total of {totalLikes} likes");
+                    st.PrintReport("Indexing Likes view", numDocs, "doc");
+                    if(complete) {
+                        totalLikes.Should().Be(345986, "because otherwise the index missed data set objects");
+                    }
+                }
+                {
+                    var st = Stopwatch.StartNew();
+                    var context = new CountContext();
+                    using(var reduce = new C4ManagedReduceFunction(CountAccumulate, CountReduce, context)) {
+                        var numLikes = QueryGrouped(_likesView, reduce.Native, true);
+                        st.PrintReport("Querying all likes", numLikes, "like");
+                        if(complete) {
+                            numLikes.Should().Be(15, "because that is the number of likes in the data set");
+                        }
+                    }
+                }
+                {
+                    var st = Stopwatch.StartNew();
+                    var total = IndexStatesView();
+                    st.PrintReport("Indexing States view", numDocs, "doc");
+                    if(complete) {
+                        total.Should().Be(300000, "because otherwise the index missed some dataset objects");
+                    }
+                }
+                {
+                    var options = C4QueryOptions.Default;
+                    var key = Native.c4key_new();
+                    NativeRaw.c4key_addString(key, C4Slice.Constant("WA"));
+                    options.startKey = options.endKey = key;
+                    var st = Stopwatch.StartNew();
+                    var total = RunQuery(_statesView, options);
+                    Native.c4key_free(key);
+                    st.PrintReport("Querying States view", total, "row");
+                    if(complete) {
+                        total.Should().Be(5053, "because that is the number of states in the data set");
+                    }
+                }
+            });
         }
 
         private uint QueryGrouped(C4View* view, C4ReduceFunction reduce, bool verbose = false)
@@ -333,13 +417,106 @@ namespace LiteCore.Tests
             }
         }
 
+        private uint IndexLikesView()
+        {
+            var likesKey = Native.FLDictKey_Init("likes", true);
+            var keys = new[] { Native.c4key_new(), Native.c4key_new(), Native.c4key_new() };
+            var values = new C4Slice[3];
+            uint totalLikes = 0;
+
+            if(_likesView == null) {
+                _likesView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "likes",
+                    "1", Native.c4db_getConfig(Db), err));
+            }
+
+            var views = new[] { _likesView };
+            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
+            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
+            C4Error error;
+            while(Native.c4enum_next(e, &error)) {
+                var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
+                var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
+                var likes = Native.FLValue_AsArray(Native.FLDict_GetWithKey(body, &likesKey));
+
+                FLArrayIterator iter;
+                Native.FLArrayIterator_Begin(likes, &iter);
+                uint nLikes;
+                for(nLikes = 0; nLikes < 3; ++nLikes) {
+                    var like = NativeRaw.FLValue_AsString(Native.FLArrayIterator_GetValue(&iter));
+                    if(like.buf == null) {
+                        break;
+                    }
+
+                    Native.c4key_reset(keys[nLikes]);
+                    NativeRaw.c4key_addString(keys[nLikes], (C4Slice)like);
+                    Native.FLArrayIterator_Next(&iter);
+                }
+
+                totalLikes += nLikes;
+                LiteCoreBridge.Check(err => Native.c4indexer_emit(indexer, doc, 0, nLikes, keys, values, err));
+                Native.c4doc_free(doc);
+            }
+
+            Native.c4enum_free(e);
+            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
+            for(uint i = 0; i < 3; i++) {
+                Native.c4key_free(keys[i]);
+            }
+
+            return totalLikes;
+        }
+
+        private uint IndexStatesView()
+        {
+            var contactKey = Native.FLDictKey_Init("contact", true);
+            var addressKey = Native.FLDictKey_Init("address", true);
+            var stateKey = Native.FLDictKey_Init("state", true);
+            var key = Native.c4key_new();
+            uint totalStates = 0;
+
+            if(_statesView == null) {
+                _statesView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "states",
+                    "1", Native.c4db_getConfig(Db), err));
+            }
+
+            var views = new[] { _statesView };
+            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
+            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
+            C4Error error;
+            while(Native.c4enum_next(e, &error)) {
+                var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
+                var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
+                var contact = Native.FLValue_AsDict(Native.FLDict_GetWithKey(body, &contactKey));
+                var address = Native.FLValue_AsDict(Native.FLDict_GetWithKey(contact, &addressKey));
+                var state = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(address, &stateKey));
+
+                uint nStates = 0;
+                if(state.buf != null) {
+                    Native.c4key_reset(key);
+                    NativeRaw.c4key_addString(key, (C4Slice)state);
+                    nStates = 1;
+                    totalStates++;
+                }
+
+                var value = C4Slice.Null;
+                LiteCoreBridge.Check(err => Native.c4indexer_emit(indexer, doc, 0, nStates, new[] { key }, 
+                new[] { value }, err));
+                Native.c4doc_free(doc);
+            }
+
+            Native.c4enum_free(e);
+            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
+            Native.c4key_free(key);
+            return totalStates;
+        }
+
         private static void TotalAccumulate(object context, C4Key* key, C4Slice value)
         {
             var ctx = context as TotalContext;
             var v = NativeRaw.FLValue_FromTrustedData((FLSlice)value);
-            Console.WriteLine($"Accumulate (Before) -> {ctx.total}");
             ctx.total += Native.FLValue_AsDouble(v);
-            Console.WriteLine($"Accumulate (After) -> {ctx.total}");
         }
 
         private static string TotalReduce(object context)
@@ -347,7 +524,19 @@ namespace LiteCore.Tests
             var ctx = context as TotalContext;
             var retVal = ctx.total.ToString("G6");
             ctx.total = 0.0;
-            Console.WriteLine($"Reduced -> {retVal}");
+            return retVal;
+        }
+
+        private static void CountAccumulate(object context, C4Key* key, C4Slice value)
+        {
+            (context as CountContext).count++;
+        }
+
+        private static string CountReduce(object context)
+        {
+            var ctx = context as CountContext;
+            var retVal = ctx.ToString();
+            ctx.count = 0;
             return retVal;
         }
 
@@ -366,10 +555,15 @@ namespace LiteCore.Tests
         protected override void TeardownVariant(int option)
         {
             Native.c4view_free(_artistsView);
+            _artistsView = null;
             Native.c4view_free(_albumsView);
+            _albumsView = null;
             Native.c4view_free(_tracksView);
+            _tracksView = null;
             Native.c4view_free(_likesView);
+            _likesView = null;
             Native.c4view_free(_statesView);
+            _statesView = null;
 
             base.TeardownVariant(option);
         }

@@ -67,23 +67,21 @@ namespace LiteCore.Interop
 
         private readonly ManagedReduceDelegate _reduce;
 
+        private readonly Delegate[] _unmanaged = new Delegate[2];
+
         private C4String _lastReturn;
 
-        private GCHandle _nativeHandle;
-
-        public C4ReduceFunction Native 
-        {
-            get {
-                return (C4ReduceFunction)_nativeHandle.Target;
-            }
-        }
+        public C4ReduceFunction Native { get; }
 
         public unsafe C4ManagedReduceFunction(ManagedAccumulateDelegate accumulate, ManagedReduceDelegate reduce, object context)
         {
             _accumulate = accumulate;
             _reduce = reduce;
             _context = context;
-            _nativeHandle = GCHandle.Alloc(new C4ReduceFunction(Accumulate, Reduce, null), GCHandleType.Pinned);
+            _unmanaged[0] = new AccumulateDelegate(Accumulate);
+            _unmanaged[1] = new ReduceDelegate(Reduce);
+            Native = new C4ReduceFunction(_unmanaged[0] as AccumulateDelegate, 
+                _unmanaged[1] as ReduceDelegate, null);
         }
 
         private unsafe void Accumulate(void* context, C4Key* key, C4Slice value)
@@ -105,7 +103,6 @@ namespace LiteCore.Interop
         public void Dispose()
         {
             _lastReturn.Dispose();
-            _nativeHandle.Free();
         }
     }
 

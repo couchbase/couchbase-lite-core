@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
 using FluentAssertions;
 using LiteCore.Interop;
+using LiteCore.Tests.Util;
 using LiteCore.Util;
 
 namespace LiteCore.Tests
@@ -150,6 +152,96 @@ namespace LiteCore.Tests
             LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
             Native.c4db_free(Db);
             Db = null;
+        }
+
+        protected bool ReadFileByLines(string path, Func<FLSlice, bool> callback)
+        {
+            using(var tr = new StreamReader(File.Open(path, FileMode.Open))) {
+                string line;
+                while((line = tr.ReadLine()) != null) {
+                    using(var c4 = new C4String(line)) {
+                        if(!callback((FLSlice)c4.AsC4Slice())) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        } 
+
+        // Read a file that contains a JSON document per line. Every line becomes a document.
+        protected uint ImportJSONLines(string path, TimeSpan timeout, bool verbose)
+        {
+            if(verbose) {
+                Console.WriteLine($"Reading {path}...");
+            }
+
+            var st = Stopwatch.StartNew();
+            uint numDocs = 0;
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+            try {
+                var encoder = Native.FLEncoder_New();
+                ReadFileByLines(path, line => {
+                    FLError error;
+                    NativeRaw.FLEncoder_ConvertJSON(encoder, line);
+                    var body = NativeRaw.FLEncoder_Finish(encoder, &error);
+                    ((long)body.buf).Should().NotBe(0, "because otherwise the encode failed");
+                    Native.FLEncoder_Reset(encoder);
+
+                    var docID = (numDocs + 1).ToString("D7");
+
+                    // Save document:
+                    using(var docID_ = new C4String(docID)) {
+                        var rq = new C4DocPutRequest {
+                            docID = docID_.AsC4Slice(),
+                            body = (C4Slice)body,
+                            save = true
+                        };
+                        var doc = (C4Document *)LiteCoreBridge.Check(err => {
+                            var localRq = rq;
+                            return Native.c4doc_put(Db, &localRq, null, err);
+                        });
+                        Native.c4doc_free(doc);
+                    }
+
+                    Native.FLSliceResult_Free(body);
+                    ++numDocs;
+                    if(numDocs % 1000 == 0 && st.Elapsed >= timeout) {
+                        Console.Write($"Stopping JSON import after {st.Elapsed.TotalSeconds:F3} sec ");
+                        return false;
+                    }
+
+                    if(verbose && numDocs % 10000 == 0) {
+                        Console.Write($"{numDocs} ");
+                    }
+
+                    return true;
+                });
+
+                if(verbose) {
+                    Console.WriteLine("Committing...");
+                }
+            } finally {
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+            }
+
+            if(verbose) {
+                st.PrintReport("Importing", numDocs, "doc");
+            }
+
+            return numDocs;
+        }
+
+        protected void ReopenDB()
+        {
+            var config = C4DatabaseConfig.Get(Native.c4db_getConfig(Db));
+            LiteCoreBridge.Check(err => Native.c4db_close(Db, err));
+            Native.c4db_free(Db);
+            Db = (C4Database *)LiteCoreBridge.Check(err => {
+                var localConfig = config;
+                return Native.c4db_open(DatabasePath(), &localConfig, err);
+            });
         }
     }
 }
