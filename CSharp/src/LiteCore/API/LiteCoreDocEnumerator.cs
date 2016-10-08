@@ -35,7 +35,7 @@ namespace LiteCore
             _native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
             {
                 var localOpts = options;
-                return Native.c4db_enumerateAlLDocs(parent, startDocID, endDocID, &localOpts, err);
+                return Native.c4db_enumerateAllDocs(parent, startDocID, endDocID, &localOpts, err);
             });
         }
 

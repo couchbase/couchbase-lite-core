@@ -77,7 +77,7 @@ namespace LiteCore.Interop
                                                                     C4EnumeratorOptions* options,
                                                                     C4Error* outError);
 
-        public static C4DocEnumerator* c4db_enumerateAlLDocs(C4Database *database,
+        public static C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                                              string startDocID,
                                                              string endDocID,
                                                              C4EnumeratorOptions *options,

@@ -23,6 +23,7 @@ namespace LiteCore.Tests
         }
         
         private bool _bundled = true;
+        private int _objectCount = 0;
 
         protected C4Database* Db { get; private set; }
         protected C4DocumentVersioning Versioning { get; private set; }
@@ -68,12 +69,38 @@ namespace LiteCore.Tests
 
         protected override void SetupVariant(int option)
         {
-            OpenDatabase(option);
+            _objectCount = Native.c4_getObjectCount();
+            Storage = (option & 1) != 0 ? C4StorageEngine.ForestDB : C4StorageEngine.SQLite;
+            Versioning = (option & 2) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
+            Native.c4_shutdown(null);
+
+            var config = new C4DatabaseConfig();
+            config.flags = C4DatabaseFlags.Create;
+            config.versioning = Versioning;
+
+            if(_bundled) {
+                config.flags |= C4DatabaseFlags.Bundled;
+            }
+
+            Console.WriteLine($"Opening {Storage} database using {Versioning}");
+
+            C4Error err;
+            config.storageEngine = Storage;
+            Native.c4db_deleteAtPath(DatabasePath(), &config, null);
+            Db = Native.c4db_open(DatabasePath(), &config, &err);
+            ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
         }
 
         protected override void TeardownVariant(int option)
         {
-            CloseAndDelete(option);
+            var config = C4DatabaseConfig.Get(Native.c4db_getConfig(Db));
+            config.Dispose();
+            LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
+            Native.c4db_free(Db);
+            Db = null;
+            if(CurrentException == null) {
+                Native.c4_getObjectCount().Should().Be(_objectCount, "because otherwise an object was leaked");
+            }
         }
 
         protected void CreateRev(string docID, C4Slice revID, C4Slice body, bool isNew = true)
@@ -120,38 +147,6 @@ namespace LiteCore.Tests
         private void Log(C4LogLevel level, C4Slice s)
         {
             Console.WriteLine($"[{level}] {s.CreateString()}");
-        }
-
-        private void OpenDatabase(int options)
-        {
-            Storage = (options & 1) != 0 ? C4StorageEngine.ForestDB : C4StorageEngine.SQLite;
-            Versioning = (options & 2) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
-            Native.c4_shutdown(null);
-
-            var config = new C4DatabaseConfig();
-            config.flags = C4DatabaseFlags.Create;
-            config.versioning = Versioning;
-
-            if(_bundled) {
-                config.flags |= C4DatabaseFlags.Bundled;
-            }
-
-            Console.WriteLine($"Opening {Storage} database using {Versioning}");
-
-            C4Error err;
-            config.storageEngine = Storage;
-            Native.c4db_deleteAtPath(DatabasePath(), &config, null);
-            Db = Native.c4db_open(DatabasePath(), &config, &err);
-            ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
-        }
-
-        private void CloseAndDelete(int options)
-        {
-            var config = C4DatabaseConfig.Get(Native.c4db_getConfig(Db));
-            config.Dispose();
-            LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
-            Native.c4db_free(Db);
-            Db = null;
         }
 
         protected bool ReadFileByLines(string path, Func<FLSlice, bool> callback)

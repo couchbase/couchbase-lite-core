@@ -150,7 +150,50 @@ namespace LiteCore.Tests
                         total.Should().Be(5053, "because that is the number of states in the data set");
                     }
                 }
+                {
+                    if(Storage == C4StorageEngine.SQLite && !IsRevTrees()) {
+                        for(int pass = 0; pass < 2; ++pass) {
+                            var st = Stopwatch.StartNew();
+                            var n = QueryWhere("{\"contact.address.state\": \"WA\"}");
+                            st.PrintReport("SQL query of state", n, "doc");
+                            if(complete) {
+                                n.Should().Be(5053, "because that is the number of states in the data set"); 
+                            }
+                            if(pass == 0) {
+                                var st2 = Stopwatch.StartNew();
+                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", err));
+                                st2.PrintReport("Creating SQL index of state", 1, "index");
+                            }
+                        }
+                    }
+                }
             });
+        }
+
+        private uint QueryWhere(string whereStr, bool verbose = false)
+        {
+            var docIDs = new List<string>(1200);
+
+            var query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, whereStr, null, err));
+            var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4query_run(query, null, null, err));
+            string artist;
+            C4Error error;
+            while(Native.c4queryenum_next(e, &error)) {
+                artist = e->docID.CreateString();
+                if(verbose) {
+                    Console.Write($"{artist}  ");
+                }
+
+                docIDs.Add(artist);
+            }
+
+            Native.c4queryenum_free(e);
+            Native.c4query_free(query);
+            if(verbose) {
+                Console.WriteLine();
+            }
+
+            return (uint)docIDs.Count;
         }
 
         private uint QueryGrouped(C4View* view, C4ReduceFunction reduce, bool verbose = false)

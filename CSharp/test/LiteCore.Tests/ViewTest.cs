@@ -339,6 +339,8 @@ namespace LiteCore.Tests
 
         protected override void SetupVariant(int options)
         {
+            base.SetupVariant(options);
+
             Native.c4view_deleteByName(Db, "myview", null);
             _view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "myview", "1",
                 Native.c4db_getConfig(Db), err));
@@ -350,6 +352,8 @@ namespace LiteCore.Tests
                 LiteCoreBridge.Check(err => Native.c4view_delete(_view, err));
                 Native.c4view_free(_view);
             }
+
+            base.TeardownVariant(options);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace LiteCore.Interop
     }
 
     [Flags]
-    public enum C4RevisionFlags : uint
+    public enum C4RevisionFlags : byte
     {
         Deleted = 0x01,
         Leaf = 0x02,

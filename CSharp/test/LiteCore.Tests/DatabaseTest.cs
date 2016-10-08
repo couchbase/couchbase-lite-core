@@ -139,27 +139,25 @@ namespace LiteCore.Tests
 
                 LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
                 try {
-                    var tmp = new[] { RevID };
-                    fixed(C4Slice* history = tmp) {
-                        var rq = new C4DocPutRequest {
-                            existingRevision = true,
-                            docID = DocID,
-                            history = history,
-                            historyCount = 1,
-                            body = Body,
-                            save = true
-                        };
+                    var tmp = RevID;
+                    var rq = new C4DocPutRequest {
+                        existingRevision = true,
+                        docID = DocID,
+                        history = &tmp,
+                        historyCount = 1,
+                        body = Body,
+                        save = true
+                    };
 
-                        doc = (C4Document *)LiteCoreBridge.Check(err => {
-                            var localRq = rq;
-                            return Native.c4doc_put(Db, &localRq, null, err);
-                        });
-                        doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the stored revID");
-                        doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the doc should have the stored revID");
-                        doc->selectedRev.flags.Should().Be(C4RevisionFlags.Leaf, "because this is a leaf revision");
-                        doc->selectedRev.body.Equals(Body).Should().BeTrue("because the body should be stored correctly");
-                        Native.c4doc_free(doc);
-                    }
+                    doc = (C4Document *)LiteCoreBridge.Check(err => {
+                        var localRq = rq;
+                        return Native.c4doc_put(Db, &localRq, null, err);
+                    });
+                    doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the stored revID");
+                    doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the doc should have the stored revID");
+                    doc->selectedRev.flags.Should().Be(C4RevisionFlags.Leaf, "because this is a leaf revision");
+                    doc->selectedRev.body.Equals(Body).Should().BeTrue("because the body should be stored correctly");
+                    Native.c4doc_free(doc);
                 } finally {
                     LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
                 }
@@ -197,7 +195,7 @@ namespace LiteCore.Tests
                 CreateRev(docID, Rev2ID, Body2, false); // test redundant insert
 
                 // Reload the doc:
-                var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, docID, true, err));
+                var doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, true, err));
                 doc->flags.Should().Be(C4DocumentFlags.Exists);
                 doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the stored doc ID");
                 doc->revID.Equals(Rev2ID).Should().BeTrue("because the doc should have the current rev ID");
@@ -239,9 +237,9 @@ namespace LiteCore.Tests
                     } finally {
                         LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
                     }
-
-                    Native.c4doc_free(doc);
                 }
+
+                Native.c4doc_free(doc);
             });
         }
 
@@ -430,7 +428,7 @@ namespace LiteCore.Tests
                 options.flags &= ~C4EnumeratorFlags.IncludeBodies;
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
                     var localOpts = options;
-                    return Native.c4db_enumerateAlLDocs(Db, null, null, &localOpts, err);
+                    return Native.c4db_enumerateAllDocs(Db, null, null, &localOpts, err);
                 });
 
                 int i = 1;
@@ -459,7 +457,7 @@ namespace LiteCore.Tests
                 i.Should().Be(100);
 
                 // Start and end ID:
-                e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateAlLDocs(Db, 
+                e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateAllDocs(Db, 
                     "doc-007", "doc-090", null, err));
                 i = 7;
                 while(Native.c4enum_next(e, &error)) {
@@ -510,7 +508,7 @@ namespace LiteCore.Tests
                 options.flags |= C4EnumeratorFlags.IncludeDeleted;
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
                     var localOpts = options;
-                    return Native.c4db_enumerateAlLDocs(Db, "doc-004", "doc-007", &localOpts, err);
+                    return Native.c4db_enumerateAllDocs(Db, "doc-004", "doc-007", &localOpts, err);
                 });
 
                 int i = 4;
@@ -544,7 +542,7 @@ namespace LiteCore.Tests
                 var options = C4EnumeratorOptions.Default;
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
                     var localOpts = options;
-                    return Native.c4db_enumerateAlLDocs(Db, null, null, &localOpts, err);
+                    return Native.c4db_enumerateAllDocs(Db, null, null, &localOpts, err);
                 });
 
                 int i = 1;
