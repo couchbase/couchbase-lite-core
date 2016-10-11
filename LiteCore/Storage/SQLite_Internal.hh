@@ -39,5 +39,6 @@ namespace litecore {
 
 
     int RegisterFleeceFunctions(sqlite3 *db);
+    int RegisterFleeceEachFunctions(sqlite3 *db);
 
 }

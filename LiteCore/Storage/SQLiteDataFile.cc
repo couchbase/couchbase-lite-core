@@ -23,6 +23,10 @@
 #include <sqlite3.h>
 #include <sstream>
 
+#if __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 using namespace std;
 
 namespace litecore {
@@ -74,13 +78,28 @@ namespace litecore {
             error::_throw(error::UnsupportedEncryption);
 
         RegisterFleeceFunctions(_sqlDb->getHandle());
+        RegisterFleeceEachFunctions(_sqlDb->getHandle());
 
         withFileLock([this]{
-            _sqlDb->exec("PRAGMA mmap_size=50000000");
-            _sqlDb->exec("PRAGMA journal_mode=WAL");
+            // http://www.sqlite.org/pragma.html
+            _sqlDb->exec("PRAGMA mmap_size=50000000");      // mmap improves performance
+            _sqlDb->exec("PRAGMA journal_mode=WAL");        // faster writes, better concurrency
+            _sqlDb->exec("PRAGMA synchronous=normal");      // faster commits
+
+            // Configure number of extra threads to be used by SQLite:
+            int maxThreads = 0;
+#if TARGET_OS_OSX
+            maxThreads = 2;
+#endif
+            // TODO: Add tests for other platforms
+            sqlite3_limit(_sqlDb->getHandle(), SQLITE_LIMIT_WORKER_THREADS, maxThreads);
+
+            // Table containing metadata about KeyStores:
             _sqlDb->exec("CREATE TABLE IF NOT EXISTS kvmeta (name TEXT PRIMARY KEY,"
                          " lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
-            (void)defaultKeyStore();    // make sure its table is created
+
+            // Create the default KeyStore's table:
+            (void)defaultKeyStore();
         });
     }
 
