@@ -630,6 +630,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
+    if (!factory().encryptionEnabled(kAES256)) {
+        cerr << "Skipping encryption test; not enabled for " << factory().cname() << "\n";
+        return;
+    }
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = kAES256;
     options.encryptionKey = slice("12345678901234567890123456789012");
@@ -674,6 +678,11 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
+    if (!factory().encryptionEnabled(kAES256)) {
+        cerr << "Skipping rekeying test; encryption not enabled for " << factory().cname() << "\n";
+        return;
+    }
+
     auto dbPath = db->filePath();
     auto options = db->options();
     createNumberedDocs(store);

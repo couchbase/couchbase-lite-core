@@ -43,7 +43,26 @@ namespace litecore {
         static SQLiteDataFile::Factory s;
         return s;
     }
-    
+
+
+    bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
+        static int sEncryptionEnabled = -1;
+        static once_flag once;
+        call_once(once, []() {
+            // Check whether encryption is available:
+            if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0) {
+                sEncryptionEnabled = false;
+            } else {
+                // Determine whether we're using SQLCipher or the SQLite Encryption Extension,
+                // by calling a SQLCipher-specific pragma that returns a number:
+                SQLite::Database sqlDb(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+                SQLite::Statement s(sqlDb, "PRAGMA cipher_default_kdf_iter");
+                sEncryptionEnabled = s.executeStep();
+            }
+        });
+        return sEncryptionEnabled > 0 && (alg == kNoEncryption || alg == kAES256);
+    }
+
 
     SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, const Options *options) {
         return new SQLiteDataFile(path, options);
@@ -117,25 +136,10 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::encryptionEnabled() {
-        // Check whether encryption is available:
-        if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0)
-            return false;
-        // Try to determine whether we're using SQLCipher or the SQLite Encryption Extension,
-        // by calling a SQLCipher-specific pragma that returns a number:
-        SQLite::Statement s(*_sqlDb, "PRAGMA cipher_default_kdf_iter");
-        if (!s.executeStep()) {
-            // Oops, this isn't SQLCipher, so we can't use encryption. (SEE requires us to call
-            // another pragma to enable encryption, which takes a license key we don't know.)
-            return false;
-        }
-        return true;
-    }
-
-
     bool SQLiteDataFile::decrypt() {
-        if (options().encryptionAlgorithm != kNoEncryption) {
-            if (options().encryptionAlgorithm != kAES256 || !encryptionEnabled())
+        auto alg = options().encryptionAlgorithm;
+        if (alg != kNoEncryption) {
+            if (!factory().encryptionEnabled(alg))
                 return false;
 
             // Set the encryption key in SQLite:
@@ -163,7 +167,7 @@ namespace litecore {
                 error::_throw(error::InvalidParameter);
         }
 
-        if (!encryptionEnabled())
+        if (!factory().encryptionEnabled(alg))
             error::_throw(error::UnsupportedEncryption);
 
         // Get the userVersion of the db:

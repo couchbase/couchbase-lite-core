@@ -46,6 +46,7 @@ namespace litecore {
         public:
             virtual const char* cname() override {return "SQLite";}
             virtual std::string filenameExtension() override {return ".sqlite3";}
+            virtual bool encryptionEnabled(EncryptionAlgorithm) override;
             virtual SQLiteDataFile* openFile(const FilePath &, const Options* =nullptr) override;
             virtual bool deleteFile(const FilePath &path, const Options* =nullptr) override;
         };
@@ -69,7 +70,6 @@ namespace litecore {
     private:
         friend class SQLiteKeyStore;
 
-        bool encryptionEnabled();
         bool decrypt();
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object

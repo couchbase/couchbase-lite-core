@@ -106,6 +106,7 @@ namespace litecore {
             std::string name()  {return std::string(cname());}
             virtual const char* cname() =0;
             virtual std::string filenameExtension() =0;
+            virtual bool encryptionEnabled(EncryptionAlgorithm) =0;
 
             /** Opens a DataFile. */
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;

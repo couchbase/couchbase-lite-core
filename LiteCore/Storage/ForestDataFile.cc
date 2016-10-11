@@ -140,6 +140,10 @@ namespace litecore {
 #pragma mark - FACTORY:
 
 
+    bool ForestDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
+        return (alg == kNoEncryption || alg == kAES256);
+    }
+
     ForestDataFile* ForestDataFile::Factory::openFile(const FilePath &path, const Options *options) {
         return new ForestDataFile(path, options);
     }

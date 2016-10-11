@@ -103,23 +103,28 @@ namespace fleece {
 }
 
 
-FilePath DataFileTestFixture::databasePath(const string baseName) {
-    auto path = FilePath::tempDirectory()[baseName];
-    return path.addingExtension(isForestDB() ? ".forestdb" : ".sqlite3");
+DataFile::Factory& DataFileTestFixture::factory() {
+    if (_isForestDB)
+        return ForestDataFile::factory();
+    else
+        return SQLiteDataFile::factory();
 }
 
 
-void DataFileTestFixture::deleteDatabase(const FilePath &dbPath) {
+FilePath DataFileTestFixture::databasePath(const string baseName) {
+    auto path = FilePath::tempDirectory()[baseName];
+    return path.addingExtension(factory().filenameExtension());
+}
+
+
+/*static*/ void DataFileTestFixture::deleteDatabase(const FilePath &dbPath) {
     auto factory = DataFile::factoryForFile(dbPath);
     factory->deleteFile(dbPath);
 }
 
 DataFile* DataFileTestFixture::newDatabase(const FilePath &path, DataFile::Options *options) {
     //TODO: Set up options
-    if (isForestDB())
-        return new ForestDataFile(path, options);
-    else
-        return new SQLiteDataFile(path, options);
+    return factory().openFile(path, options);
 }
 
 
