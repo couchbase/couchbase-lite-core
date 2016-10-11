@@ -13,3 +13,4 @@ GCC_OPTIMIZATION_LEVEL       = fast
 LLVM_LTO                     = YES
 DEAD_CODE_STRIPPING          = YES
 MTL_ENABLE_DEBUG_INFO        = NO
+DEBUG_INFORMATION_FORMAT     = dwarf-with-dsym

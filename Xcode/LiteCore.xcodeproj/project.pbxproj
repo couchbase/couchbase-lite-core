@@ -400,12 +400,15 @@
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
+		27FDF19B1DAD72280087B4E6 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
+		27FDF19D1DAD74B00087B4E6 /* ForestDBMain.c in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */; };
+		27FDF19E1DAD75010087B4E6 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
+		27FDF19F1DAD75470087B4E6 /* libforestdb.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */; };
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
 		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
 		27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
-		720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072C318E4AA4400A80C5A /* libforestdb.a */; };
 		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		720EA40F1BA8D834002B8416 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
@@ -599,12 +602,19 @@
 			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
 			remoteInfo = forestdb;
 		};
-		720EA4211BA8F386002B8416 /* PBXContainerItemProxy */ = {
+		27FDF1961DAD6F4F0087B4E6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 275072C218E4AA4400A80C5A;
-			remoteInfo = forestdb;
+			remoteInfo = "forestdb static";
+		};
+		27FDF1A01DAD75C10087B4E6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FDF1901DAD6F030087B4E6;
+			remoteInfo = ForestDB;
 		};
 		720EA4231BA8F388002B8416 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1078,6 +1088,11 @@
 		27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceEach.cc; sourceTree = "<group>"; };
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
+		27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libforestdb.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "forestdb-static.xcconfig"; sourceTree = "<group>"; };
+		27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "forestdb-dynamic.xcconfig"; sourceTree = "<group>"; };
+		27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ForestDBMain.c; sourceTree = "<group>"; };
+		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/litecore/View.java; sourceTree = "<group>"; };
 		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
 		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/litecore/QueryIterator.java; sourceTree = "<group>"; };
@@ -1192,13 +1207,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27FDF18E1DAD6F030087B4E6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FDF19E1DAD75010087B4E6 /* libforestdb.a in Frameworks */,
+				27FDF19B1DAD72280087B4E6 /* libc++.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		720EA3E91BA7EAD9002B8416 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27FDF19F1DAD75470087B4E6 /* libforestdb.dylib in Frameworks */,
 				27FA09C31D70AE90005888AA /* libFleece.a in Frameworks */,
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
-				720EA40B1BA8D813002B8416 /* libforestdb.a in Frameworks */,
 				27FA09C11D70AE24005888AA /* libsqlite3.tbd in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */,
@@ -1319,9 +1343,12 @@
 				273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */,
 				273E9FAD1C519A1B003115A6 /* LiteCore Tests.xcconfig */,
 				273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */,
+				27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */,
 				273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */,
 				273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */,
 				273E9FB91C519A1B003115A6 /* forestdb.xcconfig */,
+				27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */,
+				27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */,
 				273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */,
 				273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */,
 				273E9FBC1C519A1B003115A6 /* Project.xcconfig */,
@@ -1402,6 +1429,7 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
+				27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1449,6 +1477,7 @@
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
+				27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -2060,6 +2089,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27FDF18F1DAD6F030087B4E6 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		720EA3EF1BA7EAD9002B8416 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -2172,9 +2208,9 @@
 			productReference = 274D04081BA75E1C00FF7C35 /* C4Tests */;
 			productType = "com.apple.product-type.tool";
 		};
-		275072C218E4AA4400A80C5A /* forestdb */ = {
+		275072C218E4AA4400A80C5A /* forestdb static */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb" */;
+			buildConfigurationList = 275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb static" */;
 			buildPhases = (
 				275072BF18E4AA4400A80C5A /* Sources */,
 				275072C018E4AA4400A80C5A /* Frameworks */,
@@ -2184,7 +2220,7 @@
 			);
 			dependencies = (
 			);
-			name = forestdb;
+			name = "forestdb static";
 			productName = forestdb;
 			productReference = 275072C318E4AA4400A80C5A /* libforestdb.a */;
 			productType = "com.apple.product-type.library.static";
@@ -2300,6 +2336,24 @@
 			productReference = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		27FDF1901DAD6F030087B4E6 /* ForestDB */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27FDF1921DAD6F030087B4E6 /* Build configuration list for PBXNativeTarget "ForestDB" */;
+			buildPhases = (
+				27FDF18D1DAD6F030087B4E6 /* Sources */,
+				27FDF18E1DAD6F030087B4E6 /* Frameworks */,
+				27FDF18F1DAD6F030087B4E6 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				27FDF1971DAD6F4F0087B4E6 /* PBXTargetDependency */,
+			);
+			name = ForestDB;
+			productName = ForestDB;
+			productReference = 27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 		720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */;
@@ -2312,9 +2366,9 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
+				27FDF1A11DAD75C10087B4E6 /* PBXTargetDependency */,
 				27FA09C51D70AE96005888AA /* PBXTargetDependency */,
 				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
-				720EA4221BA8F386002B8416 /* PBXTargetDependency */,
 			);
 			name = "LiteCore dylib";
 			productName = CBForestJNI;
@@ -2359,6 +2413,10 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = 27A924931D9B316D00086206;
 					};
+					27FDF1901DAD6F030087B4E6 = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
@@ -2387,7 +2445,8 @@
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
-				275072C218E4AA4400A80C5A /* forestdb */,
+				27FDF1901DAD6F030087B4E6 /* ForestDB */,
+				275072C218E4AA4400A80C5A /* forestdb static */,
 				27A6579B1CBC190B00A7A1D7 /* Swift API */,
 				27A657A41CBC190B00A7A1D7 /* Swift API Tests */,
 				27B7E0F118F8FB4700044EBA /* All */,
@@ -2773,6 +2832,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27FDF18D1DAD6F030087B4E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FDF19D1DAD74B00087B4E6 /* ForestDBMain.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		720EA3DE1BA7EAD9002B8416 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2921,13 +2988,18 @@
 		};
 		27FA99E21917F10C00912F96 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 275072C218E4AA4400A80C5A /* forestdb */;
+			target = 275072C218E4AA4400A80C5A /* forestdb static */;
 			targetProxy = 27FA99E11917F10C00912F96 /* PBXContainerItemProxy */;
 		};
-		720EA4221BA8F386002B8416 /* PBXTargetDependency */ = {
+		27FDF1971DAD6F4F0087B4E6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 275072C218E4AA4400A80C5A /* forestdb */;
-			targetProxy = 720EA4211BA8F386002B8416 /* PBXContainerItemProxy */;
+			target = 275072C218E4AA4400A80C5A /* forestdb static */;
+			targetProxy = 27FDF1961DAD6F4F0087B4E6 /* PBXContainerItemProxy */;
+		};
+		27FDF1A11DAD75C10087B4E6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FDF1901DAD6F030087B4E6 /* ForestDB */;
+			targetProxy = 27FDF1A01DAD75C10087B4E6 /* PBXContainerItemProxy */;
 		};
 		720EA4241BA8F388002B8416 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3044,14 +3116,14 @@
 		};
 		275072C518E4AA4400A80C5A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB91C519A1B003115A6 /* forestdb.xcconfig */;
+			baseConfigurationReference = 27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */;
 			buildSettings = {
 			};
 			name = Debug;
 		};
 		275072C618E4AA4400A80C5A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB91C519A1B003115A6 /* forestdb.xcconfig */;
+			baseConfigurationReference = 27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;
@@ -3270,6 +3342,22 @@
 			};
 			name = Release;
 		};
+		27FDF1931DAD6F030087B4E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
+			buildSettings = {
+				OTHER_LDFLAGS = "-all_load";
+			};
+			name = Debug;
+		};
+		27FDF1941DAD6F030087B4E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
+			buildSettings = {
+				OTHER_LDFLAGS = "-all_load";
+			};
+			name = Release;
+		};
 		720EA3F31BA7EAD9002B8416 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
@@ -3279,8 +3367,9 @@
 		};
 		720EA3F41BA7EAD9002B8416 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 			};
 			name = Release;
 		};
@@ -3332,7 +3421,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb" */ = {
+		275072C418E4AA4400A80C5A /* Build configuration list for PBXNativeTarget "forestdb static" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				275072C518E4AA4400A80C5A /* Debug */,
@@ -3400,6 +3489,15 @@
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,
 				27EF81111917EEC600A327B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		27FDF1921DAD6F030087B4E6 /* Build configuration list for PBXNativeTarget "ForestDB" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27FDF1931DAD6F030087B4E6 /* Debug */,
+				27FDF1941DAD6F030087B4E6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

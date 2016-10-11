@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-               BuildableName = "libforestdb.a"
-               BlueprintName = "forestdb"
+               BlueprintIdentifier = "27FDF1901DAD6F030087B4E6"
+               BuildableName = "libforestdb.dylib"
+               BlueprintName = "ForestDB"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-            BuildableName = "libforestdb.a"
-            BlueprintName = "forestdb"
+            BlueprintIdentifier = "27FDF1901DAD6F030087B4E6"
+            BuildableName = "libforestdb.dylib"
+            BlueprintName = "ForestDB"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,9 +63,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "275072C218E4AA4400A80C5A"
-            BuildableName = "libforestdb.a"
-            BlueprintName = "forestdb"
+            BlueprintIdentifier = "27FDF1901DAD6F030087B4E6"
+            BuildableName = "libforestdb.dylib"
+            BlueprintName = "ForestDB"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
