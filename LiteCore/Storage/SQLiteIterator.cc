@@ -183,7 +183,7 @@ namespace litecore {
 
             stringstream sql;
             sql << "SELECT sequence, key, meta, length(body) FROM kv_" << keyStore.name() << " WHERE (" << qp.whereClause() << ") ORDER BY key LIMIT $limit OFFSET $offset"; //TODO: sorting
-            cerr << "QUERY: " << sql.str() << "\n";//TEMP
+            //cerr << "QUERY: " << sql.str() << "\n";
             _statement.reset(keyStore.compile(sql.str()));
         }
 
