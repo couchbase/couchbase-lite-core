@@ -16,59 +16,71 @@
 using namespace std;
 
 
-static string parse(string json) {
+static void enquotify(string &json) {
     for (auto i = json.begin(); i != json.end(); ++i) {
         if (*i == '`')
             *i = '"';
     }
+}
+
+
+static string parseWhere(string json) {
+    enquotify(json);
     auto fleeceData = JSONConverter::convertJSON(slice(json));
     const Value *root = Value::fromTrustedData(fleeceData);
-
-    stringstream sql;
-    QueryParser p(sql);
-    p.parse(root);
-    return sql.str();
+    QueryParser qp;
+    qp.parse(root);
+    return qp.whereClause();
 }
 
 
 TEST_CASE("QueryParser simple", "[Query]") {
-    CHECK(parse("{`name`: `Puddin' Tane`}")
+    CHECK(parseWhere("{`name`: `Puddin' Tane`}")
           == "fl_value(body, 'name') = 'Puddin'' Tane'");
-    CHECK(parse("{`name`: `Puddin' Tane`, `again`: true}")
+    CHECK(parseWhere("{`name`: `Puddin' Tane`, `again`: true}")
           == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
-    CHECK(parse("{`$and`: [{`name`: `Puddin' Tane`}, {`again`: true}]}")
+    CHECK(parseWhere("{`$and`: [{`name`: `Puddin' Tane`}, {`again`: true}]}")
           == "fl_value(body, 'name') = 'Puddin'' Tane' AND fl_value(body, 'again') = 1");
-    CHECK(parse("{`$nor`: [{`name`: `Puddin' Tane`}, {`again`: true}]}")
+    CHECK(parseWhere("{`$nor`: [{`name`: `Puddin' Tane`}, {`again`: true}]}")
           == "NOT (fl_value(body, 'name') = 'Puddin'' Tane' OR fl_value(body, 'again') = 1)");
 
-    CHECK(parse("{`age`: {`$gte`: 21}}")
+    CHECK(parseWhere("{`age`: {`$gte`: 21}}")
           == "fl_value(body, 'age') >= 21");
-    CHECK(parse("{`address`: {`state`: `CA`, `zip`: {`$lt`: 95000}}}")
+    CHECK(parseWhere("{`address`: {`state`: `CA`, `zip`: {`$lt`: 95000}}}")
           == "(fl_value(body, 'address.state') = 'CA' AND fl_value(body, 'address.zip') < 95000)");
 
-    CHECK(parse("{`name`: {`$exists`: true}}")
+    CHECK(parseWhere("{`name`: {`$exists`: true}}")
           == "fl_exists(body, 'name')");
-    CHECK(parse("{`name`: {`$exists`: false}}")
+    CHECK(parseWhere("{`name`: {`$exists`: false}}")
           == "NOT fl_exists(body, 'name')");
 
-    CHECK(parse("{`name`: {`$type`: `string`}}")
+    CHECK(parseWhere("{`name`: {`$type`: `string`}}")
           == "fl_type(body, 'name')=3");
 
-    CHECK(parse("{`name`: {`$in`: [`Webbis`, `Wowbagger`]}}")
+    CHECK(parseWhere("{`name`: {`$in`: [`Webbis`, `Wowbagger`]}}")
           == "fl_value(body, 'name') IN ('Webbis', 'Wowbagger')");
-    CHECK(parse("{`age`: {`$nin`: [6, 7, 8]}}")
+    CHECK(parseWhere("{`age`: {`$nin`: [6, 7, 8]}}")
           == "fl_value(body, 'age') NOT IN (6, 7, 8)");
 
-    CHECK(parse("{`coords`: {`$size`: 2}}")
+    CHECK(parseWhere("{`coords`: {`$size`: 2}}")
           == "fl_count(body, 'coords')=2");
 
-    CHECK(parse("{`tags`: {`$all`: [`mind-bending`, `heartwarming`]}}")
+    CHECK(parseWhere("{`tags`: {`$all`: [`mind-bending`, `heartwarming`]}}")
           == "fl_contains(body, 'tags', 1, 'mind-bending', 'heartwarming')");
-    CHECK(parse("{`tags`: {`$any`: [`mind-bending`, `heartwarming`]}}")
+    CHECK(parseWhere("{`tags`: {`$any`: [`mind-bending`, `heartwarming`]}}")
           == "fl_contains(body, 'tags', 0, 'mind-bending', 'heartwarming')");
 
-    CHECK(parse("{`name`: [1]}")
+    CHECK(parseWhere("{`name`: [1]}")
           == "fl_value(body, 'name') = :_1");
-    CHECK(parse("{`name`: [`name`]}")
+    CHECK(parseWhere("{`name`: [`name`]}")
           == "fl_value(body, 'name') = :_name");
+}
+
+
+TEST_CASE("QueryParser elemMatch", "[Query]") {
+    CHECK(parseWhere("{`tags`: {`$elemMatch`: {`$eq`: `moist`}}}")
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'tags') WHERE fl_each.value = 'moist')");
+    CHECK(parseWhere("{`prices`: {`$elemMatch`: {`$ge`: 3.95}}, "
+                             "`tags`: {`$elemMatch`: {`$eq`: `moist`}}}")
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'prices') WHERE fl_each.value >= 3.95) AND EXISTS (SELECT 1 FROM fl_each(body, 'tags') WHERE fl_each.value = 'moist')");
 }

@@ -39,6 +39,7 @@ namespace litecore {
         {"$size",   nullptr,    4},
         {"$all",    nullptr,    5},
         {"$any",    nullptr,    6},
+        {"$elemMatch",nullptr,  7},
     };
 
     // Names of Fleece types, indexed by fleece::valueType. Used with "$type" operator.
@@ -88,6 +89,7 @@ namespace litecore {
     }
 
 
+    // Utility that writes its 'word' string to the output every time next() is called but the 1st.
     class Delimiter {
     public:
         Delimiter(ostream &out, const string &word)
@@ -107,6 +109,7 @@ namespace litecore {
     };
 
 
+    // Appends two property-path strings.
     static string appendPaths(const string &parent, string child) {
         if (child[0] == '$') {
             if (child[1] == '.')
@@ -132,18 +135,14 @@ namespace litecore {
     }
 
 
-    /*static*/ void QueryParser::parse(const Value* v, ostream &out) {
-        QueryParser qp(out);
-        qp.parse(v);
-    }
-
-    /*static*/ void QueryParser::parseJSON(slice json, std::ostream &out) {
+    void QueryParser::parseJSON(slice json) {
         auto fleeceData = JSONConverter::convertJSON(json);
         auto root = Value::fromTrustedData(fleeceData);
-        parse(root, out);
+        parse(root);
     }
 
 
+    // Parses a boolean-valued expression, usually the top level of a query.
     void QueryParser::parsePredicate(const Value *q) {
         const Dict *query = mustBeDict(mustExist(q));
         auto special = getSpecialKey(query);
@@ -155,12 +154,12 @@ namespace litecore {
                 parseTerm(i.key()->asString(), i.value());
             }
         } else if (special.first == slice("$and")) {
-            parseBooleanExpr(special.second, " AND ");
+            writeBooleanExpr(special.second, " AND ");
         } else if (special.first == slice("$or")) {
-            parseBooleanExpr(special.second, " OR ");
+            writeBooleanExpr(special.second, " OR ");
         } else if (special.first == slice("$nor")) {
             _sql << "NOT (";
-            parseBooleanExpr(special.second, " OR ");
+            writeBooleanExpr(special.second, " OR ");
             _sql << ")";
         } else if (special.first == slice("$not")) {
             auto terms = mustBeArray(special.second);
@@ -173,7 +172,8 @@ namespace litecore {
     }
 
 
-    void QueryParser::parseBooleanExpr(const Value *terms, const char *op) {
+    // Writes a series of terms separated by AND or OR operators.
+    void QueryParser::writeBooleanExpr(const Value *terms, const char *op) {
         Delimiter d(_sql, op);
         for (Array::iterator i(mustBeArray(mustExist(terms))); i; ++i) {
             d.next();
@@ -182,20 +182,21 @@ namespace litecore {
     }
 
 
-    void QueryParser::parseTerm(slice key, const Value *value) {
+    // Returns the type of relation found in a value, e.g. `$eq`
+    static const relationalEntry* findRelation(const Value* &value) {
+        // First determine the comparison operation:
         slice op;
         auto special = getSpecialKey(value);
         if (special.second) {
             op = special.first;
             value = special.second;
         } else {
-            if (value->type() == kDict) {
-                parseSubPropertyTerm(key, value->asDict());
-                return;
-            }
+            if (value->type() == kDict)
+                return nullptr;
             op = slice("$eq");
         }
 
+        // Look up `op` in the kRelationals table:
         const relationalEntry *rel = nullptr;
         for (unsigned i = 0; i < TABLECOUNT(kRelationals); ++i) {
             if (op == slice(kRelationals[i].op)) {
@@ -205,9 +206,22 @@ namespace litecore {
         }
         if (!rel)
             fail();
+        return rel;
+    }
+
+
+    // Parses a key/value mapping, like `"x": {"$gt": 5}"
+    void QueryParser::parseTerm(slice key, const Value *value) {
+        // Process the relation by type:
+        const relationalEntry *rel = findRelation(value);
+
+        if (!rel) {
+            parseSubPropertyTerm(key, value->asDict());
+            return;
+        }
 
         switch (rel->type) {
-            case 0:     // normal binary op
+            case 0:     // Comparison operator like $eq, $lt, etc.
                 writePropertyGetter("fl_value", key);
                 _sql << rel->sqlOp;
                 writeLiteral(value);
@@ -260,37 +274,52 @@ namespace litecore {
                 _sql << ")";
                 break;
             }
+            case 7:     // $elemMatch
+                parseElemMatch(key, value);
+                break;
             default:
                 CBFAssert("invalid type in kRelationals" == nullptr);
         }
     }
 
 
+    // Parses a nested predicate inside a property.
     void QueryParser::parseSubPropertyTerm(slice property, const Dict *value) {
-        // Match the property value in the context of this property:
+        // Append this property to _propertyPath:
         auto savedPropertyPath = _propertyPath;
         _propertyPath = appendPaths(_propertyPath, (string)property);
         _sql << "(";
         parsePredicate(value);
         _sql << ")";
+        // On exit, restore _propertyPath:
         _propertyPath = savedPropertyPath;
     }
 
 
+    // Writes a call to a Fleece SQL function, without the closing ")".
     void QueryParser::writePropertyGetterLeftOpen(const char *fn, slice property) {
         _sql << fn;
         _sql << "(body, ";
         auto path = appendPaths(_propertyPath, (string)property);
-        writeSQLString(slice(path));
+        writeSQLString(_sql, slice(path));
     }
 
 
+    // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(const char *fn, slice property) {
         writePropertyGetterLeftOpen(fn, property);
         _sql << ")";
     }
 
-    
+
+    /*static*/ string QueryParser::propertyGetter(slice property) {
+        QueryParser qp;
+        qp.writePropertyGetter("fl_value", property);
+        return qp.whereClause();
+    }
+
+
+    // Writes a Fleece value as a SQL literal.
     void QueryParser::writeLiteral(const Value *literal) {
         switch (literal->type()) {
             case kNumber: {
@@ -327,8 +356,9 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeSQLString(slice str) {
-        _sql << "'";
+    // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
+    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str) {
+        out << "'";
         bool simple = true;
         for (unsigned i = 0; i < str.size; i++) {
             if (str[i] == '\'') {
@@ -337,16 +367,103 @@ namespace litecore {
             }
         }
         if (simple) {
-            _sql.write((const char*)str.buf, str.size);
+            out.write((const char*)str.buf, str.size);
         } else {
             for (unsigned i = 0; i < str.size; i++) {
                 if (str[i] == '\'')
-                    _sql.write("''", 2);
+                    out.write("''", 2);
                 else
-                    _sql.write((const char*)&str[i], 1);
+                    out.write((const char*)&str[i], 1);
             }
         }
-        _sql << "'";
+        out << "'";
    }
+
+
+    // Parses an "$elemMatch" expression
+    void QueryParser::parseElemMatch(slice property, const fleece::Value *match) {
+        // Query the "table":
+        _sql << "EXISTS (SELECT 1 FROM ";
+        writePropertyGetter("fl_each", property);
+        _sql << " WHERE ";
+        parseElemMatchTerm("fl_each", match);
+        _sql << ")";
+    }
+
+
+    // Parses a key/value mapping within an $elemMatch
+    void QueryParser::parseElemMatchTerm(string table, const Value *value) {
+        // Process the relation by type:
+        const relationalEntry *rel = findRelation(value);
+
+        if (!rel) {
+            fail(); //TODO: IMPLEMENT
+            //parseSubPropertyTerm(key, value->asDict());
+            return;
+        }
+
+        switch (rel->type) {
+            case 0:     // Comparison operator like $eq, $lt, etc.
+                _sql << table << ".value";
+                _sql << rel->sqlOp;
+                writeLiteral(value);
+                break;
+            case 1: {   // $type
+                _sql << table << ".type";
+                _sql << "=";
+                int typeCode = -1;
+                slice typeName = value->asString();
+                for (int i = 0; i < TABLECOUNT(kTypeNames); ++i) {
+                    if (typeName == slice(kTypeNames[i])) {
+                        typeCode = i;
+                        break;
+                    }
+                }
+                if (typeCode < 0)
+                    fail();
+                _sql << typeCode;
+                break;
+            }
+            case 2:     // $exists
+                if (!value->asBool())
+                    _sql << "NOT ";
+                _sql << "(" << table << ".type >= 0)";
+                break;
+            case 3: {   // $in, $nin
+                _sql << table << ".value";
+                _sql << rel->sqlOp << "(";
+                Delimiter d(_sql, ", ");
+                for (Array::iterator i(mustBeArray(value)); i; ++i) {
+                    d.next();
+                    writeLiteral(i.value());
+                }
+                _sql << ")";
+                break;
+            }
+            case 4:     // $size
+                _sql << "count(" << table << ".*)";
+                _sql << "=";
+                writeLiteral(value);
+                break;
+            case 5:     // $all
+            case 6: {   // $any
+                fail(); //TODO: IMPLEMENT
+//                writePropertyGetterLeftOpen("fl_contains", table);
+//                _sql << ((rel->type == 5) ? ", 1" : ", 0");
+//                for (Array::iterator i(mustBeArray(value)); i; ++i) {
+//                    _sql << ", ";
+//                    writeLiteral(i.value());
+//                }
+//                _sql << ")";
+                break;
+            }
+            case 7:     // $elemMatch
+                fail(); //TODO: IMPLEMENT
+                //parseElemMatch(table, value);
+                break;
+            default:
+                CBFAssert("invalid type in kRelationals" == nullptr);
+        }
+    }
 
 }

@@ -110,7 +110,7 @@ namespace litecore {
 
 
     // fl_value(fleeceData, propertyPath) -> propertyValue
-    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             const Value *root = fleeceParam(ctx, argv[0]);
             if (!root)
@@ -123,7 +123,7 @@ namespace litecore {
 
 
     // fl_exists(fleeceData, propertyPath) -> 0/1
-    static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         const Value *root = fleeceParam(ctx, argv[0]);
         if (!root)
             return;
@@ -133,7 +133,7 @@ namespace litecore {
 
     
     // fl_type(fleeceData, propertyPath) -> int  (fleece::valueType, or -1 for no value)
-    static void fl_type(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         const Value *root = fleeceParam(ctx, argv[0]);
         if (!root)
             return;
@@ -142,7 +142,7 @@ namespace litecore {
 
     
     // fl_count(fleeceData, propertyPath) -> int
-    static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         const Value *root = fleeceParam(ctx, argv[0]);
         if (!root)
             return;
@@ -151,6 +151,84 @@ namespace litecore {
             sqlite3_result_int(ctx, val->asArray()->count());
         else
             sqlite3_result_null(ctx);
+    }
+
+
+    // fl_contains(fleeceData, propertyPath, all?, value1, ...) -> 0/1
+    static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        if (argc < 4) {
+            sqlite3_result_error(ctx, "fl_contains: too few arguments", -1);
+            return;
+        }
+        const Value *root = fleeceParam(ctx, argv[0]);
+        if (!root)
+            return;
+        root = evaluatePath(ctx, valueAsSlice(argv[1]), root);
+        if (!root)
+            return;
+        const Array *array = root->asArray();
+        if (!array) {
+            sqlite3_result_int(ctx, 0);
+            return;
+        }
+        int found = 0, needed = 1;
+        if (sqlite3_value_int(argv[2]) != 0)    // 'all' flag
+            needed = (argc - 3);
+
+        for (int i = 3; i < argc; ++i) {
+            auto arg = argv[i];
+            auto argType = sqlite3_value_type(arg);
+            switch (argType) {
+                case SQLITE_INTEGER: {
+                    int64_t n = sqlite3_value_int64(arg);
+                    for (Array::iterator j(array); j; ++j) {
+                        if (j->type() == kNumber && j->isInteger() && j->asInt() == n) {
+                            ++found;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case SQLITE_FLOAT: {
+                    double n = sqlite3_value_double(arg);
+                    for (Array::iterator j(array); j; ++j) {
+                        if (j->type() == kNumber && j->asDouble() == n) {   //TODO: Approx equal?
+                            ++found;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case SQLITE_TEXT:
+                case SQLITE_BLOB: {
+                    valueType type = (argType == SQLITE_TEXT) ? kString : kData;
+                    slice blobVal;
+                    blobVal.buf = sqlite3_value_blob(arg);
+                    blobVal.size = sqlite3_value_bytes(arg);
+                    for (Array::iterator j(array); j; ++j) {
+                        if (j->type() == type && j->asString() == blobVal) {
+                            ++found;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case SQLITE_NULL: {
+                    for (Array::iterator j(array); j; ++j) {
+                        if (j->type() == kNull) {
+                            ++found;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (found >= needed) {
+                sqlite3_result_int(ctx, 1);
+                return;
+            }
+        }
+        sqlite3_result_int(ctx, 0);
     }
 
 
@@ -171,6 +249,7 @@ namespace litecore {
             { "fl_exists",                2, 0,   fl_exists },
             { "fl_type",                  2, 0,   fl_type },
             { "fl_count",                 2, 0,   fl_count },
+            { "fl_contains",             -1, 0,   fl_contains },
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){

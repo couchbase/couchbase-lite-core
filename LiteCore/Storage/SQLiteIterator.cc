@@ -178,11 +178,12 @@ namespace litecore {
         SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression, slice sortExpression)
         :Query(keyStore)
         {
+            QueryParser qp;
+            qp.parseJSON(selectorExpression);
+
             stringstream sql;
-            sql << "SELECT sequence, key, meta, length(body) FROM kv_" << keyStore.name() << " WHERE (";
-            QueryParser::parseJSON(selectorExpression, sql);
-            sql << ") ORDER BY key LIMIT $limit OFFSET $offset"; //TODO: sorting
-            //cerr << "QUERY: " << sql.str() << "\n";
+            sql << "SELECT sequence, key, meta, length(body) FROM kv_" << keyStore.name() << " WHERE (" << qp.whereClause() << ") ORDER BY key LIMIT $limit OFFSET $offset"; //TODO: sorting
+            cerr << "QUERY: " << sql.str() << "\n";//TEMP
             _statement.reset(keyStore.compile(sql.str()));
         }
 

@@ -1213,7 +1213,6 @@
 			children = (
 				277014FF1D516CE2008BADD7 /* CollatableTest.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
-				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				277015131D5272D1008BADD7 /* IndexTest.cc */,
 				277015151D528438008BADD7 /* MapReduceTest.cc */,
 				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
@@ -1221,6 +1220,7 @@
 				2770151D1D5284C4008BADD7 /* GeoIndexTest.cc */,
 				277015191D528491008BADD7 /* TokenizerTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
+				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,

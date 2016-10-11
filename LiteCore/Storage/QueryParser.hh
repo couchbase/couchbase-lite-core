@@ -10,6 +10,7 @@
 #include "Base.hh"
 #include <memory>
 #include <sstream>
+#include <vector>
 
 namespace fleece {
     class Value;
@@ -23,27 +24,28 @@ namespace litecore {
 
     class QueryParser {
     public:
-
-        QueryParser(std::ostream &out)      :_sql(out) { }
-
         void parse(const fleece::Value*);
+        void parseJSON(slice json);
 
-        static void parse(const fleece::Value*, std::ostream &out);
-        static void parseJSON(slice json, std::ostream &out);
+        std::string whereClause()               {return _sql.str();}
 
-        void writePropertyGetter(const char *fn, slice property);
-        void writePropertyGetter(slice property) {writePropertyGetter("fl_value", property);}
-        void writeSQLString(slice str);
+        static std::string propertyGetter(slice property);
+        static void writeSQLString(std::ostream &out, slice str);
 
     private:
+        void writePropertyGetter(const char *fn, slice property);
+        void writeSQLString(slice str)      {writeSQLString(_sql, str);}
+
         void parsePredicate(const fleece::Value*);
         void parseTerm(slice key, const fleece::Value*);
         void parseSubPropertyTerm(slice key, const fleece::Dict*);
-        void parseBooleanExpr(const fleece::Value *terms, const char *op);
+        void parseElemMatch(slice property, const fleece::Value*);
+        void parseElemMatchTerm(std::string key, const fleece::Value*);
+        void writeBooleanExpr(const fleece::Value *terms, const char *op);
         void writeLiteral(const fleece::Value *literal);
         void writePropertyGetterLeftOpen(const char *fn, slice property);
 
-        std::ostream &_sql;
+        std::stringstream _sql;
         std::string _propertyPath;
     };
 

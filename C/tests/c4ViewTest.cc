@@ -11,6 +11,8 @@
 #include "c4DocEnumerator.h"
 #include <iostream>
 
+using namespace std;
+
 
 class C4ViewTest : public C4Test {
 public:
@@ -368,8 +370,7 @@ public:
     C4Query* compile(const char *expr) {
         C4Error error;
         c4query_free(query);
-        query = c4query_new(db, c4str("{\"contact.address.state\": \"CA\"}"),
-                                     kC4SliceNull, &error);
+        query = c4query_new(db, c4str(expr), kC4SliceNull, &error);
         REQUIRE(query);
         return query;
     }
@@ -399,7 +400,11 @@ private:
 
 TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile("{\"contact.address.state\": \"CA\"}");
-    CHECK(run().size() == 8);
-    CHECK(run(1, 8).size() == 7);
-    CHECK(run(1, 4).size() == 4);
+    CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run(1, 8) == (vector<string>{"0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run(1, 4) == (vector<string>{"0000015", "0000036", "0000043", "0000053"}));
+
+    compile("{\"contact.phone\": {\"$elemMatch\": {\"$like\": \"%97%\"}}}");
+    auto result = run();
+    CHECK(result == (vector<string>{"0000013", "0000014", "0000027", "0000029", "0000045", "0000048", "0000070", "0000085", "0000096"}));
 }

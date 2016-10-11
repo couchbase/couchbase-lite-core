@@ -54,7 +54,22 @@ protected:
 };
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite each array", "[fl_each]") {
+TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
+    insert("one",   "{\"hey\": [1, 2, 3, 4]}");
+    insert("two",   "{\"hey\": [2, 4, 6, 8]}");
+    insert("three", "{\"hey\": [1, \"T\", 3.1416, []]}");
+    insert("four",  "{\"hey\": [1, \"T\", 3.15,   []]}");
+    insert("yerg",  "{\"xxx\": [1, \"T\", 3.1416, []]}");
+
+    REQUIRE(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 0, 4)")
+            == (vector<string>{"one", "two"}));
+    REQUIRE(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 1, 3.1416, 'T')")
+            == (vector<string>{"three"}));
+
+}
+
+
+TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
     insert("two",   "[2, 4, 6, 8]");
     insert("three", "[3, 6, 9, \"dozen\"]");
@@ -70,7 +85,7 @@ TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite each array", "[fl_each]") {
 }
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite each dict", "[fl_each]") {
+TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[fl_each]") {
     insert("one",   "{\"one\": 1, \"two\": 2, \"three\": 3}");
     insert("two",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
     insert("three", "{\"one\": 3, \"two\": 6, \"three\": 9}");
@@ -86,7 +101,7 @@ TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite each dict", "[fl_each]") {
 }
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite each with path", "[fl_each]") {
+TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[fl_each]") {
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"xxx\": [1, 2, 3, 4]}");

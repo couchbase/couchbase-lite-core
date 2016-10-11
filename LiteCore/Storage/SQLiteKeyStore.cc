@@ -313,7 +313,7 @@ namespace litecore {
         sql << "CREATE INDEX IF NOT EXISTS ";
         writeSQLIndexName(propertyExpression, sql);
         sql << " ON kv_" << name() << " (";
-        QueryParser(sql).writePropertyGetter(propertyExpression);
+        sql << QueryParser::propertyGetter(propertyExpression);
         sql << ")";
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
         db()._sqlDb->exec(sql.str());
