@@ -130,15 +130,22 @@ namespace litecore {
 #pragma mark - QUERY PARSER:
 
 
-    void QueryParser::parse(const Value* v) {
-        parsePredicate(v);
+    void QueryParser::parse(const Value *whereExpression, const Value *sortExpression) {
+        parsePredicate(whereExpression);
+        parseSort(sortExpression);
     }
 
 
-    void QueryParser::parseJSON(slice json) {
-        auto fleeceData = JSONConverter::convertJSON(json);
-        auto root = Value::fromTrustedData(fleeceData);
-        parse(root);
+    void QueryParser::parseJSON(slice whereJSON, slice sortJSON) {
+        const Value *whereValue = nullptr, *sortValue = nullptr;
+        alloc_slice whereFleece, sortFleece;
+        whereFleece = JSONConverter::convertJSON(whereJSON);
+        whereValue = Value::fromTrustedData(whereFleece);
+        if (sortJSON.buf) {
+            sortFleece = JSONConverter::convertJSON(sortJSON);
+            sortValue = Value::fromTrustedData(sortFleece);
+        }
+        parse(whereValue, sortValue);
     }
 
 
@@ -464,6 +471,52 @@ namespace litecore {
             default:
                 CBFAssert("invalid type in kRelationals" == nullptr);
         }
+    }
+
+
+#pragma mark - SORTING:
+
+
+    void QueryParser::parseSort(const Value *expr) {
+        if (!expr)
+            return;
+        switch (expr->type()) {
+            case kString:
+                writeOrderBy(expr);
+                break;
+            case kArray: {
+                Delimiter d(_sortSQL, ", ");
+                for (Array::iterator it(expr->asArray()); it; ++it) {
+                    d.next();
+                    writeOrderBy(it.value());
+                }
+                break;
+            }
+            default:
+                fail();
+        }
+    }
+
+
+    void QueryParser::writeOrderBy(const Value *property) {
+        slice str = property->asString();
+        if (str.size < 1)
+            fail();
+        bool ascending = true;
+        char prefix = str.peekByte();
+        if (prefix == '-' || prefix == '+') {
+            ascending = (prefix == '+');
+            str.readByte();
+        }
+        
+        if (str == slice("_id"))
+            _sortSQL << "key";
+        else if (str == slice("_sequence"))
+            _sortSQL << "sequence";
+        else
+            _sortSQL << propertyGetter(str);
+        if (!ascending)
+            _sortSQL << " DESC";
     }
 
 }

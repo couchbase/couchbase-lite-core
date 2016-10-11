@@ -26,11 +26,16 @@ static void enquotify(string &json) {
 
 static string parseWhere(string json) {
     enquotify(json);
-    auto fleeceData = JSONConverter::convertJSON(slice(json));
-    const Value *root = Value::fromTrustedData(fleeceData);
     QueryParser qp;
-    qp.parse(root);
+    qp.parseJSON(slice(json), slice::null);
     return qp.whereClause();
+}
+
+static string parseSort(string json) {
+    enquotify(json);
+    QueryParser qp;
+    qp.parseJSON(slice("{}"), slice(json));
+    return qp.orderByClause();
 }
 
 
@@ -74,6 +79,16 @@ TEST_CASE("QueryParser simple", "[Query]") {
           == "fl_value(body, 'name') = :_1");
     CHECK(parseWhere("{`name`: [`name`]}")
           == "fl_value(body, 'name') = :_name");
+}
+
+
+TEST_CASE("QueryParser sort", "[Query]") {
+    CHECK(parseSort("[`size`]")
+          == "fl_value(body, 'size')");
+    CHECK(parseSort("[`+size`, `-price`]")
+          == "fl_value(body, 'size'), fl_value(body, 'price') DESC");
+    CHECK(parseSort("[`_id`, `-_sequence`]")
+          == "key, sequence DESC");
 }
 
 

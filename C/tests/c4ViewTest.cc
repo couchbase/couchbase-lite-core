@@ -357,6 +357,9 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
 }
 
 
+#pragma mark - DATABASE (NON-VIEW) QUERIES
+
+
 class QueryTest : public C4Test {
 public:
     QueryTest() :C4Test(2) {  // always use SQLite + version vectors
@@ -367,10 +370,10 @@ public:
         c4query_free(query);
     }
 
-    C4Query* compile(const char *expr) {
+    C4Query* compile(const char *expr, const char *sort =nullptr) {
         C4Error error;
         c4query_free(query);
-        query = c4query_new(db, c4str(expr), kC4SliceNull, &error);
+        query = c4query_new(db, c4str(expr), c4str(sort), &error);
         REQUIRE(query);
         return query;
     }
@@ -407,4 +410,8 @@ TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile("{\"contact.phone\": {\"$elemMatch\": {\"$like\": \"%97%\"}}}");
     auto result = run();
     CHECK(result == (vector<string>{"0000013", "0000014", "0000027", "0000029", "0000045", "0000048", "0000070", "0000085", "0000096"}));
+
+    // with sort:
+    compile("{\"contact.address.state\": \"CA\"}", "[\"name.last\"]");
+    CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
 }

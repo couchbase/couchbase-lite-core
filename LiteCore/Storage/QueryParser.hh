@@ -24,10 +24,11 @@ namespace litecore {
 
     class QueryParser {
     public:
-        void parse(const fleece::Value*);
-        void parseJSON(slice json);
+        void parse(const fleece::Value *whereExpression, const fleece::Value *sortExpression);
+        void parseJSON(slice whereJSON, slice sortJSON);
 
         std::string whereClause()               {return _sql.str();}
+        std::string orderByClause()             {return _sortSQL.str();}
 
         static std::string propertyGetter(slice property);
         static void writeSQLString(std::ostream &out, slice str);
@@ -44,8 +45,11 @@ namespace litecore {
         void writeBooleanExpr(const fleece::Value *terms, const char *op);
         void writeLiteral(const fleece::Value *literal);
         void writePropertyGetterLeftOpen(const char *fn, slice property);
+        void parseSort(const fleece::Value*);
+        void writeOrderBy(const fleece::Value*);
 
         std::stringstream _sql;
+        std::stringstream _sortSQL;
         std::string _propertyPath;
     };
 

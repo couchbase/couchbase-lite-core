@@ -179,10 +179,17 @@ namespace litecore {
         :Query(keyStore)
         {
             QueryParser qp;
-            qp.parseJSON(selectorExpression);
+            qp.parseJSON(selectorExpression, sortExpression);
 
             stringstream sql;
-            sql << "SELECT sequence, key, meta, length(body) FROM kv_" << keyStore.name() << " WHERE (" << qp.whereClause() << ") ORDER BY key LIMIT $limit OFFSET $offset"; //TODO: sorting
+            sql << "SELECT sequence, key, meta, length(body)"
+                   " FROM kv_" << keyStore.name() <<
+                   " WHERE (" << qp.whereClause() << ")";
+
+            auto orderBy = qp.orderByClause();
+            sql << " ORDER BY " << (orderBy.empty() ? "key" : orderBy);
+            
+            sql << " LIMIT $limit OFFSET $offset";
             //cerr << "QUERY: " << sql.str() << "\n";
             _statement.reset(keyStore.compile(sql.str()));
         }
