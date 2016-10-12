@@ -145,11 +145,14 @@ namespace litecore {
                             const QueryEnumerator::Options *options)
         :_statement(statement)
         {
+            _statement->clearBindings();
             int64_t offset = 0, limit = -1;
             if (options) {
                 offset = options->skip;
                 if (options->limit <= INT64_MAX)
                     limit = (int64_t)options->limit;
+                if (options->paramBindings.buf)
+                    bindParameters(options->paramBindings);
             }
             _statement->bind("$offset", offset);
             _statement->bind("$limit", limit );
@@ -157,6 +160,38 @@ namespace litecore {
 
         ~SQLiteQueryEnumImpl() {
             _statement->reset();
+        }
+
+        void bindParameters(slice json) {
+            auto fleeceData = JSONConverter::convertJSON(json);
+            const Dict *root = Value::fromData(fleeceData)->asDict();
+            if (!root)
+                error::_throw(error::InvalidParameter);
+            for (Dict::iterator it(root); it; ++it) {
+                string key = string(":_") + (string)it.key()->asString();
+                const Value *val = it.value();
+                switch (val->type()) {
+                    case kNull:
+                        break;
+                    case kBoolean:
+                    case kNumber:
+                        if (val->isInteger() && !val->isUnsigned())
+                            _statement->bind(key, val->asInt());
+                        else
+                            _statement->bind(key, val->asDouble());
+                        break;
+                    case kString:
+                        _statement->bind(key, (string)val->asString());
+                        break;
+                    case kData: {
+                        slice str = val->asString();
+                        _statement->bind(key, str.buf, (int)str.size);
+                        break;
+                    }
+                    default:
+                        error::_throw(error::InvalidParameter);
+                }
+            }
         }
 
         bool next(slice &docID, sequence_t &sequence) override {

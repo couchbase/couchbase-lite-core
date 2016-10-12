@@ -82,6 +82,14 @@ TEST_CASE("QueryParser simple", "[Query]") {
 }
 
 
+TEST_CASE("QueryParser bindings", "[Query]") {
+    CHECK(parseWhere("{`age`: {`$gte`: [1]}}")
+          == "fl_value(body, 'age') >= :_1");
+    CHECK(parseWhere("{`address`: {`state`: [`state`], `zip`: {`$lt`: [`zip`]}}}")
+          == "(fl_value(body, 'address.state') = :_state AND fl_value(body, 'address.zip') < :_zip)");
+}
+
+
 TEST_CASE("QueryParser sort", "[Query]") {
     CHECK(parseSort("[`size`]")
           == "fl_value(body, 'size')");

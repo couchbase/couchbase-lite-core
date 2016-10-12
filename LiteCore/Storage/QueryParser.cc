@@ -341,7 +341,7 @@ namespace litecore {
                 writeSQLString(literal->asString());
                 break;
             case kArray: {
-                // An array containing an integer is a placeholder.
+                // An single-item array containing an integer or string is a placeholder/binding.
                 auto a = literal->asArray();
                 if (a->count() != 1)
                     fail();
@@ -385,6 +385,9 @@ namespace litecore {
         }
         out << "'";
    }
+
+
+#pragma mark - ELEMMATCH:
 
 
     // Parses an "$elemMatch" expression

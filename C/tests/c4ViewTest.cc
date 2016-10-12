@@ -378,14 +378,16 @@ public:
         return query;
     }
 
-    std::vector<std::string> run(uint64_t skip =0, uint64_t limit =UINT64_MAX) {
+    std::vector<std::string> run(uint64_t skip =0, uint64_t limit =UINT64_MAX,
+                                 const char *bindings =nullptr)
+    {
         REQUIRE(query);
         std::vector<std::string> docIDs;
         C4QueryOptions options = kC4DefaultQueryOptions;
         options.skip = skip;
         options.limit = limit;
         C4Error error;
-        auto e = c4query_run(query, &options, kC4SliceNull, &error);
+        auto e = c4query_run(query, &options, c4str(bindings), &error);
         REQUIRE(e);
         while (c4queryenum_next(e, &error)) {
             std::string docID((const char*)e->docID.buf, e->docID.size);
@@ -408,10 +410,22 @@ TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     CHECK(run(1, 4) == (vector<string>{"0000015", "0000036", "0000043", "0000053"}));
 
     compile("{\"contact.phone\": {\"$elemMatch\": {\"$like\": \"%97%\"}}}");
-    auto result = run();
-    CHECK(result == (vector<string>{"0000013", "0000014", "0000027", "0000029", "0000045", "0000048", "0000070", "0000085", "0000096"}));
+    CHECK(run() == (vector<string>{"0000013", "0000014", "0000027", "0000029", "0000045", "0000048", "0000070", "0000085", "0000096"}));
 
-    // with sort:
+    compile("{\"contact.phone\": {\"$size\": 2}, \"gender\": \"male\"}");
+    CHECK(run() == (vector<string>{"0000002", "0000014", "0000017", "0000027", "0000031", "0000033", "0000038", "0000039", "0000045", "0000047",
+        "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"}));
+}
+
+TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
     compile("{\"contact.address.state\": \"CA\"}", "[\"name.last\"]");
-    CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run() == (vector<string>{"0000015", "0000036", "0000072", "0000043", "0000001", "0000064", "0000073", "0000053"}));
+}
+
+
+TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
+    compile("{\"contact.address.state\": [1]}");
+    CHECK(run(0, UINT64_MAX, "{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    compile("{\"contact.address.state\": [\"state\"]}");
+    CHECK(run(0, UINT64_MAX, "{\"state\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
 }
