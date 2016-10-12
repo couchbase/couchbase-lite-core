@@ -22,6 +22,7 @@
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 #include <sstream>
+#include <mutex>
 
 #if __APPLE__
 #include <TargetConditionals.h>

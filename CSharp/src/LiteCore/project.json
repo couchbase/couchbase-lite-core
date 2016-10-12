@@ -10,10 +10,12 @@
   },
   "buildOptions": {
     "allowUnsafe": true,
+    "outputName": "LiteCore-Interop",
     "copyToOutput": {
-       "include": ["libLiteCore.dylib"],
+       "include": ["libLiteCore.dylib", "LiteCore.dll"],
        "mappings": {
-         "libLiteCore.dylib": "../../native/libLiteCore.dylib"    
+         "libLiteCore.dylib": "../../native/libLiteCore.dylib", 
+         "LiteCore.dll": "../../native/LiteCore.dll"
        }
     }
   }

@@ -13,6 +13,7 @@
 #include "LogInternal.hh"
 #include <stdint.h>
 #include <stdio.h>
+#include <algorithm>
 
 
 namespace litecore {

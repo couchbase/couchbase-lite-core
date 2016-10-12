@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using LiteCore.Interop;
@@ -12,7 +12,8 @@ namespace LiteCore.Tests
 {
     public unsafe class Test : TestBase
     {
-        public const string TestDir = "/tmp";
+        public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+            "C:\\tmp" : "/tmp";
         protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
         
         protected override int NumberOfOptions
