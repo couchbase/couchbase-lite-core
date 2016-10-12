@@ -368,7 +368,11 @@ struct c4Query : InstanceCounted {
     c4Query(C4Database *db, C4Slice queryExpression, C4Slice sortExpression)
     :_database(db),
      _query(db->defaultKeyStore().compileQuery(queryExpression, sortExpression))
-    { }
+    {
+        //FIX: Queries don't work with rev-trees yet (because the doc body isn't pure Fleece.)
+        if (db->config.versioning == kC4RevisionTrees)
+            error::_throw(error::Unimplemented);
+    }
 
     C4Database* database() const    {return _database;}
     Query* query() const            {return _query.get();}

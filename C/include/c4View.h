@@ -207,7 +207,7 @@ extern "C" {
     //////// QUERYING:
 
 
-    /** \defgroup ViewQueries Querying Views
+    /** \defgroup QueryingViews Querying Views
         @{ */
 
 
