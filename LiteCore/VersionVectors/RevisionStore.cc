@@ -173,7 +173,7 @@ namespace litecore {
 
 
     // Creates a new revision that resolves a conflict.
-    Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+    Revision::Ref RevisionStore::resolveConflict(const std::vector<Revision*> &conflicting,
                                                  Revision::BodyParams body,
                                                  Transaction &t)
     {
@@ -181,7 +181,7 @@ namespace litecore {
         // CASRevisionStore overrides this
     }
 
-    Revision::Ref RevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+    Revision::Ref RevisionStore::resolveConflict(const std::vector<Revision*> &conflicting,
                                                  slice keepRevID,
                                                  Revision::BodyParams bodyParams,
                                                  Transaction &t)

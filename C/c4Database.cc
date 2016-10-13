@@ -77,7 +77,7 @@ FilePath c4Database::findOrCreateBundle(const string &path, C4DatabaseConfig &co
 }
 
 
-c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
+c4Database* c4Database::newDatabase(const string &pathStr, C4DatabaseConfig config) {
     FilePath path = (config.flags & kC4DB_Bundled)
                         ? findOrCreateBundle(pathStr, config)
                         : FilePath(pathStr);
@@ -89,9 +89,9 @@ c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
 }
 
 
-/*static*/ DataFile* c4Database::newDataFile(string path,
-                                  const C4DatabaseConfig &config,
-                                  bool isMainDB)
+/*static*/ DataFile* c4Database::newDataFile(const string &path,
+                                             const C4DatabaseConfig &config,
+                                             bool isMainDB)
 {
     DataFile::Options options { };
     if (isMainDB) {
@@ -119,7 +119,7 @@ c4Database* c4Database::newDatabase(string pathStr, C4DatabaseConfig config) {
 }
 
 
-c4Database::c4Database(string path,
+c4Database::c4Database(const string &path,
                        const C4DatabaseConfig &inConfig)
 :config(inConfig),
  _db(newDataFile(path, config, true))

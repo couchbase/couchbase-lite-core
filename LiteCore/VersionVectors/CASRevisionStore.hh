@@ -35,7 +35,7 @@ namespace litecore {
             Also deletes the saved base & latest server revisions, if any. */
         void savedToCASServer(slice docID, slice revID, generation cas, Transaction &t);
 
-        virtual Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
+        virtual Revision::Ref resolveConflict(const std::vector<Revision*> &conflicting,
                                               Revision::BodyParams body,
                                               Transaction &t) override;
         virtual void purge(slice docID, Transaction &t) override;

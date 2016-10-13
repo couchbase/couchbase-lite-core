@@ -232,7 +232,7 @@ namespace litecore {
             values.push_back(value);
         }
 
-        void emitTextTokens(slice text, std::string languageCode, slice value) {
+        void emitTextTokens(slice text, const std::string &languageCode, slice value) {
             if (!_tokenizer || _tokenizer->stemmer() != languageCode) {
                 _tokenizer = std::unique_ptr<Tokenizer> {
                     new Tokenizer(languageCode, (languageCode == "en")) };

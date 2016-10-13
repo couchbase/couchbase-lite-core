@@ -24,7 +24,7 @@ namespace litecore {
                                                 RevTree *owner,
                                                 sequence curSeq);
 
-        static alloc_slice encodeTree(std::vector<Rev> &revs);
+        static alloc_slice encodeTree(const std::vector<Rev> &revs);
 
     private:
         // Private RevisionFlags bits used in encoded form:

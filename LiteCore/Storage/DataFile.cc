@@ -62,7 +62,7 @@ namespace litecore {
     }
 
 
-    DataFile::Factory* DataFile::factoryNamed(std::string name) {
+    DataFile::Factory* DataFile::factoryNamed(const std::string &name) {
         auto facs = factories();
         if (name.empty())
             return facs[0];

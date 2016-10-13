@@ -47,7 +47,7 @@ namespace litecore {
     }
 
 
-    alloc_slice RawRevision::encodeTree(std::vector<Rev> &revs) {
+    alloc_slice RawRevision::encodeTree(const std::vector<Rev> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for (auto rev = revs.begin(); rev != revs.end(); ++rev)

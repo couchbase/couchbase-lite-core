@@ -402,7 +402,7 @@ namespace litecore {
 
 
     // Parses a key/value mapping within an $elemMatch
-    void QueryParser::parseElemMatchTerm(string table, const Value *value) {
+    void QueryParser::parseElemMatchTerm(const string &table, const Value *value) {
         // Process the relation by type:
         const relationalEntry *rel = findRelation(value);
 

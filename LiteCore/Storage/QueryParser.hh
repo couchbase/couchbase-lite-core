@@ -41,7 +41,7 @@ namespace litecore {
         void parseTerm(slice key, const fleece::Value*);
         void parseSubPropertyTerm(slice key, const fleece::Dict*);
         void parseElemMatch(slice property, const fleece::Value*);
-        void parseElemMatchTerm(std::string key, const fleece::Value*);
+        void parseElemMatchTerm(const std::string &key, const fleece::Value*);
         void writeBooleanExpr(const fleece::Value *terms, const char *op);
         void writeLiteral(const fleece::Value *literal);
         void writePropertyGetterLeftOpen(const char *fn, slice property);

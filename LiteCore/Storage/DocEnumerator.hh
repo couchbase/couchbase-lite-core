@@ -121,7 +121,6 @@ namespace litecore {
         friend class KeyStore;
 
         DocEnumerator(KeyStore &store, const Options& options);
-        void setDocIDs(std::vector<std::string> docIDs);
         void initialPosition();
         bool nextFromArray();
         bool getDoc();

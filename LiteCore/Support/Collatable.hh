@@ -89,7 +89,7 @@ namespace litecore {
 
         CollatableBuilder& operator<< (const Collatable&);
         CollatableBuilder& operator<< (const CollatableBuilder&);
-        CollatableBuilder& operator<< (std::string s)      {return operator<<(slice(s));}
+        CollatableBuilder& operator<< (const std::string &s)  {return operator<<(slice(s));}
         CollatableBuilder& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         CollatableBuilder& operator<< (slice s)            {addString(kString, s); return *this;}
 

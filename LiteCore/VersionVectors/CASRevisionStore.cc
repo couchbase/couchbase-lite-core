@@ -164,7 +164,7 @@ namespace litecore {
 #pragma mark - OVERRIDDEN HOOKS:
 
 
-    Revision::Ref CASRevisionStore::resolveConflict(std::vector<Revision*> conflicting,
+    Revision::Ref CASRevisionStore::resolveConflict(const std::vector<Revision*> &conflicting,
                                                     Revision::BodyParams body,
                                                     Transaction &t)
     {

@@ -125,7 +125,7 @@ namespace litecore {
         };
 
         static std::vector<Factory*> factories();
-        static Factory* factoryNamed(std::string name);
+        static Factory* factoryNamed(const std::string &name);
         static Factory* factoryNamed(const char *name);
         static Factory* factoryForFile(const FilePath&);
 

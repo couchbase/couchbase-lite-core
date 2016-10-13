@@ -25,10 +25,10 @@ namespace litecore {
 
 struct c4Database : public RefCounted<c4Database> {
 
-    static c4Database* newDatabase(string pathStr,
+    static c4Database* newDatabase(const string &pathStr,
                                    C4DatabaseConfig config);
 
-    static DataFile* newDataFile(string path,
+    static DataFile* newDataFile(const string &path,
                                  const C4DatabaseConfig &config,
                                  bool isMainDB);
 
@@ -69,7 +69,7 @@ struct c4Database : public RefCounted<c4Database> {
 #endif
 
 protected:
-    c4Database(string path,
+    c4Database(const string &path,
                const C4DatabaseConfig &config);
     virtual ~c4Database() { Assert(_transactionLevel == 0); }
 
@@ -92,7 +92,7 @@ namespace c4Internal {
     // Subclass for old (rev-tree) schema
     class c4DatabaseV1 : public c4Database {
     public:
-        c4DatabaseV1(string path, const C4DatabaseConfig &config)
+        c4DatabaseV1(const string &path, const C4DatabaseConfig &config)
         :c4Database(path, config)
         { }
         C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
@@ -107,7 +107,7 @@ namespace c4Internal {
     // Subclass for new (version-vector) schema
     class c4DatabaseV2 : public c4Database {
     public:
-        c4DatabaseV2(string path, const C4DatabaseConfig &config)
+        c4DatabaseV2(const string &path, const C4DatabaseConfig &config)
         :c4Database(path, config)
         { }
 

@@ -69,7 +69,7 @@ namespace litecore {
             @param body  The body of the merged revision
             @param t  A Transaction to use to write the revision
             @return  The saved merged revision. */
-        virtual Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
+        virtual Revision::Ref resolveConflict(const std::vector<Revision*> &conflicting,
                                               Revision::BodyParams body,
                                               Transaction &t);
 
@@ -93,7 +93,7 @@ namespace litecore {
         /** Given a key in the nonCurrentStore, returns the ID of the document. */
         static slice docIDFromKey(slice key);
 
-        Revision::Ref resolveConflict(std::vector<Revision*> conflicting,
+        Revision::Ref resolveConflict(const std::vector<Revision*> &conflicting,
                                       slice keepingRevID,
                                       Revision::BodyParams body,
                                       Transaction &t);
