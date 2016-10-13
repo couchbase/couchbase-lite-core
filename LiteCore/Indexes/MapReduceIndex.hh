@@ -87,6 +87,7 @@ namespace litecore {
     /** An activity that updates one or more map-reduce indexes. */
     class MapReduceIndexer {
     public:
+        MapReduceIndexer();
         ~MapReduceIndexer();
 
         void addIndex(MapReduceIndex&);
@@ -130,7 +131,7 @@ namespace litecore {
         void finished(sequence seq =1);
 
     private:
-        std::vector<MapReduceIndexWriter*> _writers;
+        std::vector<std::unique_ptr<MapReduceIndexWriter>> _writers;
         MapReduceIndex* _triggerIndex {nullptr};
         sequence _latestDbSequence {0};
         bool _allDocTypes {false};

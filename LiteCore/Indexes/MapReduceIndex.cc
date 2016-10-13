@@ -379,10 +379,14 @@ namespace litecore {
 #pragma mark - MAP-REDUCE INDEXER
 
     
+    MapReduceIndexer::MapReduceIndexer() { }
+
+    MapReduceIndexer::~MapReduceIndexer() { }
+
     void MapReduceIndexer::addIndex(MapReduceIndex &index) {
         index.checkForPurge(); // has to be called before creating the transaction
         auto writer = new MapReduceIndexWriter(index, new Transaction(index.dataFile()));
-        _writers.push_back(writer);
+        _writers.emplace_back(writer);
         if (index.documentType().buf)
             _docTypes.insert(index.documentType());
         else
@@ -395,7 +399,7 @@ namespace litecore {
 
         // First find the minimum sequence that not all indexes have indexed yet.
         sequence startSequence = _latestDbSequence+1;
-        for (auto writer : _writers) {
+        for (auto &writer : _writers) {
             sequence lastSequence = writer->index.lastSequenceIndexed();
             if (lastSequence < _latestDbSequence) {
                 startSequence = std::min(startSequence, lastSequence+1);
@@ -419,12 +423,6 @@ namespace litecore {
         }
     }
 
-    MapReduceIndexer::~MapReduceIndexer() {
-        for (auto writer : _writers) {
-            delete writer;
-        }
-    }
-
     bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) noexcept {
         return _writers[viewNumber]->shouldIndexDocument(doc);
     }
@@ -443,7 +441,7 @@ namespace litecore {
     }
 
     void MapReduceIndexer::skipDoc(slice docID, sequence docSequence) {
-        for (auto writer : _writers)
+        for (auto &writer : _writers)
             writer->indexDocument(docID, docSequence, _noKeys, _noValues);
     }
 
