@@ -152,7 +152,7 @@ namespace litecore {
 
     void CollatableBuilder::reset() {
         if (!_buf.buf)
-            _buf = {slice::newBytes(kDefaultSize), kDefaultSize};
+            _buf = slice{slice::newBytes(kDefaultSize), kDefaultSize};
         _available = _buf;
     }
 

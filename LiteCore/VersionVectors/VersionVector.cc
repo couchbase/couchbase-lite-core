@@ -302,7 +302,7 @@ namespace litecore {
         _vers.push_back(vers);
     }
 
-    alloc_slice VersionVector::copyAuthor(peerID author) {
+    slice VersionVector::copyAuthor(peerID author) {
         return *_addedAuthors.emplace(_addedAuthors.begin(), author);
     }
 

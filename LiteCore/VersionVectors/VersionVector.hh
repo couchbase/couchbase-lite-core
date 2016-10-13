@@ -171,7 +171,7 @@ namespace litecore {
 
     private:
         std::vector<Version>::iterator findPeerIter(peerID);
-        alloc_slice copyAuthor(peerID);
+        slice copyAuthor(peerID);
         void append(Version);
         friend class versionMap;
 
