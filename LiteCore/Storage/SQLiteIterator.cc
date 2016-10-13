@@ -10,7 +10,7 @@
 #include "SQLiteDataFile.hh"
 #include "Query.hh"
 #include "QueryParser.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "Fleece.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -22,7 +22,7 @@ using namespace fleece;
 
 namespace litecore {
 
-   class SQLiteIterator : public DocEnumerator::Impl {
+   class SQLiteIterator : public RecordEnumerator::Impl {
     public:
         SQLiteIterator(SQLite::Statement *stmt, bool descending, ContentOptions content)
         :_stmt(stmt),
@@ -33,10 +33,10 @@ namespace litecore {
             return _stmt->executeStep();
         }
 
-        virtual bool read(Document &doc) override {
-            updateDoc(doc, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(1));
-            doc.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
-            SQLiteKeyStore::setDocMetaAndBody(doc, *_stmt.get(), _content);
+        virtual bool read(Record &rec) override {
+            updateDoc(rec, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(1));
+            rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
+            SQLiteKeyStore::setDocMetaAndBody(rec, *_stmt.get(), _content);
             return true;
         }
 
@@ -46,7 +46,7 @@ namespace litecore {
     };
 
 
-    stringstream SQLiteKeyStore::selectFrom(const DocEnumerator::Options &options) {
+    stringstream SQLiteKeyStore::selectFrom(const RecordEnumerator::Options &options) {
         stringstream sql;
         sql << "SELECT sequence, deleted, key, meta";
         if (options.contentOptions & kMetaOnly)
@@ -57,7 +57,7 @@ namespace litecore {
         return sql;
     }
 
-    void SQLiteKeyStore::writeSQLOptions(stringstream &sql, DocEnumerator::Options &options) {
+    void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options &options) {
         if (options.descending)
             sql << " DESC";
         if (options.limit < UINT_MAX)
@@ -66,15 +66,15 @@ namespace litecore {
             if (options.limit == UINT_MAX)
                 sql << " LIMIT -1";             // OFFSET has to have a LIMIT before it
             sql << " OFFSET " << options.skip;
-            options.skip = 0;                   // tells DocEnumerator not to do skip on its own
+            options.skip = 0;                   // tells RecordEnumerator not to do skip on its own
         }
         options.limit = UINT_MAX;               // ditto for limit
     }
 
 
     // iterate by key:
-    DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
-                                                           DocEnumerator::Options &options)
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
+                                                           RecordEnumerator::Options &options)
     {
         stringstream sql = selectFrom(options);
         bool noDeleted = _capabilities.softDeletes && !options.includeDeleted;
@@ -107,8 +107,8 @@ namespace litecore {
     }
 
     // iterate by sequence:
-    DocEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence min, sequence max,
-                                                           DocEnumerator::Options &options)
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence min, sequence max,
+                                                           RecordEnumerator::Options &options)
     {
         if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
@@ -194,12 +194,12 @@ namespace litecore {
             }
         }
 
-        bool next(slice &docID, sequence_t &sequence) override {
+        bool next(slice &recordID, sequence_t &sequence) override {
             if (!_statement->executeStep())
                 return false;
             sequence = (int64_t)_statement->getColumn(0);
-            docID.buf = _statement->getColumn(1);
-            docID.size = _statement->getColumn(1).size();
+            recordID.buf = _statement->getColumn(1);
+            recordID.size = _statement->getColumn(1).size();
             return true;
         }
 

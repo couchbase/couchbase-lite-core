@@ -148,7 +148,7 @@ namespace litecore {
 
 
     FullTextMatch::FullTextMatch(const IndexEnumerator &e)
-    :docID {e.docID()},
+    :recordID {e.recordID()},
      sequence {e.sequence()},
      _index {(const MapReduceIndex&)e.index()}
      // _lastTermIndex, _fullTextID will be initialized later in readTermMatches
@@ -156,11 +156,11 @@ namespace litecore {
 
 
     alloc_slice FullTextMatch::matchedText() const {
-        return _index.readFullText(docID, sequence, _fullTextID);
+        return _index.readFullText(recordID, sequence, _fullTextID);
     }
 
     alloc_slice FullTextMatch::value() const {
-        return _index.readFullTextValue(docID, sequence, _fullTextID);
+        return _index.readFullTextValue(recordID, sequence, _fullTextID);
     }
 
 

@@ -15,7 +15,7 @@
 
 #pragma once
 #include "DataFile.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "Collatable.hh"
 #include "Encoder.hh"
 #include <atomic>
@@ -49,7 +49,7 @@ namespace litecore {
         explicit Index(KeyStore&);
         ~Index();
 
-        alloc_slice getEntry(slice docID, sequence docSequence,
+        alloc_slice getEntry(slice recordID, sequence recordSequence,
                              Collatable key,
                              unsigned emitIndex) const;
 
@@ -57,7 +57,7 @@ namespace litecore {
         bool isBusy() const                     {return _userCount > 0;}
 
         /** Used as a placeholder for an index value that's stored out of line, i.e. that
-            represents the entire document being indexed. */
+            represents the entire record being indexed. */
         static const slice kSpecialValue;
 
     protected:
@@ -80,18 +80,18 @@ namespace litecore {
         IndexWriter(Index& index, Transaction& t, bool wasEmpty =false);
         ~IndexWriter();
 
-        /** Updates the index entry for a document with the given keys and values.
+        /** Updates the index entry for a record with the given keys and values.
             Adjusts the value of rowCount by the number of rows added or removed.
             Returns true if the index may have changed as a result. */
-        bool update(slice docID,
-                    sequence docSequence,
+        bool update(slice recordID,
+                    sequence recordSequence,
                     const std::vector<Collatable> &keys,
                     const std::vector<alloc_slice> &values,
                     uint64_t &rowCount);
 
     private:
-        void getKeysForDoc(slice docID, std::vector<Collatable> &outKeys, uint32_t &outHash);
-        void setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash);
+        void getKeysForDoc(slice recordID, std::vector<Collatable> &outKeys, uint32_t &outHash);
+        void setKeysForDoc(slice recordID, const std::vector<Collatable> &keys, uint32_t hash);
 
         friend class Index;
         friend class MapReduceIndex;
@@ -115,7 +115,7 @@ namespace litecore {
     /** Index query enumerator. */
     class IndexEnumerator {
     public:
-        struct Options : public DocEnumerator::Options {
+        struct Options : public RecordEnumerator::Options {
             ReduceFunction *reduce  {nullptr};
             unsigned groupLevel     {0};
 
@@ -137,7 +137,7 @@ namespace litecore {
 
         CollatableReader key() const            {return CollatableReader(_key);}
         slice value() const                     {return _value;}
-        slice docID() const                     {return _docID;}
+        slice recordID() const                  {return _recordID;}
         sequence_t sequence() const             {return _sequence;}
 
         int currentKeyRangeIndex()              {return _currentKeyIndex;}
@@ -151,7 +151,7 @@ namespace litecore {
         virtual bool approve(slice key)         {return true;}
         bool read();
         void setValue(slice value)              {_value = value;}
-        DocEnumerator enumeratorForIndex(int keyRangeIndex);
+        RecordEnumerator enumeratorForIndex(int keyRangeIndex);
 
         void computeGroupedKey();
         bool accumulateRow();
@@ -169,10 +169,10 @@ namespace litecore {
         std::vector<KeyRange>   _keyRanges;             // Ranges of keys to traverse (optional)
         int                     _currentKeyIndex {-1};  // Current key range's index or -1
 
-        DocEnumerator           _dbEnum;                // The underlying KeyStore enumerator
+        RecordEnumerator           _dbEnum;                // The underlying KeyStore enumerator
         slice                   _key;                   // Current key
         slice                   _value;                 // Current value
-        alloc_slice             _docID;                 // Current docID
+        alloc_slice             _recordID;                 // Current recordID
         sequence_t              _sequence;              // Current sequence
 
         bool                    _reducing {false};      // Am I accumulating reduced rows?

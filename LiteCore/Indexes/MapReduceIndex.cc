@@ -38,7 +38,7 @@ namespace litecore {
     void MapReduceIndex::readState() {
         CollatableBuilder stateKey;
         stateKey.addNull();
-        Document state = _store.get(stateKey);
+        Record state = _store.get(stateKey);
         CollatableReader reader(state.body());
         if (reader.peekTag() == CollatableReader::kArray) {
             reader.beginArray();
@@ -146,36 +146,36 @@ namespace litecore {
         _stateReadAt = 0;
     }
 
-    alloc_slice MapReduceIndex::getSpecialEntry(slice docID, sequence seq, unsigned entryID) const
+    alloc_slice MapReduceIndex::getSpecialEntry(slice recordID, sequence seq, unsigned entryID) const
     {
         // This data was written by emitSpecial
         CollatableBuilder key;
         key.addNull();
-        return getEntry(docID, seq, key, entryID);
+        return getEntry(recordID, seq, key, entryID);
     }
 
-    alloc_slice MapReduceIndex::readFullText(slice docID, sequence seq, unsigned fullTextID) const {
-        alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
+    alloc_slice MapReduceIndex::readFullText(slice recordID, sequence seq, unsigned fullTextID) const {
+        alloc_slice entry = getSpecialEntry(recordID, seq, fullTextID);
         auto array = Value::fromTrustedData(entry)->asArray();
         return alloc_slice(array->get(0)->asString());
     }
 
-    alloc_slice MapReduceIndex::readFullTextValue(slice docID, sequence seq, unsigned fullTextID) const {
+    alloc_slice MapReduceIndex::readFullTextValue(slice recordID, sequence seq, unsigned fullTextID) const {
         // This data was written by emitSpecial, as called by emitTextTokens
-        alloc_slice entry = getSpecialEntry(docID, seq, fullTextID);
+        alloc_slice entry = getSpecialEntry(recordID, seq, fullTextID);
         auto array = Value::fromTrustedData(entry)->asArray();
         if (array->count() < 2)
             return alloc_slice();
         return alloc_slice(array->get(1)->asString());
     }
 
-    void MapReduceIndex::readGeoArea(slice docID, sequence seq, unsigned geoID,
+    void MapReduceIndex::readGeoArea(slice recordID, sequence seq, unsigned geoID,
                                      geohash::area &outArea,
                                      alloc_slice& outGeoJSON,
                                      alloc_slice& outValue)
     {
         // Reads data written by emitter::emit(const geohash::area&,...), below
-        alloc_slice entry = getSpecialEntry(docID, seq, geoID);
+        alloc_slice entry = getSpecialEntry(recordID, seq, geoID);
         Array::iterator iter(Value::fromTrustedData(entry)->asArray());
         outArea = ::litecore::readGeoArea(iter);
         outGeoJSON = outValue = nullslice;
@@ -324,34 +324,34 @@ namespace litecore {
         MapReduceIndexWriter(MapReduceIndex &idx, Transaction *t)
         :IndexWriter(idx, *t, (idx.rowCount() == 0)),
          index(idx),
-         _documentType(index.documentType()),
+         _documentType(index.docType()),
          _transaction(t)
         { }
 
         MapReduceIndex & index;
 
-        bool shouldIndexDocument(const Document& doc) const noexcept {
-            return doc.sequence() > index._lastSequenceIndexed;
+        bool shouldIndexRecord(const Record& rec) const noexcept {
+            return rec.sequence() > index._lastSequenceIndexed;
         }
 
-        bool shouldIndexDocumentType(slice docType) noexcept {
-            return _documentType.buf == nullptr || _documentType == docType;
+        bool shouldIndexDocumentType(slice documentType) noexcept {
+            return _documentType.buf == nullptr || _documentType == documentType;
         }
-        
+
         // Writes the given rows to the index.
-        bool indexDocument(slice docID,
-                           sequence docSequence,
+        bool indexRecord(slice recordID,
+                           sequence recordSequence,
                            const std::vector<Collatable> &keys,
                            const std::vector<alloc_slice> &values)
         {
-            if (docSequence <= index._lastSequenceIndexed)
+            if (recordSequence <= index._lastSequenceIndexed)
                 return false;
             _emitter.reset();
             for (unsigned i = 0; i < keys.size(); ++i)
                 _emitter.emit(keys[i], values[i]);
 
-            index._lastSequenceIndexed = docSequence;
-            if (update(docID, docSequence, _emitter.keys, _emitter.values, index._rowCount)) {
+            index._lastSequenceIndexed = recordSequence;
+            if (update(recordID, recordSequence, _emitter.keys, _emitter.values, index._rowCount)) {
                 index._lastSequenceChangedAt = index._lastSequenceIndexed;
                 return true;
             }
@@ -387,8 +387,8 @@ namespace litecore {
         index.checkForPurge(); // has to be called before creating the transaction
         auto writer = new MapReduceIndexWriter(index, new Transaction(index.dataFile()));
         _writers.emplace_back(writer);
-        if (index.documentType().buf)
-            _docTypes.insert(index.documentType());
+        if (index.docType().buf)
+            _docTypes.insert(index.docType());
         else
             _allDocTypes = true;
     }
@@ -423,30 +423,30 @@ namespace litecore {
         }
     }
 
-    bool MapReduceIndexer::shouldMapDocIntoView(const Document &doc, unsigned viewNumber) noexcept {
-        return _writers[viewNumber]->shouldIndexDocument(doc);
+    bool MapReduceIndexer::shouldMapDocIntoView(const Record &rec, unsigned viewNumber) noexcept {
+        return _writers[viewNumber]->shouldIndexRecord(rec);
     }
 
     bool MapReduceIndexer::shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) noexcept {
         return _writers[viewNumber]->shouldIndexDocumentType(docType);
     }
 
-    void MapReduceIndexer::emitDocIntoView(slice docID,
-                                           sequence docSequence,
+    void MapReduceIndexer::emitDocIntoView(slice recordID,
+                                           sequence recordSequence,
                                            unsigned viewNumber,
                                            const std::vector<Collatable> &keys,
                                            const std::vector<alloc_slice> &values)
     {
-        _writers[viewNumber]->indexDocument(docID, docSequence, keys, values);
+        _writers[viewNumber]->indexRecord(recordID, recordSequence, keys, values);
     }
 
-    void MapReduceIndexer::skipDoc(slice docID, sequence docSequence) {
+    void MapReduceIndexer::skipDoc(slice recordID, sequence recordSequence) {
         for (auto &writer : _writers)
-            writer->indexDocument(docID, docSequence, _noKeys, _noValues);
+            writer->indexRecord(recordID, recordSequence, _noKeys, _noValues);
     }
 
-    void MapReduceIndexer::skipDocInView(slice docID, sequence docSequence, unsigned viewNumber) {
-        _writers[viewNumber]->indexDocument(docID, docSequence, _noKeys, _noValues);
+    void MapReduceIndexer::skipDocInView(slice recordID, sequence recordSequence, unsigned viewNumber) {
+        _writers[viewNumber]->indexRecord(recordID, recordSequence, _noKeys, _noValues);
     }
 
 }

@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "KeyStore.hh"
-#include "Document.hh"
+#include "Record.hh"
 #include "DataFile.hh"
 #include "Error.hh"
 #include "LogInternal.hh"
@@ -26,28 +26,28 @@ namespace litecore {
 
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false, false};
 
-    Document KeyStore::get(slice key, ContentOptions options) const {
-        Document doc(key);
-        read(doc, options);
-        return doc;
+    Record KeyStore::get(slice key, ContentOptions options) const {
+        Record rec(key);
+        read(rec, options);
+        return rec;
     }
 
-    void KeyStore::get(slice key, ContentOptions options, function<void(const Document&)> fn) {
+    void KeyStore::get(slice key, ContentOptions options, function<void(const Record&)> fn) {
         // Subclasses can implement this differently for better memory management.
-        Document doc(key);
-        read(doc, options);
-        fn(doc);
+        Record rec(key);
+        read(rec, options);
+        fn(rec);
     }
 
-    void KeyStore::get(sequence seq, ContentOptions options, function<void(const Document&)> fn) {
+    void KeyStore::get(sequence seq, ContentOptions options, function<void(const Record&)> fn) {
         fn(get(seq, options));
     }
 
-    void KeyStore::readBody(Document &doc) const {
-        if (!doc.body()) {
-            Document fullDoc = doc.sequence() ? get(doc.sequence(), kDefaultContent)
-                                              : get(doc.key(), kDefaultContent);
-            doc._body = fullDoc._body;
+    void KeyStore::readBody(Record &rec) const {
+        if (!rec.body()) {
+            Record fullDoc = rec.sequence() ? get(rec.sequence(), kDefaultContent)
+                                              : get(rec.key(), kDefaultContent);
+            rec._body = fullDoc._body;
         }
     }
 
@@ -55,12 +55,12 @@ namespace litecore {
         trans.dataFile().deleteKeyStore(name());
     }
 
-    void KeyStore::write(Document &doc, Transaction &t) {
-        if (doc.deleted()) {
-            del(doc, t);
+    void KeyStore::write(Record &rec, Transaction &t) {
+        if (rec.deleted()) {
+            del(rec, t);
         } else {
-            auto result = set(doc.key(), doc.meta(), doc.body(), t);
-            updateDoc(doc, result.seq, result.off);
+            auto result = set(rec.key(), rec.meta(), rec.body(), t);
+            updateDoc(rec, result.seq, result.off);
         }
     }
 
@@ -78,8 +78,8 @@ namespace litecore {
         return ok;
     }
 
-    bool KeyStore::del(const litecore::Document &doc, Transaction &t) {
-        return del(doc.key(), t);
+    bool KeyStore::del(const litecore::Record &rec, Transaction &t) {
+        return del(rec.key(), t);
     }
 
     void KeyStore::createIndex(const std::string &propertyPath) {

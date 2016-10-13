@@ -16,7 +16,7 @@
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
-#include "Document.hh"
+#include "Record.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SQLiteCpp/SQLiteCpp.h"

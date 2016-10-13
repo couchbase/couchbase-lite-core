@@ -79,7 +79,7 @@ namespace litecore {
     protected:
         //////// DOCUMENT KEYS:
 
-        /** The document key to use for a non-current Revision. */
+        /** The record key to use for a non-current Revision. */
         static alloc_slice keyForNonCurrentRevision(slice docID, class Version vers);
 
         /** The start of the key range for non-current Revisions with the given docID
@@ -103,7 +103,7 @@ namespace litecore {
         bool deleteNonCurrent(slice docID, slice revID, Transaction &t);
         Revision::Ref getNonCurrent(slice docID, slice revID, ContentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
-        DocEnumerator enumerateRevisions(slice docID, slice author = nullslice);
+        RecordEnumerator enumerateRevisions(slice docID, slice author = nullslice);
 
         //////// SUBCLASS HOOKS:
 

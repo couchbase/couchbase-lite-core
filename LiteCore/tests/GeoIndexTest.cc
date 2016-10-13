@@ -7,7 +7,7 @@
 //
 
 #include "GeoIndex.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "LiteCoreTest.hh"
 
 using namespace geohash;
@@ -21,17 +21,17 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
     auto seq = indexer.startingSequence();
     numMapCalls = 0;
 
-    DocEnumerator::Options options;
+    RecordEnumerator::Options options;
     options.includeDeleted = true;
-    DocEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
+    RecordEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
-        auto &doc = e.doc();
+        auto &rec = e.record();
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
-        if (!doc.deleted()) {
+        if (!rec.deleted()) {
             // Here's the pseudo map function:
             ++numMapCalls;
-            CollatableReader r(doc.body());
+            CollatableReader r(rec.body());
             geohash::area area;
             area.longitude.min = r.readDouble();
             area.latitude.min = r.readDouble();
@@ -44,7 +44,7 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
             keys.push_back(key);
             values.push_back(value);
 }
-        indexer.emitDocIntoView(doc.key(), doc.sequence(), 0, keys, values);
+        indexer.emitDocIntoView(rec.key(), rec.sequence(), 0, keys, values);
     }
     indexer.finished();
 }
@@ -68,20 +68,20 @@ public:
     static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 
     void addCoords(unsigned n) {
-        Log("==== Adding %u docs...", n);
+        Log("==== Adding %u records...", n);
         srandom(42);
         Transaction t(db);
         IndexWriter writer(*index, t);
         for (unsigned i = 0; i < n; ++i) {
-            char docID[20];
-            sprintf(docID, "%u", i);
+            char recordID[20];
+            sprintf(recordID, "%u", i);
 
             double lat0 = randomLat(), lon0 = randomLon();
             double lat1 = std::min(lat0 + 0.5, 90.0), lon1 = std::min(lon0 + 0.5, 180.0);
             CollatableBuilder body;
             body << lon0 << lat0 << lon1 << lat1;
-            store->set(slice(docID), body, t);
-            Log("Added %s --> (%+08.4f, %+09.4f)", docID, lat0, lon0);
+            store->set(slice(recordID), body, t);
+            Log("Added %s --> (%+08.4f, %+09.4f)", recordID, lat0, lon0);
         }
         t.commit();
     }
@@ -107,9 +107,9 @@ N_WAY_TEST_CASE_METHOD(GeoIndexTest, "GeoIndex", "[GeoIndex],[Index]") {
         area a = e.keyBoundingBox();
         ++found;
         unsigned emitID = e.geoID();
-        Log("key = %s = (%g, %g)...(%g, %g) doc = '%s' #%u", e.key().toJSON().c_str(),
+        Log("key = %s = (%g, %g)...(%g, %g) rec = '%s' #%u", e.key().toJSON().c_str(),
               a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max,
-              e.docID().cString(), emitID);
+              e.recordID().cString(), emitID);
         REQUIRE(a.intersects(queryArea));
         auto geoJSON = e.keyGeoJSON();
         Log("keyGeoJSON = %s", geoJSON.cString());

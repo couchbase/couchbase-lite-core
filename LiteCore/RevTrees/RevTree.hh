@@ -32,8 +32,8 @@ namespace litecore {
         sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
         inline slice inlineBody() const;     /**< Body if stored in Revision, or null if not */
-        inline bool isBodyAvailable() const; /**< Is body inline or loadable from an earlier doc? */
-        inline alloc_slice readBody() const; /**< Reads body from earlier doc if necessary */
+        inline bool isBodyAvailable() const; /**< Is body inline or loadable from an earlier record? */
+        inline alloc_slice readBody() const; /**< Reads body from earlier record if necessary */
 
         bool isLeaf() const         {return (flags & kLeaf) != 0;}
         bool isDeleted() const      {return (flags & kDeleted) != 0;}
@@ -60,7 +60,7 @@ namespace litecore {
         static const uint16_t kNoParent = UINT16_MAX;
         
         slice       body;           /**< Revision body (JSON), or empty if not stored in this tree*/
-        uint64_t    oldBodyOffset;  /**< File offset of doc containing revision body, or else 0 */
+        uint64_t    oldBodyOffset;  /**< File offset of record containing revision body, or else 0 */
         uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
 
         void addFlag(Flags f)      {flags = (Flags)(flags | f);}
@@ -77,10 +77,10 @@ namespace litecore {
     class RevTree {
     public:
         RevTree() { }
-        RevTree(slice raw_tree, sequence seq, uint64_t docOffset);
+        RevTree(slice raw_tree, sequence seq, uint64_t recordOffset);
         virtual ~RevTree() { }
 
-        void decode(slice raw_tree, sequence seq, uint64_t docOffset);
+        void decode(slice raw_tree, sequence seq, uint64_t recordOffset);
 
         alloc_slice encode();
 

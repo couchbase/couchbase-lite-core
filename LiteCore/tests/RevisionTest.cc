@@ -30,18 +30,18 @@ TEST_CASE("CreateRev", "[Revision]") {
                  Revision::BodyParams{"{\"foo\":true}"_sl, "O-"_sl, false, true},
                  true);
     verifyRev(rev);
-    REQUIRE(rev.document().key() == "DOC"_sl);
+    REQUIRE(rev.record().key() == "DOC"_sl);
 
-    // Copy document:
-    const Document &doc = rev.document();
-    Document doc2(doc.key());
-    doc2.setMeta(doc.meta());
-    doc2.setBody(doc.body());
+    // Copy record:
+    const Record &rec = rev.record();
+    Record record2(rec.key());
+    record2.setMeta(rec.meta());
+    record2.setBody(rec.body());
 
-    Revision rev2(std::move(doc2));
+    Revision rev2(std::move(record2));
     verifyRev(rev2);
 
     rev2.setCurrent(false);
     REQUIRE_FALSE(rev2.isCurrent());
-    REQUIRE(rev2.document().key() == alloc_slice("DOC\t*,\02"));
+    REQUIRE(rev2.record().key() == alloc_slice("DOC\t*,\02"));
 }

@@ -272,16 +272,16 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         if (!e)
             return nullptr;
 
-        setEnumFilter(e, [docTypes,indexer](const Document &doc,
+        setEnumFilter(e, [docTypes,indexer](const Record &rec,
                                             C4DocumentFlags flags,
                                             slice docType) {
-            indexer->_lastSequenceIndexed = doc.sequence();
+            indexer->_lastSequenceIndexed = rec.sequence();
             if ((flags & kExists) && !(flags & kDeleted)
                                   && (!docTypes || docTypes->count(docType) > 0))
                 return true;
-            // We're skipping this doc because it's either purged or deleted, or its docType
+            // We're skipping this record because it's either purged or deleted, or its docType
             // doesn't match. But we do have to update the index to _remove_ it
-            indexer->skipDoc(doc.key(), doc.sequence());
+            indexer->skipDoc(rec.key(), rec.sequence());
             return false;
         });
         return e;
@@ -296,13 +296,13 @@ bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
 {
     try {
         auto idoc = c4Internal::internal(doc);
-        if (!indexer->shouldMapDocIntoView(idoc->document(), viewNumber))
+        if (!indexer->shouldMapDocIntoView(idoc->record(), viewNumber))
             return false;
         else if (indexer->shouldMapDocTypeIntoView(idoc->type(), viewNumber))
             return true;
         else {
             // We're skipping this doc, but we do have to update the index to _remove_ it
-            indexer->skipDocInView(idoc->document().key(), idoc->sequence, viewNumber);
+            indexer->skipDocInView(idoc->record().key(), idoc->sequence, viewNumber);
             return false;
         }
     } catchExceptions()

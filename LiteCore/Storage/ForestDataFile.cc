@@ -14,8 +14,8 @@
 //  and limitations under the License.
 
 #include "ForestDataFile.hh"
-#include "Document.hh"
-#include "DocEnumerator.hh"
+#include "Record.hh"
+#include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "LogInternal.hh"
@@ -404,7 +404,7 @@ namespace litecore {
     }
 
 
-    uint64_t ForestKeyStore::documentCount() const {
+    uint64_t ForestKeyStore::recordCount() const {
         fdb_kvs_info info;
         check(fdb_get_kvs_info(_handle, &info));
         return info.doc_count;
@@ -418,26 +418,26 @@ namespace litecore {
     }
 
 
-    void ForestKeyStore::setDocNoKey(Document &doc, fdb_doc &fdoc) const {
-        doc.adoptMeta(slice(fdoc.meta, fdoc.metalen));
+    void ForestKeyStore::setDocNoKey(Record &rec, fdb_doc &fdoc) const {
+        rec.adoptMeta(slice(fdoc.meta, fdoc.metalen));
         if (fdoc.body)
-            doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
+            rec.adoptBody(slice(fdoc.body, fdoc.bodylen));
         else
-            doc.setUnloadedBodySize(fdoc.bodylen);
-        doc.setDeleted(fdoc.deleted);
-        updateDoc(doc, fdoc.seqnum, fdoc.offset, fdoc.deleted);
+            rec.setUnloadedBodySize(fdoc.bodylen);
+        rec.setDeleted(fdoc.deleted);
+        updateDoc(rec, fdoc.seqnum, fdoc.offset, fdoc.deleted);
     }
 
-    void ForestKeyStore::setDoc(Document &doc, fdb_doc &fdoc) const {
-        doc.adoptKey(slice(fdoc.key, fdoc.keylen));
-        setDocNoKey(doc, fdoc);
+    void ForestKeyStore::setDoc(Record &rec, fdb_doc &fdoc) const {
+        rec.adoptKey(slice(fdoc.key, fdoc.keylen));
+        setDocNoKey(rec, fdoc);
     }
 
 
-    bool ForestKeyStore::read(Document &doc, ContentOptions options) const {
+    bool ForestKeyStore::read(Record &rec, ContentOptions options) const {
         fdb_doc fdoc = {};
-        fdoc.key = (void*)doc.key().buf;
-        fdoc.keylen = doc.key().size;
+        fdoc.key = (void*)rec.key().buf;
+        fdoc.keylen = rec.key().size;
         fdb_status status;
         if (options & kMetaOnly)
             status = fdb_get_metaonly(_handle, &fdoc);
@@ -445,41 +445,41 @@ namespace litecore {
             status = fdb_get(_handle, &fdoc);
         if (!checkGet(status))
             return false;
-        setDocNoKey(doc, fdoc);
-        // (the heap blocks pointed to by fdoc have been adopted by doc, so don't free them.)
+        setDocNoKey(rec, fdoc);
+        // (the heap blocks pointed to by fdoc have been adopted by rec, so don't free them.)
         return true;
     }
 
 
-    void ForestKeyStore::readBody(Document &doc) const {
-        if (doc.body().buf)
+    void ForestKeyStore::readBody(Record &rec) const {
+        if (rec.body().buf)
             return;
         
-        if (doc.offset() > 0) {
-            slice existingKey = doc.key();
+        if (rec.offset() > 0) {
+            slice existingKey = rec.key();
             fdb_doc fdoc = {};
-            fdoc.offset = doc.offset();
+            fdoc.offset = rec.offset();
             fdoc.key = (void*)existingKey.buf;
             fdoc.keylen = existingKey.size;
-            fdoc.seqnum = doc.sequence();
+            fdoc.seqnum = rec.sequence();
             if (!fdoc.seqnum) {
                 fdoc.seqnum = SEQNUM_NOT_USED;
             }
             
             check(fdb_get_byoffset(_handle, &fdoc));
 
-            doc.adoptBody(slice(fdoc.body, fdoc.bodylen));
+            rec.adoptBody(slice(fdoc.body, fdoc.bodylen));
             if (fdoc.key != existingKey.buf)
                 free(fdoc.key);
             free(fdoc.meta);
         } else {
-            KeyStore::readBody(doc);
+            KeyStore::readBody(rec);
         }
     }
 
 
-    Document ForestKeyStore::get(sequence seq, ContentOptions options) const {
-        Document doc;
+    Record ForestKeyStore::get(sequence seq, ContentOptions options) const {
+        Record rec;
         fdb_doc fdoc = {};
         fdoc.seqnum = seq;
         fdb_status status;
@@ -488,15 +488,15 @@ namespace litecore {
         else
             status = fdb_get_byseq(_handle, &fdoc);
         if (checkGet(status)) {
-            setDoc(doc, fdoc);
+            setDoc(rec, fdoc);
         }
-        // (the heap blocks pointed to by fdoc have been adopted by doc, so don't free them.)
-        return doc;
+        // (the heap blocks pointed to by fdoc have been adopted by rec, so don't free them.)
+        return rec;
     }
 
 
-    Document ForestKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
-        Document result;
+    Record ForestKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+        Record result;
 
         fdb_doc fdoc = {};
         fdoc.offset = offset;
@@ -546,9 +546,9 @@ namespace litecore {
 #pragma mark - ITERATORS:
 
 
-    class ForestEnumerator : public DocEnumerator::Impl {
+    class ForestEnumerator : public RecordEnumerator::Impl {
     public:
-        ForestEnumerator(ForestKeyStore &store, fdb_iterator *iterator, DocEnumerator::Options &options)
+        ForestEnumerator(ForestKeyStore &store, fdb_iterator *iterator, RecordEnumerator::Options &options)
         :_store(store),
          _iterator(iterator),
          _descending(options.descending),
@@ -565,7 +565,7 @@ namespace litecore {
 
 
         virtual bool shouldSkipFirstStep() override {
-            return true;    // iterator is already positioned at first doc when created
+            return true;    // iterator is already positioned at first record when created
         }
 
 
@@ -578,7 +578,7 @@ namespace litecore {
             return true;
         }
 
-        bool read(Document &doc) override {
+        bool read(Record &rec) override {
             auto fn = (_metaOnly ? fdb_iterator_get_metaonly : fdb_iterator_get);
             fdb_doc fdoc = { };
             fdb_doc *docP = &fdoc;
@@ -586,8 +586,8 @@ namespace litecore {
             if (status == FDB_RESULT_ITERATOR_FAIL)
                 return false;
             check(status);
-            _store.setDoc(doc, fdoc);
-            Debug("enum:     fdb_iterator_get --> [%s]", doc.key().hexCString());
+            _store.setDoc(rec, fdoc);
+            Debug("enum:     fdb_iterator_get --> [%s]", rec.key().hexCString());
             return true;
         }
 
@@ -600,7 +600,7 @@ namespace litecore {
 
 
 
-    static fdb_iterator_opt_t iteratorOptions(const DocEnumerator::Options& options) {
+    static fdb_iterator_opt_t iteratorOptions(const RecordEnumerator::Options& options) {
         fdb_iterator_opt_t fdbOptions = 0;
         if (!options.includeDeleted)
             fdbOptions |= FDB_ITR_NO_DELETES;
@@ -612,8 +612,8 @@ namespace litecore {
     }
 
 
-    DocEnumerator::Impl* ForestKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
-                                                     DocEnumerator::Options &options)
+    RecordEnumerator::Impl* ForestKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
+                                                     RecordEnumerator::Options &options)
     {
         fdb_iterator *iterator;
         check(fdb_iterator_init(_handle, &iterator,
@@ -624,8 +624,8 @@ namespace litecore {
     }
 
 
-    DocEnumerator::Impl* ForestKeyStore::newEnumeratorImpl(sequence minSeq, sequence maxSeq,
-                                                     DocEnumerator::Options &options)
+    RecordEnumerator::Impl* ForestKeyStore::newEnumeratorImpl(sequence minSeq, sequence maxSeq,
+                                                     RecordEnumerator::Options &options)
     {
         fdb_iterator *iterator;
         check(fdb_iterator_sequence_init(_handle, &iterator,

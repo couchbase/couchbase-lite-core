@@ -7,7 +7,7 @@
 //
 
 #include "MapReduceIndex.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "Collatable.hh"
 #include "Fleece.hh"
 
@@ -26,15 +26,15 @@ static CollatableBuilder ToCollatable(T t) {
 
 static int numMapCalls;
 
-typedef void (*mapFn)(const Document &doc,
+typedef void (*mapFn)(const Record &rec,
                       std::vector<Collatable> &keys,
                       std::vector<alloc_slice> &values);
 
-static void mapCities(const Document &doc,
+static void mapCities(const Record &rec,
                       std::vector<Collatable> &keys,
                       std::vector<alloc_slice> &values)
 {
-    const Dict *body = Value::fromData(doc.body())->asDict();
+    const Dict *body = Value::fromData(rec.body())->asDict();
     auto name = (string)body->get("name"_sl)->asString();
     const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
@@ -43,11 +43,11 @@ static void mapCities(const Document &doc,
     }
 }
 
-static void mapStates(const Document &doc,
+static void mapStates(const Record &rec,
                       std::vector<Collatable> &keys,
                       std::vector<alloc_slice> &values)
 {
-    const Dict *body = Value::fromData(doc.body())->asDict();
+    const Dict *body = Value::fromData(rec.body())->asDict();
     auto name = (string)body->get("name"_sl)->asString();
     const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
@@ -56,11 +56,11 @@ static void mapStates(const Document &doc,
     }
 }
 
-static void mapStatesAndCities(const Document &doc,
+static void mapStatesAndCities(const Record &rec,
                       std::vector<Collatable> &keys,
                       std::vector<alloc_slice> &values)
 {
-    const Dict *body = Value::fromData(doc.body())->asDict();
+    const Dict *body = Value::fromData(rec.body())->asDict();
     auto name = (string)body->get("name"_sl)->asString();
     const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
@@ -80,21 +80,21 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index, mapFn map) {
     numMapCalls = 0;
     Log("Updating index from sequence=%llu...", seq);
 
-    DocEnumerator::Options options;
+    RecordEnumerator::Options options;
     options.includeDeleted = true;
-    DocEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
+    RecordEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
-        auto &doc = e.doc();
+        auto &rec = e.record();
         Log("    enumerating seq %llu: '%.*s' (del=%d)",
-              doc.sequence(), (int)doc.key().size, doc.key().buf, doc.deleted());
+              rec.sequence(), (int)rec.key().size, rec.key().buf, rec.deleted());
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
-        if (!doc.deleted()) {
+        if (!rec.deleted()) {
             // Here's the pseudo map function:
             ++numMapCalls;
-            (*map)(doc, keys, values);
+            (*map)(rec, keys, values);
         }
-        indexer.emitDocIntoView(doc.key(), doc.sequence(), 0, keys, values);
+        indexer.emitDocIntoView(rec.key(), rec.sequence(), 0, keys, values);
     }
     indexer.finished();
     Log("...done updating index (%d map calls)", numMapCalls);
@@ -127,8 +127,8 @@ class MapReduceTest : public DataFileTestFixture {
                                Collatable(), litecore::nullslice); e.next(); ) {
             CollatableReader keyReader(e.key());
             alloc_slice keyStr = keyReader.readString();
-            Log("key = %s, docID = %.*s",
-                keyStr.cString(), (int)e.docID().size, e.docID().buf);
+            Log("key = %s, recordID = %.*s",
+                keyStr.cString(), (int)e.recordID().size, e.recordID().buf);
             REQUIRE((string)keyStr == expectedKeys[nRows++]);
         }
         REQUIRE(nRows == expectedKeys.size());
@@ -164,7 +164,7 @@ class MapReduceTest : public DataFileTestFixture {
     }
     
     
-    void addDoc(string docID, string name, vector<string> cities, Transaction &t) {
+    void addDoc(string recordID, string name, vector<string> cities, Transaction &t) {
         Encoder e;
         e.beginDictionary();
             e.writeKey("name");
@@ -177,7 +177,7 @@ class MapReduceTest : public DataFileTestFixture {
         e.endDictionary();
         auto data = e.extractOutput();
 
-        store->set(docID, nullslice, data, t);
+        store->set(recordID, nullslice, data, t);
     }
 
 
@@ -235,7 +235,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
                                 "Walla Walla"});
     REQUIRE(numMapCalls == 1);
 
-    // After deleting a doc, updating the index can be done incrementally because the deleted doc
+    // After deleting a rec, updating the index can be done incrementally because the deleted rec
     // will appear in the by-sequence iteration, so the indexer can remove its rows.
     Log("--- Deleting CA");
     {
@@ -253,7 +253,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
                         "Seattle", "Skookumchuk", "Walla Walla"});
     REQUIRE(numMapCalls == 2);
 
-    // Deletion followed by compaction will purge the deleted docs, so incremental indexing no
+    // Deletion followed by compaction will purge the deleted records, so incremental indexing no
     // longer works. The indexer should detect this and rebuild from scratch.
     Log("--- Deleting OR");
     {

@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "DataFile.hh"
-#include "Document.hh"
+#include "Record.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "LogInternal.hh"
@@ -230,11 +230,11 @@ namespace litecore {
 
     void DataFile::incrementDeletionCount(Transaction &t) {
         KeyStore &infoStore = getKeyStore(kInfoKeyStoreName);
-        Document doc = infoStore.get(slice(kDeletionCountKey));
-        uint64_t purgeCount = doc.bodyAsUInt() + 1;
+        Record rec = infoStore.get(slice(kDeletionCountKey));
+        uint64_t purgeCount = rec.bodyAsUInt() + 1;
         uint64_t newBody = _endian_encode(purgeCount);
-        doc.setBody(slice(&newBody, sizeof(newBody)));
-        infoStore.write(doc, t);
+        rec.setBody(slice(&newBody, sizeof(newBody)));
+        infoStore.write(rec, t);
     }
 
     uint64_t DataFile::purgeCount() const {
@@ -243,7 +243,7 @@ namespace litecore {
 
     void DataFile::updatePurgeCount(Transaction &t) {
         KeyStore& infoStore = getKeyStore(kInfoKeyStoreName);
-        Document purgeCount = infoStore.get(slice(kDeletionCountKey));
+        Record purgeCount = infoStore.get(slice(kDeletionCountKey));
         if (purgeCount.exists())
             infoStore.set(slice(kPurgeCountKey), purgeCount.body(), t);
     }

@@ -7,14 +7,13 @@
 //
 
 #pragma once
-#include "Document.hh"
+#include "Record.hh"
 #include "VersionVector.hh"
 
 
 namespace litecore {
 
-    /** A revision of a versioned document, which is (confusingly) stored as a separate LiteCore
-        document. */
+    /** A single revision of a versioned document, stored as an individual record. */
     class Revision {
     public:
 
@@ -28,7 +27,7 @@ namespace litecore {
             bool conflicted;
         };
 
-        /** Flags applying to the document if this is the current rev. Matches C4DocumentFlags. */
+        /** Flags applying to the record if this is the current rev. Matches C4DocumentFlags. */
         enum Flags : uint8_t {
             kNone           = 0x00,
             kDeleted        = 0x01,
@@ -36,8 +35,8 @@ namespace litecore {
             kHasAttachments = 0x04,
         };
 
-        /** Creates a Revision from a pre-populated Document read from a Database. */
-        explicit Revision(const Document& doc);
+        /** Creates a Revision from a pre-populated Record read from a DataFile. */
+        explicit Revision(const Record& rec);
 
         /** Creates a new Revision. */
         Revision(slice docID,
@@ -57,13 +56,13 @@ namespace litecore {
         bool isConflicted() const           {return (flags() & kConflicted) != 0;}
         bool hasAttachments() const         {return (flags() & kHasAttachments) != 0;}
 
-        bool exists() const                 {return _doc.exists();}
-        sequence_t sequence() const         {return _doc.sequence();}
+        bool exists() const                 {return _rec.exists();}
+        sequence_t sequence() const         {return _rec.sequence();}
 
-        slice docType() const               {return _docType;}
-        slice body() const                  {return _doc.body();}
+        slice docType() const               {return _recType;}
+        slice body() const                  {return _rec.body();}
 
-        Document& document()                {return _doc;}
+        Record& record()                    {return _rec;}
 
         bool isCurrent() const;
         void setCurrent(bool);
@@ -78,10 +77,10 @@ namespace litecore {
         Revision(const Revision&) =delete;  // not copyable
         Revision& operator= (const Revision&) =delete;
 
-        Document        _doc;               // The document
+        Record          _rec;               // The record
         Flags           _flags {kNone};     // Flags
         VersionVector   _vers;              // Version vector
-        slice           _docType;           // Document type
+        slice           _recType;           // Record type
     };
 
 }

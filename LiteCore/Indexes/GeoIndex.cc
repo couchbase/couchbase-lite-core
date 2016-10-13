@@ -84,7 +84,7 @@ namespace litecore {
     bool GeoIndexEnumerator::approve(slice key) {
         // Have we seen this result before?
         _geoID = (unsigned)fleece::Value::fromTrustedData(value())->asUnsigned();
-        ItemID item((std::string)docID(), _geoID);
+        ItemID item((std::string)recordID(), _geoID);
         if (_alreadySeen.find(item) != _alreadySeen.end()) {
             _dups++;
             return false;

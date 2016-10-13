@@ -15,7 +15,7 @@
 
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "Fleece.hh"
 
@@ -31,7 +31,7 @@ namespace litecore {
 
     CASRevisionStore::ServerState CASRevisionStore::getServerState(slice docID) {
         ServerState state;
-        Document d = _casStore.get(docID);
+        Record d = _casStore.get(docID);
         if (d.body().buf) {
             fleece::Array::iterator arr(fleece::Value::fromTrustedData(d.body())->asArray());
             if (arr.count() >= 2) {
@@ -97,7 +97,7 @@ namespace litecore {
 
         Revision::Ref newRev;
         if (!current || current->revID() == state.latest.revID) {
-            // Current version is from CAS server, or this doc doesn't exist yet,
+            // Current version is from CAS server, or this record doesn't exist yet,
             // so save this new revision as current:
             newRev = writeCASRevision(current.get(), true, docID, body, t);
 
@@ -156,7 +156,7 @@ namespace litecore {
         vers.incrementGen(kCASServerPeerID);
         Revision::Ref newRev { new Revision(docID, vers, body, current) };
         KeyStore &store = current ? _currentStore : _nonCurrentStore;
-        store.write(newRev->document(), t);
+        store.write(newRev->record(), t);
         return newRev;
     }
 
@@ -198,7 +198,7 @@ namespace litecore {
             if (state.latest.revID == curRev.revID()) {
                 readBody(curRev);
                 curRev.setCurrent(false);             // append the revID to the key
-                _nonCurrentStore.write(curRev.document(), t);
+                _nonCurrentStore.write(curRev.record(), t);
             }
         }
     }

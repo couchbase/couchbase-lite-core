@@ -181,7 +181,7 @@ struct C4MapReduceEnumerator : public C4ViewQueryEnumInternal {
             return C4ViewQueryEnumInternal::next();
         key = asKeyReader(_enum.key());
         value = _enum.value();
-        docID = _enum.docID();
+        docID = _enum.recordID();
         docSequence = _enum.sequence();
         return true;
     }
@@ -247,7 +247,7 @@ struct C4FullTextEnumerator : public C4ViewQueryEnumInternal {
         if (!_enum.next())
             return C4QueryEnumInternal::next();
         auto match = _enum.match();
-        docID = match->docID;
+        docID = match->recordID;
         docSequence = match->sequence;
         _allocatedValue = match->value();
         value = _allocatedValue;
@@ -325,7 +325,7 @@ struct C4GeoEnumerator : public C4ViewQueryEnumInternal {
     virtual bool next() override {
         if (!_enum.next())
             return C4ViewQueryEnumInternal::next();
-        docID = _enum.docID();
+        docID = _enum.recordID();
         docSequence = _enum.sequence();
         value = _enum.value();
         auto bbox = _enum.keyBoundingBox();
@@ -410,7 +410,7 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
     virtual bool next() override {
         if (!_enum.next())
             return C4QueryEnumInternal::next();
-        docID = _enum.docID();
+        docID = _enum.recordID();
         docSequence = _enum.sequence();
         return true;
     }

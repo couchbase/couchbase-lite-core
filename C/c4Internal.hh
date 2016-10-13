@@ -27,7 +27,7 @@ struct C4DocEnumerator;
 
 namespace litecore {
     class Database;
-    class Document;
+    class Record;
 }
 
 using namespace std;
@@ -77,7 +77,7 @@ namespace c4Internal {
 
     // DOC ENUMERATORS:
 
-    typedef function<bool(const Document&,
+    typedef function<bool(const Record&,
                           uint32_t documentFlags,  // C4DocumentFlags
                           slice docType)> EnumFilter;
 
@@ -85,7 +85,7 @@ namespace c4Internal {
 
 
     // Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted'),
-    // so this is equivalent to litecore::DocEnumerator::includeDeleted.
+    // so this is equivalent to litecore::RecordEnumerator::includeDeleted.
     // Should only need to be used internally, for the view indexer's enumerator.
     static const uint16_t kC4IncludePurged = 0x8000;
 

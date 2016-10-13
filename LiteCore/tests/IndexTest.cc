@@ -31,7 +31,7 @@ public:
         uint64_t _rowCount {0};
         
 
-    void updateDoc(string docID, vector<string> body, IndexWriter &writer) {
+    void updateDoc(string recordID, vector<string> body, IndexWriter &writer) {
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         for (unsigned i = 1; i < body.size(); i++) {
@@ -40,7 +40,7 @@ public:
             keys.push_back(key);
             values.push_back(alloc_slice(body[0]));
         }
-        bool changed = writer.update(docID, 1, keys, values, _rowCount);
+        bool changed = writer.update(recordID, 1, keys, values, _rowCount);
         REQUIRE(changed);
     }
 
@@ -52,10 +52,10 @@ public:
             nRows++;
             alloc_slice keyStr = e.key().readString();
             slice valueStr = e.value();
-            Log("key = %.*s, value = %.*s, docID = %.*s",
+            Log("key = %.*s, value = %.*s, recordID = %.*s",
                   (int)keyStr.size, keyStr.buf,
                   (int)valueStr.size, valueStr.buf,
-                  (int)e.docID().size, e.docID().buf);
+                  (int)e.recordID().size, e.recordID().buf);
         }
         REQUIRE(nRows == _rowCount);
         return nRows;
@@ -66,7 +66,7 @@ public:
 
 N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     //LogLevel = kDebug;
-    unordered_map<string, vector<string> > docs = {
+    unordered_map<string, vector<string> > records = {
         {"CA", {"California", "San Jose", "San Francisco", "Cambria"}},
         {"WA", {"Washington", "Seattle", "Port Townsend", "Skookumchuk"}},
         {"OR", {"Oregon", "Portland", "Eugene"}},
@@ -75,7 +75,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
         Log("--- Populate index");
         Transaction trans(db);
         IndexWriter writer(*index, trans);
-        for (auto i : docs)
+        for (auto i : records)
             updateDoc(i.first, i.second, writer);
         trans.commit();
     }
@@ -110,8 +110,8 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
                            options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, docID = %.*s",
-              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+        Log("key = %.*s, recordID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.recordID().size, e.recordID().buf);
     }
     REQUIRE(nRows == 6);
     REQUIRE(_rowCount == nRows);
@@ -127,8 +127,8 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     for (IndexEnumerator e(*index, keys); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, docID = %.*s",
-              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+        Log("key = %.*s, recordID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.recordID().size, e.recordID().buf);
     }
     REQUIRE(nRows == 2);
 
@@ -141,8 +141,8 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     for (IndexEnumerator e(*index, ranges); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, docID = %.*s",
-              (int)keyStr.size, keyStr.buf, (int)e.docID().size, e.docID().buf);
+        Log("key = %.*s, recordID = %.*s",
+              (int)keyStr.size, keyStr.buf, (int)e.recordID().size, e.recordID().buf);
     }
     REQUIRE(nRows == 3);
 
@@ -168,7 +168,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         values.push_back(alloc_slice("purple"));
         keys.push_back(key);
         values.push_back(alloc_slice("red"));
-        bool changed = writer.update("doc1"_sl, 1, keys, values, _rowCount);
+        bool changed = writer.update("record1"_sl, 1, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 2);
         trans.commit();
@@ -187,7 +187,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         values.push_back(alloc_slice("crimson"));
         keys.push_back(CollatableBuilder("Master"));
         values.push_back(alloc_slice("gray"));
-        bool changed = writer.update("doc1"_sl, 2, keys, values, _rowCount);
+        bool changed = writer.update("record1"_sl, 2, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 3);
         trans.commit();

@@ -68,7 +68,7 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "EmptyStore", "[RevisionStore]") {
 
 
 N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
-    // Create a new document:
+    // Create a new record:
     Transaction t(db);
     auto rev = store->create(kDoc1ID, VersionVector(), kBody1, t);
     REQUIRE(rev);

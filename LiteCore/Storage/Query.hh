@@ -27,7 +27,7 @@ namespace litecore {
         bool next();
         void close()                    {_impl.reset();}
 
-        slice docID() const             {return _docID;}
+        slice recordID() const             {return _recordID;}
         sequence_t sequence() const     {return _sequence;}
 
         class Impl {
@@ -38,7 +38,7 @@ namespace litecore {
 
     private:
         std::unique_ptr<Impl> _impl;
-        slice _docID;
+        slice _recordID;
         sequence_t _sequence;
     };
 

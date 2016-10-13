@@ -21,8 +21,8 @@
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 #include "KeyStore.hh"
-#include "Document.hh"
-#include "DocEnumerator.hh"
+#include "Record.hh"
+#include "RecordEnumerator.hh"
 #include "LogInternal.hh"
 
 #include "Collatable.hh"
@@ -126,7 +126,7 @@ c4Database::c4Database(const string &path,
 {
     // Validate that the versioning matches what's used in the database:
     auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
-    Document doc = info.get(slice("versioning"));
+    Record doc = info.get(slice("versioning"));
     if (doc.exists()) {
         if (doc.bodyAsUInt() != (uint64_t)config.versioning)
             error::_throw(error::WrongFormat);
@@ -358,14 +358,14 @@ const C4DatabaseConfig* c4db_getConfig(C4Database *database) {
 uint64_t c4db_getDocumentCount(C4Database* database) {
     try {
         WITH_LOCK(database);
-        DocEnumerator::Options opts;
+        RecordEnumerator::Options opts;
         opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(database->defaultKeyStore(), nullslice, nullslice, opts);
+        for (RecordEnumerator e(database->defaultKeyStore(), nullslice, nullslice, opts);
                 e.next(); ) {
             C4DocumentFlags flags;
-            if (database->readDocMeta(e.doc(), &flags) && !(flags & kDeleted))
+            if (database->readDocMeta(e.record(), &flags) && !(flags & kDeleted))
                 ++count;
         }
         return count;
@@ -431,10 +431,10 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
     try {
         WITH_LOCK(database);
         KeyStore& expiryKvs = database->getKeyStore("expiry");
-        DocEnumerator e(expiryKvs);
-        if(e.next() && e.doc().body() == nullslice) {
+        RecordEnumerator e(expiryKvs);
+        if(e.next() && e.record().body() == nullslice) {
             // Look for an entry with a null body (otherwise, its key is simply a doc ID)
-            CollatableReader r(e.doc().key());
+            CollatableReader r(e.record().key());
             r.beginArray();
             return (uint64_t)r.readInt();
         }
@@ -472,7 +472,7 @@ C4RawDocument* c4raw_get(C4Database* database,
     WITH_LOCK(database);
     try {
         KeyStore& localDocs = database->getKeyStore((string)storeName);
-        Document doc = localDocs.get(key);
+        Record doc = localDocs.get(key);
         if (!doc.exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return nullptr;

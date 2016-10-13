@@ -22,10 +22,10 @@
 namespace litecore {
 
 
-    Revision::Revision(const Document& doc)
-    :_doc(doc)
+    Revision::Revision(const Record& rec)
+    :_rec(rec)
     {
-        if (_doc.meta().buf || _doc.exists())
+        if (_rec.meta().buf || _rec.exists())
             readMeta();
     }
 
@@ -40,21 +40,21 @@ namespace litecore {
             _flags = kDeleted;
         if (p.hasAttachments)
             _flags = (Flags)(_flags | kHasAttachments);
-        _docType = p.docType;
+        _recType = p.docType;
 
         writeMeta(vers);
 
-        // Set the doc key and body:
+        // Set the rec key and body:
         setKey(docID, current);
-        _doc.setBody(p.body);
+        _rec.setBody(p.body);
     }
 
 
     Revision::Revision(Revision &&old) noexcept
-    :_doc(std::move(old._doc)),
+    :_rec(std::move(old._rec)),
      _flags(old._flags),
      _vers(std::move(old._vers)),
-     _docType(std::move(old._docType))
+     _recType(std::move(old._recType))
     { }
 
 
@@ -63,16 +63,16 @@ namespace litecore {
         enc.beginArray(3);
         enc << _flags;
         enc << vers;
-        enc << _docType;
+        enc << _recType;
         enc.endArray();
-        _doc.setMeta(enc.extractOutput());
+        _rec.setMeta(enc.extractOutput());
         // Read it back in, to set up my pointers into it:
         readMeta();
     }
 
 
     void Revision::readMeta() {
-        slice metaBytes = _doc.meta();
+        slice metaBytes = _rec.meta();
         if (metaBytes.size < 2)
             error::_throw(error::CorruptRevisionData);
 
@@ -80,9 +80,9 @@ namespace litecore {
         fleece::Array::iterator meta(metaValue->asArray());
         _flags = (Flags)meta.read()->asUnsigned();
         _vers.readFrom(meta.read());
-        _docType = meta.read()->asString();
-        if (_docType.size == 0)
-            _docType.buf = nullptr;
+        _recType = meta.read()->asString();
+        if (_recType.size == 0)
+            _recType.buf = nullptr;
     }
 
 
@@ -102,11 +102,11 @@ namespace litecore {
 
 
     slice Revision::docID() const {
-        return RevisionStore::docIDFromKey(_doc.key());
+        return RevisionStore::docIDFromKey(_rec.key());
     }
 
     bool Revision::isCurrent() const {
-        return docID().size == _doc.key().size;
+        return docID().size == _rec.key().size;
     }
 
     void Revision::setCurrent(bool current) {
@@ -116,9 +116,9 @@ namespace litecore {
 
     void Revision::setKey(slice docid, bool current) {
         if (current)
-            _doc.setKey(docid);
+            _rec.setKey(docid);
         else
-            _doc.setKey(RevisionStore::keyForNonCurrentRevision(docid, _vers.current()));
+            _rec.setKey(RevisionStore::keyForNonCurrentRevision(docid, _vers.current()));
     }
 
 }

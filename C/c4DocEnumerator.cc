@@ -19,8 +19,8 @@
 #include "c4DatabaseInternal.hh"
 #include "c4DocInternal.hh"
 #include "DataFile.hh"
-#include "Document.hh"
-#include "DocEnumerator.hh"
+#include "Record.hh"
+#include "RecordEnumerator.hh"
 #include "LogInternal.hh"
 #include <set>
 
@@ -64,8 +64,8 @@ struct C4DocEnumerator: InstanceCounted {
         _e.close();
     }
 
-    static DocEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
-        DocEnumerator::Options options;
+    static RecordEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
+        RecordEnumerator::Options options;
         options.skip = (unsigned)c4options.skip;
         options.descending = (c4options.flags & kC4Descending) != 0;
         options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
@@ -90,41 +90,41 @@ struct C4DocEnumerator: InstanceCounted {
     }
 
     C4Document* getDoc() {
-        return _e ? _database->newDocumentInstance(_e.doc()) : nullptr;
+        return _e ? _database->newDocumentInstance(_e.record()) : nullptr;
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
         if (!_e)
             return false;
-        outInfo->docID = _e.doc().key();
+        outInfo->docID = _e.record().key();
         outInfo->revID = _docRevID;
         outInfo->flags = _docFlags;
-        outInfo->sequence = _e.doc().sequence();
+        outInfo->sequence = _e.record().sequence();
         return true;
     }
 
 private:
     inline bool useDoc() {
-        if (!_e.doc().exists()) {
+        if (!_e.record().exists()) {
             // Client must be enumerating a list of docIDs, and this doc doesn't exist.
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
             _docRevID = nullslice;
-            return (!_filter || _filter(_e.doc(), 0, nullslice));
+            return (!_filter || _filter(_e.record(), 0, nullslice));
         }
         C4DocumentFlags flags;
         slice docType;
-        if (!_database->readDocMeta(_e.doc(), &flags, &_docRevID, &docType))
+        if (!_database->readDocMeta(_e.record(), &flags, &_docRevID, &docType))
             return false;
         _docFlags = flags | kExists;
         auto optFlags = _options.flags;
         return (optFlags & kC4IncludeDeleted       || !(_docFlags & kDeleted))
             && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & kConflicted))
-            && (!_filter || _filter(_e.doc(), _docFlags, docType));
+            && (!_filter || _filter(_e.record(), _docFlags, docType));
     }
 
     Retained<C4Database> _database;
-    DocEnumerator _e;
+    RecordEnumerator _e;
     C4EnumeratorOptions _options;
     EnumFilter _filter;
 

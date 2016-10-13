@@ -10,8 +10,8 @@
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
 #include "QueryParser.hh"
-#include "Document.hh"
-#include "DocEnumerator.hh"
+#include "Record.hh"
+#include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
@@ -53,7 +53,7 @@ namespace litecore {
             db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ (key BLOB PRIMARY KEY, meta BLOB, "
                           "body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
             if (capabilities.getByOffset) {
-                // shadow table for overwritten docs
+                // shadow table for overwritten records
                 db.exec(subst("CREATE TABLE IF NOT EXISTS kvold_@ ("
                               "sequence INTEGER PRIMARY KEY, key BLOB, meta BLOB, body BLOB)"));
                 db.exec("PRAGMA recursive_triggers = 1");
@@ -66,7 +66,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::close() {
-        _docCountStmt.reset();
+        _recCountStmt.reset();
         _getByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
         _getBySeqStmt.reset();
@@ -107,17 +107,17 @@ namespace litecore {
     }
 
 
-    uint64_t SQLiteKeyStore::documentCount() const {
-        if (!_docCountStmt) {
+    uint64_t SQLiteKeyStore::recordCount() const {
+        if (!_recCountStmt) {
             stringstream sql;
             sql << "SELECT count(*) FROM kv_" << _name;
             if (_capabilities.softDeletes)
                 sql << " WHERE deleted!=1";
-            compile(_docCountStmt, sql.str().c_str());
+            compile(_recCountStmt, sql.str().c_str());
         }
-        UsingStatement u(_docCountStmt);
-        if (_docCountStmt->executeStep()) {
-            auto count = (int64_t)_docCountStmt->getColumn(0);
+        UsingStatement u(_recCountStmt);
+        if (_recCountStmt->executeStep()) {
+            auto count = (int64_t)_recCountStmt->getColumn(0);
             return count;
         }
         return 0;
@@ -157,31 +157,31 @@ namespace litecore {
     }
 
 
-    // OPT: Would be nice to avoid copying key/meta/body here; this would require Document to
+    // OPT: Would be nice to avoid copying key/meta/body here; this would require Record to
     // know that the pointers are ephemeral, and create copies if they're accessed as
     // alloc_slice (not just slice).
 
 
     // Gets meta from column 3, and body (or its length) from column 4
-    /*static*/ void SQLiteKeyStore::setDocMetaAndBody(Document &doc,
+    /*static*/ void SQLiteKeyStore::setDocMetaAndBody(Record &rec,
                                                       SQLite::Statement &stmt,
                                                       ContentOptions options)
     {
-        doc.setMeta(columnAsSlice(stmt.getColumn(3)));
+        rec.setMeta(columnAsSlice(stmt.getColumn(3)));
         if (options & kMetaOnly)
-            doc.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
+            rec.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
         else
-            doc.setBody(columnAsSlice(stmt.getColumn(4)));
+            rec.setBody(columnAsSlice(stmt.getColumn(4)));
     }
     
 
-    bool SQLiteKeyStore::read(Document &doc, ContentOptions options) const {
+    bool SQLiteKeyStore::read(Record &rec, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
             ? compile(_getMetaByKeyStmt,
                       "SELECT sequence, deleted, 0, meta, length(body) FROM kv_@ WHERE key=?")
             : compile(_getByKeyStmt,
                       "SELECT sequence, deleted, 0, meta, body FROM kv_@ WHERE key=?");
-        stmt.bindNoCopy(1, doc.key().buf, (int)doc.key().size);
+        stmt.bindNoCopy(1, rec.key().buf, (int)rec.key().size);
         UsingStatement u(stmt);
         if (!stmt.executeStep())
             return false;
@@ -189,16 +189,16 @@ namespace litecore {
         sequence seq = (int64_t)stmt.getColumn(0);
         uint64_t offset = _capabilities.getByOffset ? seq : 0;
         bool deleted = (int)stmt.getColumn(1);
-        updateDoc(doc, seq, offset, deleted);
-        setDocMetaAndBody(doc, stmt, options);
-        return !doc.deleted();
+        updateDoc(rec, seq, offset, deleted);
+        setDocMetaAndBody(rec, stmt, options);
+        return !rec.deleted();
     }
 
 
-    Document SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
+    Record SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
         if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
-        Document doc;
+        Record rec;
         auto &stmt = (options & kMetaOnly)
             ? compile(_getMetaBySeqStmt,
                           "SELECT 0, deleted, key, meta, length(body) FROM kv_@ WHERE sequence=?")
@@ -209,29 +209,29 @@ namespace litecore {
         if (stmt.executeStep()) {
             uint64_t offset = _capabilities.getByOffset ? seq : 0;
             bool deleted = (int)stmt.getColumn(1);
-            updateDoc(doc, seq, offset, deleted);
-            doc.setKey(columnAsSlice(stmt.getColumn(2)));
-            setDocMetaAndBody(doc, stmt, options);
+            updateDoc(rec, seq, offset, deleted);
+            rec.setKey(columnAsSlice(stmt.getColumn(2)));
+            setDocMetaAndBody(rec, stmt, options);
         }
-        return doc;
+        return rec;
     }
 
 
-    Document SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
+    Record SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
         Assert(offset == seq);
-        Document doc;
+        Record rec;
         if (!_capabilities.getByOffset)
-            return doc;
+            return rec;
 
         auto &stmt = compile(_getByOffStmt, "SELECT key, meta, body FROM kvold_@ WHERE sequence=?");
         UsingStatement u(stmt);
         stmt.bind(1, (int64_t)seq);
         if (stmt.executeStep()) {
-            updateDoc(doc, seq, seq);
-            doc.setKey(columnAsSlice(stmt.getColumn(0)));
-            doc.setMeta(columnAsSlice(stmt.getColumn(1)));
-            doc.setBody(columnAsSlice(stmt.getColumn(2)));
-            return doc;
+            updateDoc(rec, seq, seq);
+            rec.setKey(columnAsSlice(stmt.getColumn(0)));
+            rec.setMeta(columnAsSlice(stmt.getColumn(1)));
+            rec.setBody(columnAsSlice(stmt.getColumn(2)));
+            return rec;
         } else {
             // Maybe the sequence is still current...
             return get(seq, kDefaultContent);

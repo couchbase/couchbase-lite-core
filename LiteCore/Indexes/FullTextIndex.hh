@@ -25,8 +25,8 @@ namespace litecore {
     /** Represents a match of a full-text query. */
     class FullTextMatch {
     public:
-        alloc_slice docID;                  ///< The document ID that produced the text
-        sequence_t sequence;                ///< The sequence number of the document revision
+        alloc_slice recordID;                  ///< The record ID that produced the text
+        sequence_t sequence;                ///< The sequence number of the record revision
         std::vector<TermMatch> textMatches; ///< The positions in the query string of the matches
 
         alloc_slice value() const;          ///< The emitted value
@@ -35,10 +35,10 @@ namespace litecore {
         alloc_slice matchedText() const;    ///< The emitted string that was matched
 
         static alloc_slice matchedText(MapReduceIndex *index,
-                                       slice docID,
+                                       slice recordID,
                                        sequence_t seq,
                                        unsigned fullTextID) {
-            return index->readFullText(docID, seq, fullTextID);
+            return index->readFullText(recordID, seq, fullTextID);
         }
         
 

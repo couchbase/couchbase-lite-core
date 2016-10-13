@@ -15,15 +15,15 @@
 
 #pragma once
 #include "RevTree.hh"
-#include "Document.hh"
+#include "Record.hh"
 
 namespace litecore {
 
-    /** Manages storage of a serialized RevTree in a Document. */
+    /** Manages storage of a serialized RevTree in a Record. */
     class VersionedDocument : public RevTree {
     public:
 
-        /** Flags that apply to the document as a whole */
+        /** Flags that apply to the record as a whole */
         typedef uint8_t Flags;
         enum {
             kDeleted    = 0x01,
@@ -32,38 +32,38 @@ namespace litecore {
         };
 
         VersionedDocument(KeyStore&, slice docID);
-        VersionedDocument(KeyStore&, const Document&);
+        VersionedDocument(KeyStore&, const Record&);
 
 #ifdef __OBJC__
         VersionedDocument(KeyStore&, NSString* docID);
 #endif
 
-        /** Reads and parses the body of the document. Useful if doc was read as meta-only. */
+        /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
         void read();
 
-        /** Returns false if the document was loaded metadata-only. Revision accessors will fail. */
+        /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 
-        slice docID() const         {return _doc.key();}
+        slice docID() const         {return _rec.key();}
         revid revID() const         {return _revID;}
         Flags flags() const         {return _flags;}
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}
         bool isConflicted() const   {return (flags() & kConflicted) != 0;}
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
 
-        bool exists() const         {return _doc.exists();}
-        sequence_t sequence() const {return _doc.sequence();}
+        bool exists() const         {return _rec.exists();}
+        sequence_t sequence() const {return _rec.sequence();}
 
-        const Document& document() const    {return _doc;}
+        const Record& record() const    {return _rec;}
 
-        slice docType() const       {return _docType;}
-        void setDocType(slice type) {_docType = type;}
+        slice docType() const       {return _recType;}
+        void setDocType(slice type) {_recType = type;}
 
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 
-        /** Gets the metadata of a document without having to instantiate a VersionedDocument */
-        static bool readMeta(const Document&, Flags&, revid&, slice& docType);
+        /** Gets the metadata of a record without having to instantiate a VersionedDocument */
+        static bool readMeta(const Record&, Flags&, revid&, slice& docType);
 
         void updateMeta();
 
@@ -82,9 +82,9 @@ namespace litecore {
         VersionedDocument(const VersionedDocument&) = delete;
 
         KeyStore&   _db;
-        Document    _doc;
+        Record    _rec;
         Flags       _flags;
         revid       _revID;
-        alloc_slice _docType;
+        alloc_slice _recType;
     };
 }

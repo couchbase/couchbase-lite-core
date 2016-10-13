@@ -44,7 +44,7 @@ namespace litecore {
         // if HasData flag:
         //    char      data[];       // Contains the revision body (JSON)
         // else:
-        //    varint    oldBodyOffset;  // Points to doc that has the body (0 if none)
+        //    varint    oldBodyOffset;  // Points to record that has the body (0 if none)
         //    varint    body_size;
 
         bool isValid() const {

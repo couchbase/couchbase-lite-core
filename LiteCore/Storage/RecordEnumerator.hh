@@ -1,5 +1,5 @@
 //
-//  DocEnumerator.hh
+//  RecordEnumerator.hh
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 6/18/14.
@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "Document.hh"
+#include "Record.hh"
 #include <vector>
 
 namespace litecore {
@@ -28,16 +28,16 @@ namespace litecore {
         kMetaOnly = 0x01
     };
 
-    /** KeyStore enumerator/iterator that returns a range of Documents.
+    /** KeyStore enumerator/iterator that returns a range of Records.
         Usage:
             for (auto e=db.enumerate(); e.next(); ) {...}
         or
             auto e=db.enumerate();
             while (e.next()) { ... }
-        Inside the loop you can treat the enumerator as though it were a Document*, for example
+        Inside the loop you can treat the enumerator as though it were a Record*, for example
         "e->key()".
      */
-    class DocEnumerator {
+    class RecordEnumerator {
     public:
         struct Options {
             unsigned       skip    {0};         ///< Number of results to skip
@@ -45,8 +45,8 @@ namespace litecore {
             bool           descending     :1;   ///< Reverse order? (Start must be
             bool           inclusiveStart :1;   ///< Include the start key/seq?
             bool           inclusiveEnd   :1;   ///< Include the end key/seq?
-            bool           includeDeleted :1;   ///< Include deleted documents?
-            ContentOptions contentOptions :4;   ///< Load document bodies?
+            bool           includeDeleted :1;   ///< Include deleted records?
+            ContentOptions contentOptions :4;   ///< Load record bodies?
 
             /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */
             Options();
@@ -55,51 +55,51 @@ namespace litecore {
             bool inclusiveMax() const {return descending ? inclusiveStart : inclusiveEnd;}
         };
 
-        DocEnumerator(KeyStore&,
+        RecordEnumerator(KeyStore&,
                       slice startKey = nullslice,
                       slice endKey = nullslice,
                       const Options& options = Options());
-        DocEnumerator(KeyStore&,
+        RecordEnumerator(KeyStore&,
                       sequence start,
                       sequence end = UINT64_MAX,
                       const Options& options = Options());
-        DocEnumerator(KeyStore&,
-                      std::vector<std::string> docIDs,
+        RecordEnumerator(KeyStore&,
+                      std::vector<std::string> recordIDs,
                       const Options& options = Options());
 
-        DocEnumerator(Query&,
+        RecordEnumerator(Query&,
                       slice paramValuesEncoded);
 
-        DocEnumerator(DocEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
-        DocEnumerator& operator=(DocEnumerator&& e) noexcept; // move assignment
+        RecordEnumerator(RecordEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
+        RecordEnumerator& operator=(RecordEnumerator&& e) noexcept; // move assignment
 
-        /** Advances to the next key/document, returning false when it hits the end.
-            next() must be called *before* accessing the first document! */
+        /** Advances to the next key/record, returning false when it hits the end.
+            next() must be called *before* accessing the first record! */
         bool next();
 
-        bool atEnd() const noexcept         {return !_doc.key();}
+        bool atEnd() const noexcept         {return !_record.key();}
 
         /** Stops the enumerator and frees its resources. (You only need to call this if the
             destructor might not be called soon enough.) */
         void close() noexcept;
 
-        /** The current document. */
-        const Document& doc() const         {return _doc;}
+        /** The current record. */
+        const Record& record() const         {return _record;}
 
-        // Can treat an enumerator as a document pointer:
-        operator const Document*() const    {return _doc.key().buf ? &_doc : nullptr;}
-        const Document* operator->() const  {return _doc.key().buf ? &_doc : nullptr;}
+        // Can treat an enumerator as a record pointer:
+        operator const Record*() const    {return _record.key().buf ? &_record : nullptr;}
+        const Record* operator->() const  {return _record.key().buf ? &_record : nullptr;}
 
-        DocEnumerator(const DocEnumerator&) = delete;               // no copying allowed
-        DocEnumerator& operator=(const DocEnumerator&) = delete;    // no assignment allowed
+        RecordEnumerator(const RecordEnumerator&) = delete;               // no copying allowed
+        RecordEnumerator& operator=(const RecordEnumerator&) = delete;    // no assignment allowed
 
         // C++11 'for' loop support
-        // Allows a DocEnumerator `e` to be used like:
-        //    for (const Document &doc : e) { ... }
+        // Allows a RecordEnumerator `e` to be used like:
+        //    for (const Record &record : e) { ... }
         struct Iter {
-            DocEnumerator* const _enum;
+            RecordEnumerator* const _enum;
             Iter& operator++ ()             {_enum->next(); return *this;}
-            operator const Document* ()     {return _enum ? (const Document*)(*_enum) : nullptr;}
+            operator const Record* ()     {return _enum ? (const Record*)(*_enum) : nullptr;}
         };
         Iter begin() noexcept    {next(); return Iter{this};}
         Iter end() noexcept      {return Iter{nullptr};}
@@ -109,27 +109,27 @@ namespace litecore {
         public:
             virtual ~Impl()                         { }
             virtual bool next() =0;
-            virtual bool read(Document&) =0;
+            virtual bool read(Record&) =0;
             virtual bool shouldSkipFirstStep()      {return false;}
         protected:
-            void updateDoc(Document &doc, sequence s, uint64_t offset =0, bool del =false) const {
-                doc.update(s, offset, del);
+            void updateDoc(Record &record, sequence s, uint64_t offset =0, bool del =false) const {
+                record.update(s, offset, del);
             }
         };
 
     private:
         friend class KeyStore;
 
-        DocEnumerator(KeyStore &store, const Options& options);
+        RecordEnumerator(KeyStore &store, const Options& options);
         void initialPosition();
         bool nextFromArray();
         bool getDoc();
 
         KeyStore *      _store;             // The KeyStore I'm enumerating
         Options         _options;           // Enumeration options
-        std::vector<std::string>  _docIDs;  // The set of docIDs to enumerate (if any)
-        int             _curDocIndex {0};   // Current index in _docIDs, else -1
-        Document        _doc;               // Current document
+        std::vector<std::string>  _recordIDs; // The set of recordIDs to enumerate (if any)
+        int             _curDocIndex {0};   // Current index in _recordIDs, else -1
+        Record          _record;            // Current record
         bool            _skipStep {false};  // Should next call to next() skip _impl->next()?
         std::unique_ptr<Impl> _impl;        // The storage-specific implementation
     };

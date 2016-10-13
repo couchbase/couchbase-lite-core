@@ -44,7 +44,7 @@ namespace c4Internal {
         }
 
 
-        C4TreeDocument(C4Database *database, const Document &doc)
+        C4TreeDocument(C4Database *database, const Record &doc)
         :C4DocumentInternal(database, move(doc)),
          _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(nullptr)
@@ -81,8 +81,8 @@ namespace c4Internal {
             _versionedDoc.setDocType(docType);
         }
 
-        const Document& document() override {
-            return _versionedDoc.document();
+        const Record& record() override {
+            return _versionedDoc.record();
         }
 
         bool exists() override {
@@ -236,12 +236,12 @@ namespace c4Internal {
         return new C4TreeDocument(this, docID);
     }
 
-    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(const Document &doc) {
+    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(const Record &doc) {
         return new C4TreeDocument(this, doc);
     }
 
 
-    bool c4DatabaseV1::readDocMeta(const Document &doc,
+    bool c4DatabaseV1::readDocMeta(const Record &doc,
                                    C4DocumentFlags *outFlags,
                                    alloc_slice *outRevID,
                                    slice *outDocType)

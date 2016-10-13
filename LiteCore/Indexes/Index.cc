@@ -60,11 +60,11 @@ namespace litecore {
             hash = ((hash << 5) + hash) + value[i];
     }
 
-    void IndexWriter::getKeysForDoc(slice docID, std::vector<Collatable> &keys, uint32_t &hash) {
+    void IndexWriter::getKeysForDoc(slice recordID, std::vector<Collatable> &keys, uint32_t &hash) {
         if (!_wasEmpty) {
-            Document doc = _index._store.get(docID);
-            if (doc.body().size > 0) {
-                auto keyArray = Value::fromTrustedData(doc.body())->asArray();
+            Record rec = _index._store.get(recordID);
+            if (rec.body().size > 0) {
+                auto keyArray = Value::fromTrustedData(rec.body())->asArray();
                 Array::iterator iter(keyArray);
                 hash = (uint32_t)iter->asUnsigned();
                 ++iter;
@@ -78,7 +78,7 @@ namespace litecore {
         hash = kInitialHash;
     }
 
-    void IndexWriter::setKeysForDoc(slice docID, const std::vector<Collatable> &keys, uint32_t hash) {
+    void IndexWriter::setKeysForDoc(slice recordID, const std::vector<Collatable> &keys, uint32_t hash) {
         if (keys.size() > 0) {
             _encoder.reset();
             _encoder.beginArray();
@@ -86,13 +86,13 @@ namespace litecore {
             for (auto &key : keys)
                 _encoder.writeData(key);
             _encoder.endArray();
-            _index._store.set(docID, _encoder.extractOutput(), _transaction);
+            _index._store.set(recordID, _encoder.extractOutput(), _transaction);
         } else if (!_wasEmpty) {
-            _index._store.del(docID, _transaction);
+            _index._store.del(recordID, _transaction);
         }
     }
 
-    bool IndexWriter::update(slice docID, sequence docSequence,
+    bool IndexWriter::update(slice recordID, sequence recordSequence,
                              const std::vector<Collatable> &keys,
                              const std::vector<alloc_slice> &values,
                              uint64_t &rowCount)
@@ -101,11 +101,11 @@ namespace litecore {
             return false;
 
         CollatableBuilder collatableDocID;
-        collatableDocID << docID;
+        collatableDocID << recordID;
 
-        // Metadata of emitted rows contains doc sequence as varint:
+        // Metadata of emitted rows contains rec sequence as varint:
         uint8_t metaBuf[10];
-        slice meta(metaBuf, PutUVarInt(metaBuf, docSequence));
+        slice meta(metaBuf, PutUVarInt(metaBuf, recordSequence));
 
         // Get the previously emitted keys:
         std::vector<Collatable> oldStoredKeys, newStoredKeys;
@@ -116,7 +116,7 @@ namespace litecore {
         uint32_t newStoredHash = kInitialHash;
         for (auto &value : values) {
             if (value == Index::kSpecialValue) {
-                // kSpecialValue is placeholder for entire doc, and always considered changed.
+                // kSpecialValue is placeholder for entire rec, and always considered changed.
                 oldStoredHash = newStoredHash - 1; // force comparison to fail
                 break;
             }
@@ -131,14 +131,14 @@ namespace litecore {
         unsigned emitIndex = 0;
         auto oldKey = oldStoredKeys.begin();
         for (auto key = keys.begin(); key != keys.end(); ++key,++value,++emitIndex) {
-            // Create a key for the index db by combining the emitted key, doc ID, and emit#:
+            // Create a key for the index db by combining the emitted key, rec ID, and emit#:
             _realKey.reset();
             _realKey.beginArray() << *key << collatableDocID;
             if (emitIndex > 0)
                 _realKey << emitIndex;
             _realKey.endArray();
 
-            // Is this a key that was previously emitted last time we indexed this document?
+            // Is this a key that was previously emitted last time we indexed this record?
             if (keysChanged || oldKey == oldStoredKeys.end() || !(*oldKey == *key)) {
                 // no; note that the set of keys is different
                 keysChanged = true;
@@ -147,7 +147,7 @@ namespace litecore {
                 ++oldKey;
                 if (valuesMightBeUnchanged) {
                     // read the old row so we can compare the value too:
-                    Document oldRow = _index._store.get(_realKey);
+                    Record oldRow = _index._store.get(_realKey);
                     if (oldRow.exists()) {
                         if (oldRow.body() == *value) {
                             Log("Old k/v pair (%s, %s) unchanged",
@@ -185,7 +185,7 @@ namespace litecore {
             keysChanged = true;
         }
 
-        // Store the keys that were emitted for this doc, and the hash of the values:
+        // Store the keys that were emitted for this rec, and the hash of the values:
         if (keysChanged)
             setKeysForDoc(collatableDocID, newStoredKeys, newStoredHash);
 
@@ -197,10 +197,10 @@ namespace litecore {
     }
 
 
-    alloc_slice Index::getEntry(slice docID, sequence docSequence,
+    alloc_slice Index::getEntry(slice recordID, sequence recordSequence,
                                 Collatable key, unsigned emitIndex) const {
         CollatableBuilder collatableDocID;
-        collatableDocID << docID;
+        collatableDocID << recordID;
 
         // realKey matches the key generated in update(), above
         CollatableBuilder realKey;
@@ -211,17 +211,17 @@ namespace litecore {
         realKey.endArray();
 
         Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
-        Document doc = _store.get(realKey);
-        Assert(doc.exists());
-        return alloc_slice(doc.body());
+        Record rec = _store.get(realKey);
+        Assert(rec.exists());
+        return alloc_slice(rec.body());
     }
 
 
 #pragma mark - ENUMERATOR:
 
 
-    // Converts an index key into the actual key used in the index db (key + docID)
-    static Collatable makeRealKey(Collatable key, slice docID, bool isEnd, bool descending) {
+    // Converts an index key into the actual key used in the index db (key + recordID)
+    static Collatable makeRealKey(Collatable key, slice recordID, bool isEnd, bool descending) {
         bool addEllipsis = (isEnd != descending);
         if (key.empty() && addEllipsis)
             return Collatable();
@@ -229,8 +229,8 @@ namespace litecore {
         realKey.beginArray();
         if (!key.empty()) {
             realKey << key;
-            if (docID.buf)
-                realKey << docID;
+            if (recordID.buf)
+                realKey << recordID;
         }
         if (addEllipsis) {
             realKey.beginMap();
@@ -240,11 +240,11 @@ namespace litecore {
         return realKey;
     }
 
-    static DocEnumerator::Options docOptions(IndexEnumerator::Options options) {
+    static RecordEnumerator::Options recordOptions(IndexEnumerator::Options options) {
         options.limit = UINT_MAX;
         options.skip = 0;
         options.includeDeleted = false;
-        options.contentOptions = kDefaultContent; // read() method needs the doc bodies
+        options.contentOptions = kDefaultContent; // read() method needs the rec bodies
         return options;
     }
 
@@ -259,7 +259,7 @@ namespace litecore {
      _dbEnum(_index._store,
              (slice)makeRealKey(startKey, startKeyDocID, false, options.descending),
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
-             docOptions(options))
+             recordOptions(options))
     {
         Debug("IndexEnumerator(%p)", this);
         index.addUser();
@@ -304,10 +304,10 @@ namespace litecore {
                 }
             }
             
-            const Document& doc = _dbEnum.doc();
+            const Record& rec = _dbEnum.record();
 
             // Decode the key from collatable form:
-            CollatableReader keyReader(doc.key());
+            CollatableReader keyReader(rec.key());
             keyReader.beginArray();
             _key = keyReader.read();
 
@@ -328,9 +328,9 @@ namespace litecore {
                     return false;
             }
 
-            _docID = keyReader.readString();
-            GetUVarInt(doc.meta(), &_sequence);
-            _value = doc.body();
+            _recordID = keyReader.readString();
+            GetUVarInt(rec.meta(), &_sequence);
+            _value = rec.body();
 
             // Subclasses can ignore rows:
             if (!this->approve(_key)) {
@@ -374,17 +374,17 @@ namespace litecore {
         return true;
     }
 
-    DocEnumerator IndexEnumerator::enumeratorForIndex(int i) {
+    RecordEnumerator IndexEnumerator::enumeratorForIndex(int i) {
         if (i >= _keyRanges.size()) {
-            return DocEnumerator(_index._store);
+            return RecordEnumerator(_index._store);
         }
         Collatable& startKey = _keyRanges[i].start;
         Collatable& endKey = _keyRanges[i].end;
         Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
-        return DocEnumerator(_index._store,
+        return RecordEnumerator(_index._store,
                              makeRealKey(startKey, nullslice, false, _options.descending),
                              makeRealKey(endKey,   nullslice, true,  _options.descending),
-                             docOptions(_options));
+                             recordOptions(_options));
     }
 
     bool IndexEnumerator::next() {

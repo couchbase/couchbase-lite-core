@@ -30,43 +30,43 @@ namespace litecore {
     */
 
     VersionedDocument::VersionedDocument(KeyStore& db, slice docID)
-    :_db(db), _doc(docID)
+    :_db(db), _rec(docID)
     {
         read();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore& db, const Document& doc)
-    :_db(db), _doc(std::move(doc))
+    VersionedDocument::VersionedDocument(KeyStore& db, const Record& rec)
+    :_db(db), _rec(std::move(rec))
     {
         decode();
     }
 
     void VersionedDocument::read() {
-        _db.read(_doc);
+        _db.read(_rec);
         decode();
     }
 
     void VersionedDocument::decode() {
         _unknown = false;
-        if (_doc.body().buf)
-            RevTree::decode(_doc.body(), _doc.sequence(), _doc.offset());
-        else if (_doc.bodySize() > 0)
-            _unknown = true;        // i.e. doc was read as meta-only
+        if (_rec.body().buf)
+            RevTree::decode(_rec.body(), _rec.sequence(), _rec.offset());
+        else if (_rec.bodySize() > 0)
+            _unknown = true;        // i.e. rec was read as meta-only
 
-        if (_doc.exists()) {
+        if (_rec.exists()) {
             slice docType;
-            if (!readMeta(_doc, _flags, _revID, docType))
+            if (!readMeta(_rec, _flags, _revID, docType))
                 error::_throw(error::CorruptRevisionData);
-            _docType = docType; // allocate buf for it
+            _recType = docType; // allocate buf for it
         } else {
             _flags = 0;
         }
     }
 
-    bool VersionedDocument::readMeta(const Document& doc,
+    bool VersionedDocument::readMeta(const Record& rec,
                                      Flags& flags, revid& revID, slice& docType)
     {
-        slice meta = doc.meta();
+        slice meta = rec.meta();
         if (meta.size < 2)
             return false;
         flags = meta.read(1)[0];
@@ -111,22 +111,22 @@ namespace litecore {
         // update _flags instance variable
         _flags = flags;
 
-        // Write to _doc.meta:
-        slice meta = _doc.resizeMeta(2 + revID.size + SizeOfVarInt(_docType.size) + _docType.size);
+        // Write to _rec.meta:
+        slice meta = _rec.resizeMeta(2 + revID.size + SizeOfVarInt(_recType.size) + _recType.size);
         meta.writeFrom(slice(&flags,1));
         uint8_t revIDSize = (uint8_t)revID.size;
         meta.writeFrom(slice(&revIDSize, 1));
         _revID = revid(meta.buf, revID.size);
         meta.writeFrom(revID);
-        WriteUVarInt(&meta, _docType.size);
-        meta.writeFrom(_docType);
+        WriteUVarInt(&meta, _recType.size);
+        meta.writeFrom(_recType);
         Assert(meta.size == 0);
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {
         if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
             return true;
-        if (atOffset == 0 || atOffset >= _doc.offset())
+        if (atOffset == 0 || atOffset >= _rec.offset())
             return false;
         VersionedDocument oldVersDoc(_db, _db.getByOffsetNoErrors(atOffset, rev->sequence));
         if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
@@ -138,7 +138,7 @@ namespace litecore {
     alloc_slice VersionedDocument::readBodyOfRevision(const Rev* rev, uint64_t atOffset) const {
         if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
             return RevTree::readBodyOfRevision(rev, atOffset);
-        if (atOffset == 0 || atOffset >= _doc.offset())
+        if (atOffset == 0 || atOffset >= _rec.offset())
             return alloc_slice();
         VersionedDocument oldVersDoc(_db, _db.getByOffsetNoErrors(atOffset, rev->sequence));
         if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
@@ -154,12 +154,12 @@ namespace litecore {
             return;
         updateMeta();
         if (currentRevision()) {
-            // Don't call _doc.setBody() because it'll invalidate all the pointers from Revisions into
+            // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions into
             // the existing body buffer.
-            auto result = _db.set(_doc.key(), _doc.meta(), encode(), transaction);
-            _doc.updateSequence(result.seq);
+            auto result = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
+            _rec.updateSequence(result.seq);
         } else {
-            _db.del(_doc.key(), transaction);
+            _db.del(_rec.key(), transaction);
         }
         saved();
         _changed = false;

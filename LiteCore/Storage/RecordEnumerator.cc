@@ -1,5 +1,5 @@
 //
-//  DocEnumerator.cc
+//  RecordEnumerator.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 6/18/14.
@@ -13,7 +13,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "KeyStore.hh"
 #include "LogInternal.hh"
 #include <algorithm>
@@ -28,7 +28,7 @@ namespace litecore {
 #pragma mark - ENUMERATION:
 
 
-    DocEnumerator::Options::Options()
+    RecordEnumerator::Options::Options()
     :skip(0),
      limit(UINT_MAX),
      descending(false),
@@ -39,19 +39,19 @@ namespace litecore {
     { }
 
 
-    DocEnumerator::DocEnumerator(KeyStore &store, const Options& options)
+    RecordEnumerator::RecordEnumerator(KeyStore &store, const Options& options)
     :_store(&store),
      _options(options)
     { }
 
 
     // Key-range constructor
-    DocEnumerator::DocEnumerator(KeyStore &store,
+    RecordEnumerator::RecordEnumerator(KeyStore &store,
                                  slice startKey, slice endKey,
                                  const Options& options)
-    :DocEnumerator(store, options)
+    :RecordEnumerator(store, options)
     {
-        Debug("enum: DocEnumerator(%s, [%s] -- [%s]%s) --> %p",
+        Debug("enum: RecordEnumerator(%s, [%s] -- [%s]%s) --> %p",
               store.name().c_str(), startKey.hexCString(), endKey.hexCString(),
               (options.descending ? " desc" : ""), this);
         if (startKey.size == 0)
@@ -68,12 +68,12 @@ namespace litecore {
     }
 
     // Sequence-range constructor
-    DocEnumerator::DocEnumerator(KeyStore &store,
+    RecordEnumerator::RecordEnumerator(KeyStore &store,
                                  sequence start, sequence end,
                                  const Options& options)
-    :DocEnumerator(store, options)
+    :RecordEnumerator(store, options)
     {
-        Debug("enum: DocEnumerator(%s, #%llu -- #%llu) --> %p",
+        Debug("enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
                 store.name().c_str(), start, end, this);
 
         sequence minSeq = start, maxSeq = end;
@@ -85,28 +85,28 @@ namespace litecore {
     }
 
     // Key-array constructor
-    DocEnumerator::DocEnumerator(KeyStore &store,
-                                 vector<string> docIDs,
+    RecordEnumerator::RecordEnumerator(KeyStore &store,
+                                 vector<string> recordIDs,
                                  const Options& options)
-    :DocEnumerator(store, options)
+    :RecordEnumerator(store, options)
     {
-        _docIDs = docIDs;
-        Debug("enum: DocEnumerator(%s, %zu keys) --> %p",
-                store.name().c_str(), docIDs.size(), this);
+        _recordIDs = recordIDs;
+        Debug("enum: RecordEnumerator(%s, %zu keys) --> %p",
+                store.name().c_str(), recordIDs.size(), this);
         if (_options.skip > 0)
-            _docIDs.erase(_docIDs.begin(), _docIDs.begin() + _options.skip);
-        if (_options.limit < _docIDs.size())
-            _docIDs.resize(_options.limit);
+            _recordIDs.erase(_recordIDs.begin(), _recordIDs.begin() + _options.skip);
+        if (_options.limit < _recordIDs.size())
+            _recordIDs.resize(_options.limit);
         if (_options.descending)
-            reverse(_docIDs.begin(), _docIDs.end());
+            reverse(_recordIDs.begin(), _recordIDs.end());
         // (this mode doesn't actually create an fdb_iterator)
     }
 
     // Assignment from a temporary
-    DocEnumerator& DocEnumerator::operator=(DocEnumerator&& e) noexcept {
+    RecordEnumerator& RecordEnumerator::operator=(RecordEnumerator&& e) noexcept {
         _store = e._store;
         _impl = move(e._impl);
-        _docIDs = e._docIDs;
+        _recordIDs = e._recordIDs;
         _curDocIndex = e._curDocIndex;
         _options = e._options;
         _skipStep = e._skipStep;
@@ -114,15 +114,15 @@ namespace litecore {
     }
 
 
-    void DocEnumerator::close() noexcept {
-        _doc.clear();
+    void RecordEnumerator::close() noexcept {
+        _record.clear();
         _impl.reset();
     }
 
 
-    bool DocEnumerator::next() {
-        // Enumerating an array of docs is handled specially:
-        if (_docIDs.size() > 0)
+    bool RecordEnumerator::next() {
+        // Enumerating an array of records is handled specially:
+        if (_recordIDs.size() > 0)
             return nextFromArray();
 
         if (!_impl)
@@ -143,26 +143,26 @@ namespace litecore {
     }
 
     // implementation of next() when enumerating a vector of keys
-    bool DocEnumerator::nextFromArray() {
-        if (_curDocIndex >= _docIDs.size()) {
+    bool RecordEnumerator::nextFromArray() {
+        if (_curDocIndex >= _recordIDs.size()) {
             Debug("enum: at end of vector");
             close();
             return false;
         }
-        _doc.clearMetaAndBody();
-        _doc.setKey(_docIDs[_curDocIndex++]);
-        _store->read(_doc);
-        Debug("enum:     fdb_get --> [%s]", _doc.key().hexCString());
+        _record.clearMetaAndBody();
+        _record.setKey(_recordIDs[_curDocIndex++]);
+        _store->read(_record);
+        Debug("enum:     fdb_get --> [%s]", _record.key().hexCString());
         return true;
     }
 
-    bool DocEnumerator::getDoc() {
-        _doc.clear();
-        if (!_impl->read(_doc)) {
+    bool RecordEnumerator::getDoc() {
+        _record.clear();
+        if (!_impl->read(_record)) {
             close();
             return false;
         }
-        Debug("enum:     fdb_iterator_get --> [%s]", _doc.key().hexCString());
+        Debug("enum:     fdb_iterator_get --> [%s]", _record.key().hexCString());
         return true;
     }
 

@@ -1,5 +1,5 @@
 //
-//  Document.cc
+//  Record.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/11/14.
@@ -13,20 +13,20 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "Document.hh"
+#include "Record.hh"
 #include "forestdb_endian.h"
 
 using namespace std;
 
 namespace litecore {
 
-    Document::Document(slice key)
-    :Document()
+    Record::Record(slice key)
+    :Record()
     {
         setKey(key);
     }
 
-    Document::Document(const Document &d)
+    Record::Record(const Record &d)
     :_key(d._key),
      _meta(d._meta),
      _body(d._body),
@@ -37,7 +37,7 @@ namespace litecore {
      _exists(d._exists)
     { }
 
-    Document::Document(Document &&d) noexcept
+    Record::Record(Record &&d) noexcept
     :_key(move(d._key)),
      _meta(move(d._meta)),
      _body(move(d._body)),
@@ -48,19 +48,19 @@ namespace litecore {
      _exists(d._exists)
     { }
 
-    void Document::clearMetaAndBody() noexcept {
+    void Record::clearMetaAndBody() noexcept {
         setMeta(nullslice);
         setBody(nullslice);
         _bodySize = _sequence = _offset = 0;
         _exists = _deleted = false;
     }
 
-    void Document::clear() noexcept {
+    void Record::clear() noexcept {
         clearMetaAndBody();
         setKey(nullslice);
     }
 
-    uint64_t Document::bodyAsUInt() const noexcept {
+    uint64_t Record::bodyAsUInt() const noexcept {
         uint64_t count;
         if (body().size < sizeof(count))
             return 0;
@@ -68,7 +68,7 @@ namespace litecore {
         return _endian_decode(count);
     }
 
-    void Document::setBodyAsUInt(uint64_t n) noexcept {
+    void Record::setBodyAsUInt(uint64_t n) noexcept {
         uint64_t newBody = _endian_encode(n);
         setBody(slice(&newBody, sizeof(newBody)));
     }

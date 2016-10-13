@@ -21,9 +21,9 @@ namespace litecore {
     using fleece::nsstring_slice;
 
     VersionedDocument::VersionedDocument(KeyStore &db, NSString* docID)
-    :_db(db), _doc(nsstring_slice(docID))
+    :_db(db), _rec(nsstring_slice(docID))
     {
-        _db.read(_doc);
+        _db.read(_rec);
         decode();
     }
 

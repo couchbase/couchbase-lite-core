@@ -35,14 +35,14 @@ namespace c4Internal {
          _current(_store.get(docID))
         {
             if (!_current) {
-                Document doc(docID);
+                Record doc(docID);
                 _current.reset(new Revision(doc));
             }
             init();
         }
 
 
-        C4VectorDocument(c4DatabaseV2 *database, const Document &doc)
+        C4VectorDocument(c4DatabaseV2 *database, const Record &doc)
         :C4DocumentInternal(database, move(doc)),
          _store(database->revisionStore()),
          _current(new Revision(doc))
@@ -72,8 +72,8 @@ namespace c4Internal {
         }
 
 
-        virtual const Document& document() override {
-            return _current->document();
+        virtual const Record& record() override {
+            return _current->record();
         }
 
 
@@ -246,12 +246,12 @@ namespace c4Internal {
         return new C4VectorDocument(this, docID);
     }
 
-    C4DocumentInternal* c4DatabaseV2::newDocumentInstance(const Document &doc) {
+    C4DocumentInternal* c4DatabaseV2::newDocumentInstance(const Record &doc) {
         return new C4VectorDocument(this, doc);
     }
 
 
-    bool c4DatabaseV2::readDocMeta(const Document &doc,
+    bool c4DatabaseV2::readDocMeta(const Record &doc,
                                    C4DocumentFlags *outFlags,
                                    alloc_slice *outRevID,
                                    slice *outDocType)

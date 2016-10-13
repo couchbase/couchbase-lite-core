@@ -24,7 +24,7 @@ namespace litecore {
 
     class MapReduceIndexWriter;
 
-    /** An Index that uses a MapFn to index the documents of another KeyStore. */
+    /** An Index that uses a MapFn to index the records of another KeyStore. */
     class MapReduceIndex : public Index {
     public:
         MapReduceIndex(KeyStore&,
@@ -37,7 +37,7 @@ namespace litecore {
         void setup(int indexType, std::string mapVersion);
 
         void setDocumentType(slice docType)     {_documentType = docType;}
-        alloc_slice documentType() const        {return _documentType;}
+        alloc_slice docType() const        {return _documentType;}
 
         /** The last source database sequence number to be indexed. */
         sequence lastSequenceIndexed() const;
@@ -52,7 +52,7 @@ namespace litecore {
         void erase();
 
         /** Reads the full text passed to the call to emitTextTokens(), given some info about the
-            document and the fullTextID available from IndexEnumerator::getTextToken(). */
+            record and the fullTextID available from IndexEnumerator::getTextToken(). */
         alloc_slice readFullText(slice docID, sequence seq, unsigned fullTextID) const;
 
         /** Reads the value that was emitted along with a full-text key. */
@@ -99,17 +99,17 @@ namespace litecore {
             Returns UINT64_MAX if no re-indexing is necessary. */
         sequence startingSequence();
 
-        /** Returns the set of document types that the views collectively map,
-            or nullptr if all documents should be mapped. */
+        /** Returns the set of record types that the views collectively map,
+            or nullptr if all records should be mapped. */
         std::set<slice> *documentTypes();
 
-        /** Returns true if the given document should be indexed by the given view,
+        /** Returns true if the given record should be indexed by the given view,
             i.e. if the view has not yet indexed this doc's sequence. */
-        bool shouldMapDocIntoView(const Document &doc, unsigned viewNumber) noexcept;
+        bool shouldMapDocIntoView(const Record &rec, unsigned viewNumber) noexcept;
 
         bool shouldMapDocTypeIntoView(slice docType, unsigned viewNumber) noexcept;
 
-        /** Writes a set of key/value pairs into a view's index, associated with a doc/sequence.
+        /** Writes a set of key/value pairs into a view's index, associated with a rec/sequence.
             This must be called even if there are no pairs to index, so that obsolete index rows
             can be removed. */
         void emitDocIntoView(slice docID,
@@ -118,15 +118,15 @@ namespace litecore {
                              const std::vector<Collatable> &keys,
                              const std::vector<alloc_slice> &values);
 
-        /** Removes the document from all views' indexes. Same as emitting an empty set of
+        /** Removes the record from all views' indexes. Same as emitting an empty set of
             key/value pairs for each view. */
         void skipDoc(slice docID, sequence docSequence);
 
-        /** Removes the document from the given view's index. Same as emitting an empty set of
+        /** Removes the record from the given view's index. Same as emitting an empty set of
             key/value pairs. */
         void skipDocInView(slice docID, sequence docSequence, unsigned viewNumber);
 
-        /** Call when all documents have been indexed. Pass the last sequence that was enumerated
+        /** Call when all records have been indexed. Pass the last sequence that was enumerated
             (usually the database's lastSequence).*/
         void finished(sequence seq =1);
 

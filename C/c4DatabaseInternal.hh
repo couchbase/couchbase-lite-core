@@ -55,8 +55,8 @@ struct c4Database : public RefCounted<c4Database> {
     KeyStore& getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
 
     virtual C4DocumentInternal* newDocumentInstance(C4Slice docID) =0;
-    virtual C4DocumentInternal* newDocumentInstance(const Document&) =0;
-    virtual bool readDocMeta(const Document&,
+    virtual C4DocumentInternal* newDocumentInstance(const Record&) =0;
+    virtual bool readDocMeta(const Record&,
                              C4DocumentFlags*,
                              alloc_slice *revID =nullptr,
                              slice *docType =nullptr) =0;
@@ -96,8 +96,8 @@ namespace c4Internal {
         :c4Database(path, config)
         { }
         C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
-        C4DocumentInternal* newDocumentInstance(const Document&) override;
-        bool readDocMeta(const Document&,
+        C4DocumentInternal* newDocumentInstance(const Record&) override;
+        bool readDocMeta(const Record&,
                          C4DocumentFlags*,
                          alloc_slice *revID =nullptr,
                          slice *docType =nullptr) override;
@@ -112,11 +112,11 @@ namespace c4Internal {
         { }
 
         C4DocumentInternal* newDocumentInstance(C4Slice docID) override;
-        C4DocumentInternal* newDocumentInstance(const Document&) override;
+        C4DocumentInternal* newDocumentInstance(const Record&) override;
 
         CASRevisionStore& revisionStore();
 
-        bool readDocMeta(const Document&,
+        bool readDocMeta(const Record&,
                          C4DocumentFlags*,
                          alloc_slice *revID =nullptr,
                          slice *docType =nullptr) override;

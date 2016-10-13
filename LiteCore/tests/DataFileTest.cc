@@ -7,7 +7,7 @@
 //
 
 #include "DataFile.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "Query.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -26,7 +26,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE_FALSE(DataFile::isAnyCompacting());
     REQUIRE(db->purgeCount() == 0);
     REQUIRE(&store->dataFile() == db);
-    REQUIRE(store->documentCount() == 0);
+    REQUIRE(store->recordCount() == 0);
     REQUIRE(store->lastSequence() == 0);
 }
 
@@ -49,15 +49,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
         t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
-    Document doc = db->defaultKeyStore().get(key);
-    REQUIRE(doc.key() == key);
-    REQUIRE(doc.body() == "value"_sl);
+    Record rec = db->defaultKeyStore().get(key);
+    REQUIRE(rec.key() == key);
+    REQUIRE(rec.body() == "value"_sl);
 }
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
     {
-        //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
+        //WORKAROUND: Add a rec before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
         store->set("a"_sl, "A"_sl, t);
         t.commit();
@@ -68,39 +68,39 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
 
     {
         Transaction t(db);
-        Document doc("doc"_sl);
-        doc.setMeta("m-e-t-a"_sl);
-        doc.setBody("THIS IS THE BODY"_sl);
-        store->write(doc, t);
+        Record rec("rec"_sl);
+        rec.setMeta("m-e-t-a"_sl);
+        rec.setBody("THIS IS THE BODY"_sl);
+        store->write(rec, t);
 
-        REQUIRE(doc.sequence() == 2);
+        REQUIRE(rec.sequence() == 2);
         REQUIRE(store->lastSequence() == 2);
-        auto doc_alias = store->get(doc.sequence());
-        REQUIRE(doc_alias.key() == doc.key());
-        REQUIRE(doc_alias.meta() == doc.meta());
-        REQUIRE(doc_alias.body() == doc.body());
+        auto doc_alias = store->get(rec.sequence());
+        REQUIRE(doc_alias.key() == rec.key());
+        REQUIRE(doc_alias.meta() == rec.meta());
+        REQUIRE(doc_alias.body() == rec.body());
 
         doc_alias.setBody("NU BODY"_sl);
         store->write(doc_alias, t);
 
-        REQUIRE(store->read(doc));
-        REQUIRE(doc.sequence() == 3);
-        REQUIRE(doc.meta() == doc_alias.meta());
-        REQUIRE(doc.body() == doc_alias.body());
+        REQUIRE(store->read(rec));
+        REQUIRE(rec.sequence() == 3);
+        REQUIRE(rec.meta() == doc_alias.meta());
+        REQUIRE(rec.body() == doc_alias.body());
 
-        // Doc shouldn't exist outside transaction yet:
-        REQUIRE(aliased_db->defaultKeyStore().get("doc"_sl).sequence() == 0);
+        // Record shouldn't exist outside transaction yet:
+        REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 0);
         t.commit();
     }
 
-    REQUIRE(store->get("doc"_sl).sequence() == 3);
-    REQUIRE(aliased_db->defaultKeyStore().get("doc"_sl).sequence() == 3);
+    REQUIRE(store->get("rec"_sl).sequence() == 3);
+    REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 3);
 }
 
 static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
-        string docID = stringWithFormat("doc-%03d", i);
+        string docID = stringWithFormat("rec-%03d", i);
         sequence seq = store->set(slice(docID), litecore::nullslice, slice(docID), t).seq;
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
@@ -113,7 +113,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
     {
         Log("Enumerate empty db");
         int i = 0;
-        DocEnumerator e(*store);
+        RecordEnumerator e(*store);
         for (; e.next(); ++i) {
             FAIL("Shouldn't have found any docs");
         }
@@ -124,14 +124,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
         Log("Enumerate over all docs (metaOnly=%d)", metaOnly);
-        DocEnumerator::Options opts;
+        RecordEnumerator::Options opts;
         opts.contentOptions = metaOnly ? kMetaOnly : kDefaultContent;
 
         {
             int i = 1;
-            DocEnumerator e(*store, nullslice, nullslice, opts);
+            RecordEnumerator e(*store, nullslice, nullslice, opts);
             for (; e.next(); ++i) {
-                string expectedDocID = stringWithFormat("doc-%03d", i);
+                string expectedDocID = stringWithFormat("rec-%03d", i);
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
                 REQUIRE(e->sequence() == (sequence)i);
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
@@ -144,8 +144,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
         Log("Enumerate over range of docs:");
         int i = 24;
-        for (DocEnumerator e(*store, "doc-024"_sl, "doc-029"_sl, opts); e.next(); ++i) {
-            string expectedDocID = stringWithFormat("doc-%03d", i);
+        for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
+            string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
@@ -157,8 +157,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         Log("Enumerate over range of docs without inclusive:");
         opts.inclusiveStart = opts.inclusiveEnd = false;
         i = 25;
-        for (DocEnumerator e(*store, "doc-024"_sl, "doc-029"_sl, opts); e.next(); ++i) {
-            string expectedDocID = stringWithFormat("doc-%03d", i);
+        for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
+            string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
@@ -171,14 +171,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         Log("Enumerate over vector of docs:");
         i = 0;
         vector<string> docIDs;
-        docIDs.push_back("doc-005");
-        docIDs.push_back("doc-029");
-        docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
-        docIDs.push_back("doc-028");
-        docIDs.push_back("doc-098");
-        docIDs.push_back("doc-100");
-        docIDs.push_back("doc-105"); // doesn't exist!
-        for (DocEnumerator e(*store, docIDs, opts); e.next(); ++i) {
+        docIDs.push_back("rec-005");
+        docIDs.push_back("rec-029");
+        docIDs.push_back("rec-023"); // out of order! (check for random-access fdb_seek)
+        docIDs.push_back("rec-028");
+        docIDs.push_back("rec-098");
+        docIDs.push_back("rec-100");
+        docIDs.push_back("rec-105"); // doesn't exist!
+        for (RecordEnumerator e(*store, docIDs, opts); e.next(); ++i) {
             Log("key = %s", e->key().cString());
             REQUIRE((string)e->key() == docIDs[i]);
             REQUIRE(e->exists() == i < 6);
@@ -194,15 +194,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
-    DocEnumerator::Options opts;
+    RecordEnumerator::Options opts;
     opts.descending = true;
 
     createNumberedDocs(store);
 
     SECTION("Enumerate over all docs, descending:") {
         int i = 100;
-        for (DocEnumerator e(*store, nullslice, nullslice, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, nullslice, nullslice, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -211,8 +211,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs from max, descending:") {
         int i = 100;
-        for (DocEnumerator e(*store, nullslice, "doc-090"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, nullslice, "rec-090"_sl, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -221,8 +221,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs to min, descending:") {
         int i = 10;
-        for (DocEnumerator e(*store, "doc-010"_sl, nullslice, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, "rec-010"_sl, nullslice, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -231,8 +231,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs, descending:") {
         int i = 29;
-        for (DocEnumerator e(*store, "doc-029"_sl, "doc-024"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -241,8 +241,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs, descending, max key doesn't exist:") {
         int i = 29;
-        for (DocEnumerator e(*store, "doc-029b"_sl, "doc-024"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, "rec-029b"_sl, "rec-024"_sl, opts); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -253,8 +253,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         auto optsExcl = opts;
         optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
         int i = 28;
-        for (DocEnumerator e(*store, "doc-029"_sl, "doc-024"_sl, optsExcl); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
+        for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, optsExcl); e.next(); --i) {
+            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
         }
@@ -263,15 +263,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over vector of docs, descending:") {
         vector<string> docIDs;
-        docIDs.push_back("doc-005");
-        docIDs.push_back("doc-029");
-        docIDs.push_back("doc-023"); // out of order! (check for random-access fdb_seek)
-        docIDs.push_back("doc-028");
-        docIDs.push_back("doc-098");
-        docIDs.push_back("doc-100");
-        docIDs.push_back("doc-105");
+        docIDs.push_back("rec-005");
+        docIDs.push_back("rec-029");
+        docIDs.push_back("rec-023"); // out of order! (check for random-access fdb_seek)
+        docIDs.push_back("rec-028");
+        docIDs.push_back("rec-098");
+        docIDs.push_back("rec-100");
+        docIDs.push_back("rec-105");
         int i = (int)docIDs.size() - 1;
-        for (DocEnumerator e(*store, docIDs, opts); e.next(); --i) {
+        for (RecordEnumerator e(*store, docIDs, opts); e.next(); --i) {
             Log("key = %s", e->key().cString());
             REQUIRE((string)e->key() == docIDs[i]);
         }
@@ -281,10 +281,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
 
 TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]") {
-    // Write 100 docs with Fleece bodies of the form {"num":n} where n is the doc #
+    // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
-        string docID = stringWithFormat("doc-%03d", i);
+        string docID = stringWithFormat("rec-%03d", i);
 
         fleece::Encoder enc;
         enc.beginDictionary();
@@ -305,8 +305,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         Stopwatch st;
         int i = 30;
         for (QueryEnumerator e(query.get()); e.next(); ++i) {
-            string expectedDocID = stringWithFormat("doc-%03d", i);
-            REQUIRE(e.docID() == alloc_slice(expectedDocID));
+            string expectedDocID = stringWithFormat("rec-%03d", i);
+            REQUIRE(e.recordID() == alloc_slice(expectedDocID));
             REQUIRE(e.sequence() == (sequence)i);
         }
         st.printReport("Query of $.num", i, "row");
@@ -323,7 +323,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
-    // Initial document:
+    // Initial record:
     {
         Transaction t(db);
         store->set("a"_sl, "A"_sl, t);
@@ -353,13 +353,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
         Transaction trans(db);
         for (unsigned d = 1; d <= kNDocs; d++) {
             string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
-            store->set(slice(docID), nullslice, "some document content goes here"_sl, trans);
+            store->set(slice(docID), nullslice, "some record content goes here"_sl, trans);
         }
         trans.commit();
     }
 
     int i = 0;
-    for (DocEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
+    for (RecordEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
         slice key = (*iter).key();
         //Log("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
@@ -385,8 +385,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
         store->del(key, t);
         t.commit();
     }
-    Document doc = store->get(key);
-    REQUIRE_FALSE(doc.exists());
+    Record rec = store->get(key);
+    REQUIRE_FALSE(rec.exists());
     REQUIRE(store->lastSequence() == 2);
     REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
     db->compact();
@@ -404,14 +404,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
 
     {
         Transaction t(db);
-        Document doc = store->get(key);
-        store->del(doc, t);
+        Record rec = store->get(key);
+        store->del(rec, t);
         t.commit();
     }
 
-    Document doc = store->get(key);
-    //    REQUIRE(doc.deleted());
-    REQUIRE_FALSE(doc.exists());
+    Record rec = store->get(key);
+    //    REQUIRE(rec.deleted());
+    REQUIRE_FALSE(rec.exists());
     
     REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
     db->compact();
@@ -430,18 +430,18 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[Da
 
     {
         Transaction t(db);
-        Document doc = store->get(key);
-        store->del(doc, t);
+        Record rec = store->get(key);
+        store->del(rec, t);
         t.commit();
     }
 
-    Document doc = store->get(key);
-    //    REQUIRE(doc.deleted());
-    REQUIRE_FALSE(doc.exists());
+    Record rec = store->get(key);
+    //    REQUIRE(rec.deleted());
+    REQUIRE_FALSE(rec.exists());
 
     reopenDatabase();
 
-    Document doc2 = store->get(key);
+    Record doc2 = store->get(key);
     //    REQUIRE(doc2.deleted());
     REQUIRE_FALSE(doc2.exists());
 }
@@ -452,7 +452,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile
     REQUIRE(s.lastSequence() == 0);
     REQUIRE(s.name() == string("store"));
 
-    REQUIRE(s.documentCount() == 0);
+    REQUIRE(s.recordCount() == 0);
     REQUIRE(s.lastSequence() == 0);
 }
 
@@ -466,11 +466,11 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
         t.commit();
     }
     REQUIRE(s.lastSequence() == 1);
-    Document doc = s.get(key);
-    REQUIRE(doc.key() == key);
-    REQUIRE(doc.body() == "value"_sl);
+    Record rec = s.get(key);
+    REQUIRE(rec.key() == key);
+    REQUIRE(rec.body() == "value"_sl);
 
-    Document doc2 = store->get(key);
+    Record doc2 = store->get(key);
     REQUIRE_FALSE(doc2.exists());
 }
 
@@ -485,8 +485,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
 //    }
     s.erase();
     REQUIRE(s.lastSequence() == 0);
-    Document doc = s.get(key);
-    REQUIRE_FALSE(doc.exists());
+    Record rec = s.get(key);
+    REQUIRE_FALSE(rec.exists());
 }
 
 
@@ -496,24 +496,24 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
     KeyStore &s = db->getKeyStore("store", cap);
     alloc_slice key("key");
     docOffset offset1;
-    // Create a doc:
+    // Create a rec:
     {
         Transaction t(db);
-        Document doc(key);
-        doc.setBody("value1"_sl);
-        s.write(doc, t);
-        offset1 = doc.offset();
+        Record rec(key);
+        rec.setBody("value1"_sl);
+        s.write(rec, t);
+        offset1 = rec.offset();
         CHECK(offset1 > 0);
         t.commit();
     }
     // Get it by offset:
-    Document doc1 = s.getByOffsetNoErrors(offset1, 1);
+    Record doc1 = s.getByOffsetNoErrors(offset1, 1);
     REQUIRE(doc1.key() == key);
     REQUIRE(doc1.body() == "value1"_sl);
     REQUIRE(doc1.sequence() == 1);
     REQUIRE(doc1.offset() == offset1);
 
-    // Update doc:
+    // Update rec:
     docOffset offset2;
     {
         Transaction t(db);
@@ -524,14 +524,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
         t.commit();
     }
     // Get it by offset:
-    Document doc2 = s.getByOffsetNoErrors(offset2, 2);
+    Record doc2 = s.getByOffsetNoErrors(offset2, 2);
     REQUIRE(doc2.key() == key);
     REQUIRE(doc2.body() == "value2"_sl);
     REQUIRE(doc2.sequence() == 2);
     REQUIRE(doc2.offset() == offset2);
 
     // Get old version (Seq 1) by offset:
-    Document doc1again = s.getByOffsetNoErrors(offset1, 1);
+    Record doc1again = s.getByOffsetNoErrors(offset1, 1);
     REQUIRE(doc1again.key() == key);
     REQUIRE(doc1again.body() == "value1"_sl);
     REQUIRE(doc1again.sequence() == 1);
@@ -546,7 +546,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
     try {
         Log("NOTE: Expecting an invalid-handle exception to be thrown");
         error::sWarnOnError = false;
-        Document doc = s.get(key);
+        Record rec = s.get(key);
     } catch (std::runtime_error &x) {
         error::sWarnOnError = true;
         error e = error::convertRuntimeError(x).standardized();
@@ -570,10 +570,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     options.create = false;
     reopenDatabase(&options);
 
-    auto doc = store->get("key"_sl);
-    REQUIRE(doc.exists());
+    auto rec = store->get("key"_sl);
+    REQUIRE(rec.exists());
 
-    // Attempt to change a doc:
+    // Attempt to change a rec:
     int code = 0;
     try {
         Transaction t(db);
@@ -610,9 +610,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     {
         Transaction t(db);
         for (int i = 1; i <= 100; i += 3) {
-            auto docID = stringWithFormat("doc-%03d", i);
-            Document doc = store->get((slice)docID);
-            store->del(doc, t);
+            auto docID = stringWithFormat("rec-%03d", i);
+            Record rec = store->get((slice)docID);
+            store->del(rec, t);
         }
         t.commit();
     }
@@ -650,8 +650,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
         {
             // Reopen with correct key:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-            auto doc = encryptedDB->defaultKeyStore().get("k"_sl);
-            REQUIRE(doc.body() == alloc_slice("value"));
+            auto rec = encryptedDB->defaultKeyStore().get("k"_sl);
+            REQUIRE(rec.body() == alloc_slice("value"));
         }
         {
             // Reopen without key:
@@ -695,6 +695,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
 
     reopenDatabase(&options);
 
-    Document doc = store->get((slice)"doc-001");
-    REQUIRE(doc.exists());
+    Record rec = store->get((slice)"rec-001");
+    REQUIRE(rec.exists());
 }

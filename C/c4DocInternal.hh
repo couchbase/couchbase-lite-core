@@ -8,7 +8,7 @@
 
 #pragma once
 #include "DataFile.hh"
-#include "Document.hh"
+#include "Record.hh"
 #include "LogInternal.hh"
 
 namespace c4Internal {
@@ -28,7 +28,7 @@ public:
     :_db(database)
     { }
 
-    C4DocumentInternal(C4Database *database, const Document &doc)
+    C4DocumentInternal(C4Database *database, const Record &doc)
     :_db(database)
     { }
 
@@ -44,7 +44,7 @@ public:
 
     C4Database* database()    {return _db;}
 
-    virtual const Document& document() =0;
+    virtual const Record& record() =0;
 
     virtual slice type() noexcept =0;    // should not throw
     virtual void setType(slice) noexcept =0;    // should not throw
@@ -104,7 +104,7 @@ public:
 
 protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, C4Slice docID);
-    static C4DocumentInternal* newV2Instance(C4Database* database, const Document&);
+    static C4DocumentInternal* newV2Instance(C4Database* database, const Record&);
 
     void clearSelectedRevision() noexcept {
         _selectedRevIDBuf = nullslice;

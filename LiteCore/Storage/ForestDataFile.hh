@@ -86,13 +86,13 @@ namespace litecore {
     /** ForestDB implementation of KeyStore. */
     class ForestKeyStore : public KeyStore {
     public:
-        uint64_t documentCount() const override;
+        uint64_t recordCount() const override;
         sequence lastSequence() const override;
 
-        Document get(sequence, ContentOptions) const override;
-        bool read(Document &doc, ContentOptions options) const override;
-        void readBody(Document &doc) const override;
-        Document getByOffsetNoErrors(uint64_t offset, sequence seq) const override;
+        Record get(sequence, ContentOptions) const override;
+        bool read(Record &rec, ContentOptions options) const override;
+        void readBody(Record &rec) const override;
+        Record getByOffsetNoErrors(uint64_t offset, sequence seq) const override;
 
         setResult set(slice key, slice meta, slice value, Transaction&) override;
 
@@ -108,11 +108,11 @@ namespace litecore {
         bool _del(slice key, Transaction&) override;
         bool _del(sequence s, Transaction&) override;
 
-        void setDocNoKey(Document &doc, fdb_doc &fdoc) const;
-        void setDoc(Document &doc, fdb_doc &fdoc) const;
+        void setDocNoKey(Record &rec, fdb_doc &fdoc) const;
+        void setDoc(Record &rec, fdb_doc &fdoc) const;
 
-        DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;
-        DocEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, DocEnumerator::Options&) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, RecordEnumerator::Options&) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, RecordEnumerator::Options&) override;
 
     private:
         friend class ForestDataFile;

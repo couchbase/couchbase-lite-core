@@ -18,7 +18,7 @@
 #include "c4DatabaseInternal.hh"
 
 #include "Collatable.hh"
-#include "DocEnumerator.hh"
+#include "RecordEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"
 #include <stdint.h>
@@ -48,7 +48,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 
         Transaction &t = db->transaction();
         KeyStore& expiry = db->getKeyStore("expiry");
-        Document existingDoc = expiry.get(docId);
+        Record existingDoc = expiry.get(docId);
         if (existingDoc.exists()) {
             // Previous entry found
             if (existingDoc.body().compare(tsValue) == 0) {
@@ -96,7 +96,7 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
 uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)
 {
     KeyStore &expiryKvs = db->getKeyStore("expiry");
-    Document existing = expiryKvs.get(docID);
+    Record existing = expiryKvs.get(docID);
     if (!existing.exists()) {
         return 0;
     }
@@ -127,7 +127,7 @@ public:
             return false;
         }
         
-        _reader = CollatableReader(_e.doc().key());
+        _reader = CollatableReader(_e.record().key());
         _reader.skipTag();
         _reader.readInt();
         _current = _reader.readString();
@@ -142,7 +142,7 @@ public:
     
     slice key() const
     {
-        return _e.doc().key();
+        return _e.record().key();
     }
     
     void reset()
@@ -153,7 +153,7 @@ public:
         c.beginMap();
         c.endMap();
         c.endArray();
-        _e = DocEnumerator(_db->getKeyStore("expiry"), nullslice, c.data());
+        _e = RecordEnumerator(_db->getKeyStore("expiry"), nullslice, c.data());
         _reader = CollatableReader(nullslice);
     }
 
@@ -169,7 +169,7 @@ public:
     
 private:
     Retained<C4Database> _db;
-    DocEnumerator _e;
+    RecordEnumerator _e;
     alloc_slice _current;
     CollatableReader _reader;
     uint64_t _endTimestamp;

@@ -32,14 +32,14 @@
 namespace litecore {
     using namespace fleece;
 
-    RevTree::RevTree(slice raw_tree, sequence seq, uint64_t docOffset)
-    :_bodyOffset(docOffset),
+    RevTree::RevTree(slice raw_tree, sequence seq, uint64_t recordOffset)
+    :_bodyOffset(recordOffset),
      _revs(RawRevision::decodeTree(raw_tree, this, seq))
     {
     }
 
-    void RevTree::decode(litecore::slice raw_tree, sequence seq, uint64_t docOffset) {
-        _bodyOffset = docOffset;
+    void RevTree::decode(litecore::slice raw_tree, sequence seq, uint64_t recordOffset) {
+        _bodyOffset = recordOffset;
         _revs = RawRevision::decodeTree(raw_tree, this, seq);
     }
 
@@ -196,8 +196,8 @@ namespace litecore {
         newRev.owner = this;
         newRev.revID = revID;
         newRev.body = body;
-        newRev.sequence = 0; // Sequence is unknown till doc is saved
-        newRev.oldBodyOffset = 0; // Body position is unknown till doc is saved
+        newRev.sequence = 0; // Sequence is unknown till record is saved
+        newRev.oldBodyOffset = 0; // Body position is unknown till record is saved
         newRev.flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew);
         if (deleted)
             newRev.addFlag(Rev::kDeleted);

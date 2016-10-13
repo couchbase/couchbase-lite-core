@@ -1,5 +1,5 @@
 //
-//  Document.hh
+//  Record.hh
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 11/11/14.
@@ -18,14 +18,15 @@
 
 namespace litecore {
 
-    /** Stores a Couchbase Lite Core document's key, metadata, body and sequence. */
-    class Document {
+    /** The unit of storage in a DataFile: a key, metadata and body (all opaque blobs);
+        and some extra metadata like a deletion flag and a sequence number. */
+    class Record {
     public:
-        Document()                              { }
-        explicit Document(slice key);
-        Document(const Document&);
-        Document(Document&&) noexcept;
-        Document& operator=(const Document&);
+        Record()                              { }
+        explicit Record(slice key);
+        Record(const Record&);
+        Record(Record&&) noexcept;
+        Record& operator=(const Record&);
 
         const alloc_slice& key() const          {return _key;}
         const alloc_slice& meta() const         {return _meta;}
@@ -37,7 +38,7 @@ namespace litecore {
         bool deleted() const                    {return _deleted;}
 
         /** A storage-system-dependent position in the database file, that can be used later
-            to retrieve the document. Not supported by all storage systems. */
+            to retrieve the record. Not supported by all storage systems. */
         uint64_t offset() const                 {return _offset;}
 
         bool exists() const                     {return _exists;}
@@ -49,7 +50,7 @@ namespace litecore {
         template <typename T>
             void setBody(const T &body)         {_body = body; _bodySize = _body.size;}
 
-        // Sets key/meta/body from an existing malloc'ed block. The Document assumes responsibility
+        // Sets key/meta/body from an existing malloc'ed block. The Record assumes responsibility
         // for freeing the block; caller should _not_ free it afterwards.
         void adoptKey(slice key)                {_key = alloc_slice::adopt(key);}
         void adoptMeta(slice meta)              {_meta = alloc_slice::adopt(meta);}
@@ -76,18 +77,18 @@ namespace litecore {
         friend class KeyStore;
         friend class KeyStoreWriter;
         friend class Transaction;
-        friend class DocEnumerator;
+        friend class RecordEnumerator;
 
         void update(sequence_t sequence, uint64_t offset, bool deleted) {
             _sequence = sequence; _offset = offset; _deleted = deleted; _exists = !deleted;
         }
 
-        alloc_slice _key, _meta, _body;     // The key, metadata and body of the document
+        alloc_slice _key, _meta, _body;     // The key, metadata and body of the record
         size_t      _bodySize {0};          // Size of body, if body wasn't loaded
         sequence_t  _sequence {0};          // Sequence number (if KeyStore supports sequences)
         uint64_t    _offset {0};            // File offset in db, if KeyStore supports that
-        bool        _deleted {false};       // Is the document deleted?
-        bool        _exists {false};        // Does the document exist?
+        bool        _deleted {false};       // Is the record deleted?
+        bool        _exists {false};        // Does the record exist?
     };
 
 }

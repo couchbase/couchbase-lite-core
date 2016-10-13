@@ -20,7 +20,7 @@ namespace litecore {
 
     bool QueryEnumerator::next() {
         if (_impl) {
-            if (_impl->next(_docID, _sequence))
+            if (_impl->next(_recordID, _sequence))
                 return true;
             _impl.reset();
         }
