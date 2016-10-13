@@ -218,7 +218,7 @@ namespace litecore {
 
 
     Document SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
-        CBFAssert(offset == seq);
+        Assert(offset == seq);
         Document doc;
         if (!_capabilities.getByOffset)
             return doc;

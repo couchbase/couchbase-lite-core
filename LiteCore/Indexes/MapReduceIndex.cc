@@ -62,7 +62,7 @@ namespace litecore {
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
-        CBFAssert(&_store.dataFile() == &t.dataFile());
+        Assert(&_store.dataFile() == &t.dataFile());
         _lastMapVersion = _mapVersion;
 
         CollatableBuilder stateKey;

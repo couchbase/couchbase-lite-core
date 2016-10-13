@@ -285,7 +285,7 @@ namespace litecore {
                 parseElemMatch(key, value);
                 break;
             default:
-                CBFAssert("invalid type in kRelationals" == nullptr);
+                Assert(false, "invalid type in kRelationals");
         }
     }
 
@@ -472,7 +472,7 @@ namespace litecore {
                 //parseElemMatch(table, value);
                 break;
             default:
-                CBFAssert("invalid type in kRelationals" == nullptr);
+                Assert(false, "invalid type in kRelationals");
         }
     }
 

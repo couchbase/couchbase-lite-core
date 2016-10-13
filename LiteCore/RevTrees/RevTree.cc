@@ -75,14 +75,14 @@ namespace litecore {
 #pragma mark - ACCESSORS:
 
     const Rev* RevTree::currentRevision() {
-        CBFAssert(!_unknown);
+        Assert(!_unknown);
         sort();
         return _revs.size() == 0 ? nullptr : &_revs[0];
     }
 
     const Rev* RevTree::get(unsigned index) const {
-        CBFAssert(!_unknown);
-        CBFAssert(index < _revs.size());
+        Assert(!_unknown);
+        Assert(index < _revs.size());
         return &_revs[index];
     }
 
@@ -91,7 +91,7 @@ namespace litecore {
             if (rev->revID == revID)
                 return &*rev;
         }
-        CBFAssert(!_unknown);
+        Assert(!_unknown);
         return nullptr;
     }
 
@@ -100,13 +100,13 @@ namespace litecore {
             if (rev->sequence == seq)
                 return &*rev;
         }
-        CBFAssert(!_unknown);
+        Assert(!_unknown);
         return nullptr;
     }
 
     bool RevTree::hasConflict() const {
         if (_revs.size() < 2) {
-            CBFAssert(!_unknown);
+            Assert(!_unknown);
             return false;
         } else if (_sorted) {
             return _revs[1].isActive();
@@ -123,7 +123,7 @@ namespace litecore {
     }
 
     std::vector<const Rev*> RevTree::currentRevisions() const {
-        CBFAssert(!_unknown);
+        Assert(!_unknown);
         std::vector<const Rev*> cur;
         for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
             if (rev->isLeaf())
@@ -134,7 +134,7 @@ namespace litecore {
 
     unsigned Rev::index() const {
         ptrdiff_t index = this - &owner->_revs[0];
-        CBFAssert(index >= 0 && index < owner->_revs.size());
+        Assert(index >= 0 && index < owner->_revs.size());
         return (unsigned)index;
     }
 
@@ -185,7 +185,7 @@ namespace litecore {
                                      bool deleted,
                                      bool hasAttachments)
     {
-        CBFAssert(!_unknown);
+        Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.push_back(alloc_slice(unownedRevID));
         revid revID = revid(_insertedData.back());
@@ -279,7 +279,7 @@ namespace litecore {
 
     int RevTree::insertHistory(const std::vector<revidBuffer> history, slice data,
                                bool deleted, bool hasAttachments) {
-        CBFAssert(history.size() > 0);
+        Assert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
         unsigned lastGen = 0;

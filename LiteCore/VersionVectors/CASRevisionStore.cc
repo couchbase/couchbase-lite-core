@@ -86,7 +86,7 @@ namespace litecore {
                                                      Revision::BodyParams body,
                                                      Transaction &t)
     {
-        CBFAssert(cas > 0);
+        Assert(cas > 0);
         auto state = getServerState(docID);
         if (cas <= state.latest.CAS)
             return nullptr;

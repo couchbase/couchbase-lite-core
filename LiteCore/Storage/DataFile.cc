@@ -135,7 +135,7 @@ namespace litecore {
 
     DataFile::~DataFile() {
         Debug("DataFile: deleting (~DataFile)");
-        CBFAssert(!_inTransaction);
+        Assert(!_inTransaction);
     }
 
     const FilePath& DataFile::filePath() const noexcept {
@@ -187,8 +187,10 @@ namespace litecore {
     KeyStore& DataFile::addKeyStore(const string &name, KeyStore::Capabilities options) {
         Debug("DataFile: open KVS '%s'", name.c_str());
         checkOpen();
-        CBFAssert(!(options.sequences && !_options.keyStores.sequences));
-        CBFAssert(!(options.softDeletes && !_options.keyStores.softDeletes));
+        Assert(!(options.sequences && !_options.keyStores.sequences),
+               "KeyStore can't have sequences if Database doesn't");
+        Assert(!(options.softDeletes && !_options.keyStores.softDeletes),
+               "KeyStore can't have softDeletes if Database doesn't");
         KeyStore *store = newKeyStore(name, options);
         _keyStores[name] = unique_ptr<KeyStore>(store);
         return *store;
@@ -250,7 +252,7 @@ namespace litecore {
 #pragma mark - TRANSACTION:
 
     void DataFile::beginTransactionScope(Transaction* t) {
-        CBFAssert(!_inTransaction);
+        Assert(!_inTransaction);
         checkOpen();
         unique_lock<mutex> lock(_file->_transactionMutex);
         while (_file->_transaction != nullptr)
@@ -261,7 +263,7 @@ namespace litecore {
 
     void DataFile::endTransactionScope(Transaction* t) {
         unique_lock<mutex> lock(_file->_transactionMutex);
-        CBFAssert(_file->_transaction == t);
+        Assert(_file->_transaction == t);
         _file->_transaction = nullptr;
         _file->_transactionCond.notify_one();
         _inTransaction = false;
@@ -296,7 +298,7 @@ namespace litecore {
 
 
     void Transaction::commit() {
-        CBFAssert(_active);
+        Assert(_active, "Transaction is not active");
         _active = false;
         Log("DataFile: commit transaction");
         _db._endTransaction(this, true);
@@ -304,7 +306,7 @@ namespace litecore {
 
 
     void Transaction::abort() {
-        CBFAssert(_active);
+        Assert(_active, "Transaction is not active");
         _active = false;
         Log("DataFile: abort transaction");
         _db._endTransaction(this, false);

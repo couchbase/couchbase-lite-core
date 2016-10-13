@@ -157,7 +157,7 @@ namespace c4Internal {
             auto next = _revisions.begin();
             if (_selected && _selected != _current) {
                 next = find(next, _revisions.end(), _selected);
-                CBFAssert(next != _revisions.end());
+                Assert(next != _revisions.end());
                 ++next;
             }
             if (next == _revisions.end())

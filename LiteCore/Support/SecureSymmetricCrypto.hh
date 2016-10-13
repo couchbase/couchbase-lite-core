@@ -41,8 +41,8 @@ namespace litecore {
                        slice dst,           // output buffer & capacity
                        slice src)           // input data
     {
-        CBFDebugAssert(key.size == kCCKeySizeAES256);
-        CBFDebugAssert(iv.buf == nullptr || iv.size == kCCBlockSizeAES128);
+        DebugAssert(key.size == kCCKeySizeAES256);
+        DebugAssert(iv.buf == nullptr || iv.size == kCCBlockSizeAES128, "IV is wrong size");
         size_t outSize;
         CCCryptorStatus status = CCCrypt((encrypt ? kCCEncrypt : kCCDecrypt),
                                          kCCAlgorithmAES128,
@@ -53,7 +53,7 @@ namespace litecore {
                                          (void*)dst.buf, dst.size,
                                          &outSize);
         if (status != kCCSuccess) {
-            CBFAssert(status != kCCParamError && status != kCCBufferTooSmall &&
+            Assert(status != kCCParamError && status != kCCBufferTooSmall &&
                       status != kCCUnimplemented);
             error::_throw(error::CryptoError);
         }
@@ -94,8 +94,8 @@ namespace litecore {
         slice dst,           // output buffer & capacity
         slice src)           // input data
     {
-        CBFDebugAssert(key.size == KEY_SIZE);
-        CBFDebugAssert(iv.buf == nullptr || iv.size == BLOCK_SIZE);
+        DebugAssert(key.size == KEY_SIZE);
+        DebugAssert(iv.buf == nullptr || iv.size == BLOCK_SIZE, "IV is wrong size");
 
         auto init = EVP_EncryptInit_ex;
         auto update = EVP_EncryptUpdate;

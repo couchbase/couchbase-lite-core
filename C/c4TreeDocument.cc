@@ -274,7 +274,7 @@ namespace c4Internal {
 
 
 int32_t C4TreeDocument::putExistingRevision(const C4DocPutRequest &rq) {
-    CBFAssert(rq.historyCount >= 1);
+    Assert(rq.historyCount >= 1);
     int32_t commonAncestor = -1;
     loadRevisions();
     vector<revidBuffer> revIDBuffers(rq.historyCount);

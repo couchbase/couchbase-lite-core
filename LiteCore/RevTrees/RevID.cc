@@ -195,7 +195,7 @@ namespace litecore {
     }
 
     revidBuffer& revidBuffer::operator= (const revid &other) {
-        CBFAssert(other.size <= sizeof(_buffer));
+        Assert(other.size <= sizeof(_buffer));
         memcpy(_buffer, other.buf, other.size);
         buf = &_buffer;
         size = other.size;

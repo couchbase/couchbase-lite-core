@@ -249,7 +249,7 @@ namespace litecore {
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
-        CBFAssert(_transaction == nullptr);
+        Assert(_transaction == nullptr);
         _transaction.reset( new SQLite::Transaction(*_sqlDb) );
     }
 

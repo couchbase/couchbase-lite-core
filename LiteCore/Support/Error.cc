@@ -262,7 +262,7 @@ namespace litecore {
 
     
     void error::_throw(Domain domain, int code ) {
-        CBFDebugAssert(code != 0);
+        DebugAssert(code != 0);
         error err{domain, code};
         if (sWarnOnError && !err.isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s",
@@ -284,10 +284,14 @@ namespace litecore {
 
 
 
-    void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
+    void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
+                                const char *message)
+    {
+        if (!message)
+            message = expr;
         if (LogLevel > kError || LogCallback == nullptr)
-            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
-        WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
+            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
+        WarnError("Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
         if (LogLevel <= kError)
             logBacktrace(1);
         throw error(error::AssertionFailed);

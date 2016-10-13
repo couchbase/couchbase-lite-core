@@ -81,7 +81,7 @@ namespace litecore {
 
     // Get a revision from the _nonCurrentStore only
     Revision::Ref RevisionStore::getNonCurrent(slice docID, slice revID, ContentOptions opt) const {
-        CBFAssert(revID.size > 0);
+        Assert(revID.size > 0);
         Document doc(keyForNonCurrentRevision(docID, Version{revID}));
         if (!_nonCurrentStore.read(doc, opt))
             return nullptr;
@@ -98,7 +98,7 @@ namespace litecore {
 
     // How does this revision compare to what's in the database?
     versionOrder RevisionStore::checkRevision(slice docID, slice revID) {
-        CBFAssert(revID.size);
+        Assert(revID.size);
         Version checkVers(revID);
         auto rev = get(docID);
         if (rev) {
@@ -186,7 +186,7 @@ namespace litecore {
                                                  Revision::BodyParams bodyParams,
                                                  Transaction &t)
     {
-        CBFAssert(conflicting.size() >= 2);
+        Assert(conflicting.size() >= 2);
         VersionVector newVersion;
         Revision* current = nullptr;
         for (auto rev : conflicting) {

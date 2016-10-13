@@ -44,7 +44,7 @@ namespace litecore {
      _transaction(t),
      _wasEmpty(wasEmpty)
     {
-        CBFDebugAssert(&t.dataFile() == &index._store.dataFile());
+        DebugAssert(&t.dataFile() == &index._store.dataFile());
         index.addUser();
     }
 
@@ -212,7 +212,7 @@ namespace litecore {
 
         Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
         Document doc = _store.get(realKey);
-        CBFAssert(doc.exists());
+        Assert(doc.exists());
         return alloc_slice(doc.body());
     }
 

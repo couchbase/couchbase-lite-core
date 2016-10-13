@@ -72,7 +72,7 @@ namespace litecore {
 
     uint8_t* CollatableBuilder::reserve(size_t amt) {
         if (_available.size < amt) {
-            CBFAssert(_buf.buf);
+            Assert(_buf.buf);
             // grow:
             size_t curSize = size();
             size_t newSize = std::max(_buf.size, kMinSize/2);

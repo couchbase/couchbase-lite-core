@@ -120,7 +120,7 @@ namespace litecore {
         meta.writeFrom(revID);
         WriteUVarInt(&meta, _docType.size);
         meta.writeFrom(_docType);
-        CBFAssert(meta.size == 0);
+        Assert(meta.size == 0);
     }
 
     bool VersionedDocument::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {

@@ -95,9 +95,10 @@ namespace litecore {
         [[noreturn]] static void _throw(LiteCoreError);
         [[noreturn]] static void _throwErrno();
 
-        /** Throws an assertion failure exception. Called by the CBFAssert() macro. */
+        /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
-                                                 const char *expr);
+                                                 const char *expr,
+                                                 const char *message =nullptr);
 
         static void logBacktrace(unsigned skipFrames =0);
 
@@ -106,15 +107,15 @@ namespace litecore {
 
 
 // Like C assert() but throws an exception instead of aborting
-#define	CBFAssert(e) \
-    (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e) \
+#define	Assert(e, ...) \
+    (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
                          : (void)0)
 
-// CBFDebugAssert is removed from release builds; use when 'e' test is too expensive
+// DebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifdef NDEBUG
-#define CBFDebugAssert(e)   do{ }while(0)
+#define DebugAssert(e, ...)   do{ }while(0)
 #else
-#define CBFDebugAssert(e)   CBFAssert(e)
+#define DebugAssert(e, ...)   Assert(e, ##__VA_ARGS__)
 #endif
 
 }

@@ -39,7 +39,7 @@ struct c4Database : public RefCounted<c4Database> {
     bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
 
     Transaction& transaction() {
-        CBFAssert(_transaction);
+        Assert(_transaction);
         return *_transaction;
     }
 
@@ -71,7 +71,7 @@ struct c4Database : public RefCounted<c4Database> {
 protected:
     c4Database(string path,
                const C4DatabaseConfig &config);
-    virtual ~c4Database() { CBFAssert(_transactionLevel == 0); }
+    virtual ~c4Database() { Assert(_transactionLevel == 0); }
 
     static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
 

@@ -96,7 +96,7 @@ namespace litecore {
 
 
     FilePath FilePath::withExtension(const string &ext) const {
-        CBFAssert(!isDir());
+        Assert(!isDir());
         auto name = unextendedName();
         if (ext.empty())
             return FilePath(_dir, name);
@@ -114,7 +114,7 @@ namespace litecore {
 
     
     FilePath FilePath::addingExtension(const string &ext) const {
-        CBFAssert(!isDir());
+        Assert(!isDir());
         if (ext.empty())
             return *this;
         else
@@ -131,7 +131,7 @@ namespace litecore {
 
 
     FilePath FilePath::operator[] (const string &name) const {
-        CBFAssert(isDir());
+        Assert(isDir());
         if (name.empty())
             return *this;
         else if (name[name.size()-1] == kSeparatorChar)

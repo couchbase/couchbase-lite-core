@@ -61,7 +61,7 @@ namespace litecore {
             dst = dst->copyFrom(*src);
         }
         dst->size = _enc32(0);   // write trailing 0 size marker
-        CBFAssert((&dst->size + 1) == result.end());
+        Assert((&dst->size + 1) == result.end());
         return result;
     }
 
