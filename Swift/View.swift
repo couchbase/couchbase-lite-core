@@ -28,7 +28,7 @@ public final class View {
                 create: Bool = true,
                 readOnly: Bool = false,
                 version: String,
-                map: MapFunction) throws
+                map: @escaping MapFunction) throws
     {
         var config = C4DatabaseConfig(create: create, readOnly: readOnly)
         var err = C4Error()
