@@ -80,7 +80,7 @@ namespace litecore {
                 error::_throw(error::CorruptRevisionData);
             docType = meta.read((size_t)docTypeLength);
         } else {
-            docType = slice::null;
+            docType = nullslice;
         }
         return true;
     }

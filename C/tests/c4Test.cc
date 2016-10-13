@@ -50,7 +50,7 @@ static string c4sliceToHex(C4Slice result) {
 
 ostream& operator<< (ostream& o, C4Slice s) {
     o << "C4Slice[";
-    if (s.buf == NULL)
+    if (s.buf == nullptr)
         return o << "null]";
     auto buf = (const uint8_t*)s.buf;
     for (size_t i = 0; i < s.size; i++) {
@@ -102,7 +102,7 @@ C4Test::C4Test(int testOption)
  _versioning((testOption & 2) ? kC4VersionVectors : kC4RevisionTrees),
  _bundled(true)
 {
-    c4_shutdown(NULL);
+    c4_shutdown(nullptr);
     
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
@@ -139,9 +139,9 @@ C4Test::C4Test(int testOption)
     }
 
     C4Error error;
-    c4db_deleteAtPath(databasePath(), &config, NULL);
+    c4db_deleteAtPath(databasePath(), &config, nullptr);
     db = c4db_open(databasePath(), &config, &error);
-    REQUIRE(db != NULL);
+    REQUIRE(db != nullptr);
 }
 
 
@@ -184,8 +184,8 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     rq.body = body;
     rq.deletion = (body.buf == nullptr);
     rq.save = true;
-    auto doc = c4doc_put(db, &rq, NULL, &error);
-    REQUIRE(doc != NULL);
+    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    REQUIRE(doc != nullptr);
     c4doc_free(doc);
     c4doc_free(curDoc);
 }
@@ -194,7 +194,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
 // Reads a file into memory.
 FLSliceResult C4Test::readFile(const char *path) {
     FILE *fd = fopen(path, "r");
-    REQUIRE(fd != NULL);
+    REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);
     size_t size = ftello(fd);
     fseeko(fd, 0, SEEK_SET);

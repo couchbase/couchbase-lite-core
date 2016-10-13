@@ -49,15 +49,15 @@ namespace litecore {
     { }
 
     void Document::clearMetaAndBody() noexcept {
-        setMeta(slice::null);
-        setBody(slice::null);
+        setMeta(nullslice);
+        setBody(nullslice);
         _bodySize = _sequence = _offset = 0;
         _exists = _deleted = false;
     }
 
     void Document::clear() noexcept {
         clearMetaAndBody();
-        setKey(slice::null);
+        setKey(nullslice);
     }
 
     uint64_t Document::bodyAsUInt() const noexcept {

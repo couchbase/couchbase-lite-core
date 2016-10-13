@@ -382,8 +382,8 @@ namespace litecore {
         Collatable& endKey = _keyRanges[i].end;
         Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
         return DocEnumerator(_index._store,
-                             makeRealKey(startKey, slice::null, false, _options.descending),
-                             makeRealKey(endKey,   slice::null, true,  _options.descending),
+                             makeRealKey(startKey, nullslice, false, _options.descending),
+                             makeRealKey(endKey,   nullslice, true,  _options.descending),
                              docOptions(_options));
     }
 

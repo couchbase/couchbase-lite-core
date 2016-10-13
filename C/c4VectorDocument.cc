@@ -97,7 +97,7 @@ namespace c4Internal {
 
         bool selectRevision(shared_ptr<Revision> rev) {
             _selected = rev;
-            _loadedBody = slice::null;
+            _loadedBody = nullslice;
             if (rev) {
                 _selectedRevIDBuf = rev->revID();
                 selectedRev.revID = _selectedRevIDBuf;
@@ -123,7 +123,7 @@ namespace c4Internal {
                 if (!selectRevision(rev))
                     return false;
             } else {
-                selectRevision(NULL);
+                selectRevision(nullptr);
             }
             return true;
         }

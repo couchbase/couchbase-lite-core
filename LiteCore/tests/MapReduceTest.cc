@@ -35,8 +35,8 @@ static void mapCities(const Document &doc,
                       std::vector<alloc_slice> &values)
 {
     const Dict *body = Value::fromData(doc.body())->asDict();
-    auto name = (string)body->get(slice("name"))->asString();
-    const Array *cities = body->get(slice("cities"))->asArray();
+    auto name = (string)body->get("name"_sl)->asString();
+    const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
         keys.push_back(ToCollatable(i->asString()));
         values.push_back(ToCollatable(name));
@@ -48,8 +48,8 @@ static void mapStates(const Document &doc,
                       std::vector<alloc_slice> &values)
 {
     const Dict *body = Value::fromData(doc.body())->asDict();
-    auto name = (string)body->get(slice("name"))->asString();
-    const Array *cities = body->get(slice("cities"))->asArray();
+    auto name = (string)body->get("name"_sl)->asString();
+    const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
         keys.push_back(ToCollatable(name));
         values.push_back(ToCollatable(i->asString()));
@@ -61,8 +61,8 @@ static void mapStatesAndCities(const Document &doc,
                       std::vector<alloc_slice> &values)
 {
     const Dict *body = Value::fromData(doc.body())->asDict();
-    auto name = (string)body->get(slice("name"))->asString();
-    const Array *cities = body->get(slice("cities"))->asArray();
+    auto name = (string)body->get("name"_sl)->asString();
+    const Array *cities = body->get("cities"_sl)->asArray();
     for (Array::iterator i(cities); i; ++i) {
         CollatableBuilder key;
         key.beginArray();
@@ -123,8 +123,8 @@ class MapReduceTest : public DataFileTestFixture {
         updateIndex(db, *index, mapCities);
 
         size_t nRows = 0;
-        for (IndexEnumerator e(*index, Collatable(), litecore::slice::null,
-                               Collatable(), litecore::slice::null); e.next(); ) {
+        for (IndexEnumerator e(*index, Collatable(), litecore::nullslice,
+                               Collatable(), litecore::nullslice); e.next(); ) {
             CollatableReader keyReader(e.key());
             alloc_slice keyStr = keyReader.readString();
             Log("key = %s, docID = %.*s",
@@ -147,8 +147,8 @@ class MapReduceTest : public DataFileTestFixture {
         options.groupLevel = groupLevel;
         size_t nRows = 0;
         for (IndexEnumerator e(*index,
-                               Collatable(), litecore::slice::null,
-                               Collatable(), litecore::slice::null,
+                               Collatable(), litecore::nullslice,
+                               Collatable(), litecore::nullslice,
                                options); e.next(); ) {
             CollatableReader keyReader(e.key());
             std::string keyStr = keyReader.toJSON();
@@ -177,7 +177,7 @@ class MapReduceTest : public DataFileTestFixture {
         e.endDictionary();
         auto data = e.extractOutput();
 
-        store->set(docID, slice::null, data, t);
+        store->set(docID, nullslice, data, t);
     }
 
 
@@ -240,7 +240,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     Log("--- Deleting CA");
     {
         Transaction t(db);
-        store->del(slice("CA"), t);
+        store->del("CA"_sl, t);
         t.commit();
     }
     queryExpectingKeys({"Port Townsend", "Portland", "Salem",
@@ -258,7 +258,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce", "[MapReduce]") {
     Log("--- Deleting OR");
     {
         Transaction t(db);
-        store->del(slice("OR"), t);
+        store->del("OR"_sl, t);
         t.commit();
     }
     Log("--- Compacting db");
@@ -298,7 +298,7 @@ N_WAY_TEST_CASE_METHOD (MapReduceTest, "MapReduce Reopen", "[MapReduce]") {
     REQUIRE(lastIndexed >= lastChangedAt);
 
     delete index;
-    index = NULL;
+    index = nullptr;
 
     index = new MapReduceIndex(db->getKeyStore("index"), *db);
     REQUIRE(index);

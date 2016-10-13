@@ -234,14 +234,14 @@ namespace litecore {
 
         // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
         const char *sep = (const char*)ascii.findByte('@');
-        bool isClock = (sep != NULL);
+        bool isClock = (sep != nullptr);
         if (isClock) {
             if (!allowClock)
                 return false;
             *dst++ = 0; // leading zero byte denotes clock-style revid
         } else {
             sep = (const char*)ascii.findByte('-');
-            if (sep == NULL)
+            if (sep == nullptr)
                 return false; // separator is missing
         }
 

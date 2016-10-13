@@ -163,7 +163,7 @@ TEST_CASE( "Collatable Strings", "[Collatable]" ) {
     checkRoundTrip("\033\034\035");
     // DEL is weird. There isn't room in the Collatable encoding to give it a unique value, so it
     // gets the same value as space, meaning it decodes to space.
-    REQUIRE((slice)roundTrip("hey\177there").readString() == slice("hey there"));
+    REQUIRE((slice)roundTrip("hey\177there").readString() == "hey there"_sl);
 }
 
 TEST_CASE( "Collatable IndexKey", "[Collatable]" ) {

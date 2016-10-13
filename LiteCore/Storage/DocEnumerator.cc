@@ -55,9 +55,9 @@ namespace litecore {
               store.name().c_str(), startKey.hexCString(), endKey.hexCString(),
               (options.descending ? " desc" : ""), this);
         if (startKey.size == 0)
-            startKey.buf = NULL;
+            startKey.buf = nullptr;
         if (endKey.size == 0)
-            endKey.buf = NULL;
+            endKey.buf = nullptr;
 
         slice minKey = startKey, maxKey = endKey;
         if (options.descending)

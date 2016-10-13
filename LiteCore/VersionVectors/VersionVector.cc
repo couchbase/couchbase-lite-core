@@ -29,9 +29,6 @@ namespace litecore {
 #pragma mark - VERSION:
 
 
-    const peerID kCASServerPeerID = {"$", 1};
-    const peerID kMePeerID        = {"*", 1};
-
     alloc_slice Version::peerIDFromBinary(slice binaryID) {
         fleece::Writer w;
         w.writeBase64(binaryID);
@@ -151,7 +148,7 @@ namespace litecore {
     { }
 
     void VersionVector::reset() {
-        _string = slice::null;
+        _string = nullslice;
         _vers.clear();
         _addedAuthors.clear();
     }

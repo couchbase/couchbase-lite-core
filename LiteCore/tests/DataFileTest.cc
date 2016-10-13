@@ -45,13 +45,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
     alloc_slice key("key");
     {
         Transaction t(db);
-        store->set(key, slice("value"), t);
+        store->set(key, "value"_sl, t);
         t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
     Document doc = db->defaultKeyStore().get(key);
     REQUIRE(doc.key() == key);
-    REQUIRE(doc.body() == slice("value"));
+    REQUIRE(doc.body() == "value"_sl);
 }
 
 
@@ -59,18 +59,18 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     {
         //WORKAROUND: Add a doc before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
-        store->set(slice("a"), slice("A"), t);
+        store->set("a"_sl, "A"_sl, t);
         t.commit();
     }
 
     unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
-    REQUIRE(aliased_db->defaultKeyStore().get(slice("a")).body() == alloc_slice("A"));
+    REQUIRE(aliased_db->defaultKeyStore().get("a"_sl).body() == alloc_slice("A"));
 
     {
         Transaction t(db);
-        Document doc(slice("doc"));
-        doc.setMeta(slice("m-e-t-a"));
-        doc.setBody(slice("THIS IS THE BODY"));
+        Document doc("doc"_sl);
+        doc.setMeta("m-e-t-a"_sl);
+        doc.setBody("THIS IS THE BODY"_sl);
         store->write(doc, t);
 
         REQUIRE(doc.sequence() == 2);
@@ -80,7 +80,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         REQUIRE(doc_alias.meta() == doc.meta());
         REQUIRE(doc_alias.body() == doc.body());
 
-        doc_alias.setBody(slice("NU BODY"));
+        doc_alias.setBody("NU BODY"_sl);
         store->write(doc_alias, t);
 
         REQUIRE(store->read(doc));
@@ -89,19 +89,19 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         REQUIRE(doc.body() == doc_alias.body());
 
         // Doc shouldn't exist outside transaction yet:
-        REQUIRE(aliased_db->defaultKeyStore().get(slice("doc")).sequence() == 0);
+        REQUIRE(aliased_db->defaultKeyStore().get("doc"_sl).sequence() == 0);
         t.commit();
     }
 
-    REQUIRE(store->get(slice("doc")).sequence() == 3);
-    REQUIRE(aliased_db->defaultKeyStore().get(slice("doc")).sequence() == 3);
+    REQUIRE(store->get("doc"_sl).sequence() == 3);
+    REQUIRE(aliased_db->defaultKeyStore().get("doc"_sl).sequence() == 3);
 }
 
 static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("doc-%03d", i);
-        sequence seq = store->set(slice(docID), litecore::slice::null, slice(docID), t).seq;
+        sequence seq = store->set(slice(docID), litecore::nullslice, slice(docID), t).seq;
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
@@ -129,7 +129,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
         {
             int i = 1;
-            DocEnumerator e(*store, slice::null, slice::null, opts);
+            DocEnumerator e(*store, nullslice, nullslice, opts);
             for (; e.next(); ++i) {
                 string expectedDocID = stringWithFormat("doc-%03d", i);
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
@@ -144,7 +144,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
         Log("Enumerate over range of docs:");
         int i = 24;
-        for (DocEnumerator e(*store, slice("doc-024"), slice("doc-029"), opts); e.next(); ++i) {
+        for (DocEnumerator e(*store, "doc-024"_sl, "doc-029"_sl, opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
@@ -157,7 +157,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         Log("Enumerate over range of docs without inclusive:");
         opts.inclusiveStart = opts.inclusiveEnd = false;
         i = 25;
-        for (DocEnumerator e(*store, slice("doc-024"), slice("doc-029"), opts); e.next(); ++i) {
+        for (DocEnumerator e(*store, "doc-024"_sl, "doc-029"_sl, opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("doc-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
@@ -201,7 +201,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over all docs, descending:") {
         int i = 100;
-        for (DocEnumerator e(*store, slice::null, slice::null, opts); e.next(); --i) {
+        for (DocEnumerator e(*store, nullslice, nullslice, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -211,7 +211,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs from max, descending:") {
         int i = 100;
-        for (DocEnumerator e(*store, slice::null, slice("doc-090"), opts); e.next(); --i) {
+        for (DocEnumerator e(*store, nullslice, "doc-090"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -221,7 +221,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs to min, descending:") {
         int i = 10;
-        for (DocEnumerator e(*store, slice("doc-010"), slice::null, opts); e.next(); --i) {
+        for (DocEnumerator e(*store, "doc-010"_sl, nullslice, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -231,7 +231,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs, descending:") {
         int i = 29;
-        for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), opts); e.next(); --i) {
+        for (DocEnumerator e(*store, "doc-029"_sl, "doc-024"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -241,7 +241,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over range of docs, descending, max key doesn't exist:") {
         int i = 29;
-        for (DocEnumerator e(*store, slice("doc-029b"), slice("doc-024"), opts); e.next(); --i) {
+        for (DocEnumerator e(*store, "doc-029b"_sl, "doc-024"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -253,7 +253,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         auto optsExcl = opts;
         optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
         int i = 28;
-        for (DocEnumerator e(*store, slice("doc-029"), slice("doc-024"), optsExcl); e.next(); --i) {
+        for (DocEnumerator e(*store, "doc-029"_sl, "doc-024"_sl, optsExcl); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("doc-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence)i);
@@ -293,12 +293,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         enc.endDictionary();
         alloc_slice body = enc.extractOutput();
 
-        sequence seq = store->set(slice(docID), litecore::slice::null, body, t).seq;
+        sequence seq = store->set(slice(docID), litecore::nullslice, body, t).seq;
         REQUIRE(seq == (sequence)i);
     }
     t.commit();
 
-    unique_ptr<Query> query{ store->compileQuery(slice("{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}"), slice::null) };
+    unique_ptr<Query> query{ store->compileQuery("{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}"_sl, nullslice) };
 
     // Use a (SQL) query based on the Fleece "num" property:
     for (int pass = 0; pass < 2; ++pass) {
@@ -326,19 +326,19 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[Data
     // Initial document:
     {
         Transaction t(db);
-        store->set(slice("a"), slice("A"), t);
+        store->set("a"_sl, "A"_sl, t);
         t.commit();
     }
     {
         Transaction t(db);
-        store->set(slice("x"), slice("X"), t);
-        store->set(slice("a"), slice("Z"), t);
-        REQUIRE(store->get(slice("a")).body() == alloc_slice("Z"));
-        REQUIRE(store->get(slice("a")).body() == alloc_slice("Z"));
+        store->set("x"_sl, "X"_sl, t);
+        store->set("a"_sl, "Z"_sl, t);
+        REQUIRE(store->get("a"_sl).body() == alloc_slice("Z"));
+        REQUIRE(store->get("a"_sl).body() == alloc_slice("Z"));
         t.abort();
     }
-    REQUIRE(store->get(slice("a")).body() == alloc_slice("A"));
-    REQUIRE(store->get(slice("x")).sequence() == 0);
+    REQUIRE(store->get("a"_sl).body() == alloc_slice("A"));
+    REQUIRE(store->get("x"_sl).sequence() == 0);
 }
 
 
@@ -353,7 +353,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
         Transaction trans(db);
         for (unsigned d = 1; d <= kNDocs; d++) {
             string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
-            store->set(slice(docID), slice::null, slice("some document content goes here"), trans);
+            store->set(slice(docID), nullslice, "some document content goes here"_sl, trans);
         }
         trans.commit();
     }
@@ -375,7 +375,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
     slice key("a");
     {
         Transaction t(db);
-        store->set(key, slice("A"), t);
+        store->set(key, "A"_sl, t);
         t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
@@ -398,7 +398,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
     slice key("a");
     {
         Transaction t(db);
-        store->set(key, slice("A"), t);
+        store->set(key, "A"_sl, t);
         t.commit();
     }
 
@@ -424,7 +424,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[Da
     slice key("a");
     {
         Transaction t(db);
-        store->set(key, slice("A"), t);
+        store->set(key, "A"_sl, t);
         t.commit();
     }
 
@@ -462,13 +462,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
     alloc_slice key("key");
     {
         Transaction t(db);
-        s.set(key, slice("value"), t);
+        s.set(key, "value"_sl, t);
         t.commit();
     }
     REQUIRE(s.lastSequence() == 1);
     Document doc = s.get(key);
     REQUIRE(doc.key() == key);
-    REQUIRE(doc.body() == slice("value"));
+    REQUIRE(doc.body() == "value"_sl);
 
     Document doc2 = store->get(key);
     REQUIRE_FALSE(doc2.exists());
@@ -480,7 +480,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
     alloc_slice key("key");
 //    {
 //        Transaction t(db);
-//        t(s).set(key, slice("value"));
+//        t(s).set(key, "value"_sl);
 //        t.commit();
 //    }
     s.erase();
@@ -500,7 +500,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
     {
         Transaction t(db);
         Document doc(key);
-        doc.setBody(slice("value1"));
+        doc.setBody("value1"_sl);
         s.write(doc, t);
         offset1 = doc.offset();
         CHECK(offset1 > 0);
@@ -509,7 +509,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
     // Get it by offset:
     Document doc1 = s.getByOffsetNoErrors(offset1, 1);
     REQUIRE(doc1.key() == key);
-    REQUIRE(doc1.body() == slice("value1"));
+    REQUIRE(doc1.body() == "value1"_sl);
     REQUIRE(doc1.sequence() == 1);
     REQUIRE(doc1.offset() == offset1);
 
@@ -517,7 +517,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
     docOffset offset2;
     {
         Transaction t(db);
-        auto result = s.set(key, slice("value2"), t);
+        auto result = s.set(key, "value2"_sl, t);
         offset2 = result.off;
         CHECK(offset2 > 0);
         CHECK(result.seq == 2);
@@ -526,14 +526,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[D
     // Get it by offset:
     Document doc2 = s.getByOffsetNoErrors(offset2, 2);
     REQUIRE(doc2.key() == key);
-    REQUIRE(doc2.body() == slice("value2"));
+    REQUIRE(doc2.body() == "value2"_sl);
     REQUIRE(doc2.sequence() == 2);
     REQUIRE(doc2.offset() == offset2);
 
     // Get old version (Seq 1) by offset:
     Document doc1again = s.getByOffsetNoErrors(offset1, 1);
     REQUIRE(doc1again.key() == key);
-    REQUIRE(doc1again.body() == slice("value1"));
+    REQUIRE(doc1again.body() == "value1"_sl);
     REQUIRE(doc1again.sequence() == 1);
     REQUIRE(doc1again.offset() == offset1);
 }
@@ -561,7 +561,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
     {
         Transaction t(db);
-        store->set(slice("key"), slice("value"), t);
+        store->set("key"_sl, "value"_sl, t);
         t.commit();
     }
     // Reopen db as read-only:
@@ -570,7 +570,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     options.create = false;
     reopenDatabase(&options);
 
-    auto doc = store->get(slice("key"));
+    auto doc = store->get("key"_sl);
     REQUIRE(doc.exists());
 
     // Attempt to change a doc:
@@ -580,7 +580,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
         // This is expected to throw an exception:
         Log("NOTE: Expecting a read-only exception to be thrown");
         error::sWarnOnError = false;
-        store->set(slice("key"), slice("somethingelse"), t);
+        store->set("key"_sl, "somethingelse"_sl, t);
         t.commit();
     } catch (std::runtime_error &x) {
         error e = error::convertRuntimeError(x).standardized();
@@ -636,7 +636,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
     }
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = kAES256;
-    options.encryptionKey = slice("12345678901234567890123456789012");
+    options.encryptionKey = "12345678901234567890123456789012"_sl;
     auto dbPath = databasePath("encrypted");
     deleteDatabase(dbPath);
     try {
@@ -644,13 +644,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
             // Create encrypted db:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
             Transaction t(*encryptedDB);
-            encryptedDB->defaultKeyStore().set(slice("k"), slice::null, slice("value"), t);
+            encryptedDB->defaultKeyStore().set("k"_sl, nullslice, "value"_sl, t);
             t.commit();
         }
         {
             // Reopen with correct key:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-            auto doc = encryptedDB->defaultKeyStore().get(slice("k"));
+            auto doc = encryptedDB->defaultKeyStore().get("k"_sl);
             REQUIRE(doc.body() == alloc_slice("value"));
         }
         {

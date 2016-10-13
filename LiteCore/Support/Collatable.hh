@@ -96,7 +96,7 @@ namespace litecore {
         CollatableBuilder& operator<< (const geohash::hash& h) {addString(kGeohash, (slice)h);
                                                                 return *this;}
 
-        CollatableBuilder& addFullTextKey(slice text, slice languageCode = slice::null);
+        CollatableBuilder& addFullTextKey(slice text, slice languageCode = nullslice);
         CollatableBuilder& addGeoKey(slice geoJSON, geohash::area bbox);
 
         CollatableBuilder& beginArray()                    {addTag(kArray); return *this;}
@@ -124,7 +124,7 @@ namespace litecore {
 
         alloc_slice extractOutput() {
             auto result = data();
-            _buf = _available = slice::null;
+            _buf = _available = nullslice;
             return alloc_slice::adopt(result);
         }
 
@@ -133,12 +133,12 @@ namespace litecore {
         CollatableBuilder(CollatableBuilder&& c) {
             _buf = c._buf;
             _available = c._available;
-            c._buf.buf = NULL;
+            c._buf.buf = nullptr;
         }
         CollatableBuilder& operator= (CollatableBuilder &&c) {
             _buf = c._buf;
             _available = c._available;
-            c._buf.buf = NULL;
+            c._buf.buf = nullptr;
             return *this;
         }
 

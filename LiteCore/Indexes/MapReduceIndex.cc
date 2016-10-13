@@ -178,7 +178,7 @@ namespace litecore {
         alloc_slice entry = getSpecialEntry(docID, seq, geoID);
         Array::iterator iter(Value::fromTrustedData(entry)->asArray());
         outArea = ::litecore::readGeoArea(iter);
-        outGeoJSON = outValue = slice::null;
+        outGeoJSON = outValue = nullslice;
         if (iter.count() > 0) {
             if (iter->type() == kString)
                 outGeoJSON = alloc_slice(iter->asString());
@@ -288,7 +288,7 @@ namespace litecore {
         // with an emit, such as the full text or the geo-JSON. This data is read by
         // MapReduceIndex::getSpecialEntry
         template <typename KEY>
-        unsigned emitSpecial(const KEY &key, slice value1, slice value2 = slice::null) {
+        unsigned emitSpecial(const KEY &key, slice value1, slice value2 = nullslice) {
             CollatableBuilder collKey;
             collKey.addNull();
 
@@ -335,7 +335,7 @@ namespace litecore {
         }
 
         bool shouldIndexDocumentType(slice docType) noexcept {
-            return _documentType.buf == NULL || _documentType == docType;
+            return _documentType.buf == nullptr || _documentType == docType;
         }
         
         // Writes the given rows to the index.
@@ -409,7 +409,7 @@ namespace litecore {
     }
 
     std::set<slice>* MapReduceIndexer::documentTypes() {
-        return _allDocTypes ? NULL : &_docTypes;
+        return _allDocTypes ? nullptr : &_docTypes;
     }
 
 

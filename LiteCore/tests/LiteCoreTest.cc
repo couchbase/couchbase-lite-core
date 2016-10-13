@@ -91,7 +91,7 @@ void randomBytes(slice dst) {
 namespace fleece {
     std::ostream& operator<< (std::ostream& o, slice s) {
         o << "slice[";
-        if (s.buf == NULL)
+        if (s.buf == nullptr)
             return o << "null]";
         auto buf = (const uint8_t*)s.buf;
         for (size_t i = 0; i < s.size; i++) {

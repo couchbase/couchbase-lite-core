@@ -177,7 +177,7 @@ namespace litecore {
                                                  Revision::BodyParams body,
                                                  Transaction &t)
     {
-        return resolveConflict(conflicting, slice::null, body, t);
+        return resolveConflict(conflicting, nullslice, body, t);
         // CASRevisionStore overrides this
     }
 
@@ -188,7 +188,7 @@ namespace litecore {
     {
         CBFAssert(conflicting.size() >= 2);
         VersionVector newVersion;
-        Revision* current = NULL;
+        Revision* current = nullptr;
         for (auto rev : conflicting) {
             newVersion = newVersion.mergedWith(rev->version());
             if (rev->isCurrent())

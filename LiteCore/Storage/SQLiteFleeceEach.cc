@@ -165,8 +165,8 @@ private:
 
 
     void reset() noexcept {
-        _fleeceData = slice::null;
-        _rootPath = slice::null;
+        _fleeceData = nullslice;
+        _rootPath = nullslice;
         _container = nullptr;
         _containerType = kNull;
         _rowCount = 0;

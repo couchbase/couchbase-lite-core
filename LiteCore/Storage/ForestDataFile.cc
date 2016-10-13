@@ -98,7 +98,7 @@ namespace litecore {
                 fdbKey.algorithm = FDB_ENCRYPTION_NONE;
                 break;
             case kAES256:
-                if(key.buf == NULL || key.size != sizeof(fdbKey.bytes))
+                if(key.buf == nullptr || key.size != sizeof(fdbKey.bytes))
                     error::_throw(error::InvalidParameter);
                 fdbKey.algorithm = FDB_ENCRYPTION_AES256;
                 memcpy(fdbKey.bytes, key.buf, sizeof(fdbKey.bytes));
@@ -152,7 +152,7 @@ namespace litecore {
         fdb_config cfg = ForestDataFile::defaultConfig();
         setConfigOptions(cfg, options);
         cfg.compaction_cb = ForestDataFile::compactionCallback;
-        cfg.compaction_cb_ctx = NULL;
+        cfg.compaction_cb_ctx = nullptr;
         fdb_status status = FDB_RESULT_SUCCESS;
         for (int retry = 100; retry > 0; --retry) {
             status = fdb_destroy(path.path().c_str(), &cfg);
@@ -232,7 +232,7 @@ namespace litecore {
         DataFile::close(); // closes all the KeyStores
         if (_fileHandle) {
             check(::fdb_close(_fileHandle));
-            _fileHandle = NULL;
+            _fileHandle = nullptr;
         }
     }
 
@@ -286,7 +286,7 @@ namespace litecore {
 
 
     void ForestDataFile::compact() {
-        auto status = fdb_compact(_fileHandle, NULL);
+        auto status = fdb_compact(_fileHandle, nullptr);
         if (status == FDB_RESULT_FILE_IS_BUSY) {
             // This result means there is already a background auto-compact in progress.
             while (isCompacting())
@@ -390,7 +390,7 @@ namespace litecore {
     void ForestKeyStore::reopen() {
         if (!_handle) {
             auto &db = (ForestDataFile&)dataFile();
-            check(fdb_kvs_open(db._fileHandle, &_handle, name().c_str(),  NULL));
+            check(fdb_kvs_open(db._fileHandle, &_handle, name().c_str(),  nullptr));
             (void)fdb_set_log_callback(_handle, logCallback, _handle);
         }
     }

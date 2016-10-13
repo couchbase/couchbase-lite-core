@@ -113,7 +113,7 @@ namespace litecore {
             dst.body.buf = (char*)data;
             dst.body.size = (char*)end - (char*)data;
         } else {
-            dst.body.buf = NULL;
+            dst.body.buf = nullptr;
             dst.body.size = 0;
             if (this->flags & RawRevision::kHasBodyOffset) {
                 slice buf = {(void*)data, (size_t)((uint8_t*)end-(uint8_t*)data)};

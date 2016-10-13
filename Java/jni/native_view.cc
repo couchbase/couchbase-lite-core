@@ -38,7 +38,7 @@ bool litecore::jni::initView(JNIEnv *env) {
     if (!viewClass)
         return false;
     kHandleField = env->GetFieldID(viewClass, "_handle", "J");
-    return (kHandleField != NULL);
+    return (kHandleField != nullptr);
 }
 
 //////// VIEWS:
@@ -141,7 +141,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__J
         (JNIEnv *env, jclass clazz, jlong viewHandle)
 {
     C4Error error;
-    C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, NULL, &error);
+    C4QueryEnumerator *e = c4view_query((C4View*)viewHandle, nullptr, &error);
     if (!e)
         throwError(env, error);
     return (jlong)e;
@@ -190,8 +190,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View_query__JJJZZZ_3J
         (bool)inclusiveStart,
         (bool)inclusiveEnd,
         true, // rankFullText
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         kC4SliceNull,
         kC4SliceNull,
         const_cast<const C4Key**>(c4keys.data()),

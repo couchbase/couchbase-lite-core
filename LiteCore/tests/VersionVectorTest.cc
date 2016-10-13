@@ -24,7 +24,7 @@ static revidBuffer stringToRev(const char* str) {
 
 
 TEST_CASE("RevIDs", "[VersionVector]") {
-    revidBuffer rev(slice("1-f0f0"));
+    revidBuffer rev("1-f0f0"_sl);
     REQUIRE((std::string)rev == std::string("1-f0f0"));
     static const uint8_t expectedBytes[] = {0x01, 0xf0, 0xf0};
     REQUIRE(rev == slice(expectedBytes, sizeof(expectedBytes)));
@@ -36,10 +36,10 @@ TEST_CASE("RevIDs", "[VersionVector]") {
     REQUIRE(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
 
     // New-style ('clock') revID:
-    rev.parseNew(slice("17@snej"));
+    rev.parseNew("17@snej"_sl);
     REQUIRE(rev.isClock());
     REQUIRE(rev.generation() == 17u);
-    REQUIRE(rev.digest() == slice("snej"));
+    REQUIRE(rev.digest() == "snej"_sl);
     static const uint8_t expectedBytes3[] = {0x00, 0x11, 's', 'n', 'e', 'j'};
     REQUIRE((slice)rev == slice(expectedBytes3, sizeof(expectedBytes3)));
 }
@@ -72,16 +72,16 @@ TEST_CASE("BadRevIDs", "[VersionVector]") {
     
     // Make sure we don't parse new-style IDs with the old parser:
     revidBuffer rev;
-    REQUIRE_FALSE(rev.tryParse(slice("17@snej"), false));
+    REQUIRE_FALSE(rev.tryParse("17@snej"_sl, false));
 }
 
 
 TEST_CASE("Create", "[VersionVector]") {
-    VersionVector v(slice("1@jens,2@bob"));
-    REQUIRE(v[slice("jens")] == 1ull);
-    REQUIRE(v[slice("bob")] == 2ull);
-    REQUIRE(v[slice("may")] == 0ull);
-    REQUIRE(v.current() == Version(1, slice("jens")));
+    VersionVector v("1@jens,2@bob"_sl);
+    REQUIRE(v["jens"_sl] == 1ull);
+    REQUIRE(v["bob"_sl] == 2ull);
+    REQUIRE(v["may"_sl] == 0ull);
+    REQUIRE(v.current() == Version(1, "jens"_sl));
     REQUIRE(v.count() == 2ul);
 
     // Convert to string and back:
@@ -102,22 +102,22 @@ TEST_CASE("Create", "[VersionVector]") {
 }
 
 TEST_CASE("CreateSingle", "[VersionVector]") {
-    VersionVector v(slice("1@jens"));
-    REQUIRE(v[slice("jens")] == 1ull);
-    REQUIRE(v[slice("bob")] == 0ull);
-    REQUIRE(v.current() == Version(1, slice("jens")));
+    VersionVector v("1@jens"_sl);
+    REQUIRE(v["jens"_sl] == 1ull);
+    REQUIRE(v["bob"_sl] == 0ull);
+    REQUIRE(v.current() == Version(1, "jens"_sl));
     REQUIRE(v.count() == 1ul);
     REQUIRE(v.asString() == std::string("1@jens"));
 }
 
 TEST_CASE("Compare", "[VersionVector]") {
-    VersionVector v(slice("1@jens,2@bob"));
+    VersionVector v("1@jens,2@bob"_sl);
     REQUIRE(v == v);
     REQUIRE_FALSE((v > v));
     REQUIRE_FALSE((v < v));
     REQUIRE(v.compareTo(v) == kSame);
 
-    VersionVector oldv(slice("2@bob"));
+    VersionVector oldv("2@bob"_sl);
 
     REQUIRE_FALSE((v == oldv));
     REQUIRE(v > oldv);
@@ -125,42 +125,42 @@ TEST_CASE("Compare", "[VersionVector]") {
     REQUIRE(v.compareTo(oldv) == kNewer);
     REQUIRE(oldv.compareTo(v) == kOlder);
 
-    VersionVector otherV(slice("3@bob"));
+    VersionVector otherV("3@bob"_sl);
     REQUIRE(v.compareTo(otherV) == kConflicting);
     REQUIRE(otherV.compareTo(v) == kConflicting);
 
     // Compare with single version:
-    REQUIRE(v.compareTo(Version(slice("1@jens"))) == kSame);
-    REQUIRE(v.compareTo(Version(slice("2@jens"))) == kOlder);
-    REQUIRE(v.compareTo(Version(slice("1@bob"))) == kNewer);
-    REQUIRE(v.compareTo(Version(slice("2@bob"))) == kNewer);
-    REQUIRE(v.compareTo(Version(slice("3@bob"))) == kOlder);
-    REQUIRE(v.compareTo(Version(slice("1@obo"))) == kOlder);
-    REQUIRE(v >= Version(slice("1@bob")));
-    REQUIRE(v >= Version(slice("2@bob")));
-    REQUIRE_FALSE((v >= Version(slice("3@bob"))));
+    REQUIRE(v.compareTo(Version("1@jens"_sl)) == kSame);
+    REQUIRE(v.compareTo(Version("2@jens"_sl)) == kOlder);
+    REQUIRE(v.compareTo(Version("1@bob"_sl)) == kNewer);
+    REQUIRE(v.compareTo(Version("2@bob"_sl)) == kNewer);
+    REQUIRE(v.compareTo(Version("3@bob"_sl)) == kOlder);
+    REQUIRE(v.compareTo(Version("1@obo"_sl)) == kOlder);
+    REQUIRE(v >= Version("1@bob"_sl));
+    REQUIRE(v >= Version("2@bob"_sl));
+    REQUIRE_FALSE((v >= Version("3@bob"_sl)));
 
-    REQUIRE(VersionVector(slice("1@*")).compareTo(VersionVector(slice("1@binky"))) == kConflicting);
+    REQUIRE(VersionVector("1@*"_sl).compareTo(VersionVector("1@binky"_sl)) == kConflicting);
 }
 
 TEST_CASE("Increment", "[VersionVector]") {
-    VersionVector v(slice("123@jens,3141592654@bob"));
-    v.incrementGen(slice("bob"));
+    VersionVector v("123@jens,3141592654@bob"_sl);
+    v.incrementGen("bob"_sl);
 
-    REQUIRE(v[slice("jens")] == 123ull);
-    REQUIRE(v[slice("bob")] == 3141592655ull);
-    REQUIRE(v.current() == Version(3141592655, slice("bob")));
+    REQUIRE(v["jens"_sl] == 123ull);
+    REQUIRE(v["bob"_sl] == 3141592655ull);
+    REQUIRE(v.current() == Version(3141592655, "bob"_sl));
     REQUIRE(v.count() == 2ul);
 
     auto str = v.asString();
     REQUIRE(str =="3141592655@bob,123@jens");
 
-    v.incrementGen(slice("may"));
+    v.incrementGen("may"_sl);
 
-    REQUIRE(v[slice("jens")] == 123ull);
-    REQUIRE(v[slice("bob")] == 3141592655ull);
-    REQUIRE(v[slice("may")] == 1ull);
-    REQUIRE(v.current() == Version(1, slice("may")));
+    REQUIRE(v["jens"_sl] == 123ull);
+    REQUIRE(v["bob"_sl] == 3141592655ull);
+    REQUIRE(v["may"_sl] == 1ull);
+    REQUIRE(v.current() == Version(1, "may"_sl));
     REQUIRE(v.count() == 3ul);
 
     str = v.asString();
@@ -169,20 +169,20 @@ TEST_CASE("Increment", "[VersionVector]") {
 
 TEST_CASE("IncrementEmpty", "[VersionVector]") {
     VersionVector v;
-    v.incrementGen(slice("may"));
-    REQUIRE(v[slice("may")] == 1ull);
-    REQUIRE(v.current() == Version(1, slice("may")));
+    v.incrementGen("may"_sl);
+    REQUIRE(v["may"_sl] == 1ull);
+    REQUIRE(v.current() == Version(1, "may"_sl));
     REQUIRE(v.count() == 1ul);
     REQUIRE(v.asString() == "1@may");
 }
 
 TEST_CASE("ImportExport", "[VersionVector]") {
-    VersionVector v(slice("2@bob,1@*"));
-    auto exported = v.exportAsString(slice("jens"));
+    VersionVector v("2@bob,1@*"_sl);
+    auto exported = v.exportAsString("jens"_sl);
     REQUIRE(exported == std::string("2@bob,1@jens"));
 
     VersionVector imported(exported);
-    imported.compactMyPeerID(slice("jens"));
+    imported.compactMyPeerID("jens"_sl);
     REQUIRE(imported.asString() == std::string("2@bob,1@*"));
 }
 
@@ -222,7 +222,7 @@ TEST_CASE("CanonicalString", "[VersionVector]") {
 static void testMergedRevID(const char *vec1, const char *vec2, std::string expected) {
     VersionVector v1((slice(vec1))), v2((slice(vec2)));
     VersionVector result = v1.mergedWith(v2);
-    result.insertMergeRevID(peerID("jens"), slice("{\"foo\":17}"));
+    result.insertMergeRevID(peerID("jens"), "{\"foo\":17}"_sl);
     // NOTE: This assertion will fail if we ever change the algorithm for computing the digest:
     REQUIRE(result.asString() == expected);
 }

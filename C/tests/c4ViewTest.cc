@@ -22,7 +22,7 @@ public:
     C4ViewTest(int testOption)
     :C4Test(testOption)
     {
-        c4view_deleteByName(db, c4str("myview"), NULL);
+        c4view_deleteByName(db, c4str("myview"), nullptr);
         C4Error error;
         view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("1"),
                            c4db_getConfig(db), &error);
@@ -65,7 +65,7 @@ public:
         REQUIRE(e);
 
         C4Document *doc;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
             C4Key *keys[2];
             C4Slice values[2];
@@ -113,7 +113,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
 
     view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("1"),
                        c4db_getConfig(db), &error);
-    REQUIRE(view != NULL);
+    REQUIRE(view != nullptr);
 
     REQUIRE(c4view_getTotalRows(view) == (C4SequenceNumber)200);
     REQUIRE(c4view_getLastSequenceIndexed(view) == (C4SequenceNumber)100);
@@ -125,7 +125,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View IndexVersion", "[View][C]") {
 
     view = c4view_open(db, kC4SliceNull, c4str("myview"), c4str("2"),
                        c4db_getConfig(db), &error);
-    REQUIRE(view != NULL);
+    REQUIRE(view != nullptr);
 
     REQUIRE(c4view_getTotalRows(view) == (C4SequenceNumber)0);
     REQUIRE(c4view_getLastSequenceIndexed(view) == (C4SequenceNumber)0);
@@ -136,7 +136,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryIndex", "[View][C]") {
     createIndex();
 
     C4Error error;
-    auto e = c4view_query(view, NULL, &error);
+    auto e = c4view_query(view, nullptr, &error);
     REQUIRE(e);
 
     int i = 0;
@@ -240,7 +240,7 @@ void C4ViewTest::testDocPurge(bool compactAfterPurge) {
 
     // Verify that the purged doc is no longer in the index:
     C4Error error;
-    auto e = c4view_query(view, NULL, &error);
+    auto e = c4view_query(view, nullptr, &error);
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
@@ -278,7 +278,7 @@ void C4ViewTest::createFullTextIndex(unsigned docCount) {
     REQUIRE(e);
 
     C4Document *doc;
-    while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         // Index 'doc':
         C4Key *keys[1];
         C4Slice values[1];
@@ -303,7 +303,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     // Search for "somewhere":
     C4Error error;
     C4QueryEnumerator* e = c4view_fullTextQuery(view, c4str("somewhere"), kC4SliceNull,
-                                                NULL, &error);
+                                                nullptr, &error);
     REQUIRE(e);
     REQUIRE(c4queryenum_next(e, &error));
     REQUIRE(e->docID == c4str("doc-001"));
@@ -318,7 +318,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     c4queryenum_free(e);
 
     // Search for "cat":
-    e = c4view_fullTextQuery(view, c4str("cat"), kC4SliceNull,  NULL, &error);
+    e = c4view_fullTextQuery(view, c4str("cat"), kC4SliceNull,  nullptr, &error);
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
@@ -339,7 +339,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
     REQUIRE(i == 2);
 
     // Search for "cat bark":
-    e = c4view_fullTextQuery(view, c4str("cat bark"), kC4SliceNull,  NULL, &error);
+    e = c4view_fullTextQuery(view, c4str("cat bark"), kC4SliceNull,  nullptr, &error);
     REQUIRE(c4queryenum_next(e, &error));
     REQUIRE(e->docID == c4str("doc-001"));
     REQUIRE(e->docSequence == 1uLL);

@@ -93,7 +93,7 @@ C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* out
         contents.dontFree();
         return {contents.buf, contents.size};
     } catchError(outError)
-    return {NULL, 0};
+    return {nullptr, 0};
 }
 
 

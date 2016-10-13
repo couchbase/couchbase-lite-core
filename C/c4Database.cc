@@ -188,7 +188,7 @@ bool c4Database::endTransaction(bool commit) {
     if (--_transactionLevel == 0) {
         WITH_LOCK(this);
         auto t = _transaction;
-        _transaction = NULL;
+        _transaction = nullptr;
         if (commit)
             t->commit();
         else
@@ -210,7 +210,7 @@ bool c4Database::endTransaction(bool commit) {
             database->rekey((EncryptionAlgorithm)newKey->algorithm,
                             slice(newKey->bytes, 32));
         } else {
-            database->rekey(kNoEncryption, slice::null);
+            database->rekey(kNoEncryption, nullslice);
         }
         return true;
     } catchError(outError);
@@ -235,7 +235,7 @@ C4Database* c4db_open(C4Slice path,
 
 
 bool c4db_close(C4Database* database, C4Error *outError) {
-    if (database == NULL)
+    if (database == nullptr)
         return true;
     if (!database->mustNotBeInTransaction(outError))
         return false;
@@ -249,9 +249,9 @@ bool c4db_close(C4Database* database, C4Error *outError) {
 
 
 bool c4db_free(C4Database* database) {
-    if (database == NULL)
+    if (database == nullptr)
         return true;
-    if (!database->mustNotBeInTransaction(NULL))
+    if (!database->mustNotBeInTransaction(nullptr))
         return false;
     database->release();
     return true;
@@ -362,7 +362,7 @@ uint64_t c4db_getDocumentCount(C4Database* database) {
         opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;
-        for (DocEnumerator e(database->defaultKeyStore(), slice::null, slice::null, opts);
+        for (DocEnumerator e(database->defaultKeyStore(), nullslice, nullslice, opts);
                 e.next(); ) {
             C4DocumentFlags flags;
             if (database->readDocMeta(e.doc(), &flags) && !(flags & kDeleted))
@@ -432,7 +432,7 @@ uint64_t c4db_nextDocExpiration(C4Database *database)
         WITH_LOCK(database);
         KeyStore& expiryKvs = database->getKeyStore("expiry");
         DocEnumerator e(expiryKvs);
-        if(e.next() && e.doc().body() == slice::null) {
+        if(e.next() && e.doc().body() == nullslice) {
             // Look for an entry with a null body (otherwise, its key is simply a doc ID)
             CollatableReader r(e.doc().key());
             r.beginArray();
@@ -475,7 +475,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         Document doc = localDocs.get(key);
         if (!doc.exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-            return NULL;
+            return nullptr;
         }
         auto rawDoc = new C4RawDocument;
         rawDoc->key = doc.key().copy();
@@ -483,7 +483,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         rawDoc->body = doc.body().copy();
         return rawDoc;
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 

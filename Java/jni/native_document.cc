@@ -80,7 +80,7 @@ static void updateSelection
     if(withBody)
         env->SetObjectField(self, kField_SelectedBody, toJByteArray(env, sel->body));
     else
-        env->SetObjectField(self, kField_SelectedBody, NULL);
+        env->SetObjectField(self, kField_SelectedBody, nullptr);
 }
 
 
@@ -234,7 +234,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBo
     C4Error error;
     if (!c4doc_loadRevisionBody(doc, &error)) {
         throwError(env, error);
-        return NULL;
+        return nullptr;
     }
     return toJByteArray(env, doc->selectedRev.body);
 }

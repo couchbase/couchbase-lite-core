@@ -15,6 +15,7 @@
 namespace litecore {
     using fleece::slice;
     using fleece::alloc_slice;
+    using fleece::nullslice;
 
     typedef uint64_t sequence;
 

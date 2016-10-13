@@ -160,15 +160,15 @@ namespace litecore {
                 d.next();
                 parseTerm(i.key()->asString(), i.value());
             }
-        } else if (special.first == slice("$and")) {
+        } else if (special.first == "$and"_sl) {
             writeBooleanExpr(special.second, " AND ");
-        } else if (special.first == slice("$or")) {
+        } else if (special.first == "$or"_sl) {
             writeBooleanExpr(special.second, " OR ");
-        } else if (special.first == slice("$nor")) {
+        } else if (special.first == "$nor"_sl) {
             _sql << "NOT (";
             writeBooleanExpr(special.second, " OR ");
             _sql << ")";
-        } else if (special.first == slice("$not")) {
+        } else if (special.first == "$not"_sl) {
             auto terms = mustBeArray(special.second);
             if (terms->count() != 1)
                 fail();
@@ -200,7 +200,7 @@ namespace litecore {
         } else {
             if (value->type() == kDict)
                 return nullptr;
-            op = slice("$eq");
+            op = "$eq"_sl;
         }
 
         // Look up `op` in the kRelationals table:
@@ -512,9 +512,9 @@ namespace litecore {
             str.readByte();
         }
         
-        if (str == slice("_id"))
+        if (str == "_id"_sl)
             _sortSQL << "key";
-        else if (str == slice("_sequence"))
+        else if (str == "_sequence"_sl)
             _sortSQL << "sequence";
         else
             _sortSQL << propertyGetter(str);

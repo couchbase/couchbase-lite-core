@@ -144,7 +144,7 @@ namespace litecore {
 
             // Set the encryption key in SQLite:
             slice key = options().encryptionKey;
-            if(key.buf == NULL || key.size != 32)
+            if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
             _sqlDb->exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
         }
@@ -160,7 +160,7 @@ namespace litecore {
             case kNoEncryption:
                 break;
             case kAES256:
-                if(newKey.buf == NULL || newKey.size != 32)
+                if(newKey.buf == nullptr || newKey.size != 32)
                     error::_throw(error::InvalidParameter);
                 break;
             default:

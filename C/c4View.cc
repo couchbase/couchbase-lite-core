@@ -49,14 +49,14 @@ C4View* c4view_open(C4Database* db,
 {
     if (!checkParam(config != nullptr, outError))
         return nullptr;
-    if (!checkParam(pathSlice.buf == nullptr || !(config->flags & kC4DB_Bundled), outError))
+    if (!checkParam(!pathSlice || !(config->flags & kC4DB_Bundled), outError))
         return nullptr;
     try {
         FilePath path = (pathSlice.buf) ? FilePath((string)pathSlice)
                                         : pathForViewNamed(db, viewName);
         return (new c4View(db, path, viewName, version, *config))->retain();
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 /** Closes the view and frees the object. */
@@ -75,7 +75,7 @@ bool c4view_close(C4View* view, C4Error *outError) {
 
 void c4view_free(C4View* view) {
     if (view) {
-        c4view_close(view, NULL);
+        c4view_close(view, nullptr);
         try {
             view->release();
         } catchExceptions();
@@ -101,7 +101,7 @@ bool c4view_eraseIndex(C4View *view, C4Error *outError) {
 
 bool c4view_delete(C4View *view, C4Error *outError) {
     try {
-        if (view == NULL) {
+        if (view == nullptr) {
             return true;
         }
 
@@ -233,7 +233,7 @@ C4Indexer* c4indexer_begin(C4Database *db,
                            size_t viewCount,
                            C4Error *outError)
 {
-    c4Indexer *indexer = NULL;
+    c4Indexer *indexer = nullptr;
     try {
         indexer = new c4Indexer(db);
         for (size_t i = 0; i < viewCount; ++i)
@@ -242,7 +242,7 @@ C4Indexer* c4indexer_begin(C4Database *db,
     } catchError(outError);
     if (indexer)
         delete indexer;
-    return NULL;
+    return nullptr;
 }
 
 
@@ -260,7 +260,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         }
         if (startSequence == UINT64_MAX) {
             clearError(outError);      // end of iteration is not an error
-            return NULL;
+            return nullptr;
         }
 
         auto options = kC4DefaultEnumeratorOptions;
@@ -270,7 +270,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
             options.flags &= ~kC4IncludeBodies;
         auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
         if (!e)
-            return NULL;
+            return nullptr;
 
         setEnumFilter(e, [docTypes,indexer](const Document &doc,
                                             C4DocumentFlags flags,
@@ -286,7 +286,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         });
         return e;
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 

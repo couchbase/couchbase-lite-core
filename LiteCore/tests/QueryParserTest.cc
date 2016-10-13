@@ -27,14 +27,14 @@ static void enquotify(string &json) {
 static string parseWhere(string json) {
     enquotify(json);
     QueryParser qp;
-    qp.parseJSON(slice(json), slice::null);
+    qp.parseJSON(slice(json), nullslice);
     return qp.whereClause();
 }
 
 static string parseSort(string json) {
     enquotify(json);
     QueryParser qp;
-    qp.parseJSON(slice("{}"), slice(json));
+    qp.parseJSON("{}"_sl, slice(json));
     return qp.orderByClause();
 }
 

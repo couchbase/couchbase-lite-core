@@ -40,7 +40,7 @@ public:
 
 
     C4Database* openDB() {
-        C4Database* database = c4db_open(databasePath(), c4db_getConfig(db), NULL);
+        C4Database* database = c4db_open(databasePath(), c4db_getConfig(db), nullptr);
         REQUIRE(database);
         return database;
     }
@@ -48,18 +48,18 @@ public:
     C4View* openView(C4Database* onDB) {
         C4View* view = c4view_open(onDB, kC4SliceNull,
                                    c4str("myview"), c4str("1"),
-                                   c4db_getConfig(onDB), NULL);
+                                   c4db_getConfig(onDB), nullptr);
         REQUIRE(view);
         return view;
     }
 
     void closeView(C4View* view) {
-        c4view_close(view, NULL);
+        c4view_close(view, nullptr);
         c4view_free(view);
     }
 
     void closeDB(C4Database* database) {
-        c4db_close(database, NULL);
+        c4db_close(database, nullptr);
         c4db_free(database);
     }
 
@@ -133,7 +133,7 @@ public:
 
         C4DocEnumerator* e = c4indexer_enumerateDocuments(ind, &error);
         if (!e) {
-            c4indexer_end(ind, false, NULL);
+            c4indexer_end(ind, false, nullptr);
             REQUIRE(error.code == 0);
             return;
         }
@@ -142,7 +142,7 @@ public:
 
         C4Document *doc;
         C4SequenceNumber lastSeq = oldLastSeqIndexed;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
             if (kLog) fprintf(stderr, "(#%lld) ", doc->sequence);
             if (lastSeq)
@@ -188,7 +188,7 @@ public:
 
     bool queryIndex(C4View* view) {
         C4Error error;
-        auto e = c4view_query(view, NULL, &error);
+        auto e = c4view_query(view, nullptr, &error);
         REQUIRE(e);
         if (kLog) fprintf(stderr, "{ ");
 

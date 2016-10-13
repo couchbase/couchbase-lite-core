@@ -62,8 +62,8 @@ C4SliceResult c4error_getMessage(C4Error err) {
     } else if (err.domain < 1 || err.domain > SQLiteDomain) {
         return stringResult("unknown error domain");
     } else {
-        static const error::Domain kDomains[] = {error::LiteCore, error::POSIX,
-                                                 error::ForestDB, error::SQLite};
+        static constexpr error::Domain kDomains[] = {error::LiteCore, error::POSIX,
+                                                     error::ForestDB, error::SQLite};
         error e(kDomains[err.domain - 1], err.code);
         return stringResult(e.what());
     }
@@ -110,7 +110,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
         LogCallback = logCallback;
     } else {
         LogLevel = kNone;
-        LogCallback = NULL;
+        LogCallback = nullptr;
     }
     clientLogCallback = callback;
 }

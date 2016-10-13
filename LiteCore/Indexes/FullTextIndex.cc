@@ -67,7 +67,7 @@ namespace litecore {
             auto termIndex = _e.currentKeyRangeIndex();
             RowID rowID(_e.sequence(), fullTextID);
             auto rowP = rows.find(rowID);
-            FullTextMatch *row = NULL;
+            FullTextMatch *row = nullptr;
             if (rowP != rows.end()) {
                 if (rowP->second->_lastTermIndex < termIndex-1) {
                     delete rowP->second;
@@ -139,7 +139,7 @@ namespace litecore {
 
     const FullTextMatch* FullTextIndexEnumerator::match() {
         if (_curResultIndex < 0 || _curResultIndex >= _results.size())
-            return NULL;
+            return nullptr;
         return _results[_curResultIndex];
     }
 

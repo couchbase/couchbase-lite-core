@@ -90,7 +90,7 @@ struct C4DocEnumerator: InstanceCounted {
     }
 
     C4Document* getDoc() {
-        return _e ? _database->newDocumentInstance(_e.doc()) : NULL;
+        return _e ? _database->newDocumentInstance(_e.doc()) : nullptr;
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
@@ -109,8 +109,8 @@ private:
             // Client must be enumerating a list of docIDs, and this doc doesn't exist.
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
-            _docRevID = slice::null;
-            return (!_filter || _filter(_e.doc(), 0, slice::null));
+            _docRevID = nullslice;
+            return (!_filter || _filter(_e.doc(), 0, nullslice));
         }
         C4DocumentFlags flags;
         slice docType;
@@ -153,7 +153,7 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
         return new C4DocEnumerator(database, since+1, UINT64_MAX,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -168,7 +168,7 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
         return new C4DocEnumerator(database, startDocID, endDocID,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -186,7 +186,7 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -218,9 +218,9 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) {
             clearError(outError);      // end of iteration is not an error
         return c4doc;
     } catchError(outError)
-    return NULL;
+    return nullptr;
 }
 
 C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) {
-    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : NULL;
+    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
 }

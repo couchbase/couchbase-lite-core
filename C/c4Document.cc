@@ -39,14 +39,14 @@ C4Document* c4doc_get(C4Database *database,
         auto doc = database->newDocumentInstance(docID);
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
-            doc = NULL;
+            doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
         
         
         return doc;
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -59,12 +59,12 @@ C4Document* c4doc_getBySequence(C4Database *database,
         auto doc = database->newDocumentInstance(database->defaultKeyStore().get(sequence));
         if (!internal(doc)->exists()) {
             delete doc;
-            doc = NULL;
+            doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
         return doc;
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -189,8 +189,8 @@ C4Document* c4doc_getForPut(C4Database *database,
                             C4Error *outError)
 {
     if (!database->mustBeInTransaction(outError))
-        return NULL;
-    C4DocumentInternal *idoc = NULL;
+        return nullptr;
+    C4DocumentInternal *idoc = nullptr;
     try {
         alloc_slice newDocID;
         bool isNewDoc = (!docID.buf);
@@ -228,7 +228,7 @@ C4Document* c4doc_getForPut(C4Database *database,
 
     } catchError(outError)
     delete idoc;
-    return NULL;
+    return nullptr;
 }
 
 
@@ -248,7 +248,7 @@ C4Document* c4doc_put(C4Database *database,
                 error::_throw(error::InvalidParameter);
             doc = c4doc_get(database, rq->docID, false, outError);
             if (!doc)
-                return NULL;
+                return nullptr;
             commonAncestorIndex = internal(doc)->putExistingRevision(*rq);
 
         } else {
@@ -271,7 +271,7 @@ C4Document* c4doc_put(C4Database *database,
 
     } catchError(outError) {
         c4doc_free(doc);
-        return NULL;
+        return nullptr;
     }
 }
 

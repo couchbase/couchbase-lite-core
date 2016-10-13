@@ -99,7 +99,7 @@ namespace litecore {
         sequence startingSequence();
 
         /** Returns the set of document types that the views collectively map,
-            or NULL if all documents should be mapped. */
+            or nullptr if all documents should be mapped. */
         std::set<slice> *documentTypes();
 
         /** Returns true if the given document should be indexed by the given view,

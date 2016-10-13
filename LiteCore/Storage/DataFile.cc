@@ -98,7 +98,7 @@ namespace litecore {
         const FilePath _path;
         mutex _transactionMutex;
         condition_variable _transactionCond;
-        Transaction* _transaction {NULL};
+        Transaction* _transaction {nullptr};
         atomic<bool> _isCompacting {false};
 
         static unordered_map<string, File*> sFileMap;
@@ -253,7 +253,7 @@ namespace litecore {
         CBFAssert(!_inTransaction);
         checkOpen();
         unique_lock<mutex> lock(_file->_transactionMutex);
-        while (_file->_transaction != NULL)
+        while (_file->_transaction != nullptr)
             _file->_transactionCond.wait(lock);
         _file->_transaction = t;
         _inTransaction = true;
@@ -262,7 +262,7 @@ namespace litecore {
     void DataFile::endTransactionScope(Transaction* t) {
         unique_lock<mutex> lock(_file->_transactionMutex);
         CBFAssert(_file->_transaction == t);
-        _file->_transaction = NULL;
+        _file->_transaction = nullptr;
         _file->_transactionCond.notify_one();
         _inTransaction = false;
     }

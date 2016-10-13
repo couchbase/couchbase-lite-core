@@ -79,7 +79,7 @@ void c4key_freeReader(C4KeyReader* r){
 }
 
 C4KeyToken c4key_peek(const C4KeyReader* r) {
-    static const C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,
+    static constexpr C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,
                                     kC4Number, kC4String, kC4Array, kC4Map, kC4Error, kC4Special};
     Collatable::Tag t = ((CollatableReader*)r)->peekTag();
     if (t >= sizeof(tagToType)/sizeof(tagToType[0]))
@@ -114,7 +114,7 @@ C4SliceResult c4key_readString(C4KeyReader* r) {
 
 C4SliceResult c4key_toJSON(const C4KeyReader* r) {
     if (!r || r->length == 0)
-        return {NULL, 0};
+        return {nullptr, 0};
     string str = ((CollatableReader*)r)->toJSON();
     auto s = ((slice)str).copy();
     return {s.buf, s.size};

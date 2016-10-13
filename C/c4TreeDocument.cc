@@ -38,7 +38,7 @@ namespace c4Internal {
         C4TreeDocument(C4Database* database, C4Slice docID)
         :C4DocumentInternal(database, docID),
          _versionedDoc(database->defaultKeyStore(), docID),
-         _selectedRev(NULL)
+         _selectedRev(nullptr)
         {
             init();
         }
@@ -47,7 +47,7 @@ namespace c4Internal {
         C4TreeDocument(C4Database *database, const Document &doc)
         :C4DocumentInternal(database, move(doc)),
          _versionedDoc(database->defaultKeyStore(), doc),
-         _selectedRev(NULL)
+         _selectedRev(nullptr)
         {
             init();
         }
@@ -67,7 +67,7 @@ namespace c4Internal {
             if (_versionedDoc.revID().size > 0) {
                 _revIDBuf = _versionedDoc.revID().expanded();
             } else {
-                _revIDBuf = slice::null;
+                _revIDBuf = nullslice;
             }
             revID = _revIDBuf;
             sequence = _versionedDoc.sequence();
@@ -122,7 +122,7 @@ namespace c4Internal {
 
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
             _selectedRev = rev;
-            _loadedBody = slice::null;
+            _loadedBody = nullslice;
             if (rev) {
                 _selectedRevIDBuf = rev->revID.expanded();
                 selectedRev.revID = _selectedRevIDBuf;
@@ -145,7 +145,7 @@ namespace c4Internal {
                 if (withBody)
                     loadSelectedRevBody();
             } else {
-                selectRevision(NULL);
+                selectRevision(nullptr);
             }
             return true;
         }
@@ -155,7 +155,7 @@ namespace c4Internal {
                 selectRevision(_versionedDoc.currentRevision());
                 return true;
             } else {
-                _selectedRev = NULL;
+                _selectedRev = nullptr;
                 C4DocumentInternal::selectCurrentRevision();
                 return false;
             }
@@ -166,7 +166,7 @@ namespace c4Internal {
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             if (_selectedRev)
                 selectRevision(_selectedRev->parent());
-            return _selectedRev != NULL;
+            return _selectedRev != nullptr;
         }
 
         bool selectNextRevision() noexcept override {    // does not throw
@@ -174,7 +174,7 @@ namespace c4Internal {
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             if (_selectedRev)
                 selectRevision(_selectedRev->next());
-            return _selectedRev != NULL;
+            return _selectedRev != nullptr;
         }
 
         bool selectNextLeafRevision(bool includeDeleted) noexcept override {

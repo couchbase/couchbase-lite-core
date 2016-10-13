@@ -77,7 +77,7 @@ protected:
 
 private:
     unique_ptr<DataFile>   _db;                    // Underlying DataFile
-    Transaction*                _transaction {NULL};    // Current Transaction, or null
+    Transaction*                _transaction {nullptr};    // Current Transaction, or null
     int                         _transactionLevel {0};  // Nesting level of transaction
 #if C4DB_THREADSAFE
     // Recursive mutex for accessing _transaction and _transactionLevel.

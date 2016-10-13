@@ -285,7 +285,7 @@ namespace litecore {
 
 
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr) {
-        if (LogLevel > kError || LogCallback == NULL)
+        if (LogLevel > kError || LogCallback == nullptr)
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
         WarnError("Assertion failed: %s (%s:%u, in %s)", expr, file, line, fn);
         if (LogLevel <= kError)
@@ -346,10 +346,10 @@ namespace litecore {
     void (*LogCallback)(logLevel, const char *message) = &defaultLogCallback;
 
     void _Log(logLevel level, const char *message, ...) {
-        if (LogLevel <= level && LogCallback != NULL) {
+        if (LogLevel <= level && LogCallback != nullptr) {
             va_list args;
             va_start(args, message);
-            char *formatted = NULL;
+            char *formatted = nullptr;
             vasprintf(&formatted, message, args);
             va_end(args);
             LogCallback(level, formatted);

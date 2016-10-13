@@ -45,7 +45,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumera
     jsize n = env->GetArrayLength(jdocIDs);
 
     C4Slice* docIDs = (C4Slice*)::malloc(sizeof(C4Slice) * n);
-    if(docIDs  == NULL){
+    if(docIDs  == nullptr){
         throwError(env, C4Error{POSIXDomain, errno});
         return 0;
     }

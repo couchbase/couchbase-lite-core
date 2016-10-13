@@ -183,7 +183,7 @@ static void logCallback(C4LogLevel level, C4Slice message) {
             env->PushLocalFrame(1);
             jobject jmessage = toJString(env, message);
             env->CallVoidMethod(logger, kLoggerLogMethod, (jint)level, jmessage);
-            env->PopLocalFrame(NULL);
+            env->PopLocalFrame(nullptr);
         }
     }
 }
@@ -278,7 +278,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
               err.domain,err.code, c4error_getMessageC(err, msg, sizeof(msg)));
     }
 
-    c4exp_purgeExpired(e, NULL);    // remove the expiration markers
+    c4exp_purgeExpired(e, nullptr);    // remove the expiration markers
 
     jobjectArray ret= (jobjectArray)env->NewObjectArray(
             (jsize)docIDs.size(),
@@ -370,24 +370,24 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database__1rawGet
     jstringSlice key(env, jkey);
     C4Error error;
     C4RawDocument *doc = c4raw_get((C4Database *)db, store, key, &error);
-    if (doc == NULL) {
+    if (doc == nullptr) {
         throwError(env, error);
         // NOTE: throwError() is not same with throw Exception() of java.
         // Need to return, otherwise, following codes will be executed.
-        return NULL;
+        return nullptr;
     }
 
     // create two dimension array to return meta and body byte array
     jclass elemType = env->FindClass("[B");
-    jobjectArray rows = env->NewObjectArray(2, elemType, NULL);
-    if (rows != NULL) {
+    jobjectArray rows = env->NewObjectArray(2, elemType, nullptr);
+    if (rows != nullptr) {
         env->SetObjectArrayElement(rows, 0, toJByteArray(env, doc->meta));
         env->SetObjectArrayElement(rows, 1, toJByteArray(env, doc->body));
     }
 
     // release raw document
     c4raw_free(doc);
-    doc = NULL;
+    doc = nullptr;
 
     return rows;
 }

@@ -47,8 +47,8 @@ public:
 
     uint64_t doQuery() {
         uint64_t nRows = 0;
-        for (IndexEnumerator e(*index, Collatable(), litecore::slice::null,
-                               Collatable(), litecore::slice::null); e.next(); ) {
+        for (IndexEnumerator e(*index, Collatable(), litecore::nullslice,
+                               Collatable(), litecore::nullslice); e.next(); ) {
             nRows++;
             alloc_slice keyStr = e.key().readString();
             slice valueStr = e.value();
@@ -105,8 +105,8 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     uint64_t nRows = 0;
     IndexEnumerator::Options options;
     options.descending = true;
-    for (IndexEnumerator e(*index, Collatable(), litecore::slice::null,
-                           Collatable(), litecore::slice::null,
+    for (IndexEnumerator e(*index, Collatable(), litecore::nullslice,
+                           Collatable(), litecore::nullslice,
                            options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
@@ -168,7 +168,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         values.push_back(alloc_slice("purple"));
         keys.push_back(key);
         values.push_back(alloc_slice("red"));
-        bool changed = writer.update(slice("doc1"), 1, keys, values, _rowCount);
+        bool changed = writer.update("doc1"_sl, 1, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 2);
         trans.commit();
@@ -187,7 +187,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         values.push_back(alloc_slice("crimson"));
         keys.push_back(CollatableBuilder("Master"));
         values.push_back(alloc_slice("gray"));
-        bool changed = writer.update(slice("doc1"), 2, keys, values, _rowCount);
+        bool changed = writer.update("doc1"_sl, 2, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 3);
         trans.commit();

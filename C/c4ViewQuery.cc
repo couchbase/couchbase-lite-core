@@ -206,7 +206,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
             c4options = &kC4DefaultQueryOptions;
         IndexEnumerator::Options options = convertOptions(c4options);
 
-        if (c4options->keysCount == 0 && c4options->keys == NULL) {
+        if (c4options->keysCount == 0 && c4options->keys == nullptr) {
             Collatable noKey;
             return new C4MapReduceEnumerator(view,
                                            (c4options->startKey ? (Collatable)*c4options->startKey
@@ -226,7 +226,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
             return new C4MapReduceEnumerator(view, keyRanges, options);
         }
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -285,7 +285,7 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
                                         (c4options ? c4options->rankFullText : true),
                                         convertOptions(c4options));
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 
@@ -300,7 +300,7 @@ C4SliceResult c4view_fullTextMatched(C4View *view,
         auto result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
         return {result.buf, result.size};
     } catchError(outError);
-    return {NULL, 0};
+    return {nullptr, 0};
 }
 
 
@@ -309,7 +309,7 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
         slice result = ((C4FullTextEnumerator*)e)->fullTextMatched().dontFree();
         return {result.buf, result.size};
     } catchExceptions();
-    return {NULL, 0};
+    return {nullptr, 0};
 }
 
 
@@ -356,7 +356,7 @@ C4QueryEnumerator* c4view_geoQuery(C4View *view,
                          geohash::coord(area.ymax, area.xmax));
         return new C4GeoEnumerator(view, ga);
     } catchError(outError);
-    return NULL;
+    return nullptr;
 }
 
 

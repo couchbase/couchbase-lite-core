@@ -39,7 +39,7 @@ public:
 
     jstringSlice(jstringSlice&& s) // move constructor
     :_slice(s._slice), _env(s._env), _jstr(s._jstr)
-    { s._env = NULL; s._slice.buf = NULL; }
+    { s._env = nullptr; s._slice.buf = nullptr; }
 
     operator slice()    {return _slice;}
     operator C4Slice()  {return {_slice.buf, _slice.size};}
@@ -64,7 +64,7 @@ public:
 
     jbyteArraySlice(jbyteArraySlice&& s) // move constructor
     :_slice(s._slice), _env(s._env), _jbytes(s._jbytes), _critical(s._critical)
-    { s._slice = slice::null; }
+    { s._slice = nullslice; }
 
     operator slice()    {return _slice;}
     operator C4Slice()  {return {_slice.buf, _slice.size};}

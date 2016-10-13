@@ -71,7 +71,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
             expiry.del(tsKey, t);
             expiry.del(docId, t);
         } else {
-            expiry.set(tsKey, slice::null, t);
+            expiry.set(tsKey, nullslice, t);
             expiry.set(docId, tsValue, t);
         }
 
@@ -115,10 +115,10 @@ struct C4ExpiryEnumerator
 public:
     C4ExpiryEnumerator(C4Database *database) :
     _db(database),
-    _e(_db->getKeyStore("expiry"), slice::null, slice::null),
-    _reader(slice::null)
+    _e(_db->getKeyStore("expiry"), nullslice, nullslice),
+    _reader(nullslice)
     {
-        _endTimestamp = time(NULL);
+        _endTimestamp = time(nullptr);
         reset();
     }
 
@@ -153,8 +153,8 @@ public:
         c.beginMap();
         c.endMap();
         c.endArray();
-        _e = DocEnumerator(_db->getKeyStore("expiry"), slice::null, c.data());
-        _reader = CollatableReader(slice::null);
+        _e = DocEnumerator(_db->getKeyStore("expiry"), nullslice, c.data());
+        _reader = CollatableReader(nullslice);
     }
 
     void close()
@@ -182,7 +182,7 @@ C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outErro
         return new C4ExpiryEnumerator(database);
     } catchError(outError);
 
-    return NULL;
+    return nullptr;
 }
 
 bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
@@ -218,7 +218,7 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
         commit = true;
     } catchError(outError);
     
-    c4db_endTransaction(e->getDatabase(), commit,  NULL);
+    c4db_endTransaction(e->getDatabase(), commit,  nullptr);
     return commit;
 }
 

@@ -32,7 +32,7 @@ bool litecore::jni::initQueryIterator(JNIEnv *env) {
     if (!queryIterClass)
         return false;
     kHandleField = env->GetFieldID(queryIterClass, "_handle", "J");
-    return (kHandleField != NULL);
+    return (kHandleField != nullptr);
 }
 
 
@@ -55,7 +55,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_QueryIterator_next
 
 static jbyteArray toJByteArray(JNIEnv *env, const C4KeyReader &r) {
     C4SliceResult json = c4key_toJSON(&r);
-    jbyteArray result = NULL;
+    jbyteArray result = nullptr;
     if (json.buf)
         result = toJByteArray(env, json);
     c4slice_free(json);
@@ -66,7 +66,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_keyJSON
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->key);
 }
 
@@ -74,7 +74,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_valueJSON
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     return toJByteArray(env, ((C4QueryEnumerator*)handle)->value);
 }
 
@@ -82,7 +82,7 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_QueryIterator_docID
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     return toJString(env, ((C4QueryEnumerator*)handle)->docID);
 }
 
@@ -106,11 +106,11 @@ JNIEXPORT jintArray JNICALL Java_com_couchbase_litecore_QueryIterator_fullTextTe
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     auto e = (C4QueryEnumerator*)handle;
     jintArray jterms = env->NewIntArray(3 * e->fullTextTermCount);
     if (!jterms)
-        return NULL;
+        return nullptr;
     jboolean isCopy;
     jint *term = env->GetIntArrayElements(jterms, &isCopy);
     for (uint32_t i = 0; i < e->fullTextTermCount; i++) {
@@ -127,11 +127,11 @@ JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoBoun
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     auto e = (C4QueryEnumerator*)handle;
     jdoubleArray jbox = env->NewDoubleArray(4);
     if (!jbox)
-        return NULL;
+        return nullptr;
     jboolean isCopy;
     jdouble *bp = env->GetDoubleArrayElements(jbox, &isCopy);
     bp[0] = e->geoBBox.xmin;
@@ -145,7 +145,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoJSON
   (JNIEnv *env, jclass clazz, jlong handle)
 {
     if (!handle)
-        return NULL;
+        return nullptr;
     auto e = (C4QueryEnumerator*)handle;
     return toJByteArray(env, e->geoJSON);
 }
@@ -162,14 +162,14 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_FullTextResult_getFullText
   (JNIEnv *env, jclass clazz, jlong viewHandle, jstring jdocID, jlong sequence, jint fullTextID)
 {
     if (!viewHandle)
-        return NULL;
+        return nullptr;
     jstringSlice docID(env, jdocID);
     C4Error err;
     C4SliceResult text = c4view_fullTextMatched((C4View*)viewHandle, docID, sequence, fullTextID,
                                                 &err);
     if (!text.buf) {
         throwError(env, err);
-        return NULL;
+        return nullptr;
     }
     jstring result = toJString(env, text);
     free((void*)text.buf);

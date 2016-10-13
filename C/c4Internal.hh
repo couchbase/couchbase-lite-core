@@ -47,7 +47,7 @@ typedef struct {
 } C4SliceResult;
 
 
-#define kC4SliceNull slice::null
+#define kC4SliceNull nullslice
 
 
 #define C4_IMPL // This tells c4Base.h to skip its declaration of C4Slice

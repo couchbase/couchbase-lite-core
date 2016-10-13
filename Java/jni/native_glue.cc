@@ -31,7 +31,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
             && initDocument(env)
             && initQueryIterator(env)
             && initView(env)) {
-        assert(gJVM == NULL);
+        assert(gJVM == nullptr);
         gJVM = jvm;
         return JNI_VERSION_1_2;
     } else {
@@ -46,10 +46,10 @@ namespace litecore {
         JavaVM *gJVM;
         
         jstringSlice::jstringSlice(JNIEnv *env, jstring js)
-        :_env(NULL)
+        :_env(nullptr)
         {
-            assert(env != NULL);
-            if (js != NULL) {
+            assert(env != nullptr);
+            if (js != nullptr) {
                 jboolean isCopy;
                 const char *cstr = env->GetStringUTFChars(js, &isCopy);
                 if (!cstr)
@@ -73,7 +73,7 @@ namespace litecore {
                 _slice = _slice.copy();
                 _env->ReleaseStringUTFChars(_jstr, cstr);
                 _env->DeleteLocalRef(_jstr);
-                _env = NULL;
+                _env = nullptr;
             }
         }
 
@@ -85,8 +85,8 @@ namespace litecore {
          _jbytes(jbytes),
          _critical(critical)
         {
-            if(jbytes == NULL){
-                _slice.buf = NULL;
+            if(jbytes == nullptr){
+                _slice.buf = nullptr;
                 _slice.size = 0;
                 return;
             }
@@ -134,16 +134,16 @@ namespace litecore {
 
 
         jstring toJString(JNIEnv *env, C4Slice s) {
-            if (s.buf == NULL)
-                return NULL;
+            if (s.buf == nullptr)
+                return nullptr;
             std::string utf8Buf((char*)s.buf, s.size);
             // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
             return env->NewStringUTF(utf8Buf.c_str());
         }
 
         jbyteArray toJByteArray(JNIEnv *env, C4Slice s) {
-            if (s.buf == NULL)
-                return NULL;
+            if (s.buf == nullptr)
+                return nullptr;
             // NOTE: Local reference is taken care by JVM.
             // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html#global_local
             jbyteArray array = env->NewByteArray((jsize)s.size);

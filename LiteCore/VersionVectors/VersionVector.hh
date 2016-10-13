@@ -26,8 +26,8 @@ namespace litecore {
     typedef slice peerID;
     typedef uint64_t generation;
 
-    extern const peerID kCASServerPeerID;   // "$"
-    extern const peerID kMePeerID;          // "*"
+    constexpr peerID kCASServerPeerID = {"$", 1};
+    constexpr peerID kMePeerID        = {"*", 1};
 
     /** The possible orderings of two VersionVectors. */
     enum versionOrder {

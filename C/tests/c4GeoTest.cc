@@ -25,7 +25,7 @@ public:
     C4GeoTest(int testOption)
     :C4Test(testOption)
     {
-        c4view_deleteByName(db, c4str("geoview"), NULL);
+        c4view_deleteByName(db, c4str("geoview"), nullptr);
         C4Error error;
         view = c4view_open(db, kC4SliceNull, c4str("geoview"), c4str("1"),
                            c4db_getConfig(db), &error);
@@ -62,8 +62,8 @@ public:
             rq.body = c4str(body);
             rq.save = true;
             C4Error error;
-            C4Document *doc = c4doc_put(db, &rq, NULL, &error);
-            REQUIRE(doc != NULL);
+            C4Document *doc = c4doc_put(db, &rq, nullptr, &error);
+            REQUIRE(doc != nullptr);
             if (verbose)
                 fprintf(stderr, "Added %s --> %s\n", docID, body);
             c4doc_free(doc);
@@ -79,7 +79,7 @@ public:
         REQUIRE(e);
 
         C4Document *doc;
-        while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+        while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
             char body [1000];
             memcpy(body, doc->selectedRev.body.buf, doc->selectedRev.body.size);
             body[doc->selectedRev.body.size] = '\0';

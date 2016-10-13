@@ -107,7 +107,7 @@ namespace litecore {
         }
 
         EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
-        check(init(ctx.get(), EVP_aes_256_cbc(), NULL, (const byte *)key.buf, (const byte *)iv.buf));
+        check(init(ctx.get(), EVP_aes_256_cbc(), nullptr, (const byte *)key.buf, (const byte *)iv.buf));
 
         int outSize;
         check(update(ctx.get(), (byte*)dst.buf, &outSize, (const byte*)src.buf, (int)src.size));

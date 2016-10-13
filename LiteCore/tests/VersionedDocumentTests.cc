@@ -17,7 +17,7 @@ static revidBuffer stringToRev(string str) {
 
 
 TEST_CASE("VersionedDocument RevIDs", "[VersionedDocument]") {
-    revidBuffer rev(slice("1-f0f0"));
+    revidBuffer rev("1-f0f0"_sl);
     REQUIRE((string)rev == string("1-f0f0"));
     static const uint8_t expectedBytes[] = {0x01, 0xf0, 0xf0};
     REQUIRE(rev == slice(expectedBytes, sizeof(expectedBytes)));
@@ -29,10 +29,10 @@ TEST_CASE("VersionedDocument RevIDs", "[VersionedDocument]") {
     REQUIRE(rev == slice(expectedBytes2, sizeof(expectedBytes2)));
 
     // New-style ('clock') revID:
-    rev.parseNew(slice("17@snej"));
+    rev.parseNew("17@snej"_sl);
     REQUIRE(rev.isClock());
     REQUIRE(rev.generation() == 17u);
-    REQUIRE(rev.digest() == slice("snej"));
+    REQUIRE(rev.digest() == "snej"_sl);
     static const uint8_t expectedBytes3[] = {0x00, 0x11, 's', 'n', 'e', 'j'};
     REQUIRE(rev == slice(expectedBytes3, sizeof(expectedBytes3)));
 }
@@ -66,23 +66,23 @@ TEST_CASE("VersionedDocument BadRevIDs", "[VersionedDocument]") {
 
     // Make sure we don't parse new-style IDs with the old parser:
     revidBuffer rev;
-    REQUIRE_FALSE(rev.tryParse(slice("17@snej"), false));
+    REQUIRE_FALSE(rev.tryParse("17@snej"_sl, false));
 }
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[VersionedDocument]") {
-    VersionedDocument v(*store, slice("foo"));
-    REQUIRE(v.docID() == slice("foo"));
+    VersionedDocument v(*store, "foo"_sl);
+    REQUIRE(v.docID() == "foo"_sl);
     REQUIRE(v.revID() == revid());
     REQUIRE(v.flags() == (VersionedDocument::Flags)0);
-    REQUIRE(v.get(stringToRev("1-aaaa")) == NULL);
+    REQUIRE(v.get(stringToRev("1-aaaa")) == nullptr);
 }
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", "[VersionedDocument]") {
     RevTree tree;
     const Rev* rev;
-    revidBuffer rev1ID(litecore::slice("1-aaaa"));
+    revidBuffer rev1ID("1-aaaa"_sl);
     litecore::slice rev1Data("body of revision");
     int httpStatus;
     rev = tree.insert(rev1ID, rev1Data, false, false,
@@ -94,7 +94,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     REQUIRE(rev->parent() == (const Rev*)nullptr);
     REQUIRE_FALSE(rev->isDeleted());
 
-    revidBuffer rev2ID(litecore::slice("2-bbbb"));
+    revidBuffer rev2ID("2-bbbb"_sl);
     litecore::slice rev2Data("second revision");
     auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
     REQUIRE(rev2);
@@ -109,7 +109,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     REQUIRE(rev);
     REQUIRE(rev2);
     REQUIRE(rev2->parent() == rev);
-    REQUIRE(rev->parent() == NULL);
+    REQUIRE(rev->parent() == nullptr);
 
     REQUIRE(tree.currentRevision() == rev2);
     REQUIRE_FALSE(tree.hasConflict());
@@ -129,9 +129,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[VersionedDocument]") {
     string revID = "1-fadebead", body = "{\"hello\":true}";
     revidBuffer revIDBuf(revID);
-    VersionedDocument v(*store, slice("foo"));
+    VersionedDocument v(*store, "foo"_sl);
     int httpStatus;
-    v.insert(revIDBuf, body, false, false, NULL, false, httpStatus);
+    v.insert(revIDBuf, body, false, false, nullptr, false, httpStatus);
     REQUIRE(httpStatus == 201);
 
     const Rev* node = v.get(stringToRev(revID));
@@ -146,25 +146,25 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
-    revidBuffer rev1ID(litecore::slice("1-aaaa"));
+    revidBuffer rev1ID("1-aaaa"_sl);
     {
-        VersionedDocument v(*store, slice("foo"));
+        VersionedDocument v(*store, "foo"_sl);
 
         litecore::slice rev1Data("body of revision");
         int httpStatus;
         v.insert(rev1ID, rev1Data, true /*deleted*/, false,
                  revid(), false, httpStatus);
 
-        v.setDocType(slice("moose"));
-        REQUIRE(v.docType() == slice("moose"));
+        v.setDocType("moose"_sl);
+        REQUIRE(v.docType() == "moose"_sl);
         Transaction t(db);
         v.save(t);
         t.commit();
     }
     {
-        VersionedDocument v(*store, slice("foo"));
+        VersionedDocument v(*store, "foo"_sl);
         REQUIRE((int)v.flags() == (int)VersionedDocument::kDeleted);
         REQUIRE(v.revID() == (revid)rev1ID);
-        REQUIRE(v.docType() == slice("moose"));
+        REQUIRE(v.docType() == "moose"_sl);
     }
 }

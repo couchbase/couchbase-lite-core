@@ -84,11 +84,11 @@ namespace litecore {
 
         /** The start of the key range for non-current Revisions with the given docID
             (and author, if non-null.) */
-        static alloc_slice startKeyFor(slice docID, peerID author =slice::null);
+        static alloc_slice startKeyFor(slice docID, peerID author =nullslice);
         
         /** The non-inclusive end of the key range for non-current Revisions with the given docID
             (and author, if non-null.) */
-        static alloc_slice endKeyFor(slice docID, peerID author =slice::null);
+        static alloc_slice endKeyFor(slice docID, peerID author =nullslice);
 
         /** Given a key in the nonCurrentStore, returns the ID of the document. */
         static slice docIDFromKey(slice key);
@@ -103,7 +103,7 @@ namespace litecore {
         bool deleteNonCurrent(slice docID, slice revID, Transaction &t);
         Revision::Ref getNonCurrent(slice docID, slice revID, ContentOptions) const;
         void deleteAncestors(Revision&, Transaction&);
-        DocEnumerator enumerateRevisions(slice docID, slice author = slice::null);
+        DocEnumerator enumerateRevisions(slice docID, slice author = nullslice);
 
         //////// SUBCLASS HOOKS:
 

@@ -67,7 +67,7 @@ public:
                 revFlags |= kRevHasAttachments;
         }
         selectedRev.flags = (C4RevisionFlags)revFlags;
-        selectedRev.body = slice::null;
+        selectedRev.body = nullslice;
         return false;
     }
 
@@ -86,10 +86,10 @@ public:
     virtual alloc_slice detachSelectedRevBody() {
         auto result = _loadedBody;
         if (result.buf)
-            _loadedBody = slice::null;
+            _loadedBody = nullslice;
         else
             result = selectedRev.body; // will copy
-        selectedRev.body = slice::null;
+        selectedRev.body = nullslice;
         return result;
     }
 
@@ -107,12 +107,12 @@ protected:
     static C4DocumentInternal* newV2Instance(C4Database* database, const Document&);
 
     void clearSelectedRevision() noexcept {
-        _selectedRevIDBuf = slice::null;
-        selectedRev.revID = slice::null;
+        _selectedRevIDBuf = nullslice;
+        selectedRev.revID = nullslice;
         selectedRev.flags = (C4RevisionFlags)0;
         selectedRev.sequence = 0;
-        selectedRev.body = slice::null;
-        _loadedBody = slice::null;
+        selectedRev.body = nullslice;
+        _loadedBody = nullslice;
     }
 
     Retained<C4Database> _db;

@@ -75,7 +75,7 @@ namespace litecore {
 
         virtual setResult set(slice key, slice meta, slice value, Transaction&) =0;
         setResult set(slice key, slice value, Transaction &t)
-                                                        {return set(key, slice::null, value, t);}
+                                                        {return set(key, nullslice, value, t);}
         void write(Document&, Transaction&);
 
         bool del(slice key, Transaction&);

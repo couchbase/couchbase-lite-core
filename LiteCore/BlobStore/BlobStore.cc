@@ -22,7 +22,7 @@ namespace litecore {
 #pragma mark - BLOBKEY:
 
 
-    static const size_t kBlobKeyStringLength = 5 + ((sizeof(blobKey::bytes) + 2) / 3) * 4;
+    static constexpr size_t kBlobKeyStringLength = 5 + ((sizeof(blobKey::bytes) + 2) / 3) * 4;
 
 
     blobKey::blobKey(slice s) {

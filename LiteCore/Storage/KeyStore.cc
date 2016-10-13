@@ -44,7 +44,7 @@ namespace litecore {
     }
 
     void KeyStore::readBody(Document &doc) const {
-        if (doc.body().buf == nullptr) {
+        if (!doc.body()) {
             Document fullDoc = doc.sequence() ? get(doc.sequence(), kDefaultContent)
                                               : get(doc.key(), kDefaultContent);
             doc._body = fullDoc._body;

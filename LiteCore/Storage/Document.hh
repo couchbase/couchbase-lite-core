@@ -67,7 +67,7 @@ namespace litecore {
         void clearMetaAndBody() noexcept;
 
         void updateSequence(sequence_t s)       {_sequence = s;}
-        void setUnloadedBodySize(size_t size)   {_body = slice::null; _bodySize = size;}
+        void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
 
         uint64_t bodyAsUInt() const noexcept;
         void setBodyAsUInt(uint64_t) noexcept;

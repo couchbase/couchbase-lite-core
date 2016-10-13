@@ -47,7 +47,7 @@ public:
             rq.historyCount = 1;
             rq.body = c4str(json);
             rq.save = true;
-            auto doc = c4doc_put(db, &rq, NULL, &error);
+            auto doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc);
             c4doc_free(doc);
         }
@@ -70,7 +70,7 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     REQUIRE(e);
     C4Document* doc;
     unsigned i = 0;
-    while (NULL != (doc = c4enum_nextDocument(e, &error))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         i++;
         c4doc_free(doc);
     }

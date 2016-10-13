@@ -488,7 +488,7 @@ get_adjacent(const char* hash, direction dir, char *base)
         strncpy(base, hash, len - 1);
     base[len-1] = '\0';
 
-    if (strchr(border_table, last) != NULL) {
+    if (strchr(border_table, last) != nullptr) {
         if (!get_adjacent(base, dir, base))
             return false;
     }
@@ -496,7 +496,7 @@ get_adjacent(const char* hash, direction dir, char *base)
     neighbor_table = NEIGHBORS_TABLE[idx];
 
     ptr = strchr(neighbor_table, last);
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         return false;
     }
     idx = (int)(ptr - neighbor_table);

@@ -43,7 +43,7 @@ namespace litecore {
 
     protected:
         bool _del(slice key, Transaction &t) override       {return _del(key, 0, t);}
-        bool _del(sequence s, Transaction &t) override      {return _del(slice::null, s, t);}
+        bool _del(sequence s, Transaction &t) override      {return _del(nullslice, s, t);}
         bool _del(slice key, sequence s, Transaction&);
 
         DocEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, DocEnumerator::Options&) override;

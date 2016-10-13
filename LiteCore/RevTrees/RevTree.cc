@@ -49,7 +49,7 @@ namespace litecore {
             for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
                 if (rev->body.size > 0 && !(rev->isLeaf() || rev->isNew())) {
                     // Prune body of an already-saved rev that's no longer a leaf:
-                    rev->body.buf = NULL;
+                    rev->body.buf = nullptr;
                     rev->body.size = 0;
                     rev->oldBodyOffset = _bodyOffset;
                 }
@@ -77,7 +77,7 @@ namespace litecore {
     const Rev* RevTree::currentRevision() {
         CBFAssert(!_unknown);
         sort();
-        return _revs.size() == 0 ? NULL : &_revs[0];
+        return _revs.size() == 0 ? nullptr : &_revs[0];
     }
 
     const Rev* RevTree::get(unsigned index) const {
@@ -92,7 +92,7 @@ namespace litecore {
                 return &*rev;
         }
         CBFAssert(!_unknown);
-        return NULL;
+        return nullptr;
     }
 
     const Rev* RevTree::getBySequence(sequence seq) const {
@@ -101,7 +101,7 @@ namespace litecore {
                 return &*rev;
         }
         CBFAssert(!_unknown);
-        return NULL;
+        return nullptr;
     }
 
     bool RevTree::hasConflict() const {
@@ -140,13 +140,13 @@ namespace litecore {
 
     const Rev* Rev::parent() const {
         if (parentIndex == Rev::kNoParent)
-            return NULL;
+            return nullptr;
         return owner->get(parentIndex);
     }
 
     const Rev* Rev::next() const {
         auto i = index() + 1;
-        return i < owner->size() ? owner->get(i) : NULL;
+        return i < owner->size() ? owner->get(i) : nullptr;
     }
 
     std::vector<const Rev*> Rev::history() const {
@@ -157,11 +157,11 @@ namespace litecore {
     }
 
     bool RevTree::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {
-        return rev->body.buf != NULL; // VersionedDocument overrides this
+        return rev->body.buf != nullptr; // VersionedDocument overrides this
     }
 
     alloc_slice RevTree::readBodyOfRevision(const Rev* rev, uint64_t atOffset) const {
-        if (rev->body.buf != NULL)
+        if (rev->body.buf != nullptr)
             return alloc_slice(rev->body);
         return alloc_slice(); // VersionedDocument overrides this
     }
@@ -227,12 +227,12 @@ namespace litecore {
         uint32_t newGen = revID.generation();
         if (newGen == 0) {
             httpStatus = 400;
-            return NULL;
+            return nullptr;
         }
 
         if (get(revID)) {
             httpStatus = 200;
-            return NULL; // already exists
+            return nullptr; // already exists
         }
 
         // Find the parent rev, if a parent ID is given:
@@ -240,13 +240,13 @@ namespace litecore {
         if (parent) {
             if (!allowConflict && !parent->isLeaf()) {
                 httpStatus = 409;
-                return NULL;
+                return nullptr;
             }
             parentGen = parent->revID.generation();
         } else {
             if (!allowConflict && _revs.size() > 0) {
                 httpStatus = 409;
-                return NULL;
+                return nullptr;
             }
             parentGen = 0;
         }
@@ -254,7 +254,7 @@ namespace litecore {
         // Enforce that generation number went up by 1 from the parent:
         if (newGen != parentGen + 1) {
             httpStatus = 400;
-            return NULL;
+            return nullptr;
         }
         
         // Finally, insert:
@@ -266,12 +266,12 @@ namespace litecore {
                                    revid parentRevID, bool allowConflict,
                                    int &httpStatus)
     {
-        const Rev* parent = NULL;
+        const Rev* parent = nullptr;
         if (parentRevID.buf) {
             parent = get(parentRevID);
             if (!parent) {
                 httpStatus = 404;
-                return NULL; // parent doesn't exist
+                return nullptr; // parent doesn't exist
             }
         }
         return insert(revID, body, deleted, hasAttachments, parent, allowConflict, httpStatus);
@@ -283,7 +283,7 @@ namespace litecore {
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
         unsigned lastGen = 0;
-        const Rev* parent = NULL;
+        const Rev* parent = nullptr;
         size_t historyCount = history.size();
         for (i = 0; i < historyCount; i++) {
             unsigned gen = history[i].generation();

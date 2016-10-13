@@ -57,7 +57,7 @@ namespace litecore {
     Tokenizer::Tokenizer(std::string stemmer, bool removeDiacritics)
     :_stemmer(stemmer),
      _removeDiacritics(removeDiacritics),
-     _tokenizer(NULL),
+     _tokenizer(nullptr),
      _tokenChars("'’")
     {
         if (!sModule) { //FIX: Make this thread-safe
@@ -90,7 +90,7 @@ namespace litecore {
         int err = sModule->xCreate(argc, argv, &tokenizer);
         if (err) {
             Warn("Couldn't create tokenizer: err=%d", err);
-            tokenizer = NULL;
+            tokenizer = nullptr;
         }
         return tokenizer;
     }
@@ -185,7 +185,7 @@ namespace litecore {
     }
 
     static bool isCurly(slice text) {
-        return memmem(text.buf, text.size, "’", 3) != NULL;
+        return memmem(text.buf, text.size, "’", 3) != nullptr;
     }
 
     // Convert curly-close-quote to straight apostrophe

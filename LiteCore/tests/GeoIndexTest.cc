@@ -39,7 +39,7 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index) {
             area.latitude.max = r.readDouble();
 
             CollatableBuilder key;
-            key.addGeoKey(slice("{\"geo\":true}"), area);
+            key.addGeoKey("{\"geo\":true}"_sl, area);
             CollatableBuilder value(numMapCalls);
             keys.push_back(key);
             values.push_back(value);

@@ -56,8 +56,8 @@ namespace litecore {
         };
 
         DocEnumerator(KeyStore&,
-                      slice startKey = slice::null,
-                      slice endKey = slice::null,
+                      slice startKey = nullslice,
+                      slice endKey = nullslice,
                       const Options& options = Options());
         DocEnumerator(KeyStore&,
                       sequence start,
@@ -77,7 +77,7 @@ namespace litecore {
             next() must be called *before* accessing the first document! */
         bool next();
 
-        bool atEnd() const noexcept         {return _doc.key().buf == nullptr;}
+        bool atEnd() const noexcept         {return !_doc.key();}
 
         /** Stops the enumerator and frees its resources. (You only need to call this if the
             destructor might not be called soon enough.) */
@@ -87,8 +87,8 @@ namespace litecore {
         const Document& doc() const         {return _doc;}
 
         // Can treat an enumerator as a document pointer:
-        operator const Document*() const    {return _doc.key().buf ? &_doc : NULL;}
-        const Document* operator->() const  {return _doc.key().buf ? &_doc : NULL;}
+        operator const Document*() const    {return _doc.key().buf ? &_doc : nullptr;}
+        const Document* operator->() const  {return _doc.key().buf ? &_doc : nullptr;}
 
         DocEnumerator(const DocEnumerator&) = delete;               // no copying allowed
         DocEnumerator& operator=(const DocEnumerator&) = delete;    // no assignment allowed
