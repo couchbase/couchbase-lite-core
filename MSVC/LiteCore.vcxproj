@@ -51,6 +51,7 @@
     <ClCompile Include="asprintf.c" />
     <ClCompile Include="memmem.cc" />
     <ClCompile Include="mkstemps.cc" />
+    <ClCompile Include="strlcat.c" />
     <ClCompile Include="vasprintf-msvc.c" />
     <ClCompile Include="..\C\c4Base.cc" />
     <ClCompile Include="..\C\c4Database.cc" />

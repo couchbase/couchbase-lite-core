@@ -291,5 +291,8 @@
     <ClCompile Include="..\LiteCore\BlobStore\Stream.cc">
       <Filter>Source Files\BlobStore</Filter>
     </ClCompile>
+    <ClCompile Include="strlcat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -19,6 +19,9 @@
 #include <math.h>
 #include <set>
 #include <algorithm>
+#ifdef _MSC_VER
+#include "strlcat.h"
+#endif
 
 
 namespace litecore {
