@@ -14,3 +14,6 @@ HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece  $
 LIBRARY_SEARCH_PATHS        = $(inherited) /usr/local/lib
 
 ONLY_ACTIVE_ARCH            = YES
+
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1

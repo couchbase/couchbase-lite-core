@@ -12,8 +12,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG")
 ### SUBMODULES:
 
 add_subdirectory(vendor/forestdb            EXCLUDE_FROM_ALL)
+# Configure ForestDB features, and work around compiler warning about deprecated OSSpinLock API:
+set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_CC -D_DOC_COMP -Wno-deprecated-declarations")
+
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
+
 
 include_directories("vendor/fleece/Fleece" 
                     "vendor/fleece/vendor" 
@@ -30,8 +34,6 @@ add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API threa
 if (APPLE)
     # Specify that we want to use CommonCrypto:
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
-    # Work around ForestDB compiler warnings about deprecated OSSpinLock API:
-    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
 endif()
@@ -56,11 +58,14 @@ set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c
 
 ### BUILDING THE LIBRARY:
 
-add_library(LiteCore  SHARED  ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
+add_library(LiteCoreStatic STATIC  ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
                               ${REVTREES_SRC} ${VERSIONVECTORS_SRC} ${BLOBSTORE_SRC} ${C_SRC}
                               ${SQLITECPP_SRC})
 
-target_link_libraries(LiteCore  FleeceStatic
+add_library(LiteCore  SHARED  )
+
+target_link_libraries(LiteCore  LiteCoreStatic
+                                FleeceStatic
                                 forestdb 
                                 sqlite3
                                 SQLite3_UnicodeSN)
@@ -72,3 +77,8 @@ if (APPLE)
     target_link_libraries(LiteCore  "-framework CoreFoundation" 
                                     "-framework Foundation")
 endif()
+
+### TESTS:
+
+add_subdirectory(LiteCore/tests)
+add_subdirectory(C/tests)

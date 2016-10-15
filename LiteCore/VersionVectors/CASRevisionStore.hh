@@ -40,7 +40,7 @@ namespace litecore {
                                               Transaction &t) override;
         virtual void purge(slice docID, Transaction &t) override;
 
-#if !DEBUG
+#if !LITECORE_CPP_TESTS
     private:
 #endif
         struct ServerState {
