@@ -10,9 +10,9 @@
 #pragma once
 #include "Base.hh"
 #ifdef _CRYPTO_OPENSSL
-#include <openssl\conf.h>
-#include <openssl\evp.h>
-#include <openssl\err.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 #include <string.h>
 #endif
 

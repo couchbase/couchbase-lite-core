@@ -19,7 +19,11 @@
 #include <math.h>
 #include <set>
 #include <algorithm>
+#include <string.h>
 
+#if defined(linux) || defined(__linux__)
+#include <bsd/string.h> // for strlcpy()
+#endif
 
 namespace litecore {
 

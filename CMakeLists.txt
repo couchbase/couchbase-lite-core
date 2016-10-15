@@ -32,6 +32,8 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
     # Work around ForestDB compiler warnings about deprecated OSSpinLock API:
     set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
+elseif(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
 endif()
 
 ### SOURCE FILES:
@@ -58,9 +60,6 @@ add_library(LiteCore  SHARED  ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
                               ${REVTREES_SRC} ${VERSIONVECTORS_SRC} ${BLOBSTORE_SRC} ${C_SRC}
                               ${SQLITECPP_SRC})
 
-set_target_properties(LiteCore PROPERTIES LINK_FLAGS
-                      "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
-
 target_link_libraries(LiteCore  FleeceStatic
                                 forestdb 
                                 sqlite3
@@ -68,6 +67,8 @@ target_link_libraries(LiteCore  FleeceStatic
 
 # Mac/iOS stuff
 if (APPLE)
+    set_target_properties(LiteCore PROPERTIES LINK_FLAGS
+                          "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
     target_link_libraries(LiteCore  "-framework CoreFoundation" 
                                     "-framework Foundation")
 endif()

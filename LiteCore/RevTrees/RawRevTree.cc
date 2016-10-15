@@ -19,6 +19,8 @@
 #include "varint.hh"
 #ifdef _MSC_VER
 #include <WinSock2.h>
+#else
+#include <arpa/inet.h>
 #endif
 
 using namespace fleece;

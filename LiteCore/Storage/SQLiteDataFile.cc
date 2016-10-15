@@ -20,6 +20,7 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include <mutex>
 #include <sqlite3.h>
 #include <sstream>
 

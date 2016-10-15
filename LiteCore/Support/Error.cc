@@ -354,7 +354,8 @@ namespace litecore {
             va_list args;
             va_start(args, message);
             char *formatted = nullptr;
-            vasprintf(&formatted, message, args);
+            if (vasprintf(&formatted, message, args) < 0)
+                return;
             va_end(args);
             LogCallback(level, formatted);
         }

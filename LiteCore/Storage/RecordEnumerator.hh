@@ -16,6 +16,7 @@
 #pragma once
 
 #include "Record.hh"
+#include <limits.h>
 #include <vector>
 
 namespace litecore {

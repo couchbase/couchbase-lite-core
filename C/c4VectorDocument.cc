@@ -19,10 +19,11 @@
 #include "c4Private.h"
 
 #include "c4DatabaseInternal.hh"
-#include "C4DocInternal.hh"
+#include "c4DocInternal.hh"
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
 
+#include <algorithm>
 
 namespace c4Internal {
 

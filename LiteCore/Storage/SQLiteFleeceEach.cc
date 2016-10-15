@@ -337,7 +337,7 @@ public:
 }; // end class definition
 
 
-const sqlite3_module FleeceCursor::kEachModule;
+constexpr sqlite3_module FleeceCursor::kEachModule;
 
 
 int RegisterFleeceEachFunctions(sqlite3 *db) {

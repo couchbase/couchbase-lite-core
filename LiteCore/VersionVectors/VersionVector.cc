@@ -77,10 +77,10 @@ namespace litecore {
     alloc_slice Version::asString() const {
         if (isMerge()) {
             char buf[2 + kMaxAuthorSize];
-            return alloc_slice(buf, sprintf(buf, "^%.*s", (int)_author.size, _author.buf));
+            return alloc_slice(buf, sprintf(buf, "^%.*s", (int)_author.size, (const char*)_author.buf));
         } else {
             char buf[30 + kMaxAuthorSize];
-            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", _gen, (int)_author.size, _author.buf));
+            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", _gen, (int)_author.size, (const char*)_author.buf));
         }
     }
 

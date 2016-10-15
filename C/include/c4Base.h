@@ -14,9 +14,17 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+#ifndef __has_extension
+#define __has_extension(x) 0
+#endif
+
 #ifdef _MSC_VER
-#define __has_extension
-#define __has_feature
 #define CBINLINE __forceinline
 #else
 #define CBINLINE inline
