@@ -25,9 +25,8 @@
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
 #include "Path.hh"
-//#include "Error.hh"
 
-#include <sqlite3ext.h>
+#include <sqlite3.h>
 
 using namespace std;
 using namespace fleece;

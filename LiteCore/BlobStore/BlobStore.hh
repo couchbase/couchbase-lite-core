@@ -12,6 +12,9 @@
 #include "Stream.hh"
 #include "SecureDigest.hh"
 
+#if !SECURE_DIGEST_AVAILABLE
+#error No SHA digest API configured (See SecureDigest.hh)
+#endif
 
 namespace litecore {
     class BlobStore;

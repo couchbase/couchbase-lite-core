@@ -26,3 +26,4 @@ Release_Static/
 CSharp/.vscode
 CSharp/test/LiteCore.Tests/.vscode
 CSharp/native
+/build_cmake
