@@ -44,11 +44,37 @@ It is written in C++ (using C++11 features) and compiles with Clang, GCC and MSV
 
 An earlier version of LiteCore, known as CBForest, has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and since early 2016 in the 1.2 release on all the above platforms.
 
+## Building It
+
+**Note:** After checking out this repo, make sure you've also checked out the submodules. Run `git submodule update --init --recursive`.
+
+### macOS, iOS
+
+Open **Xcode/LiteCore.xcodeproj**. Select the scheme **LiteCore dylib**. Build.
+
+### Linux
+
+    cd build_cmake
+    ./build.sh
+
+**Note:** If you get compile errors about missing headers or libraries, you'll need to install the appropriate development packages via your package manager. This is especially true on Ubuntu, which comes without the development packages for common libraries like SQLite and OpenSSL. (TBD: Add a list of `apt` packages here.)
+
+## Documentation
+
+C API docs can be generated as follows:
+
+    cd C
+    doxygen
+    
+The main page is located at `C/Documentation/html/modules.html`.
+
 ## Status
 
-**As of October 2016:** Under heavy development. Watch out for falling I-beams! The primary development platform is Mac OS, so the Xcode project should always build and the code should pass its unit tests. The Visual Studio project is generally up to date but may
-    fall behind, as may the C# bindings. The Java bindings are only updated occasionally and
-    are probably out of date.
+**As of October 2016:** Under heavy development. Watch out for falling I-beams! 
+
+* The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac.
+* The CMake (Linux) build and Visual Studio project are generally up to date but may fall behind, as may the C# bindings. 
+* The Java bindings may be out of date or incomplete.
 
 ## Authors
 
