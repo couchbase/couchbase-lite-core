@@ -19,10 +19,13 @@
 #include <math.h>
 #include <set>
 #include <algorithm>
-#include <string.h>
 
+// for nonstandard strlcat():
+#include <string.h>
 #if defined(linux) || defined(__linux__)
-#include <bsd/string.h> // for strlcpy()
+#include <bsd/string.h>
+#elsif defined(_MSC_VER)
+#include "strlcat.h"
 #endif
 
 namespace litecore {

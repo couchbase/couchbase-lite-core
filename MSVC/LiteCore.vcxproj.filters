@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Unicodesn">
       <UniqueIdentifier>{c827db91-af8c-4d8e-82e8-060b7ecf4fef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\BlobStore">
+      <UniqueIdentifier>{f0999a07-3d2b-42a3-8a32-7080d1c11df2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\LiteCore\Storage\DataFile.cc">
@@ -256,6 +259,39 @@
       <Filter>Source Files\C API</Filter>
     </ClCompile>
     <ClCompile Include="mkstemps.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\SQLiteFleeceEach.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\SQLiteFleeceFunctions.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\Query.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\QueryParser.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\SQLiteIterator.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Storage\SQLiteKeyStore.cc">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4BlobStore.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\c4ViewQuery.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\BlobStore\BlobStore.cc">
+      <Filter>Source Files\BlobStore</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\BlobStore\Stream.cc">
+      <Filter>Source Files\BlobStore</Filter>
+    </ClCompile>
+    <ClCompile Include="strlcat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

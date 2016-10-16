@@ -29,6 +29,7 @@
 #include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
+#include <mutex>
 using namespace litecore;
 
 
@@ -89,12 +90,17 @@ static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) 
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
-    C4QueryEnumInternal(mutex &m)
+    C4QueryEnumInternal()
+    {
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
+    }
+
+    C4QueryEnumInternal(mutex &m) : C4QueryEnumInternal()
 #if C4DB_THREADSAFE
     :_mutex(m)
 #endif
     {
-        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
+        
     }
 
     virtual ~C4QueryEnumInternal() { }
@@ -142,7 +148,11 @@ void c4queryenum_free(C4QueryEnumerator *e) {
 
 struct C4ViewQueryEnumInternal : public C4QueryEnumInternal {
     C4ViewQueryEnumInternal(C4View *view)
-    :C4QueryEnumInternal(view->_mutex),
+    :C4QueryEnumInternal(
+#if C4DB_THREADSAFE
+        view->_mutex
+#endif
+    ),
      _view(view)
     { }
 
@@ -403,7 +413,11 @@ void c4query_free(C4Query *query) {
 struct C4DBQueryEnumerator : public C4QueryEnumInternal {
     C4DBQueryEnumerator(C4Query *query,
                         const QueryEnumerator::Options *options)
-    :C4QueryEnumInternal(query->database()->_mutex),
+    :C4QueryEnumInternal(
+#if C4DB_THREADSAFE
+        query->database()->_mutex
+#endif
+    ),
      _enum(query->query(), options)
     { }
 

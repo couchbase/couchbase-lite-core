@@ -23,6 +23,7 @@
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
+#include <mutex>
 
 #if __APPLE__
 #include <TargetConditionals.h>
