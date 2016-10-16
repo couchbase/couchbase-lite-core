@@ -196,7 +196,7 @@ FLSliceResult C4Test::readFile(const char *path) {
     FILE *fd = fopen(path, "r");
     REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);
-    size_t size = ftello(fd);
+    auto size = (size_t)ftello(fd);
     fseeko(fd, 0, SEEK_SET);
     void* data = malloc(size);
     REQUIRE(data);

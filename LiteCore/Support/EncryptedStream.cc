@@ -97,8 +97,8 @@ namespace litecore {
                                  ciphertext,
                                  plaintext);
         _output->write(ciphertext);
-        Log("WRITE #%2llu: %lu bytes, final=%d --> %lu bytes ciphertext",
-            _blockID-1, plaintext.size, finalBlock, ciphertext.size);
+        Log("WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+            _blockID-1, (uint64_t)plaintext.size, finalBlock, (uint64_t)ciphertext.size);
 #else
         error::_throw(error::Unimplemented);
 #endif
@@ -185,8 +185,8 @@ namespace litecore {
                       slice(iv, sizeof(iv)),
                       finalBlock,
                       output, slice(blockBuf, bytesRead));
-        Log("READ  #%2llu: %lu bytes, final=%d --> %lu bytes ciphertext",
-            _blockID-1, bytesRead, finalBlock, outputSize);
+        Log("READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+            _blockID-1, (uint64_t)bytesRead, finalBlock, (uint64_t)outputSize);
         return outputSize;
 #else
         error::_throw(error::Unimplemented);

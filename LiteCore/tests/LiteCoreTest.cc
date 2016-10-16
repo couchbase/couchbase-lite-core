@@ -16,15 +16,14 @@
 
 #ifdef __linux__
      #include <bsd/stdlib.h>
-#else
-    #include <arc4random.h>
 #endif
 
-#ifndef _MSC_VER
-    #include <unistd.h>
-#else
+#ifdef _MSC_VER
+    #include <arc4random.h>
     #include "asprintf.h"
     #undef min
+#else
+    #include <unistd.h>
 #endif
 
 

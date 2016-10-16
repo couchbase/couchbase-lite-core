@@ -34,7 +34,7 @@ namespace litecore {
             return SQLITE_OK;
         } catch (const error &error) {
             WarnError("Invalid property path `%.*s` in query (err %d)",
-                      (int)path.size, path.buf, error.code);
+                      (int)path.size, (char*)path.buf, error.code);
             return SQLITE_ERROR;
         } catch (const bad_alloc&) {
             return SQLITE_NOMEM;
