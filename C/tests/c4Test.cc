@@ -208,7 +208,9 @@ FLSliceResult C4Test::readFile(const char *path) {
 
 
 bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback) {
+    INFO("Reading lines from " << path);
     fstream fd(path, ios_base::in);
+    REQUIRE(fd);
     char buf[10000];
     while (fd.good()) {
         fd.getline(buf, sizeof(buf));

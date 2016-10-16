@@ -633,15 +633,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
-		274D04061BA75E1C00FF7C35 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
 		27A924BC1D9B355900086206 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -955,6 +946,7 @@
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/litecore/Constants.java; sourceTree = "<group>"; };
+		27E3DD301DB43BAD00F2872D /* names_100.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = names_100.json; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
@@ -1390,6 +1382,7 @@
 				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
+				27E3DD301DB43BAD00F2872D /* names_100.json */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -2194,7 +2187,6 @@
 			buildPhases = (
 				274D04041BA75E1C00FF7C35 /* Sources */,
 				274D04051BA75E1C00FF7C35 /* Frameworks */,
-				274D04061BA75E1C00FF7C35 /* CopyFiles */,
 			);
 			buildRules = (
 			);

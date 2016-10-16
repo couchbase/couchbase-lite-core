@@ -21,6 +21,9 @@
 #define REQUIRE(X) ({if (!(X)) abort();})
 #endif
 
+// Download from https://github.com/arangodb/example-datasets and update this path accordingly:
+#define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
+
 using namespace fleece;
 
 
@@ -499,7 +502,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
-    auto numDocs = importJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json",
+    auto numDocs = importJSONLines(kLargeDataSetsDir"IPRanges/geoblocks.json",
                                    15.0, true);
     reopenDB();
     {
@@ -523,7 +526,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     // Docs look like:
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
-    __unused auto numDocs = importJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json", 15.0, true);
+    __unused auto numDocs = importJSONLines(kLargeDataSetsDir"RandomUsers/names_300000.json", 15.0, true);
     const bool complete = (numDocs == 300000);
 #ifdef NDEBUG
     REQUIRE(numDocs == 300000);
