@@ -57,7 +57,7 @@ namespace litecore {
             if (reader.peekTag() != CollatableTypes::kEndSequence)
                 _lastPurgeCount = (uint64_t)reader.readInt();
         }
-        Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
+        Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
@@ -75,7 +75,7 @@ namespace litecore {
         state.endArray();
 
         _stateReadAt = _store.set(stateKey, state, t).seq;
-        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%d, lastPurgeCount=%llu)",
+        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
@@ -118,7 +118,7 @@ namespace litecore {
 
 
     void MapReduceIndex::setup(int indexType, std::string mapVersion) {
-        Debug("MapReduceIndex<%p>: Setup (indexType=%ld, mapVersion='%s')",
+        Debug("MapReduceIndex<%p>: Setup (indexType=%d, mapVersion='%s')",
               this, indexType, mapVersion.c_str());
         readState();
         _mapVersion = mapVersion;

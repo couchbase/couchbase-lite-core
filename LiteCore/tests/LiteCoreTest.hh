@@ -17,7 +17,7 @@ using namespace fleece;
 
 void Log(const char *format, ...) __printflike(1, 2);
 
-std::string stringWithFormat(const char *format, ...);
+std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
 
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);

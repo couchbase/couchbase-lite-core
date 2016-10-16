@@ -29,7 +29,7 @@ enum logLevel {
 extern logLevel LogLevel;
 extern void (*LogCallback)(logLevel, const char *message);
 
-void _Log(logLevel, const char *message, ...);
+void _Log(logLevel, const char *message, ...) __printflike(2, 3);
 
 #ifdef _MSC_VER
     // Apparently vararg macro syntax is slightly different in MSVC than in Clang/GCC

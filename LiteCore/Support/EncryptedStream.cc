@@ -97,7 +97,7 @@ namespace litecore {
                                  ciphertext,
                                  plaintext);
         _output->write(ciphertext);
-        Log("WRITE #%2lu: %lu bytes, final=%d --> %lu bytes ciphertext",
+        Log("WRITE #%2llu: %lu bytes, final=%d --> %lu bytes ciphertext",
             _blockID-1, plaintext.size, finalBlock, ciphertext.size);
 #else
         error::_throw(error::Unimplemented);
@@ -185,7 +185,7 @@ namespace litecore {
                       slice(iv, sizeof(iv)),
                       finalBlock,
                       output, slice(blockBuf, bytesRead));
-        Log("READ  #%2lu: %lu bytes, final=%d --> %lu bytes ciphertext",
+        Log("READ  #%2llu: %lu bytes, final=%d --> %lu bytes ciphertext",
             _blockID-1, bytesRead, finalBlock, outputSize);
         return outputSize;
 #else
@@ -253,7 +253,7 @@ namespace litecore {
         uint64_t blockID = min(pos / kFileBlockSize, _finalBlockID);
         uint64_t blockPos = blockID * kFileBlockSize;
         if (blockID != _bufferBlockID) {
-            Log("SEEK %lu (block %lu + %lu bytes)", pos, blockID, pos - blockPos);
+            Log("SEEK %llu (block %llu + %llu bytes)", pos, blockID, pos - blockPos);
             _input->seek(blockPos);
             _blockID = blockID;
             fillBuffer();

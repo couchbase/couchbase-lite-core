@@ -25,6 +25,7 @@ public:
         C4EncryptionKey crypto, *encryption=nullptr;
         if (encrypted) {
             fprintf(stderr, "        ...encrypted\n");
+            INFO("(Encrypted)");
             crypto.algorithm = kC4EncryptionAES256;
             memset(&crypto.bytes, 0xCC, sizeof(crypto.bytes));
             encryption = &crypto;

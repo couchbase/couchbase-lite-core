@@ -111,7 +111,7 @@ namespace litecore {
 
 #if DEBUG
     GeoIndexEnumerator::~GeoIndexEnumerator() {
-        Log("GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %u keys)",
+        Log("GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %llu keys)",
             _hits, _misses, _dups, _hits+_misses+_dups, ((MapReduceIndex&)index()).rowCount());
     }
 #endif
