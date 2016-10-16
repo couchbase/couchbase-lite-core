@@ -10,14 +10,21 @@
 #include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
+#include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#ifndef _MSC_VER
-#include <unistd.h>
+
+#ifdef __linux__
+     #include <bsd/stdlib.h>
 #else
-#include "asprintf.h"
-#include "arc4random.h"
-#undef min
+    #include <arc4random.h>
+#endif
+
+#ifndef _MSC_VER
+    #include <unistd.h>
+#else
+    #include "asprintf.h"
+    #undef min
 #endif
 
 
@@ -28,8 +35,9 @@ void Log(const char *format, ...) {
     va_list args;
     va_start(args, format);
     char *cstr;
-    vasprintf(&cstr, format, args);
+    REQUIRE(vasprintf(&cstr, format, args) >= 0);
     va_end(args);
+    REQUIRE(cstr);
     INFO(cstr);
     free(cstr);
 }
@@ -39,8 +47,9 @@ string stringWithFormat(const char *format, ...) {
     va_list args;
     va_start(args, format);
     char *cstr;
-    vasprintf(&cstr, format, args);
+    REQUIRE(vasprintf(&cstr, format, args) >= 0);
     va_end(args);
+    REQUIRE(cstr);
     string str(cstr);
     free(cstr);
     return str;

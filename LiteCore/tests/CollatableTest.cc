@@ -98,7 +98,7 @@ TEST_CASE( "Collatable RandomNumbers", "[Collatable][slow][noisy]" ) {
 
 TEST_CASE( "Collatable Floats", "[Collatable]" ) {
     double numbers[] = {0, 1, 2, 10, 32, 63, 64, 256, M_PI, 100, 6.02e23, 6.02e-23, 0.01,
-        MAXFLOAT, -MAXFLOAT,
+        FLT_MAX, -FLT_MAX,
         M_PI + 0.1, M_PI - 0.1,
         -1, -64, -M_PI, -6.02e23};
     const int nFloats = sizeof(numbers)/sizeof(numbers[0]);

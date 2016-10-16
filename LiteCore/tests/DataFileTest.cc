@@ -111,7 +111,7 @@ static void createNumberedDocs(KeyStore *store) {
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
     {
-        Log("Enumerate empty db");
+        INFO("Enumerate empty db");
         int i = 0;
         RecordEnumerator e(*store);
         for (; e.next(); ++i) {
@@ -123,7 +123,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
     createNumberedDocs(store);
 
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
-        Log("Enumerate over all docs (metaOnly=%d)", metaOnly);
+        INFO("Enumerate over all docs, metaOnly=" << metaOnly);
         RecordEnumerator::Options opts;
         opts.contentOptions = metaOnly ? kMetaOnly : kDefaultContent;
 
@@ -142,7 +142,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE_FALSE(e);
         }
 
-        Log("Enumerate over range of docs:");
+        INFO("Enumerate over range of docs:");
         int i = 24;
         for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("rec-%03d", i);
@@ -154,7 +154,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         }
         REQUIRE(i == 30);
 
-        Log("Enumerate over range of docs without inclusive:");
+        INFO("Enumerate over range of docs without inclusive:");
         opts.inclusiveStart = opts.inclusiveEnd = false;
         i = 25;
         for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
@@ -168,7 +168,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         REQUIRE(i == 29);
         opts.inclusiveStart = opts.inclusiveEnd = true;
 
-        Log("Enumerate over vector of docs:");
+        INFO("Enumerate over vector of docs:");
         i = 0;
         vector<string> docIDs;
         docIDs.push_back("rec-005");
@@ -179,7 +179,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         docIDs.push_back("rec-100");
         docIDs.push_back("rec-105"); // doesn't exist!
         for (RecordEnumerator e(*store, docIDs, opts); e.next(); ++i) {
-            Log("key = %s", e->key().cString());
+            INFO("key = " << e->key());
             REQUIRE((string)e->key() == docIDs[i]);
             REQUIRE(e->exists() == i < 6);
             if (i < 6) {
@@ -272,7 +272,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         docIDs.push_back("rec-105");
         int i = (int)docIDs.size() - 1;
         for (RecordEnumerator e(*store, docIDs, opts); e.next(); --i) {
-            Log("key = %s", e->key().cString());
+            INFO("key = " << e->key());
             REQUIRE((string)e->key() == docIDs[i]);
         }
         REQUIRE(i == -1);
@@ -361,7 +361,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
     int i = 0;
     for (RecordEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
         slice key = (*iter).key();
-        //Log("key = %s", key);
+        //INFO("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
         unsigned d = (i % kNDocs) + 1;
         REQUIRE(key == slice(stringWithFormat("%03lu.%03lu",
@@ -544,7 +544,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
     alloc_slice key("key");
     db->close();
     try {
-        Log("NOTE: Expecting an invalid-handle exception to be thrown");
+        INFO("NOTE: Expecting an invalid-handle exception to be thrown");
         error::sWarnOnError = false;
         Record rec = s.get(key);
     } catch (std::runtime_error &x) {
@@ -578,7 +578,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     try {
         Transaction t(db);
         // This is expected to throw an exception:
-        Log("NOTE: Expecting a read-only exception to be thrown");
+        INFO("NOTE: Expecting a read-only exception to be thrown");
         error::sWarnOnError = false;
         store->set("key"_sl, "somethingelse"_sl, t);
         t.commit();
@@ -592,7 +592,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     // Now try to open a nonexistent db, read-only:
     code = 0;
     try {
-        Log("NOTE: Expecting a no-such-file exception to be thrown");
+        INFO("NOTE: Expecting a no-such-file exception to be thrown");
         error::sWarnOnError = false;
         (void)newDatabase("/tmp/db_non_existent", &options);
     } catch (std::runtime_error &x) {
@@ -658,7 +658,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
             options.encryptionAlgorithm = kNoEncryption;
             int code = 0;
             try {
-                Log("NOTE: Expecting a can't-open-file exception to be thrown");
+                INFO("NOTE: Expecting a can't-open-file exception to be thrown");
                 error::sWarnOnError = false;
                 unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
             } catch (std::runtime_error &x) {

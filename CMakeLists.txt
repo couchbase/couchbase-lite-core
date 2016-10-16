@@ -12,9 +12,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG")
 ### SUBMODULES:
 
 add_subdirectory(vendor/forestdb            EXCLUDE_FROM_ALL)
-# Configure ForestDB features, and work around compiler warning about deprecated OSSpinLock API:
-set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_CC -D_DOC_COMP -Wno-deprecated-declarations")
-
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 
@@ -34,8 +31,14 @@ add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API threa
 if (APPLE)
     # Specify that we want to use CommonCrypto:
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
+    # Configure ForestDB features, and work around compiler warning about deprecated OSSpinLock API:
+    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_CC -D_DOC_COMP -Wno-deprecated-declarations")
+
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
+    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL -D_DOC_COMP")
+else()
+    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_DOC_COMP")
 endif()
 
 ### SOURCE FILES:
@@ -76,6 +79,8 @@ if (APPLE)
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
     target_link_libraries(LiteCore  "-framework CoreFoundation" 
                                     "-framework Foundation")
+else()
+    target_link_libraries(LiteCore  crypto  bsd)
 endif()
 
 ### TESTS:

@@ -8,7 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4BlobStore.h"
-#include "C4Private.h"
+#include "c4Private.h"
 
 using namespace std;
 

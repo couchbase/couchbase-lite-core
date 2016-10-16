@@ -22,3 +22,7 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 forestdb
                                 sqlite3
                                 SQLite3_UnicodeSN)
+if(NOT APPLE)
+    target_link_libraries(CppTests  crypto  bsd)
+endif()
+

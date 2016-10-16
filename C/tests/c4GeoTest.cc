@@ -125,7 +125,7 @@ N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
         C4GeoArea a = e->geoBBox;
         if (verbose) {
             fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
-                (int)e->docID.size, e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
+                (int)e->docID.size, (char*)e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
         }
 
         C4Slice expected = C4STR("1234");

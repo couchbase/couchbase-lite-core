@@ -86,7 +86,7 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index, mapFn map) {
     while (e.next()) {
         auto &rec = e.record();
         Log("    enumerating seq %llu: '%.*s' (del=%d)",
-              rec.sequence(), (int)rec.key().size, rec.key().buf, rec.deleted());
+              rec.sequence(), (int)rec.key().size, (char*)rec.key().buf, rec.deleted());
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
         if (!rec.deleted()) {
@@ -128,7 +128,7 @@ class MapReduceTest : public DataFileTestFixture {
             CollatableReader keyReader(e.key());
             alloc_slice keyStr = keyReader.readString();
             Log("key = %s, recordID = %.*s",
-                keyStr.cString(), (int)e.recordID().size, e.recordID().buf);
+                keyStr.cString(), (int)e.recordID().size, (char*)e.recordID().buf);
             REQUIRE((string)keyStr == expectedKeys[nRows++]);
         }
         REQUIRE(nRows == expectedKeys.size());

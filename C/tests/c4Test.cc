@@ -80,7 +80,7 @@ string toJSON(C4KeyReader r) {
 
 static void log(C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
-    fprintf(stderr, "LiteCore-C %s: %*s\n", kLevelNames[level], (int)message.size, message.buf);
+    fprintf(stderr, "LiteCore-C %s: %.*s\n", kLevelNames[level], (int)message.size, (char*)message.buf);
 }
 
 
