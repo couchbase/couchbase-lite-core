@@ -90,17 +90,14 @@ static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) 
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
-    C4QueryEnumInternal()
-    {
-        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
-    }
-
-    C4QueryEnumInternal(mutex &m) : C4QueryEnumInternal()
 #if C4DB_THREADSAFE
+    C4QueryEnumInternal(mutex &m)
     :_mutex(m)
+#else
+    C4QueryEnumInternal()
 #endif
     {
-        
+        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
     }
 
     virtual ~C4QueryEnumInternal() { }
