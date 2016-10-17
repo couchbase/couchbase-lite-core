@@ -18,7 +18,7 @@
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4ExpiryEnumerator.h"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 #undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
 #ifdef DEBUG_TERMINATION
@@ -274,7 +274,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
     }
     if(err.code) {
         char msg[100];
-        Debug("Error enumerating expired docs: LiteCore error %d/%d",
+        Debug("Error enumerating expired docs: LiteCore error %d/%d (%s)",
               err.domain,err.code, c4error_getMessageC(err, msg, sizeof(msg)));
     }
 

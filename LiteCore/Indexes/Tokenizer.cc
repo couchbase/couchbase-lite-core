@@ -16,7 +16,7 @@
 #include "Tokenizer.hh"
 #include "Base.hh"
 #include "english_stopwords.h"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "Error.hh"
 
 #ifndef __unused

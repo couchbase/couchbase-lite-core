@@ -122,12 +122,12 @@ TEST_CASE("Geohash Covering", "[geohash]") {
     geohash::area box(geohash::coord(45, -121), geohash::coord(46, -120));
     std::vector<geohash::hashRange> hashes = box.coveringHashRanges(10);
     std::sort(hashes.begin(), hashes.end());
-    Log("Covering hashes:");
+    Debug("Covering hashes:");
     for (auto i = hashes.begin(); i != hashes.end(); ++i)
         if (i->count == 1)
-            Log("    %s", i->first().string);
+            Debug("    %s", i->first().string);
         else
-            Log("    %s ... %s (%u)", i->first().string, i->last().string, i->count);
+            Debug("    %s ... %s (%u)", i->first().string, i->last().string, i->count);
     REQUIRE(hashes.size() == 7ul);
     REQUIRE(std::string(hashes[0].first().string) =="c21b");  REQUIRE(hashes[0].count == 2u);
     REQUIRE(std::string(hashes[1].first().string) =="c21f");  REQUIRE(hashes[1].count == 2u);
@@ -143,14 +143,14 @@ TEST_CASE("Geohash Covering2", "[geohash]") {
     geohash::area box(geohash::coord(10, 10), geohash::coord(20, 20));
     std::vector<geohash::hashRange> hashes = box.coveringHashRanges(10);
     std::sort(hashes.begin(), hashes.end());
-    Log("Covering hashes:");
+    Debug("Covering hashes:");
     for (auto i = hashes.begin(); i != hashes.end(); ++i) {
         if (i->count == 1)
-            Log("    %s", i->first().string);
+            Debug("    %s", i->first().string);
         else
-            Log("    %s ... %s (%u)", i->first().string, i->last().string, i->count);
+            Debug("    %s ... %s (%u)", i->first().string, i->last().string, i->count);
         geohash::area a = i->first().decode();
-        Log("        (%g, %g)...(%g, %g)",
+        Debug("        (%g, %g)...(%g, %g)",
               a.latitude.min,a.longitude.min, a.latitude.max,a.longitude.max);
     }
     REQUIRE(hashes.size() == 2ul);

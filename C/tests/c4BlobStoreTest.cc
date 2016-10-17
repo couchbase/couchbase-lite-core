@@ -208,7 +208,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][C]") 
     const vector<size_t> kSizes = {0, 1, 15, 16, 17, 4095, 4096, 4097,
                                    4096+15, 4096+16, 4096+17, 8191, 8192, 8193};
     for (size_t size : kSizes) {
-        //fprintf(stderr, "---- %lu-byte blob\n", size);
+        //Log("---- %lu-byte blob\n", size);
         INFO("Testing " << size << "-byte blob");
         // Write the blob:
         C4Error error;

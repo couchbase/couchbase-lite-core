@@ -23,7 +23,7 @@
 #include "KeyStore.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 #include "Collatable.hh"
 #include "FilePath.hh"

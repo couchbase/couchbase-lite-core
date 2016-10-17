@@ -36,8 +36,8 @@ public:
         C4Error error;
         if (view && !c4view_delete(view, &error)) {
             char msg[256];
-            fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d: %s\n",
-                    error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
+            WarnError("Failed to delete c4View: error %d/%d: %s\n",
+                      error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
             FAIL();
         }
         c4view_free(view);
@@ -65,7 +65,7 @@ public:
             C4Document *doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc != nullptr);
             if (verbose)
-                fprintf(stderr, "Added %s --> %s\n", docID, body);
+                Log("Added %s --> %s\n", docID, body);
             c4doc_free(doc);
         }
     }
@@ -124,7 +124,7 @@ N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
         ++found;
         C4GeoArea a = e->geoBBox;
         if (verbose) {
-            fprintf(stderr, "Found doc %.*s : (%g, %g)--(%g, %g)\n",
+            Log("Found doc %.*s : (%g, %g)--(%g, %g)\n",
                 (int)e->docID.size, (char*)e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
         }
 

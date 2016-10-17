@@ -21,7 +21,7 @@
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <set>
 
 

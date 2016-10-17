@@ -14,6 +14,11 @@
 
 #include "CatchHelper.hh"
 #include "MSVC_Compat.hh"
+#include "Logging.hh"
+
+using litecore::LogLevel;
+using litecore::LogDomain;
+using litecore::DefaultLog;
 
 
 #ifdef _MSC_VER

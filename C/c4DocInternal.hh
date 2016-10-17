@@ -9,7 +9,7 @@
 #pragma once
 #include "DataFile.hh"
 #include "Record.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 namespace c4Internal {
 

@@ -8,7 +8,7 @@
 
 #include "RevisionStore.hh"
 #include "LiteCoreTest.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 
 static const slice kDoc1ID("Doc1");

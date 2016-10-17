@@ -17,7 +17,7 @@
 #include "SQLiteFleeceUtil.hh"
 #include "Path.hh"
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <sqlite3.h>
 
 using namespace fleece;

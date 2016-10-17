@@ -229,7 +229,7 @@ bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback)
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
 unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose) {
-    if (verbose) fprintf(stderr, "Reading %s ...  ", path);
+    if (verbose) Log("Reading %s ...  ", path);
     Stopwatch st;
     unsigned numDocs = 0;
     {
@@ -258,14 +258,14 @@ unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose)
             FLSliceResult_Free(body);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
-                fprintf(stderr, "Stopping JSON import after %.3f sec  ", st.elapsed());
+                Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
                 return false;
             }
             if (verbose && numDocs % 100000 == 0)
-                fprintf(stderr, "%u  ", numDocs);
+                Log("%u  ", numDocs);
             return true;
         });
-        if (verbose) fprintf(stderr, "Committing...\n");
+        if (verbose) Log("Committing...\n");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     return numDocs;

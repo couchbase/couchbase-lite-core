@@ -104,7 +104,7 @@ TEST_CASE( "Collatable Floats", "[Collatable]" ) {
     const int nFloats = sizeof(numbers)/sizeof(numbers[0]);
     for (int i=0; i<nFloats; i++) {
         double n1 = numbers[i];
-        Log("%16g --> %s\n", numbers[i], collatableData(n1).hexString().c_str());
+        Debug("%16g --> %s\n", numbers[i], collatableData(n1).hexString().c_str());
         REQUIRE(roundTrip(n1).readDouble() == n1);
         for (int j=0; j<nFloats; j++) {
             compareNumber(n1, numbers[j]);
@@ -116,7 +116,7 @@ TEST_CASE( "Collatable RandomFloats", "[Collatable][slow][noisy]" ) {
     srandomdev();
     for (int i=0; i< 10000; i++) {
         double n1 = randf(), n2 = randf();
-        Log("Compare: %g <--> %g", n1, n2);
+        Debug("Compare: %g <--> %g", n1, n2);
         REQUIRE(roundTrip(n1).readDouble() == n1);
         REQUIRE(roundTrip(n2).readDouble() == n2);
         compareNumber(n1, n2);
@@ -131,7 +131,7 @@ TEST_CASE( "Collatable RoundTripInts", "[Collatable]" ) {
         alloc_slice encoded((litecore::slice)c);
         CollatableReader reader(encoded);
         uint64_t result = reader.readInt();
-        //Log("2^%2d - 1: %llx --> %llx", bits, n-1, result);
+        //Debug("2^%2d - 1: %llx --> %llx", bits, n-1, result);
         // At 2^54-1 floating-point roundoff starts to occur. This is known, so skip the assert
         if (bits < 54)
             REQUIRE(result == n-1);

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <atomic>
 
 namespace litecore {

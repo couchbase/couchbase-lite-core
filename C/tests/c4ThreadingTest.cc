@@ -80,7 +80,7 @@ public:
     void enumDocsTask() {
         C4Database* database = db;// openDB();
 
-        if (kLog) fprintf(stderr, "Enumerating documents...\n");
+        if (kLog) Log("Enumerating documents...\n");
         int n;
         int i = 0;
         do {

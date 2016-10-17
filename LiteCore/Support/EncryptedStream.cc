@@ -8,7 +8,7 @@
 
 #include "EncryptedStream.hh"
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "SecureRandomize.hh"
 #include "SecureSymmetricCrypto.hh"
 #include "forestdb_endian.h"
@@ -45,6 +45,8 @@
 
 namespace litecore {
     using namespace std;
+
+    extern LogDomain BlobLog;
 
 
     void EncryptedStream::initEncryptor(EncryptionAlgorithm alg,
@@ -97,7 +99,7 @@ namespace litecore {
                                  ciphertext,
                                  plaintext);
         _output->write(ciphertext);
-        Log("WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+        LogTo(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             _blockID-1, (uint64_t)plaintext.size, finalBlock, (uint64_t)ciphertext.size);
 #else
         error::_throw(error::Unimplemented);
@@ -185,7 +187,7 @@ namespace litecore {
                       slice(iv, sizeof(iv)),
                       finalBlock,
                       output, slice(blockBuf, bytesRead));
-        Log("READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+        LogTo(BlobLog, "READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             _blockID-1, (uint64_t)bytesRead, finalBlock, (uint64_t)outputSize);
         return outputSize;
 #else
@@ -253,7 +255,7 @@ namespace litecore {
         uint64_t blockID = min(pos / kFileBlockSize, _finalBlockID);
         uint64_t blockPos = blockID * kFileBlockSize;
         if (blockID != _bufferBlockID) {
-            Log("SEEK %llu (block %llu + %llu bytes)", pos, blockID, pos - blockPos);
+            LogTo(BlobLog, "SEEK %llu (block %llu + %llu bytes)", pos, blockID, pos - blockPos);
             _input->seek(blockPos);
             _blockID = blockID;
             fillBuffer();

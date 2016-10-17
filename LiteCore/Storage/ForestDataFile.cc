@@ -18,7 +18,7 @@
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "forestdb.h"
 #include <algorithm>
 #include <thread>
@@ -240,7 +240,7 @@ namespace litecore {
         Assert(!isOpen());
         string path = filePath().path();
         const char *cpath = path.c_str();
-        Debug("ForestDataFile: open %s", cpath);
+        LogToAt(DBLog, Debug, "ForestDataFile: open %s", cpath);
         auto status = ::fdb_open(&_fileHandle, cpath, &_config);
         if (status == FDB_RESULT_INVALID_COMPACTION_MODE
                 && _config.compaction_mode == FDB_COMPACTION_AUTO) {
@@ -273,10 +273,10 @@ namespace litecore {
 
     void ForestDataFile::_endTransaction(Transaction *t, bool commit) {
         if (commit) {
-            Log("ForestDataFile: commit transaction");
+            LogTo(DBLog, "ForestDataFile: commit transaction");
             check(fdb_end_transaction(_fileHandle, FDB_COMMIT_NORMAL));
         } else {
-            Log("ForestDataFile: abort transaction");
+            LogTo(DBLog, "ForestDataFile: abort transaction");
             (void)fdb_abort_transaction(_fileHandle);
         }
     }
@@ -320,7 +320,7 @@ namespace litecore {
     {
         switch (status) {
             case FDB_CS_BEGIN:
-                Log("ForestDataFile %p COMPACTING...", this);
+                LogTo(DBLog, "ForestDataFile %p COMPACTING...", this);
                 beganCompacting();
                 break;
             case FDB_CS_COMPLETE:
@@ -329,7 +329,7 @@ namespace litecore {
                     updatePurgeCount(t);
                     t.commit();
                 }
-                Log("ForestDataFile %p END COMPACTING", this);
+                LogTo(DBLog, "ForestDataFile %p END COMPACTING", this);
                 finishedCompacting();
                 break;
             default:
@@ -587,7 +587,7 @@ namespace litecore {
                 return false;
             check(status);
             _store.setDoc(rec, fdoc);
-            Debug("enum:     fdb_iterator_get --> [%s]", rec.key().hexCString());
+            LogToAt(DBLog, Debug, "enum:     fdb_iterator_get --> [%s]", rec.key().hexCString());
             return true;
         }
 

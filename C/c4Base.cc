@@ -18,7 +18,7 @@
 #include "c4Document.h"
 #include "c4Private.h"
 
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 #include "SQLiteCpp/Exception.h"
 #include <ctype.h>
@@ -97,7 +97,7 @@ void c4slice_free(C4SliceResult slice) {
 
 static C4LogCallback clientLogCallback;
 
-static void logCallback(logLevel level, const char *message) {
+static void logCallback(const LogDomain &domain, LogLevel level, const char *message) {
     auto cb = clientLogCallback;
     if (cb)
         cb((C4LogLevel)level, slice(message));
@@ -106,18 +106,18 @@ static void logCallback(logLevel level, const char *message) {
 
 void c4log_register(C4LogLevel level, C4LogCallback callback) {
     if (callback) {
-        LogLevel = (logLevel)level;
-        LogCallback = logCallback;
+        LogDomain::MinLevel = (LogLevel)level;
+        LogDomain::Callback = logCallback;
     } else {
-        LogLevel = kNone;
-        LogCallback = nullptr;
+        LogDomain::MinLevel = LogLevel::None;
+        LogDomain::Callback = nullptr;
     }
     clientLogCallback = callback;
 }
 
 
 void c4log_setLevel(C4LogLevel level) {
-    LogLevel = (logLevel)level;
+    LogDomain::MinLevel = (LogLevel)level;
 }
 
 void c4log_warnOnErrors(bool warn) {

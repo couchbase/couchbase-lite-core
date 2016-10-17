@@ -10,13 +10,15 @@
 #include "FilePath.hh"
 #include "Error.hh"
 #include "EncryptedStream.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <stdint.h>
 #include <stdio.h>
 #include <algorithm>
 
 namespace litecore {
     using namespace std;
+
+    LogDomain BlobLog("Blob");
 
 
 #pragma mark - BLOBKEY:

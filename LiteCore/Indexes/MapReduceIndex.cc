@@ -19,11 +19,13 @@
 #include "Fleece.hh"
 #include "GeoIndex.hh"
 #include "Tokenizer.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <algorithm>
 
 namespace litecore {
     using namespace fleece;
+
+    extern LogDomain IndexLog;
 
     static int64_t kMinFormatVersion = 6;
     static int64_t kCurFormatVersion = 6;
@@ -57,7 +59,7 @@ namespace litecore {
             if (reader.peekTag() != CollatableTypes::kEndSequence)
                 _lastPurgeCount = (uint64_t)reader.readInt();
         }
-        Debug("MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
+        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
@@ -75,7 +77,7 @@ namespace litecore {
         state.endArray();
 
         _stateReadAt = _store.set(stateKey, state, t).seq;
-        Debug("MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
+        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
               this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
     }
 
@@ -118,7 +120,7 @@ namespace litecore {
 
 
     void MapReduceIndex::setup(int indexType, std::string mapVersion) {
-        Debug("MapReduceIndex<%p>: Setup (indexType=%d, mapVersion='%s')",
+        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Setup (indexType=%d, mapVersion='%s')",
               this, indexType, mapVersion.c_str());
         readState();
         _mapVersion = mapVersion;
@@ -130,7 +132,7 @@ namespace litecore {
 
     void MapReduceIndex::invalidate() {
         if (_lastSequenceIndexed > 0) {
-            Debug("MapReduceIndex: Erasing invalidated index");
+            LogToAt(IndexLog, Debug, "MapReduceIndex: Erasing invalidated index");
             _store.erase();
         }
         _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
@@ -139,7 +141,7 @@ namespace litecore {
     }
 
     void MapReduceIndex::erase() {
-        Debug("MapReduceIndex: Erasing");
+        LogToAt(IndexLog, Debug, "MapReduceIndex: Erasing");
         _store.erase();
         _lastSequenceIndexed = _lastSequenceChangedAt = _lastPurgeCount = 0;
         _rowCount = 0;
@@ -265,7 +267,7 @@ namespace litecore {
         static const unsigned kMaxCoveringHashes = 4;
 
         void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
-            Debug("emit {%g ... %g, %g ... %g} --> %s",
+            LogToAt(IndexLog, Debug, "emit {%g ... %g, %g ... %g} --> %s",
                   boundingBox.latitude.min, boundingBox.latitude.max,
                   boundingBox.longitude.min, boundingBox.longitude.max,
                   value.hexString().c_str());
@@ -278,7 +280,7 @@ namespace litecore {
             // Now emit a set of geohashes that cover the given area:
             auto hashes = boundingBox.coveringHashes();
             for (auto &hash : hashes) {
-                Debug("    hash='%s'", (const char*)hash);
+                LogToAt(IndexLog, Debug, "    hash='%s'", (const char*)hash);
                 CollatableBuilder collKey(hash);
                 _emit(collKey, specialKeyEncoded);
             }

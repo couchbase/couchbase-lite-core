@@ -8,7 +8,7 @@
 
 #include "FilePath.hh"
 #include "Base.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "Error.hh"
 #include <dirent.h>
 #include <errno.h>
@@ -249,7 +249,6 @@ namespace litecore {
 
 
     bool FilePath::del() const {
-        //fprintf(stderr, "DEL %s\n", path().c_str());
         auto result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
         if (result == 0)
             return true;

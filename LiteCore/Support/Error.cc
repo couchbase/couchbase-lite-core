@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "forestdb.h"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
@@ -267,7 +267,7 @@ namespace litecore {
         if (sWarnOnError && !err.isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s",
                       kDomainNames[domain], code, err.what());
-            if (LogLevel <= kError)
+            if (WillLog(LogLevel::Error))
                 logBacktrace(1);
         }
         throw err;
@@ -289,10 +289,10 @@ namespace litecore {
     {
         if (!message)
             message = expr;
-        if (LogLevel > kError || LogCallback == nullptr)
+        if (!WillLog(LogLevel::Error))
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
         WarnError("Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
-        if (LogLevel <= kError)
+        if (WillLog(LogLevel::Error))
             logBacktrace(1);
         throw error(error::AssertionFailed);
     }
@@ -328,37 +328,6 @@ namespace litecore {
         free(unmangled);
         free(lines);
 #endif
-    }
-
-
-#pragma mark - LOGGING:
-
-    
-    static void defaultLogCallback(logLevel level, const char *message) {
-        if (!error::sWarnOnError && level >= kError)
-            return;
-#ifdef __ANDROID__
-        static const int kLevels[4] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
-        __android_log_write(kLevels[level], "LiteCore", message);
-#else
-        static const char* kLevelNames[4] = {"debug", "info", "WARNING", "ERROR"};
-        fprintf(stderr, "LiteCore %s: %s\n", kLevelNames[level], message);
-#endif
-    }
-
-    logLevel LogLevel = kWarning;
-    void (*LogCallback)(logLevel, const char *message) = &defaultLogCallback;
-
-    void _Log(logLevel level, const char *message, ...) {
-        if (LogLevel <= level && LogCallback != nullptr) {
-            va_list args;
-            va_start(args, message);
-            char *formatted = nullptr;
-            if (vasprintf(&formatted, message, args) < 0)
-                return;
-            va_end(args);
-            LogCallback(level, formatted);
-        }
     }
 
 }

@@ -259,6 +259,10 @@
 		27DF46C01A119860007BB4A4 /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
+		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
+		27E3DD381DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
+		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
+		27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
@@ -830,7 +834,6 @@
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = VersionedDocument.mm; path = ../../ObjC/VersionedDocument.mm; sourceTree = "<group>"; };
 		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
 		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
-		276E93B719ECA01100DDD621 /* LogInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogInternal.hh; sourceTree = "<group>"; };
 		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		277015131D5272D1008BADD7 /* IndexTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexTest.cc; sourceTree = "<group>"; };
@@ -947,6 +950,8 @@
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/litecore/Constants.java; sourceTree = "<group>"; };
 		27E3DD301DB43BAD00F2872D /* names_100.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = names_100.json; sourceTree = "<group>"; };
+		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
+		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
@@ -1460,7 +1465,8 @@
 				27393A861C8A353A00829C9B /* Error.cc */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
-				276E93B719ECA01100DDD621 /* LogInternal.hh */,
+				27E3DD351DB450B300F2872D /* Logging.cc */,
+				27E3DD361DB450B300F2872D /* Logging.hh */,
 				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
 				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
@@ -2113,6 +2119,7 @@
 				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
+				27E3DD391DB450B300F2872D /* Logging.hh in Headers */,
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
 				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				27D74A941D4D3F3400D806E0 /* SQLiteCpp.h in Headers */,
@@ -2601,6 +2608,7 @@
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
+				27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
@@ -2767,6 +2775,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
+				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
@@ -2833,6 +2842,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				720EA4101BA8D834002B8416 /* Record.cc in Sources */,
+				27E3DD381DB450B300F2872D /* Logging.cc in Sources */,
 				720EA4181BA8D834002B8416 /* Geohash.cc in Sources */,
 				720EA4171BA8D834002B8416 /* GeoIndex.cc in Sources */,
 				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,

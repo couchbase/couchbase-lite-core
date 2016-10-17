@@ -11,11 +11,10 @@
 #include <iostream>
 #include "slice.hh"
 #include "MSVC_Compat.hh"
+#include "Logging.hh"
 
 using namespace fleece;
 
-
-void Log(const char *format, ...) __printflike(1, 2);
 
 std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
 

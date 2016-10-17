@@ -15,7 +15,7 @@
 
 #include "RecordEnumerator.hh"
 #include "KeyStore.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <algorithm>
 #include <limits.h>
 #include <string.h>
@@ -24,6 +24,8 @@ using namespace std;
 
 
 namespace litecore {
+
+    LogDomain EnumLog("Enum");
 
 #pragma mark - ENUMERATION:
 
@@ -51,7 +53,7 @@ namespace litecore {
                                  const Options& options)
     :RecordEnumerator(store, options)
     {
-        Debug("enum: RecordEnumerator(%s, [%s] -- [%s]%s) --> %p",
+        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, [%s] -- [%s]%s) --> %p",
               store.name().c_str(), startKey.hexCString(), endKey.hexCString(),
               (options.descending ? " desc" : ""), this);
         if (startKey.size == 0)
@@ -73,7 +75,7 @@ namespace litecore {
                                  const Options& options)
     :RecordEnumerator(store, options)
     {
-        Debug("enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
+        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
                 store.name().c_str(), start, end, this);
 
         sequence minSeq = start, maxSeq = end;
@@ -91,7 +93,7 @@ namespace litecore {
     :RecordEnumerator(store, options)
     {
         _recordIDs = recordIDs;
-        Debug("enum: RecordEnumerator(%s, %zu keys) --> %p",
+        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, %zu keys) --> %p",
                 store.name().c_str(), recordIDs.size(), this);
         if (_options.skip > 0)
             _recordIDs.erase(_recordIDs.begin(), _recordIDs.begin() + _options.skip);
@@ -145,14 +147,14 @@ namespace litecore {
     // implementation of next() when enumerating a vector of keys
     bool RecordEnumerator::nextFromArray() {
         if (_curDocIndex >= _recordIDs.size()) {
-            Debug("enum: at end of vector");
+            LogToAt(EnumLog, Debug, "enum: at end of vector");
             close();
             return false;
         }
         _record.clearMetaAndBody();
         _record.setKey(_recordIDs[_curDocIndex++]);
         _store->read(_record);
-        Debug("enum:     fdb_get --> [%s]", _record.key().hexCString());
+        LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
         return true;
     }
 
@@ -162,7 +164,7 @@ namespace litecore {
             close();
             return false;
         }
-        Debug("enum:     fdb_iterator_get --> [%s]", _record.key().hexCString());
+        LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
         return true;
     }
 

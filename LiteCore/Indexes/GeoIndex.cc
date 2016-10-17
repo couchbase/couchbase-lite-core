@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "GeoIndex.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include "Fleece.hh"
 #include <math.h>
 #include <set>
@@ -29,6 +29,8 @@
 #endif
 
 namespace litecore {
+
+    extern LogDomain IndexLog;
 
     static const unsigned kMaxKeyRanges = 50;
 
@@ -58,7 +60,7 @@ namespace litecore {
         std::vector<KeyRange> ranges;
         for (auto &h : hashes) {
             geohash::hash lastHash = h.last();
-            Log("GeoIndexEnumerator: query add '%s' ... '%s'",
+            LogTo(IndexLog, "GeoIndexEnumerator: query add '%s' ... '%s'",
                 (const char*)h.first(), (const char*)lastHash);
             strlcat(lastHash.string, "Z", sizeof(lastHash.string)); // so the string range includes everything inside lastHash
             ranges.push_back(KeyRange(CollatableBuilder(h.first()), CollatableBuilder(lastHash)));
@@ -73,7 +75,7 @@ namespace litecore {
                 KeyRange range(key, key);
                 if (std::find(ranges.begin(), ranges.end(), range) == ranges.end()) {
                     ranges.push_back(range);
-                    Log("GeoIndexEnumerator: query add '%s'", parent.string);
+                    LogTo(IndexLog, "GeoIndexEnumerator: query add '%s'", parent.string);
                 }
             }
         }
@@ -114,7 +116,7 @@ namespace litecore {
 
 #if DEBUG
     GeoIndexEnumerator::~GeoIndexEnumerator() {
-        Log("GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %llu keys)",
+        LogTo(IndexLog, "GeoIndexEnumerator: %u hits, %u misses, %u dups, %u total iterated (of %llu keys)",
             _hits, _misses, _dups, _hits+_misses+_dups, ((MapReduceIndex&)index()).rowCount());
     }
 #endif

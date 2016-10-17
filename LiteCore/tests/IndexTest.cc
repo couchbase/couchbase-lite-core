@@ -52,7 +52,7 @@ public:
             nRows++;
             alloc_slice keyStr = e.key().readString();
             slice valueStr = e.value();
-            Log("key = %.*s, value = %.*s, recordID = %.*s",
+            Debug("key = %.*s, value = %.*s, recordID = %.*s",
                   (int)keyStr.size, (char*)keyStr.buf,
                   (int)valueStr.size, (char*)valueStr.buf,
                   (int)e.recordID().size, (char*)e.recordID().buf);
@@ -110,7 +110,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
                            options); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, recordID = %.*s",
+        Debug("key = %.*s, recordID = %.*s",
               (int)keyStr.size, (char*)keyStr.buf, (int)e.recordID().size, (char*)e.recordID().buf);
     }
     REQUIRE(nRows == 6);
@@ -127,7 +127,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     for (IndexEnumerator e(*index, keys); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, recordID = %.*s",
+        Debug("key = %.*s, recordID = %.*s",
               (int)keyStr.size, (char*)keyStr.buf, (int)e.recordID().size, (char*)e.recordID().buf);
     }
     REQUIRE(nRows == 2);
@@ -141,7 +141,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     for (IndexEnumerator e(*index, ranges); e.next(); ) {
         nRows++;
         alloc_slice keyStr = e.key().readString();
-        Log("key = %.*s, recordID = %.*s",
+        Debug("key = %.*s, recordID = %.*s",
               (int)keyStr.size, (char*)keyStr.buf, (int)e.recordID().size, (char*)e.recordID().buf);
     }
     REQUIRE(nRows == 3);

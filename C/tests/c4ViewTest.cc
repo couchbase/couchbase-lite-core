@@ -40,8 +40,8 @@ public:
             c4view_free(view);
             if (!ok) {
                 char msg[256];
-                fprintf(stderr, "ERROR: Failed to delete c4View: error %d/%d: %s\n",
-                        error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
+                WarnError("Failed to delete c4View: error %d/%d: %s\n",
+                          error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
                 REQUIRE(false);
             }
         }

@@ -18,11 +18,13 @@
 #include "Error.hh"
 #include "Fleece.hh"
 #include "varint.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 
 namespace litecore {
     using namespace fleece;
+
+    LogDomain IndexLog("Index");
 
     const slice Index::kSpecialValue("*", 1);
 
@@ -150,7 +152,7 @@ namespace litecore {
                     Record oldRow = _index._store.get(_realKey);
                     if (oldRow.exists()) {
                         if (oldRow.body() == *value) {
-                            Log("Old k/v pair (%s, %s) unchanged",
+                            LogTo(IndexLog, "Old k/v pair (%s, %s) unchanged",
                                 key->toJSON().c_str(), ((std::string)*value).c_str());
                             continue;  // Value is unchanged, so this is a no-op; skip to next key!
                         }
@@ -162,7 +164,7 @@ namespace litecore {
             }
 
             // Store the key & value:
-            Log("**** Index: realKey = %s  value = %s",
+            LogTo(IndexLog, "**** Index: realKey = %s  value = %s",
                 _realKey.toJSON().c_str(), (*value).hexString().c_str());
             _index._store.set(_realKey, meta, *value, _transaction);
             newStoredKeys.push_back(*key);
@@ -210,7 +212,7 @@ namespace litecore {
             realKey << emitIndex;
         realKey.endArray();
 
-        Log("**** getEntry: realKey = %s", realKey.toJSON().c_str());
+        LogTo(IndexLog, "**** getEntry: realKey = %s", realKey.toJSON().c_str());
         Record rec = _store.get(realKey);
         Assert(rec.exists());
         return alloc_slice(rec.body());
@@ -261,7 +263,7 @@ namespace litecore {
              (slice)makeRealKey(endKey,   endKeyDocID,   true,  options.descending),
              recordOptions(options))
     {
-        Debug("IndexEnumerator(%p)", this);
+        LogToAt(IndexLog, Debug, "IndexEnumerator(%p)", this);
         index.addUser();
         if (!_inclusiveStart)
             _startKey = (slice)startKey;
@@ -281,9 +283,9 @@ namespace litecore {
      _dbEnum(enumeratorForIndex(0))
     {
 #if DEBUG
-        Debug("IndexEnumerator(%p), key ranges:", this);
+        LogToAt(IndexLog, Debug, "IndexEnumerator(%p), key ranges:", this);
         for (auto &r : _keyRanges)
-            Debug("    key range: %s -- %s (%d)", r.start.toJSON().c_str(), r.end.toJSON().c_str(), r.inclusiveEnd);
+            LogToAt(IndexLog, Debug, "    key range: %s -- %s (%d)", r.start.toJSON().c_str(), r.end.toJSON().c_str(), r.inclusiveEnd);
 #endif
         index.addUser();
         if (_keyRanges.size() == 0)
@@ -359,7 +361,7 @@ namespace litecore {
             }
 
             // Return it as the next row:
-            Debug("IndexEnumerator: found key=%s",
+            LogToAt(IndexLog, Debug, "IndexEnumerator: found key=%s",
                     litecore::CollatableReader(_key).toJSON().c_str());
             return true;
         }
@@ -380,7 +382,7 @@ namespace litecore {
         }
         Collatable& startKey = _keyRanges[i].start;
         Collatable& endKey = _keyRanges[i].end;
-        Debug("IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
+        LogToAt(IndexLog, Debug, "IndexEnumerator: Advance to key range #%d, '%s'", i, startKey.toJSON().c_str());
         return RecordEnumerator(_index._store,
                              makeRealKey(startKey, nullslice, false, _options.descending),
                              makeRealKey(endKey,   nullslice, true,  _options.descending),

@@ -17,7 +17,7 @@
 #include "Record.hh"
 #include "DataFile.hh"
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 
 using namespace std;
 

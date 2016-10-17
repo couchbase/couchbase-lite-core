@@ -68,7 +68,7 @@ public:
     static double randomLon()   {return random() / (double)INT_MAX * 360.0 - 180.0;}
 
     void addCoords(unsigned n) {
-        Log("==== Adding %u records...", n);
+        Debug("==== Adding %u records...", n);
         srandom(42);
         Transaction t(db);
         IndexWriter writer(*index, t);
@@ -81,14 +81,14 @@ public:
             CollatableBuilder body;
             body << lon0 << lat0 << lon1 << lat1;
             store->set(slice(recordID), body, t);
-            Log("Added %s --> (%+08.4f, %+09.4f)", recordID, lat0, lon0);
+            Debug("Added %s --> (%+08.4f, %+09.4f)", recordID, lat0, lon0);
         }
         t.commit();
     }
     
     void indexIt() {
         index->setup(0, "1");
-        Log("==== Indexing...");
+        Debug("==== Indexing...");
         updateIndex(db, *index);
     }
     
@@ -101,19 +101,19 @@ N_WAY_TEST_CASE_METHOD(GeoIndexTest, "GeoIndex", "[GeoIndex],[Index]") {
 
     indexIt();
 
-    Log("==== Querying...");
+    Debug("==== Querying...");
     unsigned found = 0;
     for (GeoIndexEnumerator e(*index, queryArea); e.next(); ) {
         area a = e.keyBoundingBox();
         ++found;
         unsigned emitID = e.geoID();
-        Log("key = %s = (%g, %g)...(%g, %g) rec = '%s' #%u", e.key().toJSON().c_str(),
+        Debug("key = %s = (%g, %g)...(%g, %g) rec = '%s' #%u", e.key().toJSON().c_str(),
               a.latitude.min, a.longitude.min, a.latitude.max, a.longitude.max,
               e.recordID().cString(), emitID);
         REQUIRE(a.intersects(queryArea));
         auto geoJSON = e.keyGeoJSON();
-        Log("keyGeoJSON = %s", geoJSON.cString());
+        Debug("keyGeoJSON = %s", geoJSON.cString());
         REQUIRE(geoJSON.asString() == string("{\"geo\":true}"));
     }
-    Log("Found %u points in the query area", found);
+    Debug("Found %u points in the query area", found);
 }

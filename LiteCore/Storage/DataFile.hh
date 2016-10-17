@@ -16,6 +16,7 @@
 #pragma once
 #include "KeyStore.hh"
 #include "FilePath.hh"
+#include "Logging.hh"
 #include <vector>
 #include <unordered_map>
 #include <atomic> // for std::atomic_uint
@@ -26,6 +27,8 @@
 namespace litecore {
 
     class Transaction;
+
+    extern LogDomain DBLog;
 
 
     /** A database file, primarily a container of KeyStores which store the actual data.

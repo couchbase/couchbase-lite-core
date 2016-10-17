@@ -30,18 +30,6 @@
 using namespace std;
 
 
-void Log(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    char *cstr;
-    REQUIRE(vasprintf(&cstr, format, args) >= 0);
-    va_end(args);
-    REQUIRE(cstr);
-    INFO(cstr);
-    free(cstr);
-}
-
-
 string stringWithFormat(const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -139,11 +127,11 @@ DataFile* DataFileTestFixture::newDatabase(const FilePath &path, DataFile::Optio
 void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
     auto dbPath = db->filePath();
     auto options = db->options();
-    Log("//// Closing db");
+    Debug("//// Closing db");
     delete db;
     db = nullptr;
     store = nullptr;
-    Log("//// Reopening db");
+    Debug("//// Reopening db");
     db = newDatabase(dbPath, newOptions ? newOptions : &options);
     store = &db->defaultKeyStore();
 }

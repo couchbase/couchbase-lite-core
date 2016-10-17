@@ -78,14 +78,14 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index, mapFn map) {
     indexer.addIndex(index);
     auto seq = indexer.startingSequence();
     numMapCalls = 0;
-    Log("Updating index from sequence=%llu...", seq);
+    Debug("Updating index from sequence=%llu...", seq);
 
     RecordEnumerator::Options options;
     options.includeDeleted = true;
     RecordEnumerator e(index.sourceStore(), seq, UINT64_MAX, options);
     while (e.next()) {
         auto &rec = e.record();
-        Log("    enumerating seq %llu: '%.*s' (del=%d)",
+        Debug("    enumerating seq %llu: '%.*s' (del=%d)",
               rec.sequence(), (int)rec.key().size, (char*)rec.key().buf, rec.deleted());
         std::vector<Collatable> keys;
         std::vector<alloc_slice> values;
@@ -97,7 +97,7 @@ static void updateIndex(DataFile *indexDB, MapReduceIndex& index, mapFn map) {
         indexer.emitDocIntoView(rec.key(), rec.sequence(), 0, keys, values);
     }
     indexer.finished();
-    Log("...done updating index (%d map calls)", numMapCalls);
+    Debug("...done updating index (%d map calls)", numMapCalls);
 }
 
 
@@ -127,7 +127,7 @@ class MapReduceTest : public DataFileTestFixture {
                                Collatable(), litecore::nullslice); e.next(); ) {
             CollatableReader keyReader(e.key());
             alloc_slice keyStr = keyReader.readString();
-            Log("key = %s, recordID = %.*s",
+            Debug("key = %s, recordID = %.*s",
                 keyStr.cString(), (int)e.recordID().size, (char*)e.recordID().buf);
             REQUIRE((string)keyStr == expectedKeys[nRows++]);
         }
@@ -155,7 +155,7 @@ class MapReduceTest : public DataFileTestFixture {
             auto value = Value::fromData(e.value());
             REQUIRE(value);
             auto valueStr = (std::string)value->toJSON();
-            Log("key = %s  value = %s", keyStr.c_str(), valueStr.c_str());
+            Debug("key = %s  value = %s", keyStr.c_str(), valueStr.c_str());
             REQUIRE(keyStr == expectedKeyJSON[nRows]);
             REQUIRE(valueStr == expectedValueJSON[nRows]);
             ++nRows;
@@ -198,11 +198,11 @@ class MapReduceTest : public DataFileTestFixture {
 class CountReduce : public ReduceFunction {
 public:
     void operator() (CollatableReader key, slice value) override {
-        Log("    CountReduce: key = %s", key.toJSON().c_str());
+        Debug("    CountReduce: key = %s", key.toJSON().c_str());
         ++_count;
     }
     slice reducedValue() override {
-        Log("    CountReduce: reduced value = %u", _count);
+        Debug("    CountReduce: reduced value = %u", _count);
         Encoder e;
         e << _count;
         _reduced = e.extractOutput();

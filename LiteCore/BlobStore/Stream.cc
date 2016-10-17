@@ -8,7 +8,7 @@
 
 #include "Stream.hh"
 #include "Error.hh"
-#include "LogInternal.hh"
+#include "Logging.hh"
 #include <errno.h>
 #include <memory>
 
