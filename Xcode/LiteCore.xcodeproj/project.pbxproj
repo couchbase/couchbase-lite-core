@@ -41,7 +41,6 @@
 		2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE371CF3A0F10022F721 /* VersionVector.hh */; };
 		2708FE551CF4CCCE0022F721 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
-		2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
@@ -92,7 +91,6 @@
 		273E9F751C51612E003115A6 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		273E9F761C51612E003115A6 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
-		273E9F781C5165FA003115A6 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
@@ -188,14 +186,12 @@
 		27A657BC1CBC19FA00A7A1D7 /* Revision.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657941CBC189800A7A1D7 /* Revision.swift */; };
 		27A657BD1CBC19FA00A7A1D7 /* View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657961CBC189800A7A1D7 /* View.swift */; };
 		27A657BF1CBC1A3D00A7A1D7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
-		27A657C01CBC1A5500A7A1D7 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27A657C81CBDD38A00A7A1D7 /* AssertHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657C71CBDD38A00A7A1D7 /* AssertHelper.swift */; };
 		27A657CA1CBED68700A7A1D7 /* SwiftForestTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657C91CBED68700A7A1D7 /* SwiftForestTestCase.swift */; };
 		27A657CC1CBED8E200A7A1D7 /* ViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657CB1CBED8E200A7A1D7 /* ViewTests.swift */; };
 		27A657CE1CBEF62D00A7A1D7 /* KeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657CD1CBEF62D00A7A1D7 /* KeyTests.swift */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A82D171BBB72DE005CB742 /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
-		27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27A924981D9B316D00086206 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.m */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		27A9249E1D9B316D00086206 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -225,7 +221,6 @@
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B6298A197ED63D00F7148E /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D941BC48E38005CB742 /* sqlite_glue.c */; };
 		27D74A671D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
 		27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
 		27D74A691D4C16C200D806E0 /* ForestDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A641D4C16C200D806E0 /* ForestDataFile.hh */; };
@@ -263,6 +258,9 @@
 		27E3DD381DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
 		27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
+		27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
+		27E3DD551DB80A9A00F2872D /* names_100.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD301DB43BAD00F2872D /* names_100.json */; };
+		27E3DD561DB80A9C00F2872D /* iTunesMusicLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */; };
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
@@ -357,7 +355,6 @@
 		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
-		27F7A1341D61F63800447BC6 /* libcppunit-1.13.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */; };
 		27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
 		27F7A1421D61F82000447BC6 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		27F7A1431D61F8B700447BC6 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
@@ -951,6 +948,7 @@
 		27E3DD301DB43BAD00F2872D /* names_100.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = names_100.json; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
+		27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = iTunesMusicLibrary.json; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
@@ -1103,6 +1101,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
+				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
 				27FA09C21D70AE45005888AA /* libsqlite3.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1112,7 +1111,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */,
-				27F7A1341D61F63800447BC6 /* libcppunit-1.13.0.dylib in Frameworks */,
 				2701C22C1C4DA4D2006D7A99 /* libLiteCore.dylib in Frameworks */,
 				2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */,
 				27F7A1421D61F82000447BC6 /* libsqlite3.tbd in Frameworks */,
@@ -1383,6 +1381,7 @@
 				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
 				27E3DD301DB43BAD00F2872D /* names_100.json */,
+				27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -1399,7 +1398,6 @@
 				27D74A721D4D3EC000D806E0 /* vendor */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
 				27A924951D9B316D00086206 /* LiteCore iOS */,
-				27A924AF1D9B316D00086206 /* LiteCore-iOS Tests */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
 			);
@@ -1742,6 +1740,7 @@
 				27A924A41D9B316D00086206 /* LaunchScreen.storyboard */,
 				27A924A71D9B316D00086206 /* Info.plist */,
 				27A924961D9B316D00086206 /* Supporting Files */,
+				27A924AF1D9B316D00086206 /* LiteCore-iOS Tests */,
 			);
 			name = "LiteCore iOS";
 			path = "LiteCore-iOS";
@@ -1761,7 +1760,7 @@
 				27A924B21D9B316D00086206 /* Info.plist */,
 			);
 			path = "LiteCore-iOS Tests";
-			sourceTree = "<group>";
+			sourceTree = SOURCE_ROOT;
 		};
 		27D74A5F1D4C063A00D806E0 /* Storage */ = {
 			isa = PBXGroup;
@@ -2476,6 +2475,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27E3DD551DB80A9A00F2872D /* names_100.json in Resources */,
+				27E3DD561DB80A9C00F2872D /* iTunesMusicLibrary.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2517,7 +2518,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2708FE581CF4CD3B0022F721 /* sqlite_glue.c in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				27FA099F1D6F811E005888AA /* CollatableTest.cc in Sources */,
@@ -2541,7 +2541,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27CD6C591BC5ADBD002C8A3C /* sqlite_glue.c in Sources */,
 				27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */,
 				27FA09D41D70EDBF005888AA /* Catch_Tests.mm in Sources */,
 				27FA099E1D6F811D005888AA /* CollatableTest.cc in Sources */,
@@ -2573,7 +2572,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
-				273E9F781C5165FA003115A6 /* sqlite_glue.c in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
 				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
 				273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */,
@@ -2668,7 +2666,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27A657C01CBC1A5500A7A1D7 /* sqlite_glue.c in Sources */,
 				27A657BC1CBC19FA00A7A1D7 /* Revision.swift in Sources */,
 				27A657B81CBC19FA00A7A1D7 /* Document.swift in Sources */,
 				27A657BB1CBC19FA00A7A1D7 /* Query.swift in Sources */,
@@ -2801,8 +2798,8 @@
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
-				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
+				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
@@ -2857,7 +2854,6 @@
 				72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */,
 				27D74A831D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
-				27A82D951BC48E38005CB742 /* sqlite_glue.c in Sources */,
 				27D74A7B1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				27D74A811D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				278963631D7A376900493096 /* EncryptedStream.cc in Sources */,

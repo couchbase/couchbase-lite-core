@@ -193,6 +193,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
 
 // Reads a file into memory.
 FLSliceResult C4Test::readFile(const char *path) {
+    INFO("Opening file " << path);
     FILE *fd = fopen(path, "r");
     REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);

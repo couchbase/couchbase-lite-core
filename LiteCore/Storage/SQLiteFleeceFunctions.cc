@@ -30,7 +30,7 @@ namespace litecore {
         if (!path.buf)
             return SQLITE_FORMAT;
         try {
-            *pValue = Path::eval(path, *pValue);    // can throw!
+            *pValue = Path::eval(path, nullptr, *pValue);    // can throw!
             return SQLITE_OK;
         } catch (const error &error) {
             WarnError("Invalid property path `%.*s` in query (err %d)",
