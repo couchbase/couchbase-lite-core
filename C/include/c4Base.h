@@ -56,6 +56,13 @@
 
 
 #ifdef __cplusplus
+#define C4API noexcept
+#else
+#define C4API
+#endif
+
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -184,14 +191,14 @@ const C4Slice kC4SliceNull = { NULL, 0 };
 #endif // C4_IMPL
 
 /** Returns true if two slices have equal contents. */
-bool c4SliceEqual(C4Slice a, C4Slice b);
+bool c4SliceEqual(C4Slice a, C4Slice b) C4API;
 
 /** Frees the memory of a heap-allocated slice by calling free(buf). */
-void c4slice_free(C4SliceResult);
+void c4slice_free(C4SliceResult) C4API;
 
 
 /** Returns an error message describing a C4Error. Remember to free the result. */
-C4SliceResult c4error_getMessage(C4Error error);
+C4SliceResult c4error_getMessage(C4Error error) C4API;
 
 /** Writes an error message describing a C4Error to a buffer, as a C string.
     It will not write past the end of the buffer; the message will be truncated if necessary.
@@ -199,7 +206,7 @@ C4SliceResult c4error_getMessage(C4Error error);
     @param buffer  Where to write the C string to
     @param bufferSize  The size of the buffer
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
-char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize);
+char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) C4API;
 
 
 /** Logging levels. */
@@ -218,14 +225,14 @@ typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
     Note that this setting is global to the entire process.
     @param level  The minimum level of message to log.
     @param callback  The logging callback, or NULL to disable logging entirely. */
-void c4log_register(C4LogLevel level, C4LogCallback callback);
+void c4log_register(C4LogLevel level, C4LogCallback callback) C4API;
 
 /** Changes the log level. */
-void c4log_setLevel(C4LogLevel level);
+void c4log_setLevel(C4LogLevel level) C4API;
 
 
 /** Returns the number of objects that have been created but not yet freed. */
-int c4_getObjectCount(void);
+int c4_getObjectCount(void) C4API;
 
 
 #ifdef __cplusplus

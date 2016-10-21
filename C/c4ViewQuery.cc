@@ -18,7 +18,7 @@
 #include "c4DBQuery.h"
 
 #include "c4ViewInternal.hh"
-#include "c4DatabaseInternal.hh"
+#include "Database.hh"
 #include "c4KeyInternal.hh"
 
 #include "DataFile.hh"
@@ -118,26 +118,26 @@ static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnu
 
 
 bool c4queryenum_next(C4QueryEnumerator *e,
-                      C4Error *outError)
+                      C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<bool>(outError, [&]{
         WITH_LOCK(asInternal(e));
         if (asInternal(e)->next())
             return true;
         clearError(outError);      // end of iteration is not an error
-    } catchError(outError);
-    return false;
+        return false;
+    });
 }
 
 
-void c4queryenum_close(C4QueryEnumerator *e) {
+void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     if (e) {
         WITH_LOCK(asInternal(e));
         asInternal(e)->close();
     }
 }
 
-void c4queryenum_free(C4QueryEnumerator *e) {
+void c4queryenum_free(C4QueryEnumerator *e) noexcept {
     c4queryenum_close(e);
     delete asInternal(e);
 }
@@ -205,9 +205,9 @@ private:
 
 C4QueryEnumerator* c4view_query(C4View *view,
                                 const C4QueryOptions *c4options,
-                                C4Error *outError)
+                                C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4QueryEnumerator*>(outError, [&]{
         WITH_LOCK(view);
         if (!c4options)
             c4options = &kC4DefaultQueryOptions;
@@ -232,8 +232,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
             }
             return new C4MapReduceEnumerator(view, keyRanges, options);
         }
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -282,17 +281,16 @@ C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
                                         C4Slice queryString,
                                         C4Slice queryStringLanguage,
                                         const C4QueryOptions *c4options,
-                                        C4Error *outError)
+                                        C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4QueryEnumerator*>(outError, [&]{
         WITH_LOCK(view);
         if (queryStringLanguage == kC4LanguageDefault)
             queryStringLanguage = Tokenizer::defaultStemmer;
         return new C4FullTextEnumerator(view, queryString, queryStringLanguage,
                                         (c4options ? c4options->rankFullText : true),
                                         convertOptions(c4options));
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -300,23 +298,21 @@ C4SliceResult c4view_fullTextMatched(C4View *view,
                                      C4Slice docID,
                                      C4SequenceNumber seq,
                                      unsigned fullTextID,
-                                     C4Error *outError)
+                                     C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4SliceResult>(outError, [&]{
         WITH_LOCK(view);
         auto result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
-        return {result.buf, result.size};
-    } catchError(outError);
-    return {nullptr, 0};
+        return C4SliceResult{result.buf, result.size};
+    });
 }
 
 
-C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) {
-    try {
+C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]{
         slice result = ((C4FullTextEnumerator*)e)->fullTextMatched().dontFree();
-        return {result.buf, result.size};
-    } catchExceptions();
-    return {nullptr, 0};
+        return C4SliceResult{result.buf, result.size};
+    });
 }
 
 
@@ -355,15 +351,14 @@ private:
 
 C4QueryEnumerator* c4view_geoQuery(C4View *view,
                                    C4GeoArea area,
-                                   C4Error *outError)
+                                   C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4QueryEnumerator*>(outError, [&]{
         WITH_LOCK(view);
         geohash::area ga(geohash::coord(area.ymin, area.xmin),
                          geohash::coord(area.ymax, area.xmax));
         return new C4GeoEnumerator(view, ga);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -372,7 +367,7 @@ C4QueryEnumerator* c4view_geoQuery(C4View *view,
 
 // This is the same as C4Query
 struct c4Query : InstanceCounted {
-    c4Query(C4Database *db, C4Slice queryExpression, C4Slice sortExpression)
+    c4Query(Database *db, C4Slice queryExpression, C4Slice sortExpression)
     :_database(db),
      _query(db->defaultKeyStore().compileQuery(queryExpression, sortExpression))
     {
@@ -381,11 +376,11 @@ struct c4Query : InstanceCounted {
             error::_throw(error::Unimplemented);
     }
 
-    C4Database* database() const    {return _database;}
+    Database* database() const    {return _database;}
     Query* query() const            {return _query.get();}
 
 private:
-    Retained<C4Database> _database;
+    Retained<Database> _database;
     unique_ptr<Query> _query;
 };
 
@@ -393,16 +388,15 @@ private:
 C4Query* c4query_new(C4Database *database,
                      C4Slice queryExpression,
                      C4Slice sortExpression,
-                     C4Error *outError)
+                     C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4Query*>(outError, [&]{
         return new c4Query(database, queryExpression, sortExpression);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
-void c4query_free(C4Query *query) {
+void c4query_free(C4Query *query) noexcept {
     delete query;
 }
 
@@ -438,9 +432,9 @@ private:
 C4QueryEnumerator* c4query_run(C4Query *query,
                                const C4QueryOptions *options,
                                C4Slice encodedParameters,
-                               C4Error *outError)
+                               C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4QueryEnumerator*>(outError, [&]{
         WITH_LOCK(query->database());
         QueryEnumerator::Options qeOpts;
         if (options) {
@@ -449,32 +443,27 @@ C4QueryEnumerator* c4query_run(C4Query *query,
         }
         qeOpts.paramBindings = encodedParameters;
         return new C4DBQueryEnumerator(query, &qeOpts);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
 bool c4db_createIndex(C4Database *database,
                       C4Slice expression,
-                      C4Error *outError)
+                      C4Error *outError) noexcept
 {
-    try {
+    return tryCatch(outError, [&]{
         WITH_LOCK(database);
         database->defaultKeyStore().createIndex((string)expression);
-        return true;
-    } catchError(outError);
-    return false;
+    });
 }
 
 
 bool c4db_deleteIndex(C4Database *database,
                       C4Slice expression,
-                      C4Error *outError)
+                      C4Error *outError) noexcept
 {
-    try {
+    return tryCatch(outError, [&]{
         WITH_LOCK(database);
         database->defaultKeyStore().deleteIndex((string)expression);
-        return true;
-    } catchError(outError);
-    return false;
+    });
 }

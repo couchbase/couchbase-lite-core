@@ -66,35 +66,35 @@ extern "C" {
         C4Document is returned, that doesn't yet exist in the database (but will be added when
         saved.)
         The current revision is selected (if the document exists.) */
-    C4Document* c4doc_get(struct c4Database *database,
+    C4Document* c4doc_get(C4Database *database,
                           C4Slice docID,
                           bool mustExist,
-                          C4Error *outError);
+                          C4Error *outError) C4API;
 
     /** Gets a document from the database given its sequence number. */
-    C4Document* c4doc_getBySequence(struct c4Database *database,
+    C4Document* c4doc_getBySequence(C4Database *database,
                                     C4SequenceNumber,
-                                    C4Error *outError);
+                                    C4Error *outError) C4API;
 
     /** Returns the document type (as set by setDocType.) This value is ignored by LiteCore itself;
         by convention Couchbase Lite sets it to the value of the current revision's "type" property,
         and uses it as an optimization when indexing a view. */
-    C4SliceResult c4doc_getType(C4Document *doc);
+    C4SliceResult c4doc_getType(C4Document *doc) C4API;
 
     /** Sets a document's docType. (By convention this is the value of the "type" property of the
         current revision's JSON; this value can be used as optimization when indexing a view.)
         The change will not be persisted until the document is saved. */
-    void c4doc_setType(C4Document *doc, C4Slice docType);
+    void c4doc_setType(C4Document *doc, C4Slice docType) C4API;
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given. */
     bool c4doc_save(C4Document *doc,
                     uint32_t maxRevTreeDepth,
-                    C4Error *outError);
+                    C4Error *outError) C4API;
 
     /** Frees a C4Document. */
-    void c4doc_free(C4Document *doc);
+    void c4doc_free(C4Document *doc) C4API;
 
     /** @} */
     
@@ -110,32 +110,32 @@ extern "C" {
     bool c4doc_selectRevision(C4Document* doc,
                               C4Slice revID,
                               bool withBody,
-                              C4Error *outError);
+                              C4Error *outError) C4API;
 
     /** Selects the current revision of a document.
         (This is the first revision, in the order they appear in the document.) */
-    bool c4doc_selectCurrentRevision(C4Document* doc);
+    bool c4doc_selectCurrentRevision(C4Document* doc) C4API;
 
     /** Populates the body field of a doc's selected revision,
         if it was initially loaded without its body. */
     bool c4doc_loadRevisionBody(C4Document* doc,
-                                C4Error *outError);
+                                C4Error *outError) C4API;
 
     /** Transfers ownership of the document's `selectedRev.body` to the caller, without copying.
         The C4Document's field is cleared, and the value returned from this function. As witt
         all C4SliceResult values, the caller is responsible for freeing it when finished. */
-    C4SliceResult c4doc_detachRevisionBody(C4Document* doc);
+    C4SliceResult c4doc_detachRevisionBody(C4Document* doc) C4API;
 
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
-    bool c4doc_hasRevisionBody(C4Document* doc);
+    bool c4doc_hasRevisionBody(C4Document* doc) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
-    bool c4doc_selectParentRevision(C4Document* doc);
+    bool c4doc_selectParentRevision(C4Document* doc) C4API;
 
     /** Selects the next revision in priority order.
         This can be used to iterate over all revisions, starting from the current revision. */
-    bool c4doc_selectNextRevision(C4Document* doc);
+    bool c4doc_selectNextRevision(C4Document* doc) C4API;
 
     /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
         To distinguish between the end of the iteration and a failure, check the value of
@@ -143,11 +143,11 @@ extern "C" {
     bool c4doc_selectNextLeafRevision(C4Document* doc,
                                       bool includeDeleted,
                                       bool withBody,
-                                      C4Error *outError);
+                                      C4Error *outError) C4API;
 
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
-    unsigned c4rev_getGeneration(C4Slice revID);
+    unsigned c4rev_getGeneration(C4Slice revID) C4API;
 
 
     /** Removes a branch from a document's history. The revID must correspond to a leaf
@@ -163,7 +163,7 @@ extern "C" {
         @return  The total number of revisions purged (including ancestors), or -1 on error. */
         int32_t c4doc_purgeRevision(C4Document *doc,
                                     C4Slice revID,
-                                    C4Error *outError);
+                                    C4Error *outError) C4API;
 
     /** @} */
 
@@ -176,7 +176,7 @@ extern "C" {
 
 
     /** Removes all trace of a document and its revisions from the database. */
-    bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError);
+    bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) C4API;
 
 
     /** Sets an expiration date on a document.  After this time the
@@ -191,10 +191,10 @@ extern "C" {
     bool c4doc_setExpiration(C4Database *db,
                              C4Slice docId,
                              uint64_t timestamp,
-                             C4Error *outError);
+                             C4Error *outError) C4API;
 
     /** Returns the expiration time of a document, if one has been set, else 0. */
-    uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId);
+    uint64_t c4doc_getExpiration(C4Database *db, C4Slice docId) C4API;
 
     /** @} */
 
@@ -233,18 +233,18 @@ extern "C" {
     C4Document* c4doc_put(C4Database *database,
                           const C4DocPutRequest *request,
                           size_t *outCommonAncestorIndex,
-                          C4Error *outError);
+                          C4Error *outError) C4API;
 
     /** Generates the revision ID for a new document revision.
         @param body  The (JSON) body of the revision, exactly as it'll be stored.
         @param parentRevID  The revID of the parent revision, or null if there's none.
         @param deletion  True if this revision is a deletion.
         @result  The new revID. Caller is responsible for freeing its buf. */
-    C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion);
+    C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deletion) C4API;
 
     /** Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that
         are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
-    void c4doc_generateOldStyleRevID(bool generateOldStyle);
+    void c4doc_generateOldStyleRevID(bool generateOldStyle) C4API;
 
     /** @} */
     /** @} */

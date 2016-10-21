@@ -41,10 +41,10 @@ extern "C" {
     typedef struct c4Key C4Key;
 
     /** Creates a new empty C4Key. */
-    C4Key* c4key_new(void);
+    C4Key* c4key_new(void) C4API;
 
     /** Creates a C4Key by copying the data, which must be in the C4Key binary format. */
-    C4Key* c4key_withBytes(C4Slice);
+    C4Key* c4key_withBytes(C4Slice) C4API;
 
     /** Creates a C4Key containing a string of text to be full-text-indexed by a view.
         @param text  The text to be indexed.
@@ -53,43 +53,43 @@ extern "C" {
                     stemming; or kC4LanguageDefault to fall back to the default language
                     (as set by c4key_setDefaultFullTextLanguage.)
         @return  A new C4Key representing this key. */
-    C4Key* c4key_newFullTextString(C4Slice text, C4Slice language);
+    C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) C4API;
 
     /** Creates a C4Key containing a 2D shape to be geo-indexed.
         Caller must provide a bounding box (which is what's actually used for searching.)
         @param geoJSON  GeoJSON describing the shape.
         @param boundingBox  A conservative bounding box of the shape.
         @return  A new C4Key for the shape. */
-    C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox);
+    C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox) C4API;
 
     /** Resets a C4Key to the empty state so it can be reused. */
-    void c4key_reset(C4Key*);
+    void c4key_reset(C4Key*) C4API;
 
     /** Frees a C4Key. */
-    void c4key_free(C4Key*);
+    void c4key_free(C4Key*) C4API;
 
-    void c4key_addNull(C4Key*);             ///< Adds a JSON null value to a C4Key. */
-    void c4key_addBool(C4Key*, bool);       ///< Adds a boolean value to a C4Key. */
-    void c4key_addNumber(C4Key*, double);   ///< Adds a number to a C4Key. */
-    void c4key_addString(C4Key*, C4Slice);  ///< Adds a UTF-8 string to a C4Key. */
+    void c4key_addNull(C4Key*) C4API;             ///< Adds a JSON null value to a C4Key. */
+    void c4key_addBool(C4Key*, bool) C4API;       ///< Adds a boolean value to a C4Key. */
+    void c4key_addNumber(C4Key*, double) C4API;   ///< Adds a number to a C4Key. */
+    void c4key_addString(C4Key*, C4Slice) C4API;  ///< Adds a UTF-8 string to a C4Key. */
 
     /** Adds an array to a C4Key.
         Subsequent values added will go into the array, until c4key_endArray is called. */
-    void c4key_beginArray(C4Key*);
+    void c4key_beginArray(C4Key*) C4API;
 
     /** Closes an array opened by c4key_beginArray. (Every array must be closed.) */
-    void c4key_endArray(C4Key*);
+    void c4key_endArray(C4Key*) C4API;
 
     /** Adds a map/dictionary/object to a C4Key.
         Subsequent keys and values added will go into the map, until c4key_endMap is called. */
-    void c4key_beginMap(C4Key*);
+    void c4key_beginMap(C4Key*) C4API;
 
     /** Closes a map opened by c4key_beginMap. (Every map must be closed.) */
-    void c4key_endMap(C4Key*);
+    void c4key_endMap(C4Key*) C4API;
 
     /** Adds a map key, before the next value. When adding to a map, every value must be
         preceded by a key. */
-    void c4key_addMapKey(C4Key*, C4Slice);
+    void c4key_addMapKey(C4Key*, C4Slice) C4API;
 
 
     /** Sets the process-wide default (human) language for full-text keys. This affects how
@@ -98,7 +98,7 @@ extern "C" {
         @param stripDiacriticals  True if accents and other diacriticals should be stripped from
                                   letters. Appropriate for English but not for most other languages.
         @return  True if the languageName was recognized, false if not. */
-    bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals);
+    bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) C4API;
 
     /** @} */
 
@@ -133,30 +133,30 @@ extern "C" {
 
     /** Returns a C4KeyReader that can parse the contents of a C4Key.
         Warning: Adding to the C4Key will invalidate the reader. */
-    C4KeyReader c4key_read(const C4Key *key);
+    C4KeyReader c4key_read(const C4Key *key) C4API;
 
     /** Same as c4key_read, but allocates the C4KeyReader on the heap.
         (Used by the Java binding.) */
-    C4KeyReader* c4key_newReader(const C4Key *key);
+    C4KeyReader* c4key_newReader(const C4Key *key) C4API;
 
     /** Frees a C4KeyReader allocated by c4key_newReader. */
-    void c4key_freeReader(C4KeyReader*);
+    void c4key_freeReader(C4KeyReader*) C4API;
 
     /** Returns the type of the next item in the key, or kC4Error at the end of the key or if the
         data is corrupt.
         To move on to the next item, you must call skipToken or one of the read___ functions. */
-    C4KeyToken c4key_peek(const C4KeyReader*);
+    C4KeyToken c4key_peek(const C4KeyReader*) C4API;
 
     /** Skips the current token in the key. If it was kC4Array or kC4Map, the reader will
         now be positioned at the first item of the collection. */
-    void c4key_skipToken(C4KeyReader*);
+    void c4key_skipToken(C4KeyReader*) C4API;
 
-    bool c4key_readBool(C4KeyReader*);              ///< Reads a boolean value.
-    double c4key_readNumber(C4KeyReader*);          ///< Reads a numeric value.
-    C4SliceResult c4key_readString(C4KeyReader*);   ///< Reads a string (remember to free it!)
+    bool c4key_readBool(C4KeyReader*) C4API;              ///< Reads a boolean value.
+    double c4key_readNumber(C4KeyReader*) C4API;          ///< Reads a numeric value.
+    C4SliceResult c4key_readString(C4KeyReader*) C4API;   ///< Reads a string (remember to free it!)
 
     /** Converts a C4KeyReader to JSON. Remember to free the result. */
-    C4SliceResult c4key_toJSON(const C4KeyReader*);
+    C4SliceResult c4key_toJSON(const C4KeyReader*) C4API;
 
     /** @} */
 
@@ -172,16 +172,16 @@ extern "C" {
     typedef struct c4KeyValueList C4KeyValueList;
 
     /** Creates a new empty list. */
-    C4KeyValueList* c4kv_new(void);
+    C4KeyValueList* c4kv_new(void) C4API;
 
     /** Adds a key/value pair to a list. The key and value are copied. */
-    void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value);
+    void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) C4API;
 
     /** Removes all keys and values from a list. */
-    void c4kv_reset(C4KeyValueList *kv);
+    void c4kv_reset(C4KeyValueList *kv) C4API;
 
     /** Frees all storage used by a list (including its copied keys and values.) */
-    void c4kv_free(C4KeyValueList *kv);
+    void c4kv_free(C4KeyValueList *kv) C4API;
 
     /* @} */
     /* @} */

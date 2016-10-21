@@ -1,5 +1,5 @@
 //
-//  c4TreeDocument.cc
+//  TreeDocument.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/19/16.
@@ -13,13 +13,11 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Internal.hh"
-#include "c4Document.h"
+#include "Document.hh"
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "c4DatabaseInternal.hh"
-#include "c4DocInternal.hh"
+#include "Record.hh"
 #include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -28,15 +26,15 @@
 #include <algorithm>
 
 
-static const uint32_t kDefaultMaxRevTreeDepth = 20;
-
-
 namespace c4Internal {
 
-    class C4TreeDocument : public C4DocumentInternal {
+    static const uint32_t kDefaultMaxRevTreeDepth = 20;
+
+
+    class TreeDocument : public Document {
     public:
-        C4TreeDocument(C4Database* database, C4Slice docID)
-        :C4DocumentInternal(database, docID),
+        TreeDocument(Database* database, C4Slice docID)
+        :Document(database, docID),
          _versionedDoc(database->defaultKeyStore(), docID),
          _selectedRev(nullptr)
         {
@@ -44,8 +42,8 @@ namespace c4Internal {
         }
 
 
-        C4TreeDocument(C4Database *database, const Record &doc)
-        :C4DocumentInternal(database, move(doc)),
+        TreeDocument(Database *database, const Record &doc)
+        :Document(database, move(doc)),
          _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(nullptr)
         {
@@ -156,7 +154,7 @@ namespace c4Internal {
                 return true;
             } else {
                 _selectedRev = nullptr;
-                C4DocumentInternal::selectCurrentRevision();
+                Document::selectCurrentRevision();
                 return false;
             }
         }
@@ -228,23 +226,25 @@ namespace c4Internal {
         public:
             VersionedDocument _versionedDoc;
             const Rev *_selectedRev;
-
     };
 
 
-    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(C4Slice docID) {
-        return new C4TreeDocument(this, docID);
+#pragma mark - FACTORY:
+
+
+    Document* TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
+        return new TreeDocument(database(), docID);
     }
 
-    C4DocumentInternal* c4DatabaseV1::newDocumentInstance(const Record &doc) {
-        return new C4TreeDocument(this, doc);
+    Document* TreeDocumentFactory::newDocumentInstance(const Record &doc) {
+        return new TreeDocument(database(), doc);
     }
 
 
-    bool c4DatabaseV1::readDocMeta(const Record &doc,
-                                   C4DocumentFlags *outFlags,
-                                   alloc_slice *outRevID,
-                                   slice *outDocType)
+    bool TreeDocumentFactory::readDocMeta(const Record &doc,
+                                          C4DocumentFlags *outFlags,
+                                          alloc_slice *outRevID,
+                                          slice *outDocType)
     {
         VersionedDocument::Flags vdocFlags;
         revidBuffer packedRevID;
@@ -267,108 +267,109 @@ namespace c4Internal {
             *outDocType = docType;
         return true;
     }
-}
 
 
 #pragma mark - INSERTING REVISIONS
 
 
-int32_t C4TreeDocument::putExistingRevision(const C4DocPutRequest &rq) {
-    Assert(rq.historyCount >= 1);
-    int32_t commonAncestor = -1;
-    loadRevisions();
-    vector<revidBuffer> revIDBuffers(rq.historyCount);
-    for (size_t i = 0; i < rq.historyCount; i++)
-        revIDBuffers[i].parse(rq.history[i]);
-    commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
-                                                 rq.body,
-                                                 rq.deletion,
-                                                 rq.hasAttachments);
-    if (commonAncestor < 0)
-        error::_throw(error::InvalidParameter); // must be invalid revision IDs
-    updateMeta();
-    selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
-    if (rq.save)
-        save(rq.maxRevTreeDepth);
-    return commonAncestor;
-}
-
-
-static bool sGenerateOldStyleRevIDs = false;
-
-
-static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-#if SECURE_DIGEST_AVAILABLE
-    uint8_t digestBuf[20];
-    slice digest;
-    if (sGenerateOldStyleRevIDs) {
-        // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
-        md5Context ctx;
-        md5_begin(&ctx);
-        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-        if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
-            md5_add(&ctx, &revLen, 1);
-        md5_add(&ctx, parentRevID.buf, revLen);
-        uint8_t delByte = deleted;
-        md5_add(&ctx, &delByte, 1);
-        md5_add(&ctx, body.buf, body.size);
-        md5_end(&ctx, digestBuf);
-        digest = slice(digestBuf, 16);
-    } else {
-        // SHA-1 digest:
-        sha1Context ctx;
-        sha1_begin(&ctx);
-        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-        sha1_add(&ctx, &revLen, 1);
-        sha1_add(&ctx, parentRevID.buf, revLen);
-        uint8_t delByte = deleted;
-        sha1_add(&ctx, &delByte, 1);
-        sha1_add(&ctx, body.buf, body.size);
-        sha1_end(&ctx, digestBuf);
-        digest = slice(digestBuf, 20);
-    }
-
-    // Derive new rev's generation #:
-    unsigned generation = 1;
-    if (parentRevID.buf) {
-        revidBuffer parentID(parentRevID);
-        generation = parentID.generation() + 1;
-    }
-    return revidBuffer(generation, digest, kDigestType);
-#else
-    error::_throw(error::Unimplemented);
-#endif
-}
-
-
-bool C4TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
-    revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, rq.deletion);
-    int httpStatus;
-    auto newRev = _versionedDoc.insert(encodedRevID,
-                                       rq.body,
-                                       rq.deletion,
-                                       rq.hasAttachments,
-                                       _selectedRev,
-                                       rq.allowConflict,
-                                       httpStatus);
-    if (newRev) {
-        // Success:
+    int32_t TreeDocument::putExistingRevision(const C4DocPutRequest &rq) {
+        Assert(rq.historyCount >= 1);
+        int32_t commonAncestor = -1;
+        loadRevisions();
+        vector<revidBuffer> revIDBuffers(rq.historyCount);
+        for (size_t i = 0; i < rq.historyCount; i++)
+            revIDBuffers[i].parse(rq.history[i]);
+        commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
+                                                     rq.body,
+                                                     rq.deletion,
+                                                     rq.hasAttachments);
+        if (commonAncestor < 0)
+            error::_throw(error::InvalidParameter); // must be invalid revision IDs
         updateMeta();
-        newRev = _versionedDoc.get(encodedRevID);
-        selectRevision(newRev);
+        selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
         if (rq.save)
             save(rq.maxRevTreeDepth);
-        return true;
-    } else if (httpStatus == 200) {
-        // Revision already exists, so nothing was added. Not an error.
-        selectRevision(encodedRevID.expanded(), true);
-    } else if (httpStatus == 400) {
-        error::_throw(error::InvalidParameter);
-    } else if (httpStatus == 409) {
-        error::_throw(error::Conflict);
+        return commonAncestor;
     }
-    return false;
-}
+
+
+    static bool sGenerateOldStyleRevIDs = false;
+
+
+    static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+    #if SECURE_DIGEST_AVAILABLE
+        uint8_t digestBuf[20];
+        slice digest;
+        if (sGenerateOldStyleRevIDs) {
+            // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
+            md5Context ctx;
+            md5_begin(&ctx);
+            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
+            if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
+                md5_add(&ctx, &revLen, 1);
+            md5_add(&ctx, parentRevID.buf, revLen);
+            uint8_t delByte = deleted;
+            md5_add(&ctx, &delByte, 1);
+            md5_add(&ctx, body.buf, body.size);
+            md5_end(&ctx, digestBuf);
+            digest = slice(digestBuf, 16);
+        } else {
+            // SHA-1 digest:
+            sha1Context ctx;
+            sha1_begin(&ctx);
+            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
+            sha1_add(&ctx, &revLen, 1);
+            sha1_add(&ctx, parentRevID.buf, revLen);
+            uint8_t delByte = deleted;
+            sha1_add(&ctx, &delByte, 1);
+            sha1_add(&ctx, body.buf, body.size);
+            sha1_end(&ctx, digestBuf);
+            digest = slice(digestBuf, 20);
+        }
+
+        // Derive new rev's generation #:
+        unsigned generation = 1;
+        if (parentRevID.buf) {
+            revidBuffer parentID(parentRevID);
+            generation = parentID.generation() + 1;
+        }
+        return revidBuffer(generation, digest, kDigestType);
+    #else
+        error::_throw(error::Unimplemented);
+    #endif
+    }
+
+
+    bool TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
+        revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, rq.deletion);
+        int httpStatus;
+        auto newRev = _versionedDoc.insert(encodedRevID,
+                                           rq.body,
+                                           rq.deletion,
+                                           rq.hasAttachments,
+                                           _selectedRev,
+                                           rq.allowConflict,
+                                           httpStatus);
+        if (newRev) {
+            // Success:
+            updateMeta();
+            newRev = _versionedDoc.get(encodedRevID);
+            selectRevision(newRev);
+            if (rq.save)
+                save(rq.maxRevTreeDepth);
+            return true;
+        } else if (httpStatus == 200) {
+            // Revision already exists, so nothing was added. Not an error.
+            selectRevision(encodedRevID.expanded(), true);
+        } else if (httpStatus == 400) {
+            error::_throw(error::InvalidParameter);
+        } else if (httpStatus == 409) {
+            error::_throw(error::Conflict);
+        }
+        return false;
+    }
+
+} // end namespace c4Internal
 
 
 #pragma mark - DEPRECATED API:
@@ -376,7 +377,7 @@ bool C4TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
 
 bool c4doc_save(C4Document *doc,
                 uint32_t maxRevTreeDepth,
-                C4Error *outError)
+                C4Error *outError) noexcept
 {
     auto idoc = internal(doc);
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
@@ -384,25 +385,25 @@ bool c4doc_save(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
-        ((C4TreeDocument*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
+        ((TreeDocument*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
         return true;
     } catchError(outError)
     return false;
 }
 
 
-C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) noexcept {
     slice result = generateDocRevID(body, parentRevID, deleted).expanded().dontFree();
     return {result.buf, result.size};
 }
 
-unsigned c4rev_getGeneration(C4Slice revID) {
+unsigned c4rev_getGeneration(C4Slice revID) noexcept {
     try {
         return revidBuffer(revID).generation();
     }catchExceptions()
     return 0;
 }
 
-void c4doc_generateOldStyleRevID(bool generateOldStyle) {
+void c4doc_generateOldStyleRevID(bool generateOldStyle) noexcept {
     sGenerateOldStyleRevIDs = generateOldStyle;
 }

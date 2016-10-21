@@ -16,8 +16,8 @@
 #include "c4Internal.hh"
 #include "c4DocEnumerator.h"
 
-#include "c4DatabaseInternal.hh"
-#include "c4DocInternal.hh"
+#include "Database.hh"
+#include "Document.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
@@ -79,7 +79,7 @@ struct C4DocEnumerator: InstanceCounted {
 
     void setFilter(const EnumFilter &f)  {_filter = f;}
 
-    C4Database* database() const {return _database;}
+    C4Database* database() const {return external(_database);}
 
     bool next() {
         do {
@@ -90,7 +90,7 @@ struct C4DocEnumerator: InstanceCounted {
     }
 
     C4Document* getDoc() {
-        return _e ? _database->newDocumentInstance(_e.record()) : nullptr;
+        return _e ? _database->documentFactory().newDocumentInstance(_e.record()) : nullptr;
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
@@ -114,7 +114,7 @@ private:
         }
         C4DocumentFlags flags;
         slice docType;
-        if (!_database->readDocMeta(_e.record(), &flags, &_docRevID, &docType))
+        if (!_database->documentFactory().readDocMeta(_e.record(), &flags, &_docRevID, &docType))
             return false;
         _docFlags = flags | kExists;
         auto optFlags = _options.flags;
@@ -123,7 +123,7 @@ private:
             && (!_filter || _filter(_e.record(), _docFlags, docType));
     }
 
-    Retained<C4Database> _database;
+    Retained<Database> _database;
     RecordEnumerator _e;
     C4EnumeratorOptions _options;
     EnumFilter _filter;
@@ -133,12 +133,12 @@ private:
 };
 
 
-void c4enum_close(C4DocEnumerator *e) {
+void c4enum_close(C4DocEnumerator *e) noexcept {
     if (e)
         e->close();
 }
 
-void c4enum_free(C4DocEnumerator *e) {
+void c4enum_free(C4DocEnumerator *e) noexcept {
     delete e;
 }
 
@@ -146,14 +146,13 @@ void c4enum_free(C4DocEnumerator *e) {
 C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4SequenceNumber since,
                                        const C4EnumeratorOptions *c4options,
-                                       C4Error *outError)
+                                       C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4DocEnumerator*>(outError, [&]{
         WITH_LOCK(database);
         return new C4DocEnumerator(database, since+1, UINT64_MAX,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -161,14 +160,13 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Slice startDocID,
                                        C4Slice endDocID,
                                        const C4EnumeratorOptions *c4options,
-                                       C4Error *outError)
+                                       C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4DocEnumerator*>(outError, [&]{
         WITH_LOCK(database);
         return new C4DocEnumerator(database, startDocID, endDocID,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -176,17 +174,16 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                         const C4Slice docIDs[],
                                         size_t docIDsCount,
                                         const C4EnumeratorOptions *c4options,
-                                        C4Error *outError)
+                                        C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4DocEnumerator*>(outError, [&]{
         vector<string> docIDStrings;
         for (size_t i = 0; i < docIDsCount; ++i)
             docIDStrings.push_back((string)docIDs[i]);
         WITH_LOCK(database);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
@@ -196,31 +193,31 @@ namespace c4Internal {
     }
 }
 
-bool c4enum_next(C4DocEnumerator *e, C4Error *outError) {
-    try {
+bool c4enum_next(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return tryCatch<bool>(outError, [&]{
         if (e->next())
             return true;
         clearError(outError);      // end of iteration is not an error
-    } catchError(outError)
-    return false;
+        return false;
+    });
 }
 
 
-bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo) {
+bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo) noexcept {
     return e->getDocInfo(outInfo);
 }
 
 
-C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) {
-    try {
+C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return tryCatch<C4Document*>(outError, [&]{
         auto c4doc = e->getDoc();
         if (!c4doc)
             clearError(outError);      // end of iteration is not an error
         return c4doc;
-    } catchError(outError)
+    });
     return nullptr;
 }
 
-C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) {
+C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
 }

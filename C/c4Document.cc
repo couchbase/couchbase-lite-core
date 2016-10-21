@@ -15,65 +15,61 @@
 
 #define NOMINMAX
 #include "c4Internal.hh"
-#include "c4DatabaseInternal.hh"
+#include "Database.hh"
 #include "c4Document.h"
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "c4DocInternal.hh"
+#include "Document.hh"
 #include "SecureRandomize.hh"
 
 
-void c4doc_free(C4Document *doc) {
-    delete (C4DocumentInternal*)doc;
+void c4doc_free(C4Document *doc) noexcept {
+    delete (Document*)doc;
 }
 
 
 C4Document* c4doc_get(C4Database *database,
                       C4Slice docID,
                       bool mustExist,
-                      C4Error *outError)
+                      C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4Document*>(outError, [&]{
         WITH_LOCK(database);
-        auto doc = database->newDocumentInstance(docID);
+        auto doc = database->documentFactory().newDocumentInstance(docID);
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
-        
-        
         return doc;
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
 C4Document* c4doc_getBySequence(C4Database *database,
                                 C4SequenceNumber sequence,
-                                C4Error *outError)
+                                C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<C4Document*>(outError, [&]{
         WITH_LOCK(database);
-        auto doc = database->newDocumentInstance(database->defaultKeyStore().get(sequence));
+        auto doc = database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
         if (!internal(doc)->exists()) {
             delete doc;
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
         return doc;
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
-C4SliceResult c4doc_getType(C4Document *doc) {
+C4SliceResult c4doc_getType(C4Document *doc) noexcept {
     slice result = internal(doc)->type().copy();
     return {result.buf, result.size};
 }
 
-void c4doc_setType(C4Document *doc, C4Slice docType) {
+void c4doc_setType(C4Document *doc, C4Slice docType) noexcept {
     return internal(doc)->setType(docType);
 }
 
@@ -84,75 +80,69 @@ void c4doc_setType(C4Document *doc, C4Slice docType) {
 bool c4doc_selectRevision(C4Document* doc,
                           C4Slice revID,
                           bool withBody,
-                          C4Error *outError)
+                          C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<bool>(outError, [&]{
         if (internal(doc)->selectRevision(revID, withBody))
             return true;
         recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-    } catchError(outError);
-    return false;
+        return false;
+    });
 }
 
 
-bool c4doc_selectCurrentRevision(C4Document* doc)
+bool c4doc_selectCurrentRevision(C4Document* doc) noexcept
 {
     return internal(doc)->selectCurrentRevision();
 }
 
 
-C4SliceResult c4doc_detachRevisionBody(C4Document* doc) {
+C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
     alloc_slice result = internal(doc)->detachSelectedRevBody();
     result.dontFree();
     return {result.buf, result.size};
 }
 
 
-bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) {
-    try {
+bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
+    return tryCatch<bool>(outError, [&]{
         if (internal(doc)->loadSelectedRevBodyIfAvailable())
             return true;
         recordError(LiteCoreDomain, kC4ErrorDeleted, outError);
-    } catchError(outError);
-    return false;
+        return false;
+    });
 }
 
 
-bool c4doc_hasRevisionBody(C4Document* doc) {
-    try {
-        return internal(doc)->hasRevisionBody();
-    } catchExceptions();
-    return false;
+bool c4doc_hasRevisionBody(C4Document* doc) noexcept {
+    return tryCatch<bool>(nullptr, bind(&Document::hasRevisionBody, internal(doc)));
 }
 
 
-bool c4doc_selectParentRevision(C4Document* doc) {
+bool c4doc_selectParentRevision(C4Document* doc) noexcept {
     return internal(doc)->selectParentRevision();
 }
 
 
-bool c4doc_selectNextRevision(C4Document* doc) {
-    try {
-        return internal(doc)->selectNextRevision();
-    } catchExceptions();
-    return false;
+bool c4doc_selectNextRevision(C4Document* doc) noexcept {
+    return tryCatch<bool>(nullptr, bind(&Document::selectNextRevision, internal(doc)));
 }
 
 
 bool c4doc_selectNextLeafRevision(C4Document* doc,
                                   bool includeDeleted,
                                   bool withBody,
-                                  C4Error *outError)
+                                  C4Error *outError) noexcept
 {
-    try {
+    return tryCatch<bool>(outError, [&]{
         if (internal(doc)->selectNextLeafRevision(includeDeleted)) {
             if (withBody)
                 internal(doc)->loadSelectedRevBody();
             return true;
         }
         clearError(outError); // normal failure
-    } catchError(outError);
-    return false;
+        return false;
+    });
 }
 
 
@@ -186,11 +176,11 @@ C4Document* c4doc_getForPut(C4Database *database,
                             C4Slice parentRevID,
                             bool deleting,
                             bool allowConflict,
-                            C4Error *outError)
+                            C4Error *outError) noexcept
 {
     if (!database->mustBeInTransaction(outError))
         return nullptr;
-    C4DocumentInternal *idoc = nullptr;
+    Document *idoc = nullptr;
     try {
         alloc_slice newDocID;
         bool isNewDoc = (!docID.buf);
@@ -199,7 +189,7 @@ C4Document* c4doc_getForPut(C4Database *database,
             docID = newDocID;
         }
 
-        idoc = internal(database->newDocumentInstance(docID));
+        idoc = internal(database->documentFactory().newDocumentInstance(docID));
         int code = 0;
 
         if (parentRevID.buf) {
@@ -235,7 +225,7 @@ C4Document* c4doc_getForPut(C4Database *database,
 C4Document* c4doc_put(C4Database *database,
                       const C4DocPutRequest *rq,
                       size_t *outCommonAncestorIndex,
-                      C4Error *outError)
+                      C4Error *outError) noexcept
 {
     if (!database->mustBeInTransaction(outError))
         return nullptr;
@@ -278,7 +268,7 @@ C4Document* c4doc_put(C4Database *database,
 
 int32_t c4doc_purgeRevision(C4Document *doc,
                             C4Slice revID,
-                            C4Error *outError)
+                            C4Error *outError) noexcept
 {
     auto idoc = internal(doc);
     if (!idoc->mustBeInTransaction(outError))

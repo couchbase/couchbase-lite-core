@@ -44,10 +44,10 @@ extern "C" {
     C4Query* c4query_new(C4Database *database,
                          C4Slice queryExpression,
                          C4Slice sortExpression,
-                         C4Error *error);
+                         C4Error *error) C4API;
 
     /** Frees a query.  It is legal to pass NULL. */
-    void c4query_free(C4Query*);
+    void c4query_free(C4Query*) C4API;
 
     /** Runs a compiled query.
         NOTE: Queries will run much faster if the appropriate properties are indexed.
@@ -62,7 +62,7 @@ extern "C" {
     C4QueryEnumerator* c4query_run(C4Query *query,
                                    const C4QueryOptions *options,
                                    C4Slice encodedParameters,
-                                   C4Error *outError);
+                                   C4Error *outError) C4API;
 
     /** @} */
 
@@ -82,7 +82,7 @@ extern "C" {
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database,
                           C4Slice expression,
-                          C4Error *outError);
+                          C4Error *outError) C4API;
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.
@@ -91,7 +91,7 @@ extern "C" {
         @return  True on success, false on failure. */
     bool c4db_deleteIndex(C4Database *database,
                           C4Slice expression,
-                          C4Error *outError);
+                          C4Error *outError) C4API;
 
     /** @} */
 

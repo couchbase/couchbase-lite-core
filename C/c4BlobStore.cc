@@ -28,7 +28,7 @@ static BlobWriteStream* internal(C4WriteStream* s)          {return (BlobWriteSt
 static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStream*)s;}
 
 
-bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) {
+bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
     try {
         blobKey key(string((char*)str.buf, str.size));
         *outKey = external(key);
@@ -38,7 +38,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) {
 }
 
 
-C4SliceResult c4blob_keyToString(C4BlobKey key) {
+C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
     string str = internal(key).base64String();
     return stringResult(str.c_str());
 }
@@ -48,7 +48,7 @@ C4SliceResult c4blob_keyToString(C4BlobKey key) {
 C4BlobStore* c4blob_openStore(C4Slice dirPath,
                               C4DatabaseFlags flags,
                               const C4EncryptionKey *key,
-                              C4Error* outError)
+                              C4Error* outError) noexcept
 {
     try {
         BlobStore::Options options = {};
@@ -64,12 +64,12 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
 }
 
 
-void c4blob_freeStore(C4BlobStore *store) {
+void c4blob_freeStore(C4BlobStore *store) noexcept {
     delete store;
 }
 
 
-bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) {
+bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
     try {
         store->deleteStore();
         delete store;
@@ -79,7 +79,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) {
 }
 
 
-int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) {
+int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
     try {
         return store->get(internal(key)).contentLength();
     } catchExceptions()
@@ -87,7 +87,7 @@ int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) {
 }
 
 
-C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
+C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
         alloc_slice contents = store->get(internal(key)).contents();
         contents.dontFree();
@@ -97,7 +97,7 @@ C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* out
 }
 
 
-bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey *outKey, C4Error* outError) {
+bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey *outKey, C4Error* outError) noexcept {
     try {
         Blob blob = store->put(contents);
         if (outKey)
@@ -108,7 +108,7 @@ bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey *outKey, C4Er
 }
 
 
-bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
+bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
         store->get(internal(key)).del();
         return true;
@@ -120,7 +120,7 @@ bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
 #pragma mark - STREAMING READS:
 
 
-C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) {
+C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
         unique_ptr<SeekableReadStream> stream = store->get(internal(key)).read();
         return external(stream.release());
@@ -129,7 +129,7 @@ C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* 
 }
 
 
-size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Error* outError) {
+size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Error* outError) noexcept {
     try {
         clearError(outError);
         return internal(stream)->read(buffer, maxBytes);
@@ -138,7 +138,7 @@ size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Erro
 }
 
 
-int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) {
+int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
     try {
         return internal(stream)->getLength();
     } catchError(outError)
@@ -146,7 +146,7 @@ int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) {
 }
 
 
-bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) {
+bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) noexcept {
     try {
         internal(stream)->seek(position);
         return true;
@@ -155,7 +155,7 @@ bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) {
 }
 
 
-void c4stream_close(C4ReadStream* stream) {
+void c4stream_close(C4ReadStream* stream) noexcept {
     delete internal(stream);
 }
 
@@ -163,7 +163,7 @@ void c4stream_close(C4ReadStream* stream) {
 #pragma mark - STREAMING WRITES:
 
 
-C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) {
+C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) noexcept {
     try {
         return external(new BlobWriteStream(*store));
     } catchError(outError)
@@ -171,7 +171,7 @@ C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) {
 }
 
 
-bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4Error* outError) {
+bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4Error* outError) noexcept {
     try {
         internal(stream)->write(slice(bytes, length));
         return true;
@@ -180,12 +180,12 @@ bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4E
 }
 
 
-C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) {
+C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) noexcept {
     return external( internal(stream)->computeKey() );
 }
 
 
-bool c4stream_install(C4WriteStream* stream, C4Error *outError) {
+bool c4stream_install(C4WriteStream* stream, C4Error *outError) noexcept {
     try {
         internal(stream)->install();
         return true;
@@ -194,7 +194,7 @@ bool c4stream_install(C4WriteStream* stream, C4Error *outError) {
 }
 
 
-void c4stream_closeWriter(C4WriteStream* stream) {
+void c4stream_closeWriter(C4WriteStream* stream) noexcept {
     if (!stream)
         return;
     try {

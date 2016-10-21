@@ -48,33 +48,33 @@ extern "C" {
                         C4Slice viewName,
                         C4Slice version,
                         const C4DatabaseConfig *config,
-                        C4Error *outError);
+                        C4Error *outError) C4API;
 
     /** Frees a view handle, closing it if necessary. */
-    void c4view_free(C4View* view);
+    void c4view_free(C4View* view) C4API;
 
     /** Closes the view. Does not free the handle, but calls to it will return errors. */
-    bool c4view_close(C4View* view, C4Error*);
+    bool c4view_close(C4View* view, C4Error*) C4API;
 
     /** Changes a view's encryption key (removing encryption if it's NULL.) */
     bool c4view_rekey(C4View*,
                       const C4EncryptionKey *newKey,
-                      C4Error *outError);
+                      C4Error *outError) C4API;
 
     /** Erases the view index, but doesn't delete the database file. */
-    bool c4view_eraseIndex(C4View*, C4Error *outError);
+    bool c4view_eraseIndex(C4View*, C4Error *outError) C4API;
 
     /** Deletes the view's file(s) and closes/frees the C4View. */
-    bool c4view_delete(C4View*, C4Error *outError);
+    bool c4view_delete(C4View*, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the view at the given path.
         All C4Views at that path should be closed first. */
-    bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError);
+    bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
 
     /** Deletes the file(s) for a view given its name and parent database.
         Its path is assumed to be the same default path as used by c4view_open when no explicit
         path is given. */
-    bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError);
+    bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError) C4API;
 
     /** @} */
 
@@ -88,26 +88,26 @@ extern "C" {
 
     /** Sets the persistent version string associated with the map function. If the new value is
         different from the one previously stored, the index is invalidated. */
-    void c4view_setMapVersion(C4View *view, C4Slice version);
+    void c4view_setMapVersion(C4View *view, C4Slice version) C4API;
 
     /** Returns the total number of rows in the view index. */
-    uint64_t c4view_getTotalRows(C4View*);
+    uint64_t c4view_getTotalRows(C4View*) C4API;
 
     /** Returns the last database sequence number that's been indexed.
         If this is less than the database's lastSequence, the view index is out of date. */
-    C4SequenceNumber c4view_getLastSequenceIndexed(C4View*);
+    C4SequenceNumber c4view_getLastSequenceIndexed(C4View*) C4API;
 
     /** Returns the last database sequence number that changed the view index. */
-    C4SequenceNumber c4view_getLastSequenceChangedAt(C4View*);
+    C4SequenceNumber c4view_getLastSequenceChangedAt(C4View*) C4API;
 
 
     /** Sets a documentType filter on the view. If non-null, only documents whose
         documentType matches will be indexed by this view. */
-    void c4view_setDocumentType(C4View*, C4Slice docType);
+    void c4view_setDocumentType(C4View*, C4Slice docType) C4API;
 
     /** Registers a callback to be invoked when the view's index db starts or finishes compacting.
         May be called on a background thread, so be careful of thread safety. */
-    void c4view_setOnCompactCallback(C4View*, C4OnCompactCallback, void *context);
+    void c4view_setOnCompactCallback(C4View*, C4OnCompactCallback, void *context) C4API;
 
     /** @} */
 
@@ -131,17 +131,17 @@ extern "C" {
     C4Indexer* c4indexer_begin(C4Database *db,
                                C4View *views[],
                                size_t viewCount,
-                               C4Error *outError);
+                               C4Error *outError) C4API;
 
     /** Instructs the indexer not to do any indexing if the given view is up-to-date.
         Typically this is used when the indexing occurs because this view is being queried. */
-    void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view);
+    void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) C4API;
 
     /** Creates an enumerator that will return all the documents that need to be (re)indexed.
         Returns NULL if no indexing is needed; you can distinguish this from an error by looking
         at the C4Error. */
     struct C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer,
-                                                         C4Error *outError);
+                                                         C4Error *outError) C4API;
 
     /** Returns true if a view being indexed should index the given document.
         (This checks whether the document's current revision's sequence is greater than
@@ -152,7 +152,7 @@ extern "C" {
         If this function returns false, the caller should skip to the next view.*/
     bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                        unsigned viewNumber,
-                                       C4Document *doc);
+                                       C4Document *doc) C4API;
 
     /** Adds index rows for the keys/values derived from one document, for one view.
         This function needs to be called *exactly once* for each (document, view) pair during
@@ -176,14 +176,14 @@ extern "C" {
                         unsigned emitCount,
                         C4Key* const emittedKeys[],
                         C4Slice const emittedValues[],
-                        C4Error *outError);
+                        C4Error *outError) C4API;
 
     /** Alternate form of c4indexer_emit that takes a C4KeyValueList instead of C arrays. */
     bool c4indexer_emitList(C4Indexer *indexer,
                             C4Document *doc,
                             unsigned viewNumber,
                             C4KeyValueList *kv,
-                            C4Error *outError);
+                            C4Error *outError) C4API;
 
     /** Finishes an indexing task and frees the indexer reference.
         @param indexer  The indexer.
@@ -192,7 +192,7 @@ extern "C" {
         @return  True on success, false on failure. */
     bool c4indexer_end(C4Indexer *indexer,
                        bool commit,
-                       C4Error *outError);
+                       C4Error *outError) C4API;
 
 // A view value that represents a placeholder for the entire document
 #ifdef _MSC_VER
@@ -294,7 +294,7 @@ extern "C" {
         @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */
     C4QueryEnumerator* c4view_query(C4View *view,
                                     const C4QueryOptions *options,
-                                    C4Error *outError);
+                                    C4Error *outError) C4API;
 
     /** Runs a full-text query and returns an enumerator for the results.
         The enumerator's fields are not valid until you call c4queryenum_next(), though.
@@ -311,7 +311,7 @@ extern "C" {
                                             C4Slice queryString,
                                             C4Slice queryStringLanguage,
                                             const C4QueryOptions *c4options,
-                                            C4Error *outError);
+                                            C4Error *outError) C4API;
 
     /** Runs a geo-query and returns an enumerator for the results.
         The enumerator's fields are not valid until you call c4queryenum_next(), though.
@@ -321,11 +321,11 @@ extern "C" {
         @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */
     C4QueryEnumerator* c4view_geoQuery(C4View *view,
                                        C4GeoArea area,
-                                       C4Error *outError);
+                                       C4Error *outError) C4API;
 
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */
-    C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e);
+    C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) C4API;
 
     /** Given a document and the fullTextID from the enumerator, returns the text that was emitted
         during indexing. */
@@ -333,19 +333,19 @@ extern "C" {
                                          C4Slice docID,
                                          C4SequenceNumber seq,
                                          unsigned fullTextID,
-                                         C4Error *outError);
+                                         C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */
     bool c4queryenum_next(C4QueryEnumerator *e,
-                          C4Error *outError);
+                          C4Error *outError) C4API;
 
     /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
-    void c4queryenum_close(C4QueryEnumerator *e);
+    void c4queryenum_close(C4QueryEnumerator *e) C4API;
 
     /** Frees a query enumerator. */
-    void c4queryenum_free(C4QueryEnumerator *e);
+    void c4queryenum_free(C4QueryEnumerator *e) C4API;
 
 
     /** @} */

@@ -44,6 +44,15 @@ namespace c4Internal {
     }
 
 
+    bool tryCatch(C4Error *error, std::function<void()> fn) noexcept {
+        try {
+            fn();
+            return true;
+        } catchError(error);
+        return false;
+    }
+
+
     C4SliceResult stringResult(const char *str) {
         if (str) {
             slice result = alloc_slice(str, strlen(str)).dontFree();
@@ -56,7 +65,7 @@ namespace c4Internal {
 }
 
 
-C4SliceResult c4error_getMessage(C4Error err) {
+C4SliceResult c4error_getMessage(C4Error err) noexcept {
     if (err.code == 0) {
         return stringResult(nullptr);
     } else if (err.domain < 1 || err.domain > SQLiteDomain) {
@@ -69,7 +78,7 @@ C4SliceResult c4error_getMessage(C4Error err) {
     }
 }
 
-char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {
+char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) noexcept {
     C4SliceResult msg = c4error_getMessage(error);
     auto len = min(msg.size, bufferSize-1);
     if (msg.buf)
@@ -80,17 +89,17 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) {
 }
 
 
-int c4_getObjectCount() {
+int c4_getObjectCount() noexcept {
     return InstanceCounted::gObjectCount;
 }
 
 
-bool c4SliceEqual(C4Slice a, C4Slice b) {
+bool c4SliceEqual(C4Slice a, C4Slice b) noexcept {
     return a == b;
 }
 
 
-void c4slice_free(C4SliceResult slice) {
+void c4slice_free(C4SliceResult slice) noexcept {
     free((void*)slice.buf);
 }
 
@@ -104,7 +113,7 @@ static void logCallback(const LogDomain &domain, LogLevel level, const char *mes
 }
 
 
-void c4log_register(C4LogLevel level, C4LogCallback callback) {
+void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
     if (callback) {
         LogDomain::MinLevel = (LogLevel)level;
         LogDomain::Callback = logCallback;
@@ -116,10 +125,10 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) {
 }
 
 
-void c4log_setLevel(C4LogLevel level) {
+void c4log_setLevel(C4LogLevel level) noexcept {
     LogDomain::MinLevel = (LogLevel)level;
 }
 
-void c4log_warnOnErrors(bool warn) {
+void c4log_warnOnErrors(bool warn) noexcept {
     error::sWarnOnError = warn;
 }

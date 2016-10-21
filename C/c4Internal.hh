@@ -26,7 +26,6 @@
 struct C4DocEnumerator;
 
 namespace litecore {
-    class Database;
     class Record;
 }
 
@@ -73,6 +72,22 @@ namespace c4Internal {
     #define checkParam(TEST, OUTERROR) \
         ((TEST) || (recordError(LiteCoreDomain, kC4ErrorInvalidParameter, OUTERROR), false))
 
+    // Calls the function, returning its return value. If an exception is thrown, stores the error
+    // into `outError`, and returns a default 0/nullptr/false value.
+    template <typename RESULT>
+    __attribute((noinline)) RESULT tryCatch(C4Error *outError, function<RESULT()> fn) noexcept {
+        try {
+            return fn();
+        } catchError(outError);
+        return RESULT(); // this will be 0, nullptr, false, etc.
+    }
+
+    // Calls the function and returns true. If an exception is thrown, stores the error
+    // into `outError`, and returns false.
+    bool tryCatch(C4Error *error, std::function<void()> fn) noexcept __attribute((noinline));
+
+    // SLICES:
+
     C4SliceResult stringResult(const char *str);
 
     // DOC ENUMERATORS:
@@ -92,4 +107,3 @@ namespace c4Internal {
 }
 
 using namespace c4Internal;
-

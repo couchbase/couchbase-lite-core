@@ -49,8 +49,8 @@
 		2709F29C191EA10E00C5A8A3 /* btree_var_kv_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */; };
 		2709F29E191EA10E00C5A8A3 /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
 		2709F2A0191EA10E00C5A8A3 /* compactor.h in Headers */ = {isa = PBXBuildFile; fileRef = 2709F299191EA10E00C5A8A3 /* compactor.h */; };
-		271057D41D3D70780018247B /* c4VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* c4VectorDocument.cc */; };
-		271057D51D3D70780018247B /* c4VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* c4VectorDocument.cc */; };
+		271057D41D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
+		271057D51D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		272230481A0815E700BFF25C /* Geohash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272230461A0815E700BFF25C /* Geohash.cc */; };
 		2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722304D1A0858A100BFF25C /* GeoIndex.cc */; };
@@ -143,8 +143,8 @@
 		275072F118E4ACE100A80C5A /* bitwise_utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DD18E4ACE100A80C5A /* bitwise_utils.h */; };
 		275072F318E4ACE100A80C5A /* crc32.h in Headers */ = {isa = PBXBuildFile; fileRef = 275072DF18E4ACE100A80C5A /* crc32.h */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
-		275CED451D3ECE9B001DE46C /* c4TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* c4TreeDocument.cc */; };
-		275CED461D3ECE9B001DE46C /* c4TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* c4TreeDocument.cc */; };
+		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
+		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
@@ -261,6 +261,8 @@
 		27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27E3DD551DB80A9A00F2872D /* names_100.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD301DB43BAD00F2872D /* names_100.json */; };
 		27E3DD561DB80A9C00F2872D /* iTunesMusicLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */; };
+		27E3DD581DB8524300F2872D /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD571DB8524300F2872D /* Database.cc */; };
+		27E3DD591DB8524300F2872D /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD571DB8524300F2872D /* Database.cc */; };
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
@@ -676,8 +678,8 @@
 		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
 		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
-		271057D31D3D70780018247B /* c4VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4VectorDocument.cc; sourceTree = "<group>"; };
-		271057D61D3D70B10018247B /* c4DocInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4DocInternal.hh; sourceTree = "<group>"; };
+		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorDocument.cc; sourceTree = "<group>"; };
+		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -826,7 +828,7 @@
 		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
 		2757DE591B9FC3F1002EE261 /* c4Base.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = c4Base.h; sourceTree = "<group>"; };
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
-		275CED441D3ECE9B001DE46C /* c4TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4TreeDocument.cc; sourceTree = "<group>"; };
+		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TreeDocument.cc; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = VersionedDocument.mm; path = ../../ObjC/VersionedDocument.mm; sourceTree = "<group>"; };
 		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
 		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
@@ -949,6 +951,7 @@
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = iTunesMusicLibrary.json; sourceTree = "<group>"; };
+		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
@@ -1069,7 +1072,7 @@
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
 		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
-		27F7A0BD1D5E2BAB00447BC6 /* c4DatabaseInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4DatabaseInternal.hh; sourceTree = "<group>"; };
+		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
 		27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4KeyInternal.hh; sourceTree = "<group>"; };
 		27F7A0C21D5E646000447BC6 /* RefCounted.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
 		27F7A0C31D5E657C00447BC6 /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
@@ -1640,16 +1643,17 @@
 			isa = PBXGroup;
 			children = (
 				27F7A0C11D5E5C3500447BC6 /* include */,
+				27F7A0BD1D5E2BAB00447BC6 /* Database.hh */,
+				27E3DD571DB8524300F2872D /* Database.cc */,
+				271057D61D3D70B10018247B /* Document.hh */,
+				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
+				271057D31D3D70780018247B /* VectorDocument.cc */,
 				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
 				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
-				27F7A0BD1D5E2BAB00447BC6 /* c4DatabaseInternal.hh */,
-				271057D61D3D70B10018247B /* c4DocInternal.hh */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
-				275CED441D3ECE9B001DE46C /* c4TreeDocument.cc */,
-				271057D31D3D70780018247B /* c4VectorDocument.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
@@ -2595,18 +2599,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
-				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
-				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
-				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
-				27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
-				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				273E9ECA1C506CBC003115A6 /* c4GeoTest.cc in Sources */,
+				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
+				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
+				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
+				27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */,
+				273E9F771C516145003115A6 /* c4.c in Sources */,
+				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2799,6 +2803,7 @@
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
 				2701993B19F1972E00FDC239 /* Tokenizer.cc in Sources */,
+				27E3DD581DB8524300F2872D /* Database.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
@@ -2808,8 +2813,8 @@
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
-				271057D41D3D70780018247B /* c4VectorDocument.cc in Sources */,
-				275CED451D3ECE9B001DE46C /* c4TreeDocument.cc in Sources */,
+				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,
+				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
 				273E9F761C51612E003115A6 /* c4Key.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
@@ -2849,7 +2854,7 @@
 				720EA40F1BA8D834002B8416 /* DataFile.cc in Sources */,
 				279794AF1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
 				273E9ED61C506DB4003115A6 /* FullTextIndex.cc in Sources */,
-				275CED461D3ECE9B001DE46C /* c4TreeDocument.cc in Sources */,
+				275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
 				720EA4111BA8D834002B8416 /* RecordEnumerator.cc in Sources */,
 				72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */,
 				27D74A831D4D3F2300D806E0 /* Statement.cpp in Sources */,
@@ -2868,6 +2873,7 @@
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
 				274EDDF31DA2F63C003AD158 /* SQLiteIterator.cc in Sources */,
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
+				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
@@ -2879,7 +2885,7 @@
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
-				271057D51D3D70780018247B /* c4VectorDocument.cc in Sources */,
+				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */,

@@ -62,10 +62,10 @@ extern "C" {
 
     /** Closes an enumeration. This is optional, but can be used to free up resources if the
         enumeration has not reached its end, but will not be freed for a while. */
-    void c4enum_close(C4DocEnumerator *e);
+    void c4enum_close(C4DocEnumerator *e) C4API;
 
     /** Frees a C4DocEnumerator handle. */
-    void c4enum_free(C4DocEnumerator *e);
+    void c4enum_free(C4DocEnumerator *e) C4API;
 
     /** Creates an enumerator ordered by sequence.
         Caller is responsible for freeing the enumerator when finished with it.
@@ -77,7 +77,7 @@ extern "C" {
     C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                            C4SequenceNumber since,
                                            const C4EnumeratorOptions *options,
-                                           C4Error *outError);
+                                           C4Error *outError) C4API;
 
     /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
@@ -93,7 +93,7 @@ extern "C" {
                                            C4Slice startDocID,
                                            C4Slice endDocID,
                                            const C4EnumeratorOptions *options,
-                                           C4Error *outError);
+                                           C4Error *outError) C4API;
 
     /** Creates an enumerator on a series of document IDs.
         Options have the same meanings as in Couchbase Lite.
@@ -108,12 +108,12 @@ extern "C" {
                                             const C4Slice docIDs[],
                                             size_t docIDsCount,
                                             const C4EnumeratorOptions *options,
-                                            C4Error *outError);
+                                            C4Error *outError) C4API;
 
     /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
         and don't forget to free the enumerator. */
-    bool c4enum_next(C4DocEnumerator *e, C4Error *outError);
+    bool c4enum_next(C4DocEnumerator *e, C4Error *outError) C4API;
 
     /** Returns the current document, if any, from an enumerator.
         @param e  The enumerator.
@@ -121,7 +121,7 @@ extern "C" {
         @return  The document, or NULL if there is none or if an error occurred reading its body.
                  Caller is responsible for calling c4document_free when done with it. */
     struct C4Document* c4enum_getDocument(C4DocEnumerator *e,
-                                          C4Error *outError);
+                                          C4Error *outError) C4API;
 
     /** Stores the metadata of the enumerator's current document into the supplied
         C4DocumentInfo struct. Unlike c4enum_getDocument(), this allocates no memory.
@@ -129,7 +129,7 @@ extern "C" {
         @param outInfo  A pointer to a C4DocumentInfo struct that will be filled in if a document
                         is found.
         @return  True if the info was stored, false if there is no current document. */
-    bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo);
+    bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo) C4API;
 
     /** Convenience function that combines c4enum_next() and c4enum_getDocument().
         @param e  The enumerator.
@@ -137,7 +137,7 @@ extern "C" {
         @return  The next document, or NULL at the end of the enumeration (or an error occurred.)
                  Caller is responsible for calling c4document_free when done with it. */
     struct C4Document* c4enum_nextDocument(C4DocEnumerator *e,
-                                           C4Error *outError);
+                                           C4Error *outError) C4API;
 
     /** @} */
 

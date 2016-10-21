@@ -25,21 +25,21 @@
 using namespace litecore;
 
 
-C4Key* c4key_new()                              {return new c4Key();}
-C4Key* c4key_withBytes(C4Slice bytes)           {return new c4Key(bytes);}
-void c4key_reset(C4Key *key)                    {key->reset();}
-void c4key_free(C4Key *key)                     {delete key;}
-void c4key_addNull(C4Key *key)                  {key->addNull();}
-void c4key_addBool(C4Key *key, bool b)          {key->addBool(b);}
-void c4key_addNumber(C4Key *key, double n)      {*key << n;}
-void c4key_addString(C4Key *key, C4Slice str)   {*key << str;}
-void c4key_addMapKey(C4Key *key, C4Slice mapKey){*key << mapKey;}
-void c4key_beginArray(C4Key *key)               {key->beginArray();}
-void c4key_endArray(C4Key *key)                 {key->endArray();}
-void c4key_beginMap(C4Key *key)                 {key->beginMap();}
-void c4key_endMap(C4Key *key)                   {key->endMap();}
+C4Key* c4key_new()                              noexcept {return new c4Key();}
+C4Key* c4key_withBytes(C4Slice bytes)           noexcept {return new c4Key(bytes);}
+void c4key_reset(C4Key *key)                    noexcept {key->reset();}
+void c4key_free(C4Key *key)                     noexcept {delete key;}
+void c4key_addNull(C4Key *key)                  noexcept {key->addNull();}
+void c4key_addBool(C4Key *key, bool b)          noexcept {key->addBool(b);}
+void c4key_addNumber(C4Key *key, double n)      noexcept {*key << n;}
+void c4key_addString(C4Key *key, C4Slice str)   noexcept {*key << str;}
+void c4key_addMapKey(C4Key *key, C4Slice mapKey)noexcept {*key << mapKey;}
+void c4key_beginArray(C4Key *key)               noexcept {key->beginArray();}
+void c4key_endArray(C4Key *key)                 noexcept {key->endArray();}
+void c4key_beginMap(C4Key *key)                 noexcept {key->beginMap();}
+void c4key_endMap(C4Key *key)                   noexcept {key->endMap();}
 
-C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) {
+C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) noexcept {
     if (language == kC4LanguageDefault)
         language = Tokenizer::defaultStemmer;
     auto key = new c4Key();
@@ -47,7 +47,7 @@ C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) {
     return key;
 }
 
-C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea bb) {
+C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea bb) noexcept {
     auto key = new c4Key();
     key->addGeoKey(geoJSON, geohash::area(geohash::coord(bb.ymin, bb.xmin),
                                           geohash::coord(bb.ymax, bb.xmax)));
@@ -58,27 +58,27 @@ C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea bb) {
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
 // a slice. So these functions use pointer-casting to reinterpret C4KeyReader as CollatableReader.
 
-static inline C4KeyReader asKeyReader(const CollatableReader &r) {
+static inline C4KeyReader asKeyReader(const CollatableReader &r) noexcept {
     return *(C4KeyReader*)&r;
 }
 
 
-C4KeyReader c4key_read(const C4Key *key) {
+C4KeyReader c4key_read(const C4Key *key) noexcept {
     CollatableReader r(*key);
     return asKeyReader(r);
 }
 
 /** for java binding */
-C4KeyReader* c4key_newReader(const C4Key *key){
+C4KeyReader* c4key_newReader(const C4Key *key) noexcept {
     return (C4KeyReader*)new CollatableReader(*key);
 }
 
 /** Free a C4KeyReader */
-void c4key_freeReader(C4KeyReader* r){
+void c4key_freeReader(C4KeyReader* r) noexcept {
     delete r;
 }
 
-C4KeyToken c4key_peek(const C4KeyReader* r) {
+C4KeyToken c4key_peek(const C4KeyReader* r) noexcept {
     static constexpr C4KeyToken tagToType[] = {kC4EndSequence, kC4Null, kC4Bool, kC4Bool, kC4Number,
                                     kC4Number, kC4String, kC4Array, kC4Map, kC4Error, kC4Special};
     Collatable::Tag t = ((CollatableReader*)r)->peekTag();
@@ -87,24 +87,24 @@ C4KeyToken c4key_peek(const C4KeyReader* r) {
     return tagToType[t];
 }
 
-void c4key_skipToken(C4KeyReader* r) {
+void c4key_skipToken(C4KeyReader* r) noexcept {
     ((CollatableReader*)r)->skipTag();
 }
 
-bool c4key_readBool(C4KeyReader* r) {
+bool c4key_readBool(C4KeyReader* r) noexcept {
     bool result = ((CollatableReader*)r)->peekTag() >= CollatableReader::kTrue;
     ((CollatableReader*)r)->skipTag();
     return result;
 }
 
-double c4key_readNumber(C4KeyReader* r) {
+double c4key_readNumber(C4KeyReader* r) noexcept {
     try {
         return ((CollatableReader*)r)->readDouble();
     } catchExceptions()
     return nan("err");  // ????
 }
 
-C4SliceResult c4key_readString(C4KeyReader* r) {
+C4SliceResult c4key_readString(C4KeyReader* r) noexcept {
     slice s;
     try {
         s = ((CollatableReader*)r)->readString().dontFree();
@@ -112,7 +112,7 @@ C4SliceResult c4key_readString(C4KeyReader* r) {
     return {s.buf, s.size};
 }
 
-C4SliceResult c4key_toJSON(const C4KeyReader* r) {
+C4SliceResult c4key_toJSON(const C4KeyReader* r) noexcept {
     if (!r || r->length == 0)
         return {nullptr, 0};
     string str = ((CollatableReader*)r)->toJSON();
@@ -121,20 +121,20 @@ C4SliceResult c4key_toJSON(const C4KeyReader* r) {
 }
 
 
-C4KeyValueList* c4kv_new() {
+C4KeyValueList* c4kv_new() noexcept {
     return new c4KeyValueList;
 }
 
-void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) {
+void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) noexcept {
     kv->keys.push_back(*key);
     kv->values.push_back(alloc_slice(value));
 }
 
-void c4kv_free(C4KeyValueList *kv) {
+void c4kv_free(C4KeyValueList *kv) noexcept {
     delete kv;
 }
 
-void c4kv_reset(C4KeyValueList *kv) {
+void c4kv_reset(C4KeyValueList *kv) noexcept {
     kv->keys.clear();
     kv->values.clear();
 }

@@ -15,7 +15,7 @@
 
 #include "c4Internal.hh"
 #include "c4ExpiryEnumerator.h"
-#include "c4DatabaseInternal.hh"
+#include "Database.hh"
 
 #include "Collatable.hh"
 #include "RecordEnumerator.hh"
@@ -30,7 +30,7 @@ using namespace fleece;
 // This helper function is meant to be wrapped in a transaction
 static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
 {
-    try {
+    return tryCatch<bool>(outError, [&]{
         if (!db->defaultKeyStore().get(docId, kMetaOnly).exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return false;
@@ -76,14 +76,11 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
         }
 
         return true;
-    } catchError(outError);
-
-    return false;
+    });
 }
 
 
-bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError)
-{
+bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError) noexcept {
     if (!c4db_beginTransaction(db, outError)) {
         return false;
     }
@@ -93,8 +90,7 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
 }
 
 
-uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID)
-{
+uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
     KeyStore &expiryKvs = db->getKeyStore("expiry");
     Record existing = expiryKvs.get(docID);
     if (!existing.exists()) {
@@ -164,49 +160,42 @@ public:
     
     C4Database *getDatabase() const
     {
-        return _db;
+        return external(_db);
     }
     
 private:
-    Retained<C4Database> _db;
+    Retained<Database> _db;
     RecordEnumerator _e;
     alloc_slice _current;
     CollatableReader _reader;
     uint64_t _endTimestamp;
 };
 
-C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError)
-{
-    try {
+C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError) noexcept {
+    return tryCatch<C4ExpiryEnumerator*>(outError, [&]{
         WITH_LOCK(database);
         return new C4ExpiryEnumerator(database);
-    } catchError(outError);
-
-    return nullptr;
+    });
 }
 
-bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError)
-{
-    try {
+bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError) noexcept {
+    return tryCatch<bool>(outError, [&]{
         if (e->next())
             return true;
         clearError(outError);
-    } catchError(outError);
-    return false;
+        return false;
+    });
 }
 
-C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e)
-{
+C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e) noexcept {
     slice result = e->docID().copy();
     return { result.buf, result.size };
 }
 
-bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
-{
+bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError) noexcept {
     if (!c4db_beginTransaction(e->getDatabase(), outError))
         return false;
-    bool commit = false;
-    try {
+    bool commit = tryCatch(outError, [&]{
         WITH_LOCK(e->getDatabase());
         e->reset();
         Transaction &t = e->getDatabase()->transaction();
@@ -215,21 +204,18 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError)
             expiry.del(e->key(), t);
             expiry.del(e->docID(), t);
         }
-        commit = true;
-    } catchError(outError);
+    });
     
     c4db_endTransaction(e->getDatabase(), commit,  nullptr);
     return commit;
 }
 
-void c4exp_close(C4ExpiryEnumerator *e)
-{
+void c4exp_close(C4ExpiryEnumerator *e) noexcept {
     if (e) {
         e->close();
     }
 }
 
-void c4exp_free(C4ExpiryEnumerator *e)
-{
+void c4exp_free(C4ExpiryEnumerator *e) noexcept {
     delete e;
 }

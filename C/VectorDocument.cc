@@ -1,5 +1,5 @@
 //
-//  c4VectorDocument.cc
+//  VectorDocument.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 7/18/16.
@@ -13,13 +13,10 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include "c4Internal.hh"
-#include "c4Document.h"
+#include "Document.hh"
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "c4DatabaseInternal.hh"
-#include "c4DocInternal.hh"
 #include "CASRevisionStore.hh"
 #include "Revision.hh"
 
@@ -27,12 +24,12 @@
 
 namespace c4Internal {
 
-    class C4VectorDocument : public C4DocumentInternal {
+    class VectorDocument : public Document {
     public:
 
-        C4VectorDocument(c4DatabaseV2* database, C4Slice docID)
-        :C4DocumentInternal(database, docID),
-         _store(database->revisionStore()),
+        VectorDocument(VectorDocumentFactory *factory, C4Slice docID)
+        :Document(factory->database(), docID),
+         _store(factory->revisionStore()),
          _current(_store.get(docID))
         {
             if (!_current) {
@@ -43,16 +40,17 @@ namespace c4Internal {
         }
 
 
-        C4VectorDocument(c4DatabaseV2 *database, const Record &doc)
-        :C4DocumentInternal(database, move(doc)),
-         _store(database->revisionStore()),
+        VectorDocument(VectorDocumentFactory *factory, const Record &doc)
+        :Document(factory->database(), move(doc)),
+         _store(factory->revisionStore()),
          _current(new Revision(doc))
         {
             init();
         }
 
 
-        ~C4VectorDocument();
+        ~VectorDocument()
+        { }
 
 
         void init() {
@@ -135,7 +133,7 @@ namespace c4Internal {
                 selectRevision(_current);
                 return true;
             } else {
-                return C4DocumentInternal::selectCurrentRevision();
+                return Document::selectCurrentRevision();
             }
         }
 
@@ -232,30 +230,34 @@ namespace c4Internal {
     };
 
 
-    C4VectorDocument::~C4VectorDocument() {
-    }
+#pragma mark - FACTORY:
 
 
-    CASRevisionStore& c4DatabaseV2::revisionStore() {
+    VectorDocumentFactory::VectorDocumentFactory(Database *db)
+    :DocumentFactory(db)
+    { }
+
+
+    CASRevisionStore& VectorDocumentFactory::revisionStore() {
         if (!_revisionStore)
-            _revisionStore.reset(new CASRevisionStore(db()));
+            _revisionStore.reset(new CASRevisionStore(database()->dataFile()));
         return *_revisionStore;
     }
 
 
-    C4DocumentInternal* c4DatabaseV2::newDocumentInstance(C4Slice docID) {
-        return new C4VectorDocument(this, docID);
+    Document* VectorDocumentFactory::newDocumentInstance(C4Slice docID) {
+        return new VectorDocument(this, docID);
     }
 
-    C4DocumentInternal* c4DatabaseV2::newDocumentInstance(const Record &doc) {
-        return new C4VectorDocument(this, doc);
+    Document* VectorDocumentFactory::newDocumentInstance(const Record &doc) {
+        return new VectorDocument(this, doc);
     }
 
 
-    bool c4DatabaseV2::readDocMeta(const Record &doc,
-                                   C4DocumentFlags *outFlags,
-                                   alloc_slice *outRevID,
-                                   slice *outDocType)
+    bool VectorDocumentFactory::readDocMeta(const Record &doc,
+                                            C4DocumentFlags *outFlags,
+                                            alloc_slice *outRevID,
+                                            slice *outDocType)
     {
         Revision rev(doc);
         if (outFlags)

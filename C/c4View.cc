@@ -19,8 +19,8 @@
 #include "c4DocEnumerator.h"
 
 #include "c4ViewInternal.hh"
-#include "c4DatabaseInternal.hh"
-#include "c4DocInternal.hh"
+#include "Database.hh"
+#include "Document.hh"
 #include "c4KeyInternal.hh"
 
 #include "DataFile.hh"
@@ -34,9 +34,13 @@ using namespace litecore;
 
 
 static FilePath pathForViewNamed(C4Database *db, C4Slice viewName) {
-    FilePath dbPath = db->db()->filePath();
+    FilePath path = db->path();
     string quotedName = FilePath::sanitizedFileName((string)viewName);
-    return dbPath.fileNamed(quotedName).addingExtension("viewindex");
+    if (path.isDir())
+        path = path[quotedName];
+    else
+        path = path.fileNamed(quotedName);
+    return path.addingExtension("viewindex");
 }
 
 
@@ -45,62 +49,58 @@ C4View* c4view_open(C4Database* db,
                     C4Slice viewName,
                     C4Slice version,
                     const C4DatabaseConfig *config,
-                    C4Error *outError)
+                    C4Error *outError) noexcept
 {
     if (!checkParam(config != nullptr, outError))
         return nullptr;
     if (!checkParam(!pathSlice || !(config->flags & kC4DB_Bundled), outError))
         return nullptr;
-    try {
+    return tryCatch<C4View*>(outError, [&]{
         FilePath path = (pathSlice.buf) ? FilePath((string)pathSlice)
                                         : pathForViewNamed(db, viewName);
         return (new c4View(db, path, viewName, version, *config))->retain();
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 /** Closes the view and frees the object. */
-bool c4view_close(C4View* view, C4Error *outError) {
+bool c4view_close(C4View* view, C4Error *outError) noexcept {
     if (!view)
         return true;
-    try {
+    return tryCatch<bool>(outError, [&]{
         WITH_LOCK(view);
         if (!view->checkNotBusy(outError))
             return false;
         view->close();
         return true;
-    } catchError(outError);
-    return false;
+    });
 }
 
-void c4view_free(C4View* view) {
+void c4view_free(C4View* view) noexcept {
     if (view) {
         c4view_close(view, nullptr);
-        try {
+        tryCatch(nullptr, [&]{
             view->release();
-        } catchExceptions();
+        });
     }
 }
 
 
-bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) {
+bool c4view_rekey(C4View *view, const C4EncryptionKey *newKey, C4Error *outError) noexcept {
     WITH_LOCK(view);
     if (!view->checkNotBusy(outError))
         return false;
-    return c4Database::rekey(view->_viewDB.get(), newKey, outError);
+    return c4Database::rekeyDataFile(view->_viewDB.get(), newKey, outError);
 }
 
-bool c4view_eraseIndex(C4View *view, C4Error *outError) {
-    try {
+bool c4view_eraseIndex(C4View *view, C4Error *outError) noexcept {
+    return tryCatch(outError, [&]{
         WITH_LOCK(view);
         view->_index.erase();
-        return true;
-    } catchError(outError);
-    return false;
+    });
 }
 
-bool c4view_delete(C4View *view, C4Error *outError) {
-    try {
+bool c4view_delete(C4View *view, C4Error *outError) noexcept {
+    return tryCatch<bool>(outError, [&]{
         if (view == nullptr) {
             return true;
         }
@@ -111,11 +111,10 @@ bool c4view_delete(C4View *view, C4Error *outError) {
         view->_viewDB->deleteDataFile();
         view->close();
         return true;
-    } catchError(outError)
-    return false;
+    });
 }
 
-bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Error *outError) {
+bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Error *outError) noexcept {
     if (!checkParam(config != nullptr, outError))
         return false;
     if (!checkParam(!(config->flags & kC4DB_Bundled), outError))
@@ -124,52 +123,49 @@ bool c4view_deleteAtPath(C4Slice viewPath, const C4DatabaseConfig *config, C4Err
 }
 
 
-bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError) {
+bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError) noexcept {
     FilePath path = pathForViewNamed(database, viewName);
     return c4view_deleteAtPath((slice)path.path(), &database->config, outError);
 }
 
 
-void c4view_setMapVersion(C4View *view, C4Slice version) {
-    try {
+void c4view_setMapVersion(C4View *view, C4Slice version) noexcept {
+    tryCatch(nullptr, [&]{
         WITH_LOCK(view);
         view->setVersion(version);
-    } catchExceptions();
+    });
 }
 
 
-uint64_t c4view_getTotalRows(C4View *view) {
-    try {
+uint64_t c4view_getTotalRows(C4View *view) noexcept {
+    return tryCatch<uint64_t>(nullptr, [&]{
         WITH_LOCK(view);
         return view->_index.rowCount();
-    } catchExceptions();
-    return 0;
+    });
 }
 
-C4SequenceNumber c4view_getLastSequenceIndexed(C4View *view) {
-    try {
+C4SequenceNumber c4view_getLastSequenceIndexed(C4View *view) noexcept {
+    return tryCatch<C4SequenceNumber>(nullptr, [&]{
         WITH_LOCK(view);
         return view->_index.lastSequenceIndexed();
-    } catchExceptions();
-    return 0;
+    });
 }
 
-C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) {
-    try {
+C4SequenceNumber c4view_getLastSequenceChangedAt(C4View *view) noexcept {
+    return tryCatch<C4SequenceNumber>(nullptr, [&]{
         WITH_LOCK(view);
         return view->_index.lastSequenceChangedAt();
-    } catchExceptions();
-    return 0;
+    });
 }
 
 
-void c4view_setDocumentType(C4View *view, C4Slice docType) {
+void c4view_setDocumentType(C4View *view, C4Slice docType) noexcept {
     WITH_LOCK(view);
     view->_index.setDocumentType(docType);
 }
 
 
-void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *context) {
+void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *context) noexcept {
     WITH_LOCK(view);
     view->_viewDB->setOnCompact([cb,context](bool compacting) {
         cb(context, compacting);
@@ -231,28 +227,24 @@ struct c4Indexer : public MapReduceIndexer, InstanceCounted {
 C4Indexer* c4indexer_begin(C4Database *db,
                            C4View *views[],
                            size_t viewCount,
-                           C4Error *outError)
+                           C4Error *outError) noexcept
 {
-    c4Indexer *indexer = nullptr;
-    try {
-        indexer = new c4Indexer(db);
+    return tryCatch<C4Indexer*>(outError, [&]{
+        unique_ptr<c4Indexer> indexer { new c4Indexer(db) };
         for (size_t i = 0; i < viewCount; ++i)
             indexer->addView(views[i]);
-        return indexer;
-    } catchError(outError);
-    if (indexer)
-        delete indexer;
-    return nullptr;
+        return indexer.release();
+    });
 }
 
 
-void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) {
+void c4indexer_triggerOnView(C4Indexer *indexer, C4View *view) noexcept {
     indexer->triggerOnIndex(&view->_index);
 }
 
 
-C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) {
-    try {
+C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outError) noexcept {
+    return tryCatch<C4DocEnumerator*>(outError, [&]{
         sequence startSequence;
         {
             WITH_LOCK(indexer->_db);       // startingSequence calls _sourceDB
@@ -260,7 +252,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
         }
         if (startSequence == UINT64_MAX) {
             clearError(outError);      // end of iteration is not an error
-            return nullptr;
+            return (C4DocEnumerator*)nullptr;
         }
 
         auto options = kC4DefaultEnumeratorOptions;
@@ -270,7 +262,7 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
             options.flags &= ~kC4IncludeBodies;
         auto e = c4db_enumerateChanges(indexer->_db, startSequence-1, &options, outError);
         if (!e)
-            return nullptr;
+            return (C4DocEnumerator*)nullptr;
 
         setEnumFilter(e, [docTypes,indexer](const Record &rec,
                                             C4DocumentFlags flags,
@@ -285,14 +277,13 @@ C4DocEnumerator* c4indexer_enumerateDocuments(C4Indexer *indexer, C4Error *outEr
             return false;
         });
         return e;
-    } catchError(outError);
-    return nullptr;
+    });
 }
 
 
 bool c4indexer_shouldIndexDocument(C4Indexer *indexer,
                                    unsigned viewNumber,
-                                   C4Document *doc)
+                                   C4Document *doc) noexcept
 {
     try {
         auto idoc = c4Internal::internal(doc);
@@ -316,7 +307,7 @@ bool c4indexer_emit(C4Indexer *indexer,
                     unsigned emitCount,
                     C4Key* const emittedKeys[],
                     C4Slice const emittedValues[],
-                    C4Error *outError)
+                    C4Error *outError) noexcept
 {
     C4KeyValueList kv;
     kv.keys.reserve(emitCount);
@@ -332,30 +323,26 @@ bool c4indexer_emitList(C4Indexer *indexer,
                     C4Document *doc,
                     unsigned viewNumber,
                     C4KeyValueList *kv,
-                    C4Error *outError)
+                    C4Error *outError) noexcept
 {
-    try {
+    return tryCatch(outError, [&]{
         if (doc->flags & kDeleted)
             c4kv_reset(kv);
         indexer->emitDocIntoView(doc->docID, doc->sequence, viewNumber, kv->keys, kv->values);
-        return true;
-    } catchError(outError)
-    return false;
+    });
 }
 
 
-bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) {
-    try {
+bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) noexcept {
+    return tryCatch(outError, [&]{
         if (commit)
             indexer->finished();
         delete indexer;
-        return true;
-    } catchError(outError)
-    return false;
+    });
 }
 
 
-bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) {
+bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) noexcept {
     initTokenizer();
     Tokenizer::defaultStemmer = string(languageName);
     Tokenizer::defaultRemoveDiacritics = stripDiacriticals;
