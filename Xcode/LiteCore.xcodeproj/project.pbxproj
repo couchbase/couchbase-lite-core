@@ -3034,11 +3034,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/Fleece",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-				);
 				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Debug;
@@ -3047,11 +3042,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/Fleece",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-				);
 				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Release;
@@ -3106,7 +3096,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -3114,7 +3103,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -3136,7 +3124,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C11CBC390700A7A1D7 /* Swift_Debug.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -3144,7 +3131,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C21CBC390700A7A1D7 /* Swift_Release.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -3152,7 +3138,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C41CBC390700A7A1D7 /* SwiftTests_Debug.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -3160,7 +3145,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27A657C51CBC390700A7A1D7 /* SwiftTests_Release.xcconfig */;
 			buildSettings = {
-				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
@@ -3373,7 +3357,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 			};
 			name = Release;
 		};

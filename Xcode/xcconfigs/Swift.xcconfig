@@ -47,5 +47,6 @@ PRODUCT_NAME                       = LiteCoreSwift
 SDKROOT                            = macosx
 SKIP_INSTALL                       = YES
 SWIFT_OBJC_BRIDGING_HEADER         = $(SRCROOT)/../Swift/Swift-Bridging-Header.h
-VERSION_INFO_PREFIX                = 
+SWIFT_VERSION                      = 3.0
+VERSION_INFO_PREFIX                =
 VERSIONING_SYSTEM                  = apple-generic
