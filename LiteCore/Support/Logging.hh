@@ -7,7 +7,9 @@
 //
 
 #pragma once
+#include "slice.hh"
 #include "MSVC_Compat.hh"
+#include <string>
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -82,6 +84,10 @@ private:
 
 
 extern LogDomain DefaultLog;
+
+
+std::string _logSlice(fleece::slice);
+#define logSlice(S) (_logSlice((S)).c_str())
 
 
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \

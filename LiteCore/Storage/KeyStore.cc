@@ -24,6 +24,8 @@ using namespace std;
 
 namespace litecore {
 
+    extern LogDomain DBLog;
+
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false, false};
 
     Record KeyStore::get(slice key, ContentOptions options) const {
@@ -65,15 +67,17 @@ namespace litecore {
     }
 
     bool KeyStore::del(slice key, Transaction &t) {
+        LogTo(DBLog, "KeyStore(%s) del %s", _name.c_str(), logSlice(key));
         bool ok = _del(key, t);
-        if (ok)
+        if (ok && _capabilities.softDeletes)
             t.incrementDeletionCount();
         return ok;
     }
 
     bool KeyStore::del(sequence s, Transaction &t) {
+        LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), s);
         bool ok = _del(s, t);
-        if (ok)
+        if (ok && _capabilities.softDeletes)
             t.incrementDeletionCount();
         return ok;
     }

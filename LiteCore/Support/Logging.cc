@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string>
+#include <sstream>
 #if __APPLE__
 #include <sys/time.h>
 #endif
@@ -94,4 +95,25 @@ namespace litecore {
                     timestamp, name, (name[0] ? ":" :""), kLevels[(int)level], message);
         #endif
     }
+
+
+    std::string _logSlice(fleece::slice s) {
+        std::stringstream o;
+        if (s.buf == nullptr) {
+            return "<null>";
+        } else {
+            auto buf = (const uint8_t*)s.buf;
+            for (size_t i = 0; i < s.size; i++) {
+                if (buf[i] < 32 || buf[i] > 126) {
+                    o << "<" << s.hexString() << ">";
+                    return o.str();
+                }
+            }
+            o << "\"" << std::string((char*)s.buf, s.size) << "\"";
+        }
+        return o.str();
+    }
+    
+    
+
 }

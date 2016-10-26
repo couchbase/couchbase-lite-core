@@ -509,6 +509,7 @@ namespace litecore {
 
 
     KeyStore::setResult ForestKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+        LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
         fdb_doc fdoc = {
             key.size, meta.size, body.size, 0,
             (void*)key.buf,

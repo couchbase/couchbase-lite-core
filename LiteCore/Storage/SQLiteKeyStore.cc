@@ -240,6 +240,7 @@ namespace litecore {
 
 
     KeyStore::setResult SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+        LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
         compile(_setStmt,
                 "INSERT OR REPLACE INTO kv_@ (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
         _setStmt->bindNoCopy(1, key.buf, (int)key.size);
