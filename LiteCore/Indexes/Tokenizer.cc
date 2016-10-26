@@ -58,7 +58,7 @@ namespace litecore {
     :_stemmer(stemmer),
      _removeDiacritics(removeDiacritics),
      _tokenizer(nullptr),
-     _tokenChars("'’")
+     _tokenChars(u8"'’")
     {
         if (!sModule) { //FIX: Make this thread-safe
             sqlite3Fts3UnicodeSnTokenizer(&sModule);
@@ -173,9 +173,9 @@ namespace litecore {
             } else if (token[0] == '\'') {
                 ++token;
                 --length;
-            } else if (length >= 3 && memcmp(token+length-3, "’", 3)==0) {
+            } else if (length >= 3 && memcmp(token+length-3, u8"’", 3)==0) {
                 length -= 3;
-            } else if (length >= 3 && memcmp(token, "’", 3)==0) {
+            } else if (length >= 3 && memcmp(token, u8"’", 3)==0) {
                 token += 3;
                 length -= 3;
             } else {
@@ -185,13 +185,13 @@ namespace litecore {
     }
 
     static bool isCurly(slice text) {
-        return memmem(text.buf, text.size, "’", 3) != nullptr;
+        return memmem(text.buf, text.size, u8"’", 3) != nullptr;
     }
 
     // Convert curly-close-quote to straight apostrophe
     static std::string uncurl(std::string token) {
         while(true) {
-            size_t pos = token.find("’");
+            size_t pos = token.find(u8"’");
             if (pos == std::string::npos)
                 break;
             token = token.replace(pos, 3, "'");
