@@ -246,12 +246,6 @@
     <ClCompile Include="..\LiteCore\Support\EncryptedStream.cc">
       <Filter>Source Files\Support</Filter>
     </ClCompile>
-    <ClCompile Include="..\C\c4TreeDocument.cc">
-      <Filter>Source Files\C API</Filter>
-    </ClCompile>
-    <ClCompile Include="..\C\c4VectorDocument.cc">
-      <Filter>Source Files\C API</Filter>
-    </ClCompile>
     <ClCompile Include="mkstemps.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -293,6 +287,18 @@
     </ClCompile>
     <ClCompile Include="..\LiteCore\Storage\RecordEnumerator.cc">
       <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\TreeDocument.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\VectorDocument.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\C\Database.cc">
+      <Filter>Source Files\C API</Filter>
+    </ClCompile>
+    <ClCompile Include="..\LiteCore\Support\Logging.cc">
+      <Filter>Source Files\Support</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

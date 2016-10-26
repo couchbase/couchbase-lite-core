@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\LiteCore\tests\CASRevisionStoreTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\CollatableTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\DataFileTest.cc" />
+    <ClCompile Include="..\..\LiteCore\tests\DocumentKeysTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\GeoHashTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\GeoIndexTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\IndexTest.cc" />
@@ -95,19 +96,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

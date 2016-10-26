@@ -11,6 +11,7 @@
 #include "Base.hh"
 #include "Error.hh"
 #include "RefCounted.hh"
+#include "MSVC_Compat.hh"
 #include <functional>
 
 
@@ -75,7 +76,7 @@ namespace c4Internal {
     // Calls the function, returning its return value. If an exception is thrown, stores the error
     // into `outError`, and returns a default 0/nullptr/false value.
     template <typename RESULT>
-    __attribute((noinline)) RESULT tryCatch(C4Error *outError, function<RESULT()> fn) noexcept {
+    NOINLINE RESULT tryCatch(C4Error *outError, function<RESULT()> fn) noexcept {
         try {
             return fn();
         } catchError(outError);
@@ -84,7 +85,7 @@ namespace c4Internal {
 
     // Calls the function and returns true. If an exception is thrown, stores the error
     // into `outError`, and returns false.
-    bool tryCatch(C4Error *error, std::function<void()> fn) noexcept __attribute((noinline));
+    NOINLINE bool tryCatch(C4Error *error, std::function<void()> fn) noexcept;
 
     // SLICES:
 
