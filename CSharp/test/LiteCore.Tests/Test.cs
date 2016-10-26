@@ -166,6 +166,11 @@ namespace LiteCore.Tests
             return true;
         } 
 
+        protected uint ImportJSONLines(string path)
+        {
+            return ImportJSONLines(path, TimeSpan.FromSeconds(15), false);
+        }
+
         // Read a file that contains a JSON document per line. Every line becomes a document.
         protected uint ImportJSONLines(string path, TimeSpan timeout, bool verbose)
         {

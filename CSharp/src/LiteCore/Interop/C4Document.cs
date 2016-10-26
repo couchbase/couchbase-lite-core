@@ -285,6 +285,32 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4doc_generateOldStyleRevID([MarshalAs(UnmanagedType.U1)]bool generateOldStyle);
+    
+        public static string c4doc_bodyAsJSON(C4Document *doc, C4Error *outError)
+        {
+            using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, outError)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLEncoder* c4db_createFleeceEncoder(C4Database* db);
+
+        public static string c4db_encodeJSON(C4Database* db, string jsonData, C4Error *outError)
+        {
+            using(var jsonData_ = new C4String(jsonData)) {
+                using(var retVal = NativeRaw.c4db_encodeJSON(db, jsonData_.AsC4Slice(), outError)) {
+                    return ((C4Slice)retVal).CreateString();
+                }
+            }
+        }
+
+        public static FLDictKey c4db_initFLDictKey(C4Database *db, string str)
+        {
+            using(var str_ = new C4String(str)) {
+                return NativeRaw.c4db_initFLDictKey(db, str_.AsC4Slice());
+            }
+        }
     }
 
 
@@ -348,5 +374,15 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, [MarshalAs(UnmanagedType.U1)]bool deletion);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4db_encodeJSON(C4Database* db, C4Slice jsonData, C4Error *outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLDictKey c4db_initFLDictKey(C4Database *db, C4Slice str);
+
     }
 }
