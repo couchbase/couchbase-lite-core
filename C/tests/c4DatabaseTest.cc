@@ -12,7 +12,7 @@
 #include "c4ExpiryEnumerator.h"
 #include <cmath>
 
-#include "forestdb.h"
+#include "forestdb.h"   // needed for error codes
 #include "sqlite3.h"
 
 #ifdef _MSC_VER

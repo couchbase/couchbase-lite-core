@@ -15,6 +15,7 @@
 
 #include "DataFile.hh"
 #include "Record.hh"
+#include "DocumentKeys.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
@@ -123,7 +124,7 @@ namespace litecore {
     }
 
 
-#pragma mark - DATABASE:
+#pragma mark - DATAFILE:
 
 
     const DataFile::Options DataFile::Options::defaults = DataFile::Options {
@@ -222,6 +223,12 @@ namespace litecore {
     }
 
 
+    void DataFile::useDocumentKeys() {
+        if (!_documentKeys.get())
+            _documentKeys.reset(new DocumentKeys(*this));
+    }
+
+
 
 #pragma mark PURGE/DELETION COUNT:
 
@@ -264,12 +271,34 @@ namespace litecore {
         _inTransaction = true;
     }
 
+    void DataFile::transactionBegan(Transaction*) {
+        if (_documentKeys)
+            _documentKeys->transactionBegan();
+    }
+
+    void DataFile::transactionEnding(Transaction*, bool committing) {
+        if (_documentKeys) {
+            if (committing)
+                _documentKeys->save();
+            else
+                _documentKeys->revert();
+        }
+    }
+    
     void DataFile::endTransactionScope(Transaction* t) {
         unique_lock<mutex> lock(_file->_transactionMutex);
         Assert(_file->_transaction == t);
         _file->_transaction = nullptr;
         _file->_transactionCond.notify_one();
         _inTransaction = false;
+        if (_documentKeys)
+            _documentKeys->transactionEnded();
+    }
+
+
+    Transaction& DataFile::transaction() {
+        Assert(_inTransaction);
+        return *_file->_transaction;
     }
 
 
@@ -296,12 +325,14 @@ namespace litecore {
             LogTo(DBLog, "DataFile: beginTransaction");
             _db._beginTransaction(this);
             _active = true;
+            _db.transactionBegan(this);
         }
     }
 
 
     void Transaction::commit() {
         Assert(_active, "Transaction is not active");
+        _db.transactionEnding(this, true);
         _active = false;
         LogTo(DBLog, "DataFile: commit transaction");
         _db._endTransaction(this, true);
@@ -310,6 +341,7 @@ namespace litecore {
 
     void Transaction::abort() {
         Assert(_active, "Transaction is not active");
+        _db.transactionEnding(this, false);
         _active = false;
         LogTo(DBLog, "DataFile: abort transaction");
         _db._endTransaction(this, false);
@@ -319,7 +351,7 @@ namespace litecore {
     Transaction::~Transaction() {
         if (_active) {
             LogTo(DBLog, "DataFile: Transaction exiting scope without explicit commit; aborting");
-            _db._endTransaction(this, false);
+            abort();
         }
         _db.endTransactionScope(this);
     }

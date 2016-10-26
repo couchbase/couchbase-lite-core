@@ -23,9 +23,10 @@ namespace c4Internal {
     class VectorDocument;
 
 
-    // Abstract base class for implementation of C4Document.
-    // Concrete subclasses are TreeDocument (rev-trees) and VectorDocument (version-vectors).
-    // Note: Base 'class' C4Document is the public struct declared in c4Document.h.
+    /** A versioned LiteCore document.
+        This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
+        and VectorDocument (version-vectors).
+        Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public C4Document, InstanceCounted {
     public:
         alloc_slice _revIDBuf;

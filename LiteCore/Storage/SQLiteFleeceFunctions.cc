@@ -26,11 +26,11 @@ using namespace std;
 namespace litecore {
 
 
-    int evaluatePath(slice path, const Value **pValue) noexcept {
+    int evaluatePath(slice path, SharedKeys *sharedKeys, const Value **pValue) noexcept {
         if (!path.buf)
             return SQLITE_FORMAT;
         try {
-            *pValue = Path::eval(path, nullptr, *pValue);    // can throw!
+            *pValue = Path::eval(path, sharedKeys, *pValue);    // can throw!
             return SQLITE_OK;
         } catch (const error &error) {
             WarnError("Invalid property path `%.*s` in query (err %d)",
@@ -45,7 +45,8 @@ namespace litecore {
 
 
     static const Value* evaluatePath(sqlite3_context *ctx, slice path, const Value *val) noexcept {
-        int rc = evaluatePath(path, &val);
+        auto sharedKeys = (SharedKeys*)sqlite3_user_data(ctx);
+        int rc = evaluatePath(path, sharedKeys, &val);
         if (rc == SQLITE_OK)
             return val;
         sqlite3_result_error_code(ctx, rc);
@@ -235,21 +236,20 @@ namespace litecore {
 #pragma mark - REGISTRATION:
 
 
-    int RegisterFleeceFunctions(sqlite3 *db) {
+    int RegisterFleeceFunctions(sqlite3 *db, fleece::SharedKeys *sharedKeys) {
         // Adapted from json1.c in SQLite source code
         int rc = SQLITE_OK;
         unsigned int i;
         static const struct {
             const char *zName;
             int nArg;
-            int flag;
             void (*xFunc)(sqlite3_context*,int,sqlite3_value**);
         } aFunc[] = {
-            { "fl_value",                 2, 0,   fl_value  },
-            { "fl_exists",                2, 0,   fl_exists },
-            { "fl_type",                  2, 0,   fl_type },
-            { "fl_count",                 2, 0,   fl_count },
-            { "fl_contains",             -1, 0,   fl_contains },
+            { "fl_value",                 2,   fl_value  },
+            { "fl_exists",                2,   fl_exists },
+            { "fl_type",                  2,   fl_type },
+            { "fl_count",                 2,   fl_count },
+            { "fl_contains",             -1,   fl_contains },
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){
@@ -257,7 +257,7 @@ namespace litecore {
                                          aFunc[i].zName,
                                          aFunc[i].nArg,
                                          SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-                                         (void*)&aFunc[i].flag,
+                                         sharedKeys,
                                          aFunc[i].xFunc, nullptr, nullptr);
         }
         return rc;

@@ -22,6 +22,9 @@
 #endif
 
 
+namespace fleece {
+    class SharedKeys;
+}
 namespace litecore {
     class CASRevisionStore;
 }
@@ -31,6 +34,8 @@ namespace c4Internal {
     class Document;
     class DocumentFactory;
 
+
+    /** A top-level LiteCore database. */
     class Database : public RefCounted<Database> {
     public:
         /** Factory method. */
@@ -73,6 +78,9 @@ namespace c4Internal {
 
         DocumentFactory& documentFactory()                  {return *_documentFactory;}
 
+        void useDocumentKeys()                              {_db->useDocumentKeys();}
+        fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
+
 #if C4DB_THREADSAFE
         // Mutex for synchronizing DataFile calls. Non-recursive!
         mutex _mutex;
@@ -110,7 +118,7 @@ namespace c4Internal {
     static inline C4Database* external(Database *db)    {return (C4Database*)db;}
 
 
-    // Abstract interface for creating Document instances.
+    /** Abstract interface for creating Document instances; owned by a Database. */
     class DocumentFactory {
     public:
         DocumentFactory(Database *db)       :_db(db) { }
@@ -128,7 +136,7 @@ namespace c4Internal {
     };
 
 
-    // Subclass for old (rev-tree) schema
+    /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
@@ -141,7 +149,7 @@ namespace c4Internal {
     };
 
 
-    // Subclass for new (version-vector) schema
+    /** DocumentFactory subclass for version-vector (RevisionStore) document schema. */
     class VectorDocumentFactory : public DocumentFactory {
     public:
         VectorDocumentFactory(Database *db);

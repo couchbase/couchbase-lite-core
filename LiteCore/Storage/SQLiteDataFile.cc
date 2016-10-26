@@ -19,6 +19,7 @@
 #include "Record.hh"
 #include "Error.hh"
 #include "FilePath.hh"
+#include "SharedKeys.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <mutex>
 #include <sqlite3.h>
@@ -98,9 +99,6 @@ namespace litecore {
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
 
-        RegisterFleeceFunctions(_sqlDb->getHandle());
-        RegisterFleeceEachFunctions(_sqlDb->getHandle());
-
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
             _sqlDb->exec("PRAGMA mmap_size=50000000");      // mmap improves performance
@@ -122,6 +120,15 @@ namespace litecore {
             // Create the default KeyStore's table:
             (void)defaultKeyStore();
         });
+    }
+
+
+    void SQLiteDataFile::registerFleeceFunctions() {
+        if (!_registeredFleeceFunctions) {
+            RegisterFleeceFunctions(_sqlDb->getHandle(), documentKeys());
+            RegisterFleeceEachFunctions(_sqlDb->getHandle(), documentKeys());
+            _registeredFleeceFunctions = true;
+        }
     }
 
 

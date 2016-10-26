@@ -29,6 +29,9 @@ _c4db_getLastSequence
 _c4db_beginTransaction
 _c4db_endTransaction
 _c4db_isInTransaction
+_c4db_createFleeceEncoder
+_c4db_encodeJSON
+_c4db_initFLDictKey
 
 _c4raw_free
 _c4raw_get
@@ -56,6 +59,7 @@ _c4doc_save
 _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
+_c4doc_bodyAsJSON
 
 _c4rev_getGeneration
 

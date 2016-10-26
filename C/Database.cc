@@ -113,6 +113,8 @@ namespace c4Internal {
     :config(inConfig),
      _db(newDataFile(path, config, true))
     {
+        //useDocumentKeys();
+        
         // Validate that the versioning matches what's used in the database:
         auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
         Record doc = info.get(slice("versioning"));
@@ -127,7 +129,6 @@ namespace c4Internal {
         } else if (config.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
         }
-
     }
 
 
@@ -298,12 +299,18 @@ namespace c4Internal {
         if (--_transactionLevel == 0) {
             WITH_LOCK(this);
             auto t = _transaction;
-            _transaction = nullptr;
-            if (commit)
-                t->commit();
-            else
-                t->abort();
+            try {
+                if (commit)
+                    t->commit();
+                else
+                    t->abort();
+            } catch (...) {
+                delete t;
+                _transaction = nullptr;
+                throw;
+            }
             delete t;
+            _transaction = nullptr;
         }
     #if C4DB_THREADSAFE
         _transactionMutex.unlock(); // undoes lock in beginTransaction()
@@ -353,6 +360,5 @@ namespace c4Internal {
         else
             localDocs.del(key, t);
     }
-    
 
 }

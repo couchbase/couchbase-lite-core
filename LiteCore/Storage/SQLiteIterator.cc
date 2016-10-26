@@ -239,6 +239,7 @@ namespace litecore {
 
 
     Query* SQLiteKeyStore::compileQuery(slice selectorExpression, slice sortExpression) {
+        ((SQLiteDataFile&)dataFile()).registerFleeceFunctions();
         return new SQLiteQuery(*this, selectorExpression, sortExpression);
     }
 

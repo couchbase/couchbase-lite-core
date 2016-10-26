@@ -17,11 +17,15 @@
 #include "c4Internal.hh"
 #include "Database.hh"
 #include "c4Document.h"
+#include "c4Document+Fleece.h"
 #include "c4Database.h"
 #include "c4Private.h"
 
 #include "Document.hh"
+#include "Database.hh"
 #include "SecureRandomize.hh"
+#include "Fleece.hh"
+#include "Fleece.h"
 
 
 void c4doc_free(C4Document *doc) noexcept {
@@ -278,4 +282,52 @@ int32_t c4doc_purgeRevision(C4Document *doc,
         return idoc->purgeRevision(revID);
     } catchError(outError)
     return -1;
+}
+
+
+#pragma mark - FLEECE-SPECIFIC:
+
+
+using namespace fleece;
+
+
+struct _FLEncoder* c4db_createFleeceEncoder(C4Database* db) {
+    FLEncoder enc = FLEncoder_New();
+    ((Encoder*)enc)->setSharedKeys(db->documentKeys());
+    return enc;
+}
+
+
+C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outError) {
+    return tryCatch<C4SliceResult>(outError, [&]{
+        Encoder enc;
+        enc.setSharedKeys(db->documentKeys());
+        JSONConverter jc(enc);
+        if (!jc.encodeJSON(jsonData)) {
+            recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);
+            return C4SliceResult{};
+        }
+        slice result = enc.extractOutput().dontFree();
+        return C4SliceResult{result.buf, result.size};
+    });
+}
+
+
+C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) {
+    return tryCatch<C4SliceResult>(outError, [&]{
+        auto root = Value::fromTrustedData(doc->selectedRev.body);
+        if (!root) {
+            recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);
+            return C4SliceResult();
+        }
+        Database *db = c4Internal::internal(doc)->database();
+        slice result = root->toJSON(db->documentKeys()).dontFree();
+        return C4SliceResult{result.buf, result.size};
+    });
+}
+
+
+FLDictKey c4db_initFLDictKey(C4Database *db, C4Slice string) {
+    return FLDictKey_InitWithSharedKeys({string.buf, string.size},
+                                        (FLSharedKeys)db->documentKeys());
 }

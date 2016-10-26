@@ -66,6 +66,7 @@ namespace litecore {
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
         int exec(const std::string &sql);
+        void registerFleeceFunctions();
 
     private:
         friend class SQLiteKeyStore;
@@ -75,6 +76,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        bool _registeredFleeceFunctions {false};
     };
 
 }

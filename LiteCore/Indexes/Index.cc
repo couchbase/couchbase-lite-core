@@ -72,7 +72,7 @@ namespace litecore {
                 ++iter;
                 keys.reserve(iter.count());
                 for (; iter; ++iter) {
-                    keys.push_back( Collatable::withData(iter->asString()) );
+                    keys.push_back( Collatable::withData(iter->asData()) );
                 }
                 return;
             }

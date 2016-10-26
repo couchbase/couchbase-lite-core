@@ -53,11 +53,17 @@ enum {
 };
 
 
+struct FleeceVTab : public sqlite3_vtab {
+    SharedKeys *sharedKeys;
+};
+
+
 // FleeceCursor is a subclass of sqlite3_vtab_cursor which will
 // serve as the underlying representation of a cursor that scans over rows of the result
 class FleeceCursor : public sqlite3_vtab_cursor {
 private:
     // Instance data:
+    FleeceVTab* _vtab;                  // The virtual table
     alloc_slice _fleeceData;            // The root Fleece data
     alloc_slice _rootPath;              // The path string within the data, if any
     const Value *_container;            // The object being iterated (target of the path)
@@ -69,7 +75,7 @@ private:
 #pragma mark - STATIC METHODS (DIRECT CALLBACKS):
 
 
-    // FleeceCursor instances are allocated via malloc, i.e. no exceptions raised
+    // instances are allocated via malloc, i.e. no exceptions raised
     static void* operator new(size_t size) noexcept     {return malloc(size);}
     static void operator delete(void *mem) noexcept     {free(mem);}
 
@@ -87,9 +93,13 @@ private:
         int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type,"
                                           " root_data HIDDEN, root_path HIDDEN)");
         if( rc==SQLITE_OK ) {
-            *ppVtab = (sqlite3_vtab*) operator new(sizeof(sqlite3_vtab));
-            if( *ppVtab==nullptr )
+            auto vtab = (FleeceVTab*) malloc(sizeof(FleeceVTab));
+            if (vtab) {
+                vtab->sharedKeys = (SharedKeys*)pAux;
+                *ppVtab = vtab;
+            } else {
                 rc = SQLITE_NOMEM;
+            }
         }
         return rc;
     }
@@ -97,14 +107,14 @@ private:
 
     // Destructor for sqlite3_vtab
     static int disconnect(sqlite3_vtab *pVtab) noexcept {
-        operator delete(pVtab);
+        free(pVtab);
         return SQLITE_OK;
     }
 
 
     // Creates a new FleeceCursor object.
-    static int open(sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor) noexcept {
-        *ppCursor = new FleeceCursor;
+    static int open(sqlite3_vtab *vtab, sqlite3_vtab_cursor **ppCursor) noexcept {
+        *ppCursor = new FleeceCursor((FleeceVTab*)vtab);
         return *ppCursor ? SQLITE_OK : SQLITE_NOMEM;
     }
 
@@ -163,6 +173,11 @@ private:
 #pragma mark - INSTANCE METHODS:
 
 
+    FleeceCursor(FleeceVTab *table)
+    :_vtab(table)
+    { }
+
+
     void reset() noexcept {
         _fleeceData = nullslice;
         _rootPath = nullslice;
@@ -190,7 +205,7 @@ private:
         // Evaluate the path, if there is one:
         if (idxNum == kPathIndex) {
             _rootPath = valueAsSlice(argv[1]);
-            int rc = evaluatePath(_rootPath, &_container);
+            int rc = evaluatePath(_rootPath, _vtab->sharedKeys, &_container);
             if (rc != SQLITE_OK)
                 return rc;
         }
@@ -219,9 +234,17 @@ private:
         if (atEOF())
             return SQLITE_ERROR;
         switch( column ) {
-            case kKeyColumn:
-                setResultFromValue(ctx, currentKey());
+            case kKeyColumn: {
+                auto key = currentKey();
+                if (key && key->isInteger()) {
+                    slice str = _vtab->sharedKeys->decode((int)key->asInt());
+                    sqlite3_result_text(ctx, (const char*)str.buf, (int)str.size,
+                                        SQLITE_TRANSIENT);
+                } else {
+                    setResultFromValue(ctx, key);
+                }
                 break;
+            }
             case kValueColumn:
                 setResultFromValue(ctx, currentValue());
                 break;
@@ -340,8 +363,8 @@ public:
 constexpr sqlite3_module FleeceCursor::kEachModule;
 
 
-int RegisterFleeceEachFunctions(sqlite3 *db) {
-    return sqlite3_create_module(db, "fl_each", &FleeceCursor::kEachModule, 0);
+int RegisterFleeceEachFunctions(sqlite3 *db, SharedKeys *sharedKeys) {
+    return sqlite3_create_module(db, "fl_each", &FleeceCursor::kEachModule, sharedKeys);
 }
 
 

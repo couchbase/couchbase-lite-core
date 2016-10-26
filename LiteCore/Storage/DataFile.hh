@@ -24,6 +24,11 @@
 #undef check
 #endif
 
+namespace fleece {
+    class SharedKeys;
+    class PersistentSharedKeys;
+}
+
 namespace litecore {
 
     class Transaction;
@@ -79,8 +84,12 @@ namespace litecore {
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
-        /** The number of deletions that have been purged via compaction. (Used by the indexer) */
+        /** The number of soft deletions that have been purged via compaction. 
+            (Used by the indexer) */
         uint64_t purgeCount() const;
+
+        void useDocumentKeys();
+        fleece::SharedKeys* documentKeys() const          {return (fleece::SharedKeys*)_documentKeys.get();}
 
         //////// KEY-STORES:
 
@@ -163,10 +172,14 @@ namespace litecore {
         class File;
         friend class KeyStore;
         friend class Transaction;
+        friend class DocumentKeys;
 
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
         void beginTransactionScope(Transaction*);
+        void transactionBegan(Transaction*);
+        void transactionEnding(Transaction*, bool committing);
         void endTransactionScope(Transaction*);
+        Transaction& transaction();
 
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
@@ -176,9 +189,10 @@ namespace litecore {
         File* const             _file;                          // Shared state of file (lock)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
-        std::unordered_map<std::string, std::unique_ptr<KeyStore> > _keyStores;// Opened KeyStores
-        bool _inTransaction     {false};                        // Am I in a Transaction?
+        std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
+        std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
+        bool _inTransaction     {false};                        // Am I in a Transaction?
     };
 
 

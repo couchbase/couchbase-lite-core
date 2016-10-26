@@ -16,6 +16,9 @@ namespace SQLite {
     class Statement;
     class Transaction;
 }
+namespace fleece {
+    class SharedKeys;
+}
 
 
 namespace litecore {
@@ -38,7 +41,7 @@ namespace litecore {
     };
 
 
-    int RegisterFleeceFunctions(sqlite3 *db);
-    int RegisterFleeceEachFunctions(sqlite3 *db);
+    int RegisterFleeceFunctions(sqlite3 *db, fleece::SharedKeys*);
+    int RegisterFleeceEachFunctions(sqlite3 *db, fleece::SharedKeys*);
 
 }

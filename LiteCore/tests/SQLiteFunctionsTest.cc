@@ -22,17 +22,22 @@ using namespace std;
 class SQLiteFunctionsTest {
 public:
 
-    SQLiteFunctionsTest()
+    static constexpr int numberOfOptions = 2;
+
+    SQLiteFunctionsTest(int which)
     :db(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE)
     {
-        RegisterFleeceFunctions(db.getHandle());
-        RegisterFleeceEachFunctions(db.getHandle());
+        // Run test once with shared keys, once without:
+        if (which & 1)
+            sharedKeys.reset(new SharedKeys());
+        RegisterFleeceFunctions(db.getHandle(), sharedKeys.get());
+        RegisterFleeceEachFunctions(db.getHandle(), sharedKeys.get());
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt.reset(new SQLite::Statement(db, "INSERT INTO kv (key, body) VALUES (?, ?)"));
     }
 
     void insert(const char *key, const char *json) {
-        auto body = JSONConverter::convertJSON(slice(json));
+        auto body = JSONConverter::convertJSON(slice(json), sharedKeys.get());
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();
@@ -51,10 +56,11 @@ public:
 protected:
     SQLite::Database db;
     unique_ptr<SQLite::Statement> insertStmt;
+    std::unique_ptr<SharedKeys> sharedKeys;
 };
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"hey\": [1, \"T\", 3.1416, []]}");
@@ -69,7 +75,7 @@ TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
 }
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
     insert("two",   "[2, 4, 6, 8]");
     insert("three", "[3, 6, 9, \"dozen\"]");
@@ -85,23 +91,23 @@ TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]") {
 }
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[fl_each]") {
-    insert("one",   "{\"one\": 1, \"two\": 2, \"three\": 3}");
-    insert("two",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
-    insert("three", "{\"one\": 3, \"two\": 6, \"three\": 9}");
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[fl_each]") {
+    insert("a",   "{\"one\": 1, \"two\": 2, \"three\": 3}");
+    insert("b",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
+    insert("c",   "{\"one\": 3, \"two\": 6, \"three\": 9}");
 
-    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
-            == (vector<string>{"3", "9", "6"}));
-    REQUIRE(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.value")
+            == (vector<string>{"3", "6", "9"}));
+    REQUIRE(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.key")
             == (vector<string>{"one", "three", "two"}));
-    REQUIRE(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    REQUIRE(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'c'")
             == (vector<string>{"2", "2", "2"}));
     REQUIRE(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 2")
-            == (vector<string>{"one", "two"}));
+            == (vector<string>{"a", "b"}));
 }
 
 
-TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[fl_each]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[fl_each]") {
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"xxx\": [1, 2, 3, 4]}");
