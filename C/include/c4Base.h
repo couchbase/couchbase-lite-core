@@ -41,7 +41,7 @@
     #define C4_ENUM CF_ENUM
     #define C4_OPTIONS CF_OPTIONS
 #else
-    #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
+    #if defined(_MSC_VER) || (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
         #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
         #if (__cplusplus)
             #define C4_OPTIONS(_type, _name) _type _name; enum : _type

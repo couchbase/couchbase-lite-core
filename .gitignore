@@ -27,3 +27,5 @@ CSharp/.vscode
 CSharp/test/LiteCore.Tests/.vscode
 CSharp/native
 /build_cmake
+Release_Testing/
+Debug_Testing/

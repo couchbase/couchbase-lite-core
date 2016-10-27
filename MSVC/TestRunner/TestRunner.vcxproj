@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\LiteCore\tests\CASRevisionStoreTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\CollatableTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\DataFileTest.cc" />
+    <ClCompile Include="..\..\LiteCore\tests\DocumentKeysTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\GeoHashTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\GeoIndexTest.cc" />
     <ClCompile Include="..\..\LiteCore\tests\IndexTest.cc" />
@@ -53,27 +54,27 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -95,19 +96,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\MSVC;$(ProjectDir)..\..\vendor\forestdb\include\libforestdb;$(ProjectDir)..\..\vendor\;$(ProjectDir)..\..\vendor\Fleece\vendor\catch;$(ProjectDir)..\..\vendor\Fleece\Fleece;$(ProjectDir)..\..\LiteCore\VersionVectors;$(ProjectDir)..\..\LiteCore\Support;$(ProjectDir)..\..\LiteCore\Storage;$(ProjectDir)..\..\LiteCore\RevTrees;$(ProjectDir)..\..\LiteCore\Indexes;$(ProjectDir)..\..\LiteCore\C API;$(ProjectDir)..\..\LiteCore\tests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,7 +116,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);DEBUG;LITECORE_CPP_TESTS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +130,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);DEBUG;LITECORE_CPP_TESTS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,7 +146,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);LITECORE_CPP_TESTS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,7 +164,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_USE_MATH_DEFINES;%(PreprocessorDefinitions);LITECORE_CPP_TESTS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

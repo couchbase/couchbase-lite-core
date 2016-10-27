@@ -135,7 +135,7 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     // Enumerate a vector of key ranges:
     Log("--- Enumerating a vector of key ranges");
     std::vector<KeyRange> ranges;
-    ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder("Port\uFFFE")));
+    ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder(u8"Port\uFFFE")));
     ranges.push_back(KeyRange(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti")));
     nRows = 0;
     for (IndexEnumerator e(*index, ranges); e.next(); ) {

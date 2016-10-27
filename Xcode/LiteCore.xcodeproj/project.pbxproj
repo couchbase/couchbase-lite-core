@@ -3363,6 +3363,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
 			buildSettings = {
+				DYLIB_INSTALL_NAME_BASE = "@loader_path";
 				OTHER_LDFLAGS = "-all_load";
 			};
 			name = Debug;
@@ -3371,6 +3372,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
 			buildSettings = {
+				DYLIB_INSTALL_NAME_BASE = "@loader_path";
 				OTHER_LDFLAGS = "-all_load";
 			};
 			name = Release;
@@ -3379,6 +3381,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
+				DYLIB_INSTALL_NAME_BASE = "@loader_path";
 			};
 			name = Debug;
 		};
@@ -3386,6 +3389,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
+				DYLIB_INSTALL_NAME_BASE = "@loader_path";
 			};
 			name = Release;
 		};

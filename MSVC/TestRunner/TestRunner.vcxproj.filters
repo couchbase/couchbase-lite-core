@@ -66,5 +66,8 @@
     <ClCompile Include="..\arc4random.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\LiteCore\tests\DocumentKeysTest.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

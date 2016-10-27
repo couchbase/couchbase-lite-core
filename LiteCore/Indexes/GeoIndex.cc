@@ -24,7 +24,7 @@
 #include <string.h>
 #if defined(linux) || defined(__linux__)
 #include <bsd/string.h>
-#elsif defined(_MSC_VER)
+#elif defined(_MSC_VER)
 #include "strlcat.h"
 #endif
 
