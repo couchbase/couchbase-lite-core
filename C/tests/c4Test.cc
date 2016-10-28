@@ -109,7 +109,7 @@ C4Test::C4Test(int testOption)
     c4log_register(kC4LogWarning, log);
 
     C4DatabaseConfig config = { };
-    config.flags = kC4DB_Create;
+    config.flags = kC4DB_Create | kC4DB_SharedKeys;
     config.storageEngine = _storage;
     config.versioning = _versioning;
 

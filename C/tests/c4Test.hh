@@ -21,6 +21,14 @@ using litecore::LogDomain;
 using litecore::DefaultLog;
 
 
+#ifdef NDEBUG
+#undef REQUIRE  // it slows down the tests significantly
+#define REQUIRE(X) ({if (!(X)) abort();})
+#undef INFO
+#define INFO(X)
+#endif
+
+
 #ifdef _MSC_VER
 #define kTestDir "C:\\tmp\\"
 #else

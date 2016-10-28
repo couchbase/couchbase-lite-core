@@ -8,6 +8,7 @@
 
 #include "Fleece.h"     // including this before c4 makes FLSlice and C4Slice compatible
 #include "c4Test.hh"
+#include "c4Document+Fleece.h"
 #include "Base.hh"
 #include "Benchmark.hh"
 #include <fcntl.h>
@@ -15,11 +16,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
-
-#ifdef NDEBUG
-#undef REQUIRE  // it slows down the tests significantly
-#define REQUIRE(X) ({if (!(X)) abort();})
-#endif
 
 // Download from https://github.com/arangodb/example-datasets and update this path accordingly:
 #define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
@@ -303,7 +299,8 @@ public:
 
 
     unsigned indexLikesView() {
-        FLDictKey likesKey   = FLDictKey_Init(FLSTR("likes"), true);
+        FLDictKey likesKey   = FLDictKey_InitWithSharedKeys(FLSTR("likes"),
+                                                            c4db_getFLSharedKeys(db));
         C4Key *keys[3] = {c4key_new(), c4key_new(), c4key_new()};
         C4Slice values[3] = {};
         unsigned totalLikes = 0;
@@ -354,9 +351,10 @@ public:
 
 
     unsigned indexStatesView() {
-        FLDictKey contactKey = FLDictKey_Init(FLSTR("contact"), true);
-        FLDictKey addressKey = FLDictKey_Init(FLSTR("address"), true);
-        FLDictKey stateKey   = FLDictKey_Init(FLSTR("state"), true);
+        auto sk = c4db_getFLSharedKeys(db);
+        FLDictKey contactKey = FLDictKey_InitWithSharedKeys(FLSTR("contact"), sk);
+        FLDictKey addressKey = FLDictKey_InitWithSharedKeys(FLSTR("address"), sk);
+        FLDictKey stateKey   = FLDictKey_InitWithSharedKeys(FLSTR("state"), sk);
         C4Key *key = c4key_new();
         C4Slice values[3] = {};
         unsigned totalStates = 0;

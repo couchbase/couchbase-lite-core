@@ -300,8 +300,7 @@ struct _FLEncoder* c4db_createFleeceEncoder(C4Database* db) noexcept {
 
 C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        Encoder enc;
-        enc.setSharedKeys(db->documentKeys());
+        Encoder &enc = db->sharedEncoder();
         JSONConverter jc(enc);
         if (!jc.encodeJSON(jsonData)) {
             recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);

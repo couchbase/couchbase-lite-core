@@ -23,6 +23,7 @@
 
 
 namespace fleece {
+    class Encoder;
     class SharedKeys;
 }
 namespace litecore {
@@ -78,6 +79,8 @@ namespace c4Internal {
 
         DocumentFactory& documentFactory()                  {return *_documentFactory;}
 
+        fleece::Encoder& sharedEncoder();
+
         void useDocumentKeys()                              {_db->useDocumentKeys();}
         fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
 
@@ -112,6 +115,7 @@ namespace c4Internal {
         // Must be acquired BEFORE _mutex, or deadlock may occur!
         recursive_mutex             _transactionMutex;
     #endif
+        unique_ptr<fleece::Encoder> _encoder;
     };
 
 

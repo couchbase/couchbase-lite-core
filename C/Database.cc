@@ -12,6 +12,7 @@
 #include "DataFile.hh"
 #include "Collatable.hh"
 #include "CASRevisionStore.hh"
+#include "Fleece.hh"
 
 
 namespace c4Internal {
@@ -67,8 +68,6 @@ namespace c4Internal {
                             ? findOrCreateBundle(pathStr, config)
                             : FilePath(pathStr);
         Retained<Database> db {new Database((string)path, config)};
-        if (config.flags & kC4DB_SharedKeys)
-            db->useDocumentKeys();
         DocumentFactory* factory;
         switch (config.versioning) {
             case kC4VersionVectors: factory = new VectorDocumentFactory(db); break;
@@ -113,10 +112,14 @@ namespace c4Internal {
     Database::Database(const string &path,
                            const C4DatabaseConfig &inConfig)
     :config(inConfig),
-     _db(newDataFile(path, config, true))
+     _db(newDataFile(path, config, true)),
+     _encoder( new fleece::Encoder() )
     {
-        //useDocumentKeys();
-        
+        if (config.flags & kC4DB_SharedKeys) {
+            _db->useDocumentKeys();
+            _encoder->setSharedKeys(documentKeys());
+        }
+
         // Validate that the versioning matches what's used in the database:
         auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
         Record doc = info.get(slice("versioning"));
@@ -361,6 +364,12 @@ namespace c4Internal {
             localDocs.set(key, meta, body, t);
         else
             localDocs.del(key, t);
+    }
+
+
+    fleece::Encoder& Database::sharedEncoder() {
+        _encoder->reset();
+        return *_encoder.get();
     }
 
 }
