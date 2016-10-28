@@ -32,6 +32,7 @@ _c4db_isInTransaction
 _c4db_createFleeceEncoder
 _c4db_encodeJSON
 _c4db_initFLDictKey
+_c4db_getFLSharedKeys
 
 _c4raw_free
 _c4raw_get
@@ -197,6 +198,7 @@ _FLArrayIterator_Next
 _FLDict_Count
 _FLDict_Get
 _FLDict_GetUnsorted
+_FLDict_GetSharedKey
 _FLDictIterator_Begin
 _FLDictIterator_GetKey
 _FLDictIterator_GetValue
@@ -209,6 +211,7 @@ _FLEncoder_New
 _FLEncoder_NewWithOptions
 _FLEncoder_Free
 _FLEncoder_Reset
+_FLEncoder_SetSharedKeys
 _FLEncoder_WriteNull
 _FLEncoder_WriteBool
 _FLEncoder_WriteInt
@@ -235,3 +238,4 @@ _FLDict_GetWithCFString
 _FLEncoder_WriteNSObject
 _FLValue_GetNSObject
 _FLDict_GetWithNSString
+_FLErrorDomain

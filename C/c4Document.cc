@@ -291,14 +291,14 @@ int32_t c4doc_purgeRevision(C4Document *doc,
 using namespace fleece;
 
 
-struct _FLEncoder* c4db_createFleeceEncoder(C4Database* db) {
+struct _FLEncoder* c4db_createFleeceEncoder(C4Database* db) noexcept {
     FLEncoder enc = FLEncoder_New();
     ((Encoder*)enc)->setSharedKeys(db->documentKeys());
     return enc;
 }
 
 
-C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outError) {
+C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
         Encoder enc;
         enc.setSharedKeys(db->documentKeys());
@@ -313,7 +313,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
 }
 
 
-C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) {
+C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
         auto root = Value::fromTrustedData(doc->selectedRev.body);
         if (!root) {
@@ -327,7 +327,12 @@ C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) {
 }
 
 
-FLDictKey c4db_initFLDictKey(C4Database *db, C4Slice string) {
+FLDictKey c4db_initFLDictKey(C4Database *db, C4Slice string) noexcept {
     return FLDictKey_InitWithSharedKeys({string.buf, string.size},
                                         (FLSharedKeys)db->documentKeys());
+}
+
+
+FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
+    return (FLSharedKeys)db->documentKeys();
 }

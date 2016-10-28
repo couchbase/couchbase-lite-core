@@ -67,6 +67,8 @@ namespace c4Internal {
                             ? findOrCreateBundle(pathStr, config)
                             : FilePath(pathStr);
         Retained<Database> db {new Database((string)path, config)};
+        if (config.flags & kC4DB_SharedKeys)
+            db->useDocumentKeys();
         DocumentFactory* factory;
         switch (config.versioning) {
             case kC4VersionVectors: factory = new VectorDocumentFactory(db); break;

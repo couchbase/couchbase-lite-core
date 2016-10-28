@@ -103,6 +103,7 @@ namespace litecore {
             // http://www.sqlite.org/pragma.html
             _sqlDb->exec("PRAGMA mmap_size=50000000");      // mmap improves performance
             _sqlDb->exec("PRAGMA journal_mode=WAL");        // faster writes, better concurrency
+            _sqlDb->exec("PRAGMA journal_size_limit=5000000"); // trim WAL file to 5MB
             _sqlDb->exec("PRAGMA synchronous=normal");      // faster commits
 
             // Configure number of extra threads to be used by SQLite:

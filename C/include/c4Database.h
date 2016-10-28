@@ -32,6 +32,7 @@ extern "C" {
         kC4DB_ReadOnly      = 2,    ///< Open file read-only
         kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
         kC4DB_Bundled       = 8,    ///< Store db (and views) inside a directory
+        kC4DB_SharedKeys    = 0x10, ///< Enable shared-keys optimization at creation time
     };
 
     /** Document versioning system (also determines database storage schema) */
