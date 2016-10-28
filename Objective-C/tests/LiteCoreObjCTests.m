@@ -7,33 +7,118 @@
 //
 
 #import <XCTest/XCTest.h>
+#import "LCDatabase.h"
+#import "LCDocument.h"
+#import "c4Base.h"
+
+
+#define Assert XCTAssert
+#define AssertNotNil XCTAssertNotNil
+#define AssertEqual XCTAssertEqual
+#define AssertEqualObjects XCTAssertEqualObjects
+#define AssertFalse XCTAssertFalse
+
 
 @interface LiteCoreObjCTests : XCTestCase
-
 @end
 
+
 @implementation LiteCoreObjCTests
+{
+    LCDatabase* db;
+}
+
 
 - (void)setUp {
     [super setUp];
-    // Put setup code here. This method is called before the invocation of each test method in the class.
+    // (Can't use default directory because XCTest doesn't have a bundle ID)
+    NSString* path = [NSTemporaryDirectory() stringByAppendingPathComponent: @"LCDatabaseTest"];
+    NSError* error;
+    Assert([LCDatabase deleteDatabaseAtPath: path error: &error]);
+    db = [[LCDatabase alloc] initWithPath: path error: &error];
+    AssertNotNil(db, @"Couldn't open db: %@", error);
 }
 
+
 - (void)tearDown {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    NSError *error;
+    Assert([db close: &error]);
+    db = nil;
     [super tearDown];
 }
 
-- (void)testExample {
-    // This is an example of a functional test case.
-    // Use XCTAssert and related functions to verify your tests produce the correct results.
+
+- (void)test01_NewDoc {
+    // Create a new document:
+    LCDocument* doc = db[@"doc1"];
+    AssertNotNil(doc);
+    AssertEqualObjects(doc.documentID, @"doc1");
+    AssertEqual(doc.database, db);
+    AssertEqual(doc.sequence, 0);
+    AssertFalse(doc.exists);
+    AssertFalse(doc.isDeleted);
+    AssertEqual(doc.properties, nil);
+    AssertEqual(doc[@"prop"], nil);
+    AssertFalse([doc boolForKey: @"prop"]);
+    AssertEqual([doc integerForKey: @"prop"], 0);
+    AssertEqual([doc floatForKey: @"prop"], 0.0);
+    AssertEqual([doc doubleForKey: @"prop"], 0.0);
+    AssertFalse(doc.hasUnsavedChanges);
+    AssertEqual(doc.savedProperties, nil);
+
+    // Try and fail to load:
+    NSError* error;
+    AssertFalse([doc reload: &error]);
+    AssertEqualObjects(error.domain, LCErrorDomain);
+    AssertEqual(error.code, kC4ErrorNotFound);
 }
 
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
+
+- (void)test02_SetProperties {
+    LCDocument* doc = db[@"doc1"];
+    doc[@"type"] = @"demo";
+    doc[@"weight"] = @12.5;
+    doc[@"tags"] = @[@"useless", @"temporary"];
+
+    Assert(doc.hasUnsavedChanges);
+    AssertEqualObjects(doc[@"type"], @"demo");
+    AssertEqual([doc doubleForKey: @"weight"], 12.5);
+    AssertEqualObjects(doc.properties,
+                       (@{@"type": @"demo", @"weight": @12.5, @"tags": @[@"useless", @"temporary"]}));
+    [doc revertToSaved];
+    Assert(!doc.hasUnsavedChanges);
+    AssertEqualObjects(doc[@"type"], nil);
+    AssertEqual([doc doubleForKey: @"weight"], 0);
+    AssertEqualObjects(doc.properties, nil);
+}
+
+
+- (void)test03_SaveNewDoc {
+    LCDocument* doc = db[@"doc1"];
+    doc[@"type"] = @"demo";
+    doc[@"weight"] = @12.5;
+    doc[@"tags"] = @[@"useless", @"temporary"];
+    NSError *error;
+    Assert([doc save: &error], @"Error saving: %@", error);
+
+    Assert(!doc.hasUnsavedChanges);
+    AssertEqualObjects(doc[@"type"], @"demo");
+    AssertEqualObjects(doc.properties,
+                       (@{@"type": @"demo", @"weight": @12.5, @"tags": @[@"useless", @"temporary"]}));
+    AssertEqual(doc.sequence, 1);
+
+    // Note: This only works because LCDocuments aren't being uniqued yet, so this
+    // 'doc' is a different object
+    LCDocument* firstDoc = doc;
+    doc = db[@"doc1"];
+    Assert(doc != firstDoc);
+
+    AssertEqual(doc.sequence, 1);
+    Assert(!doc.hasUnsavedChanges);
+    AssertEqualObjects(doc[@"type"], @"demo");
+    AssertEqual([doc doubleForKey: @"weight"], 12.5);
+    AssertEqualObjects(doc.properties,
+                       (@{@"type": @"demo", @"weight": @12.5, @"tags": @[@"useless", @"temporary"]}));
 }
 
 @end

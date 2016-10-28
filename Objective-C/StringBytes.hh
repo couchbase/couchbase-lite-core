@@ -8,6 +8,8 @@
 
 #pragma once
 #import <Foundation/Foundation.h>
+#import "c4Base.h"
+#import "Fleece.h"
 
 
 /** A slice holding the data of an NSString. It might point directly into the NSString, so
@@ -16,6 +18,9 @@
 struct stringBytes  {
     stringBytes(NSString*);
     ~stringBytes();
+
+    operator FLSlice() {return {buf, size};}
+    operator C4Slice() {return {buf, size};}
 
     const char *buf;
     size_t size;

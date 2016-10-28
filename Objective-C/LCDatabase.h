@@ -7,14 +7,56 @@
 //
 
 #import <Foundation/Foundation.h>
+@class LCDocument;
+
+NS_ASSUME_NONNULL_BEGIN
+
+
+extern const NSString* const LCErrorDomain;
+
+
+/** Callback that resolves document conflicts during a save.
+    @param myVersion  The LCDocument's current in-memory properties
+    @param theirVersion  The document's current revision
+    @param baseVersion  The common ancestor, if available
+    @return  The merged properties to save, or nil to give up */
+typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
+                                                       NSDictionary* theirVersion,
+                                                       NSDictionary* baseVersion);
 
 
 /** LiteCore database object. */
 @interface LCDatabase : NSObject
 
++ (NSString*) defaultDirectory;
+
 - (instancetype) initWithPath: (NSString*)directory
+                        error: (NSError**)outError NS_DESIGNATED_INITIALIZER;
+
+- (instancetype) initWithName: (NSString*)name
                         error: (NSError**)outError;
+
+- (instancetype) init NS_UNAVAILABLE;
+
 
 - (bool) close: (NSError**)outError;
 
+- (bool) deleteDatabase: (NSError**)outError;
+
++ (bool) deleteDatabaseAtPath: (NSString*)path error: (NSError**)outError;
+
+
+- (bool) inTransaction: (NSError**)outError do: (bool (^)())block;
+
+
+- (LCDocument*) documentWithID: (NSString*)docID;
+- (LCDocument*) objectForKeyedSubscript: (NSString*)docID;
+
+- (nullable LCDocument*) existingDocumentWithID: (NSString*)docID
+                                          error: (NSError**)outError;
+
+@property (readwrite, nullable, nonatomic) LCConflictResolver conflictResolver;
+
 @end
+
+NS_ASSUME_NONNULL_END
