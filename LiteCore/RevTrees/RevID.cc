@@ -16,7 +16,7 @@
 #include "RevID.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include "MSVC_Compat.hh"
+#include "PlatformCompat.hh"
 #include <math.h>
 
 

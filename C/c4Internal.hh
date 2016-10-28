@@ -11,7 +11,7 @@
 #include "Base.hh"
 #include "Error.hh"
 #include "RefCounted.hh"
-#include "MSVC_Compat.hh"
+#include "PlatformCompat.hh"
 #include <functional>
 
 

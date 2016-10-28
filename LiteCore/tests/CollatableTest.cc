@@ -10,7 +10,7 @@
 #include "LiteCoreTest.hh"
 #include <math.h>
 #include <float.h>
-#include "MSVC_Compat.hh"
+#include "PlatformCompat.hh"
 
 using namespace litecore;
 
@@ -113,7 +113,9 @@ TEST_CASE( "Collatable Floats", "[Collatable]" ) {
 }
 
 TEST_CASE( "Collatable RandomFloats", "[Collatable][slow][noisy]" ) {
-    srandomdev();
+    time_t now;
+    time(&now);
+    srandom((unsigned)now);
     for (int i=0; i< 10000; i++) {
         double n1 = randf(), n2 = randf();
         Debug("Compare: %g <--> %g", n1, n2);

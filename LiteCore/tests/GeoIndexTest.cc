@@ -9,7 +9,7 @@
 #include "GeoIndex.hh"
 #include "RecordEnumerator.hh"
 #include "LiteCoreTest.hh"
-#include "MSVC_Compat.hh"
+#include "PlatformCompat.hh"
 
 using namespace geohash;
 

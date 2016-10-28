@@ -25,9 +25,9 @@
 #endif
 
 #ifdef _MSC_VER
-#define CBINLINE __forceinline
+#define C4INLINE __forceinline
 #else
-#define CBINLINE inline
+#define C4INLINE inline
 #endif
 
 // Macros for defining typed enumerations and option flags.
@@ -168,7 +168,7 @@ typedef struct {
 #endif
 
 /** Creates a slice pointing to the contents of a C string. */
-static CBINLINE C4Slice c4str(const char *str) {
+static C4INLINE C4Slice c4str(const char *str) {
     C4Slice foo = { str, str ? strlen(str) : 0 };
     return foo;
 }

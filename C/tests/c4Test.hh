@@ -13,7 +13,7 @@
 #include "c4.h"
 
 #include "CatchHelper.hh"
-#include "MSVC_Compat.hh"
+#include "PlatformCompat.hh"
 #include "Logging.hh"
 
 using litecore::LogLevel;
