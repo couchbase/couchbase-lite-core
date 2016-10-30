@@ -49,11 +49,12 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
 - (bool) inTransaction: (NSError**)outError do: (bool (^)())block;
 
 
-- (LCDocument*) documentWithID: (NSString*)docID;
-- (LCDocument*) objectForKeyedSubscript: (NSString*)docID;
+- (nullable LCDocument*) documentWithID: (NSString*)docID;
+- (nullable LCDocument*) objectForKeyedSubscript: (NSString*)docID;
 
-- (nullable LCDocument*) existingDocumentWithID: (NSString*)docID
-                                          error: (NSError**)outError;
+- (nullable LCDocument*) documentWithID: (NSString*)docID
+                              mustExist: (bool)mustExist
+                                  error: (NSError**)outError;
 
 @property (readwrite, nullable, nonatomic) LCConflictResolver conflictResolver;
 

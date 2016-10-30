@@ -19,6 +19,15 @@
 #define AssertFalse XCTAssertFalse
 
 
+// Internal API; I use this to create multiple doc instances on a single document
+@interface LCDocument ()
+- (instancetype) initWithDatabase: (LCDatabase*)db
+                            docID: (NSString*)docID
+                        mustExist: (BOOL)mustExist
+                            error: (NSError**)outError;
+@end
+
+
 @interface LiteCoreObjCTests : XCTestCase
 @end
 
@@ -71,6 +80,15 @@
     AssertFalse([doc reload: &error]);
     AssertEqualObjects(error.domain, LCErrorDomain);
     AssertEqual(error.code, kC4ErrorNotFound);
+
+    AssertEqual(db[@"doc1"], doc);
+
+    AssertEqual([db documentWithID: @"doc1" mustExist: true error: &error], nil);
+    AssertEqualObjects(error.domain, LCErrorDomain);
+    AssertEqual(error.code, kC4ErrorNotFound);
+    AssertEqual([db documentWithID: @"doc2" mustExist: true error: NULL], nil);
+    AssertEqualObjects(error.domain, LCErrorDomain);
+    AssertEqual(error.code, kC4ErrorNotFound);
 }
 
 
@@ -107,10 +125,9 @@
                        (@{@"type": @"demo", @"weight": @12.5, @"tags": @[@"useless", @"temporary"]}));
     AssertEqual(doc.sequence, 1);
 
-    // Note: This only works because LCDocuments aren't being uniqued yet, so this
-    // 'doc' is a different object
+    // Create a different LCDocument on the same doc, so we can read it back in:
     LCDocument* firstDoc = doc;
-    doc = db[@"doc1"];
+    doc = [[LCDocument alloc] initWithDatabase: db docID: @"doc1" mustExist: YES error: NULL];
     Assert(doc != firstDoc);
 
     AssertEqual(doc.sequence, 1);
@@ -119,6 +136,47 @@
     AssertEqual([doc doubleForKey: @"weight"], 12.5);
     AssertEqualObjects(doc.properties,
                        (@{@"type": @"demo", @"weight": @12.5, @"tags": @[@"useless", @"temporary"]}));
+}
+
+
+- (void) test04_Conflict {
+    LCDocument* doc = db[@"doc1"];
+    doc[@"type"] = @"demo";
+    doc[@"weight"] = @12.5;
+    doc[@"tags"] = @[@"useless", @"temporary"];
+    NSError *error;
+    Assert([doc save: &error], @"Error saving: %@", error);
+
+    doc[@"weight"] = @200;
+
+    // Update the doc in the db, by using a different object:
+    {
+        LCDocument *shadow = [[LCDocument alloc] initWithDatabase: db docID: @"doc1"
+                                                        mustExist: YES error: NULL];
+        AssertEqualObjects(shadow[@"weight"], @12.5);
+        shadow[@"weight"] = @1.5;
+        Assert([shadow save: &error], @"Error saving shadow: %@", error);
+    }
+
+    AssertFalse([doc save: &error]);
+    AssertEqualObjects(error.domain, LCErrorDomain);
+    AssertEqual(error.code, kC4ErrorConflict);
+
+    // Conflict resolver that returns nil aborts the resolve:
+    doc.conflictResolver = ^(NSDictionary *mine, NSDictionary* theirs, NSDictionary* base) {
+        return (NSDictionary*)nil;
+    };
+    AssertFalse([doc save: &error]);
+
+    // Now use a resolver that just takes my changes:
+    doc.conflictResolver = ^(NSDictionary *mine, NSDictionary* theirs, NSDictionary* base) {
+        AssertEqualObjects(mine[@"weight"], @200);
+        AssertEqualObjects(theirs[@"weight"], @1.5);
+        AssertEqualObjects(base[@"weight"], @12.5);
+        return mine;
+    };
+    Assert([doc save: &error], @"Error updating: %@", error);
+    AssertEqualObjects(doc[@"weight"], @200);
 }
 
 @end

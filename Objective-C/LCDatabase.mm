@@ -18,6 +18,7 @@ const NSString* const LCErrorDomain = @"LiteCore";
 @implementation LCDatabase
 {
     C4Database* _c4db;
+    NSMapTable<NSString*,LCDocument*>* _documents;
 }
 
 @synthesize c4db=_c4db, conflictResolver=_conflictResolver;
@@ -40,6 +41,7 @@ static const C4DatabaseConfig kDBConfig = {
         _c4db = c4db_open({b.buf, b.size}, &kDBConfig, &err);
         if (!_c4db)
             return convertError(err, outError), nil;
+        _documents = [NSMapTable strongToWeakObjectsMapTable];
     }
     return self;
 }
@@ -113,20 +115,41 @@ static const C4DatabaseConfig kDBConfig = {
 }
 
 
+#pragma mark - DOCUMENTS:
+
+
+- (LCDocument*) documentWithID: (NSString*)docID
+                     mustExist: (bool)mustExist
+                         error: (NSError**)outError
+{
+    LCDocument *doc = [_documents objectForKey: docID];
+    if (!doc) {
+        doc = [[LCDocument alloc] initWithDatabase: self docID: docID
+                                         mustExist: mustExist
+                                             error: outError];
+        if (!doc)
+            return nil;
+        [_documents setObject: doc forKey: docID];
+    } else {
+        if (mustExist && !doc.exists) {
+            // Don't return a pre-instantiated LCDocument if it doesn't exist
+            convertError(C4Error{LiteCoreDomain, kC4ErrorNotFound},  outError);
+            return nil;
+        }
+    }
+    return doc;
+}
+
 - (LCDocument*) documentWithID: (NSString*)docID {
-    //TODO: Cache document objects by ID
-    return [[LCDocument alloc] initWithDatabase: self docID: docID];
+    return [self documentWithID: docID mustExist: false error: nil];
 }
 
 - (LCDocument*) objectForKeyedSubscript: (NSString*)docID {
-    return [self documentWithID: docID];
+    return [self documentWithID: docID mustExist: false error: nil];
 }
 
-
 - (LCDocument*) existingDocumentWithID: (NSString*)docID error: (NSError**)outError {
-    //TODO: Cache document objects by ID
-    auto doc = [[LCDocument alloc] initWithDatabase: self docID: docID];
-    return [doc reload: outError] ? doc : nil;
+    return [self documentWithID: docID mustExist: true error: outError];
 }
 
 

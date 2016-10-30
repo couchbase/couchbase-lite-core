@@ -23,14 +23,20 @@
 @synthesize conflictResolver=_conflictResolver;
 
 
-- (instancetype) initWithDatabase: (LCDatabase*)db docID: (NSString*)docID {
+- (instancetype) initWithDatabase: (LCDatabase*)db
+                            docID: (NSString*)docID
+                        mustExist: (BOOL)mustExist
+                            error: (NSError**)outError
+{
     self = [super init];
     if (self) {
         _database = db;
         _documentID = docID;
         _c4db = db.c4db;
-        if (![self reload: nullptr])
+        auto doc = [self readCurrentC4Doc: outError mustExist: mustExist];
+        if (!doc)
             return nil;
+        [self setC4Doc: doc];
     }
     return self;
 }
@@ -42,7 +48,7 @@
 
 
 - (bool) reload: (NSError**)outError {
-    auto doc = [self readCurrentC4Doc: outError mustExist: (_c4doc != nullptr)];
+    auto doc = [self readCurrentC4Doc: outError mustExist: true];
     if (!doc)
         return false;
     [self setC4Doc: doc];
@@ -276,7 +282,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
         }
 
         // Update to current revision of doc:
-        [self setC4Doc: newDoc];
+        [self setC4Doc: curDoc];
         if ([resolved isEqual: curProperties]) {
             // Resolved doc is same as current revision, so nothing to save:
             _properties = [curProperties copy];

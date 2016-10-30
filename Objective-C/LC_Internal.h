@@ -30,7 +30,10 @@ bool convertError(const FLError&, NSError **outError);
 @end
 
 @interface LCDocument ()
-- (instancetype) initWithDatabase: (LCDatabase*)db docID: (NSString*)docID;
+- (instancetype) initWithDatabase: (LCDatabase*)db
+                            docID: (NSString*)docID
+                        mustExist: (BOOL)mustExist
+                            error: (NSError**)outError;
 @end
 
 
