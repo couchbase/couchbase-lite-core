@@ -41,7 +41,7 @@ stringBytes::stringBytes(__unsafe_unretained NSString* str)
     NSUInteger maxByteCount = [str maximumLengthOfBytesUsingEncoding: NSUTF8StringEncoding];
     buf = (const char *)malloc(maxByteCount);
     _needsFree = true;
-    BOOL ok = [str getBytes: (void*)buf maxLength: maxByteCount usedLength: &byteCount
+    __unused BOOL ok = [str getBytes: (void*)buf maxLength: maxByteCount usedLength: &byteCount
                    encoding: NSUTF8StringEncoding options: 0
                       range: NSMakeRange(0, str.length) remainingRange: nullptr];
     NSCAssert(ok, @"Couldn't get NSString bytes");

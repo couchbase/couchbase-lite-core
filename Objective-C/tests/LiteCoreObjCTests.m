@@ -179,4 +179,45 @@
     AssertEqualObjects(doc[@"weight"], @200);
 }
 
+
+- (void) test05_ImportITunes {
+    NSURL* libraryURL = [[NSBundle bundleForClass: [self class]] URLForResource: @"iTunesMusicLibrary"
+                                                withExtension: @"json"];
+    NSData* jsonData = [NSData dataWithContentsOfURL: libraryURL];
+    NSArray* tracks = [NSJSONSerialization JSONObjectWithData: jsonData options: 0 error:NULL];
+    NSAssert(tracks, @"Couldn't read %@", libraryURL.path);
+
+    NSArray* keysToCopy = keysToCopy = @[@"Name", @"Artist", @"Album", @"Genre", @"Year",
+                                         @"Total Time", @"Track Number", @"Compilation"];
+
+    CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
+    __block unsigned count = 0;
+    [db inTransaction: NULL do:^bool{
+        for (NSDictionary* track in tracks) {
+            NSString* trackType = track[@"Track Type"];
+            if (![trackType isEqual: @"File"] && ![trackType isEqual: @"Remote"])
+                continue;
+            @autoreleasepool {
+                NSString* documentID = track[@"Persistent ID"];
+                if (!documentID)
+                    continue;
+                LCDocument* doc = [self->db documentWithID: documentID];
+                for(NSString* key in keysToCopy) {
+                    id value = track[key];
+                    if (value)
+                        doc[key] = value;
+                }
+                ++count;
+                NSError* error;
+                if (![doc save: &error])
+                    NSAssert(NO, @"Couldn't save doc: %@", error);
+            }
+        }
+        return YES;
+    }];
+    CFAbsoluteTime t = (CFAbsoluteTimeGetCurrent() - startTime);
+    NSLog(@"Writing %u docs took %.3f ms (%.3f us/doc, or %.0f docs/sec)",
+          count, t*1000, t/count*1e6, count/t);
+}
+
 @end
