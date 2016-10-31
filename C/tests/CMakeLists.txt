@@ -8,8 +8,7 @@ add_definitions(-DDEBUG)
 include_directories(${TOP}C/include/
                     ${TOP}C/
                     ${TOP}vendor/fleece/Fleece/
-                    ${TOP}vendor/   # for catch.hpp
-                    ${TOP}LiteCore/tests/    # for CatchHelper.hh
+                    ${TOP}vendor/fleece/vendor/catch/
                 )
                     
 aux_source_directory(.  TEST_SRC)
