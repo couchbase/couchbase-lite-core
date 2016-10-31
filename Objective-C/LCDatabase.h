@@ -12,6 +12,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 
+/********
+ NOTE: THIS IS A PROVISIONAL, PLACEHOLDER API, NOT THE OFFICIAL COUCHBASE LITE 2.0 API.
+ It's for prototyping, experimentation, and performance testing. It will change without notice.
+ Once the 2.0 API is designed, we will begin implementing that and remove these classes.
+ ********/
+
+
 extern const NSString* const LCErrorDomain;
 
 

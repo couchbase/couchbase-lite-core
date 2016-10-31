@@ -16,4 +16,5 @@ FOUNDATION_EXPORT const unsigned char LiteCoreObjCVersionString[];
 
 // In this header, you should import all the public headers of your framework using statements like #import <LiteCoreObjC/PublicHeader.h>
 
-
+#import <LiteCoreObjC/LCDatabase.h>
+#import <LiteCoreObjC/LCDocument.h>
