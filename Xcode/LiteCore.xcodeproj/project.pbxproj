@@ -18,6 +18,8 @@
 				2701C22F1C4DA83E006D7A99 /* PBXTargetDependency */,
 				27732CE21D734EFB006D3802 /* PBXTargetDependency */,
 				27732CE41D734EFE006D3802 /* PBXTargetDependency */,
+				276683B01DC7CA3600E3F187 /* PBXTargetDependency */,
+				276683B21DC7CA3B00E3F187 /* PBXTargetDependency */,
 			);
 			name = All;
 			productName = All;
@@ -93,6 +95,7 @@
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		2744151F1900E8D800964583 /* fdb_errors.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151D1900E8D800964583 /* fdb_errors.h */; };
 		274415211900E8D800964583 /* fdb_types.h in Headers */ = {isa = PBXBuildFile; fileRef = 2744151E1900E8D800964583 /* fdb_types.h */; };
+		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274A69911BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		274A69931BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
@@ -146,6 +149,9 @@
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		276683A91DC7A5ED00E3F187 /* iTunesMusicLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */; };
+		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
+		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
+		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
 		276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
@@ -515,6 +521,20 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
 		};
+		276683AF1DC7CA3600E3F187 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27E3DCF31DB0583E00F2872D;
+			remoteInfo = LiteCoreObjC;
+		};
+		276683B11DC7CA3B00E3F187 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27A924931D9B316D00086206;
+			remoteInfo = "LiteCore-iOS";
+		};
 		27732CE11D734EFB006D3802 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -709,8 +729,8 @@
 		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
 		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
 		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
-		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorDocument.cc; sourceTree = "<group>"; };
-		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
+		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VectorDocument.cc; path = ../C/VectorDocument.cc; sourceTree = "<group>"; };
+		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Document.hh; path = ../C/Document.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B2018F8E9750021A9A3 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
@@ -775,6 +795,7 @@
 		273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tokenizer.xcconfig; sourceTree = "<group>"; };
 		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
 		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
+		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
@@ -859,8 +880,10 @@
 		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
 		2757DE591B9FC3F1002EE261 /* c4Base.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = c4Base.h; sourceTree = "<group>"; };
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
-		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TreeDocument.cc; sourceTree = "<group>"; };
+		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TreeDocument.cc; path = ../C/TreeDocument.cc; sourceTree = "<group>"; };
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = VersionedDocument.mm; path = ../../ObjC/VersionedDocument.mm; sourceTree = "<group>"; };
+		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequenceTracker.cc; path = Database/SequenceTracker.cc; sourceTree = "<group>"; };
+		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SequenceTracker.hh; path = Database/SequenceTracker.hh; sourceTree = "<group>"; };
 		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
 		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
 		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
@@ -999,7 +1022,7 @@
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */ = {isa = PBXFileReference; explicitFileType = compiled; fileEncoding = 4; path = iTunesMusicLibrary.json; sourceTree = "<group>"; };
-		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
+		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = ../C/Database.cc; sourceTree = "<group>"; };
 		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
 		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
@@ -1121,7 +1144,7 @@
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
 		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
-		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
+		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Database.hh; path = ../C/Database.hh; sourceTree = "<group>"; };
 		27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4KeyInternal.hh; sourceTree = "<group>"; };
 		27F7A0C21D5E646000447BC6 /* RefCounted.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
 		27F7A0C31D5E657C00447BC6 /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
@@ -1307,6 +1330,7 @@
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
+				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
 				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
@@ -1715,11 +1739,6 @@
 			isa = PBXGroup;
 			children = (
 				27F7A0C11D5E5C3500447BC6 /* include */,
-				27F7A0BD1D5E2BAB00447BC6 /* Database.hh */,
-				27E3DD571DB8524300F2872D /* Database.cc */,
-				271057D61D3D70B10018247B /* Document.hh */,
-				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
-				271057D31D3D70780018247B /* VectorDocument.cc */,
 				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
 				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
@@ -1740,6 +1759,20 @@
 			);
 			name = "C API";
 			path = ../C;
+			sourceTree = "<group>";
+		};
+		276683B31DC7DCBC00E3F187 /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				27F7A0BD1D5E2BAB00447BC6 /* Database.hh */,
+				27E3DD571DB8524300F2872D /* Database.cc */,
+				271057D61D3D70B10018247B /* Document.hh */,
+				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
+				271057D31D3D70780018247B /* VectorDocument.cc */,
+				276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */,
+				276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */,
+			);
+			name = Database;
 			sourceTree = "<group>";
 		};
 		276CD4251D77E8F7001346A3 /* Blobs */ = {
@@ -1936,6 +1969,7 @@
 		27E4871019217187007D8940 /* LiteCore */ = {
 			isa = PBXGroup;
 			children = (
+				276683B31DC7DCBC00E3F187 /* Database */,
 				27D74A5F1D4C063A00D806E0 /* Storage */,
 				279794A91D3187E8001D0F3A /* VersionVectors */,
 				273E9F7C1C518678003115A6 /* Rev-Trees */,
@@ -2214,6 +2248,7 @@
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
+				276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
 				27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */,
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
@@ -2604,11 +2639,11 @@
 				275072C218E4AA4400A80C5A /* forestdb static */,
 				27A6579B1CBC190B00A7A1D7 /* Swift API */,
 				27A657A41CBC190B00A7A1D7 /* Swift API Tests */,
-				27B7E0F118F8FB4700044EBA /* All */,
-				27A924931D9B316D00086206 /* LiteCore-iOS */,
-				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
 				27E3DCF31DB0583E00F2872D /* LiteCoreObjC */,
 				27E3DCFB1DB0583E00F2872D /* LiteCoreObjCTests */,
+				27A924931D9B316D00086206 /* LiteCore-iOS */,
+				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
+				27B7E0F118F8FB4700044EBA /* All */,
 			);
 		};
 /* End PBXProject section */
@@ -2717,6 +2752,7 @@
 				27FA09B11D6FB7AE005888AA /* RevisionTest.cc in Sources */,
 				27FA09B31D6FB939005888AA /* RevisionStoreTest.cc in Sources */,
 				27FA09B51D6FBAAD005888AA /* CASRevisionStoreTest.cc in Sources */,
+				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3018,6 +3054,7 @@
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				279794A61D307626001D0F3A /* RevisionStore.cc in Sources */,
+				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 				273E9F751C51612E003115A6 /* c4View.cc in Sources */,
@@ -3076,6 +3113,7 @@
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
+				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */,
@@ -3123,6 +3161,16 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
+		};
+		276683B01DC7CA3600E3F187 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27E3DCF31DB0583E00F2872D /* LiteCoreObjC */;
+			targetProxy = 276683AF1DC7CA3600E3F187 /* PBXContainerItemProxy */;
+		};
+		276683B21DC7CA3B00E3F187 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27A924931D9B316D00086206 /* LiteCore-iOS */;
+			targetProxy = 276683B11DC7CA3B00E3F187 /* PBXContainerItemProxy */;
 		};
 		27732CE21D734EFB006D3802 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
