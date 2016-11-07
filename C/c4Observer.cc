@@ -37,12 +37,11 @@ struct c4DatabaseObserver : public DatabaseChangeNotifier, InstanceCounted {
 
 
 C4DatabaseObserver* c4dbobs_create(C4Database *db,
-                                   C4SequenceNumber since,
                                    C4DatabaseObserverCallback callback,
                                    void *context) noexcept
 {
     return tryCatch<C4DatabaseObserver*>(nullptr, [&]{
-        return new c4DatabaseObserver(db, since, callback, context);
+        return new c4DatabaseObserver(db, UINT64_MAX, callback, context);
     });
 }
 

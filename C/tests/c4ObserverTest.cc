@@ -70,7 +70,7 @@ static void docObserverCallback(C4DocumentObserver* obs,
 
 
 TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
-    dbObserver = c4dbobs_create(db, 0, dbObserverCallback, this);
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
     createRev(C4STR("A"), C4STR("1-aa"), kBody);
