@@ -14,11 +14,13 @@
 //  and limitations under the License.
 
 #include "Database.hh"
+#include "Document.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "DataFile.hh"
 #include "Collatable.hh"
 #include "CASRevisionStore.hh"
+#include "SequenceTracker.hh"
 #include "Fleece.hh"
 
 
@@ -117,10 +119,11 @@ namespace c4Internal {
 
 
     Database::Database(const string &path,
-                           const C4DatabaseConfig &inConfig)
+                       const C4DatabaseConfig &inConfig)
     :config(inConfig),
      _db(newDataFile(path, config, true)),
-     _encoder( new fleece::Encoder() )
+     _encoder(new fleece::Encoder()),
+     _sequenceTracker(new SequenceTracker())
     {
         if (config.flags & kC4DB_SharedKeys) {
             _db->useDocumentKeys();
@@ -291,6 +294,7 @@ namespace c4Internal {
         if (++_transactionLevel == 1) {
             WITH_LOCK(this);
             _transaction = new Transaction(_db.get());
+            _sequenceTracker->beginTransaction();
         }
     }
 
@@ -319,10 +323,12 @@ namespace c4Internal {
             } catch (...) {
                 delete t;
                 _transaction = nullptr;
+                _sequenceTracker->endTransaction(false);
                 throw;
             }
             delete t;
             _transaction = nullptr;
+            _sequenceTracker->endTransaction(commit);
         }
     #if C4DB_THREADSAFE
         _transactionMutex.unlock(); // undoes lock in beginTransaction()
@@ -377,6 +383,11 @@ namespace c4Internal {
     fleece::Encoder& Database::sharedEncoder() {
         _encoder->reset();
         return *_encoder.get();
+    }
+
+
+    void Database::saved(Document* doc) {
+        _sequenceTracker->documentChanged(doc->docID, doc->sequence);
     }
 
 }

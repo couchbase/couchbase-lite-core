@@ -94,26 +94,37 @@ namespace litecore {
 
 #pragma mark - FILE:
 
+
+    /** Shared state between all open DataFile instances on the same filesystem file.
+        Manages a mutex that ensures that only one DataFile can open a transaction at once. */
     class DataFile::File {
     public:
         static File* forPath(const FilePath &path);
-        File(const FilePath &path)      :_path(path) { }
+        File(const FilePath &p)      :path(p) { }
 
-        const FilePath _path;
-        mutex _transactionMutex;
-        condition_variable _transactionCond;
-        Transaction* _transaction {nullptr};
-        atomic<bool> _isCompacting {false};
+        void setTransaction(Transaction*);
+        void unsetTransaction(Transaction*);
+        Transaction* transaction()                      {return _transaction;}
+
+        const FilePath path;                            // The filesystem path
+        atomic<bool> isCompacting {false};              // Is the database compacting?
+
+    private:
+        mutex _transactionMutex;                        // Mutex for transactions
+        condition_variable _transactionCond;            // For waiting on the mutex
+        Transaction* _transaction {nullptr};            // Currently active Transaction object
 
         static unordered_map<string, File*> sFileMap;
-        static mutex sMutex;
+        static mutex sFileMapMutex;
     };
 
+
     unordered_map<string, DataFile::File*> DataFile::File::sFileMap;
-    mutex DataFile::File::sMutex;
+    mutex DataFile::File::sFileMapMutex;
+
 
     DataFile::File* DataFile::File::forPath(const FilePath &path) {
-        unique_lock<mutex> lock(sMutex);
+        unique_lock<mutex> lock(sFileMapMutex);
         auto pathStr = path.path();
         File* file = sFileMap[pathStr];
         if (!file) {
@@ -121,6 +132,23 @@ namespace litecore {
             sFileMap[pathStr] = file;
         }
         return file;
+    }
+
+
+    void DataFile::File::setTransaction(Transaction* t) {
+        Assert(t);
+        unique_lock<mutex> lock(_transactionMutex);
+        while (_transaction != nullptr)
+            _transactionCond.wait(lock);
+        _transaction = t;
+    }
+
+
+    void DataFile::File::unsetTransaction(Transaction* t) {
+        unique_lock<mutex> lock(_transactionMutex);
+        Assert(t && _transaction == t);
+        _transaction = nullptr;
+        _transactionCond.notify_one();
     }
 
 
@@ -143,7 +171,7 @@ namespace litecore {
     }
 
     const FilePath& DataFile::filePath() const noexcept {
-        return _file->_path;
+        return _file->path;
     }
 
 
@@ -264,10 +292,7 @@ namespace litecore {
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();
-        unique_lock<mutex> lock(_file->_transactionMutex);
-        while (_file->_transaction != nullptr)
-            _file->_transactionCond.wait(lock);
-        _file->_transaction = t;
+        _file->setTransaction(t);
         _inTransaction = true;
     }
 
@@ -286,10 +311,7 @@ namespace litecore {
     }
     
     void DataFile::endTransactionScope(Transaction* t) {
-        unique_lock<mutex> lock(_file->_transactionMutex);
-        Assert(_file->_transaction == t);
-        _file->_transaction = nullptr;
-        _file->_transactionCond.notify_one();
+        _file->unsetTransaction(t);
         _inTransaction = false;
         if (_documentKeys)
             _documentKeys->transactionEnded();
@@ -298,7 +320,7 @@ namespace litecore {
 
     Transaction& DataFile::transaction() {
         Assert(_inTransaction);
-        return *_file->_transaction;
+        return *_file->transaction();
     }
 
 
@@ -365,17 +387,17 @@ namespace litecore {
 
     void DataFile::beganCompacting() {
         ++sCompactCount;
-        _file->_isCompacting = true;
+        _file->isCompacting = true;
         if (_onCompactCallback) _onCompactCallback(true);
     }
     void DataFile::finishedCompacting() {
         --sCompactCount;
-        _file->_isCompacting = false;
+        _file->isCompacting = false;
         if (_onCompactCallback) _onCompactCallback(false);
     }
 
     bool DataFile::isCompacting() const noexcept {
-        return _file->_isCompacting;
+        return _file->isCompacting;
     }
 
     bool DataFile::isAnyCompacting() noexcept {

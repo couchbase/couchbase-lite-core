@@ -195,6 +195,8 @@ namespace c4Internal {
             if (order == kConflicting)
                 _current->setConflicted(true);
             selectNewRev(newRev);
+            if (newRev->isCurrent())
+                _db->saved(this);
             return 1;
         }
 
@@ -206,6 +208,8 @@ namespace c4Internal {
             if (!newRev)
                 return false;
             selectNewRev(newRev);
+            if (newRev->isCurrent())
+                _db->saved(this);
             return true;
         }
 

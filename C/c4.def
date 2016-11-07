@@ -139,6 +139,11 @@ c4stream_write
 c4stream_computeBlobKey
 c4stream_install
 c4stream_closeWriter
+c4dbobs_create
+c4dbobs_getChanges
+c4dbobs_free
+c4docobs_create
+c4docobs_free
 c4doc_getForPut
 c4_getObjectCount
 c4_shutdown

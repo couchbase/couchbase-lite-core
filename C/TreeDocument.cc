@@ -202,8 +202,11 @@ namespace c4Internal {
                 WITH_LOCK(_db);
                 _versionedDoc.save(_db->transaction());
             }
-            sequence = _versionedDoc.sequence();
             selectedRev.flags &= ~kRevNew;
+            if (_versionedDoc.sequence() > sequence) {
+                sequence = _versionedDoc.sequence();
+                _db->saved(this);
+            }
         }
 
         int32_t purgeRevision(C4Slice revID) override {
@@ -287,7 +290,7 @@ namespace c4Internal {
             error::_throw(error::InvalidParameter); // must be invalid revision IDs
         updateMeta();
         selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
-        if (rq.save)
+        if (commonAncestor > 0 && rq.save)
             save(rq.maxRevTreeDepth);
         return commonAncestor;
     }

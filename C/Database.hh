@@ -28,6 +28,7 @@ namespace fleece {
 }
 namespace litecore {
     class CASRevisionStore;
+    class SequenceTracker;
 }
 
 
@@ -84,12 +85,17 @@ namespace c4Internal {
         void useDocumentKeys()                              {_db->useDocumentKeys();}
         fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
 
+        SequenceTracker& sequenceTracker()                  {return *_sequenceTracker;}
+
 #if C4DB_THREADSAFE
         // Mutex for synchronizing DataFile calls. Non-recursive!
         mutex _mutex;
 #endif
 
     public:
+        // should be private, but called from Document
+        void saved(Document*);
+
         // these should be private, but are also used by c4View
         static DataFile* newDataFile(const string &path,
                                      const C4DatabaseConfig &config,
@@ -116,6 +122,7 @@ namespace c4Internal {
         recursive_mutex             _transactionMutex;
     #endif
         unique_ptr<fleece::Encoder> _encoder;
+        unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
     };
 
 

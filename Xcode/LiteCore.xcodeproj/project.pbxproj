@@ -152,6 +152,9 @@
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
+		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
+		2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
+		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
@@ -884,6 +887,9 @@
 		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = VersionedDocument.mm; path = ../../ObjC/VersionedDocument.mm; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequenceTracker.cc; path = Database/SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SequenceTracker.hh; path = Database/SequenceTracker.hh; sourceTree = "<group>"; };
+		276943881DCD4AAD00DB2555 /* c4Observer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Observer.h; sourceTree = "<group>"; };
+		2769438B1DCD502A00DB2555 /* c4Observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Observer.cc; sourceTree = "<group>"; };
+		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
 		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
 		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
 		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
@@ -1469,6 +1475,7 @@
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
 				27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */,
+				2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */,
 				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */,
 				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
@@ -1747,6 +1754,7 @@
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
+				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
 				274A698E1BED3E0500D16D37 /* c4Key.cc */,
 				27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */,
 				274D04241BA8A58200FF7C35 /* c4View.cc */,
@@ -2120,6 +2128,7 @@
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
+				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				274A698F1BED3E0500D16D37 /* c4Key.h */,
 				275607781BA21DAB00F58218 /* c4View.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */,
@@ -2824,6 +2833,7 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
+				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
@@ -3009,6 +3019,7 @@
 				2722304F1A0858A100BFF25C /* GeoIndex.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
+				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				2705154D1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
@@ -3121,6 +3132,7 @@
 				279794A71D307626001D0F3A /* RevisionStore.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
+				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,

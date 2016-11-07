@@ -164,6 +164,12 @@ _c4stream_computeBlobKey
 _c4stream_install
 _c4stream_closeWriter
 
+_c4dbobs_create
+_c4dbobs_getChanges
+_c4dbobs_free
+_c4docobs_create
+_c4docobs_free
+
 # Private API, only exposed for testing:
 _c4doc_getForPut
 _c4_getObjectCount
