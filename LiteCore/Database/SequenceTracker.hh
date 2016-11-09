@@ -18,6 +18,7 @@
 #include <list>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 namespace c4Internal {
     class Database;

@@ -43,12 +43,13 @@ endif()
 
 ### SOURCE FILES:
               
-include_directories(LiteCore/BlobStore LiteCore/Indexes LiteCore/RevTrees LiteCore/Storage
-                    LiteCore/Support LiteCore/VersionVectors C/include)
+include_directories(LiteCore/BlobStore LiteCore/Database LiteCore/Indexes LiteCore/RevTrees LiteCore/Storage
+                    LiteCore/Support LiteCore/VersionVectors C/include C)
 
 # TODO: CMake docs say it's better to list the source files explicitly than use aux_source_directory
 aux_source_directory(C                        C_SRC)
 aux_source_directory(LiteCore/BlobStore       BLOBSTORE_SRC)
+aux_source_directory(LiteCore/Database        DATABASE_SRC)
 aux_source_directory(LiteCore/Indexes         INDEXES_SRC)
 aux_source_directory(LiteCore/RevTrees        REVTREES_SRC)
 aux_source_directory(LiteCore/Storage         STORAGE_SRC)
@@ -63,7 +64,7 @@ set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c
 
 add_library(LiteCoreStatic STATIC  ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
                               ${REVTREES_SRC} ${VERSIONVECTORS_SRC} ${BLOBSTORE_SRC} ${C_SRC}
-                              ${SQLITECPP_SRC})
+                              ${SQLITECPP_SRC} ${DATABASE_SRC})
 
 add_library(LiteCore  SHARED  )
 
