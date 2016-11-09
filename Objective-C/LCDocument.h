@@ -67,4 +67,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+
+extern NSString* const LCDocumentSavedNotification;
+
+
 NS_ASSUME_NONNULL_END

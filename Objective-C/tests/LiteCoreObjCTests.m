@@ -220,4 +220,29 @@
           count, t*1000, t/count*1e6, count/t);
 }
 
+
+- (void) test06_DBChangeNotification {
+    [self expectationForNotification: LCDatabaseChangedNotification
+                              object: db
+                             handler: ^BOOL(NSNotification *n)
+    {
+        NSArray *docIDs = n.userInfo[@"docIDs"];
+        AssertEqual(docIDs.count, 10);
+        return YES;
+    }];
+
+    __block NSError* error;
+    bool ok = [db inTransaction: &error do: ^bool {
+        for (unsigned i = 0; i < 10; i++) {
+            LCDocument* doc = self->db[[NSString stringWithFormat: @"doc-%u", i]];
+            doc[@"type"] = @"demo";
+            Assert([doc save: &error], @"Error saving: %@", error);
+        }
+        return true;
+    }];
+    XCTAssert(ok);
+
+    [self waitForExpectationsWithTimeout: 5 handler: NULL];
+}
+
 @end

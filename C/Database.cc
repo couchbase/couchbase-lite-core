@@ -381,12 +381,14 @@ namespace c4Internal {
 
 
     fleece::Encoder& Database::sharedEncoder() {
+        WITH_LOCK(this);
         _encoder->reset();
         return *_encoder.get();
     }
 
 
     void Database::saved(Document* doc) {
+        WITH_LOCK(this);
         _sequenceTracker->documentChanged(doc->docID, doc->sequence);
     }
 

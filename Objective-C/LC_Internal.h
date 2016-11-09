@@ -27,6 +27,8 @@ bool convertError(const FLError&, NSError **outError);
 
 @interface LCDatabase ()
 @property (readonly, nonatomic) C4Database* c4db;
+- (void) document: (LCDocument*)doc hasUnsavedChanges: (bool)unsaved;
+- (void) postDatabaseChanged;
 @end
 
 @interface LCDocument ()
@@ -34,6 +36,7 @@ bool convertError(const FLError&, NSError **outError);
                             docID: (NSString*)docID
                         mustExist: (BOOL)mustExist
                             error: (NSError**)outError;
+- (void) _noteDocChanged;
 @end
 
 

@@ -18,6 +18,9 @@
 #import "StringBytes.hh"
 
 
+NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
+
+
 @implementation LCDocument
 {
     C4Document* _c4doc;
@@ -54,11 +57,19 @@
 }
 
 
+- (NSString*) description {
+    return [NSString stringWithFormat: @"%@[%@]", self.class, _documentID];
+}
+
+
+
 - (bool) reload: (NSError**)outError {
     auto doc = [self readCurrentC4Doc: outError mustExist: true];
     if (!doc)
         return false;
     [self setC4Doc: doc];
+    _properties = nil;
+    self.hasUnsavedChanges = false;
     return true;
 }
 
@@ -76,8 +87,6 @@
 - (void) setC4Doc: (nullable C4Document*)doc {
     c4doc_free(_c4doc);
     _c4doc = doc;
-    _hasUnsavedChanges = false;
-    _properties = nil;  // this is set lazily when .properties is accessed
     _root = nullptr;
     if (_c4doc) {
         C4Slice body = _c4doc->selectedRev.body;
@@ -86,6 +95,7 @@
             NSAssert(_root, @"Doc body is unreadable");
         }
     }
+    // This method does not clear _properties nor _hasUnsavedChanges.
 }
 
 
@@ -101,6 +111,11 @@
 
 - (uint64_t) sequence {
     return _c4doc->sequence;
+}
+
+
+- (void) _noteDocChanged {
+    NSLog(@"*** External change to %@", self);
 }
 
 
@@ -129,7 +144,7 @@
 
 - (void) setProperties:(NSDictionary *)properties {
     _properties = properties ? [properties mutableCopy] : [NSMutableDictionary dictionary];
-    _hasUnsavedChanges = true;
+    self.hasUnsavedChanges = true;
 }
 
 
@@ -154,7 +169,7 @@
     if (!self.properties)
         _properties = [NSMutableDictionary dictionary];
     [_properties setValue: value forKey: key];
-    _hasUnsavedChanges = true;
+    self.hasUnsavedChanges = true;
 }
 
 
@@ -197,6 +212,18 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 
 
 #pragma mark - SAVING:
+
+
+- (bool) hasUnsavedChanges {
+    return _hasUnsavedChanges;
+}
+
+- (void) setHasUnsavedChanges: (bool)unsaved {
+    if (unsaved != _hasUnsavedChanges) {
+        _hasUnsavedChanges = unsaved;
+        [_database document: self hasUnsavedChanges: unsaved];
+    }
+}
 
 
 - (bool) save: (NSError**)outError {
@@ -256,11 +283,18 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
         C4Document* newDoc = c4doc_put(_c4db, &put, nullptr, &err);
         c4slice_free(put.body);
         if (newDoc) {
-            // Success:
-            auto p = _properties;
+            // Save succeeded; now commit:
+            if (!transaction.commit()) {
+                c4doc_free(newDoc);
+                return convertError(transaction.error(), outError);
+            }
+            // Success!
             [self setC4Doc: newDoc];
-            _properties = p;
-            return transaction.commit() || convertError(transaction.error(), outError);
+            self.hasUnsavedChanges = false;
+            [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentSavedNotification
+                                                              object: self];
+            [_database postDatabaseChanged];
+            return true;
         }
 
         // Save failed; examine the error:
@@ -293,10 +327,10 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
         if ([resolved isEqual: curProperties]) {
             // Resolved doc is same as current revision, so nothing to save:
             _properties = [curProperties copy];
+            self.hasUnsavedChanges = false;
             return true;
         }
 
-        _hasUnsavedChanges = true;
         _properties = [resolved mutableCopy];
         // Now go round and try to save again...
     }
@@ -305,7 +339,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 
 - (void) revertToSaved {
     _properties = nil;
-    _hasUnsavedChanges = false;
+    self.hasUnsavedChanges = false;
 }
 
 

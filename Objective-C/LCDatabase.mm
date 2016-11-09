@@ -17,15 +17,19 @@
 #import "LCDocument.h"
 #import "LC_Internal.h"
 #import "StringBytes.hh"
+#import "c4Observer.h"
 
 
-const NSString* const LCErrorDomain = @"LiteCore";
+NSString* const LCErrorDomain = @"LiteCore";
+NSString* const LCDatabaseChangedNotification = @"LCDatabaseChanged";
 
 
 @implementation LCDatabase
 {
     C4Database* _c4db;
     NSMapTable<NSString*,LCDocument*>* _documents;
+    NSMutableSet<LCDocument*>* _unsavedDocuments;
+    C4DatabaseObserver* _c4dbObserver;
 }
 
 @synthesize c4db=_c4db, conflictResolver=_conflictResolver;
@@ -49,6 +53,7 @@ static const C4DatabaseConfig kDBConfig = {
         if (!_c4db)
             return convertError(err, outError), nil;
         _documents = [NSMapTable strongToWeakObjectsMapTable];
+        _unsavedDocuments = [NSMutableSet setWithCapacity: 100];
     }
     return self;
 }
@@ -61,10 +66,14 @@ static const C4DatabaseConfig kDBConfig = {
                         error: outError];
 }
 
+
 - (bool) close: (NSError**)outError {
     C4Error err;
     if (!c4db_close(_c4db, &err))
         return convertError(err, outError);
+    c4dbobs_free(_c4dbObserver);
+    _c4dbObserver = nullptr;
+    c4db_free(_c4db);
     _c4db = nullptr;
     return true;
 }
@@ -88,6 +97,7 @@ static const C4DatabaseConfig kDBConfig = {
 
 - (void) dealloc {
     c4db_free(_c4db);
+    c4dbobs_free(_c4dbObserver);
 }
 
 
@@ -118,7 +128,10 @@ static const C4DatabaseConfig kDBConfig = {
     if (!block())
         return false;
 
-    return transaction.commit() || convertError(transaction.error(), outError);
+    if (!transaction.commit())
+        return convertError(transaction.error(), outError);
+    [self postDatabaseChanged];
+    return true;
 }
 
 
@@ -137,6 +150,7 @@ static const C4DatabaseConfig kDBConfig = {
         if (!doc)
             return nil;
         [_documents setObject: doc forKey: docID];
+        [self startDBObserver];
     } else {
         if (mustExist && !doc.exists) {
             // Don't return a pre-instantiated LCDocument if it doesn't exist
@@ -157,6 +171,85 @@ static const C4DatabaseConfig kDBConfig = {
 
 - (LCDocument*) existingDocumentWithID: (NSString*)docID error: (NSError**)outError {
     return [self documentWithID: docID mustExist: true error: outError];
+}
+
+
+- (void) document: (LCDocument*)doc hasUnsavedChanges: (bool)unsaved {
+    if (unsaved)
+        [_unsavedDocuments addObject: doc];
+    else
+        [_unsavedDocuments removeObject: doc];
+}
+
+
+- (NSSet<LCDocument*>*) unsavedDocuments {
+    return _unsavedDocuments;
+}
+
+
+- (bool) saveAllDocuments: (NSError**)outError {
+    if (_unsavedDocuments.count == 0)
+        return true;
+    NSSet<LCDocument*>* toSave = [_unsavedDocuments copy];
+    return [self inTransaction: outError do: ^bool {
+        for (LCDocument* doc in toSave) {
+            if (![doc save: outError])
+                return false;
+        }
+        return true;
+    }];
+}
+
+// FIX: If a transaction fails, docs that were saved during it need to be marked unsaved again.
+
+
+#pragma mark - OBSERVERS:
+
+
+- (void) startDBObserver {
+    if (!_c4dbObserver) {
+        _c4dbObserver = c4dbobs_create(_c4db, dbObserverCallback, (__bridge void*)self);
+        NSAssert(_c4dbObserver, @"Couldn't create database observer");
+    }
+}
+
+
+static void dbObserverCallback(C4DatabaseObserver* observer, void *context) {
+    @autoreleasepool {
+        [(__bridge LCDatabase*)context _c4DatabaseChanged];
+    }
+}
+
+
+- (void) _c4DatabaseChanged {
+    [self performSelectorOnMainThread: @selector(postDatabaseChanged) withObject: nil waitUntilDone: NO];
+}
+
+
+- (void) postDatabaseChanged {
+    if (!_c4dbObserver || !_c4db || c4db_isInTransaction(_c4db))
+        return;
+    @autoreleasepool {
+        NSMutableArray* docIDs = [[NSMutableArray alloc] init];
+
+        C4Slice docIDSlices[100];
+        C4SequenceNumber lastSeq;
+        uint32_t nChanges;
+        while (0 < (nChanges = c4dbobs_getChanges(_c4dbObserver, docIDSlices, 100, &lastSeq))) {
+            for (uint32_t i = 0; i < nChanges; ++i) {
+                NSString* docID = [[NSString alloc] initWithBytes: (void*)docIDSlices[i].buf
+                                                           length: docIDSlices[i].size
+                                                         encoding: NSUTF8StringEncoding];
+                [docIDs addObject: docID];
+            }
+        }
+
+        if (docIDs.count > 0) {
+            [NSNotificationCenter.defaultCenter postNotificationName: LCDatabaseChangedNotification
+                                                              object: self
+                                                            userInfo: @{@"docIDs": docIDs}];
+        }
+    }
 }
 
 

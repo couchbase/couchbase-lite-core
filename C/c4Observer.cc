@@ -41,6 +41,7 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
                                    void *context) noexcept
 {
     return tryCatch<C4DatabaseObserver*>(nullptr, [&]{
+        WITH_LOCK(db);
         return new c4DatabaseObserver(db, UINT64_MAX, callback, context);
     });
 }
@@ -52,13 +53,17 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
                             C4SequenceNumber* outLastSequence) noexcept
 {
     return tryCatch<uint32_t>(nullptr, [&]{
+        WITH_LOCK(obs->_db);
         return (uint32_t) obs->readChanges((slice*)outDocIDs, maxChanges);
     });
 }
 
 
 void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
-    delete obs;
+    if (obs) {
+        WITH_LOCK(obs->_db);
+        delete obs;
+    }
 }
 
 
@@ -93,11 +98,15 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
                                     void *context) noexcept
 {
     return tryCatch<C4DocumentObserver*>(nullptr, [&]{
+        WITH_LOCK(db);
         return new c4DocumentObserver(db, docID, callback, context);
     });
 }
 
 
 void c4docobs_free(C4DocumentObserver* obs) noexcept {
-    delete obs;
+    if (obs) {
+        WITH_LOCK(obs->_db);
+        delete obs;
+    }
 }

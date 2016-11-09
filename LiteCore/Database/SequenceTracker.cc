@@ -192,7 +192,8 @@ namespace litecore {
         }
         if (n > 0) {
             _changes.splice(i, _changes, placeholder);
-            removeObsoleteEntries();
+            // (It would be nice to call removeObsoleteEntries now, but it could free the entries
+            // that own the docID slices I'm about to return.)
         }
         return n;
    }
