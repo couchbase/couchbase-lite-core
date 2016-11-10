@@ -91,6 +91,7 @@ namespace litecore {
 
 
     void SQLiteDataFile::reopen() {
+        DataFile::reopen();
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;

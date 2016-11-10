@@ -68,7 +68,6 @@ static void docObserverCallback(C4DocumentObserver* obs,
 }
 
 
-
 TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
@@ -95,7 +94,6 @@ TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
 }
 
 
-
 TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
     createRev(C4STR("A"), C4STR("1-aa"), kBody);
 
@@ -105,4 +103,39 @@ TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
     createRev(C4STR("A"), C4STR("2-bb"), kBody);
     createRev(C4STR("B"), C4STR("1-bb"), kBody);
     CHECK(docCallbackCalls == 1);
+}
+
+
+TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    CHECK(dbCallbackCalls == 0);
+
+    createRev(C4STR("A"), C4STR("1-aa"), kBody);
+    CHECK(dbCallbackCalls == 1);
+    createRev(C4STR("B"), C4STR("1-bb"), kBody);
+    CHECK(dbCallbackCalls == 1);
+    checkChanges({"A", "B"});
+
+    // Open another database on the same file:
+    C4Database* otherdb = c4db_open(databasePath(), c4db_getConfig(db), nullptr);
+    REQUIRE(otherdb);
+    {
+        TransactionHelper t(otherdb);
+        createRev(otherdb, C4STR("c"), C4STR("1-cc"), kBody);
+        createRev(otherdb, C4STR("d"), C4STR("1-dd"), kBody);
+        createRev(otherdb, C4STR("e"), C4STR("1-ee"), kBody);
+    }
+
+    CHECK(dbCallbackCalls == 2);
+
+    checkChanges({"c", "d", "e"});
+
+    c4dbobs_free(dbObserver);
+    dbObserver = nullptr;
+
+    createRev(C4STR("A"), C4STR("2-aaaa"), kBody);
+    CHECK(dbCallbackCalls == 2);
+
+    c4db_close(otherdb, NULL);
+    c4db_free(otherdb);
 }

@@ -36,7 +36,6 @@ namespace litecore {
         bool isOpen() const noexcept override;
         void close() override;
         void deleteDataFile() override;
-        void reopen() override;
         std::vector<std::string> allKeyStoreNames() override;
         void compact() override;
         bool setAutoCompact(bool autoCompact) override;
@@ -55,6 +54,7 @@ namespace litecore {
         static Factory& factory();
 
     protected:
+        void reopen() override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const std::string &name) override;
         void _beginTransaction(Transaction*) override;

@@ -21,7 +21,7 @@
     #import <Foundation/Foundation.h>
 #endif
 
-// Enable thread safety of C API:
-#ifndef C4DB_THREADSAFE
-#define C4DB_THREADSAFE 1
-#endif
+// Enables thread safety of C API:
+//#ifndef C4DB_THREADSAFE
+//#define C4DB_THREADSAFE 1
+//#endif

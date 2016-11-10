@@ -170,6 +170,10 @@ void C4Test::reopenDB() {
 
 
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
+    C4Test::createRev(db, docID, revID, body, isNew);
+}
+
+void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
     TransactionHelper t(db);
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);

@@ -29,6 +29,7 @@ namespace c4Internal {
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public C4Document, InstanceCounted {
     public:
+        alloc_slice _docIDBuf;
         alloc_slice _revIDBuf;
         alloc_slice _selectedRevIDBuf;
         alloc_slice _loadedBody;

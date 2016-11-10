@@ -238,6 +238,7 @@ namespace litecore {
 
     void ForestDataFile::reopen() {
         Assert(!isOpen());
+        DataFile::reopen();
         string path = filePath().path();
         const char *cpath = path.c_str();
         LogToAt(DBLog, Debug, "ForestDataFile: open %s", cpath);

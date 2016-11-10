@@ -99,8 +99,12 @@ namespace litecore {
         Manages a mutex that ensures that only one DataFile can open a transaction at once. */
     class DataFile::File {
     public:
-        static File* forPath(const FilePath &path);
+        static File* forPath(const FilePath &path, DataFile *dataFile);
         File(const FilePath &p)      :path(p) { }
+
+        void addDataFile(DataFile *dataFile);
+        void removeDataFile(DataFile*, bool deleteIfUnused);
+        void forOpenDataFiles(DataFile *except, std::function<void(DataFile*)> fn);
 
         void setTransaction(Transaction*);
         void unsetTransaction(Transaction*);
@@ -113,6 +117,8 @@ namespace litecore {
         mutex _transactionMutex;                        // Mutex for transactions
         condition_variable _transactionCond;            // For waiting on the mutex
         Transaction* _transaction {nullptr};            // Currently active Transaction object
+        vector<DataFile*> _dataFiles;                   // Open DataFiles on this File
+        mutex _dataFilesMutex;
 
         static unordered_map<string, File*> sFileMap;
         static mutex sFileMapMutex;
@@ -123,15 +129,51 @@ namespace litecore {
     mutex DataFile::File::sFileMapMutex;
 
 
-    DataFile::File* DataFile::File::forPath(const FilePath &path) {
+    DataFile::File* DataFile::File::forPath(const FilePath &path, DataFile *dataFile) {
         unique_lock<mutex> lock(sFileMapMutex);
         auto pathStr = path.path();
         File* file = sFileMap[pathStr];
         if (!file) {
             file = new File(path);
             sFileMap[pathStr] = file;
+            LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, path.path().c_str());
+        } else {
+            LogToAt(DBLog, Debug, "File %p: adding DataFile %p", file, dataFile);
         }
+        lock.unlock();
+
+        file->addDataFile(dataFile);
         return file;
+    }
+
+
+    void DataFile::File::addDataFile(DataFile *dataFile) {
+        unique_lock<mutex> lock(_dataFilesMutex);
+        if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
+            _dataFiles.push_back(dataFile);
+    }
+
+    void DataFile::File::removeDataFile(DataFile *dataFile, bool deleteIfUnused) {
+        unique_lock<mutex> lock(_dataFilesMutex);
+        LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
+        auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
+        if (pos != _dataFiles.end())
+            _dataFiles.erase(pos);
+
+        if (deleteIfUnused && _dataFiles.empty()) {
+            LogToAt(DBLog, Debug, "File %p: destructing", this);
+            sFileMap.erase(path.path());
+            lock.unlock();
+            delete this;
+        }
+    }
+
+
+    void DataFile::File::forOpenDataFiles(DataFile *except, std::function<void(DataFile*)> fn) {
+        unique_lock<mutex> lock(_dataFilesMutex);
+        for (auto df : _dataFiles)
+            if (df != except)
+                fn(df);
     }
 
 
@@ -161,13 +203,14 @@ namespace litecore {
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
-    :_file(File::forPath(path)),
+    :_file(File::forPath(path, this)),
      _options(options ? *options : Options::defaults)
     { }
 
     DataFile::~DataFile() {
-        LogToAt(DBLog, Debug, "DataFile: deleting (~DataFile)");
+        LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile)");
         Assert(!_inTransaction);
+        _file->removeDataFile(this, true);
     }
 
     const FilePath& DataFile::filePath() const noexcept {
@@ -179,6 +222,12 @@ namespace litecore {
         for (auto& i : _keyStores) {
             i.second->close();
         }
+        _file->removeDataFile(this, false);
+    }
+
+
+    void DataFile::reopen() {
+        _file->addDataFile(this);
     }
 
 
@@ -191,6 +240,11 @@ namespace litecore {
     void DataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
         if (alg != kNoEncryption)
             error::_throw(error::UnsupportedEncryption);
+    }
+
+
+    void DataFile::forOtherDataFiles(std::function<void(DataFile*)> fn) {
+        _file->forOpenDataFiles(this, fn);
     }
 
 

@@ -144,6 +144,7 @@ namespace c4Internal {
         } else if (config.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
         }
+        _db->setOwner(this);
     }
 
 
@@ -294,6 +295,7 @@ namespace c4Internal {
         if (++_transactionLevel == 1) {
             WITH_LOCK(this);
             _transaction = new Transaction(_db.get());
+            lock_guard<mutex> lock(_sequenceTracker->mutex());
             _sequenceTracker->beginTransaction();
         }
     }
@@ -323,16 +325,36 @@ namespace c4Internal {
             } catch (...) {
                 delete t;
                 _transaction = nullptr;
-                _sequenceTracker->endTransaction(false);
+                {
+                    lock_guard<mutex> lock(_sequenceTracker->mutex());
+                    _sequenceTracker->endTransaction(false);
+                }
                 throw;
             }
             delete t;
             _transaction = nullptr;
+
+            lock_guard<mutex> lock(_sequenceTracker->mutex());
+            if (commit) {
+                // Notify other Database instances on this file:
+                _db->forOtherDataFiles([&](DataFile *other) {
+                    auto otherDatabase = (Database*)other->owner();
+                    if (otherDatabase)
+                        otherDatabase->externalTransactionCommitted(*_sequenceTracker);
+                });
+            }
+
             _sequenceTracker->endTransaction(commit);
         }
     #if C4DB_THREADSAFE
         _transactionMutex.unlock(); // undoes lock in beginTransaction()
     #endif
+    }
+
+
+    void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
+        lock_guard<mutex> lock(_sequenceTracker->mutex());
+        _sequenceTracker->copyTransactionFrom(sourceTracker);
     }
 
 
@@ -389,7 +411,8 @@ namespace c4Internal {
 
     void Database::saved(Document* doc) {
         WITH_LOCK(this);
-        _sequenceTracker->documentChanged(doc->docID, doc->sequence);
+        lock_guard<mutex> lock(_sequenceTracker->mutex());
+        _sequenceTracker->documentChanged(doc->_docIDBuf, doc->sequence);
     }
 
 }

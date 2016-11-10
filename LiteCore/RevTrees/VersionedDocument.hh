@@ -44,7 +44,7 @@ namespace litecore {
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 
-        slice docID() const         {return _rec.key();}
+        const alloc_slice& docID() const {return _rec.key();}
         revid revID() const         {return _revID;}
         Flags flags() const         {return _flags;}
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}

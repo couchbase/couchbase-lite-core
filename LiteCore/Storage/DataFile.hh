@@ -66,9 +66,6 @@ namespace litecore {
             except isOpen() or mustBeOpen(), before deleting it. */
         virtual void close();
 
-        /** Reopens database after it's been closed. */
-        virtual void reopen() =0;
-
         /** Closes the database and deletes its file. */
         virtual void deleteDataFile() =0;
 
@@ -90,6 +87,11 @@ namespace litecore {
 
         void useDocumentKeys();
         fleece::SharedKeys* documentKeys() const          {return (fleece::SharedKeys*)_documentKeys.get();}
+
+        void* owner()                                       {return _owner;}
+        void setOwner(void* owner)                          {_owner = owner;}
+
+        void forOtherDataFiles(std::function<void(DataFile*)> fn);
 
         //////// KEY-STORES:
 
@@ -142,6 +144,9 @@ namespace litecore {
         static Factory* factoryForFile(const FilePath&);
 
     protected:
+        /** Reopens database after it's been closed. */
+        virtual void reopen();
+
         /** Override to instantiate a KeyStore object. */
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
 
@@ -192,7 +197,8 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
-        bool _inTransaction     {false};                        // Am I in a Transaction?
+        bool                    _inTransaction {false};         // Am I in a Transaction?
+        void*                   _owner {nullptr};               // App-defined object that owns me
     };
 
 

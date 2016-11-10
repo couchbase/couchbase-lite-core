@@ -41,15 +41,21 @@ namespace litecore {
         :_commitCallback(cb)
         { }
 
+        /** Multithreaded clients can use this to synchronize access to the tracker. */
+        std::mutex& mutex()                     {return _mutex;}
+
         void beginTransaction();
         void endTransaction(bool commit);
 
         /** Document implementation calls this to register the change with the Notifier. */
-        void documentChanged(slice docID, sequence_t);
+        void documentChanged(const alloc_slice &docID, sequence_t);
 
         void documentsChanged(const std::vector<const Entry*>&);
 
         sequence_t lastSequence() const         {return _lastSequence;}
+
+        /** Copy all the other tracker's transaction's changes into myself as committed. */
+        void copyTransactionFrom(const SequenceTracker &from);
 
         /** Tracks a document's current sequence. */
         struct Entry {
@@ -64,7 +70,7 @@ namespace litecore {
             // Placeholder entry (when sequence == 0):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
-            Entry(slice d, sequence_t s)        :docID(d), sequence(s) { }
+            Entry(const alloc_slice &d, sequence_t s)  :docID(d), sequence(s) { }
             Entry(DatabaseChangeNotifier *o)    :databaseObserver(o) { }    // placeholder
 
             bool isPlaceholder() const          {return docID.buf == nullptr;}
@@ -101,19 +107,20 @@ namespace litecore {
         friend class DocChangeNotifier;
         friend class SequenceTrackerTest;
 
-        void _documentChanged(slice docID, sequence_t);
+        void _documentChanged(const alloc_slice &docID, sequence_t);
         const_iterator _since(sequence_t s) const;
 
         typedef std::list<Entry>::iterator iterator;
 
-        std::list<Entry> _changes;
-        std::list<Entry> _idle;
+        std::list<Entry>                        _changes;
+        std::list<Entry>                        _idle;
         std::unordered_map<slice, iterator, fleece::sliceHash> _byDocID;
-        sequence_t _lastSequence {0};
-        size_t _numPlaceholders {0};
+        sequence_t                              _lastSequence {0};
+        size_t                                  _numPlaceholders {0};
         std::unique_ptr<DatabaseChangeNotifier> _transaction;
-        CommitCallback _commitCallback;
-        sequence_t _preTransactionLastSequence;
+        CommitCallback                          _commitCallback;
+        sequence_t                              _preTransactionLastSequence;
+        std::mutex                              _mutex;
     };
 
 
@@ -122,16 +129,17 @@ namespace litecore {
     public:
         typedef std::function<void(DocChangeNotifier&, slice docID, sequence_t)> Callback;
 
-        DocChangeNotifier(SequenceTracker &tracker, slice docID, Callback cb)
-        :_tracker(tracker),
+        DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
+        :tracker(t),
          _docEntry(tracker.addDocChangeNotifier(docID, this)),
          callback(cb)
         { }
 
         ~DocChangeNotifier() {
-            _tracker.removeDocChangeNotifier(_docEntry, this);
+            tracker.removeDocChangeNotifier(_docEntry, this);
         }
 
+        SequenceTracker &tracker;
         Callback const callback;
 
         slice docID() const             {return _docEntry->docID;}
@@ -144,7 +152,6 @@ namespace litecore {
 
     private:
         friend class SequenceTracker;
-        SequenceTracker &_tracker;
         SequenceTracker::const_iterator const _docEntry;
     };
 
@@ -159,20 +166,21 @@ namespace litecore {
         DatabaseChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);
 
         ~DatabaseChangeNotifier() {
-            _tracker.removePlaceholder(_placeholder);
+            tracker.removePlaceholder(_placeholder);
         }
 
+        SequenceTracker &tracker;
         Callback const callback;
 
         /** Returns true if there are new changes, i.e. if `changes` would return a non-empty vector. */
         bool hasChanges() const {
-            return _tracker.hasChangesAfterPlaceholder(_placeholder);
+            return tracker.hasChangesAfterPlaceholder(_placeholder);
         }
 
         /** Returns changes that have occurred since the last call to `changes` (or since
             construction.) Resets the callback state so it can be called again. */
         size_t readChanges(slice docIDs[], size_t maxDocIDs) {
-            return _tracker.readChanges(_placeholder, docIDs, maxDocIDs);
+            return tracker.readChanges(_placeholder, docIDs, maxDocIDs);
         }
 
     protected:
@@ -181,7 +189,6 @@ namespace litecore {
     private:
         friend class SequenceTracker;
 
-        SequenceTracker &_tracker;
         SequenceTracker::const_iterator const _placeholder;
     };
 

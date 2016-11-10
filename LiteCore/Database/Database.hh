@@ -106,6 +106,7 @@ namespace c4Internal {
         virtual ~Database();
         void mustBeInTransaction();
         void mustNotBeInTransaction();
+        void externalTransactionCommitted(const SequenceTracker&);
 
     private:
         Database(const string &path,

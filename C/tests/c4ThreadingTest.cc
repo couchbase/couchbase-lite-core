@@ -8,10 +8,22 @@
 
 #include "c4Test.hh"
 #include "c4View.h"
+#include "c4Observer.h"
 #include "c4DocEnumerator.h"
+#include <assert.h>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
+#include <mutex>
 #include <thread>
+
+using namespace std;
+
+
+#undef REQUIRE
+#define REQUIRE assert
+#undef CHECK
+#define CHECK assert
 
 
 static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
@@ -27,6 +39,10 @@ public:
     
 
     C4View* v {nullptr};
+    mutex _observerMutex;
+    condition_variable _observerCond;
+    bool _changesToObserve {false};
+
 
     C4ThreadingTest(int testOption)
     :C4Test(testOption)
@@ -62,6 +78,9 @@ public:
         c4db_close(database, nullptr);
         c4db_free(database);
     }
+
+
+#pragma mark - TASKS:
 
 
     void addDocsTask() {
@@ -216,21 +235,62 @@ public:
         REQUIRE(error.code == 0);
         return (i < kNumDocs);
     }
+
+
+    static void obsCallback(C4DatabaseObserver* observer, void *context) {
+        ((C4ThreadingTest*)context)->observe(observer);
+    }
+
+    void observe(C4DatabaseObserver* observer) {
+        fprintf(stderr, "!");
+        {
+            std::lock_guard<std::mutex> lock(_observerMutex);
+            _changesToObserve = true;
+        }
+        _observerCond.notify_one();
+    }
+
+
+    void observerTask() {
+        C4Database* database = openDB();
+        auto observer = c4dbobs_create(database, obsCallback, this);
+        C4SequenceNumber lastSequence;
+        do {
+            {
+                unique_lock<mutex> lock(_observerMutex);
+                _observerCond.wait(lock, [&]{return _changesToObserve;});
+                fprintf(stderr, "8");
+                _changesToObserve = false;
+            }
+
+            C4Slice docIDs[10];
+            uint32_t nDocs;
+            while (0 < (nDocs = c4dbobs_getChanges(observer, docIDs, 10, &lastSequence))) {
+                for (auto i = 0; i < nDocs; ++i)
+                    REQUIRE(memcmp(docIDs[i].buf, "doc-", 4) == 0);
+            }
+            REQUIRE(lastSequence > 0);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } while (lastSequence < kNumDocs);
+        c4dbobs_free(observer);
+        closeDB(database);
+    }
     
 };
 
 
-N_WAY_TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[.broken][Threading][noisy][C]") {
+N_WAY_TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[Threading][noisy][C]") {
     std::cerr << "\nThreading test ";
 
     std::thread thread1([this]{addDocsTask();});
     std::thread thread2([this]{updateIndexTask();});
     std::thread thread3([this]{queryIndexTask();});
-    //        std::thread thread4([this]{enumDocsTask();});
+    std::thread thread4([this]{observerTask();});
 
     thread1.join();
     thread2.join();
     thread3.join();
-    //        thread4.join();
+    thread4.join();
     std::cerr << "Threading test done!\n";
 }

@@ -34,6 +34,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
     auto path = db->filePath();
     db->deleteDataFile();
+    delete db;
     db = nullptr;
     path.forEachMatch([](const FilePath &file) {
         FAIL("Leftover file(s) '" << file.path() << "' after deleting database");

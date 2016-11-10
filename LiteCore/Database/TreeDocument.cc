@@ -52,7 +52,7 @@ namespace c4Internal {
 
 
         void init() {
-            docID = _versionedDoc.docID();
+            docID = _docIDBuf = _versionedDoc.docID();
             flags = (C4DocumentFlags)_versionedDoc.flags();
             if (_versionedDoc.exists())
                 flags = (C4DocumentFlags)(flags | kExists);

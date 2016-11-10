@@ -34,7 +34,7 @@ namespace litecore {
 
     static void defaultCallback(const LogDomain &domain, LogLevel, const char *message);
 
-    LogLevel LogDomain::MinLevel = LogLevel::Info;
+    LogLevel LogDomain::MinLevel = LogLevel::Debug;
     LogDomain* LogDomain::sFirstDomain = nullptr;
     void (*LogDomain::Callback)(const LogDomain&, LogLevel, const char *message) = defaultCallback;
 
@@ -52,10 +52,12 @@ namespace litecore {
     void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
         if (_level == LogLevel::Uninitialized) {
             char *val = getenv((std::string("LiteCoreLog") + _name).c_str());
-            if (val)
-                _level = LogLevel::Info;
-            else
+            if (!val)
                 _level = LogLevel::Warning;
+            else if (0 == strcasecmp(val, "debug"))
+                _level = LogLevel::Debug;
+            else
+                _level = LogLevel::Info;
         }
         if (!willLog(level) || level < MinLevel || !Callback)
             return;

@@ -28,7 +28,7 @@ their notifiers post notifications. Here document F changed, and notifier 1 post
 Transactions:
  When a transaction begins, a placeholder is added at the end of the list.
  On commit: Generate a list of all changes since that placeholder, and broadcast to all other databases open on this file. They add those changes to their SequenceTrackers.
- On abort: Iterate over all changes since that placeholder and call documentChanged, with the old sequence number. (Where do we get it from?) This will notify all observers that the doc has reverted back.
+ On abort: Iterate over all changes since that placeholder and call documentChanged, with the old committed sequence number. This will notify all observers that the doc has reverted back.
 */
 
 
@@ -71,14 +71,14 @@ namespace litecore {
     }
 
 
-    void SequenceTracker::documentChanged(slice docID, sequence_t sequence) {
+    void SequenceTracker::documentChanged(const alloc_slice &docID, sequence_t sequence) {
         Assert(sequence > _lastSequence);
         _lastSequence = sequence;
         _documentChanged(docID, sequence);
     }
 
 
-    void SequenceTracker::_documentChanged(slice docID, sequence_t sequence) {
+    void SequenceTracker::_documentChanged(const alloc_slice &docID, sequence_t sequence) {
         bool listChanged = true;
         auto i = _byDocID.find(docID);
         if (i != _byDocID.end()) {
@@ -103,8 +103,6 @@ namespace litecore {
                 docNotifier->notify(entry);
         } else {
             // or create a new entry at the end:
-            if (!hasDBChangeNotifiers())
-                return; // ... unless there are no notifiers in place to care
             _changes.emplace_back(docID, sequence);
             iterator change = prev(_changes.end());
             _byDocID[change->docID] = change;
@@ -114,14 +112,19 @@ namespace litecore {
 
         if (listChanged) {
             // Any placeholders right before this change were up to date, should be notified:
+            bool notified = false;
             auto ph = next(_changes.rbegin());      // iterating _backwards_
             while (ph != _changes.rend() && ph->isPlaceholder()) {
                 auto nextph = ph;
                 ++nextph; // precompute next pos, in case 'ph' moves itself during the callback
-                if (ph->databaseObserver)
+                if (ph->databaseObserver) {
                     ph->databaseObserver->notify();
+                    notified = true;
+                }
                 ph = nextph;
             }
+            if (notified)
+                removeObsoleteEntries();
         }
     }
 
@@ -129,6 +132,14 @@ namespace litecore {
     void SequenceTracker::documentsChanged(const vector<const Entry*>& entries) {
         for (auto change : entries)
             documentChanged(change->docID, change->committedSequence);
+    }
+
+
+    void SequenceTracker::copyTransactionFrom(const SequenceTracker &other) {
+        Assert(other.inTransaction());
+        for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
+            documentChanged(e->docID, e->sequence);
+        }
     }
 
 
@@ -227,7 +238,7 @@ namespace litecore {
             entry = i->second;
         } else {
             // Document isn't known yet; create an entry and put it in the _idle list
-            entry = _idle.emplace(_idle.end(), docID, 0);
+            entry = _idle.emplace(_idle.end(), alloc_slice(docID), 0);
             entry->idle = true;
             _byDocID[entry->docID] = entry;
         }
@@ -251,8 +262,8 @@ namespace litecore {
 #pragma mark - DATABASE CHANGE NOTIFIER:
 
 
-    DatabaseChangeNotifier::DatabaseChangeNotifier(SequenceTracker &tracker, Callback cb, sequence_t afterSeq)
-    :_tracker(tracker),
+    DatabaseChangeNotifier::DatabaseChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
+    :tracker(t),
      callback(cb),
      _placeholder(tracker.addPlaceholderAfter(this, afterSeq))
     { }

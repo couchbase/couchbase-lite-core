@@ -32,7 +32,6 @@ namespace litecore {
         bool isOpen() const noexcept override;
         void close() override;
         void deleteDataFile() override;
-        void reopen() override;
         void compact() override;
 
         static void shutdown() { }
@@ -54,6 +53,7 @@ namespace litecore {
         static Factory& factory();
         
     protected:
+        void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*, bool commit) override;

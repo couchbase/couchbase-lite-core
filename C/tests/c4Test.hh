@@ -105,6 +105,7 @@ protected:
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
+    static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
 
     FLSliceResult readFile(const char *path);
     bool readFileByLines(const char *path, std::function<bool(FLSlice)>);

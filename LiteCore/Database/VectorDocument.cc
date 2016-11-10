@@ -61,7 +61,7 @@ namespace c4Internal {
 
 
         void currentChanged() {
-            docID = _current->docID();
+            docID = _docIDBuf = _current->docID();
             _revIDBuf = _current->revID();
             revID = _revIDBuf;
             sequence = _current->sequence();
