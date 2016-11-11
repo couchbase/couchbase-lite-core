@@ -48,12 +48,14 @@ extern "C" {
         @param maxChanges  The maximum number of changes to return, i.e. the size of the caller's
                             outDocIDs buffer.
         @param outLastSequence  The sequence number of the latest change will be written here.
+        @param outExternal  Will be set to true if the changes were made by a different C4Database.
         @return  The number of changes written to `outDocIDs`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
     uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer,
                                 C4Slice outDocIDs[],
                                 uint32_t maxChanges,
-                                C4SequenceNumber* outLastSequence) C4API;
+                                C4SequenceNumber* outLastSequence,
+                                bool *outExternal) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */

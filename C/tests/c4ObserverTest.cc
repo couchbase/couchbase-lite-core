@@ -39,12 +39,14 @@ class C4ObserverTest : public C4Test {
     void checkChanges(std::vector<const char*> expectedDocIDs) {
         C4Slice docIDs[100];
         C4SequenceNumber lastSeq;
-        auto changeCount = c4dbobs_getChanges(dbObserver, docIDs, 100, &lastSeq);
+        bool external;
+        auto changeCount = c4dbobs_getChanges(dbObserver, docIDs, 100, &lastSeq, &external);
         REQUIRE(changeCount == expectedDocIDs.size());
         unsigned i = 0;
         for (auto docID : expectedDocIDs) {
             CHECK(docIDs[i++] == c4str(docID));
         }
+        CHECK(external == false);
     }
 
     C4DatabaseObserver* dbObserver {nullptr};

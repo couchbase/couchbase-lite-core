@@ -14,15 +14,15 @@
 using namespace std::placeholders;
 
 
-struct c4DatabaseObserver : public DatabaseChangeNotifier, InstanceCounted {
+struct c4DatabaseObserver : public InstanceCounted {
     c4DatabaseObserver(C4Database *db, C4SequenceNumber since,
                        C4DatabaseObserverCallback callback, void *context)
-    :DatabaseChangeNotifier(db->sequenceTracker(),
-                            bind(&c4DatabaseObserver::dispatchCallback, this, _1),
-                            since),
+    :_db(db),
      _callback(callback),
      _context(context),
-     _db(db)
+     _notifier(db->sequenceTracker(),
+               bind(&c4DatabaseObserver::dispatchCallback, this, _1),
+               since)
     { }
 
 
@@ -30,9 +30,13 @@ struct c4DatabaseObserver : public DatabaseChangeNotifier, InstanceCounted {
         _callback(this, _context);
     }
 
+    Retained<Database> _db;
+    DatabaseChangeNotifier _notifier;
     C4DatabaseObserverCallback _callback;
     void *_context;
-    Retained<Database> _db;
+    //NOTE: Order of members is important! _notifier needs to appear after _db so that it will be
+    // destructed *before* _db; this ensures that the Database's SequenceTracker is still in
+    // existence when the notifier removes itself from it.
 };
 
 
@@ -51,13 +55,14 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
 uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
                             C4Slice outDocIDs[],
                             uint32_t maxChanges,
-                            C4SequenceNumber* outLastSequence) noexcept
+                            C4SequenceNumber* outLastSequence,
+                            bool *outExternal) noexcept
 {
     return tryCatch<uint32_t>(nullptr, [&]{
-        lock_guard<mutex> lock(obs->tracker.mutex());
+        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         if (outLastSequence)
-            *outLastSequence = obs->tracker.lastSequence();
-        return (uint32_t) obs->readChanges((slice*)outDocIDs, maxChanges);
+            *outLastSequence = obs->_notifier.tracker.lastSequence();
+        return (uint32_t) obs->_notifier.readChanges((slice*)outDocIDs, maxChanges, *outExternal);
     });
 }
 
@@ -65,7 +70,7 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
 void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
     if (obs) {
         WITH_LOCK(obs->_db);
-        lock_guard<mutex> lock(obs->tracker.mutex());
+        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         delete obs;
     }
 }
@@ -74,15 +79,15 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 #pragma mark - DOCUMENT OBSERVER:
 
 
-struct c4DocumentObserver : public DocChangeNotifier, InstanceCounted {
+struct c4DocumentObserver : public InstanceCounted {
     c4DocumentObserver(C4Database *db, C4Slice docID,
                        C4DocumentObserverCallback callback, void *context)
-    :DocChangeNotifier(db->sequenceTracker(),
-                       docID,
-                       bind(&c4DocumentObserver::dispatchCallback, this, _1, _2, _3)),
+    :_db(db),
      _callback(callback),
      _context(context),
-     _db(db)
+     _notifier(db->sequenceTracker(),
+               docID,
+               bind(&c4DocumentObserver::dispatchCallback, this, _1, _2, _3))
     { }
 
 
@@ -90,9 +95,11 @@ struct c4DocumentObserver : public DocChangeNotifier, InstanceCounted {
         _callback(this, docID, sequence, _context);
     }
 
+    Retained<Database> _db;
     C4DocumentObserverCallback _callback;
     void *_context;
-    Retained<Database> _db;
+    DocChangeNotifier _notifier;
+    //NOTE: Order of member variables is important here too (see above).
 };
 
 
@@ -112,7 +119,7 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
 void c4docobs_free(C4DocumentObserver* obs) noexcept {
     if (obs) {
         WITH_LOCK(obs->_db);
-        lock_guard<mutex> lock(obs->tracker.mutex());
+        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         delete obs;
     }
 }

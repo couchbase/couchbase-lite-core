@@ -265,7 +265,9 @@ public:
 
             C4Slice docIDs[10];
             uint32_t nDocs;
-            while (0 < (nDocs = c4dbobs_getChanges(observer, docIDs, 10, &lastSequence))) {
+            bool external;
+            while (0 < (nDocs = c4dbobs_getChanges(observer, docIDs, 10, &lastSequence, &external))) {
+                REQUIRE(external);
                 for (auto i = 0; i < nDocs; ++i)
                     REQUIRE(memcmp(docIDs[i].buf, "doc-", 4) == 0);
             }

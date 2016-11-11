@@ -354,7 +354,7 @@ namespace c4Internal {
 
     void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
         lock_guard<mutex> lock(_sequenceTracker->mutex());
-        _sequenceTracker->copyTransactionFrom(sourceTracker);
+        _sequenceTracker->addExternalTransaction(sourceTracker);
     }
 
 

@@ -35,11 +35,8 @@ namespace litecore {
     class SequenceTracker {
     public:
         struct Entry;
-        typedef std::function<void(SequenceTracker&, const std::vector<const Entry*>&)> CommitCallback;
 
-        SequenceTracker(CommitCallback cb =nullptr)
-        :_commitCallback(cb)
-        { }
+        SequenceTracker() { }
 
         /** Multithreaded clients can use this to synchronize access to the tracker. */
         std::mutex& mutex()                     {return _mutex;}
@@ -52,10 +49,10 @@ namespace litecore {
 
         void documentsChanged(const std::vector<const Entry*>&);
 
-        sequence_t lastSequence() const         {return _lastSequence;}
+        /** Copy the other tracker's transaction's changes into myself as committed & external */
+        void addExternalTransaction(const SequenceTracker &from);
 
-        /** Copy all the other tracker's transaction's changes into myself as committed. */
-        void copyTransactionFrom(const SequenceTracker &from);
+        sequence_t lastSequence() const         {return _lastSequence;}
 
         /** Tracks a document's current sequence. */
         struct Entry {
@@ -65,17 +62,28 @@ namespace litecore {
             sequence_t                      committedSequence {0};
             alloc_slice const               docID;
             std::vector<DocChangeNotifier*> documentObservers;
-            bool                            idle {false};
+            bool                            idle     :1;
+            bool                            external :1;
 
             // Placeholder entry (when sequence == 0):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
-            Entry(const alloc_slice &d, sequence_t s)  :docID(d), sequence(s) { }
-            Entry(DatabaseChangeNotifier *o)    :databaseObserver(o) { }    // placeholder
+            Entry(const alloc_slice &d, sequence_t s)
+            :docID(d), sequence(s), idle(false), external(false) { }
+            Entry(DatabaseChangeNotifier *o)
+            :databaseObserver(o) { }    // placeholder
 
             bool isPlaceholder() const          {return docID.buf == nullptr;}
             bool isIdle() const                 {return idle && !isPlaceholder();}
         };
+
+#if DEBUG
+        /** Writes a string representation for debugging/testing purposes. Format is a list of
+            comma-separated entries, inside square brackets. Each entry is either "docid@sequence"
+            for a change, or "*" for a placeholder. The entries in an open transaction are
+            inside a pair of parentheses. */
+        std::string dump() const;
+#endif
 
     protected:
         typedef std::list<Entry>::const_iterator const_iterator;
@@ -95,7 +103,9 @@ namespace litecore {
         const_iterator addPlaceholderAfter(DatabaseChangeNotifier *obs, sequence_t);
         void removePlaceholder(const_iterator);
         bool hasChangesAfterPlaceholder(const_iterator) const;
-        size_t readChanges(const_iterator placeholder, slice docIDs[], size_t numIDs);
+        size_t readChanges(const_iterator placeholder,
+                           slice docIDs[], size_t numIDs,
+                           bool &external);
         std::vector<const Entry*> changesSincePlaceholder(const_iterator);
         void catchUpPlaceholder(const_iterator);
         const_iterator addDocChangeNotifier(slice docID, DocChangeNotifier*);
@@ -118,7 +128,6 @@ namespace litecore {
         sequence_t                              _lastSequence {0};
         size_t                                  _numPlaceholders {0};
         std::unique_ptr<DatabaseChangeNotifier> _transaction;
-        CommitCallback                          _commitCallback;
         sequence_t                              _preTransactionLastSequence;
         std::mutex                              _mutex;
     };
@@ -179,8 +188,8 @@ namespace litecore {
 
         /** Returns changes that have occurred since the last call to `changes` (or since
             construction.) Resets the callback state so it can be called again. */
-        size_t readChanges(slice docIDs[], size_t maxDocIDs) {
-            return tracker.readChanges(_placeholder, docIDs, maxDocIDs);
+        size_t readChanges(slice docIDs[], size_t maxDocIDs, bool &external) {
+            return tracker.readChanges(_placeholder, docIDs, maxDocIDs, external);
         }
 
     protected:
