@@ -36,7 +36,7 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
 
 
 /** LiteCore database object. (Unlike CBL 1.x there is no Manager.) */
-@interface LCDatabase : NSObject
+@interface LCDatabase : NSObject <NSCopying>
 
 + (NSString*) defaultDirectory;
 
@@ -47,6 +47,9 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
                         error: (NSError**)outError;
 
 - (instancetype) init NS_UNAVAILABLE;
+
+
+@property (readonly) NSString* path;
 
 
 - (bool) close: (NSError**)outError;

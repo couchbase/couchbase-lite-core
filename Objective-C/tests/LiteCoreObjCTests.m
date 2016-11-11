@@ -245,4 +245,44 @@
     [self waitForExpectationsWithTimeout: 5 handler: NULL];
 }
 
+
+- (void) test07_ExternalChanges {
+    LCDatabase* db2 = [db copy];
+    XCTAssert(db2);
+
+    [self expectationForNotification: LCDatabaseChangedNotification
+                              object: db2
+                             handler: ^BOOL(NSNotification *n)
+     {
+         NSArray *docIDs = n.userInfo[@"docIDs"];
+         AssertEqual(docIDs.count, 10);
+         AssertEqualObjects(n.userInfo[@"external"], @YES);
+         return YES;
+     }];
+
+    LCDocument* db2doc6 = db2[@"doc-6"];
+    [self expectationForNotification: LCDocumentSavedNotification
+                              object: db2doc6
+                             handler: ^BOOL(NSNotification *n)
+     {
+         AssertEqualObjects(n.userInfo[@"external"], @YES);
+         AssertEqualObjects(db2doc6[@"type"], @"demo");
+         return YES;
+     }];
+
+    __block NSError* error;
+    bool ok = [db inTransaction: &error do: ^bool {
+        for (unsigned i = 0; i < 10; i++) {
+            LCDocument* doc = self->db[[NSString stringWithFormat: @"doc-%u", i]];
+            doc[@"type"] = @"demo";
+            Assert([doc save: &error], @"Error saving: %@", error);
+        }
+        return true;
+    }];
+    XCTAssert(ok);
+
+    [self waitForExpectationsWithTimeout: 5 handler: NULL];
+}
+
+
 @end

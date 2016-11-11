@@ -36,7 +36,7 @@ bool convertError(const FLError&, NSError **outError);
                             docID: (NSString*)docID
                         mustExist: (BOOL)mustExist
                             error: (NSError**)outError;
-- (void) _noteDocChanged;
+- (void) changedExternally;
 @end
 
 

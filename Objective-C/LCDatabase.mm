@@ -47,13 +47,14 @@ static const C4DatabaseConfig kDBConfig = {
 {
     self = [super init];
     if (self) {
-        stringBytes b(path.stringByStandardizingPath);
+        const char *cPath = path.stringByStandardizingPath.fileSystemRepresentation;
         C4Error err;
-        _c4db = c4db_open({b.buf, b.size}, &kDBConfig, &err);
+        _c4db = c4db_open({cPath, strlen(cPath)}, &kDBConfig, &err);
         if (!_c4db)
             return convertError(err, outError), nil;
         _documents = [NSMapTable strongToWeakObjectsMapTable];
         _unsavedDocuments = [NSMutableSet setWithCapacity: 100];
+        [self startDBObserver];
     }
     return self;
 }
@@ -64,6 +65,11 @@ static const C4DatabaseConfig kDBConfig = {
 {
     return [self initWithPath: [[self.class defaultDirectory] stringByAppendingPathComponent: name]
                         error: outError];
+}
+
+
+- (instancetype) copyWithZone: (NSZone*)zone {
+    return [[[self class] alloc] initWithPath: self.path error: nullptr];
 }
 
 
@@ -92,6 +98,15 @@ static const C4DatabaseConfig kDBConfig = {
     path = [path stringByAppendingPathComponent: bundleID];
 #endif
     return [path stringByAppendingPathComponent: @"LiteCore"];
+}
+
+
+- (NSString*) path {
+    C4SliceResult str = c4db_getPath(_c4db);
+    NSString* path = [NSFileManager.defaultManager stringWithFileSystemRepresentation: (const char*)str.buf
+                                                                     length: str.size];
+    c4slice_free(str);
+    return path;
 }
 
 
@@ -150,7 +165,6 @@ static const C4DatabaseConfig kDBConfig = {
         if (!doc)
             return nil;
         [_documents setObject: doc forKey: docID];
-        [self startDBObserver];
     } else {
         if (mustExist && !doc.exists) {
             // Don't return a pre-instantiated LCDocument if it doesn't exist
@@ -216,40 +230,50 @@ static const C4DatabaseConfig kDBConfig = {
 
 static void dbObserverCallback(C4DatabaseObserver* observer, void *context) {
     @autoreleasepool {
-        [(__bridge LCDatabase*)context _c4DatabaseChanged];
+        auto self = (__bridge LCDatabase*)context;
+        [self performSelectorOnMainThread: @selector(postDatabaseChanged)
+                               withObject: nil waitUntilDone: NO];
     }
-}
-
-
-- (void) _c4DatabaseChanged {
-    [self performSelectorOnMainThread: @selector(postDatabaseChanged) withObject: nil waitUntilDone: NO];
 }
 
 
 - (void) postDatabaseChanged {
     if (!_c4dbObserver || !_c4db || c4db_isInTransaction(_c4db))
         return;
-    @autoreleasepool {
-        NSMutableArray* docIDs = [[NSMutableArray alloc] init];
+    NSMutableArray* docIDs = [NSMutableArray new];
+    bool external = false;
 
-        C4Slice docIDSlices[100];
-        C4SequenceNumber lastSeq;
-        uint32_t nChanges;
-        while (0 < (nChanges = c4dbobs_getChanges(_c4dbObserver, docIDSlices, 100, &lastSeq))) {
+    uint32_t nChanges;
+    do {
+        @autoreleasepool {
+            C4Slice docIDSlices[100];
+            C4SequenceNumber lastSeq;
+            bool newExternal;
+            nChanges = c4dbobs_getChanges(_c4dbObserver, docIDSlices, 100, &lastSeq, &newExternal);
+
+            if ((nChanges == 0 || newExternal != external || docIDs.count > 1000)
+                && docIDs.count > 0) {
+                NSLog(@"DatabaseChanged: ext=%d, docs=%@",
+                      external, [docIDs componentsJoinedByString: @", "]);
+                [NSNotificationCenter.defaultCenter postNotificationName: LCDatabaseChangedNotification
+                                                                  object: self
+                                                                userInfo: @{@"docIDs": docIDs,
+                                                                            @"external": @(external)}];
+                docIDs = [NSMutableArray new];
+            }
+            external = newExternal;
+
             for (uint32_t i = 0; i < nChanges; ++i) {
                 NSString* docID = [[NSString alloc] initWithBytes: (void*)docIDSlices[i].buf
                                                            length: docIDSlices[i].size
                                                          encoding: NSUTF8StringEncoding];
                 [docIDs addObject: docID];
+
+                if (external)
+                    [[_documents objectForKey: docID] changedExternally];
             }
         }
-
-        if (docIDs.count > 0) {
-            [NSNotificationCenter.defaultCenter postNotificationName: LCDatabaseChangedNotification
-                                                              object: self
-                                                            userInfo: @{@"docIDs": docIDs}];
-        }
-    }
+    } while (nChanges > 0);
 }
 
 

@@ -18,6 +18,7 @@
 #import "StringBytes.hh"
 
 
+NSString* const LCDocumentChangedNotification = @"LCDocumenChanged";
 NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
 
 
@@ -114,11 +115,6 @@ NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
 }
 
 
-- (void) _noteDocChanged {
-    NSLog(@"*** External change to %@", self);
-}
-
-
 #pragma mark - PROPERTIES:
 
 
@@ -143,8 +139,8 @@ NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
 
 
 - (void) setProperties:(NSDictionary *)properties {
-    _properties = properties ? [properties mutableCopy] : [NSMutableDictionary dictionary];
-    self.hasUnsavedChanges = true;
+    _properties = properties ? [properties mutableCopy] : [NSMutableDictionary new];
+    [self noteChanged];
 }
 
 
@@ -168,8 +164,11 @@ NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
 - (void) setObject: (UU id)value forKeyedSubscript:(UU NSString*)key {
     if (!self.properties)
         _properties = [NSMutableDictionary dictionary];
-    [_properties setValue: value forKey: key];
-    self.hasUnsavedChanges = true;
+    id oldValue = _properties[key];
+    if (![value isEqual: oldValue] && value != oldValue) {
+        [_properties setValue: value forKey: key];
+        [self noteChanged];
+    }
 }
 
 
@@ -209,6 +208,14 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 - (void) setInteger: (NSInteger)i forKey: (NSString*)key {self[key] = @(i);}
 - (void) setFloat:   (float)f forKey: (NSString*)key     {self[key] = @(f);}
 - (void) setDouble:  (double)d forKey: (NSString*)key    {self[key] = @(d);}
+
+
+- (void) noteChanged {
+    if (!_hasUnsavedChanges)
+        self.hasUnsavedChanges = true;
+    [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentChangedNotification
+                                                      object: self];
+}
 
 
 #pragma mark - SAVING:
@@ -291,8 +298,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
             // Success!
             [self setC4Doc: newDoc];
             self.hasUnsavedChanges = false;
-            [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentSavedNotification
-                                                              object: self];
+            [self postSavedNotificationExternal: false];
             [_database postDatabaseChanged];
             return true;
         }
@@ -337,9 +343,30 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 }
 
 
+- (void) postSavedNotificationExternal: (bool)external {
+    NSLog(@"DocumentSaved: %@ @%llu%s", _documentID, self.sequence,
+          (external ? " EXT" : ""));
+    NSDictionary* userInfo = external ? @{@"external": @YES} : nil;
+    [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentSavedNotification
+                                                      object: self
+                                                    userInfo: userInfo];
+}
+
+
 - (void) revertToSaved {
     _properties = nil;
     self.hasUnsavedChanges = false;
+}
+
+
+- (void) changedExternally {
+    // The current API design decision is that when a document has unsaved changes, it should
+    // not update with external changes and should not post notifications. Instead the conflict
+    // resolution will happen when the app saves the document.
+    if (!_hasUnsavedChanges) {
+        [self reload: nullptr];
+        [self postSavedNotificationExternal: true];
+    }
 }
 
 
