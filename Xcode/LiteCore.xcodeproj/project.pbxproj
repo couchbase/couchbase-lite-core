@@ -955,7 +955,6 @@
 		27A657CB1CBED8E200A7A1D7 /* ViewTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewTests.swift; sourceTree = "<group>"; };
 		27A657CD1CBEF62D00A7A1D7 /* KeyTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyTests.swift; sourceTree = "<group>"; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/litecore/Logger.java; sourceTree = "<group>"; };
-		27A82D941BC48E38005CB742 /* sqlite_glue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite_glue.c; sourceTree = "<group>"; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924971D9B316D00086206 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		27A924991D9B316D00086206 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -1571,7 +1570,6 @@
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
-				27A82D941BC48E38005CB742 /* sqlite_glue.c */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */,
 			);
