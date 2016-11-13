@@ -69,8 +69,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
 
 
 C4SliceResult c4doc_getType(C4Document *doc) noexcept {
-    slice result = internal(doc)->type().copy();
-    return {result.buf, result.size};
+    return sliceResult(internal(doc)->type());
 }
 
 void c4doc_setType(C4Document *doc, C4Slice docType) noexcept {
@@ -102,9 +101,7 @@ bool c4doc_selectCurrentRevision(C4Document* doc) noexcept
 
 
 C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
-    alloc_slice result = internal(doc)->detachSelectedRevBody();
-    result.dontFree();
-    return {result.buf, result.size};
+    return sliceResult(internal(doc)->detachSelectedRevBody());
 }
 
 
@@ -306,8 +303,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
             recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);
             return C4SliceResult{};
         }
-        slice result = enc.extractOutput().dontFree();
-        return C4SliceResult{result.buf, result.size};
+        return sliceResult(enc.extractOutput());
     });
 }
 
@@ -320,8 +316,7 @@ C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) noexcept {
             return C4SliceResult();
         }
         Database *db = c4Internal::internal(doc)->database();
-        slice result = root->toJSON(db->documentKeys()).dontFree();
-        return C4SliceResult{result.buf, result.size};
+        return sliceResult(root->toJSON(db->documentKeys()));
     });
 }
 

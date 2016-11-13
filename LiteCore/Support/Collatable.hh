@@ -124,8 +124,13 @@ namespace litecore {
 
         alloc_slice extractOutput() {
             auto result = data();
+#if 0
+            //TODO: Restore this optimization by using alloc_slice internally
             _buf = _available = nullslice;
             return alloc_slice::adopt(result);
+#else
+            return alloc_slice(result);
+#endif
         }
 
         void reset();

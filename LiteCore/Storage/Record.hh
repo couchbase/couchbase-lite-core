@@ -50,12 +50,6 @@ namespace litecore {
         template <typename T>
             void setBody(const T &body)         {_body = body; _bodySize = _body.size;}
 
-        // Sets key/meta/body from an existing malloc'ed block. The Record assumes responsibility
-        // for freeing the block; caller should _not_ free it afterwards.
-        void adoptKey(slice key)                {_key = alloc_slice::adopt(key);}
-        void adoptMeta(slice meta)              {_meta = alloc_slice::adopt(meta);}
-        void adoptBody(slice body)              {_body = alloc_slice::adopt(body); _bodySize = _body.size;}
-
         void setDeleted(bool deleted)           {_deleted = deleted; if (deleted) _exists = false;}
 
         /** Reallocs the 'meta' slice to the desired size. */

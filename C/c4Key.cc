@@ -105,19 +105,17 @@ double c4key_readNumber(C4KeyReader* r) noexcept {
 }
 
 C4SliceResult c4key_readString(C4KeyReader* r) noexcept {
-    slice s;
     try {
-        s = ((CollatableReader*)r)->readString().dontFree();
+        return sliceResult(((CollatableReader*)r)->readString());
     } catchExceptions()
-    return {s.buf, s.size};
+    return {nullptr, 0};
 }
 
 C4SliceResult c4key_toJSON(const C4KeyReader* r) noexcept {
     if (!r || r->length == 0)
         return {nullptr, 0};
     string str = ((CollatableReader*)r)->toJSON();
-    auto s = ((slice)str).copy();
-    return {s.buf, s.size};
+    return sliceResult(str);
 }
 
 

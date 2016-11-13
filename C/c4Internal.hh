@@ -89,7 +89,9 @@ namespace c4Internal {
 
     // SLICES:
 
-    C4SliceResult stringResult(const char *str);
+    C4SliceResult sliceResult(slice s);
+    C4SliceResult sliceResult(alloc_slice s);
+    C4SliceResult sliceResult(const char *str);
 
     // DOC ENUMERATORS:
 

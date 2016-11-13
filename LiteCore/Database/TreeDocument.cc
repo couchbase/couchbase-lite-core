@@ -396,8 +396,7 @@ bool c4doc_save(C4Document *doc,
 
 
 C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, bool deleted) noexcept {
-    slice result = generateDocRevID(body, parentRevID, deleted).expanded().dontFree();
-    return {result.buf, result.size};
+    return sliceResult(generateDocRevID(body, parentRevID, deleted).expanded());
 }
 
 unsigned c4rev_getGeneration(C4Slice revID) noexcept {

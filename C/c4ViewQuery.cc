@@ -302,16 +302,14 @@ C4SliceResult c4view_fullTextMatched(C4View *view,
 {
     return tryCatch<C4SliceResult>(outError, [&]{
         WITH_LOCK(view);
-        auto result = FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID).dontFree();
-        return C4SliceResult{result.buf, result.size};
+        return sliceResult(FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID));
     });
 }
 
 
 C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        slice result = ((C4FullTextEnumerator*)e)->fullTextMatched().dontFree();
-        return C4SliceResult{result.buf, result.size};
+        return sliceResult(((C4FullTextEnumerator*)e)->fullTextMatched());
     });
 }
 

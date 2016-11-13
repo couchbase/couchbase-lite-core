@@ -53,13 +53,21 @@ namespace c4Internal {
     }
 
 
-    C4SliceResult stringResult(const char *str) {
-        if (str) {
-            slice result = alloc_slice(str, strlen(str)).dontFree();
-            return {result.buf, result.size};
-        } else {
+    C4SliceResult sliceResult(alloc_slice s) {
+        s.retain();
+        return {s.buf, s.size};
+    }
+
+    C4SliceResult sliceResult(slice s) {
+        return sliceResult(alloc_slice(s));
+    }
+
+
+    C4SliceResult sliceResult(const char *str) {
+        if (str)
+            return sliceResult(slice{str, strlen(str)});
+        else
             return {nullptr, 0};
-        }
     }
 
 }
@@ -67,14 +75,14 @@ namespace c4Internal {
 
 C4SliceResult c4error_getMessage(C4Error err) noexcept {
     if (err.code == 0) {
-        return stringResult(nullptr);
+        return sliceResult(nullptr);
     } else if (err.domain < 1 || err.domain > SQLiteDomain) {
-        return stringResult("unknown error domain");
+        return sliceResult("unknown error domain");
     } else {
         static constexpr error::Domain kDomains[] = {error::LiteCore, error::POSIX,
                                                      error::ForestDB, error::SQLite};
         error e(kDomains[err.domain - 1], err.code);
-        return stringResult(e.what());
+        return sliceResult(e.what());
     }
 }
 
@@ -84,7 +92,7 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) noexc
     if (msg.buf)
         memcpy(buffer, msg.buf, len);
     buffer[len] = '\0';
-    free((void*)msg.buf);
+    c4slice_free(msg);
     return buffer;
 }
 
@@ -100,7 +108,7 @@ bool c4SliceEqual(C4Slice a, C4Slice b) noexcept {
 
 
 void c4slice_free(C4SliceResult slice) noexcept {
-    free((void*)slice.buf);
+    alloc_slice::release({slice.buf, slice.size});
 }
 
 

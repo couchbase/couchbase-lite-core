@@ -197,7 +197,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 
 
 // Reads a file into memory.
-FLSliceResult C4Test::readFile(const char *path) {
+FLSlice C4Test::readFile(const char *path) {
     INFO("Opening file " << path);
     FILE *fd = fopen(path, "r");
     REQUIRE(fd != nullptr);
@@ -209,7 +209,7 @@ FLSliceResult C4Test::readFile(const char *path) {
     ssize_t bytesRead = fread((void*)data, 1, size, fd);
     REQUIRE(bytesRead == size);
     fclose(fd);
-    return FLSliceResult{data, size};
+    return FLSlice{data, size};
 }
 
 

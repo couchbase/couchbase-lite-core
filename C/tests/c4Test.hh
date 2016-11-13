@@ -107,7 +107,7 @@ protected:
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
 
-    FLSliceResult readFile(const char *path);
+    FLSlice readFile(const char *path); // caller must free buf when done
     bool readFileByLines(const char *path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(const char *path, double timeout =15.0, bool verbose =false);
     

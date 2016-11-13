@@ -47,7 +47,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
 
 C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
     string str = internal(key).base64String();
-    return stringResult(str.c_str());
+    return sliceResult(str);
 }
 
 
@@ -96,9 +96,7 @@ int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
 
 C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
-        alloc_slice contents = store->get(internal(key)).contents();
-        contents.dontFree();
-        return {contents.buf, contents.size};
+        return sliceResult(store->get(internal(key)).contents());
     } catchError(outError)
     return {nullptr, 0};
 }

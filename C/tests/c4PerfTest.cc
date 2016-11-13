@@ -468,7 +468,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
     auto jsonData = readFile(kJSONFilePath);
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
-    FLSliceResult_Free(jsonData);
+    free((void*)jsonData.buf);
     FLArray root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     unsigned numDocs;
 

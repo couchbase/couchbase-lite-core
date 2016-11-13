@@ -136,9 +136,7 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 
 
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
-    FilePath path = database->path();
-    slice s = slice(path.path()).copy();  // C4SliceResult must be malloced & adopted by caller
-    return {s.buf, s.size};
+    return sliceResult(database->path().path());
 }
 
 

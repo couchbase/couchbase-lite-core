@@ -420,17 +420,22 @@ namespace litecore {
 
 
     void ForestKeyStore::setDocNoKey(Record &rec, fdb_doc &fdoc) const {
-        rec.adoptMeta(slice(fdoc.meta, fdoc.metalen));
-        if (fdoc.body)
-            rec.adoptBody(slice(fdoc.body, fdoc.bodylen));
-        else
+        rec.setMeta(slice(fdoc.meta, fdoc.metalen));
+        free(fdoc.meta);
+        if (fdoc.body) {
+            rec.setBody(slice(fdoc.body, fdoc.bodylen));
+            free(fdoc.body);
+        } else {
             rec.setUnloadedBodySize(fdoc.bodylen);
+        }
         rec.setDeleted(fdoc.deleted);
         updateDoc(rec, fdoc.seqnum, fdoc.offset, fdoc.deleted);
     }
 
     void ForestKeyStore::setDoc(Record &rec, fdb_doc &fdoc) const {
-        rec.adoptKey(slice(fdoc.key, fdoc.keylen));
+        rec.setKey(slice(fdoc.key, fdoc.keylen));
+        free(fdoc.key);
+        
         setDocNoKey(rec, fdoc);
     }
 
@@ -469,7 +474,8 @@ namespace litecore {
             
             check(fdb_get_byoffset(_handle, &fdoc));
 
-            rec.adoptBody(slice(fdoc.body, fdoc.bodylen));
+            //rec.adoptBody(slice(fdoc.body, fdoc.bodylen));
+            rec.setBody(slice(fdoc.body, fdoc.bodylen));
             if (fdoc.key != existingKey.buf)
                 free(fdoc.key);
             free(fdoc.meta);
