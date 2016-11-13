@@ -9,6 +9,7 @@
 #pragma once
 #include "slice.hh"
 #include "PlatformCompat.hh"
+#include <atomic>
 #include <string>
 #include <stdarg.h>
 #include <stdint.h>
@@ -75,7 +76,7 @@ public:
     static void (*Callback)(const LogDomain&, LogLevel, const char *message);
 
 private:
-    LogLevel _level;
+    std::atomic<LogLevel> _level;
     const char* const _name;
     LogDomain* const _next;
 

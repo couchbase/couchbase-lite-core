@@ -198,7 +198,7 @@ namespace litecore {
         OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
-        void*                   _owner {nullptr};               // App-defined object that owns me
+        std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
     };
 
 

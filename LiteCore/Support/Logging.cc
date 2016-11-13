@@ -29,6 +29,8 @@
 #include "asprintf.h"
 #endif
 
+using namespace std;
+
 
 namespace litecore {
 
@@ -41,6 +43,9 @@ namespace litecore {
     LogDomain DefaultLog("", LogLevel::Info);
 
 
+    static mutex sLogMutex;
+
+
     void LogDomain::log(LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
@@ -51,7 +56,7 @@ namespace litecore {
 
     void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
         if (_level == LogLevel::Uninitialized) {
-            char *val = getenv((std::string("LiteCoreLog") + _name).c_str());
+            char *val = getenv((string("LiteCoreLog") + _name).c_str());
             if (!val)
                 _level = LogLevel::Warning;
             else if (0 == strcasecmp(val, "debug"))
@@ -61,6 +66,8 @@ namespace litecore {
         }
         if (!willLog(level) || level < MinLevel || !Callback)
             return;
+
+        unique_lock<mutex> lock(sLogMutex);
         char *message;
         if (vasprintf(&message, fmt, args) < 0) {
             Callback(*this, level, "(Failed to allocate memory for log message)");
@@ -106,8 +113,8 @@ namespace litecore {
     }
 
 
-    std::string _logSlice(fleece::slice s) {
-        std::stringstream o;
+    string _logSlice(fleece::slice s) {
+        stringstream o;
         if (s.buf == nullptr) {
             return "<null>";
         } else {
@@ -118,11 +125,9 @@ namespace litecore {
                     return o.str();
                 }
             }
-            o << "\"" << std::string((char*)s.buf, s.size) << "\"";
+            o << "\"" << string((char*)s.buf, s.size) << "\"";
         }
         return o.str();
     }
-    
-    
 
 }

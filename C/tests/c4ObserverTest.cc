@@ -36,7 +36,7 @@ class C4ObserverTest : public C4Test {
         ++docCallbackCalls;
     }
 
-    void checkChanges(std::vector<const char*> expectedDocIDs) {
+    void checkChanges(std::vector<const char*> expectedDocIDs, bool expectedExternal =false) {
         C4Slice docIDs[100];
         C4SequenceNumber lastSeq;
         bool external;
@@ -46,7 +46,7 @@ class C4ObserverTest : public C4Test {
         for (auto docID : expectedDocIDs) {
             CHECK(docIDs[i++] == c4str(docID));
         }
-        CHECK(external == false);
+        CHECK(external == expectedExternal);
     }
 
     C4DatabaseObserver* dbObserver {nullptr};
@@ -130,7 +130,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
 
     CHECK(dbCallbackCalls == 2);
 
-    checkChanges({"c", "d", "e"});
+    checkChanges({"c", "d", "e"}, true);
 
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;
