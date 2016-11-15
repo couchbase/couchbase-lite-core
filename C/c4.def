@@ -3,6 +3,7 @@ kC4ForestDBStorageEngine
 kC4SQLiteStorageEngine
 c4SliceEqual
 c4slice_free
+c4log
 c4log_register
 c4log_setLevel
 c4log_warnOnErrors
@@ -181,6 +182,7 @@ FLDictIterator_GetKey
 FLDictIterator_GetValue
 FLDictIterator_Next
 FLDictKey_Init
+FLDictKey_InitWithSharedKeys
 FLDictKey_GetString
 FLDict_GetWithKey
 FLDict_GetWithKeys

@@ -9,8 +9,6 @@
 #include "c4Test.hh"
 #include "c4Observer.h"
 
-using namespace fleece;
-
 
 class C4ObserverTest : public C4Test {
     public:

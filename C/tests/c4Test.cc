@@ -104,9 +104,10 @@ C4Test::C4Test(int testOption)
  _bundled(true)
 {
     c4_shutdown(nullptr);
-    
+
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
+    c4log_setLevel("", kC4LogInfo);
 
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys;
@@ -235,7 +236,7 @@ bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback)
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
 unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose) {
-    if (verbose) Log("Reading %s ...  ", path);
+    C4Log("Reading %s ...  ", path);
     Stopwatch st;
     unsigned numDocs = 0;
     {
@@ -261,14 +262,14 @@ unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose)
             FLSliceResult_Free(body);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
-                Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
+                C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
                 return false;
             }
             if (verbose && numDocs % 100000 == 0)
-                Log("%u  ", numDocs);
+                C4Log("%u  ", numDocs);
             return true;
         });
-        if (verbose) Log("Committing...\n");
+        C4Log("Committing...");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     return numDocs;

@@ -271,7 +271,6 @@
 		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD381DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
-		27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27E3DD551DB80A9A00F2872D /* names_100.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD301DB43BAD00F2872D /* names_100.json */; };
 		27E3DD561DB80A9C00F2872D /* iTunesMusicLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */; };
@@ -358,7 +357,6 @@
 		27EF80B819142C9900A327B9 /* stem_UTF_8_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */; };
 		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
-		27F3707F1DC025890096F717 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
 		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
@@ -1193,7 +1191,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27F3707F1DC025890096F717 /* libFleece.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2749,7 +2746,6 @@
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
-				27E3DD3A1DB4A12100F2872D /* Logging.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 			);

@@ -9,6 +9,7 @@ _kC4SQLiteStorageEngine
 
 _c4SliceEqual
 _c4slice_free
+_c4log
 _c4log_register
 _c4log_setLevel
 _c4log_warnOnErrors
@@ -210,6 +211,7 @@ _FLDictIterator_GetKey
 _FLDictIterator_GetValue
 _FLDictIterator_Next
 _FLDictKey_Init
+_FLDictKey_InitWithSharedKeys
 _FLDictKey_GetString
 _FLDict_GetWithKey
 _FLDict_GetWithKeys

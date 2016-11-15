@@ -14,11 +14,6 @@
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
-#include "Logging.hh"
-
-using litecore::LogLevel;
-using litecore::LogDomain;
-using litecore::DefaultLog;
 
 
 #ifdef NDEBUG

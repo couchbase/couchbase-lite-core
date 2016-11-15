@@ -72,8 +72,13 @@ public:
     void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
     void vlog(LogLevel level, const char *fmt, va_list);
 
+    /** The minimum level of logging for all LogDomains; defaults to Warning.
+        Changes only take effect if made before any logging occurs. */
     static LogLevel MinLevel;
+
     static void (*Callback)(const LogDomain&, LogLevel, const char *message);
+
+    static LogDomain* named(const char *name);
 
 private:
     std::atomic<LogLevel> _level;
@@ -115,6 +120,7 @@ std::string _logSlice(fleece::slice);
 #define Warn(FMT, ARGS...)                  LogToAt(DefaultLog, Warning, FMT, ##ARGS)
 #define WarnError(FMT, ARGS...)             LogToAt(DefaultLog, Error,   FMT, ##ARGS)
 #endif
+
 
 static inline bool WillLog(LogLevel lv)     {return DefaultLog.willLog(lv);}
 

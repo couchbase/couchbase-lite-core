@@ -212,6 +212,7 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) C4API
 /** Logging levels. */
 typedef C4_ENUM(uint8_t, C4LogLevel) {
     kC4LogDebug,
+    kC4LogVerbose,
     kC4LogInfo,
     kC4LogWarning,
     kC4LogError
@@ -222,13 +223,31 @@ typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
     Before this is called, logs are by default written to stderr for warnings and errors.
-    Note that this setting is global to the entire process.
+    NOTE: this setting is global to the entire process.
     @param level  The minimum level of message to log.
     @param callback  The logging callback, or NULL to disable logging entirely. */
 void c4log_register(C4LogLevel level, C4LogCallback callback) C4API;
 
-/** Changes the log level. */
-void c4log_setLevel(C4LogLevel level) C4API;
+/** Changes the level of the given log domain (use "" for the default domain).
+    NOTE: this setting is global to the entire process. */
+void c4log_setLevel(const char *domainName, C4LogLevel level) C4API;
+
+/** Logs a message/warning/error to the default domain, if its current level is less than
+    or equal to the given level. */
+void c4log(C4LogLevel level, const char *fmt, ...);
+
+// Convenient aliases for c4log:
+#ifdef _MSC_VER
+    #define C4Debug(FMT, ...)           c4log(kC4LogDebug,   FMT, ##__VA_ARGS)
+    #define C4Log(FMT, ...)             c4log(kC4LogInfo,    FMT, ##__VA_ARGS)
+    #define C4Warn(FMT, ...)            c4log(kC4LogWarning, FMT, ##__VA_ARGS)
+    #define C4WarnError(FMT, ...)       c4log(kC4LogError,   FMT, ##__VA_ARGS)
+#else
+    #define C4Debug(FMT, ARGS...)       c4log(kC4LogDebug,   FMT, ##ARGS)
+    #define C4Log(FMT, ARGS...)         c4log(kC4LogInfo,    FMT, ##ARGS)
+    #define C4Warn(FMT, ARGS...)        c4log(kC4LogWarning, FMT, ##ARGS)
+    #define C4WarnError(FMT, ARGS...)   c4log(kC4LogError,   FMT, ##ARGS)
+#endif
 
 
 /** Returns the number of objects that have been created but not yet freed. */

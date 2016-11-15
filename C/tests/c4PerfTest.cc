@@ -532,7 +532,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     {
         Stopwatch st;
         auto totalLikes = indexLikesView();
-        Log("Total of %u likes\n", totalLikes);
+        C4Log("Total of %u likes", totalLikes);
         st.printReport("Indexing Likes view", numDocs, "doc");
         if (complete) CHECK(totalLikes == 345986);
     }

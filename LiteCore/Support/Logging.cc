@@ -36,7 +36,7 @@ namespace litecore {
 
     static void defaultCallback(const LogDomain &domain, LogLevel, const char *message);
 
-    LogLevel LogDomain::MinLevel = LogLevel::Debug;
+    LogLevel LogDomain::MinLevel = LogLevel::Warning;
     LogDomain* LogDomain::sFirstDomain = nullptr;
     void (*LogDomain::Callback)(const LogDomain&, LogLevel, const char *message) = defaultCallback;
 
@@ -63,10 +63,14 @@ namespace litecore {
                 _level = LogLevel::Debug;
             else
                 _level = LogLevel::Info;
+            if (_level > MinLevel)
+                _level = MinLevel;
         }
-        if (!willLog(level) || level < MinLevel || !Callback)
+        if (!willLog(level))
             return;
 
+        if (Callback == nullptr)
+            return;
         unique_lock<mutex> lock(sLogMutex);
         char *message;
         if (vasprintf(&message, fmt, args) < 0) {
@@ -129,5 +133,16 @@ namespace litecore {
         }
         return o.str();
     }
+
+
+    LogDomain* LogDomain::named(const char *name) {
+        if (!name)
+            name = "";
+        for (auto d = sFirstDomain; d; d = d->_next)
+            if (strcmp(d->name(), name) == 0)
+                return d;
+        return nullptr;
+    }
+
 
 }

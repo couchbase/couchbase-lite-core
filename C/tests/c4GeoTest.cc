@@ -36,15 +36,15 @@ public:
         C4Error error;
         if (view && !c4view_delete(view, &error)) {
             char msg[256];
-            WarnError("Failed to delete c4View: error %d/%d: %s\n",
-                      error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
+            C4WarnError("Failed to delete c4View: error %d/%d: %s\n",
+                        error.domain, error.code, c4error_getMessageC(error, msg, sizeof(msg)));
             FAIL();
         }
         c4view_free(view);
     }
 
 
-    void createDocs(unsigned n, bool verbose =false) {
+    void createDocs(unsigned n) {
         srandom(42);
         TransactionHelper t(db);
 
@@ -64,8 +64,7 @@ public:
             C4Error error;
             C4Document *doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc != nullptr);
-            if (verbose)
-                Log("Added %s --> %s\n", docID, body);
+            C4Debug("Added %s --> %s", docID, body);
             c4doc_free(doc);
         }
     }
@@ -110,8 +109,7 @@ N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo CreateIndex", "[Geo][View][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
-    static const bool verbose = false;
-    createDocs(100, verbose);
+    createDocs(100);
     createIndex();
 
     C4GeoArea queryArea = {10, 10, 40, 40};
@@ -123,11 +121,8 @@ N_WAY_TEST_CASE_METHOD(C4GeoTest, "Geo Query", "[Geo][View][C]") {
     while (c4queryenum_next(e, &error)) {
         ++found;
         C4GeoArea a = e->geoBBox;
-        if (verbose) {
-            Log("Found doc %.*s : (%g, %g)--(%g, %g)\n",
-                (int)e->docID.size, (char*)e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
-        }
-
+        C4Debug("Found doc %.*s : (%g, %g)--(%g, %g)",
+              (int)e->docID.size, (char*)e->docID.buf, a.xmin, a.ymin, a.xmax, a.ymax);
         C4Slice expected = C4STR("1234");
         REQUIRE(e->value == expected);
         REQUIRE(a.xmin <= 40);

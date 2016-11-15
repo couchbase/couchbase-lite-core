@@ -53,7 +53,7 @@ public:
         }
 
         REQUIRE(c4db_endTransaction(db, true, &error));
-        Log("Created %u docs\n", kNumDocuments);
+        C4Log("Created %u docs", kNumDocuments);
 
         REQUIRE(c4db_getDocumentCount(db) == (uint64_t)kNumDocuments);
     }
@@ -78,5 +78,5 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     REQUIRE(i == kNumDocuments);
 
     double elapsed = st.elapsedMS();
-    Log("Enumerating %u docs took %.3f ms (%.3f ms/doc)\n", i, elapsed, elapsed/i);
+    C4Log("Enumerating %u docs took %.3f ms (%.3f ms/doc)", i, elapsed, elapsed/i);
 }

@@ -27,6 +27,9 @@
 using namespace litecore;
 
 
+#pragma mark - ERRORS:
+
+
 namespace c4Internal {
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
@@ -50,24 +53,6 @@ namespace c4Internal {
             return true;
         } catchError(error);
         return false;
-    }
-
-
-    C4SliceResult sliceResult(alloc_slice s) {
-        s.retain();
-        return {s.buf, s.size};
-    }
-
-    C4SliceResult sliceResult(slice s) {
-        return sliceResult(alloc_slice(s));
-    }
-
-
-    C4SliceResult sliceResult(const char *str) {
-        if (str)
-            return sliceResult(slice{str, strlen(str)});
-        else
-            return {nullptr, 0};
     }
 
 }
@@ -102,6 +87,9 @@ int c4_getObjectCount() noexcept {
 }
 
 
+#pragma mark - SLICES:
+
+
 bool c4SliceEqual(C4Slice a, C4Slice b) noexcept {
     return a == b;
 }
@@ -112,7 +100,32 @@ void c4slice_free(C4SliceResult slice) noexcept {
 }
 
 
+namespace c4Internal {
+
+    C4SliceResult sliceResult(alloc_slice s) {
+        s.retain();
+        return {s.buf, s.size};
+    }
+
+    C4SliceResult sliceResult(slice s) {
+        return sliceResult(alloc_slice(s));
+    }
+
+    C4SliceResult sliceResult(const char *str) {
+        if (str)
+            return sliceResult(slice{str, strlen(str)});
+        else
+            return {nullptr, 0};
+    }
+
+}
+
+
+#pragma mark - LOGGING:
+
+
 static C4LogCallback clientLogCallback;
+
 
 static void logCallback(const LogDomain &domain, LogLevel level, const char *message) {
     auto cb = clientLogCallback;
@@ -133,10 +146,27 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
 }
 
 
-void c4log_setLevel(C4LogLevel level) noexcept {
-    LogDomain::MinLevel = (LogLevel)level;
+void c4log_setLevel(const char *domainName, C4LogLevel level) noexcept {
+    auto domain = LogDomain::named(domainName);
+    if (domain)
+        domain->setLevel((LogLevel)level);
+    else
+        Warn("c4log_setLevel: No log domain named \"%s\"", domainName);
 }
+
 
 void c4log_warnOnErrors(bool warn) noexcept {
     error::sWarnOnError = warn;
+}
+
+
+void c4log(C4LogLevel level, const char *fmt, ...) {
+    if (_usuallyFalse(DefaultLog.willLog((LogLevel)level))) {
+        va_list args;
+        va_start(args, fmt);
+        try {
+            DefaultLog.vlog((LogLevel)level, fmt, args);
+        } catch (...) { }
+        va_end(args);
+    }
 }
