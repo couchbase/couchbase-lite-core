@@ -116,7 +116,6 @@ namespace litecore {
         #endif
     }
 
-
     string _logSlice(fleece::slice s) {
         stringstream o;
         if (s.buf == nullptr) {

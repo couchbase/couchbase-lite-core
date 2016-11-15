@@ -92,8 +92,10 @@ private:
 extern LogDomain DefaultLog;
 
 
+#ifndef C4_TESTS
 std::string _logSlice(fleece::slice);
 #define logSlice(S) (_logSlice((S)).c_str())
+#endif
 
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \

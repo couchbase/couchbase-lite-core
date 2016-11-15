@@ -41,7 +41,7 @@
     #define C4_ENUM CF_ENUM
     #define C4_OPTIONS CF_OPTIONS
 #else
-    #if defined(_MSC_VER) || (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
+    #if (__cplusplus && _MSC_VER) || (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
         #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
         #if (__cplusplus)
             #define C4_OPTIONS(_type, _name) _type _name; enum : _type
@@ -176,7 +176,7 @@ static C4INLINE C4Slice c4str(const char *str) {
 // Macro version of c4str, for use in initializing compile-time constants.
 // STR must be a C string literal.
 #ifdef _MSC_VER
-#define C4STR(STR) {("" STR), sizeof(("" STR))-1}
+#define C4STR(STR) C4Slice({("" STR), sizeof(("" STR))-1})
 #else
 #define C4STR(STR) ((C4Slice){("" STR), sizeof(("" STR))-1})
 #endif

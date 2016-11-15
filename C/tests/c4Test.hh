@@ -14,6 +14,7 @@
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
+#include <functional>
 
 
 #ifdef NDEBUG
