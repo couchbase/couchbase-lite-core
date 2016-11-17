@@ -19,7 +19,7 @@
 
 #ifdef NDEBUG
 #undef REQUIRE  // it slows down the tests significantly
-#define REQUIRE(X) ({if (!(X)) abort();})
+#define REQUIRE(X) {if (!(X)) abort();}
 #undef INFO
 #define INFO(X)
 #endif

@@ -391,10 +391,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Put", "[Database][C]") {
     REQUIRE((unsigned long)commonAncestorIndex == 1ul);
     REQUIRE(doc->selectedRev.revID == kConflictRevID);
     REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kConflicted));
-    if (isRevTrees())
+    if (isRevTrees()) {
         REQUIRE(doc->revID == kConflictRevID);
-    else
+    } else {
         REQUIRE(doc->revID == kExpectedRev2ID);
+    }
+
     c4doc_free(doc);
 }
 

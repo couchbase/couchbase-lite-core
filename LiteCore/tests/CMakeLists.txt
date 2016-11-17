@@ -1,9 +1,12 @@
 cmake_minimum_required (VERSION 2.6)
 project (CppTests)
 
-set(TOP ../../)
+set(TOP ${PROJECT_SOURCE_DIR}/../../)
 
-add_definitions(-DDEBUG -DLITECORE_CPP_TESTS=1)
+add_definitions(-DLITECORE_CPP_TESTS=1)
+if(NOT MSVC)
+    add_definitions(-DDEBUG)
+endif()
 
 include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
@@ -29,7 +32,27 @@ if(NOT APPLE)
     if(UNIX)
         target_link_libraries(CppTests  crypto  bsd)
     else()
-        target_link_libraries(CppTests ${OPENSSL_LIBRARIES} ws2_32 )
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
+        if(MSVC)
+            add_custom_command(TARGET CppTests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb.dll
+                ${PROJECT_BINARY_DIR}/\$\(Configuration\))
+            add_custom_command(TARGET CppTests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3.dll
+                ${PROJECT_BINARY_DIR}/\$\(Configuration\))
+            if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
+                add_custom_command(TARGET CppTests POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb.pdb
+                    ${PROJECT_BINARY_DIR}/\$\(Configuration\))
+                add_custom_command(TARGET CppTests POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3.pdb
+                    ${PROJECT_BINARY_DIR}/\$\(Configuration\))
+            endif()
+        endif()
     endif()
 endif()
 

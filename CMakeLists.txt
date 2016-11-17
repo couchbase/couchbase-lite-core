@@ -7,18 +7,22 @@ set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 
 if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()
-
-if(NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -O0    -DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG")
 else()
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} /Od /DDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} /O2 /DNDEBUG")
 endif()
-
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG")
 
 if(WIN32)
     set(_ENCRYPTION openssl)
+    if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015")
+        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/x86/)
+    elseif(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015 Win64")
+        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/amd64/)
+    endif()
+    set(OPENSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/include)
+    set(SQLITE3_WIN_INCLUDE ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
 endif()
 
 ### SUBMODULES:
@@ -55,10 +59,10 @@ elseif(UNIX)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32")
     set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL")
-    target_include_directories(forestdb PRIVATE "vendor/openssl/libs/include")
-    include_directories("vendor/openssl/libs/include"
-                        "vendor/SQLiteCpp/sqlite3"
-			"MSVC")
+    target_include_directories(forestdb PRIVATE ${OPENSSL_INCLUDE_DIR})
+    include_directories(${OPENSSL_INCLUDE_DIR}
+                        ${SQLITE3_WIN_INCLUDE}
+                        "MSVC")
     target_compile_options(forestdb PRIVATE /EHsc -DWIN32)
 endif()
 
@@ -86,10 +90,8 @@ set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
 
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 
-if(!WIN32)
-    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
-else()
-    
+if(!MSVC)
+    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage) 
 endif()
 
 ### BUILDING THE LIBRARY:
@@ -98,7 +100,7 @@ set(ALL_SRC_FILES ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
                               ${REVTREES_SRC} ${VERSIONVECTORS_SRC} ${BLOBSTORE_SRC} ${C_SRC}
                               ${SQLITECPP_SRC} ${DATABASE_SRC})
 							  
-if(WIN32)
+if(MSVC)
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
 			     MSVC/memmem.cc MSVC/mkstemps.cc MSVC/strlcat.c MSVC/strlcat.c
 			     MSVC/vasprintf-msvc.c)
@@ -110,10 +112,9 @@ add_library(LiteCore SHARED empty.cpp)
 
 target_link_libraries(LiteCore PRIVATE LiteCoreStatic
 								FleeceStatic 
-                                sqlite3
                                 SQLite3_UnicodeSN)
 								
-target_link_libraries(LiteCore PUBLIC forestdb)
+target_link_libraries(LiteCore PUBLIC sqlite3 forestdb)
 		   
 
 # Mac/iOS stuff
@@ -127,7 +128,7 @@ elseif(UNIX)
 else()
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
-    target_link_libraries(LiteCore PRIVATE ${OPENSSL_LIBRARIES} Ws2_32)
+    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} Ws2_32)
 endif()
 
 ### TESTS:

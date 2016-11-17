@@ -238,10 +238,10 @@ void c4log(C4LogLevel level, const char *fmt, ...);
 
 // Convenient aliases for c4log:
 #ifdef _MSC_VER
-    #define C4Debug(FMT, ...)           c4log(kC4LogDebug,   FMT, ##__VA_ARGS)
-    #define C4Log(FMT, ...)             c4log(kC4LogInfo,    FMT, ##__VA_ARGS)
-    #define C4Warn(FMT, ...)            c4log(kC4LogWarning, FMT, ##__VA_ARGS)
-    #define C4WarnError(FMT, ...)       c4log(kC4LogError,   FMT, ##__VA_ARGS)
+    #define C4Debug(FMT, ...)           c4log(kC4LogDebug,   FMT, ##__VA_ARGS__)
+    #define C4Log(FMT, ...)             c4log(kC4LogInfo,    FMT, ##__VA_ARGS__)
+    #define C4Warn(FMT, ...)            c4log(kC4LogWarning, FMT, ##__VA_ARGS__)
+    #define C4WarnError(FMT, ...)       c4log(kC4LogError,   FMT, ##__VA_ARGS__)
 #else
     #define C4Debug(FMT, ARGS...)       c4log(kC4LogDebug,   FMT, ##ARGS)
     #define C4Log(FMT, ARGS...)         c4log(kC4LogInfo,    FMT, ##ARGS)

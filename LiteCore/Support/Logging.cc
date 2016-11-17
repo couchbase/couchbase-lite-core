@@ -19,6 +19,7 @@
 #include <time.h>
 #include <string>
 #include <sstream>
+#include <mutex>
 #if __APPLE__
 #include <sys/time.h>
 #endif
