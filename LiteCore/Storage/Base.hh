@@ -17,9 +17,8 @@ namespace litecore {
     using fleece::alloc_slice;
     using fleece::nullslice;
 
-    typedef uint64_t sequence;
-
-    typedef sequence sequence_t;    // Sometimes used for disambiguation with a sequence() method
+    // Database sequence number
+    typedef uint64_t sequence_t;
 
     enum EncryptionAlgorithm : uint8_t {
         kNoEncryption = 0,      /**< No encryption (default) */

@@ -61,8 +61,8 @@ namespace litecore {
                       slice endKey = nullslice,
                       const Options& options = Options());
         RecordEnumerator(KeyStore&,
-                      sequence start,
-                      sequence end = UINT64_MAX,
+                      sequence_t start,
+                      sequence_t end = UINT64_MAX,
                       const Options& options = Options());
         RecordEnumerator(KeyStore&,
                       std::vector<std::string> recordIDs,
@@ -113,7 +113,7 @@ namespace litecore {
             virtual bool read(Record&) =0;
             virtual bool shouldSkipFirstStep()      {return false;}
         protected:
-            void updateDoc(Record &record, sequence s, uint64_t offset =0, bool del =false) const {
+            void updateDoc(Record &record, sequence_t s, uint64_t offset =0, bool del =false) const {
                 record.update(s, offset, del);
             }
         };
