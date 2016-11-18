@@ -16,16 +16,19 @@
  don't modify or release the NSString while this is in scope. Or instead it might copy
  the data into a small internal buffer, or allocate it on the heap. */
 struct stringBytes  {
-    stringBytes(NSString*);
+    stringBytes(NSString* =nil);
     ~stringBytes();
 
-    operator FLSlice() {return {buf, size};}
-    operator C4Slice() {return {buf, size};}
+    void operator= (NSString*);
+
+    operator FLSlice() const {return {buf, size};}
+    operator C4Slice() const {return {buf, size};}
 
     const char *buf;
     size_t size;
 
 private:
+    NSString *_string {nullptr};
     char _local[127];
-    bool _needsFree;
+    bool _needsFree {false};
 };

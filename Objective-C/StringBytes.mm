@@ -18,10 +18,22 @@
 
 
 stringBytes::stringBytes(__unsafe_unretained NSString* str)
-:_needsFree(false)
 {
-    if (!str)
+    *this = str;
+}
+
+
+void stringBytes::operator= (NSString* str) {
+    _string = str;
+    if (_needsFree)
+        ::free((void*)buf);
+
+    if (!str) {
+        buf = nullptr;
+        size = 0;
         return;
+    }
+    
     // First try to use a direct pointer to the bytes:
     auto cstr = CFStringGetCStringPtr((__bridge CFStringRef)str, kCFStringEncodingUTF8);
     if (cstr) {
@@ -54,6 +66,7 @@ stringBytes::stringBytes(__unsafe_unretained NSString* str)
     NSCAssert(ok, @"Couldn't get NSString bytes");
     size = byteCount;
 }
+
 
 stringBytes::~stringBytes() {
     if (_needsFree)

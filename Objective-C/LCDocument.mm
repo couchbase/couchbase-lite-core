@@ -124,16 +124,13 @@ NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
     else if (_properties && !_hasUnsavedChanges)
         return _properties;
     else
-        return [self fleeceToID: (FLValue)_root];
+        return [self fleeceRootToDict: _root isDeletion: (_c4doc->flags & kDeleted)];
 }
 
 
 - (nullable NSDictionary*) properties {
-    if (!_properties) {
-        if (!self.exists)
-            return nil;
-        _properties = [[self fleeceToID: (FLValue)_root] mutableCopy];
-    }
+    if (!_properties)
+        _properties = [self.savedProperties mutableCopy];
     return _properties;
 }
 
@@ -146,6 +143,16 @@ NSString* const LCDocumentSavedNotification = @"LCDocumentSaved";
 
 - (id) fleeceToID: (FLValue)value {
     return FLValue_GetNSObject(value, c4db_getFLSharedKeys(_c4db), nil);
+}
+
+
+- (NSDictionary*) fleeceRootToDict: (FLDict)root isDeletion: (bool)isDeletion {
+    if (root)
+        return FLValue_GetNSObject((FLValue)root, c4db_getFLSharedKeys(_c4db), nil);
+    else if (isDeletion)
+        return nil;
+    else
+        return @{};
 }
 
 
@@ -257,7 +264,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
                          deletion: (bool)deletion
                             error: (NSError**)outError
 {
-    if (!_hasUnsavedChanges)
+    if (!_hasUnsavedChanges && !deletion)
         return true;
 
     C4Transaction transaction(_c4db);
@@ -266,23 +273,27 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 
     while (true) {
         // Encode _properties to data:
+        NSDictionary* propertiesToSave = deletion ? nil : _properties;
+        stringBytes docTypeSlice;
         C4DocPutRequest put = {
-            .deletion = deletion,
             .docID = _c4doc->docID,
+            .deletion = deletion,
             .history = &_c4doc->revID,
             .historyCount = 1,
             .save = true,
         };
-        if (_properties.count) {
+        if (propertiesToSave.count) {
             auto enc = FLEncoder_New();
             FLEncoder_SetSharedKeys(enc, c4db_getFLSharedKeys(_c4db));
-            FLEncoder_WriteNSObject(enc, _properties);
+            FLEncoder_WriteNSObject(enc, propertiesToSave);
             FLError flErr;
             auto body = FLEncoder_Finish(enc, &flErr);
             FLEncoder_Free(enc);
             if (!body.buf)
                 return convertError(flErr, outError);
             put.body = {body.buf, body.size};
+            docTypeSlice = self[@"type"];
+            put.docType = docTypeSlice;
         }
 
         // Save to database:
@@ -318,11 +329,12 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
         // Get current and base properties:
         C4Slice curBody = curDoc->selectedRev.body;
         auto curRoot = FLValue_AsDict(FLValue_FromTrustedData({curBody.buf, curBody.size}));
-        NSDictionary *curProperties = [self fleeceToID: (FLValue)curRoot];
+        NSDictionary* curProperties = [self fleeceRootToDict: curRoot
+                                            isDeletion: (curDoc->selectedRev.flags & kDeleted)];
         NSDictionary *baseProperties = self.savedProperties;
 
         // Invoke the resolver:
-        NSDictionary *resolved = resolver(_properties, curProperties, baseProperties);
+        NSDictionary *resolved = resolver(propertiesToSave, curProperties, baseProperties);
         if (!resolved) {
             // Resolver gave up; return conflict error:
             return convertError(err, outError);
