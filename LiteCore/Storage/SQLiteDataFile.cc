@@ -95,7 +95,7 @@ namespace litecore {
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
-        _sqlDb.reset(new SQLite::Database(filePath().path().c_str(), sqlFlags));
+        _sqlDb = make_unique<SQLite::Database>(filePath().path().c_str(), sqlFlags);
 
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
@@ -261,7 +261,7 @@ namespace litecore {
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
         Assert(_transaction == nullptr);
-        _transaction.reset( new SQLite::Transaction(*_sqlDb) );
+        _transaction = make_unique<SQLite::Transaction>(*_sqlDb);
     }
 
 
@@ -291,8 +291,7 @@ namespace litecore {
     {
         checkOpen();
         if (ref == nullptr)
-            const_cast<unique_ptr<SQLite::Statement>&>(ref).reset(
-                                                      new SQLite::Statement(*_sqlDb, sql));
+            const_cast<unique_ptr<SQLite::Statement>&>(ref) = make_unique<SQLite::Statement>(*_sqlDb, sql);
         return *ref.get();
     }
 

@@ -29,11 +29,11 @@ public:
     {
         // Run test once with shared keys, once without:
         if (which & 1)
-            sharedKeys.reset(new SharedKeys());
+            sharedKeys = make_unique<SharedKeys>();
         RegisterFleeceFunctions(db.getHandle(), sharedKeys.get());
         RegisterFleeceEachFunctions(db.getHandle(), sharedKeys.get());
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
-        insertStmt.reset(new SQLite::Statement(db, "INSERT INTO kv (key, body) VALUES (?, ?)"));
+        insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {

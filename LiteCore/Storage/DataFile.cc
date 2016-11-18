@@ -307,7 +307,7 @@ namespace litecore {
 
     void DataFile::useDocumentKeys() {
         if (!_documentKeys.get())
-            _documentKeys.reset(new DocumentKeys(*this));
+            _documentKeys = make_unique<DocumentKeys>(*this);
     }
 
 

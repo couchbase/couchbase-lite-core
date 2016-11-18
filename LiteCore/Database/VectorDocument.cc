@@ -34,7 +34,7 @@ namespace c4Internal {
         {
             if (!_current) {
                 Record doc(docID);
-                _current.reset(new Revision(doc));
+                _current = make_unique<Revision>(doc);
             }
             init();
         }
@@ -244,7 +244,7 @@ namespace c4Internal {
 
     CASRevisionStore& VectorDocumentFactory::revisionStore() {
         if (!_revisionStore)
-            _revisionStore.reset(new CASRevisionStore(database()->dataFile()));
+            _revisionStore = make_unique<CASRevisionStore>(database()->dataFile());
         return *_revisionStore;
     }
 

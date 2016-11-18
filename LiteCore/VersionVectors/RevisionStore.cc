@@ -57,7 +57,7 @@ namespace litecore {
         Record rec(docID);
         if (!_currentStore.read(rec, opt))
             return nullptr;
-        return Revision::Ref{ new Revision(std::move(rec)) };
+        return std::make_unique<Revision>(std::move(rec));
     }
 
 
@@ -85,7 +85,7 @@ namespace litecore {
         Record rec(keyForNonCurrentRevision(docID, Version{revID}));
         if (!_nonCurrentStore.read(rec, opt))
             return nullptr;
-        return Revision::Ref{ new Revision(std::move(rec)) };
+        return std::make_unique<Revision>(std::move(rec));
     }
 
 
@@ -137,7 +137,7 @@ namespace litecore {
             return nullptr;
         newVersion.incrementGen(kMePeerID);
 
-        auto newRev = Revision::Ref{ new Revision(docID, newVersion, body, true) };
+        auto newRev = std::make_unique<Revision>(docID, newVersion, body, true);
         replaceCurrent(*newRev, current.get(), t);
         return newRev;
     }
@@ -202,7 +202,7 @@ namespace litecore {
 
         slice docID = conflicting[0]->docID();
         bodyParams.conflicted = hasConflictingRevisions(docID);
-        auto newRev = Revision::Ref{ new Revision(docID, newVersion, bodyParams, true) };
+        auto newRev = std::make_unique<Revision>(docID, newVersion, bodyParams, true);
         _currentStore.write(newRev->record(), t);
         return newRev;
     }

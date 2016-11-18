@@ -129,7 +129,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     std::unique_ptr<DatabaseChangeNotifier> cn;
 
     SECTION("With db change notifier") {
-        cn.reset(new DatabaseChangeNotifier(tracker, nullptr));
+        cn = make_unique<DatabaseChangeNotifier>(tracker, nullptr);
     }
     SECTION("Without db change notifier") {
         // don't initialize cn. Now the tracker isn't recording document changes...

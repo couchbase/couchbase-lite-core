@@ -230,7 +230,7 @@ C4Indexer* c4indexer_begin(C4Database *db,
                            C4Error *outError) noexcept
 {
     return tryCatch<C4Indexer*>(outError, [&]{
-        unique_ptr<c4Indexer> indexer { new c4Indexer(db) };
+        auto indexer = make_unique<c4Indexer>(db);
         for (size_t i = 0; i < viewCount; ++i)
             indexer->addView(views[i]);
         return indexer.release();

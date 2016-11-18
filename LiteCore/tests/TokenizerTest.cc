@@ -33,7 +33,7 @@ public:
 
 
 TEST_CASE_METHOD(TokenizerTest, "Default Tokenizer", "[Tokenizer]") {
-    tokenizer.reset(new Tokenizer("", false));
+    tokenizer = make_unique<Tokenizer>("", false);
     REQUIRE(tokenize("Have a nice day, dude!") == (vector<string>{"have", "a", "nice", "day", "dude"}));
     REQUIRE(tokenize("Having,larger books. ¡Ça vä!") == (vector<string>{"having", "larger", "books", "ça", "vä"}));
     REQUIRE(tokenize("“Typographic ‘quotes’ aren’t optional”") == (vector<string>{"typographic", "quotes", "aren't", "optional"}));
@@ -42,7 +42,7 @@ TEST_CASE_METHOD(TokenizerTest, "Default Tokenizer", "[Tokenizer]") {
 
 
 TEST_CASE_METHOD(TokenizerTest, "English Tokenizer", "[Tokenizer]") {
-    tokenizer.reset(new Tokenizer("english", true));
+    tokenizer = make_unique<Tokenizer>("english", true);
 
     REQUIRE(tokenize("Have a nice day, dude!") == (vector<string>{"nice", "day", "dude"}));
     REQUIRE(tokenize("Having,larger books. ¡Ça vä!") == (vector<string>{"larger", "book", "ca", "va"}));

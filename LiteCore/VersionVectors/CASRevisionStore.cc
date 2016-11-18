@@ -154,7 +154,7 @@ namespace litecore {
         if (parent)
             vers = parent->version();
         vers.incrementGen(kCASServerPeerID);
-        Revision::Ref newRev { new Revision(docID, vers, body, current) };
+        auto newRev = std::make_unique<Revision>(docID, vers, body, current);
         KeyStore &store = current ? _currentStore : _nonCurrentStore;
         store.write(newRev->record(), t);
         return newRev;
