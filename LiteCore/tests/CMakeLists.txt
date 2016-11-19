@@ -34,24 +34,12 @@ if(NOT APPLE)
     else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
         if(MSVC)
+            set(FilesToCopy ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3)
             add_custom_command(TARGET CppTests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb.dll
-                ${PROJECT_BINARY_DIR}/\$\(Configuration\))
-            add_custom_command(TARGET CppTests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3.dll
-                ${PROJECT_BINARY_DIR}/\$\(Configuration\))
-            if(${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
-                add_custom_command(TARGET CppTests POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb.pdb
-                    ${PROJECT_BINARY_DIR}/\$\(Configuration\))
-                add_custom_command(TARGET CppTests POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3.pdb
-                    ${PROJECT_BINARY_DIR}/\$\(Configuration\))
-            endif()
+                COMMAND ${CMAKE_COMMAND}
+                -DFilesToCopy="${FilesToCopy}"
+                -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
+                -P ${TOP}MSVC/copy_artifacts.cmake)
         endif()
     endif()
 endif()
