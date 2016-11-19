@@ -27,8 +27,10 @@
 
 #ifdef _MSC_VER
 #define kTestDir "C:\\tmp\\"
+#define kPathSeparator "\\"
 #else
 #define kTestDir "/tmp/"
+#define kPathSeparator "/"
 #endif
 
 

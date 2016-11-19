@@ -1,3 +1,3 @@
 #pragma once
 
-int mkstemps(char *tmplate, int length);
+int mkstemps(char *path, int slen);
