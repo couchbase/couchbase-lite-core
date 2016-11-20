@@ -82,7 +82,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
     C4SliceResult path = c4db_getPath(bundle);
-    REQUIRE(path == c4str(kTestDir "cbl_core_test_bundle/")); // note trailing '/'
+    REQUIRE(path == c4str(kTestDir "cbl_core_test_bundle" kPathSeparator)); // note trailing '/'
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
     c4db_free(bundle);

@@ -57,7 +57,6 @@ elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
     set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL -D_DOC_COMP")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32")
     set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL")
     target_include_directories(forestdb PRIVATE ${OPENSSL_INCLUDE_DIR})
     include_directories(${OPENSSL_INCLUDE_DIR}
@@ -109,7 +108,6 @@ endif()
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 file(WRITE empty.cpp)
 add_library(LiteCore SHARED empty.cpp)
-
 target_link_libraries(LiteCore PRIVATE LiteCoreStatic
 								FleeceStatic 
                                 SQLite3_UnicodeSN)
@@ -126,6 +124,7 @@ if (APPLE)
 elseif(UNIX)
     target_link_libraries(LiteCore  crypto  bsd)
 else()
+    set_target_properties(LiteCoreStatic PROPERTIES COMPILE_FLAGS "-D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32")
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} Ws2_32)
@@ -133,5 +132,6 @@ endif()
 
 ### TESTS:
 
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_ORIGINAL_FLAGS})
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)

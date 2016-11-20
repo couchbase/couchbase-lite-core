@@ -28,9 +28,8 @@
 #include "Collatable.hh"
 #include "FilePath.hh"
 
-
-const char* const kC4ForestDBStorageEngine = "ForestDB";
-const char* const kC4SQLiteStorageEngine   = "SQLite";
+CBL_CORE_API C4StorageEngine const kC4ForestDBStorageEngine = "ForestDB";
+CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
 #pragma mark - C4DATABASE METHODS:
