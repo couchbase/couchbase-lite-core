@@ -53,7 +53,7 @@ namespace litecore {
     /** Concrete ReadStream that reads a file. */
     class FileReadStream : public virtual SeekableReadStream {
     public:
-        FileReadStream(const FilePath& path)        :FileReadStream(path, "r") {}
+        FileReadStream(const FilePath& path)        :FileReadStream(path, "rb") {}
         FileReadStream(FILE *file)                  :_file(file) { }
         virtual ~FileReadStream();
 

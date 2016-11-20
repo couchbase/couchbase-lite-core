@@ -300,14 +300,10 @@ namespace litecore {
 
     
     void FilePath::moveTo(const string &to) const {
+        ::unlink(to.c_str());
         int result = ::rename(path().c_str(), to.c_str());
         if (result != 0) {
-            if (errno == EEXIST) {
-                setReadOnly(false);
-                ::unlink(path().c_str());
-            } else {
-                error::_throwErrno();
-            }
+            error::_throwErrno();
         }
 
         chmod(to.c_str(), 0600);
