@@ -23,7 +23,7 @@ stringBytes::stringBytes(__unsafe_unretained NSString* str)
 }
 
 
-void stringBytes::operator= (NSString* str) {
+void stringBytes::operator= (__unsafe_unretained NSString* str) {
     _string = str;
     if (_needsFree)
         ::free((void*)buf);

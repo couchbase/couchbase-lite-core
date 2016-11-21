@@ -12,9 +12,13 @@
 #import "Fleece.h"
 
 
-/** A slice holding the data of an NSString. It might point directly into the NSString, so
- don't modify or release the NSString while this is in scope. Or instead it might copy
- the data into a small internal buffer, or allocate it on the heap. */
+/** A slice holding the data of an NSString. If possible, it points the slice into the data of the
+    NSString, requiring no copying. Otherwise it copies the characters into a small internal
+    buffer, or into a temporary heap block.
+ 
+    NOTE: Since the slice may point directly into the NSString, if the string is mutable do not
+    mutate it while the stringBytes object is in scope! (Releasing the string is OK, as
+    stringBytes retains it.) */
 struct stringBytes  {
     stringBytes(NSString* =nil);
     ~stringBytes();
@@ -28,7 +32,7 @@ struct stringBytes  {
     size_t size;
 
 private:
-    NSString *_string {nullptr};
+    __strong NSString *_string {nullptr};
     char _local[127];
     bool _needsFree {false};
 };
