@@ -132,6 +132,5 @@ endif()
 
 ### TESTS:
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_ORIGINAL_FLAGS})
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)
