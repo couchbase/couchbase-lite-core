@@ -629,8 +629,8 @@ extern "C" {
 			size_t n;
 
 			/* Convert directory name to wide-character string */
-			error = dirent_mbstowcs_s(&n, wname, PATH_MAX, dirname, PATH_MAX);
-			if (!error) {
+			int rc = MultiByteToWideChar(CP_UTF8, 0, dirname, strnlen_s(dirname, PATH_MAX) + 1, wname, PATH_MAX);
+			if (rc) {
 
 				/* Open directory stream using wide-character name */
 				dirp->wdirp = _wopendir(wname);

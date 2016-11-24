@@ -25,28 +25,16 @@
 
 using namespace fleece;
 
-#ifdef _MSC_VER
-#include <Windows.h>
-static const char* getJsonFilePath()
-{
-    static char buffer[MAX_PATH] = { 0 };
-    if (buffer[0] == 0) {
-        int length = GetModuleFileName(0, buffer, MAX_PATH);
-        std::string::size_type pos = std::string(buffer).find_last_of("\\/");
-        buffer[pos] = 0;
-        strcat_s(buffer, MAX_PATH - length, "\\..\\iTunesMusicLibrary.json");
-    }
-    return buffer;
-}
-static const char* kJSONFilePath = "..\\iTunesMusicLibrary.json";
-#define kJSONFilePath getJsonFilePath()
-
-// Download from https://github.com/arangodb/example-datasets and update this path accordingly:
-#define kLargeDataSetsDir "D:\\Couchbase\\example-datasets-master\\"
+#ifdef CMAKE
+static const char* kJSONFilePath = "../../../C/tests/iTunesMusicLibrary.json";
 #else
 static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
+#endif
 
 // Download from https://github.com/arangodb/example-datasets and update this path accordingly:
+#ifdef WIN32
+#define kLargeDataSetsDir "D:\\Couchbase\\example-datasets-master\\"
+#else
 #define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
 #endif
 

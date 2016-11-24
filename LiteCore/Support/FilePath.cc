@@ -17,6 +17,7 @@
 #include "Base.hh"
 #include "Logging.hh"
 #include "Error.hh"
+#include "PlatformCompat.hh"
 #include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
@@ -205,7 +206,7 @@ namespace litecore {
     
     int64_t FilePath::dataSize() const {
         struct stat s;
-        if (::stat(path().c_str(), &s) != 0) {
+        if (stat_u8(path().c_str(), &s) != 0) {
             if (errno == ENOENT)
                 return -1;
             error::_throwErrno();
@@ -215,24 +216,24 @@ namespace litecore {
 
     bool FilePath::exists() const {
         struct stat s;
-        return ::stat(path().c_str(), &s) == 0;
+        return stat_u8(path().c_str(), &s) == 0;
     }
 
     bool FilePath::existsAsDir() const {
         struct stat s;
-        return ::stat(path().c_str(), &s) == 0 && S_ISDIR(s.st_mode);
+        return stat_u8(path().c_str(), &s) == 0 && S_ISDIR(s.st_mode);
     }
 
     void FilePath::mustExistAsDir() const {
         struct stat s;
-        check(::stat(path().c_str(), &s));
+        check(stat_u8(path().c_str(), &s));
         if (!S_ISDIR(s.st_mode))
             error::_throw(error::POSIX, ENOTDIR);
     }
 
 
     bool FilePath::mkdir(int mode) const {
-        if (MKDIR(path().c_str(), mode) != 0) {
+        if (mkdir_u8(path().c_str(), mode) != 0) {
             if (errno != EEXIST)
                 error::_throwErrno();
             return false;
@@ -256,7 +257,7 @@ namespace litecore {
 
 
     bool FilePath::del() const {
-        auto result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
+        auto result = isDir() ? rmdir_u8(path().c_str()) : unlink_u8(path().c_str());
         if (result == 0)
             return true;
         
@@ -266,7 +267,7 @@ namespace litecore {
 #ifdef _MSC_VER
         if (errno == EACCES) {
             setReadOnly(false);
-            result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
+            result = isDir() ? rmdir_u8(path().c_str()) : unlink_u8(path().c_str());
             if (result == 0) {
                 return true;
             }
@@ -313,21 +314,21 @@ namespace litecore {
     
     void FilePath::moveTo(const string &to) const {
 #ifdef _MSC_VER
-        int result = chmod(to.c_str(), 0600);
+        int result = chmod_u8(to.c_str(), 0600);
         if (result != 0) {
             if (errno != ENOENT) {
                 error::_throwErrno();
             }
         } else {
-            check(_unlink(to.c_str()));
+            check(unlink_u8(to.c_str()));
         }
 #endif
-        check(::rename(path().c_str(), to.c_str()));
+        check(rename_u8(path().c_str(), to.c_str()));
     }
 
 
     void FilePath::setReadOnly(bool readOnly) const {
-        chmod(path().c_str(), (readOnly ? 0400 : 0600));
+        chmod_u8(path().c_str(), (readOnly ? 0400 : 0600));
     }
 
 
