@@ -131,7 +131,7 @@ static C4LogCallback clientLogCallback;
 static void logCallback(const LogDomain &domain, LogLevel level, const char *message) {
     auto cb = clientLogCallback;
     if (cb)
-        cb((C4LogLevel)level, slice(message));
+        cb((C4LogLevel)level, toc4slice(slice(message)));
 }
 
 

@@ -36,10 +36,26 @@ using namespace litecore;
 
 // SLICE STUFF:
 
+typedef struct _C4Slice {
+    const void *buf;
+    size_t size;
 
-// Predefine C4Slice as a typedef of slice so we can use the richer slice API:
+    operator slice() const { return {buf, size}; }
+    explicit operator std::string() const { return std::string((const char*)buf, size); }
 
-typedef slice C4Slice;
+    bool operator==(const struct _C4Slice &s) const {
+        return size == s.size &&
+            memcmp(buf, s.buf, size) == 0;
+    }
+    bool operator!=(const struct _C4Slice &s) const { return !(*this == s); }
+
+    _C4Slice& operator= (slice s)   {buf = s.buf; size = s.size; return *this;}
+} C4Slice;
+
+static inline C4Slice toc4slice(slice s)
+{
+    return {s.buf, s.size};
+}
 
 typedef struct {
     const void *buf;
@@ -47,7 +63,8 @@ typedef struct {
 } C4SliceResult;
 
 
-#define kC4SliceNull nullslice
+constexpr C4Slice C4SliceNull = { nullptr, 0 };
+#define kC4SliceNull C4SliceNull
 
 
 #define C4_IMPL // This tells c4Base.h to skip its declaration of C4Slice

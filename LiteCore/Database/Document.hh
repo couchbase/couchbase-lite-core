@@ -77,7 +77,7 @@ namespace c4Internal {
                     revFlags |= kRevHasAttachments;
             }
             selectedRev.flags = (C4RevisionFlags)revFlags;
-            selectedRev.body = nullslice;
+            selectedRev.body = kC4SliceNull;
             return false;
         }
 
@@ -99,7 +99,7 @@ namespace c4Internal {
                 _loadedBody = nullslice;
             else
                 result = selectedRev.body; // will copy
-            selectedRev.body = nullslice;
+            selectedRev.body = kC4SliceNull;
             return result;
         }
 
@@ -113,10 +113,10 @@ namespace c4Internal {
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
-            selectedRev.revID = nullslice;
+            selectedRev.revID = kC4SliceNull;
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
-            selectedRev.body = nullslice;
+            selectedRev.body = kC4SliceNull;
             _loadedBody = nullslice;
         }
 

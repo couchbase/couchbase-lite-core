@@ -60,8 +60,8 @@ public:
     { }
 
     void operator() (CollatableReader key, slice value) override {
-        c4Key k(key.data());
-        _callback.accumulate(_callback.context, &k, value);
+        c4Key k(toc4slice(key.data()));
+        _callback.accumulate(_callback.context, &k, toc4slice(value));
     }
 
     slice reducedValue() override {

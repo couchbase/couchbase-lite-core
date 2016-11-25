@@ -75,7 +75,7 @@ namespace c4Internal {
             return _versionedDoc.docType();
         }
 
-        void setType(C4Slice docType) noexcept override {
+        void setType(slice docType) noexcept override {
             _versionedDoc.setDocType(docType);
         }
 
@@ -363,7 +363,7 @@ namespace c4Internal {
             return true;
         } else if (httpStatus == 200) {
             // Revision already exists, so nothing was added. Not an error.
-            selectRevision(encodedRevID.expanded(), true);
+            selectRevision(toc4slice(encodedRevID.expanded()), true);
         } else if (httpStatus == 400) {
             error::_throw(error::InvalidParameter);
         } else if (httpStatus == 409) {

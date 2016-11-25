@@ -244,7 +244,7 @@ C4Document* c4doc_put(C4Database *database,
 
         } else {
             // New revision:
-            C4Slice parentRevID;
+            C4Slice parentRevID = kC4SliceNull;
             if (rq->historyCount == 1)
                 parentRevID = rq->history[0];
             else if (rq->historyCount > 1)

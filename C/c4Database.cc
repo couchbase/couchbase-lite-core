@@ -200,9 +200,9 @@ bool c4_shutdown(C4Error *outError) noexcept {
 
 void c4raw_free(C4RawDocument* rawDoc) noexcept {
     if (rawDoc) {
-        rawDoc->key.free();
-        rawDoc->meta.free();
-        rawDoc->body.free();
+        ((slice)rawDoc->key).free();
+        ((slice)rawDoc->meta).free();
+        ((slice)rawDoc->body).free();
         delete rawDoc;
     }
 }
