@@ -40,7 +40,7 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
 
 LiteCore runs on Mac OS, iOS, tvOS, Android, various other flavors of Unix, and Windows.
 
-It is written in C++ (using C++11 features) and compiles with Clang, GCC and MSVC.
+It is written in C++ (using C++11 features) and compiles with Clang (with libc++), GCC 5+ and MSVC.
 
 An earlier version of LiteCore, known as CBForest, has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and since early 2016 in the 1.2 release on all the above platforms.
 
@@ -57,7 +57,14 @@ Open **Xcode/LiteCore.xcodeproj**. Select the scheme **LiteCore dylib**. Build.
     cd build_cmake
     ./build.sh
 
-**Note:** If you get compile errors about missing headers or libraries, you'll need to install the appropriate development packages via your package manager. This is especially true on Ubuntu, which comes without the development packages for common libraries like SQLite and OpenSSL. (TBD: Add a list of `apt` packages here.)
+**Note:** If you get compile errors about missing headers or libraries, you'll need to install the appropriate development packages via your package manager. This is especially true on Ubuntu, which comes without the development packages for common libraries like SQLite and OpenSSL. In particular you must have the following libraries present:
+    
+| LIB_NAME   | APT-GET        | YUM           | SOURCE |
+| ---------- | -------------- | ------------- | ------ |
+| libsqlite3 | libsqlite3-dev | n/a           | https://sqlite.org/download.html          |
+| libcrypto  | libssl-dev     | openssl-devel | https://github.com/openssl/openssl        |
+| libbsd     | libbsd-dev     | libbsd        | https://libbsd.freedesktop.org/releases/  |
+| libsnappy  | libsnappy-dev  | n/a           | https://github.com/google/snappy/releases |
 
 ## Documentation
 
@@ -75,8 +82,8 @@ The main page is then located at `Documentation/html/modules.html`.
 **As of October 2016:** Under heavy development. Watch out for falling I-beams! 
 
 * The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac.
-* The CMake (Linux) build and Visual Studio project are generally up to date but may fall behind, as may the C# bindings. 
-* The Java bindings may be out of date or incomplete.
+* The CMake build is generally up to date but may fall behind
+* The Java / C# bindings may be out of date or incomplete.
 
 ## Authors
 
