@@ -35,6 +35,20 @@ using namespace std;
 namespace litecore {
 
 
+    LogDomain SQL("SQL");
+
+    void LogStatement(const SQLite::Statement &st) {
+        LogTo(SQL, "... %s", st.getQuery().c_str());
+    }
+
+
+    UsingStatement::UsingStatement(SQLite::Statement &stmt) noexcept
+    :_stmt(stmt)
+    {
+        LogStatement(stmt);
+    }
+
+
     UsingStatement::~UsingStatement() {
         try {
             _stmt.reset();
@@ -60,6 +74,7 @@ namespace litecore {
                 // by calling a SQLCipher-specific pragma that returns a number:
                 SQLite::Database sqlDb(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
                 SQLite::Statement s(sqlDb, "PRAGMA cipher_default_kdf_iter");
+                LogStatement(s);
                 sEncryptionEnabled = s.executeStep();
             }
         });
@@ -102,10 +117,12 @@ namespace litecore {
 
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
-            _sqlDb->exec("PRAGMA mmap_size=50000000");      // mmap improves performance
-            _sqlDb->exec("PRAGMA journal_mode=WAL");        // faster writes, better concurrency
-            _sqlDb->exec("PRAGMA journal_size_limit=5000000"); // trim WAL file to 5MB
-            _sqlDb->exec("PRAGMA synchronous=normal");      // faster commits
+            exec("PRAGMA mmap_size=50000000; "          // mmap improves performance
+                 "PRAGMA journal_mode=WAL; "            // faster writes, better concurrency
+                 "PRAGMA journal_size_limit=5000000; "  // trim WAL file to 5MB
+                 "PRAGMA synchronous=normal; "          // faster commits
+                 "CREATE TABLE IF NOT EXISTS "          // Table of metadata about KeyStores
+                        "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
 #if DEBUG
             if (arc4random() % 1)              // deliberately make unordered queries unpredictable
                 _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
@@ -115,13 +132,9 @@ namespace litecore {
             int maxThreads = 0;
 #if TARGET_OS_OSX
             maxThreads = 2;
+            // TODO: Configure for other platforms
 #endif
-            // TODO: Add tests for other platforms
             sqlite3_limit(_sqlDb->getHandle(), SQLITE_LIMIT_WORKER_THREADS, maxThreads);
-
-            // Table containing metadata about KeyStores:
-            _sqlDb->exec("CREATE TABLE IF NOT EXISTS kvmeta (name TEXT PRIMARY KEY,"
-                         " lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
 
             // Create the default KeyStore's table:
             (void)defaultKeyStore();
@@ -161,11 +174,11 @@ namespace litecore {
             slice key = options().encryptionKey;
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            _sqlDb->exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
+            exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
         }
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
-        _sqlDb->exec("SELECT count(*) FROM sqlite_master");
+        exec("SELECT count(*) FROM sqlite_master");
         return true;
     }
 
@@ -189,6 +202,7 @@ namespace litecore {
         int userVersion = 0;
         {
             SQLite::Statement st(*_sqlDb, "PRAGMA user_version");
+            LogStatement(st);
             if (st.executeStep())
                 userVersion = st.getColumn(0);
         }
@@ -207,6 +221,7 @@ namespace litecore {
                 sql += "\"x'" + newKey.hexString() + "'\"";
             SQLite::Statement attach(*_sqlDb, sql);
             attach.bind(1, tempPath);
+            LogStatement(attach);
             attach.executeStep();
         }
 
@@ -215,11 +230,11 @@ namespace litecore {
             // Export the current database's contents to the new one:
             // <https://www.zetetic.net/sqlcipher/sqlcipher-api/#sqlcipher_export>
             {
-                _sqlDb->exec("SELECT sqlcipher_export('rekeyed_db')");
+                exec("SELECT sqlcipher_export('rekeyed_db')");
 
                 stringstream sql;
                 sql << "PRAGMA rekeyed_db.user_version = " << userVersion;
-                _sqlDb->exec(sql.str());
+                exec(sql.str());
             }
 
             // Close the old database:
@@ -257,14 +272,15 @@ namespace litecore {
     }
 
     void SQLiteDataFile::deleteKeyStore(const string &name) {
-        exec(string("DROP TABLE IF EXISTS kv_") + name);
-        exec(string("DROP TABLE IF EXISTS kvold_") + name);
+        execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
+        execWithLock(string("DROP TABLE IF EXISTS kvold_") + name);
     }
 
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
         Assert(_transaction == nullptr);
+        LogTo(SQL, "BEGIN");
         _transaction = make_unique<SQLite::Transaction>(*_sqlDb);
     }
 
@@ -276,16 +292,28 @@ namespace litecore {
         });
 
         // Now commit:
-        if (commit)
+        if (commit) {
+            LogTo(SQL, "COMMIT");
             _transaction->commit();
+        } else {
+            LogTo(SQL, "ROLLBACK");
+        }
         _transaction.reset(); // destruct SQLite::Transaction, which will rollback if not committed
     }
 
 
     int SQLiteDataFile::exec(const string &sql) {
+        LogTo(SQL, "%s", sql.c_str());
+        return _sqlDb->exec(sql);
+    }
+
+
+    int SQLiteDataFile::execWithLock(const string &sql) {
         checkOpen();
         int result;
-        withFileLock([&]{ result = _sqlDb->exec(sql); });
+        withFileLock([&]{
+            result = exec(sql);
+        });
         return result;
     }
 
@@ -294,8 +322,15 @@ namespace litecore {
                                                const char *sql) const
     {
         checkOpen();
-        if (ref == nullptr)
-            const_cast<unique_ptr<SQLite::Statement>&>(ref) = make_unique<SQLite::Statement>(*_sqlDb, sql);
+        if (ref == nullptr) {
+            try {
+                const_cast<unique_ptr<SQLite::Statement>&>(ref)
+                                                    = make_unique<SQLite::Statement>(*_sqlDb, sql);
+            } catch (const SQLite::Exception &x) {
+                Warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
+                throw;
+            }
+        }
         return *ref.get();
     }
 
@@ -332,15 +367,15 @@ namespace litecore {
         {
             Transaction t(this);
             for (auto& name : allKeyStoreNames()) {
-                _sqlDb->exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
+                exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
                 if (options().keyStores.getByOffset) {
-                    _sqlDb->exec(string("DELETE FROM kvold_")+name);
+                    exec(string("DELETE FROM kvold_")+name);
                 }
             }
             updatePurgeCount(t);
             t.commit();
         }
-        _sqlDb->exec(string("VACUUM"));     // Vacuum can't be called in a transaction
+        exec(string("VACUUM"));     // Vacuum can't be called in a transaction
         finishedCompacting();
     }
 

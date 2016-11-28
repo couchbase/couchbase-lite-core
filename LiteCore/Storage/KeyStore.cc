@@ -86,11 +86,11 @@ namespace litecore {
         return del(rec.key(), t);
     }
 
-    void KeyStore::createIndex(const std::string &propertyPath) {
+    void KeyStore::createIndex(const std::string &propertyPath, IndexType) {
         error::_throw(error::Unimplemented);
     }
 
-    void KeyStore::deleteIndex(const std::string &propertyPath) {
+    void KeyStore::deleteIndex(const std::string &propertyPath, IndexType) {
         error::_throw(error::Unimplemented);
     }
 

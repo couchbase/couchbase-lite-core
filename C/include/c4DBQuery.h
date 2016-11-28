@@ -84,25 +84,36 @@ extern "C" {
      @{ */
 
 
+    typedef C4_ENUM(uint32_t, C4IndexType) {
+        kC4ValueIndex,         ///< Regular index of property value
+        kC4FullTextIndex,      ///< Full-text index
+        kC4GeoIndex,           ///< Geospatial index of GeoJSON values
+    };
+
+
     /** Creates an index on a document property, to speed up subsequent queries.
         Nested properties can be indexed, but their values must be scalar (string, number, bool.)
         It's fine if not every document in the database has such a property.
         @param database  The database to index.
-        @param expression  The property to index: a path expression such as "address.street"
+        @param propertyPath  The property to index: a path expression such as "address.street"
                             or "coords[0]".
+        @param indexType  The type of index (regular, full-text or geospatial.)
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database,
-                          C4Slice expression,
+                          C4Slice propertyPath,
+                          C4IndexType indexType,
                           C4Error *outError) C4API;
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.
-        @param expression  The path expression used when creating the index.
+        @param propertyPath  The property path used when creating the index.
+        @param indexType  The type of the index.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_deleteIndex(C4Database *database,
-                          C4Slice expression,
+                          C4Slice propertyPath,
+                          C4IndexType indexType,
                           C4Error *outError) C4API;
 
     /** @} */

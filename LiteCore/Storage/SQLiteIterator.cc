@@ -8,6 +8,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
+#include "SQLite_Internal.hh"
 #include "Logging.hh"
 #include "Query.hh"
 #include "QueryParser.hh"
@@ -37,7 +38,7 @@ namespace litecore {
         virtual bool read(Record &rec) override {
             updateDoc(rec, (int64_t)_stmt->getColumn(0), 0, (int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
-            SQLiteKeyStore::setDocMetaAndBody(rec, *_stmt.get(), _content);
+            SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt.get(), _content);
             return true;
         }
 
@@ -114,7 +115,7 @@ namespace litecore {
             error::_throw(error::NoSequences);
 
         if (!_createdSeqIndex) {
-            db().exec(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs"
+            db().execWithLock(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs"
                                           " ON kv_"+name()+" (sequence)"));
             _createdSeqIndex = true;
         }
@@ -140,11 +141,49 @@ namespace litecore {
 #pragma mark - DB QUERIES:
 
 
+    class SQLiteQuery : public Query {
+    public:
+        SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression, slice sortExpression)
+        :Query(keyStore)
+        {
+            QueryParser qp(keyStore.tableName());
+            qp.parseJSON(selectorExpression, sortExpression);
+
+            stringstream sql;
+            sql << "SELECT sequence, key, meta, length(body)";
+            _ftsPaths = qp.ftsTableNames(); //FIX
+            for (auto ftsTable : qp.ftsTableNames())
+                sql << ", offsets(" << ftsTable << ")";
+            sql << " FROM " << qp.fromClause() <<
+                   " WHERE (" << qp.whereClause() << ")";
+
+            auto orderBy = qp.orderByClause();
+            if (!orderBy.empty())
+                sql << " ORDER BY " << orderBy;
+
+            sql << " LIMIT $limit OFFSET $offset";
+            LogTo(SQL, "Compiled Query: %s", sql.str().c_str());
+            _statement.reset(keyStore.compile(sql.str()));
+        }
+
+    protected:
+        QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override;
+        
+        shared_ptr<SQLite::Statement> statement() {return _statement;}
+
+    private:
+        friend class SQLiteQueryEnumImpl;
+
+        shared_ptr<SQLite::Statement> _statement;
+        vector<string> _ftsPaths;
+    };
+
+
     class SQLiteQueryEnumImpl : public QueryEnumerator::Impl {
     public:
-        SQLiteQueryEnumImpl(shared_ptr<SQLite::Statement> &statement,
-                            const QueryEnumerator::Options *options)
-        :_statement(statement)
+        SQLiteQueryEnumImpl(SQLiteQuery &query, const QueryEnumerator::Options *options)
+        :_query(query)
+        ,_statement(query.statement())
         {
             _statement->clearBindings();
             long long offset = 0, limit = -1;
@@ -157,10 +196,13 @@ namespace litecore {
             }
             _statement->bind("$offset", offset);
             _statement->bind("$limit", limit );
+            LogStatement(*_statement);
         }
 
         ~SQLiteQueryEnumImpl() {
-            _statement->reset();
+            try {
+                _statement->reset();
+            } catch (...) { }
         }
 
         void bindParameters(slice json) {
@@ -195,49 +237,36 @@ namespace litecore {
             }
         }
 
-        bool next(slice &recordID, sequence_t &sequence) override {
+        bool next(slice &outRecordID, sequence_t &outSequence) override {
             if (!_statement->executeStep())
                 return false;
-            sequence = (int64_t)_statement->getColumn(0);
-            recordID.buf = _statement->getColumn(1);
-            recordID.size = _statement->getColumn(1).size();
+            outSequence = (int64_t)_statement->getColumn(0);
+            outRecordID.buf = _statement->getColumn(1);
+            outRecordID.size = _statement->getColumn(1).size();
             return true;
         }
 
-    private:
-        shared_ptr<SQLite::Statement> _statement;
-    };
-    
-
-    class SQLiteQuery : public Query {
-    public:
-        SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression, slice sortExpression)
-        :Query(keyStore)
-        {
-            QueryParser qp;
-            qp.parseJSON(selectorExpression, sortExpression);
-
-            stringstream sql;
-            sql << "SELECT sequence, key, meta, length(body)"
-                   " FROM kv_" << keyStore.name() <<
-                   " WHERE (" << qp.whereClause() << ")";
-
-            auto orderBy = qp.orderByClause();
-            if (!orderBy.empty())
-                sql << " ORDER BY " << orderBy;
-            
-            sql << " LIMIT $limit OFFSET $offset";
-            LogTo(DBLog, "QUERY: %s", sql.str().c_str());
-            _statement.reset(keyStore.compile(sql.str()));
+        slice meta() override {
+            return {_statement->getColumn(2), (size_t)_statement->getColumn(2).size()};
+        }
+        
+        size_t bodyLength() override {
+            return (int64_t)_statement->getColumn(3);
         }
 
-        QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override {
-            return new SQLiteQueryEnumImpl(_statement, options);
+        bool hasFullText() override {
+            return _statement->getColumnCount() < 5;
         }
 
     private:
+        SQLiteQuery &_query;
         shared_ptr<SQLite::Statement> _statement;
     };
+
+
+    QueryEnumerator::Impl* SQLiteQuery::createEnumerator(const QueryEnumerator::Options *options) {
+        return new SQLiteQueryEnumImpl(*this, options);
+    }
 
 
     Query* SQLiteKeyStore::compileQuery(slice selectorExpression, slice sortExpression) {

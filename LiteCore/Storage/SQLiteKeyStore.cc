@@ -26,6 +26,7 @@ namespace litecore {
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
                                                     " WHERE type='table' AND name GLOB 'kv_*'"));
+        LogStatement(allStores);
         while (allStores.executeStep()) {
             names.push_back(allStores.getColumn(0));
         }
@@ -38,6 +39,7 @@ namespace litecore {
         SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
                                                       " WHERE type='table' AND name=?"));
         storeExists.bind(1, string("kv_") + name);
+        LogStatement(storeExists);
         bool exists = storeExists.executeStep();
         storeExists.reset();
         return exists;
@@ -55,9 +57,9 @@ namespace litecore {
             if (capabilities.getByOffset) {
                 // shadow table for overwritten records
                 db.exec(subst("CREATE TABLE IF NOT EXISTS kvold_@ ("
-                              "sequence INTEGER PRIMARY KEY, key BLOB, meta BLOB, body BLOB)"));
-                db.exec("PRAGMA recursive_triggers = 1");
-                db.exec(subst("CREATE TRIGGER backup_@ BEFORE DELETE ON kv_@ BEGIN "
+                                  "sequence INTEGER PRIMARY KEY, key BLOB, meta BLOB, body BLOB); "
+                              "PRAGMA recursive_triggers = 1; "
+                              "CREATE TRIGGER backup_@ BEFORE DELETE ON kv_@ BEGIN "
                               "  INSERT INTO kvold_@ (sequence, key, meta, body) "
                               "    VALUES (OLD.sequence, OLD.key, OLD.meta, OLD.body); END"));
             }
@@ -90,7 +92,12 @@ namespace litecore {
 
 
     SQLite::Statement* SQLiteKeyStore::compile(const string &sql) const {
-        return new SQLite::Statement(db(), sql);
+        try {
+            return new SQLite::Statement(db(), sql);
+        } catch (const SQLite::Exception &x) {
+            Warn("SQLite error compiling statement \"%s\": %s", sql.c_str(), x.what());
+            throw;
+        }
     }
 
 
@@ -163,9 +170,9 @@ namespace litecore {
 
 
     // Gets meta from column 3, and body (or its length) from column 4
-    /*static*/ void SQLiteKeyStore::setDocMetaAndBody(Record &rec,
-                                                      SQLite::Statement &stmt,
-                                                      ContentOptions options)
+    /*static*/ void SQLiteKeyStore::setRecordMetaAndBody(Record &rec,
+                                                         SQLite::Statement &stmt,
+                                                         ContentOptions options)
     {
         rec.setMeta(columnAsSlice(stmt.getColumn(3)));
         if (options & kMetaOnly)
@@ -190,7 +197,7 @@ namespace litecore {
         uint64_t offset = _capabilities.getByOffset ? seq : 0;
         bool deleted = (int)stmt.getColumn(1);
         updateDoc(rec, seq, offset, deleted);
-        setDocMetaAndBody(rec, stmt, options);
+        setRecordMetaAndBody(rec, stmt, options);
         return !rec.deleted();
     }
 
@@ -211,7 +218,7 @@ namespace litecore {
             bool deleted = (int)stmt.getColumn(1);
             updateDoc(rec, seq, offset, deleted);
             rec.setKey(columnAsSlice(stmt.getColumn(2)));
-            setDocMetaAndBody(rec, stmt, options);
+            setRecordMetaAndBody(rec, stmt, options);
         }
         return rec;
     }
@@ -297,36 +304,101 @@ namespace litecore {
 
     void SQLiteKeyStore::erase() {
         Transaction t(db());
-        db()._sqlDb->exec(string("DELETE FROM kv_"+name()));
+        db().exec(string("DELETE FROM kv_"+name()));
         setLastSequence(0);
         t.commit();
     }
 
 
-    // Writes a SQL string containing a unique name for the index with the given path.
-    void SQLiteKeyStore::writeSQLIndexName(const string &propertyPath, stringstream &sql) {
-        sql << "'" << name() << "::" << propertyPath << "'";
+#pragma mark - INDEXES:
+
+
+    static string stripPathDollar(string propertyPath) {
+        unsigned start = 0;
+        if (propertyPath[0] == '$') {
+            if (propertyPath[1] == '.')
+                start = 2;
+            else
+                start = 1;
+        }
+        return propertyPath.substr(start);
     }
 
 
-    void SQLiteKeyStore::createIndex(const string &propertyExpression) {
+    // Returns a SQL string containing a unique name for the index with the given path.
+    string SQLiteKeyStore::SQLIndexName(const string &propertyPath, const char *suffix) {
         stringstream sql;
-        sql << "CREATE INDEX IF NOT EXISTS ";
-        writeSQLIndexName(propertyExpression, sql);
-        sql << " ON kv_" << name() << " (";
-        sql << QueryParser::propertyGetter(propertyExpression);
-        sql << ")";
-        // TODO: Add 'WHERE' clause for use with SQLite 3.15+
-        db()._sqlDb->exec(sql.str());
+        sql << "'" << name() << "::" << stripPathDollar(propertyPath);
+        if (suffix)
+            sql << "::" << suffix;
+        sql << "'";
+        return sql.str();
+    }
+
+    
+    // Returns a SQL string containing a unique name for the index with the given path.
+    string SQLiteKeyStore::SQLFTSTableName(const string &propertyPath) {
+        stringstream sql;
+        sql << '"' << tableName() << "::" << stripPathDollar(propertyPath) << '"';
+        return sql.str();
+    }
+
+    
+    void SQLiteKeyStore::createIndex(const string &propertyExpression, IndexType type) {
+        ((SQLiteDataFile&)dataFile()).registerFleeceFunctions();
+
+        Transaction t(db());
+        auto indexName = SQLIndexName(propertyExpression);
+        switch (type) {
+            case  kValueIndex: {
+                stringstream sql;
+                sql << "CREATE INDEX IF NOT EXISTS " << indexName;
+                sql << " ON kv_" << name() << " (";
+                sql << QueryParser::propertyGetter(propertyExpression);
+                sql << ")";
+                // TODO: Add 'WHERE' clause for use with SQLite 3.15+
+                db().exec(sql.str());
+                break;
+            }
+            case kFullTextIndex: {
+                // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
+                auto tableName = SQLFTSTableName(propertyExpression);
+                db().exec(string("CREATE VIRTUAL TABLE ") + tableName + " USING fts4(text)");
+                // TODO: Use tokenizer
+
+                //TODO:  Index existing records:
+
+                // Set up triggers to keep the FTS5 table up to date:
+                string ins = "INSERT INTO " + tableName + "(rowid, text) VALUES (new.sequence, " + QueryParser::propertyGetter(propertyExpression, "new.body") + "); ";
+                string del = "DELETE FROM " + tableName + " WHERE rowid = old.sequence; ";
+                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "ins") + " AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
+                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "del") + " AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
+                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "upd") + " AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
+                break;
+            }
+            default:
+                error::_throw(error::Unimplemented);
+        }
+        t.commit();
     }
 
 
-    void SQLiteKeyStore::deleteIndex(const string &propertyPath) {
-        stringstream sql;
-        sql << "DROP INDEX ";
-        writeSQLIndexName(propertyPath, sql);
-        db()._sqlDb->exec(sql.str());
-
+    void SQLiteKeyStore::deleteIndex(const string &propertyPath, IndexType type) {
+        Transaction t(db());
+        string indexName = SQLIndexName(propertyPath);
+        switch (type) {
+            case  kValueIndex:
+                db().exec(string("DROP INDEX ") + indexName);
+                break;
+            case kFullTextIndex: {
+                db().exec(string("DROP VIRTUAL TABLE ") + indexName);
+                // TODO: Do I have to explicitly delete the triggers too?
+                break;
+            }
+            default:
+                error::_throw(error::Unimplemented);
+        }
+        t.commit();
     }
 
 }

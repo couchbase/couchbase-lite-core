@@ -111,7 +111,7 @@ namespace litecore {
             #endif
 
             auto name = domain.name();
-            static const char *kLevels[] = {"***", "", "", "WARNING:", "ERROR: "};
+            static const char *kLevels[] = {"***", "", "", "WARNING: ", "ERROR: "};
             fprintf(stderr, "%s| %s%s %s%s\n",
                     timestamp, name, (name[0] ? ":" :""), kLevels[(int)level], message);
         #endif

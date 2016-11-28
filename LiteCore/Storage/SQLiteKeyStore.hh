@@ -37,11 +37,12 @@ namespace litecore {
 
         void erase() override;
 
-        bool supportsIndexes() const override               {return true;}
-        void createIndex(const std::string &propertyPath) override;
-        void deleteIndex(const std::string &propertyPath) override;
+        bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
+        void createIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
+        void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
 
     protected:
+        std::string tableName() const                       {return std::string("kv_") + name();}
         bool _del(slice key, Transaction &t) override       {return _del(key, 0, t);}
         bool _del(sequence s, Transaction &t) override      {return _del(nullslice, s, t);}
         bool _del(slice key, sequence s, Transaction&);
@@ -59,9 +60,9 @@ namespace litecore {
         void close() override;
 
         static slice columnAsSlice(const SQLite::Column &col);
-        static void setDocMetaAndBody(Record &rec,
-                                      SQLite::Statement &stmt,
-                                      ContentOptions options);
+        static void setRecordMetaAndBody(Record &rec,
+                                         SQLite::Statement &stmt,
+                                         ContentOptions options);
 
     private:
         friend class SQLiteDataFile;
@@ -74,7 +75,8 @@ namespace litecore {
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options &options);
         void setLastSequence(sequence seq);
-        void writeSQLIndexName(const std::string &propertyPath, std::stringstream &sql);
+        std::string SQLIndexName(const std::string &propertyPath, const char *suffix = NULL);
+        std::string SQLFTSTableName(const std::string &propertyPath);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

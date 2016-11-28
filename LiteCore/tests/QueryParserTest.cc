@@ -16,26 +16,18 @@
 using namespace std;
 
 
-static void enquotify(string &json) {
-    for (auto i = json.begin(); i != json.end(); ++i) {
-        if (*i == '`')
-            *i = '"';
-    }
+static QueryParser parserWith(string whereJson, slice sortJson = nullslice) {
+    QueryParser qp("kv_default");
+    qp.parseJSON(slice(enquotify(whereJson)), sortJson);
+    return qp;
 }
-
 
 static string parseWhere(string json) {
-    enquotify(json);
-    QueryParser qp;
-    qp.parseJSON(slice(json), nullslice);
-    return qp.whereClause();
+    return parserWith(json).whereClause();
 }
 
-static string parseSort(string json) {
-    enquotify(json);
-    QueryParser qp;
-    qp.parseJSON("{}"_sl, slice(json));
-    return qp.orderByClause();
+static string parseSort(string sortJson) {
+    return parserWith("{}", slice(enquotify(sortJson))).orderByClause();
 }
 
 
@@ -106,4 +98,15 @@ TEST_CASE("QueryParser elemMatch", "[Query]") {
     CHECK(parseWhere("{`prices`: {`$elemMatch`: {`$ge`: 3.95}}, "
                              "`tags`: {`$elemMatch`: {`$eq`: `moist`}}}")
           == "EXISTS (SELECT 1 FROM fl_each(body, 'prices') WHERE fl_each.value >= 3.95) AND EXISTS (SELECT 1 FROM fl_each(body, 'tags') WHERE fl_each.value = 'moist')");
+}
+
+
+TEST_CASE("QueryParser FTS", "[Query]") {
+    auto p = parserWith("{`bio`: {`$match`: `architect`}}");
+    CHECK(p.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1");
+    CHECK(p.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence)");
+
+    p = parserWith("{`bio`: {`$match`: `architect`}, `skills`: {`$match`: `mobile`}}");
+    CHECK(p.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1, \"kv_default::skills\" AS FTS2");
+    CHECK(p.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence) AND (FTS2.text MATCH 'mobile' AND FTS2.rowid = kv_default.sequence)");
 }

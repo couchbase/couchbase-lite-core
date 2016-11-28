@@ -8,6 +8,7 @@
 
 #pragma once
 #include "DataFile.hh"
+#include "Logging.hh"
 #include <memory>
 
 struct sqlite3;
@@ -24,12 +25,15 @@ namespace fleece {
 
 namespace litecore {
 
+    extern LogDomain SQL;
+
+    void LogStatement(const SQLite::Statement &st);
+
+
     // Little helper class that makes sure Statement objects get reset on exit
     class UsingStatement {
     public:
-        UsingStatement(SQLite::Statement &stmt) noexcept
-        :_stmt(stmt)
-        { }
+        UsingStatement(SQLite::Statement &stmt) noexcept;
 
         UsingStatement(const std::unique_ptr<SQLite::Statement> &stmt) noexcept
         :UsingStatement(*stmt.get())

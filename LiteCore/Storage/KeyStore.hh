@@ -48,6 +48,10 @@ namespace litecore {
         virtual uint64_t recordCount() const =0;
         virtual sequence lastSequence() const =0;
 
+        virtual void erase() =0;
+
+        void deleteKeyStore(Transaction&);
+
         // Keys/values:
 
         Record get(slice key, ContentOptions = kDefaultContent) const;
@@ -82,13 +86,17 @@ namespace litecore {
         bool del(sequence s, Transaction&);
         bool del(const Record&, Transaction&);
 
-        virtual bool supportsIndexes() const                        {return false;}
-        virtual void createIndex(const std::string &propertyPath);
-        virtual void deleteIndex(const std::string &propertyPath);
+        //////// INDEXING:
 
-        virtual void erase() =0;
+        enum IndexType {
+            kValueIndex,         ///< Regular index of property value
+            kFullTextIndex,      ///< Full-text index
+            kGeoIndex,           ///< Geo index of GeoJSON values
+        };
 
-        void deleteKeyStore(Transaction&);
+        virtual bool supportsIndexes(IndexType) const                   {return false;}
+        virtual void createIndex(const std::string &propertyPath, IndexType =kValueIndex);
+        virtual void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex);
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }

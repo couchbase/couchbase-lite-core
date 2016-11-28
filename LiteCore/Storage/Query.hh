@@ -27,19 +27,39 @@ namespace litecore {
         bool next();
         void close()                    {_impl.reset();}
 
-        slice recordID() const             {return _recordID;}
+        slice recordID() const          {return _recordID;}
         sequence_t sequence() const     {return _sequence;}
+        slice meta()                    {return _impl->meta();}
+        size_t bodyLength()             {return _impl->bodyLength();}
+
+        /** Info about a match of a full-text query term */
+        struct FullTextTerm {
+            uint32_t termIndex;                 ///< Index of the search term in the tokenized query
+            uint32_t start, length;             ///< *Byte* range of word in query string
+        };
+
+        bool hasFullText()              {return _impl->hasFullText();}
+
+        const std::vector<FullTextTerm>& fullTextTerms() {
+            _impl->getFullTextTerms(_fullTextTerms); return _fullTextTerms;
+        }
+
 
         class Impl {
         public:
             virtual ~Impl() = default;
             virtual bool next(slice &docID, sequence_t &sequence) =0;
+            virtual slice meta() =0;
+            virtual size_t bodyLength() =0;
+            virtual bool hasFullText()  {return false;}
+            virtual void getFullTextTerms(std::vector<FullTextTerm>& t) {}
         };
 
     private:
         std::unique_ptr<Impl> _impl;
         slice _recordID;
         sequence_t _sequence;
+        std::vector<FullTextTerm> _fullTextTerms;
     };
 
 

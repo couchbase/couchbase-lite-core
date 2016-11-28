@@ -281,23 +281,25 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile][Query]") {
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
-    Transaction t(store->dataFile());
-    for (int i = 1; i <= 100; i++) {
-        string docID = stringWithFormat("rec-%03d", i);
+    {
+        Transaction t(store->dataFile());
+        for (int i = 1; i <= 100; i++) {
+            string docID = stringWithFormat("rec-%03d", i);
 
-        fleece::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeInt(i);
-        enc.endDictionary();
-        alloc_slice body = enc.extractOutput();
+            fleece::Encoder enc;
+            enc.beginDictionary();
+            enc.writeKey("num");
+            enc.writeInt(i);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
 
-        sequence seq = store->set(slice(docID), litecore::nullslice, body, t).seq;
-        REQUIRE(seq == (sequence)i);
+            sequence seq = store->set(slice(docID), litecore::nullslice, body, t).seq;
+            REQUIRE(seq == (sequence)i);
+        }
+        t.commit();
     }
-    t.commit();
 
     unique_ptr<Query> query{ store->compileQuery("{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}"_sl, nullslice) };
 
@@ -320,6 +322,48 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
             st2.printReport("Index on $.num", 1, "index");
         }
     }
+}
+
+
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Query]") {
+    store->createIndex("$.sentence", KeyStore::kFullTextIndex);
+
+    // Add some text to the database:
+    static const char* strings[] = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.",
+        "In their most elementary form, full-text search engines allow the user to efficiently search a large collection of documents for the subset that contain one or more instances of a search term.",
+        "The search functionality provided to world wide web users by Google is, among other things, a full-text search engine, as it allows users to search for all documents on the web that contain, for example, the term \"fts5\".",
+        "To use FTS5, the user creates an FTS5 virtual table with one or more columns."};
+    {
+        Transaction t(store->dataFile());
+        for (int i = 0; i < sizeof(strings)/sizeof(strings[0]); i++) {
+            string docID = stringWithFormat("rec-%03d", i);
+
+            fleece::Encoder enc;
+            enc.beginDictionary();
+            enc.writeKey("sentence");
+            enc.writeString(strings[i]);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+
+            store->set(slice(docID), litecore::nullslice, body, t);
+        }
+        t.commit();
+    }
+
+    unique_ptr<Query> query{ store->compileQuery(enquotify("{`sentence`: {`$match`: `search`}}"), nullslice) };
+    REQUIRE(query != nullptr);
+    unsigned rows = 0;
+    for (QueryEnumerator e(query.get()); e.next(); ) {
+        Log("key = %s", e.recordID().cString());
+        CHECK(e.fullTextTerms().size() > 0);
+        for (auto term : e.fullTextTerms()) {
+            CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", rows));
+            auto word = string(strings[rows] + term.start, term.length);
+            CHECK(word == "search");
+        }
+        ++rows;
+    }
+    CHECK(rows == 3);
 }
 
 

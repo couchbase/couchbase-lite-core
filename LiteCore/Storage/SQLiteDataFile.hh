@@ -66,6 +66,7 @@ namespace litecore {
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
         int exec(const std::string &sql);
+        int execWithLock(const std::string &sql);
         void registerFleeceFunctions();
 
     private:

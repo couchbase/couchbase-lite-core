@@ -370,7 +370,7 @@ struct c4Query : InstanceCounted {
      _query(db->defaultKeyStore().compileQuery(queryExpression, sortExpression))
     { }
 
-    Database* database() const    {return _database;}
+    Database* database() const      {return _database;}
     Query* query() const            {return _query.get();}
 
 private:
@@ -402,8 +402,9 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
 #if C4DB_THREADSAFE
         query->database()->_mutex
 #endif
-    ),
-     _enum(query->query(), options)
+    )
+    ,_enum(query->query(), options)
+    ,_hasFullText(_enum.hasFullText())
     { }
 
     virtual bool next() override {
@@ -411,6 +412,12 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
             return C4QueryEnumInternal::next();
         docID = _enum.recordID();
         docSequence = _enum.sequence();
+
+        if (_hasFullText) {
+            auto ft = _enum.fullTextTerms();
+            fullTextTerms = (const C4FullTextTerm*)ft.data();
+            fullTextTermCount = (uint32_t)ft.size();
+        }
         return true;
     }
 
@@ -420,6 +427,7 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
 
 private:
     QueryEnumerator _enum;
+    bool _hasFullText;
 };
 
 
@@ -442,22 +450,26 @@ C4QueryEnumerator* c4query_run(C4Query *query,
 
 
 bool c4db_createIndex(C4Database *database,
-                      C4Slice expression,
+                      C4Slice propertyPath,
+                      C4IndexType indexType,
                       C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
         WITH_LOCK(database);
-        database->defaultKeyStore().createIndex((string)expression);
+        database->defaultKeyStore().createIndex((string)propertyPath,
+                                                (KeyStore::IndexType)indexType);
     });
 }
 
 
 bool c4db_deleteIndex(C4Database *database,
-                      C4Slice expression,
+                      C4Slice propertyPath,
+                      C4IndexType indexType,
                       C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
         WITH_LOCK(database);
-        database->defaultKeyStore().deleteIndex((string)expression);
+        database->defaultKeyStore().deleteIndex((string)propertyPath,
+                                                (KeyStore::IndexType)indexType);
     });
 }

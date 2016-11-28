@@ -26,6 +26,9 @@ using namespace fleece;
 
 std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
 
+// Converts back-quotes to double-quotes; useful for JSON strings
+std::string enquotify(std::string);
+
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);
 

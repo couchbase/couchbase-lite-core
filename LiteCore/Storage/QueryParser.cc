@@ -47,6 +47,7 @@ namespace litecore {
         {"$all",    nullptr,    5},
         {"$any",    nullptr,    6},
         {"$elemMatch",nullptr,  7},
+        {"$match",  " MATCH ",  8},
     };
 
     // Names of Fleece types, indexed by fleece::valueType. Used with "$type" operator.
@@ -291,6 +292,9 @@ namespace litecore {
             case 7:     // $elemMatch
                 parseElemMatch(key, value);
                 break;
+            case 8:
+                parseFTSMatch(key, value);
+                break;
             default:
                 Assert(false, "invalid type in kRelationals");
         }
@@ -310,12 +314,17 @@ namespace litecore {
     }
 
 
-    // Writes a call to a Fleece SQL function, without the closing ")".
-    void QueryParser::writePropertyGetterLeftOpen(const char *fn, slice property) {
-        _sql << fn;
-        _sql << "(body, ";
+    // Writes a SQL string containing a Fleece path to the property.
+    void QueryParser::writePropertyPathString(slice property) {
         auto path = appendPaths(_propertyPath, (string)property);
         writeSQLString(_sql, slice(path));
+    }
+
+
+    // Writes a call to a Fleece SQL function, without the closing ")".
+    void QueryParser::writePropertyGetterLeftOpen(const char *fn, slice property) {
+        _sql << fn << "(" << _jsonColumnName << ", ";
+        writePropertyPathString(property);
     }
 
 
@@ -326,8 +335,8 @@ namespace litecore {
     }
 
 
-    /*static*/ string QueryParser::propertyGetter(slice property) {
-        QueryParser qp;
+    /*static*/ string QueryParser::propertyGetter(slice property, const char *sqlColumn) {
+        QueryParser qp("XXX", sqlColumn);
         qp.writePropertyGetter("fl_value", property);
         return qp.whereClause();
     }
@@ -481,6 +490,46 @@ namespace litecore {
             default:
                 Assert(false, "invalid type in kRelationals");
         }
+    }
+
+
+#pragma mark - FULL-TEXT-SEARCH MATCH:
+
+
+    void QueryParser::parseFTSMatch(slice property, const fleece::Value *match) {
+        // The FTS index is a separate (virtual) table. Get the table name and add it to FROM:
+        auto propertyPath = appendPaths(_propertyPath, (string)property);
+        auto i = find(_ftsProperties.begin(), _ftsProperties.end(), propertyPath);
+        size_t ftsTableNo = i - _ftsProperties.begin() + 1;
+        if (i == _ftsProperties.end())
+            _ftsProperties.push_back(propertyPath);
+
+        // Write the match expression (using an implicit join):
+        _sql << "(FTS" << ftsTableNo << ".text MATCH ";
+        writeLiteral(match);
+        _sql << " AND FTS" << ftsTableNo << ".rowid = " << _tableName << ".sequence)";
+    }
+
+
+    string QueryParser::fromClause() {
+        stringstream from;
+        from << _tableName;
+        unsigned ftsTableNo = 0;
+        for (auto propertyPath : _ftsProperties) {
+            from << ", \"" << _tableName << "::" << propertyPath << "\" AS FTS" << ++ftsTableNo;
+        }
+        return from.str();
+    }
+
+
+    vector<string> QueryParser::ftsTableNames() const {
+        vector<string> names;
+        for (auto propertyPath : _ftsProperties) {
+            stringstream s;
+            s << "\"" << _tableName << "::" << propertyPath << "\"";
+            names.push_back(s.str());
+        }
+        return names;
     }
 
 

@@ -22,7 +22,6 @@
 namespace litecore {
 
     class KeyStore;
-    class Query;
 
     enum ContentOptions {
         kDefaultContent = 0,
@@ -67,9 +66,6 @@ namespace litecore {
         RecordEnumerator(KeyStore&,
                       std::vector<std::string> recordIDs,
                       const Options& options = Options());
-
-        RecordEnumerator(Query&,
-                      slice paramValuesEncoded);
 
         RecordEnumerator(RecordEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept; // move assignment
