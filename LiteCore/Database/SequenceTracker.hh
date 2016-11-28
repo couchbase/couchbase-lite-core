@@ -77,13 +77,13 @@ namespace litecore {
             bool isIdle() const                 {return idle && !isPlaceholder();}
         };
 
-//#if DEBUG
+#if DEBUG
         /** Writes a string representation for debugging/testing purposes. Format is a list of
             comma-separated entries, inside square brackets. Each entry is either "docid@sequence"
             for a change, or "*" for a placeholder. The entries in an open transaction are
             inside a pair of parentheses. */
         std::string dump() const;
-//#endif
+#endif
 
     protected:
         typedef std::list<Entry>::const_iterator const_iterator;

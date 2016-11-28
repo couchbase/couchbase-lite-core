@@ -283,7 +283,7 @@ namespace litecore {
     }
 
 
-//#if DEBUG
+#if DEBUG
     string SequenceTracker::dump() const {
         stringstream s;
         s << "[";
@@ -309,7 +309,7 @@ namespace litecore {
         s << "]";
         return s.str();
     }
-//#endif
+#endif
 
 
 #pragma mark - DATABASE CHANGE NOTIFIER:
