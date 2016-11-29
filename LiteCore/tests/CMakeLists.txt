@@ -31,7 +31,7 @@ if(NOT APPLE)
     else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
         if(MSVC)
-            set(FilesToCopy ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb ${TOP}build_cmake/vendor/SQLiteCpp/sqlite3/\$\(Configuration\)/sqlite3)
+            set(FilesToCopy ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb ${TOP}build_cmake/\$\(Configuration\)/sqlite3)
             add_custom_command(TARGET CppTests POST_BUILD
                 COMMAND ${CMAKE_COMMAND}
                 -DFilesToCopy="${FilesToCopy}"
