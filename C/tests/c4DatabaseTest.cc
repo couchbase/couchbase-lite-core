@@ -1,4 +1,4 @@
-//
+﻿//
 //  c4DatabaseTest.cc
 //  Couchbase Lite Core
 //

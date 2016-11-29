@@ -33,8 +33,7 @@
 #include <windows.h>
 #include <dirent.h>
 #include <io.h>
-#define __mkdir(dir, perm) CreateDirectory(dir, NULL)
-#define lstat(path, buf) stat(path, buf)
+#include "PlatformCompat.hh"
 
 
 #ifndef HAVE_MKSTEMPS
@@ -49,6 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#define u8_to_wstr(in, out_name) wchar_t out_name[256]; if(MultiByteToWideChar(CP_UTF8, 0, in, strnlen_s(in, 255) + 1, out_name, 256) == 0) return 0
 
 static int _gettemp(char *, int *, int, int);
 static unsigned int __time_seed(void);
@@ -102,7 +103,7 @@ static int _gettemp(char *path, int *doopen, int domkdir, int slen)
         for (; trv > path; --trv) {
             if (*trv == '/') {
                 *trv = '\0';
-                rval = stat(path, &sbuf);
+                rval = stat_u8(path, &sbuf);
                 *trv = '/';
                 if (rval != 0)
                     return (0);
@@ -117,17 +118,18 @@ static int _gettemp(char *path, int *doopen, int domkdir, int slen)
 
     for (;;) {
         if (doopen) {
-            int err = _sopen_s(doopen, path, _O_RDWR | _O_CREAT | _O_EXCL | _O_BINARY, SH_DENYNO, _S_IWRITE);
+            u8_to_wstr(path, wpath);
+            int err = _wsopen_s(doopen, wpath, _O_RDWR | _O_CREAT | _O_EXCL | _O_BINARY, SH_DENYNO, _S_IWRITE);
             if (doopen >= 0)
                 return (1);
             if (errno != EEXIST)
                 return (0);
         } else if (domkdir) {
-            if (__mkdir(path, 0700) == 0)
+            if (mkdir_u8(path, 0700) == 0)
                 return (1);
             if (errno != EEXIST)
                 return (0);
-        } else if (lstat(path, &sbuf))
+        } else if (stat_u8(path, &sbuf))
             return (errno == ENOENT);
 
         /* If we have a collision, cycle through the space of filenames */
