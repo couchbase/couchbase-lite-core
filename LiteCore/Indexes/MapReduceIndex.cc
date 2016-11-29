@@ -252,7 +252,7 @@ namespace litecore {
                     tokValue.beginArray();
                     tokValue << specialKey;
                 }
-                tokValue << i.wordOffset() << i.wordLength();
+                tokValue << (uint64_t)i.wordOffset() << (uint64_t)i.wordLength();
             }
 
             // Emit each token string and value array as a key:
