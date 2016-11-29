@@ -31,7 +31,14 @@ add_subdirectory(vendor/forestdb            EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 if(WIN32)
-    add_subdirectory(vendor/SQLiteCpp/sqlite3 EXCLUDE_FROM_ALL)
+    set(SQLITECPP_INTERNAL_SQLITE OFF)
+    add_library(sqlite3 SHARED
+     vendor/SQLiteCpp/sqlite3/sqlite3.c
+     vendor/SQLiteCpp/sqlite3/sqlite3.h
+    )
+    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS -DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4)
+    set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
+                "/def:${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def")	
 endif()
 
 
