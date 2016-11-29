@@ -13,6 +13,14 @@
 #include "PlatformCompat.hh"
 #include "Logging.hh"
 
+#ifdef DEBUG
+#define CHECK_IF_DEBUG CHECK
+#define REQUIRE_IF_DEBUG REQUIRE
+#else
+#define CHECK_IF_DEBUG(x)
+#define REQUIRE_IF_DEBUG(x)
+#endif
+
 using namespace fleece;
 
 

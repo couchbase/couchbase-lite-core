@@ -28,7 +28,9 @@ namespace litecore {
 
         // These methods provide access to private members of SequenceTracker
 
+#if DEBUG
         string dump() { return tracker.dump(); }
+#endif
 
         SequenceTracker::const_iterator since(sequence_t s) {
             return tracker._since(s);
@@ -48,19 +50,19 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker", "[notificatio
     tracker.documentChanged("A"_asl, ++seq);
     tracker.documentChanged("B"_asl, ++seq);
     tracker.documentChanged("C"_asl, ++seq);
-    REQUIRE(dump() == "[(A@1, B@2, C@3)]");
+    REQUIRE_IF_DEBUG(dump() == "[(A@1, B@2, C@3)]");
     CHECK(tracker.lastSequence() == seq);
     tracker.documentChanged("B"_asl, ++seq);
-    REQUIRE(dump() == "[(A@1, C@3, B@4)]");
+    REQUIRE_IF_DEBUG(dump() == "[(A@1, C@3, B@4)]");
     tracker.documentChanged("B"_asl, ++seq);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE(dump() == "[(A@1, C@3, B@5)]");
+    REQUIRE_IF_DEBUG(dump() == "[(A@1, C@3, B@5)]");
     tracker.documentChanged("A"_asl, ++seq);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE(dump() == "[(C@3, B@5, A@6)]");
+    REQUIRE_IF_DEBUG(dump() == "[(C@3, B@5, A@6)]");
     tracker.documentChanged("D"_asl, ++seq);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE(dump() == "[(C@3, B@5, A@6, D@7)]");
+    REQUIRE_IF_DEBUG(dump() == "[(C@3, B@5, A@6, D@7)]");
 
     REQUIRE(since(0)->docID == "C"_sl);
     REQUIRE(since(4)->docID == "B"_sl);
@@ -81,7 +83,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
     DatabaseChangeNotifier cn2(tracker, [&](DatabaseChangeNotifier&) {++count2;});
     {
         DatabaseChangeNotifier cn3(tracker, [&](DatabaseChangeNotifier&) {++count3;}, 1);
-        REQUIRE(dump() == "[(A@1, *, B@2, C@3, *, *)]");
+        REQUIRE_IF_DEBUG(dump() == "[(A@1, *, B@2, C@3, *, *)]");
 
         slice changes[5];
         bool external;
@@ -89,7 +91,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         CHECK(!external);
         CHECK(changes[0] == "B"_sl);
         CHECK(changes[1] == "C"_sl);
-        REQUIRE(dump() == "[(A@1, B@2, C@3, *, *, *)]");
+        REQUIRE_IF_DEBUG(dump() == "[(A@1, B@2, C@3, *, *, *)]");
         REQUIRE(!cn3.hasChanges());
         REQUIRE(cn3.readChanges(changes, 5, external) == 0);
 
@@ -114,10 +116,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         CHECK(count1==2);   // was notified again because it called changes() after 1st change
         CHECK(count2==1);   // wasn't because it didn't
         CHECK(count3==1);   // ditto
-        REQUIRE(dump() == "[(A@1, *, *, B@4, *, C@5)]");
+        REQUIRE_IF_DEBUG(dump() == "[(A@1, *, *, B@4, *, C@5)]");
     }
     // After cn3 is destructed:
-    REQUIRE(dump() == "[(A@1, *, B@4, *, C@5)]");
+    REQUIRE_IF_DEBUG(dump() == "[(A@1, *, B@4, *, C@5)]");
 }
 
 
@@ -188,7 +190,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     tracker.documentChanged("B"_asl, ++seq);
     tracker.documentChanged("C"_asl, ++seq);
     tracker.endTransaction(true);
-    CHECK(tracker.dump() == "[*, A@1, B@2, C@3]");
+    CHECK_IF_DEBUG(tracker.dump() == "[*, A@1, B@2, C@3]");
     numChanges = cn.readChanges(changes, 10, external);
     REQUIRE(numChanges == 3);
 
@@ -197,7 +199,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     tracker.documentChanged("B"_asl, ++seq);
     tracker.documentChanged("D"_asl, ++seq);
 
-    CHECK(tracker.dump() == "[A@1, C@3, *, (B@4, D@5)]");
+    CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, (B@4, D@5)]");
 
     // Start tracking individual document notifications:
     int countA=0, countB=0, countD=0;
@@ -216,7 +218,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
         tracker.endTransaction(true);
         CHECK(tracker.lastSequence() == 5);
 
-        CHECK(tracker.dump() == "[A@1, C@3, *, B@4, D@5]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@4, D@5]");
 
         // Make sure the committed changes appear in the feed:
         numChanges = cn.readChanges(changes, 10, external);
@@ -235,13 +237,13 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
         REQUIRE(numChanges == 2);
         CHECK(changes[0] == "B"_sl);
         CHECK(changes[1] == "D"_sl);
-        CHECK(tracker.dump() == "[A@1, C@3, (B@4, D@5, *)]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, (B@4, D@5, *)]");
 
         // Commit:
         tracker.endTransaction(true);
         CHECK(tracker.lastSequence() == 5);
 
-        CHECK(tracker.dump() == "[A@1, C@3, B@4, D@5, *]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, B@4, D@5, *]");
 
         // The commit itself shouldn't add to the feed or change the docs:
         numChanges = cn.readChanges(changes, 10, external);
@@ -254,7 +256,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     SECTION("Abort, then check feed") {
         tracker.endTransaction(false);
         CHECK(tracker.lastSequence() == 3);
-        CHECK(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
 
         numChanges = cn.readChanges(changes, 10, external);
         REQUIRE(numChanges == 2);
@@ -271,12 +273,12 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
         REQUIRE(numChanges == 2);
         CHECK(changes[0] == "B"_sl);
         CHECK(changes[1] == "D"_sl);
-        CHECK(tracker.dump() == "[A@1, C@3, (B@4, D@5, *)]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, (B@4, D@5, *)]");
 
         // Abort:
         tracker.endTransaction(false);
         CHECK(tracker.lastSequence() == 3);
-        CHECK(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
+        CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
 
         // The rolled-back docs should be in the feed again:
         numChanges = cn.readChanges(changes, 10, external);
@@ -289,6 +291,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
         CHECK(countD == 1);
     }
 }
+#define FOO(x) 
 
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
@@ -308,7 +311,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
     tracker.addExternalTransaction(track2);
     track2.endTransaction(true);
 
-    CHECK(tracker.dump() == "[A@1, C@3, B@4', Z@5']");
+    CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, B@4', Z@5']");
 
     DatabaseChangeNotifier cn(tracker, nullptr, 0);
     slice changes[10];

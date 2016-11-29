@@ -3,10 +3,7 @@ project (CppTests)
 
 set(TOP ${PROJECT_SOURCE_DIR}/../../)
 
-add_definitions(-DLITECORE_CPP_TESTS=1)
-if(NOT MSVC)
-    add_definitions(-DDEBUG)
-endif()
+add_definitions(-DLITECORE_CPP_TESTS=1 -D_USE_MATH_DEFINES)
 
 include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/

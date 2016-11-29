@@ -3,7 +3,7 @@ project (C4Tests)
 
 set(TOP ${PROJECT_SOURCE_DIR}/../../)
 
-add_definitions(-DDEBUG -DC4_TESTS)
+add_definitions(-DC4_TESTS)
 
 include_directories(${TOP}C/include/
                     ${TOP}C/
