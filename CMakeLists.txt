@@ -4,9 +4,13 @@ project (LiteCore)
 ### BUILD SETTINGS:
 
 set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_definitions(-DCMAKE)
 if(NOT MSVC)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -O0    -DDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG")
@@ -117,9 +121,15 @@ endif()
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 file(WRITE empty.cpp)
 add_library(LiteCore SHARED empty.cpp)
-target_link_libraries(LiteCore PRIVATE LiteCoreStatic
+
+if(UNIX AND NOT APPLE)
+    set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive")
+    set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive")
+endif()
+
+target_link_libraries(LiteCore PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreStatic
 								FleeceStatic 
-                                SQLite3_UnicodeSN)
+                SQLite3_UnicodeSN ${NO_WHOLE_LIBRARY_FLAG})
 								
 target_link_libraries(LiteCore PUBLIC sqlite3 forestdb)
 		   
