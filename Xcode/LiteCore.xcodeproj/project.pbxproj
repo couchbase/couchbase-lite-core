@@ -50,6 +50,9 @@
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		2722504F1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
+		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
+		273407241DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
+		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		273483C41DDA52CE00B27A8C /* breakpad_dummy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */; };
 		273483C51DDA52D200B27A8C /* superblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9C1D28929400F84E6E /* superblock.cc */; };
 		273483C61DDA539600B27A8C /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
@@ -732,6 +735,8 @@
 		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };
 		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
 		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
+		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
 		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
@@ -1521,6 +1526,8 @@
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				27E3DD351DB450B300F2872D /* Logging.cc */,
 				27E3DD361DB450B300F2872D /* Logging.hh */,
+				273407211DEE116600EA5532 /* PlatformIO.cc */,
+				273407221DEE116600EA5532 /* PlatformIO.hh */,
 				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
 				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
@@ -2187,6 +2194,7 @@
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
 				276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */,
+				273407251DEE116600EA5532 /* PlatformIO.hh in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
 				27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */,
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
@@ -2887,6 +2895,7 @@
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
 				27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */,
+				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				272230481A0815E700BFF25C /* Geohash.cc in Sources */,
@@ -3036,6 +3045,7 @@
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
+				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,

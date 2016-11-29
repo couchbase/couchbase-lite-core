@@ -17,7 +17,7 @@
 #include "Base.hh"
 #include "Logging.hh"
 #include "Error.hh"
-#include "PlatformCompat.hh"
+#include "PlatformIO.hh"
 #include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
