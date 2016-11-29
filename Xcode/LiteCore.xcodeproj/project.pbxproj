@@ -138,6 +138,8 @@
 		279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
+		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
+		279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
 		27A657A61CBC190B00A7A1D7 /* LiteCoreSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A6579C1CBC190B00A7A1D7 /* LiteCoreSwift.framework */; };
 		27A657AB1CBC190B00A7A1D7 /* DatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A657AA1CBC190B00A7A1D7 /* DatabaseTests.swift */; };
 		27A657B41CBC19E300A7A1D7 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -782,6 +784,7 @@
 		279794B31D34583A001D0F3A /* RevisionTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionTest.cc; sourceTree = "<group>"; };
 		279794B91D355A31001D0F3A /* RevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStoreTest.cc; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
+		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cpp; sourceTree = "<group>"; };
 		27A6578D1CBC189800A7A1D7 /* Base.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base.swift; sourceTree = "<group>"; };
 		27A6578E1CBC189800A7A1D7 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		27A6578F1CBC189800A7A1D7 /* DocEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocEnumerator.swift; sourceTree = "<group>"; };
@@ -1569,6 +1572,7 @@
 				274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */,
 				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
 				27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */,
+				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */,
 				27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */,
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
@@ -2597,6 +2601,7 @@
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
+				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
@@ -2658,6 +2663,7 @@
 				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
+				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,

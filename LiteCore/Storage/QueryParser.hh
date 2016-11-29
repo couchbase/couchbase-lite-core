@@ -52,11 +52,13 @@ namespace litecore {
         void parseElemMatch(slice property, const fleece::Value*);
         void parseElemMatchTerm(const std::string &key, const fleece::Value*);
         void parseFTSMatch(slice property, const fleece::Value *match);
+        size_t FTSPropertyIndex(const std::string &propertyPath);
         void writeBooleanExpr(const fleece::Value *terms, const char *op);
         void writeLiteral(const fleece::Value *literal);
         void writePropertyGetterLeftOpen(const char *fn, slice property);
         void parseSort(const fleece::Value*);
         void writeOrderBy(const fleece::Value*);
+        void writeOrderByFTSRank(slice property);
 
         std::string _tableName;
         std::string _jsonColumnName;

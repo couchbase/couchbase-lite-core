@@ -144,8 +144,10 @@ namespace litecore {
 
     void SQLiteDataFile::registerFleeceFunctions() {
         if (!_registeredFleeceFunctions) {
-            RegisterFleeceFunctions    (_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
-            RegisterFleeceEachFunctions(_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
+            auto sqlite = _sqlDb->getHandle();
+            RegisterFleeceFunctions    (sqlite, fleeceAccessor(), documentKeys());
+            RegisterFleeceEachFunctions(sqlite, fleeceAccessor(), documentKeys());
+            RegisterFTSRankFunction(sqlite);
             _registeredFleeceFunctions = true;
         }
     }

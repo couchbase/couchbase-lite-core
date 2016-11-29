@@ -350,15 +350,18 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
         t.commit();
     }
 
-    unique_ptr<Query> query{ store->compileQuery(enquotify("{`sentence`: {`$match`: `search`}}"), nullslice) };
+    unique_ptr<Query> query{ store->compileQuery(enquotify("{`sentence`: {`$match`: `search`}}"),
+                                                 enquotify("[`sentence`]")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
+    int expectedOrder[3] = {1, 2, 0};
+    int expectedTerms[3] = {3, 3, 1};
     for (QueryEnumerator e(query.get()); e.next(); ) {
         Log("key = %s", e.recordID().cString());
-        CHECK(e.fullTextTerms().size() > 0);
+        CHECK(e.fullTextTerms().size() == expectedTerms[rows]);
         for (auto term : e.fullTextTerms()) {
-            CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", rows));
-            auto word = string(strings[rows] + term.start, term.length);
+            CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
+            auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
             CHECK(word == "search");
         }
         ++rows;

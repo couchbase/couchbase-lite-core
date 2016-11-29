@@ -496,13 +496,22 @@ namespace litecore {
 #pragma mark - FULL-TEXT-SEARCH MATCH:
 
 
+    size_t QueryParser::FTSPropertyIndex(const string &propertyPath) {
+        auto i = find(_ftsProperties.begin(), _ftsProperties.end(), propertyPath);
+        if (i == _ftsProperties.end())
+            return 0;
+        return i - _ftsProperties.begin() + 1;
+    }
+
+
     void QueryParser::parseFTSMatch(slice property, const fleece::Value *match) {
         // The FTS index is a separate (virtual) table. Get the table name and add it to FROM:
         auto propertyPath = appendPaths(_propertyPath, (string)property);
-        auto i = find(_ftsProperties.begin(), _ftsProperties.end(), propertyPath);
-        size_t ftsTableNo = i - _ftsProperties.begin() + 1;
-        if (i == _ftsProperties.end())
+        size_t ftsTableNo = FTSPropertyIndex(propertyPath);
+        if (ftsTableNo == 0) {
             _ftsProperties.push_back(propertyPath);
+            ftsTableNo = _ftsProperties.size();
+        }
 
         // Write the match expression (using an implicit join):
         _sql << "(FTS" << ftsTableNo << ".text MATCH ";
@@ -561,6 +570,12 @@ namespace litecore {
         slice str = property->asString();
         if (str.size < 1)
             fail();
+
+        if (FTSPropertyIndex((string)str) > 0) {
+            writeOrderByFTSRank(str);
+            return;
+        }
+        
         bool ascending = true;
         char prefix = str.peekByte();
         if (prefix == '-' || prefix == '+') {
@@ -576,6 +591,11 @@ namespace litecore {
             _sortSQL << propertyGetter(str);
         if (!ascending)
             _sortSQL << " DESC";
+    }
+
+
+    void QueryParser::writeOrderByFTSRank(slice property) {
+        _sortSQL << "rank(matchinfo(\"" << _tableName << "::" << (string)property << "\")) DESC";
     }
 
 }
