@@ -103,7 +103,7 @@ static int _gettemp(char *path, int *doopen, int domkdir, int slen)
         for (; trv > path; --trv) {
             if (*trv == '/') {
                 *trv = '\0';
-                rval = stat_u8(path, &sbuf);
+                rval = fleece::stat_u8(path, &sbuf);
                 *trv = '/';
                 if (rval != 0)
                     return (0);
@@ -125,11 +125,11 @@ static int _gettemp(char *path, int *doopen, int domkdir, int slen)
             if (errno != EEXIST)
                 return (0);
         } else if (domkdir) {
-            if (mkdir_u8(path, 0700) == 0)
+            if (fleece::mkdir_u8(path, 0700) == 0)
                 return (1);
             if (errno != EEXIST)
                 return (0);
-        } else if (stat_u8(path, &sbuf))
+        } else if (fleece::stat_u8(path, &sbuf))
             return (errno == ENOENT);
 
         /* If we have a collision, cycle through the space of filenames */

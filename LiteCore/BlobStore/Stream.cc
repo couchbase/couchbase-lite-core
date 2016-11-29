@@ -42,7 +42,7 @@ namespace litecore {
 
 
     FileReadStream::FileReadStream(const FilePath &path, const char *mode) {
-        _file = fopen_u8(path.path().c_str(), mode);
+        _file = fleece::fopen_u8(path.path().c_str(), mode);
         if (!_file)
             error::_throwErrno();
     }

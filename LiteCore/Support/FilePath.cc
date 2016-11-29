@@ -34,6 +34,7 @@
 
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore {
 
