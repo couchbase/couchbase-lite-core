@@ -315,7 +315,7 @@ namespace litecore {
                 "INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)");
         UsingStatement u(_setLastSeqStmt);
         _setLastSeqStmt->bindNoCopy(1, store.name());
-        _setLastSeqStmt->bind(2, (int64_t)seq);
+        _setLastSeqStmt->bind(2, (long long)seq);
         _setLastSeqStmt->exec();
     }
 

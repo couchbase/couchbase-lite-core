@@ -205,7 +205,7 @@ namespace litecore {
             : compile(_getBySeqStmt,
                            "SELECT 0, deleted, key, meta, body FROM kv_@ WHERE sequence=?");
         UsingStatement u(stmt);
-        stmt.bind(1, (int64_t)seq);
+        stmt.bind(1, (long long)seq);
         if (stmt.executeStep()) {
             uint64_t offset = _capabilities.getByOffset ? seq : 0;
             bool deleted = (int)stmt.getColumn(1);
@@ -225,7 +225,7 @@ namespace litecore {
 
         auto &stmt = compile(_getByOffStmt, "SELECT key, meta, body FROM kvold_@ WHERE sequence=?");
         UsingStatement u(stmt);
-        stmt.bind(1, (int64_t)seq);
+        stmt.bind(1, (long long)seq);
         if (stmt.executeStep()) {
             updateDoc(rec, seq, seq);
             rec.setKey(columnAsSlice(stmt.getColumn(0)));
@@ -250,7 +250,7 @@ namespace litecore {
         sequence seq = 0;
         if (_capabilities.sequences) {
             seq = lastSequence() + 1;
-            _setStmt->bind(4, (int64_t)seq);
+            _setStmt->bind(4, (long long)seq);
         } else {
             _setStmt->bind(4);
         }
@@ -280,10 +280,10 @@ namespace litecore {
         int param = 1;
         if (_capabilities.softDeletes && _capabilities.sequences) {
             newSeq = lastSequence() + 1;
-            stmt->bind(param++, (int64_t)newSeq);
+            stmt->bind(param++, (long long)newSeq);
         }
         if (delSeq)
-            stmt->bind(param++, (int64_t)delSeq);
+            stmt->bind(param++, (long long)delSeq);
         else
             stmt->bindNoCopy(param++, key.buf, (int)key.size);
 

@@ -25,6 +25,7 @@
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
 #include <dirent.h>
+#include <algorithm>
 #ifdef _MSC_VER
 #include <asprintf.h>
 #else
