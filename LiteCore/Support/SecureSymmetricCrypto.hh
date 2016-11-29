@@ -99,11 +99,11 @@ namespace litecore {
 
         auto init = EVP_EncryptInit_ex;
         auto update = EVP_EncryptUpdate;
-        auto final = EVP_EncryptFinal;
+        auto final = EVP_EncryptFinal_ex;
         if (!encrypt) {
             init = EVP_DecryptInit_ex;
             update = EVP_DecryptUpdate;
-            final = EVP_DecryptFinal;
+            final = EVP_DecryptFinal_ex;
         }
 
         EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
@@ -116,7 +116,12 @@ namespace litecore {
         check(update(ctx.get(), (byte*)dst.buf, &outSize, (const byte*)src.buf, (int)src.size));
         
         int outSize2 = (int)dst.size - outSize;
-        check(final(ctx.get(), (byte*)dst.buf + outSize, &outSize2));
+        int finalResult = final(ctx.get(), (byte*)dst.buf + outSize, &outSize2);
+        if (encrypt) {
+            check(finalResult);
+        } else if (finalResult <= 0) {
+            throw error::CryptoError;
+        }
 
         return outSize + outSize2;
     }

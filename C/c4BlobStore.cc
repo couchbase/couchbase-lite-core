@@ -30,7 +30,7 @@ public:
 static inline const blobKey& internal(const C4BlobKey &key) {return *(blobKey*)&key;}
 static inline const C4BlobKey& external(const blobKey &key) {return *(C4BlobKey*)&key;}
 static SeekableReadStream* internal(C4ReadStream* s)        {return (SeekableReadStream*)s;}
-static inline C4ReadStream* external(ReadStream* s)         {return (C4ReadStream*)s;}
+static inline C4ReadStream* external(SeekableReadStream* s) {return (C4ReadStream*)s;}
 static BlobWriteStream* internal(C4WriteStream* s)          {return (BlobWriteStream*)s;}
 static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStream*)s;}
 

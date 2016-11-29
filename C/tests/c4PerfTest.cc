@@ -14,17 +14,41 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <iostream>
+#include <chrono>
+#include <thread>
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
-// Download from https://github.com/arangodb/example-datasets and update this path accordingly:
-#define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
+
 
 using namespace fleece;
 
+#ifdef _MSC_VER
+#include <Windows.h>
+static const char* getJsonFilePath()
+{
+    static char buffer[MAX_PATH] = { 0 };
+    if (buffer[0] == 0) {
+        int length = GetModuleFileName(0, buffer, MAX_PATH);
+        std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+        buffer[pos] = 0;
+        strcat_s(buffer, MAX_PATH - length, "\\..\\iTunesMusicLibrary.json");
+    }
+    return buffer;
+}
+static const char* kJSONFilePath = "..\\iTunesMusicLibrary.json";
+#define kJSONFilePath getJsonFilePath()
 
+// Download from https://github.com/arangodb/example-datasets and update this path accordingly:
+#define kLargeDataSetsDir "D:\\Couchbase\\example-datasets-master\\"
+#else
 static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 
+// Download from https://github.com/arangodb/example-datasets and update this path accordingly:
+#define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
+#endif
 
 
 struct countContext {
@@ -517,14 +541,14 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
         }
         st.printReport("Reading random docs", readNo, "doc");
     }
-    sleep(1);//TEMP
+	std::this_thread::sleep_for(std::chrono::seconds(1)); //TEMP
 }
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     // Docs look like:
     // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
-    __unused auto numDocs = importJSONLines(kLargeDataSetsDir"RandomUsers/names_300000.json", 15.0, true);
+    auto numDocs = importJSONLines(kLargeDataSetsDir"RandomUsers/names_300000.json", 15.0, true);
     const bool complete = (numDocs == 300000);
 #ifdef NDEBUG
     REQUIRE(numDocs == 300000);

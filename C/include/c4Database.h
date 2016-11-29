@@ -55,8 +55,8 @@ extern "C" {
 
     /** Underlying storage engines that can be used. */
     typedef const char* C4StorageEngine;
-    extern C4StorageEngine const kC4ForestDBStorageEngine;
-    extern C4StorageEngine const kC4SQLiteStorageEngine;
+    CBL_CORE_API extern C4StorageEngine const kC4ForestDBStorageEngine;
+    CBL_CORE_API extern C4StorageEngine const kC4SQLiteStorageEngine;
 
     /** Main database/view configuration struct. */
     typedef struct C4DatabaseConfig {

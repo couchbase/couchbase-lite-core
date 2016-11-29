@@ -259,8 +259,20 @@ namespace litecore {
         auto result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
         if (result == 0)
             return true;
+        
         if (errno == ENOENT)
             return false;
+
+#ifdef _MSC_VER
+        if (errno == EACCES) {
+            setReadOnly(false);
+            result = isDir() ? ::rmdir(path().c_str()) : unlink(path().c_str());
+            if (result == 0) {
+                return true;
+            }
+        }
+#endif
+
         error::_throwErrno();
     }
 
@@ -300,6 +312,16 @@ namespace litecore {
 
     
     void FilePath::moveTo(const string &to) const {
+#ifdef _MSC_VER
+        int result = chmod(to.c_str(), 0600);
+        if (result != 0) {
+            if (errno != ENOENT) {
+                error::_throwErrno();
+            }
+        } else {
+            check(_unlink(to.c_str()));
+        }
+#endif
         check(::rename(path().c_str(), to.c_str()));
     }
 

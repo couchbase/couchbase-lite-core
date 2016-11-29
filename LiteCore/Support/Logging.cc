@@ -19,6 +19,7 @@
 #include <time.h>
 #include <string>
 #include <sstream>
+#include <mutex>
 #if __APPLE__
 #include <sys/time.h>
 #endif
@@ -116,7 +117,7 @@ namespace litecore {
         #endif
     }
 
-
+#ifndef C4_TESTS
     string _logSlice(fleece::slice s) {
         stringstream o;
         if (s.buf == nullptr) {
@@ -133,7 +134,7 @@ namespace litecore {
         }
         return o.str();
     }
-
+#endif
 
     LogDomain* LogDomain::named(const char *name) {
         if (!name)

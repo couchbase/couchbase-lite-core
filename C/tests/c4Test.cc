@@ -200,7 +200,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 // Reads a file into memory.
 FLSlice C4Test::readFile(const char *path) {
     INFO("Opening file " << path);
-    FILE *fd = fopen(path, "r");
+    FILE *fd = fopen(path, "rb");
     REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);
     auto size = (size_t)ftello(fd);

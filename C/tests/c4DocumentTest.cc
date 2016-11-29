@@ -11,5 +11,9 @@
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
+#ifdef WIN32
+    importJSONLines("..\\names_100.json");
+#else
     importJSONLines("C/tests/names_100.json");
+#endif
 }

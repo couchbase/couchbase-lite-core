@@ -23,6 +23,7 @@
 #include "SQLiteCpp/Exception.h"
 #include <ctype.h>
 #include <algorithm>
+#include <mutex>
 
 using namespace litecore;
 
