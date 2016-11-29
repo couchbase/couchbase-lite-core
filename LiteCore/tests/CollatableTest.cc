@@ -43,7 +43,7 @@ static double randf() {
     do {
         n.u1 = (uint32_t)random();
         n.u2 = (uint32_t)random();
-    } while (isnan(n.d) || isinf(n.d));
+    } while (std::isnan(n.d) || std::isinf(n.d));
     return n.d;
 }
 
