@@ -18,7 +18,7 @@
 #include "Logging.hh"
 #include "SecureRandomize.hh"
 #include "SecureSymmetricCrypto.hh"
-#include "forestdb_endian.h"
+#include "Endian.hh"
 
 
 /*
@@ -97,7 +97,8 @@ namespace litecore {
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
 #if AES256_AVAILABLE
         DebugAssert(plaintext.size <= kFileBlockSize, "Block is too large");
-        uint64_t iv[2] = {0, _endian_encode(_blockID++)};
+        uint64_t iv[2] = {0, _endian_encode(_blockID)};
+        ++_blockID;
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
         slice ciphertext(cipherBuf, sizeof(cipherBuf));
         ciphertext.size = AES256(true,
@@ -188,7 +189,8 @@ namespace litecore {
             readSize = (size_t)(_inputLength - (_blockID * kFileBlockSize));  // don't read trailer
         size_t bytesRead = _input->read(blockBuf, readSize);
 
-        uint64_t iv[2] = {0, _endian_encode(_blockID++)};
+        uint64_t iv[2] = {0, _endian_encode(_blockID)};
+        ++_blockID;
         size_t outputSize = AES256(false,
                       slice(_key, sizeof(_key)),
                       slice(iv, sizeof(iv)),

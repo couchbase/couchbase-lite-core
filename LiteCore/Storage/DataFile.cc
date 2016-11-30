@@ -19,7 +19,7 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "forestdb_endian.h"
+#include "Endian.hh"
 #include <errno.h>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable

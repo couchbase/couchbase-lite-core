@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "Record.hh"
-#include "forestdb_endian.h"
+#include "Endian.hh"
 
 using namespace std;
 

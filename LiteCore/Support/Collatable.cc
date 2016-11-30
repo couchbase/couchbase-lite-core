@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "Collatable.hh"
-#include "forestdb_endian.h"
+#include "Endian.hh"
 #include "Geohash.hh"
 #include "Error.hh"
 #include <sstream>

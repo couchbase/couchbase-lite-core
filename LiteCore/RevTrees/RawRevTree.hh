@@ -10,7 +10,7 @@
 #include "slice.hh"
 #include "RevTree.hh"
 #include "KeyStore.hh"
-#include "forestdb_endian.h"
+#include "Endian.hh"
 
 
 namespace litecore {
