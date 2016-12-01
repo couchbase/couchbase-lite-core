@@ -247,7 +247,6 @@
 		27E89BA61D679542002C32B3 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		27E89BA71D679542002C32B3 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		27E89BA81D679542002C32B3 /* FilePath.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E89BA51D679542002C32B3 /* FilePath.hh */; };
-		27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27EF008219492BD7001BF7F3 /* Collatable.mm */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -750,7 +749,6 @@
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
 		2759BD4C1DDFB15100C263B4 /* make_unique.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = make_unique.h; sourceTree = "<group>"; };
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TreeDocument.cc; path = Database/TreeDocument.cc; sourceTree = "<group>"; };
-		275F1444195CC588009DADB2 /* VersionedDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = VersionedDocument.mm; path = ../../ObjC/VersionedDocument.mm; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequenceTracker.cc; path = Database/SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SequenceTracker.hh; path = Database/SequenceTracker.hh; sourceTree = "<group>"; };
 		276943881DCD4AAD00DB2555 /* c4Observer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Observer.h; sourceTree = "<group>"; };
@@ -769,7 +767,6 @@
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
-		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../../ObjC/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
@@ -897,7 +894,6 @@
 		27E89BA51D679542002C32B3 /* FilePath.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FilePath.hh; sourceTree = "<group>"; };
 		27E89BAB1D6A611D002C32B3 /* libsqlcipher.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlcipher.0.dylib; path = ../../../../usr/local/Cellar/sqlcipher/3.4.0/lib/libsqlcipher.0.dylib; sourceTree = "<group>"; };
 		27ECCB011D89DCDB00FA8C4A /* Doxyfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Doxyfile; sourceTree = "<group>"; };
-		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Collatable.mm; path = ../../ObjC/Collatable.mm; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
 		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
@@ -1212,10 +1208,8 @@
 			children = (
 				27E487291923F24D007D8940 /* VersionedDocument.cc */,
 				27E4872A1923F24D007D8940 /* VersionedDocument.hh */,
-				275F1444195CC588009DADB2 /* VersionedDocument.mm */,
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
-				277D19C6194CCE7A008E91EB /* RevID.mm */,
 				27E487211922A64F007D8940 /* RevTree.cc */,
 				27E487221922A64F007D8940 /* RevTree.hh */,
 				2708FE5C1CF6197D0022F721 /* RawRevTree.cc */,
@@ -1356,7 +1350,6 @@
 			children = (
 				27E4872D1924178B007D8940 /* Collatable.cc */,
 				27E4872E1924178B007D8940 /* Collatable.hh */,
-				27EF008219492BD7001BF7F3 /* Collatable.mm */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
@@ -2590,7 +2583,6 @@
 				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				274EDDF21DA2F63C003AD158 /* SQLiteIterator.cc in Sources */,
-				27EF008319492BD7001BF7F3 /* Collatable.mm in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,

@@ -34,10 +34,6 @@ namespace litecore {
         VersionedDocument(KeyStore&, slice docID);
         VersionedDocument(KeyStore&, const Record&);
 
-#ifdef __OBJC__
-        VersionedDocument(KeyStore&, NSString* docID);
-#endif
-
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
         void read();
 

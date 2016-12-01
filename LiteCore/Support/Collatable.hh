@@ -105,11 +105,6 @@ namespace litecore {
         CollatableBuilder& beginMap()                      {addTag(kMap); return *this;}
         CollatableBuilder& endMap()                        {addTag(kEndSequence); return *this;}
 
-#ifdef __OBJC__
-        CollatableBuilder(id obj);
-        CollatableBuilder& operator<< (id);
-#endif
-
         CollatableBuilder& addSpecial()                    {addTag(kSpecial); return *this;}
 
         size_t size() const                         {return _buf.size - _available.size;}
@@ -182,11 +177,6 @@ namespace litecore {
         
         std::pair<alloc_slice, alloc_slice> readFullTextKey();  // pair is <text, langCode>
         alloc_slice readGeoKey(geohash::area &outBBox);
-
-#ifdef __OBJC__
-        id readNSObject();
-        NSString* readNSString();
-#endif
 
         /** Reads (skips) an entire object of any type, returning its data in Collatable form. */
         slice read();

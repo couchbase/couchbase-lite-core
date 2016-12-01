@@ -91,10 +91,6 @@ namespace litecore {
         const Rev* operator[](revid revID) const    {return get(revID);}
         const Rev* getBySequence(sequence) const;
 
-#ifdef __OBJC__
-        const Rev* get(NSString* revID) const;
-#endif
-
         const std::vector<Rev>& allRevisions() const    {return _revs;}
         const Rev* currentRevision();
         std::vector<const Rev*> currentRevisions() const;

@@ -44,9 +44,6 @@ namespace litecore {
         bool operator< (const revid&) const;
 
         explicit operator std::string() const;
-#ifdef __OBJC__
-        explicit operator NSString*() const; // overrides slice method
-#endif
 
     private:
         slice skipFlag() const;
@@ -76,10 +73,6 @@ namespace litecore {
         void parseNew(slice s);
 
         bool tryParse(slice ascii, bool allowClock);
-
-#ifdef __OBJC__
-        explicit revidBuffer(NSString* str);
-#endif
 
     private:
         uint8_t _buffer[42];
