@@ -93,8 +93,10 @@ C4Slice C4Test::databasePath() const {
         return c4str(kTestDir "cbl_core_test");
     else if (storageType() == kC4SQLiteStorageEngine)
         return c4str(kTestDir "cbl_core_test.sqlite3");
-    else
+    else {
         FAIL("Unknown storage type");
+        return c4str(kTestDir "cbl_core_test");
+    }
 }
 
 
