@@ -31,7 +31,6 @@
 #include <unistd.h>
 #endif
 
-#include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 
 using namespace std;
@@ -62,7 +61,7 @@ namespace litecore {
 
 
     std::vector<DataFile::Factory*> DataFile::factories() {
-        return {&SQLiteDataFile::factory(), &ForestDataFile::factory()};
+        return {&SQLiteDataFile::factory()};
     }
 
 

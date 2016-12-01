@@ -51,7 +51,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_View__1open
     jstringSlice path(env, jpath), name(env, jname), version(env, jversion);
     C4DatabaseConfig config { };
     config.flags = (C4DatabaseFlags)flags;
-    config.storageEngine = kC4ForestDBStorageEngine;
+    config.storageEngine = kC4SQLiteStorageEngine;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
         return 0;
     C4Error error;

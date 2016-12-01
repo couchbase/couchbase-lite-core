@@ -12,7 +12,7 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
     * Iteration by _sequence_, reflecting the order in which changes were made to the database. (This is useful for tasks like updating indexes and replication.)
     * Optional multi-version document format that tracks history using a revision tree (as in CouchDB) or version vectors
     * Timed document expiration (as in Couchbase Server)
-    * API support for database encryption (as provided by ForestDB and SQLCipher)
+    * API support for database encryption (as provided by SQLCipher or SQLite's Encryption Extension)
     * Highly efficient [Fleece][FLEECE] binary data encoding: supports JSON data types but
       requires no parsing, making it extremely efficient to read.
 * Map/reduce indexing & querying:
@@ -31,7 +31,7 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
     * Queries don't require indexes, but will run faster if indexes are created on the document
       properties being searched for.
 * Pluggable storage engines
-    * [ForestDB][FDB] and SQLite are available by default
+    * SQLite is available by default
     * Others can be added by implementing C++ `DataFile` and `KeyStore` interfaces
 * C and C++ APIs
 * Bindings to C# and Java (may not be up-to-date with the native APIs)
@@ -93,7 +93,7 @@ The main page is then located at `Documentation/html/modules.html`.
 
 ## Status
 
-**As of October 2016:** Under heavy development. Watch out for falling I-beams! 
+**As of December 2016:** Under heavy development. Watch out for falling I-beams! 
 
 * The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac.
 * The CMake build is generally up to date but may fall behind
@@ -107,6 +107,5 @@ Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://g
 
 Like all Couchbase source code, this is released under the Apache 2 [license](LICENSE).
 
-[FDB]: https://github.com/couchbase/forestdb
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
 [FLEECE]: https://github.com/couchbaselabs/fleece

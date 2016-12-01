@@ -136,7 +136,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
                 REQUIRE(e->sequence() == (sequence)i);
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
-                if (isForestDB())
+                if (store->capabilities().getByOffset)
                     REQUIRE(e->offset() > 0);
             }
             REQUIRE(i == 101);
@@ -150,7 +150,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-            if (isForestDB())
+            if (store->capabilities().getByOffset)
                 REQUIRE(e->offset() > 0);
         }
         REQUIRE(i == 30);
@@ -163,7 +163,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-            if (isForestDB())
+            if (store->capabilities().getByOffset)
                 REQUIRE(e->offset() > 0);
         }
         REQUIRE(i == 29);
@@ -185,7 +185,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->exists() == i < 6);
             if (i < 6) {
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-                if (isForestDB())
+                if (store->capabilities().getByOffset)
                     REQUIRE(e->offset() > 0);
             }
         }

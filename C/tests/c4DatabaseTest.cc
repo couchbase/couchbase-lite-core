@@ -12,7 +12,6 @@
 #include "c4ExpiryEnumerator.h"
 #include <cmath>
 
-#include "forestdb.h"   // needed for error codes
 #include "sqlite3.h"
 
 #ifdef _MSC_VER
@@ -62,12 +61,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]"
     REQUIRE(cmsg == &buf[0]);
     REQUIRE(buf[0] == '\0');
 
-    assertMessage(ForestDBDomain, FDB_RESULT_KEY_NOT_FOUND, "key not found");
     assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
     assertMessage(LiteCoreDomain, 15, "invalid parameter");
     assertMessage(POSIXDomain, ENOENT, "No such file or directory");
     assertMessage(LiteCoreDomain, kC4ErrorIndexBusy, "index busy; can't close view");
-    assertMessage(ForestDBDomain, -1234, "unknown error");
+    assertMessage(SQLiteDomain, -1234, "unknown error");
     assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
 }
 
@@ -96,11 +94,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
 
     // Reopen with wrong storage type:
     c4log_warnOnErrors(false);
-    if (config.storageEngine == kC4SQLiteStorageEngine)
-        config.storageEngine = kC4ForestDBStorageEngine;
-    else
-        config.storageEngine = kC4SQLiteStorageEngine;
+    auto engine = config.storageEngine;
+    config.storageEngine = "b0gus";
     REQUIRE(!c4db_open(bundlePath, &config, &error));
+    config.storageEngine = engine;
 
     // Open nonexistent bundle:
     REQUIRE(!c4db_open(c4str(kTestDir "no_such_bundle"), &config, &error));

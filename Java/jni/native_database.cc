@@ -80,7 +80,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1open
 
     C4DatabaseConfig config { };
     config.flags = (C4DatabaseFlags)flags;
-    config.storageEngine = kC4ForestDBStorageEngine;
+    config.storageEngine = kC4SQLiteStorageEngine;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
         return 0;
 

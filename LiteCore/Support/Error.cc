@@ -15,7 +15,6 @@
 
 #include "Error.hh"
 #include "Logging.hh"
-#include "forestdb.h"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include <errno.h>
@@ -42,50 +41,6 @@ namespace litecore {
 
 
     struct codeMapping { int err; error::Domain domain; int code; };
-
-    // Maps ForestDB errors (fdb_error.h).
-    static const codeMapping kForestDBMapping[] = {
-        {FDB_RESULT_INVALID_ARGS,       error::LiteCore,    error::InvalidParameter},
-        {FDB_RESULT_OPEN_FAIL,          error::LiteCore,    error::CantOpenFile},
-        {FDB_RESULT_NO_SUCH_FILE,       error::LiteCore,    error::CantOpenFile},
-        {FDB_RESULT_WRITE_FAIL,         error::LiteCore,    error::IOError},
-        {FDB_RESULT_READ_FAIL,          error::LiteCore,    error::IOError},
-        {FDB_RESULT_CLOSE_FAIL,         error::LiteCore,    error::IOError},
-        {FDB_RESULT_COMMIT_FAIL,        error::LiteCore,    error::CommitFailed},
-        {FDB_RESULT_ALLOC_FAIL,         error::LiteCore,    error::MemoryError},
-        {FDB_RESULT_KEY_NOT_FOUND,      error::LiteCore,    error::NotFound},
-        {FDB_RESULT_RONLY_VIOLATION,    error::LiteCore,    error::NotWriteable},
-        {FDB_RESULT_SEEK_FAIL,          error::LiteCore,    error::IOError},
-        {FDB_RESULT_FSYNC_FAIL,         error::LiteCore,    error::IOError},
-        {FDB_RESULT_CHECKSUM_ERROR,     error::LiteCore,    error::CorruptData},
-        {FDB_RESULT_FILE_CORRUPTION,    error::LiteCore,    error::CorruptData},
-        {FDB_RESULT_INVALID_HANDLE,     error::LiteCore,    error::NotOpen},
-        {FDB_RESULT_NO_DB_HEADERS,      error::LiteCore,    error::NotADatabaseFile},
-
-        {FDB_RESULT_EPERM,              error::POSIX,       EPERM},
-        {FDB_RESULT_EIO,                error::POSIX,       EIO},
-        {FDB_RESULT_ENXIO,              error::POSIX,       ENXIO},
-        {FDB_RESULT_ENOMEM,             error::POSIX,       ENOMEM},
-        {FDB_RESULT_EACCESS,            error::POSIX,       EACCES},
-        {FDB_RESULT_EFAULT,             error::POSIX,       EFAULT},
-        {FDB_RESULT_EEXIST,             error::POSIX,       EEXIST},
-        {FDB_RESULT_ENODEV,             error::POSIX,       ENODEV},
-        {FDB_RESULT_ENOTDIR,            error::POSIX,       ENOTDIR},
-        {FDB_RESULT_EISDIR,             error::POSIX,       EISDIR},
-        {FDB_RESULT_EINVAL,             error::POSIX,       EINVAL},
-        {FDB_RESULT_ENFILE,             error::POSIX,       ENFILE},
-        {FDB_RESULT_EMFILE,             error::POSIX,       EMFILE},
-        {FDB_RESULT_EFBIG,              error::POSIX,       EFBIG},
-        {FDB_RESULT_ENOSPC,             error::POSIX,       ENOSPC},
-        {FDB_RESULT_EROFS,              error::POSIX,       EROFS},
-        {FDB_RESULT_EOPNOTSUPP,         error::POSIX,       EOPNOTSUPP},
-        {FDB_RESULT_ENOBUFS,            error::POSIX,       ENOBUFS},
-        {FDB_RESULT_ELOOP,              error::POSIX,       ELOOP},
-        {FDB_RESULT_ENAMETOOLONG,       error::POSIX,       ENAMETOOLONG},
-        {FDB_RESULT_EOVERFLOW,          error::POSIX,       EOVERFLOW},
-        {FDB_RESULT_EAGAIN,             error::POSIX,       EAGAIN},
-        {0, /*must end with err=0*/     error::LiteCore,    0},
-    };
 
     static const codeMapping kPOSIXMapping[] = {
         {ENOENT,                        error::LiteCore,    error::NotFound},
@@ -173,8 +128,6 @@ namespace litecore {
                 return litecore_errstr((LiteCoreError)code);
             case POSIX:
                 return strerror(code);
-            case ForestDB:
-                return fdb_error_msg((fdb_status)code);
             case SQLite:
                 return sqlite3_errstr(code);
             default:
@@ -202,9 +155,6 @@ namespace litecore {
         switch (domain) {
             case POSIX:
                 mapError(d, c, kPOSIXMapping);
-                break;
-            case ForestDB:
-                mapError(d, c, kForestDBMapping);
                 break;
             case SQLite:
                 mapError(d, c, kSQLiteMapping);
@@ -253,8 +203,6 @@ namespace litecore {
                 return code == NotFound || code == Deleted;
             case POSIX:
                 return code == ENOENT;
-            case ForestDB:
-                return code == FDB_RESULT_KEY_NOT_FOUND || code == FDB_RESULT_NO_DB_HEADERS;
             default:
                 return false;
         }

@@ -1,5 +1,4 @@
 EXPORTS
-kC4ForestDBStorageEngine
 kC4SQLiteStorageEngine
 
 c4SliceEqual

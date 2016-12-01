@@ -9,7 +9,6 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
-                    ${TOP}vendor/forestdb/include/libforestdb/
                     ${TOP}vendor/SQLiteCpp/include/
                 )
                     
@@ -22,7 +21,6 @@ add_executable(CppTests ${TEST_SRC})
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
-                                forestdb
                                 sqlite3
                                 SQLite3_UnicodeSN)
 if(NOT APPLE)
@@ -31,7 +29,7 @@ if(NOT APPLE)
     else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
         if(MSVC)
-            set(FilesToCopy ${TOP}build_cmake/vendor/forestdb/\$\(Configuration\)/forestdb ${TOP}build_cmake/\$\(Configuration\)/sqlite3)
+            set(FilesToCopy ${TOP}build_cmake/\$\(Configuration\)/sqlite3)
             add_custom_command(TARGET CppTests POST_BUILD
                 COMMAND ${CMAKE_COMMAND}
                 -DFilesToCopy="${FilesToCopy}"

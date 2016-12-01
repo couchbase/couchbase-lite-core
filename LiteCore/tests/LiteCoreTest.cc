@@ -7,7 +7,6 @@
 //
 
 #include "LiteCoreTest.hh"
-#include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
 #include <assert.h>
@@ -100,10 +99,7 @@ namespace fleece {
 
 
 DataFile::Factory& DataFileTestFixture::factory() {
-    if (_isForestDB)
-        return ForestDataFile::factory();
-    else
-        return SQLiteDataFile::factory();
+    return SQLiteDataFile::factory();
 }
 
 
@@ -137,9 +133,7 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 }
 
 
-DataFileTestFixture::DataFileTestFixture(int testOption)
-:_isForestDB((testOption & 1) != 0)
-{
+DataFileTestFixture::DataFileTestFixture(int testOption) {
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
     db = newDatabase(dbPath);

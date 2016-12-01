@@ -18,7 +18,6 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "ForestDataFile.hh"
 #include "SQLiteDataFile.hh"
 #include "KeyStore.hh"
 #include "Record.hh"
@@ -28,7 +27,6 @@
 #include "Collatable.hh"
 #include "FilePath.hh"
 
-CBL_CORE_API C4StorageEngine const kC4ForestDBStorageEngine = "ForestDB";
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
@@ -189,8 +187,7 @@ uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
 }
 
 bool c4_shutdown(C4Error *outError) noexcept {
-    return tryCatch(outError, []{
-        ForestDataFile::shutdown();
+    return tryCatch(outError, [] {
         SQLiteDataFile::shutdown();
     });
 }

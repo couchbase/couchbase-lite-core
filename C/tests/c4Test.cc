@@ -94,13 +94,13 @@ C4Slice C4Test::databasePath() const {
     else if (storageType() == kC4SQLiteStorageEngine)
         return c4str(kTestDir "cbl_core_test.sqlite3");
     else
-        return c4str(kTestDir "cbl_core_test.forestdb");
+        FAIL("Unknown storage type");
 }
 
 
 C4Test::C4Test(int testOption)
-:_storage((testOption & 1) ? kC4ForestDBStorageEngine : kC4SQLiteStorageEngine),
- _versioning((testOption & 2) ? kC4VersionVectors : kC4RevisionTrees),
+:_storage(kC4SQLiteStorageEngine),
+ _versioning((testOption & 1) ? kC4VersionVectors : kC4RevisionTrees),
  _bundled(true)
 {
     c4_shutdown(nullptr);

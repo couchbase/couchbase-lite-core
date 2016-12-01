@@ -33,7 +33,6 @@ endif()
 
 ### SUBMODULES:
 
-add_subdirectory(vendor/forestdb            EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 if(WIN32)
@@ -50,7 +49,6 @@ endif()
 
 include_directories("vendor/fleece/Fleece" 
                     "vendor/fleece/vendor" 
-                    "vendor/forestdb/include/libforestdb"
                     "vendor/SQLiteCpp/include"
                     "vendor/sqlite3-unicodesn")
 
@@ -63,19 +61,13 @@ add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API threa
 if (APPLE)
     # Specify that we want to use CommonCrypto:
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
-    # Configure ForestDB features, and work around compiler warning about deprecated OSSpinLock API:
-    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_CC -D_DOC_COMP -Wno-deprecated-declarations")
 
 elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
-    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL -D_DOC_COMP")
 else()
-    set_target_properties(forestdb PROPERTIES COMPILE_FLAGS "-DHAVE_GCC_ATOMICS=1 -D_CRYPTO_OPENSSL")
-    target_include_directories(forestdb PRIVATE ${OPENSSL_INCLUDE_DIR})
     include_directories(${OPENSSL_INCLUDE_DIR}
                         ${SQLITE3_WIN_INCLUDE}
                         "MSVC")
-    target_compile_options(forestdb PRIVATE /EHsc -DWIN32)
 endif()
 
 ### SOURCE FILES:
@@ -96,7 +88,6 @@ set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
 		"LiteCore/Support/EncryptedStream.cc"
 		"LiteCore/Support/Error.cc"
 		"LiteCore/Support/FilePath.cc"
-		"LiteCore/Support/ForestDBMain.c"
 		"LiteCore/Support/Logging.cc"
 		"LiteCore/Support/RefCounted.cc")
 
@@ -131,7 +122,7 @@ target_link_libraries(LiteCore PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreStatic
 								FleeceStatic 
                 SQLite3_UnicodeSN ${NO_WHOLE_LIBRARY_FLAG})
 								
-target_link_libraries(LiteCore PUBLIC sqlite3 forestdb)
+target_link_libraries(LiteCore PUBLIC sqlite3)
 		   
 
 # Mac/iOS stuff

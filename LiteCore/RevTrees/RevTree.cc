@@ -16,7 +16,6 @@
 #include "RevTree.hh"
 #include "RawRevTree.hh"
 #include "Error.hh"
-#include <forestdb.h>
 #include <algorithm>
 #include <ctype.h>
 #include <stddef.h>

@@ -53,51 +53,6 @@
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407241DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
-		273483C41DDA52CE00B27A8C /* breakpad_dummy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */; };
-		273483C51DDA52D200B27A8C /* superblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF9C1D28929400F84E6E /* superblock.cc */; };
-		273483C61DDA539600B27A8C /* api_wrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F296191EA10E00C5A8A3 /* api_wrapper.cc */; };
-		273483C71DDA53B300B27A8C /* avltree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729318E4857900A80C5A /* avltree.cc */; };
-		273483C81DDA53B300B27A8C /* blockcache.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729418E4857900A80C5A /* blockcache.cc */; };
-		273483C91DDA53B300B27A8C /* btree_fast_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */; };
-		273483CA1DDA53B300B27A8C /* btree_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729518E4857900A80C5A /* btree_kv.cc */; };
-		273483CB1DDA53B300B27A8C /* btree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729618E4857900A80C5A /* btree.cc */; };
-		273483CC1DDA53B300B27A8C /* btreeblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729718E4857900A80C5A /* btreeblock.cc */; };
-		273483CD1DDA53B300B27A8C /* btree_str_kv.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF8F1976317D006362F8 /* btree_str_kv.cc */; };
-		273483CE1DDA53B300B27A8C /* bgflusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721831BB609CD001500DF /* bgflusher.cc */; };
-		273483CF1DDA53B300B27A8C /* checksum.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721851BB609CD001500DF /* checksum.cc */; };
-		273483D01DDA53B300B27A8C /* compactor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2709F298191EA10E00C5A8A3 /* compactor.cc */; };
-		273483D11DDA53B300B27A8C /* configuration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3BD18EF263B007D8C23 /* configuration.cc */; };
-		273483D21DDA53B300B27A8C /* docio.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729818E4857900A80C5A /* docio.cc */; };
-		273483D31DDA53B300B27A8C /* encryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721891BB634F1001500DF /* encryption.cc */; };
-		273483D41DDA53B300B27A8C /* encryption_aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E7218F1BB6404C001500DF /* encryption_aes.cc */; };
-		273483D51DDA53D600B27A8C /* encryption_bogus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E721981BB66ECD001500DF /* encryption_bogus.cc */; };
-		273483D61DDA53D600B27A8C /* fdb_errors.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03501A21A331007B843E /* fdb_errors.cc */; };
-		273483D71DDA53D600B27A8C /* filemgr_ops_linux.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729918E4857900A80C5A /* filemgr_ops_linux.cc */; };
-		273483D81DDA53D600B27A8C /* filemgr_ops_windows.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */; };
-		273483D91DDA53D600B27A8C /* filemgr_ops.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729B18E4857900A80C5A /* filemgr_ops.cc */; };
-		273483DA1DDA53D600B27A8C /* filemgr.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729C18E4857900A80C5A /* filemgr.cc */; };
-		273483DB1DDA53D600B27A8C /* forestdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729D18E4857900A80C5A /* forestdb.cc */; };
-		273483DC1DDA53D600B27A8C /* hash_functions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729E18E4857900A80C5A /* hash_functions.cc */; };
-		273483DD1DDA53D600B27A8C /* hash.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750729F18E4857900A80C5A /* hash.cc */; };
-		273483DE1DDA53D600B27A8C /* hbtrie.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A018E4857900A80C5A /* hbtrie.cc */; };
-		273483DF1DDA53D600B27A8C /* iterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A118E4857900A80C5A /* iterator.cc */; };
-		273483E01DDA53D600B27A8C /* kv_instance.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46BF1A119860007BB4A4 /* kv_instance.cc */; };
-		273483E11DDA53D600B27A8C /* list.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A218E4857900A80C5A /* list.cc */; };
-		273483E21DDA53D600B27A8C /* staleblock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A994E91BF2B6C100320AF2 /* staleblock.cc */; };
-		273483E31DDA53D600B27A8C /* transaction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF007E1949297F001BF7F3 /* transaction.cc */; };
-		273483E41DDA53D600B27A8C /* version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2733A74F1BD6C78400F0FF07 /* version.cc */; };
-		273483E51DDA53D600B27A8C /* wal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072A318E4857900A80C5A /* wal.cc */; };
-		273483E61DDA53E800B27A8C /* crc32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275072DE18E4ACE100A80C5A /* crc32.cc */; };
-		273483E71DDA53E800B27A8C /* debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF93197631B1006362F8 /* debug.cc */; };
-		273483E81DDA53E800B27A8C /* memleak.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278EBF9B19763238006362F8 /* memleak.cc */; };
-		273483E91DDA53E800B27A8C /* partiallock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E03531A21A372007B843E /* partiallock.cc */; };
-		273483EA1DDA53E800B27A8C /* system_resource_stats.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */; };
-		273483EB1DDA53E800B27A8C /* time_utils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E45D001A6F01AD001A3A03 /* time_utils.cc */; };
-		273483EC1DDA53FA00B27A8C /* snappy-c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D118F5E8D8007D8C23 /* snappy-c.cc */; };
-		273483ED1DDA53FA00B27A8C /* snappy-sinksource.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D418F5E8D8007D8C23 /* snappy-sinksource.cc */; };
-		273483EE1DDA53FA00B27A8C /* snappy-stubs-internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3D618F5E8D8007D8C23 /* snappy-stubs-internal.cc */; };
-		273483EF1DDA53FA00B27A8C /* snappy.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273AD3DA18F5E8D8007D8C23 /* snappy.cc */; };
-		273483F41DDA567C00B27A8C /* libforestdb.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		27393A881C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
@@ -230,9 +185,6 @@
 		27BA04C11DC12DCA000BA8E5 /* LCDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */; };
 		27BA04CD1DC26FB9000BA8E5 /* LC_Internal.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04CC1DC26FB9000BA8E5 /* LC_Internal.mm */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		27D74A671D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
-		27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A631D4C16C200D806E0 /* ForestDataFile.cc */; };
-		27D74A691D4C16C200D806E0 /* ForestDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A641D4C16C200D806E0 /* ForestDataFile.hh */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
@@ -412,9 +364,6 @@
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
-		27FDF19B1DAD72280087B4E6 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
-		27FDF19D1DAD74B00087B4E6 /* ForestDBMain.c in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */; };
-		27FDF19F1DAD75470087B4E6 /* libforestdb.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */; };
 		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
 		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
 		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
@@ -500,13 +449,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
-		};
-		273483F51DDA568700B27A8C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FDF1901DAD6F030087B4E6;
-			remoteInfo = ForestDB;
 		};
 		27410EA9198BFD97007EE67C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -648,13 +590,6 @@
 			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
 			remoteInfo = Fleece;
 		};
-		27FDF1A01DAD75C10087B4E6 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FDF1901DAD6F030087B4E6;
-			remoteInfo = ForestDB;
-		};
 		720EA4231BA8F388002B8416 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -712,10 +647,6 @@
 		2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreTest.cc; sourceTree = "<group>"; };
 		2708FE5C1CF6197D0022F721 /* RawRevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RawRevTree.cc; sourceTree = "<group>"; };
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
-		2709F296191EA10E00C5A8A3 /* api_wrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = api_wrapper.cc; sourceTree = "<group>"; };
-		2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_var_kv_ops.h; sourceTree = "<group>"; };
-		2709F298191EA10E00C5A8A3 /* compactor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactor.cc; sourceTree = "<group>"; };
-		2709F299191EA10E00C5A8A3 /* compactor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compactor.h; sourceTree = "<group>"; };
 		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VectorDocument.cc; path = Database/VectorDocument.cc; sourceTree = "<group>"; };
 		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Document.hh; path = Database/Document.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -724,9 +655,6 @@
 		27139B2118F8E9750021A9A3 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27139BA518F8EE3A0021A9A3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		271E03501A21A331007B843E /* fdb_errors.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fdb_errors.cc; sourceTree = "<group>"; };
-		271E03531A21A372007B843E /* partiallock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = partiallock.cc; sourceTree = "<group>"; };
-		271E03541A21A372007B843E /* partiallock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = partiallock.h; sourceTree = "<group>"; };
 		272230431A0812FF00BFF25C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.1.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
 		272230461A0815E700BFF25C /* Geohash.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Geohash.cc; sourceTree = "<group>"; };
 		272230471A0815E700BFF25C /* Geohash.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Geohash.hh; sourceTree = "<group>"; };
@@ -736,15 +664,9 @@
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
 		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };
-		2733A74F1BD6C78400F0FF07 /* version.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cc; sourceTree = "<group>"; };
-		2733A7501BD6C78400F0FF07 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
-		273AD3BD18EF263B007D8C23 /* configuration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = configuration.cc; sourceTree = "<group>"; };
-		273AD3BE18EF263B007D8C23 /* configuration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = configuration.h; sourceTree = "<group>"; };
-		273AD3CD18F45E05007D8C23 /* forestdb_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = forestdb_endian.h; sourceTree = "<group>"; };
-		273AD3CE18F45E05007D8C23 /* internal_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = internal_types.h; sourceTree = "<group>"; };
 		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		273AD3D118F5E8D8007D8C23 /* snappy-c.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "snappy-c.cc"; sourceTree = "<group>"; };
 		273AD3D218F5E8D8007D8C23 /* snappy-c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-c.h"; sourceTree = "<group>"; };
@@ -775,13 +697,10 @@
 		273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib.xcconfig"; sourceTree = "<group>"; };
 		273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreJNI.xcconfig; sourceTree = "<group>"; };
 		273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = C4Tests.xcconfig; sourceTree = "<group>"; };
-		273E9FB91C519A1B003115A6 /* forestdb.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = forestdb.xcconfig; sourceTree = "<group>"; };
 		273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
 		273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release.xcconfig; sourceTree = "<group>"; };
 		273E9FBC1C519A1B003115A6 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tokenizer.xcconfig; sourceTree = "<group>"; };
-		2744151D1900E8D800964583 /* fdb_errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_errors.h; path = libforestdb/fdb_errors.h; sourceTree = "<group>"; };
-		2744151E1900E8D800964583 /* fdb_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fdb_types.h; path = libforestdb/fdb_types.h; sourceTree = "<group>"; };
 		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
@@ -818,47 +737,10 @@
 		2750723E18E3E52800A80C5A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore-Prefix.pch"; sourceTree = "<group>"; };
 		2750724C18E3E5BB00A80C5A /* libforestdb.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libforestdb.dylib; path = vendor/forestdb/build/libforestdb.dylib; sourceTree = "<group>"; };
-		2750726118E3E72900A80C5A /* option.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = option.h; sourceTree = "<group>"; };
-		2750726318E3E72900A80C5A /* arch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = arch.h; sourceTree = "<group>"; };
-		2750726518E3E72900A80C5A /* avltree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = avltree.h; sourceTree = "<group>"; };
-		2750726718E3E72900A80C5A /* blockcache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = blockcache.h; sourceTree = "<group>"; };
-		2750726A18E3E72900A80C5A /* btree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btree.h; sourceTree = "<group>"; };
-		2750726D18E3E72900A80C5A /* btree_kv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btree_kv.h; sourceTree = "<group>"; };
-		2750727018E3E72900A80C5A /* btreeblock.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = btreeblock.h; sourceTree = "<group>"; };
-		2750727218E3E72900A80C5A /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
-		2750727418E3E72900A80C5A /* docio.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = docio.h; sourceTree = "<group>"; };
-		2750727718E3E72900A80C5A /* filemgr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filemgr.h; sourceTree = "<group>"; };
-		2750727A18E3E72900A80C5A /* filemgr_ops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filemgr_ops.h; sourceTree = "<group>"; };
-		2750728118E3E72900A80C5A /* hash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hash.h; sourceTree = "<group>"; };
-		2750728418E3E72900A80C5A /* hash_functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hash_functions.h; sourceTree = "<group>"; };
-		2750728718E3E72900A80C5A /* hbtrie.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hbtrie.h; sourceTree = "<group>"; };
-		2750728B18E3E72900A80C5A /* list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
-		2750729118E3E72900A80C5A /* wal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wal.h; sourceTree = "<group>"; };
-		2750729318E4857900A80C5A /* avltree.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = avltree.cc; sourceTree = "<group>"; };
-		2750729418E4857900A80C5A /* blockcache.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = blockcache.cc; sourceTree = "<group>"; };
-		2750729518E4857900A80C5A /* btree_kv.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btree_kv.cc; sourceTree = "<group>"; };
-		2750729618E4857900A80C5A /* btree.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btree.cc; sourceTree = "<group>"; };
-		2750729718E4857900A80C5A /* btreeblock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = btreeblock.cc; sourceTree = "<group>"; };
-		2750729818E4857900A80C5A /* docio.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = docio.cc; sourceTree = "<group>"; };
-		2750729918E4857900A80C5A /* filemgr_ops_linux.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_linux.cc; sourceTree = "<group>"; };
-		2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops_windows.cc; sourceTree = "<group>"; };
-		2750729B18E4857900A80C5A /* filemgr_ops.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr_ops.cc; sourceTree = "<group>"; };
-		2750729C18E4857900A80C5A /* filemgr.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = filemgr.cc; sourceTree = "<group>"; };
-		2750729D18E4857900A80C5A /* forestdb.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = forestdb.cc; sourceTree = "<group>"; };
-		2750729E18E4857900A80C5A /* hash_functions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hash_functions.cc; sourceTree = "<group>"; };
-		2750729F18E4857900A80C5A /* hash.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hash.cc; sourceTree = "<group>"; };
-		275072A018E4857900A80C5A /* hbtrie.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hbtrie.cc; sourceTree = "<group>"; };
-		275072A118E4857900A80C5A /* iterator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = iterator.cc; sourceTree = "<group>"; };
-		275072A218E4857900A80C5A /* list.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = list.cc; sourceTree = "<group>"; };
-		275072A318E4857900A80C5A /* wal.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = wal.cc; sourceTree = "<group>"; };
 		275072AB18E4A68E00A80C5A /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		275072AF18E4A68E00A80C5A /* LiteCore Tests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "LiteCore Tests-Info.plist"; sourceTree = "<group>"; };
 		275072B118E4A68E00A80C5A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore Tests-Prefix.pch"; sourceTree = "<group>"; };
-		275072DD18E4ACE100A80C5A /* bitwise_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitwise_utils.h; sourceTree = "<group>"; };
-		275072DE18E4ACE100A80C5A /* crc32.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc32.cc; sourceTree = "<group>"; };
-		275072DF18E4ACE100A80C5A /* crc32.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
-		2750731118E6493F00A80C5A /* forestdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = forestdb.h; path = libforestdb/forestdb.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		275607781BA21DAB00F58218 /* c4View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4View.h; sourceTree = "<group>"; };
@@ -890,20 +772,10 @@
 		277D19C6194CCE7A008E91EB /* RevID.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RevID.mm; path = ../../ObjC/RevID.mm; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
-		2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = breakpad_dummy.cc; sourceTree = "<group>"; };
-		2783DF9B1D28929400F84E6E /* breakpad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = breakpad.h; sourceTree = "<group>"; };
-		2783DF9C1D28929400F84E6E /* superblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = superblock.cc; sourceTree = "<group>"; };
-		2783DF9D1D28929400F84E6E /* superblock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = superblock.h; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
-		278EBF8F1976317D006362F8 /* btree_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_str_kv.cc; sourceTree = "<group>"; };
-		278EBF901976317D006362F8 /* btree_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_str_kv.h; sourceTree = "<group>"; };
-		278EBF93197631B1006362F8 /* debug.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = debug.cc; sourceTree = "<group>"; };
-		278EBF94197631B1006362F8 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
-		278EBF9B19763238006362F8 /* memleak.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memleak.cc; sourceTree = "<group>"; };
-		278EBF9C19763238006362F8 /* memleak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memleak.h; sourceTree = "<group>"; };
 		2797949D1D305EC2001D0F3A /* Revision.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Revision.cc; sourceTree = "<group>"; };
 		2797949E1D305EC2001D0F3A /* Revision.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Revision.hh; sourceTree = "<group>"; };
 		279794A41D307626001D0F3A /* RevisionStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStore.cc; sourceTree = "<group>"; };
@@ -951,15 +823,8 @@
 		27A924A71D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924B21D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		27A994E91BF2B6C100320AF2 /* staleblock.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = staleblock.cc; sourceTree = "<group>"; };
-		27A994EA1BF2B6C100320AF2 /* staleblock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = staleblock.h; sourceTree = "<group>"; };
-		27B086BE1B3B2DD100D3D9D8 /* atomic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = atomic.h; sourceTree = "<group>"; };
-		27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = system_resource_stats.cc; sourceTree = "<group>"; };
-		27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = system_resource_stats.h; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
-		27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_fast_str_kv.cc; sourceTree = "<group>"; };
-		27B62989197ED63D00F7148E /* btree_fast_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_fast_str_kv.h; sourceTree = "<group>"; };
 		27B738001DEF65C900A8A6B1 /* LCQuery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCQuery.h; sourceTree = "<group>"; };
 		27B738011DEF65C900A8A6B1 /* LCQuery.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LCQuery.mm; sourceTree = "<group>"; };
 		27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCDocument.h; sourceTree = "<group>"; };
@@ -969,8 +834,6 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27D74A621D4C0FA600D806E0 /* Base.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Base.hh; sourceTree = "<group>"; };
-		27D74A631D4C16C200D806E0 /* ForestDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ForestDataFile.cc; sourceTree = "<group>"; };
-		27D74A641D4C16C200D806E0 /* ForestDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ForestDataFile.hh; sourceTree = "<group>"; };
 		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
 		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
@@ -992,7 +855,6 @@
 		27D74A9E1D4FF65000D806E0 /* c4Base.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Base.cc; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
-		27DF46BF1A119860007BB4A4 /* kv_instance.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kv_instance.cc; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocumentTest.cc; sourceTree = "<group>"; };
@@ -1014,8 +876,6 @@
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27E3DD541DB80A8E00F2872D /* iTunesMusicLibrary.json */ = {isa = PBXFileReference; explicitFileType = compiled; fileEncoding = 4; path = iTunesMusicLibrary.json; sourceTree = "<group>"; };
 		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = Database/Database.cc; sourceTree = "<group>"; };
-		27E45D001A6F01AD001A3A03 /* time_utils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = time_utils.cc; sourceTree = "<group>"; };
-		27E45D011A6F01AD001A3A03 /* time_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_utils.h; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
 		27E48712192171EA007D8940 /* DataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DataFile.hh; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
@@ -1033,21 +893,10 @@
 		27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DBQuery.h; sourceTree = "<group>"; };
 		27E6DFEE1DA5AFF3008EB681 /* Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Query.cc; sourceTree = "<group>"; };
 		27E6DFEF1DA5AFF3008EB681 /* Query.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Query.hh; sourceTree = "<group>"; };
-		27E721831BB609CD001500DF /* bgflusher.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bgflusher.cc; sourceTree = "<group>"; };
-		27E721841BB609CD001500DF /* bgflusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bgflusher.h; sourceTree = "<group>"; };
-		27E721851BB609CD001500DF /* checksum.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = checksum.cc; sourceTree = "<group>"; };
-		27E721861BB609CD001500DF /* checksum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = checksum.h; sourceTree = "<group>"; };
-		27E721891BB634F1001500DF /* encryption.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption.cc; sourceTree = "<group>"; };
-		27E7218A1BB634F1001500DF /* encryption.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = encryption.h; sourceTree = "<group>"; };
-		27E7218F1BB6404C001500DF /* encryption_aes.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_aes.cc; sourceTree = "<group>"; };
-		27E721981BB66ECD001500DF /* encryption_bogus.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = encryption_bogus.cc; sourceTree = "<group>"; };
-		27E721A01BB9BB38001500DF /* crypto_primitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypto_primitives.h; sourceTree = "<group>"; };
 		27E89BA41D679542002C32B3 /* FilePath.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FilePath.cc; sourceTree = "<group>"; };
 		27E89BA51D679542002C32B3 /* FilePath.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FilePath.hh; sourceTree = "<group>"; };
 		27E89BAB1D6A611D002C32B3 /* libsqlcipher.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlcipher.0.dylib; path = ../../../../usr/local/Cellar/sqlcipher/3.4.0/lib/libsqlcipher.0.dylib; sourceTree = "<group>"; };
 		27ECCB011D89DCDB00FA8C4A /* Doxyfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Doxyfile; sourceTree = "<group>"; };
-		27EF007E1949297F001BF7F3 /* transaction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transaction.cc; sourceTree = "<group>"; };
-		27EF00811949299A001BF7F3 /* fdb_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fdb_internal.h; sourceTree = "<group>"; };
 		27EF008219492BD7001BF7F3 /* Collatable.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Collatable.mm; path = ../../ObjC/Collatable.mm; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
@@ -1144,10 +993,6 @@
 		27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceEach.cc; sourceTree = "<group>"; };
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
-		27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libforestdb.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "forestdb-static.xcconfig"; sourceTree = "<group>"; };
-		27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "forestdb-dynamic.xcconfig"; sourceTree = "<group>"; };
-		27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ForestDBMain.c; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/litecore/View.java; sourceTree = "<group>"; };
 		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
@@ -1167,7 +1012,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
-				273483F41DDA567C00B27A8C /* libforestdb.dylib in Frameworks */,
 				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
 				27FA09C21D70AE45005888AA /* libsqlite3.tbd in Frameworks */,
 			);
@@ -1273,21 +1117,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FDF18E1DAD6F030087B4E6 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27FDF19B1DAD72280087B4E6 /* libc++.tbd in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		720EA3E91BA7EAD9002B8416 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				27FA09C31D70AE90005888AA /* libFleece.a in Frameworks */,
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
-				27FDF19F1DAD75470087B4E6 /* libforestdb.dylib in Frameworks */,
 				27FA09C11D70AE24005888AA /* libsqlite3.tbd in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */,
@@ -1402,9 +1237,6 @@
 				27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */,
 				273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */,
 				273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */,
-				273E9FB91C519A1B003115A6 /* forestdb.xcconfig */,
-				27FDF1981DAD701C0087B4E6 /* forestdb-static.xcconfig */,
-				27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */,
 				273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */,
 				273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */,
 				273E9FBC1C519A1B003115A6 /* Project.xcconfig */,
@@ -1488,7 +1320,6 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
-				27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */,
 				27E3DCF41DB0583E00F2872D /* LiteCoreObjC.framework */,
 				27E3DCFC1DB0583E00F2872D /* LiteCoreObjCTests.xctest */,
 			);
@@ -1540,111 +1371,9 @@
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
-				27FDF19C1DAD74B00087B4E6 /* ForestDBMain.c */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
 			);
 			path = Support;
-			sourceTree = "<group>";
-		};
-		2750725A18E3E6E100A80C5A /* forestdb */ = {
-			isa = PBXGroup;
-			children = (
-				2750725E18E3E72900A80C5A /* include */,
-				2750726018E3E72900A80C5A /* option */,
-				2750726218E3E72900A80C5A /* src */,
-				275072DB18E4ACE100A80C5A /* utils */,
-			);
-			path = forestdb;
-			sourceTree = "<group>";
-		};
-		2750725E18E3E72900A80C5A /* include */ = {
-			isa = PBXGroup;
-			children = (
-				2750731118E6493F00A80C5A /* forestdb.h */,
-				2744151D1900E8D800964583 /* fdb_errors.h */,
-				2744151E1900E8D800964583 /* fdb_types.h */,
-			);
-			path = include;
-			sourceTree = "<group>";
-		};
-		2750726018E3E72900A80C5A /* option */ = {
-			isa = PBXGroup;
-			children = (
-				2750726118E3E72900A80C5A /* option.h */,
-			);
-			path = option;
-			sourceTree = "<group>";
-		};
-		2750726218E3E72900A80C5A /* src */ = {
-			isa = PBXGroup;
-			children = (
-				2709F296191EA10E00C5A8A3 /* api_wrapper.cc */,
-				2750729318E4857900A80C5A /* avltree.cc */,
-				2750729418E4857900A80C5A /* blockcache.cc */,
-				2783DF9B1D28929400F84E6E /* breakpad.h */,
-				2783DF9A1D28929400F84E6E /* breakpad_dummy.cc */,
-				27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */,
-				2750729518E4857900A80C5A /* btree_kv.cc */,
-				2750729618E4857900A80C5A /* btree.cc */,
-				2750729718E4857900A80C5A /* btreeblock.cc */,
-				278EBF8F1976317D006362F8 /* btree_str_kv.cc */,
-				27E721831BB609CD001500DF /* bgflusher.cc */,
-				27E721851BB609CD001500DF /* checksum.cc */,
-				2709F298191EA10E00C5A8A3 /* compactor.cc */,
-				273AD3BD18EF263B007D8C23 /* configuration.cc */,
-				2750729818E4857900A80C5A /* docio.cc */,
-				27E721891BB634F1001500DF /* encryption.cc */,
-				27E7218F1BB6404C001500DF /* encryption_aes.cc */,
-				27E721981BB66ECD001500DF /* encryption_bogus.cc */,
-				271E03501A21A331007B843E /* fdb_errors.cc */,
-				2750729918E4857900A80C5A /* filemgr_ops_linux.cc */,
-				2750729A18E4857900A80C5A /* filemgr_ops_windows.cc */,
-				2750729B18E4857900A80C5A /* filemgr_ops.cc */,
-				2750729C18E4857900A80C5A /* filemgr.cc */,
-				2750729D18E4857900A80C5A /* forestdb.cc */,
-				2750729E18E4857900A80C5A /* hash_functions.cc */,
-				2750729F18E4857900A80C5A /* hash.cc */,
-				275072A018E4857900A80C5A /* hbtrie.cc */,
-				275072A118E4857900A80C5A /* iterator.cc */,
-				27DF46BF1A119860007BB4A4 /* kv_instance.cc */,
-				275072A218E4857900A80C5A /* list.cc */,
-				27A994E91BF2B6C100320AF2 /* staleblock.cc */,
-				2783DF9C1D28929400F84E6E /* superblock.cc */,
-				27EF007E1949297F001BF7F3 /* transaction.cc */,
-				2733A74F1BD6C78400F0FF07 /* version.cc */,
-				275072A318E4857900A80C5A /* wal.cc */,
-				2750726318E3E72900A80C5A /* arch.h */,
-				27B086BE1B3B2DD100D3D9D8 /* atomic.h */,
-				2750726518E3E72900A80C5A /* avltree.h */,
-				27E721841BB609CD001500DF /* bgflusher.h */,
-				2750726718E3E72900A80C5A /* blockcache.h */,
-				2750726A18E3E72900A80C5A /* btree.h */,
-				27B62989197ED63D00F7148E /* btree_fast_str_kv.h */,
-				2750726D18E3E72900A80C5A /* btree_kv.h */,
-				278EBF901976317D006362F8 /* btree_str_kv.h */,
-				2750727018E3E72900A80C5A /* btreeblock.h */,
-				2709F297191EA10E00C5A8A3 /* btree_var_kv_ops.h */,
-				27E721861BB609CD001500DF /* checksum.h */,
-				2750727218E3E72900A80C5A /* common.h */,
-				2709F299191EA10E00C5A8A3 /* compactor.h */,
-				273AD3BE18EF263B007D8C23 /* configuration.h */,
-				2750727418E3E72900A80C5A /* docio.h */,
-				27E7218A1BB634F1001500DF /* encryption.h */,
-				27EF00811949299A001BF7F3 /* fdb_internal.h */,
-				2750727718E3E72900A80C5A /* filemgr.h */,
-				2750727A18E3E72900A80C5A /* filemgr_ops.h */,
-				273AD3CD18F45E05007D8C23 /* forestdb_endian.h */,
-				2750728118E3E72900A80C5A /* hash.h */,
-				2750728418E3E72900A80C5A /* hash_functions.h */,
-				2750728718E3E72900A80C5A /* hbtrie.h */,
-				273AD3CE18F45E05007D8C23 /* internal_types.h */,
-				2750728B18E3E72900A80C5A /* list.h */,
-				27A994EA1BF2B6C100320AF2 /* staleblock.h */,
-				2783DF9D1D28929400F84E6E /* superblock.h */,
-				2733A7501BD6C78400F0FF07 /* version.h */,
-				2750729118E3E72900A80C5A /* wal.h */,
-			);
-			path = src;
 			sourceTree = "<group>";
 		};
 		275072AD18E4A68E00A80C5A /* Objective-C Tests */ = {
@@ -1665,27 +1394,6 @@
 				275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		275072DB18E4ACE100A80C5A /* utils */ = {
-			isa = PBXGroup;
-			children = (
-				27E721A01BB9BB38001500DF /* crypto_primitives.h */,
-				275072DD18E4ACE100A80C5A /* bitwise_utils.h */,
-				275072DE18E4ACE100A80C5A /* crc32.cc */,
-				275072DF18E4ACE100A80C5A /* crc32.h */,
-				278EBF93197631B1006362F8 /* debug.cc */,
-				278EBF94197631B1006362F8 /* debug.h */,
-				278EBF9B19763238006362F8 /* memleak.cc */,
-				278EBF9C19763238006362F8 /* memleak.h */,
-				271E03531A21A372007B843E /* partiallock.cc */,
-				271E03541A21A372007B843E /* partiallock.h */,
-				27B086BF1B3B2E0400D3D9D8 /* system_resource_stats.cc */,
-				27B086C01B3B2E0400D3D9D8 /* system_resource_stats.h */,
-				27E45D001A6F01AD001A3A03 /* time_utils.cc */,
-				27E45D011A6F01AD001A3A03 /* time_utils.h */,
-			);
-			path = utils;
 			sourceTree = "<group>";
 		};
 		275607791BA22E5700F58218 /* Java */ = {
@@ -1861,8 +1569,6 @@
 				27DF46C31A12CF46007BB4A4 /* Record.hh */,
 				27E609A11951E4C000202B72 /* RecordEnumerator.cc */,
 				27E609A41951E53F00202B72 /* RecordEnumerator.hh */,
-				27D74A631D4C16C200D806E0 /* ForestDataFile.cc */,
-				27D74A641D4C16C200D806E0 /* ForestDataFile.hh */,
 				27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */,
 				27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */,
 				274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */,
@@ -1882,7 +1588,6 @@
 			isa = PBXGroup;
 			children = (
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
-				2750725A18E3E6E100A80C5A /* forestdb */,
 				273AD3D018F5E8B0007D8C23 /* snappy */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
@@ -2185,20 +1890,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FDF18F1DAD6F030087B4E6 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		720EA3EF1BA7EAD9002B8416 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
-				27D74A691D4C16C200D806E0 /* ForestDataFile.hh in Headers */,
 				279794A11D305EC2001D0F3A /* Revision.hh in Headers */,
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
@@ -2246,7 +1943,6 @@
 			);
 			dependencies = (
 				2708FE541CF4CCAB0022F721 /* PBXTargetDependency */,
-				273483F61DDA568700B27A8C /* PBXTargetDependency */,
 			);
 			name = LiteCoreCppTests;
 			productName = CppTests;
@@ -2457,23 +2153,6 @@
 			productReference = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		27FDF1901DAD6F030087B4E6 /* ForestDB */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27FDF1921DAD6F030087B4E6 /* Build configuration list for PBXNativeTarget "ForestDB" */;
-			buildPhases = (
-				27FDF18D1DAD6F030087B4E6 /* Sources */,
-				27FDF18E1DAD6F030087B4E6 /* Frameworks */,
-				27FDF18F1DAD6F030087B4E6 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = ForestDB;
-			productName = ForestDB;
-			productReference = 27FDF1911DAD6F030087B4E6 /* libforestdb.dylib */;
-			productType = "com.apple.product-type.library.dynamic";
-		};
 		720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */;
@@ -2486,7 +2165,6 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
-				27FDF1A11DAD75C10087B4E6 /* PBXTargetDependency */,
 				27FA09C51D70AE96005888AA /* PBXTargetDependency */,
 				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
 			);
@@ -2543,10 +2221,6 @@
 						DevelopmentTeam = N2Q372V7W2;
 						ProvisioningStyle = Automatic;
 					};
-					27FDF1901DAD6F030087B4E6 = {
-						CreatedOnToolsVersion = 8.0;
-						ProvisioningStyle = Automatic;
-					};
 				};
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
@@ -2575,7 +2249,6 @@
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
-				27FDF1901DAD6F030087B4E6 /* ForestDB */,
 				27A6579B1CBC190B00A7A1D7 /* Swift API */,
 				27A657A41CBC190B00A7A1D7 /* Swift API Tests */,
 				27E3DCF31DB0583E00F2872D /* LiteCoreObjC */,
@@ -2922,7 +2595,6 @@
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
-				27D74A671D4C16C200D806E0 /* ForestDataFile.cc in Sources */,
 				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				273E9ED51C506DB4003115A6 /* FullTextIndex.cc in Sources */,
@@ -2949,58 +2621,6 @@
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
 				273E9F751C51612E003115A6 /* c4View.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27FDF18D1DAD6F030087B4E6 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				273483D01DDA53B300B27A8C /* compactor.cc in Sources */,
-				273483EB1DDA53E800B27A8C /* time_utils.cc in Sources */,
-				273483E01DDA53D600B27A8C /* kv_instance.cc in Sources */,
-				273483CC1DDA53B300B27A8C /* btreeblock.cc in Sources */,
-				273483C81DDA53B300B27A8C /* blockcache.cc in Sources */,
-				273483DE1DDA53D600B27A8C /* hbtrie.cc in Sources */,
-				273483E61DDA53E800B27A8C /* crc32.cc in Sources */,
-				273483E81DDA53E800B27A8C /* memleak.cc in Sources */,
-				273483E21DDA53D600B27A8C /* staleblock.cc in Sources */,
-				273483E31DDA53D600B27A8C /* transaction.cc in Sources */,
-				273483EF1DDA53FA00B27A8C /* snappy.cc in Sources */,
-				273483DD1DDA53D600B27A8C /* hash.cc in Sources */,
-				273483DC1DDA53D600B27A8C /* hash_functions.cc in Sources */,
-				273483CA1DDA53B300B27A8C /* btree_kv.cc in Sources */,
-				273483CB1DDA53B300B27A8C /* btree.cc in Sources */,
-				273483C61DDA539600B27A8C /* api_wrapper.cc in Sources */,
-				273483EA1DDA53E800B27A8C /* system_resource_stats.cc in Sources */,
-				273483ED1DDA53FA00B27A8C /* snappy-sinksource.cc in Sources */,
-				273483E91DDA53E800B27A8C /* partiallock.cc in Sources */,
-				273483E71DDA53E800B27A8C /* debug.cc in Sources */,
-				273483D51DDA53D600B27A8C /* encryption_bogus.cc in Sources */,
-				273483CD1DDA53B300B27A8C /* btree_str_kv.cc in Sources */,
-				273483C71DDA53B300B27A8C /* avltree.cc in Sources */,
-				273483E51DDA53D600B27A8C /* wal.cc in Sources */,
-				273483C91DDA53B300B27A8C /* btree_fast_str_kv.cc in Sources */,
-				273483CF1DDA53B300B27A8C /* checksum.cc in Sources */,
-				273483D91DDA53D600B27A8C /* filemgr_ops.cc in Sources */,
-				273483DF1DDA53D600B27A8C /* iterator.cc in Sources */,
-				273483EC1DDA53FA00B27A8C /* snappy-c.cc in Sources */,
-				273483DA1DDA53D600B27A8C /* filemgr.cc in Sources */,
-				273483D41DDA53B300B27A8C /* encryption_aes.cc in Sources */,
-				273483D21DDA53B300B27A8C /* docio.cc in Sources */,
-				273483EE1DDA53FA00B27A8C /* snappy-stubs-internal.cc in Sources */,
-				273483C41DDA52CE00B27A8C /* breakpad_dummy.cc in Sources */,
-				273483C51DDA52D200B27A8C /* superblock.cc in Sources */,
-				273483D81DDA53D600B27A8C /* filemgr_ops_windows.cc in Sources */,
-				273483E11DDA53D600B27A8C /* list.cc in Sources */,
-				273483DB1DDA53D600B27A8C /* forestdb.cc in Sources */,
-				273483CE1DDA53B300B27A8C /* bgflusher.cc in Sources */,
-				273483D31DDA53B300B27A8C /* encryption.cc in Sources */,
-				273483D61DDA53D600B27A8C /* fdb_errors.cc in Sources */,
-				27FDF19D1DAD74B00087B4E6 /* ForestDBMain.c in Sources */,
-				273483D11DDA53B300B27A8C /* configuration.cc in Sources */,
-				273483E41DDA53D600B27A8C /* version.cc in Sources */,
-				273483D71DDA53D600B27A8C /* filemgr_ops_linux.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3062,7 +2682,6 @@
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
-				27D74A681D4C16C200D806E0 /* ForestDataFile.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3093,11 +2712,6 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 273483F21DDA55CC00B27A8C /* PBXContainerItemProxy */;
-		};
-		273483F61DDA568700B27A8C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FDF1901DAD6F030087B4E6 /* ForestDB */;
-			targetProxy = 273483F51DDA568700B27A8C /* PBXContainerItemProxy */;
 		};
 		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3183,11 +2797,6 @@
 			isa = PBXTargetDependency;
 			name = Fleece;
 			targetProxy = 27FA09C91D70BA3C005888AA /* PBXContainerItemProxy */;
-		};
-		27FDF1A11DAD75C10087B4E6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FDF1901DAD6F030087B4E6 /* ForestDB */;
-			targetProxy = 27FDF1A01DAD75C10087B4E6 /* PBXContainerItemProxy */;
 		};
 		720EA4241BA8F388002B8416 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3657,24 +3266,6 @@
 			};
 			name = Release;
 		};
-		27FDF1931DAD6F030087B4E6 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
-			buildSettings = {
-				DYLIB_INSTALL_NAME_BASE = "@loader_path";
-				OTHER_LDFLAGS = "-all_load";
-			};
-			name = Debug;
-		};
-		27FDF1941DAD6F030087B4E6 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FDF1991DAD704C0087B4E6 /* forestdb-dynamic.xcconfig */;
-			buildSettings = {
-				DYLIB_INSTALL_NAME_BASE = "@loader_path";
-				OTHER_LDFLAGS = "-all_load";
-			};
-			name = Release;
-		};
 		720EA3F31BA7EAD9002B8416 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
@@ -3816,15 +3407,6 @@
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,
 				27EF81111917EEC600A327B9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		27FDF1921DAD6F030087B4E6 /* Build configuration list for PBXNativeTarget "ForestDB" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27FDF1931DAD6F030087B4E6 /* Debug */,
-				27FDF1941DAD6F030087B4E6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

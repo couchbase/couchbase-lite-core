@@ -55,7 +55,6 @@ extern "C" {
 
     /** Underlying storage engines that can be used. */
     typedef const char* C4StorageEngine;
-    CBL_CORE_API extern C4StorageEngine const kC4ForestDBStorageEngine;
     CBL_CORE_API extern C4StorageEngine const kC4SQLiteStorageEngine;
 
     /** Main database/view configuration struct. */
@@ -145,7 +144,7 @@ extern "C" {
     typedef void (*C4OnCompactCallback)(void *context, bool compacting);
 
     /** Registers a callback to be invoked when the database starts or finishes compacting.
-        The callback is likely to be called on a background thread owned by ForestDB, so be
+        The callback is likely to be called on a private background thread, so be
         careful of thread safety. */
     void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) C4API;
 

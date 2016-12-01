@@ -82,7 +82,7 @@ class TransactionHelper {
 // and closes & deletes it in tearDown.
 class C4Test {
 public:
-    static const int numberOfOptions = 4;
+    static const int numberOfOptions = 2;       // rev-trees or version vectors
     
     C4Test(int testOption);
     ~C4Test();
@@ -94,7 +94,6 @@ protected:
 
     const C4StorageEngine storageType() const   {return _storage;}
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
-    bool isForestDB() const                     {return storageType() == kC4ForestDBStorageEngine;}
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
     bool isVersionVectors() const               {return _versioning == kC4VersionVectors;}

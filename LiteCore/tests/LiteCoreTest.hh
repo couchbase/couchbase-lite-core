@@ -55,8 +55,6 @@ public:
     DataFileTestFixture(int testOption);
     ~DataFileTestFixture();
 
-    const bool _isForestDB;
-    bool isForestDB() {return _isForestDB;}
     DataFile::Factory& factory();
     
     DataFile *db {nullptr};

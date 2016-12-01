@@ -15,7 +15,6 @@
 
 #include "native_glue.hh"
 #include "c4Database.h"
-#include "fdb_errors.h"
 #include <assert.h>
 
 using namespace litecore::jni;
@@ -160,7 +159,7 @@ namespace litecore {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
                 fleece::slice keySlice = keyBytes;
                 if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
-                    throwError(env, C4Error{ForestDBDomain, FDB_RESULT_CRYPTO_ERROR});
+                    throwError(env, C4Error{LiteCoreDomain, kC4ErrorCrypto});
                     return false;
                 }
                 memset(outKey->bytes, 0, sizeof(outKey->bytes));
