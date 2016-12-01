@@ -31,6 +31,14 @@ namespace c4Internal {
 #pragma mark - LIFECYCLE:
 
 
+    Database* Database::newDatabase(const string &pathStr, C4DatabaseConfig config) {
+        FilePath path = (config.flags & kC4DB_Bundled)
+                            ? findOrCreateBundle(pathStr, config)
+                            : FilePath(pathStr);
+        return (new Database(path, config))->retain();
+    }
+
+
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     FilePath Database::findOrCreateBundle(const string &path, C4DatabaseConfig &config) {
         FilePath bundle {path, ""};
@@ -72,23 +80,8 @@ namespace c4Internal {
     }
 
 
-    Database* Database::newDatabase(const string &pathStr, C4DatabaseConfig config) {
-        FilePath path = (config.flags & kC4DB_Bundled)
-                            ? findOrCreateBundle(pathStr, config)
-                            : FilePath(pathStr);
-        Retained<Database> db {new Database((string)path, config)};
-        DocumentFactory* factory;
-        switch (config.versioning) {
-            case kC4VersionVectors: factory = new VectorDocumentFactory(db); break;
-            case kC4RevisionTrees:  factory = new TreeDocumentFactory(db); break;
-            default:                error::_throw(error::InvalidParameter);
-        }
-        db->_documentFactory.reset(factory);
-        return db->retain();
-    }
-
-
-    /*static*/ DataFile* Database::newDataFile(const string &path,
+    // subroutine of Database constructor that creates its _db
+    /*static*/ DataFile* Database::newDataFile(const FilePath &path,
                                                const C4DatabaseConfig &config,
                                                bool isMainDB)
     {
@@ -118,7 +111,7 @@ namespace c4Internal {
     }
 
 
-    Database::Database(const string &path,
+    Database::Database(const FilePath &path,
                        const C4DatabaseConfig &inConfig)
     :config(inConfig),
      _db(newDataFile(path, config, true)),
@@ -145,7 +138,16 @@ namespace c4Internal {
             error::_throw(error::WrongFormat);
         }
         _db->setOwner(this);
-    }
+
+        DocumentFactory* factory;
+        switch (config.versioning) {
+            case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
+            case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
+            default:                error::_throw(error::InvalidParameter);
+        }
+        _documentFactory.reset(factory);
+        _db->setRecordFleeceAccessor(factory->fleeceAccessor());
+}
 
 
     Database::~Database() {

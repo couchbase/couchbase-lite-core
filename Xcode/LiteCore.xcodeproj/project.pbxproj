@@ -160,6 +160,7 @@
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
+		276AE6951DEF86D7000A4D21 /* names_100.json in Resources */ = {isa = PBXBuildFile; fileRef = 27E3DD301DB43BAD00F2872D /* names_100.json */; };
 		276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
 		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
@@ -223,6 +224,8 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27B738021DEF65C900A8A6B1 /* LCQuery.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B738001DEF65C900A8A6B1 /* LCQuery.h */; };
+		27B738031DEF65C900A8A6B1 /* LCQuery.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B738011DEF65C900A8A6B1 /* LCQuery.mm */; };
 		27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */; };
 		27BA04C11DC12DCA000BA8E5 /* LCDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */; };
 		27BA04CD1DC26FB9000BA8E5 /* LC_Internal.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04CC1DC26FB9000BA8E5 /* LC_Internal.mm */; };
@@ -957,6 +960,8 @@
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B62988197ED63D00F7148E /* btree_fast_str_kv.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = btree_fast_str_kv.cc; sourceTree = "<group>"; };
 		27B62989197ED63D00F7148E /* btree_fast_str_kv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = btree_fast_str_kv.h; sourceTree = "<group>"; };
+		27B738001DEF65C900A8A6B1 /* LCQuery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCQuery.h; sourceTree = "<group>"; };
+		27B738011DEF65C900A8A6B1 /* LCQuery.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LCQuery.mm; sourceTree = "<group>"; };
 		27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCDocument.h; sourceTree = "<group>"; };
 		27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LCDocument.mm; sourceTree = "<group>"; };
 		27BA04C41DC12E5F000BA8E5 /* LC_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LC_Internal.h; sourceTree = "<group>"; };
@@ -1917,6 +1922,8 @@
 				27E3DD171DB0594400F2872D /* LCDatabase.mm */,
 				27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */,
 				27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */,
+				27B738001DEF65C900A8A6B1 /* LCQuery.h */,
+				27B738011DEF65C900A8A6B1 /* LCQuery.mm */,
 				27E3DD1A1DB05AD200F2872D /* StringBytes.mm */,
 				27E3DD1B1DB05AD200F2872D /* StringBytes.hh */,
 				27BA04C41DC12E5F000BA8E5 /* LC_Internal.h */,
@@ -2134,6 +2141,7 @@
 			files = (
 				27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */,
 				27E3DD181DB0594400F2872D /* LCDatabase.h in Headers */,
+				27B738021DEF65C900A8A6B1 /* LCQuery.h in Headers */,
 				27E3DD1D1DB05AD200F2872D /* StringBytes.hh in Headers */,
 				27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */,
 			);
@@ -2655,6 +2663,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				276AE6951DEF86D7000A4D21 /* names_100.json in Resources */,
 				276683A91DC7A5ED00E3F187 /* iTunesMusicLibrary.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2822,6 +2831,7 @@
 			files = (
 				27E3DD1C1DB05AD200F2872D /* StringBytes.mm in Sources */,
 				27BA04C11DC12DCA000BA8E5 /* LCDocument.mm in Sources */,
+				27B738031DEF65C900A8A6B1 /* LCQuery.mm in Sources */,
 				27E3DD191DB0594400F2872D /* LCDatabase.mm in Sources */,
 				27BA04CD1DC26FB9000BA8E5 /* LC_Internal.mm in Sources */,
 			);

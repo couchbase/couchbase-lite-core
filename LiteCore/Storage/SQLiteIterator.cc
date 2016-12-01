@@ -8,6 +8,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
+#include "Logging.hh"
 #include "Query.hh"
 #include "QueryParser.hh"
 #include "RecordEnumerator.hh"
@@ -225,7 +226,7 @@ namespace litecore {
             sql << " ORDER BY " << (orderBy.empty() ? "key" : orderBy);
             
             sql << " LIMIT $limit OFFSET $offset";
-            //cerr << "QUERY: " << sql.str() << "\n";
+            LogTo(DBLog, "QUERY: %s", sql.str().c_str());
             _statement.reset(keyStore.compile(sql.str()));
         }
 

@@ -45,7 +45,7 @@ namespace litecore {
 
 
     static const Value* evaluatePath(sqlite3_context *ctx, slice path, const Value *val) noexcept {
-        auto sharedKeys = (SharedKeys*)sqlite3_user_data(ctx);
+        auto sharedKeys = ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
         int rc = evaluatePath(path, sharedKeys, &val);
         if (rc == SQLITE_OK)
             return val;
@@ -236,7 +236,10 @@ namespace litecore {
 #pragma mark - REGISTRATION:
 
 
-    int RegisterFleeceFunctions(sqlite3 *db, fleece::SharedKeys *sharedKeys) {
+    int RegisterFleeceFunctions(sqlite3 *db,
+                                DataFile::FleeceAccessor accessor,
+                                fleece::SharedKeys *sharedKeys)
+    {
         // Adapted from json1.c in SQLite source code
         int rc = SQLITE_OK;
         unsigned int i;
@@ -253,12 +256,13 @@ namespace litecore {
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){
-            rc = sqlite3_create_function(db,
-                                         aFunc[i].zName,
-                                         aFunc[i].nArg,
-                                         SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-                                         sharedKeys,
-                                         aFunc[i].xFunc, nullptr, nullptr);
+            rc = sqlite3_create_function_v2(db,
+                                            aFunc[i].zName,
+                                            aFunc[i].nArg,
+                                            SQLITE_UTF8 | SQLITE_DETERMINISTIC,
+                                            new fleeceFuncContext{accessor, sharedKeys},
+                                            aFunc[i].xFunc, nullptr, nullptr,
+                                            [](void *param) {delete (fleeceFuncContext*)param;});
         }
         return rc;
     }

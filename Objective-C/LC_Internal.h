@@ -40,6 +40,12 @@ bool convertError(const FLError&, NSError **outError);
 @end
 
 
+static inline id _Nonnull assertNonNull(id _Nullable t) {
+    NSCAssert(t != nil, @"Unexpected nil value");
+    return (NSObject*)t;
+}
+
+
 class C4Transaction {
 public:
     C4Transaction(C4Database *db)

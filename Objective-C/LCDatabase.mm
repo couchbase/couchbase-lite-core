@@ -42,6 +42,18 @@ static const C4DatabaseConfig kDBConfig = {
 };
 
 
+static void logCallback(C4LogLevel level, C4Slice message) {
+    NSLog(@"C4Log: %.*s", (int)message.size, (char*)message.buf);
+}
+
+
++ (void) initialize {
+    if (self == [LCDatabase class]) {
+        c4log_register(kC4LogInfo, &logCallback);
+    }
+}
+
+
 - (instancetype) initWithPath: (NSString*)path
                         error: (NSError**)outError
 {
@@ -275,6 +287,23 @@ static void dbObserverCallback(C4DatabaseObserver* observer, void *context) {
         }
     } while (nChanges > 0);
 }
+
+
+#pragma mark - INDEXES:
+
+
+- (bool) createIndexOn: (NSString*)propertyPath error: (NSError**)outError {
+    stringBytes propertyBytes(propertyPath);
+    C4Error c4err;
+    return c4db_createIndex(_c4db, propertyBytes, &c4err) || convertError(c4err, outError);
+}
+
+
+- (bool) deleteIndexOn: (NSString*)propertyPath {
+    stringBytes propertyBytes(propertyPath);
+    return c4db_deleteIndex(_c4db, propertyBytes, NULL);
+}
+
 
 
 @end

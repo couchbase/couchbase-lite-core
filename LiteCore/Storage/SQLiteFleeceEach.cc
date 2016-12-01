@@ -54,7 +54,7 @@ enum {
 
 
 struct FleeceVTab : public sqlite3_vtab {
-    SharedKeys *sharedKeys;
+    fleeceFuncContext context;
 };
 
 
@@ -95,7 +95,7 @@ private:
         if( rc==SQLITE_OK ) {
             auto vtab = (FleeceVTab*) malloc(sizeof(FleeceVTab));
             if (vtab) {
-                vtab->sharedKeys = (SharedKeys*)pAux;
+                vtab->context = *(fleeceFuncContext*)pAux;
                 *ppVtab = vtab;
             } else {
                 rc = SQLITE_NOMEM;
@@ -198,14 +198,19 @@ private:
 
         // Parse the Fleece data:
         _fleeceData = valueAsSlice(argv[0]);
-        _container = Value::fromTrustedData(_fleeceData);
-        if (!_container)
+        slice data = _fleeceData;
+        if (_vtab->context.accessor)
+            data = _vtab->context.accessor(data);
+        _container = Value::fromTrustedData(data);
+        if (!_container) {
+            Warn("Invalid Fleece data in SQLite table");
             return SQLITE_MISMATCH; // failed to parse Fleece data
+        }
 
         // Evaluate the path, if there is one:
         if (idxNum == kPathIndex) {
             _rootPath = valueAsSlice(argv[1]);
-            int rc = evaluatePath(_rootPath, _vtab->sharedKeys, &_container);
+            int rc = evaluatePath(_rootPath, _vtab->context.sharedKeys, &_container);
             if (rc != SQLITE_OK)
                 return rc;
         }
@@ -237,7 +242,7 @@ private:
             case kKeyColumn: {
                 auto key = currentKey();
                 if (key && key->isInteger()) {
-                    slice str = _vtab->sharedKeys->decode((int)key->asInt());
+                    slice str = _vtab->context.sharedKeys->decode((int)key->asInt());
                     sqlite3_result_text(ctx, (const char*)str.buf, (int)str.size,
                                         SQLITE_TRANSIENT);
                 } else {
@@ -363,8 +368,15 @@ public:
 constexpr sqlite3_module FleeceCursor::kEachModule;
 
 
-int RegisterFleeceEachFunctions(sqlite3 *db, SharedKeys *sharedKeys) {
-    return sqlite3_create_module(db, "fl_each", &FleeceCursor::kEachModule, sharedKeys);
+int RegisterFleeceEachFunctions(sqlite3 *db,
+                                DataFile::FleeceAccessor accessor,
+                                SharedKeys *sharedKeys)
+{
+    return sqlite3_create_module_v2(db,
+                                    "fl_each",
+                                    &FleeceCursor::kEachModule,
+                                    new fleeceFuncContext{accessor, sharedKeys},
+                                    [](void *param){delete (fleeceFuncContext*)param;});
 }
 
 

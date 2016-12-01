@@ -127,8 +127,8 @@ namespace litecore {
 
     void SQLiteDataFile::registerFleeceFunctions() {
         if (!_registeredFleeceFunctions) {
-            RegisterFleeceFunctions(_sqlDb->getHandle(), documentKeys());
-            RegisterFleeceEachFunctions(_sqlDb->getHandle(), documentKeys());
+            RegisterFleeceFunctions(_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
+            RegisterFleeceEachFunctions(_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
             _registeredFleeceFunctions = true;
         }
     }

@@ -18,6 +18,7 @@
 #include "c4Private.h"
 
 #include "Record.hh"
+#include "RawRevTree.hh"
 #include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -270,6 +271,12 @@ namespace c4Internal {
             *outDocType = docType;
         return true;
     }
+
+
+    DataFile::FleeceAccessor TreeDocumentFactory::fleeceAccessor() const {
+        return RawRevision::getCurrentRevBody;
+    }
+
 
 
 #pragma mark - INSERTING REVISIONS

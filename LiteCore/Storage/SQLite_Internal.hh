@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "DataFile.hh"
 #include <memory>
 
 struct sqlite3;
@@ -41,7 +42,7 @@ namespace litecore {
     };
 
 
-    int RegisterFleeceFunctions(sqlite3 *db, fleece::SharedKeys*);
-    int RegisterFleeceEachFunctions(sqlite3 *db, fleece::SharedKeys*);
+    int RegisterFleeceFunctions(sqlite3 *db, DataFile::FleeceAccessor, fleece::SharedKeys*);
+    int RegisterFleeceEachFunctions(sqlite3 *db, DataFile::FleeceAccessor, fleece::SharedKeys*);
 
 }

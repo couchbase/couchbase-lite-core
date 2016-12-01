@@ -9,6 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "LCDatabase.h"
 #import "LCDocument.h"
+#import "LCQuery.h"
 #import "c4Base.h"
 
 
@@ -282,6 +283,44 @@
     XCTAssert(ok);
 
     [self waitForExpectationsWithTimeout: 5 handler: NULL];
+}
+
+
+- (void) test08_Query {
+    NSString* path = [[NSBundle bundleForClass: [self class]] pathForResource: @"names_100" ofType: @"json"];
+    XCTAssert(path);
+    NSString* contents = (NSString*)[NSString stringWithContentsOfFile: path encoding: NSUTF8StringEncoding error: NULL];
+    XCTAssert(contents);
+    __block int n = 0;
+    [db inTransaction: NULL do: ^bool{
+        [contents enumerateLinesUsingBlock: ^(NSString *line, BOOL *stop) {
+            LCDocument* doc = [self->db documentWithID: [NSString stringWithFormat: @"person-%d", ++n]];
+            doc.properties = [NSJSONSerialization JSONObjectWithData: (NSData*)[line dataUsingEncoding: NSUTF8StringEncoding] options: 0 error: NULL];
+            NSError* error;
+            XCTAssert([doc save: &error]);
+        }];
+        return true;
+    }];
+
+    NSError* error;
+    LCQuery* q = [[LCQuery alloc] initWithDatabase: db
+                                             where: @{@"name.first": @[@1]}
+                                           orderBy: nil error: &error];
+    XCTAssert(q, @"Couldn't create query: %@", error);
+    q.parameters = @{@"1": @"Claude"};
+    NSEnumerator* e = [q run: &error];
+    XCTAssert(e);
+    n = 0;
+    for (LCQueryRow *row in e) {
+        ++n;
+        NSLog(@"Row: docID='%@', sequence=%llu", row.documentID, row.sequence);
+        XCTAssertEqualObjects(row.documentID, @"person-9");
+        XCTAssertEqual(row.sequence, 9);
+        LCDocument* doc = row.document;
+        XCTAssertEqualObjects(doc.documentID, @"person-9");
+        XCTAssertEqual(doc.sequence, 9);
+    }
+    XCTAssertEqual(n, 1);
 }
 
 

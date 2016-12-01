@@ -19,6 +19,14 @@ using namespace std;
 // http://www.sqlite.org/json1.html#jeach
 
 
+static slice flip(slice s) {
+    uint8_t* bytes = (uint8_t*)s.buf;
+    for (size_t i = 0; i < s.size; ++i)
+        bytes[i] ^= 0xFF;
+    return s;
+}
+
+
 class SQLiteFunctionsTest {
 public:
 
@@ -30,14 +38,15 @@ public:
         // Run test once with shared keys, once without:
         if (which & 1)
             sharedKeys = make_unique<SharedKeys>();
-        RegisterFleeceFunctions(db.getHandle(), sharedKeys.get());
-        RegisterFleeceEachFunctions(db.getHandle(), sharedKeys.get());
+        RegisterFleeceFunctions(db.getHandle(), flip, sharedKeys.get());
+        RegisterFleeceEachFunctions(db.getHandle(), flip, sharedKeys.get());
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {
         auto body = JSONConverter::convertJSON(slice(json), sharedKeys.get());
+        flip(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();

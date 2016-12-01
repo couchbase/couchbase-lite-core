@@ -57,6 +57,12 @@ namespace litecore {
         const FilePath& filePath() const noexcept;
         const Options& options() const noexcept              {return _options;}
 
+        // Callback that takes a record body and returns the portion of it containing Fleece data
+        typedef slice (*FleeceAccessor)(slice recordBody);
+
+        void setRecordFleeceAccessor(FleeceAccessor a)      {_fleeceAccessor = a;}
+        FleeceAccessor fleeceAccessor() const               {return _fleeceAccessor;}
+
         virtual bool isOpen() const noexcept =0;
 
         /** Throws an exception if the database is closed. */
@@ -199,6 +205,7 @@ namespace litecore {
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
+        FleeceAccessor          _fleeceAccessor;                // Callback to get Fleece data from a record
     };
 
 

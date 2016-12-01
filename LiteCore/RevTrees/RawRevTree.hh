@@ -26,6 +26,8 @@ namespace litecore {
 
         static alloc_slice encodeTree(const std::vector<Rev> &revs);
 
+        static slice getCurrentRevBody(slice raw_tree) noexcept;
+
     private:
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
@@ -50,6 +52,8 @@ namespace litecore {
         bool isValid() const {
             return size != 0;
         }
+
+        slice body() const;
 
         const RawRevision *next() const {
             return (const RawRevision*)fleece::offsetby(this, _dec32(size));

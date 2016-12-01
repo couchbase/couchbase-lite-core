@@ -49,6 +49,12 @@ namespace litecore {
     }
 
 
+    slice RawRevision::getCurrentRevBody(slice raw_tree) noexcept {
+        const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
+        return rawRev->body();
+    }
+
+
     alloc_slice RawRevision::encodeTree(const std::vector<Rev> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
@@ -66,6 +72,7 @@ namespace litecore {
         Assert((&dst->size + 1) == result.end());
         return result;
     }
+
 
     size_t RawRevision::sizeToWrite(const Rev &rev) {
         size_t size = offsetof(RawRevision, revID) + rev.revID.size + SizeOfVarInt(rev.sequence);
@@ -122,6 +129,19 @@ namespace litecore {
                 size_t nBytes = GetUVarInt(buf, &dst.oldBodyOffset);
                 buf.moveStart(nBytes);
             }
+        }
+    }
+
+
+    slice RawRevision::body() const {
+        if (this->flags & RawRevision::kHasData) {
+            const void* end = this->next();
+            const void *data = offsetby(&this->revID, this->revIDLen);
+            uint64_t sequence;
+            data = offsetby(data, GetUVarInt(slice(data, end), &sequence));
+            return slice(data, end);
+        } else {
+            return nullslice;
         }
     }
 

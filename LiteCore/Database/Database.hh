@@ -97,7 +97,7 @@ namespace c4Internal {
         void saved(Document*);
 
         // these should be private, but are also used by c4View
-        static DataFile* newDataFile(const string &path,
+        static DataFile* newDataFile(const FilePath &path,
                                      const C4DatabaseConfig &config,
                                      bool isMainDB);
         static void rekeyDataFile(DataFile* database, const C4EncryptionKey *newKey);
@@ -109,7 +109,7 @@ namespace c4Internal {
         void externalTransactionCommitted(const SequenceTracker&);
 
     private:
-        Database(const string &path,
+        Database(const FilePath &path,
                  const C4DatabaseConfig &config);
         static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
 
@@ -143,6 +143,8 @@ namespace c4Internal {
                                  C4DocumentFlags*,
                                  alloc_slice *revID =nullptr,
                                  slice *docType =nullptr) =0;
+        virtual DataFile::FleeceAccessor fleeceAccessor() const {return nullptr;}
+
     private:
         Database* const _db;
     };
@@ -158,6 +160,7 @@ namespace c4Internal {
                          C4DocumentFlags*,
                          alloc_slice *revID =nullptr,
                          slice *docType =nullptr) override;
+        DataFile::FleeceAccessor fleeceAccessor() const override;
     };
 
 

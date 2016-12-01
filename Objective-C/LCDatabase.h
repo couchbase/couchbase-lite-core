@@ -62,6 +62,9 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
 - (bool) inTransaction: (NSError**)outError do: (bool (^)())block;
 
 
+//////// DOCUMENTS:
+
+
 - (nullable LCDocument*) documentWithID: (NSString*)docID;
 - (nullable LCDocument*) objectForKeyedSubscript: (NSString*)docID;
 
@@ -75,6 +78,14 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
 @property (readonly, nonatomic) NSSet<LCDocument*>* unsavedDocuments;
 
 - (bool) saveAllDocuments: (NSError**)outError;
+
+
+//////// INDEXES:
+
+
+- (bool) createIndexOn: (NSString*)propertyPath
+                 error: (NSError**)error;
+- (bool) deleteIndexOn: (NSString*)propertyPath;
 
 @end
 
