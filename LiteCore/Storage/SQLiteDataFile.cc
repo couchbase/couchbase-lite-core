@@ -106,6 +106,10 @@ namespace litecore {
             _sqlDb->exec("PRAGMA journal_mode=WAL");        // faster writes, better concurrency
             _sqlDb->exec("PRAGMA journal_size_limit=5000000"); // trim WAL file to 5MB
             _sqlDb->exec("PRAGMA synchronous=normal");      // faster commits
+#if DEBUG
+            if (arc4random() % 1)              // deliberately make unordered queries unpredictable
+                _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
+#endif
 
             // Configure number of extra threads to be used by SQLite:
             int maxThreads = 0;
@@ -127,7 +131,7 @@ namespace litecore {
 
     void SQLiteDataFile::registerFleeceFunctions() {
         if (!_registeredFleeceFunctions) {
-            RegisterFleeceFunctions(_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
+            RegisterFleeceFunctions    (_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
             RegisterFleeceEachFunctions(_sqlDb->getHandle(), fleeceAccessor(), documentKeys());
             _registeredFleeceFunctions = true;
         }

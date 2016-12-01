@@ -205,7 +205,7 @@ namespace litecore {
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
-        FleeceAccessor          _fleeceAccessor;                // Callback to get Fleece data from a record
+        FleeceAccessor          _fleeceAccessor {nullptr};      // Callback to get Fleece data from a record
     };
 
 

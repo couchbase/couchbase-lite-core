@@ -33,12 +33,22 @@ extern "C" {
         Queries are currently not supported on databases whose documents use revision trees.
         @param database  The database to be queried.
         @param queryExpression  JSON data describing a predicate that documents must match.
+                    The syntax is too complex to describe here; see full documentation elsewhere.
         @param sortExpression  Optional JSON array of strings, describing the property path(s)
                     to sort by. The first path is the primary sort, the second secondary, etc.
-                    A path can be prefixed with "-" to denote descending order.
+                    A path can be prefixed with "-" to denote descending order, or "+" (a no-op.)
+
                     The special path "_id" denotes the document ID, and "_sequence" denotes the
                     sequence number.
-                    If this is left null, results are ordered by document ID.
+
+                    An empty array suppresses sorting; this is slightly faster, but the order of
+                    results is _undefined_ and should be assumed to be randomized.
+
+                    As a convenience, the JSON may be a single string, which is treated as though
+                    it were a one-element array. (Of course, it's still JSON, so it must still
+                    be enclosed in double-quotes and escaped.)
+     
+                    If this parameter is left null, results are ordered by document ID.
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
     C4Query* c4query_new(C4Database *database,
@@ -74,7 +84,9 @@ extern "C" {
      @{ */
 
 
-    /** Creates an index on a document property, to speed up subsequent compiled queries.
+    /** Creates an index on a document property, to speed up subsequent queries.
+        Nested properties can be indexed, but their values must be scalar (string, number, bool.)
+        It's fine if not every document in the database has such a property.
         @param database  The database to index.
         @param expression  The property to index: a path expression such as "address.street"
                             or "coords[0]".

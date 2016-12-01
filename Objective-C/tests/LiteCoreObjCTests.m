@@ -302,25 +302,32 @@
         return true;
     }];
 
-    NSError* error;
-    LCQuery* q = [[LCQuery alloc] initWithDatabase: db
-                                             where: @{@"name.first": @[@1]}
-                                           orderBy: nil error: &error];
-    XCTAssert(q, @"Couldn't create query: %@", error);
-    q.parameters = @{@"1": @"Claude"};
-    NSEnumerator* e = [q run: &error];
-    XCTAssert(e);
-    n = 0;
-    for (LCQueryRow *row in e) {
-        ++n;
-        NSLog(@"Row: docID='%@', sequence=%llu", row.documentID, row.sequence);
-        XCTAssertEqualObjects(row.documentID, @"person-9");
-        XCTAssertEqual(row.sequence, 9);
-        LCDocument* doc = row.document;
-        XCTAssertEqualObjects(doc.documentID, @"person-9");
-        XCTAssertEqual(doc.sequence, 9);
+    for (int pass = 0; pass < 2; ++pass) {
+        NSError* error;
+        LCQuery* q = [[LCQuery alloc] initWithDatabase: db
+                                                 where: @{@"name.first": @[@1]}
+                                               orderBy: nil error: &error];
+        XCTAssert(q, @"Couldn't create query: %@", error);
+        q.parameters = @{@"1": @"Claude"};
+        NSEnumerator* e = [q run: &error];
+        XCTAssert(e);
+        n = 0;
+        for (LCQueryRow *row in e) {
+            ++n;
+            NSLog(@"Row: docID='%@', sequence=%llu", row.documentID, row.sequence);
+            XCTAssertEqualObjects(row.documentID, @"person-9");
+            XCTAssertEqual(row.sequence, 9);
+            LCDocument* doc = row.document;
+            XCTAssertEqualObjects(doc.documentID, @"person-9");
+            XCTAssertEqual(doc.sequence, 9);
+        }
+        XCTAssertEqual(n, 1);
+
+        if (pass == 0) {
+            XCTAssert([db createIndexOn: @"name.first" error: &error]);
+        }
     }
-    XCTAssertEqual(n, 1);
+    XCTAssert([db deleteIndexOn: @"name.first"]);
 }
 
 

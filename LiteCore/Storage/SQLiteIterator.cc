@@ -223,7 +223,8 @@ namespace litecore {
                    " WHERE (" << qp.whereClause() << ")";
 
             auto orderBy = qp.orderByClause();
-            sql << " ORDER BY " << (orderBy.empty() ? "key" : orderBy);
+            if (!orderBy.empty())
+                sql << " ORDER BY " << orderBy;
             
             sql << " LIMIT $limit OFFSET $offset";
             LogTo(DBLog, "QUERY: %s", sql.str().c_str());

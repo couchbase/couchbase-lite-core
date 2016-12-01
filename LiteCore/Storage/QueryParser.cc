@@ -488,9 +488,9 @@ namespace litecore {
 
 
     void QueryParser::parseSort(const Value *expr) {
-        if (!expr)
-            return;
-        switch (expr->type()) {
+        if (!expr) {
+            _sortSQL << "key";
+        } else switch (expr->type()) {
             case kString:
                 writeOrderBy(expr);
                 break;
