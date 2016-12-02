@@ -96,7 +96,7 @@ namespace c4Internal {
             if (!_versionedDoc.revsAvailable()) {
                 WITH_LOCK(_db);
                 _versionedDoc.read();
-                _selectedRev = _versionedDoc.currentRevision();
+                selectRevision(_versionedDoc.currentRevision());
             }
         }
 
@@ -109,14 +109,7 @@ namespace c4Internal {
 
         bool loadSelectedRevBodyIfAvailable() override {
             loadRevisions();
-            if (_selectedRev && !selectedRev.body.buf) {
-                WITH_LOCK(_db);
-                _loadedBody = _selectedRev->readBody();
-                selectedRev.body = _loadedBody;
-                if (!_loadedBody.buf)
-                    return false;           // compacted away
-            }
-            return true;
+            return selectedRev.body.buf != nullptr;
         }
 
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
@@ -127,7 +120,7 @@ namespace c4Internal {
                 selectedRev.revID = _selectedRevIDBuf;
                 selectedRev.flags = (C4RevisionFlags)rev->flags;
                 selectedRev.sequence = rev->sequence;
-                selectedRev.body = rev->inlineBody();
+                selectedRev.body = rev->body();
                 return true;
             } else {
                 clearSelectedRevision();

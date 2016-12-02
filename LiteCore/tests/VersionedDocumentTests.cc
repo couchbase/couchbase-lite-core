@@ -90,7 +90,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     REQUIRE(rev);
     REQUIRE(httpStatus == 201);
     REQUIRE(rev->revID == rev1ID);
-    REQUIRE(rev->inlineBody() == rev1Data);
+    REQUIRE(rev->body() == rev1Data);
     REQUIRE(rev->parent() == (const Rev*)nullptr);
     REQUIRE_FALSE(rev->isDeleted());
 
@@ -100,7 +100,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     REQUIRE(rev2);
     REQUIRE(httpStatus == 201);
     REQUIRE(rev2->revID == rev2ID);
-    REQUIRE(rev2->inlineBody() == rev2Data);
+    REQUIRE(rev2->body() == rev2Data);
     REQUIRE_FALSE(rev2->isDeleted());
 
     tree.sort();
@@ -122,7 +122,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
 
     alloc_slice ext = tree.encode();
 
-    RevTree tree2(ext, 12, 1234);
+    RevTree tree2(ext, 12);
 }
 
 

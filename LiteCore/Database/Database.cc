@@ -88,7 +88,6 @@ namespace c4Internal {
         DataFile::Options options { };
         if (isMainDB) {
             options.keyStores.sequences = options.keyStores.softDeletes = true;
-            options.keyStores.getByOffset = (config.versioning == kC4RevisionTrees);
         }
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;

@@ -32,7 +32,6 @@ namespace litecore {
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
             kPublicPersistentFlags = (Rev::kLeaf | Rev::kDeleted | Rev::kHasAttachments),
-            kHasBodyOffset = 0x40,  /**< Does this raw rev have a file position (oldBodyOffset)? */
             kHasData       = 0x80,  /**< Does this raw rev contain JSON data? */
         };
 
@@ -45,9 +44,6 @@ namespace litecore {
         // varint       sequence
         // if HasData flag:
         //    char      data[];       // Contains the revision body (JSON)
-        // else:
-        //    varint    oldBodyOffset;  // Points to record that has the body (0 if none)
-        //    varint    body_size;
 
         bool isValid() const {
             return size != 0;

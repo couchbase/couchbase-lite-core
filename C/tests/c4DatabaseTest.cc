@@ -225,9 +225,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Dat
         REQUIRE(doc->selectedRev.revID == kRevID);
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)1);
         REQUIRE(doc->selectedRev.body == kC4SliceNull);
+#if 1
+        // No longer keeping non-leaf revisions around. --jpa 12/1/2016
+        REQUIRE(!c4doc_hasRevisionBody(doc));
+#else
         REQUIRE(c4doc_hasRevisionBody(doc));
         REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
         REQUIRE(doc->selectedRev.body == kBody);
+#endif
         REQUIRE(!c4doc_selectParentRevision(doc));
         c4doc_free(doc);
 

@@ -31,9 +31,8 @@ namespace litecore {
         revid           revID;      /**< Revision ID (compressed) */
         sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
-        inline slice inlineBody() const;     /**< Body if stored in Revision, or null if not */
-        inline bool isBodyAvailable() const; /**< Is body inline or loadable from an earlier record? */
-        inline alloc_slice readBody() const; /**< Reads body from earlier record if necessary */
+        slice body() const          {return _body;}
+        bool isBodyAvailable() const {return _body.buf != nullptr;}
 
         bool isLeaf() const         {return (flags & kLeaf) != 0;}
         bool isDeleted() const      {return (flags & kDeleted) != 0;}
@@ -59,8 +58,7 @@ namespace litecore {
     private:
         static const uint16_t kNoParent = UINT16_MAX;
         
-        slice       body;           /**< Revision body (JSON), or empty if not stored in this tree*/
-        uint64_t    oldBodyOffset;  /**< File offset of record containing revision body, or else 0 */
+        slice       _body;           /**< Revision body (JSON), or empty if not stored in this tree*/
         uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
 
         void addFlag(Flags f)      {flags = (Flags)(flags | f);}
@@ -77,10 +75,10 @@ namespace litecore {
     class RevTree {
     public:
         RevTree() { }
-        RevTree(slice raw_tree, sequence seq, uint64_t recordOffset);
+        RevTree(slice raw_tree, sequence seq);
         virtual ~RevTree() { }
 
-        void decode(slice raw_tree, sequence seq, uint64_t recordOffset);
+        void decode(slice raw_tree, sequence seq);
 
         alloc_slice encode();
 
@@ -112,6 +110,8 @@ namespace litecore {
 
         unsigned prune(unsigned maxDepth);
 
+        void removeNonLeafBodies();
+
         /** Removes a leaf revision and any of its ancestors that aren't shared with other leaves. */
         int purge(revid);
         int purgeAll();
@@ -125,8 +125,8 @@ namespace litecore {
 #endif
 
     protected:
-        virtual bool isBodyOfRevisionAvailable(const Rev*, uint64_t atOffset) const;
-        virtual alloc_slice readBodyOfRevision(const Rev*, uint64_t atOffset) const;
+        virtual bool isBodyOfRevisionAvailable(const Rev*) const;
+        virtual alloc_slice readBodyOfRevision(const Rev*) const;
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
@@ -139,7 +139,6 @@ namespace litecore {
         void compact();
         RevTree(const RevTree&) = delete;
 
-        uint64_t    _bodyOffset {0};     // File offset of body this tree was read from
         bool        _sorted {true};         // Are the revs currently sorted?
         std::vector<Rev> _revs;
         std::vector<alloc_slice> _insertedData;
@@ -147,16 +146,5 @@ namespace litecore {
         bool _changed {false};
         bool _unknown {false};
     };
-
-
-    inline bool Rev::isBodyAvailable() const {
-        return owner->isBodyOfRevisionAvailable(this, oldBodyOffset);
-    }
-    inline alloc_slice Rev::readBody() const {
-        return owner->readBodyOfRevision(this, oldBodyOffset);
-    }
-    inline slice Rev::inlineBody() const {
-        return body;
-    }
 
 }

@@ -75,12 +75,10 @@ namespace litecore {
 
 
     size_t RawRevision::sizeToWrite(const Rev &rev) {
-        size_t size = offsetof(RawRevision, revID) + rev.revID.size + SizeOfVarInt(rev.sequence);
-        if (rev.body.size > 0)
-            size += rev.body.size;
-        else if (rev.oldBodyOffset > 0)
-            size += SizeOfVarInt(rev.oldBodyOffset);
-        return size;
+        return offsetof(RawRevision, revID)
+             + rev.revID.size
+             + SizeOfVarInt(rev.sequence)
+             + rev._body.size;
     }
 
     RawRevision* RawRevision::copyFrom(const Rev &rev) {
@@ -91,19 +89,13 @@ namespace litecore {
         this->parentIndex = htons(rev.parentIndex);
 
         uint8_t dstFlags = rev.flags & RawRevision::kPublicPersistentFlags;
-        if (rev.body.size > 0)
+        if (rev._body.size > 0)
             dstFlags |= RawRevision::kHasData;
-        else if (rev.oldBodyOffset > 0)
-            dstFlags |= RawRevision::kHasBodyOffset;
         this->flags = (Rev::Flags)dstFlags;
 
         void *dstData = offsetby(&this->revID[0], rev.revID.size);
         dstData = offsetby(dstData, PutUVarInt(dstData, rev.sequence));
-        if (this->flags & RawRevision::kHasData) {
-            memcpy(dstData, rev.body.buf, rev.body.size);
-        } else if (this->flags & RawRevision::kHasBodyOffset) {
-            /*dstData +=*/ PutUVarInt(dstData, rev.oldBodyOffset);
-        }
+        memcpy(dstData, rev._body.buf, rev._body.size);
 
         return (RawRevision*)offsetby(this, revSize);
     }
@@ -117,19 +109,10 @@ namespace litecore {
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
         data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));
-        dst.oldBodyOffset = 0;
-        if (this->flags & RawRevision::kHasData) {
-            dst.body.buf = (char*)data;
-            dst.body.size = (char*)end - (char*)data;
-        } else {
-            dst.body.buf = nullptr;
-            dst.body.size = 0;
-            if (this->flags & RawRevision::kHasBodyOffset) {
-                slice buf = {(void*)data, (size_t)((uint8_t*)end-(uint8_t*)data)};
-                size_t nBytes = GetUVarInt(buf, &dst.oldBodyOffset);
-                buf.moveStart(nBytes);
-            }
-        }
+        if (this->flags & RawRevision::kHasData)
+            dst._body = slice(data, end);
+        else
+            dst._body = nullslice;
     }
 
 

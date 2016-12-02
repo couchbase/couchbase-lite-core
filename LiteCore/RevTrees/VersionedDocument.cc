@@ -49,7 +49,7 @@ namespace litecore {
     void VersionedDocument::decode() {
         _unknown = false;
         if (_rec.body().buf)
-            RevTree::decode(_rec.body(), _rec.sequence(), _rec.offset());
+            RevTree::decode(_rec.body(), _rec.sequence());
         else if (_rec.bodySize() > 0)
             _unknown = true;        // i.e. rec was read as meta-only
 
@@ -123,39 +123,14 @@ namespace litecore {
         Assert(meta.size == 0);
     }
 
-    bool VersionedDocument::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {
-        if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
-            return true;
-        if (atOffset == 0 || atOffset >= _rec.offset())
-            return false;
-        VersionedDocument oldVersDoc(_db, _db.getByOffsetNoErrors(atOffset, rev->sequence));
-        if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
-            return false;
-        const Rev* oldRev = oldVersDoc.get(rev->revID);
-        return (oldRev && RevTree::isBodyOfRevisionAvailable(oldRev, atOffset));
-    }
-
-    alloc_slice VersionedDocument::readBodyOfRevision(const Rev* rev, uint64_t atOffset) const {
-        if (RevTree::isBodyOfRevisionAvailable(rev, atOffset))
-            return RevTree::readBodyOfRevision(rev, atOffset);
-        if (atOffset == 0 || atOffset >= _rec.offset())
-            return alloc_slice();
-        VersionedDocument oldVersDoc(_db, _db.getByOffsetNoErrors(atOffset, rev->sequence));
-        if (!oldVersDoc.exists() || oldVersDoc.sequence() != rev->sequence)
-            return alloc_slice();
-        const Rev* oldRev = oldVersDoc.get(rev->revID);
-        if (!oldRev)
-            return alloc_slice();
-        return alloc_slice(oldRev->inlineBody());
-    }
-
     void VersionedDocument::save(Transaction& transaction) {
         if (!_changed)
             return;
         updateMeta();
         if (currentRevision()) {
-            // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions into
-            // the existing body buffer.
+            removeNonLeafBodies();
+            // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions
+            // into the existing body buffer.
             auto result = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
             _rec.updateSequence(result.seq);
         } else {

@@ -31,29 +31,17 @@
 namespace litecore {
     using namespace fleece;
 
-    RevTree::RevTree(slice raw_tree, sequence seq, uint64_t recordOffset)
-    :_bodyOffset(recordOffset),
-     _revs(RawRevision::decodeTree(raw_tree, this, seq))
+    RevTree::RevTree(slice raw_tree, sequence seq)
+    :_revs(RawRevision::decodeTree(raw_tree, this, seq))
     {
     }
 
-    void RevTree::decode(litecore::slice raw_tree, sequence seq, uint64_t recordOffset) {
-        _bodyOffset = recordOffset;
+    void RevTree::decode(litecore::slice raw_tree, sequence seq) {
         _revs = RawRevision::decodeTree(raw_tree, this, seq);
     }
 
     alloc_slice RevTree::encode() {
         sort();
-        if (_bodyOffset > 0) {
-            for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
-                if (rev->body.size > 0 && !(rev->isLeaf() || rev->isNew())) {
-                    // Prune body of an already-saved rev that's no longer a leaf:
-                    rev->body.buf = nullptr;
-                    rev->body.size = 0;
-                    rev->oldBodyOffset = _bodyOffset;
-                }
-            }
-        }
         return RawRevision::encodeTree(_revs);
     }
 
@@ -155,13 +143,13 @@ namespace litecore {
         return h;
     }
 
-    bool RevTree::isBodyOfRevisionAvailable(const Rev* rev, uint64_t atOffset) const {
-        return rev->body.buf != nullptr; // VersionedDocument overrides this
+    bool RevTree::isBodyOfRevisionAvailable(const Rev* rev) const {
+        return rev->_body.buf != nullptr; // VersionedDocument overrides this
     }
 
-    alloc_slice RevTree::readBodyOfRevision(const Rev* rev, uint64_t atOffset) const {
-        if (rev->body.buf != nullptr)
-            return alloc_slice(rev->body);
+    alloc_slice RevTree::readBodyOfRevision(const Rev* rev) const {
+        if (rev->_body.buf != nullptr)
+            return alloc_slice(rev->_body);
         return alloc_slice(); // VersionedDocument overrides this
     }
 
@@ -194,9 +182,8 @@ namespace litecore {
         Rev newRev;
         newRev.owner = this;
         newRev.revID = revID;
-        newRev.body = body;
+        newRev._body = body;
         newRev.sequence = 0; // Sequence is unknown till record is saved
-        newRev.oldBodyOffset = 0; // Body position is unknown till record is saved
         newRev.flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew);
         if (deleted)
             newRev.addFlag(Rev::kDeleted);
@@ -303,6 +290,14 @@ namespace litecore {
             _insert(history[0], data, parent, deleted, hasAttachments);
         }
         return commonAncestorIndex;
+    }
+
+    // Prune body of already-saved revs that are no longer leaves:
+    void RevTree::removeNonLeafBodies() {
+        for (auto rev = _revs.begin(); rev != _revs.end(); ++rev) {
+            if (rev->_body.size > 0 && !(rev->isLeaf() || rev->isNew()))
+                rev->_body = nullslice;
+        }
     }
 
     unsigned RevTree::prune(unsigned maxDepth) {
