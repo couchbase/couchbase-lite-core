@@ -22,9 +22,9 @@
 
 // for nonstandard strlcat():
 #include <string.h>
-#if defined(linux) || defined(__linux__)
+#if !defined(__ANDROID__) && (defined(linux) || defined(__linux__))
 #include <bsd/string.h>
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(__ANDROID__)
 #include "strlcat.h"
 #endif
 

@@ -47,7 +47,11 @@ namespace litecore {
     static const char  kSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
+#ifdef __ANDROID__
+    static const char* kTempDir = "/data/local/tmp/";
+#else
     static const char* kTempDir = "/tmp/";
+#endif
 #endif
 
 
@@ -243,10 +247,10 @@ namespace litecore {
     }
 
 
-    FilePath FilePath::mkTempFile(const string &suffix, FILE* *outHandle) const {
+    FilePath FilePath::mkTempFile(FILE* *outHandle) const {
         char templ[1024]; // MAXPATHLEN
-        sprintf(templ, "%sXXXXXX%s", path().c_str(), suffix.c_str());
-        int fd = mkstemps(templ, (int)suffix.length());
+        sprintf(templ, "%sXXXXXX", path().c_str());
+        int fd = mkstemp(templ);
         if (fd < 0)
             error::_throwErrno();
         if (outHandle)

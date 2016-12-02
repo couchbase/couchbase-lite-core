@@ -21,30 +21,34 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} /O2 /DNDEBUG")
 endif()
 
-if(WIN32)
-    set(_ENCRYPTION openssl)
+if(WIN32 OR ANDROID)
     if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015")
         set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/x86/)
     elseif(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015 Win64")
         set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/amd64/)
+    elseif(ANDROID)
+        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/android/${CMAKE_ANDROID_ARCH_ABI}/)
     endif()
     set(OPENSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/include)
-    set(SQLITE3_WIN_INCLUDE ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
+    set(SQLITE3_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
+    include(FindOpenSSL)
 endif()
 
 ### SUBMODULES:
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
-if(WIN32)
+if(WIN32 OR ANDROID)
     set(SQLITECPP_INTERNAL_SQLITE OFF)
     add_library(sqlite3 SHARED
      vendor/SQLiteCpp/sqlite3/sqlite3.c
      vendor/SQLiteCpp/sqlite3/sqlite3.h
     )
     set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS -DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4)
-    set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
+    if(WIN32)
+        set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
                 "/def:${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def")	
+    endif()
 endif()
 
 
@@ -63,12 +67,16 @@ if (APPLE)
     # Specify that we want to use CommonCrypto:
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
 
-elseif(UNIX)
+  elseif(UNIX AND NOT ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
 else()
     include_directories(${OPENSSL_INCLUDE_DIR}
-                        ${SQLITE3_WIN_INCLUDE}
-                        "MSVC")
+      ${SQLITE3_INCLUDE_DIR})
+    if(WIN32)
+      include_directories("MSVC")
+    elseif(ANDROID)
+      include_directories("LiteCore/Android")
+    endif()
 endif()
 
 ### SOURCE FILES:
@@ -108,6 +116,8 @@ if(MSVC)
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
 			     MSVC/memmem.cc MSVC/mkstemps.cc MSVC/strlcat.c MSVC/strlcat.c
 			     MSVC/vasprintf-msvc.c)
+elseif(ANDROID)
+  set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/strlcat.c)
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
@@ -132,9 +142,13 @@ if (APPLE)
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
     target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation" 
                                     "-framework Foundation")
-elseif(UNIX)
+elseif(UNIX AND NOT ANDROID)
     target_link_libraries(LiteCore PRIVATE crypto  bsd)
     add_custom_command(TARGET LiteCore COMMAND ./strip.sh)
+elseif(ANDROID)
+   target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_OPENSSL)
+    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} "atomic")
+    add_custom_command(TARGET LiteCore COMMAND ./strip.sh ${CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX})
 else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS

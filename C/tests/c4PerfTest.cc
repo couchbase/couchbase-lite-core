@@ -25,7 +25,7 @@
 
 using namespace fleece;
 
-#ifdef CMAKE
+#if defined(CMAKE) && !defined(__ANDROID__)
 static const char* kJSONFilePath = "../../../C/tests/iTunesMusicLibrary.json";
 #else
 static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
@@ -34,6 +34,8 @@ static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 // Download from https://github.com/arangodb/example-datasets and update this path accordingly:
 #ifdef WIN32
 #define kLargeDataSetsDir "D:\\Couchbase\\example-datasets-master\\"
+#elif defined(__ANDROID__)
+#define kLargeDataSetsDir "Couchbase/example-datasets-master/"
 #else
 #define kLargeDataSetsDir "/Couchbase/example-datasets-master/"
 #endif

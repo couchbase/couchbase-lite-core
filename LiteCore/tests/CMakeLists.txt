@@ -24,8 +24,10 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 sqlite3
                                 SQLite3_UnicodeSN)
 if(NOT APPLE)
-    if(UNIX)
+    if(UNIX AND NOT ANDROID)
         target_link_libraries(CppTests  crypto  bsd)
+    elseif(ANDROID)
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
     else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
         if(MSVC)

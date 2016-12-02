@@ -93,7 +93,7 @@ namespace litecore {
                 strcat(source, " ");
                 strcat(source, name);
             }
-            __android_log_write(kLevels[level], source, message);
+            __android_log_write(kLevels[(int)level], source, message);
         #else
             #if __APPLE__
                 struct timeval tv;

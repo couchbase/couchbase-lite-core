@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(__ANDROID__)
      #include <bsd/stdlib.h>
 #endif
 

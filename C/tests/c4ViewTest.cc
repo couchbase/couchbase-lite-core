@@ -363,7 +363,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View QueryFullTextIndex", "[View][C]") {
 class QueryTest : public C4Test {
 public:
     QueryTest() :C4Test(2) {  // always use SQLite + version vectors
-#ifdef CMAKE
+#if defined(CMAKE) && !defined(__ANDROID__)
         importJSONLines("../../../C/tests/names_100.json");
 #else
         importJSONLines("C/tests/names_100.json");
