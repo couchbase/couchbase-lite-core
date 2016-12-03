@@ -1,4 +1,5 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.1)
+cmake_policy(VERSION 3.1)
 project (LiteCore)
 
 ### BUILD SETTINGS:
@@ -129,7 +130,7 @@ target_link_libraries(LiteCore PUBLIC sqlite3)
 if (APPLE)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
-    target_link_libraries(LiteCore  "-framework CoreFoundation" 
+    target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation" 
                                     "-framework Foundation")
 elseif(UNIX)
     target_link_libraries(LiteCore  crypto  bsd)
