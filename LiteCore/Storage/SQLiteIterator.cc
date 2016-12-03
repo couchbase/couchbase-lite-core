@@ -130,9 +130,9 @@ namespace litecore {
         writeSQLOptions(sql, options);
 
         auto st = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
-        st->bind(1, (int64_t)min);
+        st->bind(1, (long long)min);
         if (max < INT64_MAX)
-            st->bind(2, (int64_t)max);
+            st->bind(2, (long long)max);
         return new SQLiteIterator(st, options.descending, options.contentOptions);
     }
 
@@ -147,11 +147,11 @@ namespace litecore {
         :_statement(statement)
         {
             _statement->clearBindings();
-            int64_t offset = 0, limit = -1;
+            long long offset = 0, limit = -1;
             if (options) {
                 offset = options->skip;
                 if (options->limit <= INT64_MAX)
-                    limit = (int64_t)options->limit;
+                    limit = options->limit;
                 if (options->paramBindings.buf)
                     bindParameters(options->paramBindings);
             }
@@ -177,7 +177,7 @@ namespace litecore {
                     case kBoolean:
                     case kNumber:
                         if (val->isInteger() && !val->isUnsigned())
-                            _statement->bind(key, val->asInt());
+                            _statement->bind(key, (long long)val->asInt());
                         else
                             _statement->bind(key, val->asDouble());
                         break;
