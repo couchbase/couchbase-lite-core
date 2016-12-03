@@ -28,4 +28,6 @@ if(MSVC)
         -DFilesToCopy="${FilesToCopy}"
         -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
         -P ${TOP}MSVC/copy_artifacts.cmake)
+elseif(UNIX AND NOT APPLE)
+    target_link_libraries(C4Tests "pthread")
 endif()
