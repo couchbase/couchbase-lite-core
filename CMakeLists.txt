@@ -133,7 +133,7 @@ if (APPLE)
     target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation" 
                                     "-framework Foundation")
 elseif(UNIX)
-    target_link_libraries(LiteCore  crypto  bsd)
+    target_link_libraries(LiteCore PRIVATE crypto  bsd)
     add_custom_command(TARGET LiteCore COMMAND ./strip.sh)
 else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
