@@ -71,7 +71,7 @@ namespace litecore {
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         std::string subst(const char *sqlTemplate) const;
-        std::stringstream selectFrom(const RecordEnumerator::Options &options);
+        void selectFrom(std::stringstream& in, const RecordEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options &options);
         void setLastSequence(sequence seq);
         void writeSQLIndexName(const std::string &propertyPath, std::stringstream &sql);

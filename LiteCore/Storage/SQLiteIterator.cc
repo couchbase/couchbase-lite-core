@@ -47,15 +47,13 @@ namespace litecore {
     };
 
 
-    stringstream SQLiteKeyStore::selectFrom(const RecordEnumerator::Options &options) {
-        stringstream sql;
-        sql << "SELECT sequence, deleted, key, meta";
+    void SQLiteKeyStore::selectFrom(stringstream& in, const RecordEnumerator::Options &options) {
+        in << "SELECT sequence, deleted, key, meta";
         if (options.contentOptions & kMetaOnly)
-            sql << ", length(body)";
+            in << ", length(body)";
         else
-            sql << ", body";
-        sql << " FROM kv_" << name();
-        return sql;
+            in << ", body";
+        in << " FROM kv_" << name();
     }
 
     void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options &options) {
@@ -77,7 +75,8 @@ namespace litecore {
     RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
                                                            RecordEnumerator::Options &options)
     {
-        stringstream sql = selectFrom(options);
+        stringstream sql;
+        selectFrom(sql, options);
         bool noDeleted = _capabilities.softDeletes && !options.includeDeleted;
         if (minKey.buf || maxKey.buf || noDeleted) {
             sql << " WHERE ";
@@ -120,7 +119,8 @@ namespace litecore {
             _createdSeqIndex = true;
         }
 
-        stringstream sql = selectFrom(options);
+        stringstream sql;
+        selectFrom(sql, options);
         sql << (options.inclusiveMin() ? " WHERE sequence >= ?" : " WHERE sequence > ?");
         if (max < INT64_MAX)
             sql << (options.inclusiveMax() ? " AND sequence <= ?"   : " AND sequence < ?");

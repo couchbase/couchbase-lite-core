@@ -109,20 +109,20 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "CreateRevs", "[RevisionStore]") {
 N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "InsertRevs", "[RevisionStore]") {
     Transaction t(db);
     Revision rev1(kDoc1ID, VersionVector("5@bob,1@ada"_sl),
-                  Revision::BodyParams{kBody1}, true);
+                  kBody1, true);
     REQUIRE(store->insert(rev1, t) == kNewer);
 
     Revision rev2(kDoc1ID, VersionVector("4@bob"_sl),
-                  Revision::BodyParams{kBody1}, true);
+                  kBody1, true);
     REQUIRE(store->insert(rev2, t) == kOlder);
 
     Revision rev3(kDoc1ID, VersionVector("1@ada"_sl),
-                  Revision::BodyParams{kBody1}, true);
+                  kBody1, true);
     REQUIRE(store->insert(rev3, t) == kOlder);
 
     // Newer revision by another author:
     Revision rev4(kDoc1ID, VersionVector("2@ada,5@bob"_sl),
-                  Revision::BodyParams{kBody1}, true);
+                  kBody1, true);
     REQUIRE(store->insert(rev4, t) == kNewer);
 
     auto gotRev = store->get(kDoc1ID, "2@ada"_sl);
@@ -144,7 +144,7 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "Conflict", "[RevisionStore]") {
     // Start with a doc edited by me and Ada:
     Transaction t(db);
     Revision rev1(kDoc1ID, VersionVector("5@*,1@ada"_sl),
-                  Revision::BodyParams{kBody1}, true);
+                  kBody1, true);
     REQUIRE(store->insert(rev1, t) == kNewer);
 
     // Update it locally:
@@ -154,7 +154,7 @@ N_WAY_TEST_CASE_METHOD(RevisionStoreTest, "Conflict", "[RevisionStore]") {
 
     // Ada updates the original doc too:
     Revision revC(kDoc1ID, VersionVector("2@ada,5@*"_sl),
-                  Revision::BodyParams{kBody3}, true);
+                  kBody3, true);
     REQUIRE(store->insert(revC, t) == kConflicting);
 
     // Check that we can get both my rev and the conflicting one:
