@@ -15,6 +15,7 @@
 #include "Error.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -27,8 +28,10 @@ namespace litecore {
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
                                                     " WHERE type='table' AND name GLOB 'kv_*'"));
         while (allStores.executeStep()) {
-            names.push_back(allStores.getColumn(0));
+            string storeName = allStores.getColumn(0).getString();
+            names.push_back(storeName);
         }
+        
         return names;
     }
 

@@ -11,6 +11,8 @@
 #include "c4DocEnumerator.h"
 #include "c4ExpiryEnumerator.h"
 #include <cmath>
+#include <errno.h>
+#include <iostream>
 
 #include "sqlite3.h"
 

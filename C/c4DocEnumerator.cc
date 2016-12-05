@@ -178,8 +178,10 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
         vector<string> docIDStrings;
-        for (size_t i = 0; i < docIDsCount; ++i)
-            docIDStrings.push_back((string)docIDs[i]);
+        for (size_t i = 0; i < docIDsCount; ++i) {
+            string docID = (string)docIDs[i];
+            docIDStrings.push_back(docID);
+        }
         WITH_LOCK(database);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
