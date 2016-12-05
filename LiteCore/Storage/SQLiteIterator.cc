@@ -15,6 +15,7 @@
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "Fleece.hh"
+#include "Path.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
 #include <iostream>
@@ -151,9 +152,12 @@ namespace litecore {
 
             stringstream sql;
             sql << "SELECT sequence, key, meta, length(body)";
-            _ftsPaths = qp.ftsTableNames(); //FIX
-            for (auto ftsTable : qp.ftsTableNames())
-                sql << ", offsets(" << ftsTable << ")";
+            _ftsProperties = qp.ftsProperties();
+            for (auto property : _ftsProperties) {
+                if (!keyStore.hasIndex(property, KeyStore::kFullTextIndex))
+                    error::_throw(error::LiteCore, error::NoSuchIndex);
+                sql << ", offsets(\"" << keyStore.tableName() << "::" << property << "\")";
+            }
             sql << " FROM " << qp.fromClause() <<
                    " WHERE (" << qp.whereClause() << ")";
 
@@ -166,6 +170,24 @@ namespace litecore {
             _statement.reset(keyStore.compile(sql.str()));
         }
 
+
+        alloc_slice matchedText(slice recordID, sequence_t seq) override {
+            alloc_slice result;
+            if (_ftsProperties.size() > 0) {
+                keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
+                    if (rec.body() && rec.sequence() == seq) {
+                        auto root = fleece::Value::fromTrustedData(rec.body());
+                        //TODO: Support multiple FTS properties in a query
+                        auto textObj = fleece::Path::eval(_ftsProperties[0], nullptr, root);
+                        if (textObj)
+                            result = textObj->asString();
+                    }
+                });
+            }
+            return result;
+        }
+        
+        
     protected:
         QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override;
         
@@ -175,7 +197,7 @@ namespace litecore {
         friend class SQLiteQueryEnumImpl;
 
         shared_ptr<SQLite::Statement> _statement;
-        vector<string> _ftsPaths;
+        vector<string> _ftsProperties;
     };
 
 
@@ -255,8 +277,24 @@ namespace litecore {
         }
 
         bool hasFullText() override {
-            return _statement->getColumnCount() < 5;
+            return _statement->getColumnCount() >= 5;
         }
+
+        void getFullTextTerms(std::vector<QueryEnumerator::FullTextTerm>& terms) override {
+            terms.clear();
+            // The offsets() function returns a string of space-separated numbers in groups of 4.
+            const char *str = _statement->getColumn(4);
+            while (*str) {
+                uint32_t n[4];
+                for (int i = 0; i < 4; ++i) {
+                    char *next;
+                    n[i] = (uint32_t)strtol(str, &next, 10);
+                    str = next;
+                }
+                terms.push_back({n[1], n[2], n[3]});    // {term #, byte offset, byte length}
+            }
+         }
+
 
     private:
         SQLiteQuery &_query;

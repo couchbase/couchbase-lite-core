@@ -15,6 +15,7 @@
 
 #include "Error.hh"
 #include "Logging.hh"
+#include "FleeceException.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include <errno.h>
@@ -44,6 +45,7 @@ namespace litecore {
 
     static const codeMapping kPOSIXMapping[] = {
         {ENOENT,                        error::LiteCore,    error::NotFound},
+        {0, /*must end with err=0*/     error::LiteCore,    0},
     };
 
     static const codeMapping kSQLiteMapping[] = {
@@ -62,6 +64,13 @@ namespace litecore {
     };
     //TODO: Map the SQLite 'extended error codes' that give more detail about file errors
 
+    static const codeMapping kFleeceMapping[] = {
+        {fleece::MemoryError,           error::LiteCore,    error::MemoryError},
+        {fleece::JSONError,             error::LiteCore,    error::InvalidQuery},
+        {fleece::PathSyntaxError,       error::LiteCore,    error::InvalidQuery},
+        {0, /*must end with err=0*/     error::Fleece,      0},
+    };
+
     static bool mapError(error::Domain &domain, int &code, const codeMapping table[]) {
         for (const codeMapping *row = &table[0]; row->err != 0; ++row) {
             if (row->err == code) {
@@ -78,7 +87,7 @@ namespace litecore {
     static const char* kDomainNames[] = {"LiteCore", "POSIX", "ForestDB", "SQLite"};
 
     static const char* litecore_errstr(error::LiteCoreError code) {
-        static const char* kLiteCoreMessages[error::NumLiteCoreErrors] = {
+        static const char* kLiteCoreMessages[] = {
             // These must match up with the codes in the declaration of LiteCoreError
             "no error", // 0
             "assertion failed",
@@ -113,7 +122,10 @@ namespace litecore {
             "file/data is not in the requested format",
             "encryption/decryption error",
             "query syntax error",
+            "missing database index",
         };
+        static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
+                        error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
         const char *str = nullptr;
         if (code < sizeof(kLiteCoreMessages)/sizeof(char*))
             str = kLiteCoreMessages[code];
@@ -159,6 +171,9 @@ namespace litecore {
             case SQLite:
                 mapError(d, c, kSQLiteMapping);
                 break;
+            case Fleece:
+                mapError(d, c, kFleeceMapping);
+                break;
             default:
                 return *this;
         }
@@ -184,6 +199,9 @@ namespace litecore {
         auto se = dynamic_cast<const SQLite::Exception*>(&re);
         if (se)
             return error(SQLite, se->getErrorCode());
+        auto fe = dynamic_cast<const fleece::FleeceException*>(&re);
+        if (fe)
+            return error(Fleece, fe->code);
         return unexpectedException(re);
     }
 

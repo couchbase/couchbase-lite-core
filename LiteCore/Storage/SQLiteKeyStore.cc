@@ -35,14 +35,7 @@ namespace litecore {
 
 
     bool SQLiteDataFile::keyStoreExists(const string &name) {
-        checkOpen();
-        SQLite::Statement storeExists(*_sqlDb, string("SELECT * FROM sqlite_master"
-                                                      " WHERE type='table' AND name=?"));
-        storeExists.bind(1, string("kv_") + name);
-        LogStatement(storeExists);
-        bool exists = storeExists.executeStep();
-        storeExists.reset();
-        return exists;
+        return tableExists(string("kv_") + name);
     }
 
 
@@ -339,7 +332,7 @@ namespace litecore {
     // Returns a SQL string containing a unique name for the index with the given path.
     string SQLiteKeyStore::SQLFTSTableName(const string &propertyPath) {
         stringstream sql;
-        sql << '"' << tableName() << "::" << stripPathDollar(propertyPath) << '"';
+        sql << tableName() << "::" << stripPathDollar(propertyPath);
         return sql.str();
     }
 
@@ -363,14 +356,15 @@ namespace litecore {
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
                 auto tableName = SQLFTSTableName(propertyExpression);
-                db().exec(string("CREATE VIRTUAL TABLE ") + tableName + " USING fts4(text)");
+                db().exec(string("CREATE VIRTUAL TABLE \"") + tableName + "\" USING fts4(text)");
                 // TODO: Use tokenizer
 
-                //TODO:  Index existing records:
+                // Index existing records:
+                db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::propertyGetter(propertyExpression, "body") + " FROM kv_" + name());
 
                 // Set up triggers to keep the FTS5 table up to date:
-                string ins = "INSERT INTO " + tableName + "(rowid, text) VALUES (new.sequence, " + QueryParser::propertyGetter(propertyExpression, "new.body") + "); ";
-                string del = "DELETE FROM " + tableName + " WHERE rowid = old.sequence; ";
+                string ins = "INSERT INTO \"" + tableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::propertyGetter(propertyExpression, "new.body") + "); ";
+                string del = "DELETE FROM \"" + tableName + "\" WHERE rowid = old.sequence; ";
                 db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "ins") + " AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
                 db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "del") + " AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
                 db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "upd") + " AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
@@ -399,6 +393,18 @@ namespace litecore {
                 error::_throw(error::Unimplemented);
         }
         t.commit();
+    }
+
+
+    bool SQLiteKeyStore::hasIndex(const string &propertyPath, IndexType type) {
+        switch (type) {
+            case kFullTextIndex: {
+                return db().tableExists(SQLFTSTableName(propertyPath));
+                break;
+            }
+            default:
+                error::_throw(error::Unimplemented);
+        }
     }
 
 }

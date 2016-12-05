@@ -9,7 +9,9 @@
 #import "LCQuery.h"
 #import "LC_Internal.h"
 #import "StringBytes.hh"
+#import "c4Document.h"
 #import "c4DBQuery.h"
+#import "Fleece.h"
 
 
 template <typename T>
@@ -19,24 +21,22 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
 }
 
 
+@interface LCQuery ()
+@property (readonly, nonatomic) C4Query* c4query;
+@end
+
 @interface LCQueryRow ()
-- (instancetype) initWithDatabase: (LCDatabase*)db
-                  queryEnumerator: (C4QueryEnumerator*)e;
+- (instancetype) initWithQuery: (LCQuery*)query enumerator: (C4QueryEnumerator*)e;
 @end
 
 @interface LCQueryEnumerator : NSEnumerator
-- (instancetype) initWithDatabase: (LCDatabase*)db
-                  queryEnumerator: (C4QueryEnumerator*)e;
+- (instancetype) initWithQuery: (LCQuery*)query enumerator: (C4QueryEnumerator*)e;
 @end
 
 
 @implementation LCQuery
-{
-    LCDatabase* _db;
-    C4Query* _c4Query;
-}
 
-@synthesize skip=_skip, limit=_limit, parameters=_parameters;
+@synthesize database=_db, skip=_skip, limit=_limit, parameters=_parameters, c4query=_c4Query;
 
 
 - (instancetype) initWithDatabase: (LCDatabase*)db
@@ -111,7 +111,7 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
         convertError(c4Err, outError);
         return nil;
     }
-    return [[LCQueryEnumerator alloc] initWithDatabase: _db queryEnumerator: e];
+    return [[LCQueryEnumerator alloc] initWithQuery: self enumerator: e];
 }
 
 @end
@@ -121,16 +121,15 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
 
 @implementation LCQueryEnumerator
 {
-    LCDatabase* _db;
+    LCQuery *_query;
     C4QueryEnumerator* _c4enum;
 }
 
-- (instancetype) initWithDatabase: (LCDatabase*)db
-                  queryEnumerator: (C4QueryEnumerator*)e
+- (instancetype) initWithQuery: (LCQuery*)query enumerator: (C4QueryEnumerator*)e
 {
     self = [super init];
     if (self) {
-        _db = db;
+        _query = query;
         _c4enum = e;
     }
     return self;
@@ -145,7 +144,7 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
 - (LCQueryRow*) nextObject {
     C4Error err;
     if (c4queryenum_next(_c4enum, &err)) {
-        return [[LCQueryRow alloc] initWithDatabase: _db queryEnumerator: _c4enum];
+        return [[LCQueryRow alloc] initWithQuery: _query enumerator: _c4enum];
     } else if (err.code) {
         C4Warn("LCQueryEnumerator error: %d/%d", err.domain, err.code);
         return nil;
@@ -162,29 +161,87 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
 
 @implementation LCQueryRow
 {
-    LCDatabase* _db;
+    LCQuery *_query;
+    C4FullTextTerm* _matches;
 }
 
-@synthesize documentID=_documentID, sequence=_sequence;
+@synthesize documentID=_documentID, sequence=_sequence, matchCount=_matchCount;
 
 
-- (instancetype) initWithDatabase: (LCDatabase*)db
-                  queryEnumerator: (C4QueryEnumerator*)e
-{
+- (instancetype) initWithQuery: (LCQuery*)query enumerator: (C4QueryEnumerator*)e {
     self = [super init];
     if (self) {
-        _db = db;
+        _query = query;
         _documentID = assertNonNull( [[NSString alloc] initWithBytes: e->docID.buf
                                                               length: e->docID.size
                                                             encoding: NSUTF8StringEncoding] );
         _sequence = e->docSequence;
+        _matchCount = e->fullTextTermCount;
+        if (_matchCount > 0) {
+            _matches = new C4FullTextTerm[_matchCount];
+            memcpy(_matches, e->fullTextTerms, _matchCount * sizeof(C4FullTextTerm));
+        }
     }
     return self;
 }
 
 
+- (void) dealloc {
+    delete [] _matches;
+}
+
+
 - (LCDocument*) document {
-    return assertNonNull( [_db documentWithID: _documentID] );
+    return assertNonNull( [_query.database documentWithID: _documentID] );
+}
+
+
+// Full-text search:
+
+
+- (NSData*) fullTextUTF8Data {
+    stringBytes docIDSlice(_documentID);
+    C4SliceResult text = c4query_fullTextMatched(_query.c4query, docIDSlice, _sequence, nullptr);
+    if (!text.buf)
+        return nil;
+    NSData *result = [NSData dataWithBytes: text.buf length: text.size];
+    c4slice_free(text);
+    return result;
+}
+
+
+- (NSString*) fullTextMatched {
+    NSData* data = self.fullTextUTF8Data;
+    return data ? [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding] : nil;
+}
+
+
+- (NSUInteger) termIndexOfMatch: (NSUInteger)matchNumber {
+    NSParameterAssert(matchNumber < _matchCount);
+    return _matches[matchNumber].termIndex;
+}
+
+- (NSRange) textRangeOfMatch: (NSUInteger)matchNumber {
+    NSParameterAssert(matchNumber < _matchCount);
+    NSUInteger byteStart  = _matches[matchNumber].start;
+    NSUInteger byteLength = _matches[matchNumber].length;
+    NSData* rawText = self.fullTextUTF8Data;
+    if (!rawText)
+        return NSMakeRange(NSNotFound, 0);
+    return NSMakeRange(charCountOfUTF8ByteRange(rawText.bytes, 0, byteStart),
+                       charCountOfUTF8ByteRange(rawText.bytes, byteStart, byteStart + byteLength));
+}
+
+
+// Determines the number of NSString (UTF-16) characters in a byte range of a UTF-8 string. */
+static NSUInteger charCountOfUTF8ByteRange(const void* bytes, NSUInteger byteStart, NSUInteger byteEnd) {
+    if (byteStart == byteEnd)
+        return 0;
+    NSString* prefix = [[NSString alloc] initWithBytesNoCopy: (UInt8*)bytes + byteStart
+                                                      length: byteEnd - byteStart
+                                                    encoding: NSUTF8StringEncoding
+                                                freeWhenDone: NO];
+    return prefix.length;
 }
 
 

@@ -141,6 +141,7 @@ _c4queryenum_free
 _c4query_new
 _c4query_free
 _c4query_run
+_c4query_fullTextMatched
 
 _c4blob_keyFromString
 _c4blob_keyToString

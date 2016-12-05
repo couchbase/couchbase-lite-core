@@ -36,6 +36,7 @@ namespace litecore {
         std::string whereClause()               {return _sql.str();}
         std::string orderByClause()             {return _sortSQL.str();}
 
+        const std::vector<std::string>& ftsProperties() const   {return _ftsProperties;}
         std::vector<std::string> ftsTableNames() const;
 
         static std::string propertyGetter(slice property, const char *sqlColumn = "body");

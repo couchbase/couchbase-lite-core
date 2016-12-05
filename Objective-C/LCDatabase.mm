@@ -292,16 +292,22 @@ static void dbObserverCallback(C4DatabaseObserver* observer, void *context) {
 #pragma mark - INDEXES:
 
 
-- (bool) createIndexOn: (NSString*)propertyPath error: (NSError**)outError {
+- (bool) createIndexOn: (NSString*)propertyPath
+                  type: (LCIndexType)type
+                 error: (NSError**)outError
+{
     stringBytes propertyBytes(propertyPath);
     C4Error c4err;
-    return c4db_createIndex(_c4db, propertyBytes, &c4err) || convertError(c4err, outError);
+    return c4db_createIndex(_c4db, propertyBytes, (C4IndexType)type, &c4err)
+                || convertError(c4err, outError);
 }
 
 
-- (bool) deleteIndexOn: (NSString*)propertyPath {
+- (bool) deleteIndexOn: (NSString*)propertyPath
+                  type: (LCIndexType)type
+{
     stringBytes propertyBytes(propertyPath);
-    return c4db_deleteIndex(_c4db, propertyBytes, NULL);
+    return c4db_deleteIndex(_c4db, propertyBytes, (C4IndexType)type, NULL);
 }
 
 

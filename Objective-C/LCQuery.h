@@ -26,6 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
                                    orderBy: (nullable NSArray*)sortDescriptors
                                      error: (NSError**)error;
 
+@property (nonatomic) LCDatabase* database;
 @property (nonatomic) NSUInteger skip;
 @property (nonatomic) NSUInteger limit;
 @property (copy, nonatomic, nullable) NSDictionary* parameters;
@@ -41,6 +42,24 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readonly, nonatomic) uint64_t sequence;
 
 @property (readonly, nonatomic) LCDocument* document;
+
+// Full-text queries only:
+
+/** The text emitted when the view was indexed (the argument to CBLTextKey()) which contains the
+    match(es). */
+@property (readonly, nullable) NSString* fullTextMatched;
+
+/** The number of query words that were found in the fullText.
+    (If a query word appears more than once, only the first instance is counted.) */
+@property (readonly, nonatomic) NSUInteger matchCount;
+
+/** The character range in the fullText of a particular match. */
+- (NSRange) textRangeOfMatch: (NSUInteger)matchNumber;
+
+/** The index of the search term matched by a particular match. Search terms are the individual
+    words in the full-text search expression, skipping duplicates and noise/stop-words. They're
+    numbered from zero. */
+- (NSUInteger) termIndexOfMatch: (NSUInteger)matchNumber;
 
 @end
 

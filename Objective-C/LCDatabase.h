@@ -35,6 +35,13 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
                                                        NSDictionary* baseVersion);
 
 
+typedef NS_ENUM(uint32_t, LCIndexType) {
+    kLCValueIndex,         ///< Regular index of property value
+    kLCFullTextIndex,      ///< Full-text index
+    kLCGeoIndex,           ///< Geospatial index of GeoJSON values
+};
+
+
 /** LiteCore database object. (Unlike CBL 1.x there is no Manager.) */
 @interface LCDatabase : NSObject <NSCopying>
 
@@ -84,8 +91,11 @@ typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
 
 
 - (bool) createIndexOn: (NSString*)propertyPath
+                  type: (LCIndexType)type
                  error: (NSError**)error;
-- (bool) deleteIndexOn: (NSString*)propertyPath;
+
+- (bool) deleteIndexOn: (NSString*)propertyPath
+                  type: (LCIndexType)type;
 
 @end
 

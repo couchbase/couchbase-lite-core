@@ -89,6 +89,7 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     POSIXDomain,        // code is an errno
     ForestDBDomain,     // code is a fdb_status
     SQLiteDomain,       // code is a SQLite error
+    FleeceDomain,       // code is a Fleece error
 };
 
 
@@ -127,6 +128,7 @@ enum {
     kC4ErrorWrongFormat, /*30*/     // Database exists but not in the format/storage requested
     kC4ErrorCrypto,                 // Encryption/decryption error
     kC4ErrorInvalidQuery,           // Invalid query
+    kC4ErrorMissingIndex,           // No such index, or query requires a nonexistent index
 };
 
 

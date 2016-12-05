@@ -44,7 +44,6 @@ namespace litecore {
             _impl->getFullTextTerms(_fullTextTerms); return _fullTextTerms;
         }
 
-
         class Impl {
         public:
             virtual ~Impl() = default;
@@ -70,6 +69,8 @@ namespace litecore {
         virtual ~Query() = default;
 
         KeyStore& keyStore() const      {return _keyStore;}
+
+        virtual alloc_slice matchedText(slice recordID, sequence_t) {return alloc_slice();}
 
     protected:
         Query(KeyStore &keyStore) noexcept

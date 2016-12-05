@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4View.h"
+#include "c4DBQuery.h"
 #include "c4DocEnumerator.h"
 #include <iostream>
 
@@ -378,6 +379,8 @@ public:
         C4Error error;
         c4query_free(query);
         query = c4query_new(db, c4str(expr), c4str(sort), &error);
+        char errbuf[256];
+        INFO("error " << error.domain << "/" << error.code << ": " << c4error_getMessageC(error, errbuf, sizeof(errbuf)));
         REQUIRE(query);
         return query;
     }
@@ -432,4 +435,13 @@ TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
     CHECK(run(0, UINT64_MAX, "{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     compile("{\"contact.address.state\": [\"state\"]}");
     CHECK(run(0, UINT64_MAX, "{\"state\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, &err));
+    compile("{\"contact.address.street\": {\"$match\": \"Hwy\"}}");
+    CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
+
 }

@@ -74,6 +74,12 @@ extern "C" {
                                    C4Slice encodedParameters,
                                    C4Error *outError) C4API;
 
+    /** Given a docID and sequence number from the enumerator, returns the text that was emitted
+        during indexing. */
+    C4SliceResult c4query_fullTextMatched(C4Query *query,
+                                          C4Slice docID,
+                                          C4SequenceNumber seq,
+                                          C4Error *outError) C4API;
     /** @} */
 
 

@@ -42,7 +42,7 @@ namespace c4Internal {
 
     void recordException(const exception &e, C4Error* outError) noexcept {
         static const C4ErrorDomain domainMap[] = {LiteCoreDomain, POSIXDomain,
-                                                  ForestDBDomain, SQLiteDomain};
+                                                  ForestDBDomain, SQLiteDomain, FleeceDomain};
         error err = error::convertException(e).standardized();
         recordError(domainMap[err.domain], err.code, outError);
     }

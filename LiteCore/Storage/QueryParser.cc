@@ -28,6 +28,7 @@ namespace litecore {
     #define TABLECOUNT(TABLE)   (sizeof(TABLE) / sizeof((TABLE)[0]))
 
     // Relational operators, appearing as dictionary keys, e.g. {"$eq": 42}
+    // Used by parseTerm(); the 'type' numbers match cases in a switch statement.
     struct relationalEntry {const char *op; const char *sqlOp; int type;};
     static const relationalEntry kRelationals[] = {
         {"$eq",     " = "},

@@ -358,12 +358,14 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     int expectedTerms[3] = {3, 3, 1};
     for (QueryEnumerator e(query.get()); e.next(); ) {
         Log("key = %s", e.recordID().cString());
+        CHECK(e.hasFullText());
         CHECK(e.fullTextTerms().size() == expectedTerms[rows]);
         for (auto term : e.fullTextTerms()) {
             CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
             auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
             CHECK(word == "search");
         }
+        CHECK((string)query->matchedText(e.recordID(), e.sequence()) == strings[expectedOrder[rows]]);
         ++rows;
     }
     CHECK(rows == 3);

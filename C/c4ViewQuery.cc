@@ -449,6 +449,18 @@ C4QueryEnumerator* c4query_run(C4Query *query,
 }
 
 
+C4SliceResult c4query_fullTextMatched(C4Query *query,
+                                      C4Slice docID,
+                                      C4SequenceNumber seq,
+                                      C4Error *outError) noexcept
+{
+    return tryCatch<C4SliceResult>(outError, [&]{
+        WITH_LOCK(query->database());
+        return sliceResult(query->query()->matchedText(docID, seq));
+    });
+}
+
+
 bool c4db_createIndex(C4Database *database,
                       C4Slice propertyPath,
                       C4IndexType indexType,

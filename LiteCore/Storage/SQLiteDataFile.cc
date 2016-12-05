@@ -337,6 +337,18 @@ namespace litecore {
     }
 
 
+    bool SQLiteDataFile::tableExists(const string &name) const {
+        checkOpen();
+        SQLite::Statement st(*_sqlDb, string("SELECT * FROM sqlite_master"
+                                             " WHERE type='table' AND name=?"));
+        st.bind(1, name);
+        LogStatement(st);
+        bool exists = st.executeStep();
+        st.reset();
+        return exists;
+    }
+
+    
     sequence SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence seq = 0;
         compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");

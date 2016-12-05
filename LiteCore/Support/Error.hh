@@ -30,6 +30,7 @@ namespace litecore {
             POSIX,
             ForestDB,
             SQLite,
+            Fleece,
         };
 
         // Error codes in LiteCore domain:
@@ -66,8 +67,9 @@ namespace litecore {
             WrongFormat,                // data exists but not in format requested, or data given is in unusable format
             CryptoError,
             InvalidQuery,
+            NoSuchIndex,
             
-            NumLiteCoreErrors
+            NumLiteCoreErrorsPlus1
         };
 
         Domain const domain;

@@ -40,6 +40,7 @@ namespace litecore {
         bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
         void createIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
         void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
+        bool hasIndex(const std::string &propertyPath, IndexType =kValueIndex);
 
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}

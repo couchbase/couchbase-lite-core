@@ -40,6 +40,7 @@ namespace litecore {
 
         std::vector<std::string> allKeyStoreNames() override;
         bool keyStoreExists(const std::string &name);
+        bool tableExists(const std::string &name) const;
 
         class Factory : public DataFile::Factory {
         public:
