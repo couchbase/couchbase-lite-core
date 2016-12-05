@@ -17,8 +17,6 @@
 #include "Collatable.hh"
 #include "Error.hh"
 #include "Fleece.hh"
-#include "GeoIndex.hh"
-#include "Tokenizer.hh"
 #include "Logging.hh"
 #include <algorithm>
 
@@ -156,40 +154,6 @@ namespace litecore {
         return getEntry(recordID, seq, key, entryID);
     }
 
-    alloc_slice MapReduceIndex::readFullText(slice recordID, sequence seq, unsigned fullTextID) const {
-        alloc_slice entry = getSpecialEntry(recordID, seq, fullTextID);
-        auto array = Value::fromTrustedData(entry)->asArray();
-        return alloc_slice(array->get(0)->asString());
-    }
-
-    alloc_slice MapReduceIndex::readFullTextValue(slice recordID, sequence seq, unsigned fullTextID) const {
-        // This data was written by emitSpecial, as called by emitTextTokens
-        alloc_slice entry = getSpecialEntry(recordID, seq, fullTextID);
-        auto array = Value::fromTrustedData(entry)->asArray();
-        if (array->count() < 2)
-            return alloc_slice();
-        return alloc_slice(array->get(1)->asString());
-    }
-
-    void MapReduceIndex::readGeoArea(slice recordID, sequence seq, unsigned geoID,
-                                     geohash::area &outArea,
-                                     alloc_slice& outGeoJSON,
-                                     alloc_slice& outValue)
-    {
-        // Reads data written by emitter::emit(const geohash::area&,...), below
-        alloc_slice entry = getSpecialEntry(recordID, seq, geoID);
-        Array::iterator iter(Value::fromTrustedData(entry)->asArray());
-        outArea = ::litecore::readGeoArea(iter);
-        outGeoJSON = outValue = nullslice;
-        if (iter.count() > 0) {
-            if (iter->type() == kString)
-                outGeoJSON = alloc_slice(iter->asString());
-            ++iter;
-            if (iter)
-                outValue = alloc_slice(iter->asString());
-        }
-    }
-
 
 #pragma mark - EMITTER:
 
@@ -202,118 +166,15 @@ namespace litecore {
         std::vector<alloc_slice> values;
 
         void emit(Collatable key, alloc_slice value) {
-            CollatableReader keyReader(key);
-            switch (keyReader.peekTag()) {
-                case CollatableTypes::kFullTextKey: {
-                    auto textAndLang = keyReader.readFullTextKey();
-                    emitTextTokens(textAndLang.first, std::string(textAndLang.second), value);
-                    break;
-                }
-                case CollatableTypes::kGeoJSONKey: {
-                    geohash::area bbox;
-                    alloc_slice geoJSON = keyReader.readGeoKey(bbox);
-                    emit(bbox, geoJSON, value);
-                    break;
-                }
-                default:
-                    _emit(key, value);
-                    break;
-            }
+            keys.push_back(key);
+            values.push_back(value);
         }
 
         void reset() {
             keys.clear();
             values.clear();
-            // _tokenizer is stateless
         }
 
-    private:
-
-        void _emit(Collatable key, alloc_slice value) {
-            keys.push_back(key);
-            values.push_back(value);
-        }
-
-        void emitTextTokens(slice text, const std::string &languageCode, slice value) {
-            if (!_tokenizer || _tokenizer->stemmer() != languageCode) {
-                _tokenizer = std::unique_ptr<Tokenizer> {
-                    new Tokenizer(languageCode, (languageCode == "en")) };
-            }
-            std::unordered_map<std::string, Encoder> tokens;
-            int specialKey = -1;
-            for (TokenIterator i(*_tokenizer, slice(text), false); i; ++i) {
-                if (specialKey < 0) {
-                    // Emit the full text being indexed, and the value, under a special key.
-                    specialKey = emitSpecial(text, value);
-                }
-                // Add the word position to the value array for this token:
-                Encoder& tokValue = tokens[i.token()];
-                if (tokValue.isEmpty()) {
-                    tokValue.beginArray();
-                    tokValue << specialKey;
-                }
-                tokValue << (uint64_t)i.wordOffset() << (uint64_t)i.wordLength();
-            }
-
-            // Emit each token string and value array as a key:
-            for (auto &kv : tokens) {
-                CollatableBuilder collKey(kv.first);
-                Encoder& tokValue = kv.second;
-                tokValue.endArray();
-                _emit(collKey, tokValue.extractOutput());
-            }
-        }
-
-        static const unsigned kMaxCoveringHashes = 4;
-
-        void emit(const geohash::area& boundingBox, slice geoJSON, slice value) {
-            LogToAt(IndexLog, Debug, "emit {%g ... %g, %g ... %g} --> %s",
-                  boundingBox.latitude.min, boundingBox.latitude.max,
-                  boundingBox.longitude.min, boundingBox.longitude.max,
-                  value.hexString().c_str());
-            // Emit the bbox, geoJSON, and value, under a special key:
-            unsigned specialKey = emitSpecial(boundingBox, geoJSON, value);
-            Encoder enc;
-            enc << specialKey;
-            auto specialKeyEncoded = enc.extractOutput();
-
-            // Now emit a set of geohashes that cover the given area:
-            auto hashes = boundingBox.coveringHashes();
-            for (auto &hash : hashes) {
-                LogToAt(IndexLog, Debug, "    hash='%s'", (const char*)hash);
-                CollatableBuilder collKey(hash);
-                _emit(collKey, specialKeyEncoded);
-            }
-        }
-
-        // Saves a special key-value pair in the index that can store auxiliary data associated
-        // with an emit, such as the full text or the geo-JSON. This data is read by
-        // MapReduceIndex::getSpecialEntry
-        template <typename KEY>
-        unsigned emitSpecial(const KEY &key, slice value1, slice value2 = nullslice) {
-            CollatableBuilder collKey;
-            collKey.addNull();
-
-            Encoder encValue;
-            encValue.beginArray();
-            encValue << key;
-            // Write value1 (or a null placeholder) then value2
-            if (value1.size > 0 || value2.size > 0) {
-                if (value1.size > 0)
-                    encValue << value1;
-                else
-                    encValue.writeNull();
-                if (value2.size > 0)
-                    encValue << value2;
-            }
-            encValue.endArray();
-
-            auto result = keys.size();
-            emit(collKey, encValue.extractOutput());
-            return (unsigned)result;
-        }
-
-        std::unique_ptr<Tokenizer> _tokenizer;
     };
 
 

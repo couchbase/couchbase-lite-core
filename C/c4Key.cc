@@ -18,8 +18,6 @@
 #include "c4Key.h"
 #include "c4Document.h"
 #include "Collatable.hh"
-#include "Geohash.hh"
-#include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
 using namespace litecore;
@@ -38,21 +36,6 @@ void c4key_beginArray(C4Key *key)               noexcept {key->beginArray();}
 void c4key_endArray(C4Key *key)                 noexcept {key->endArray();}
 void c4key_beginMap(C4Key *key)                 noexcept {key->beginMap();}
 void c4key_endMap(C4Key *key)                   noexcept {key->endMap();}
-
-C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) noexcept {
-    if (language == kC4LanguageDefault)
-        language = Tokenizer::defaultStemmer;
-    auto key = new c4Key();
-    key->addFullTextKey(text, language);
-    return key;
-}
-
-C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea bb) noexcept {
-    auto key = new c4Key();
-    key->addGeoKey(geoJSON, geohash::area(geohash::coord(bb.ymin, bb.xmin),
-                                          geohash::coord(bb.ymax, bb.xmax)));
-    return key;
-}
 
 
 // C4KeyReader is really identical to CollatableReader, which itself consists of nothing but

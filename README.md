@@ -18,8 +18,6 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
 * Map/reduce indexing & querying:
     * Index API that uses a database as an index of an external data set
     * Map-reduce indexes that update incrementally as documents are changed in the source DB (as in Couchbase Lite or CouchDB)
-    * Limited full-text indexing
-    * Limited geo-indexing
     * JSON-compatible structured keys in indexes, sorted according to CouchDB's JSON collation spec
     * Querying by key range, with typical options like descending order, offset, limit
 * Direct database querying:
@@ -30,6 +28,7 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
     * Parameters can be substituted without having to recompile the query
     * Queries don't require indexes, but will run faster if indexes are created on the document
       properties being searched for.
+    * Supports full-text search, using SQLite's FTS4 module.
 * Pluggable storage engines
     * SQLite is available by default
     * Others can be added by implementing C++ `DataFile` and `KeyStore` interfaces

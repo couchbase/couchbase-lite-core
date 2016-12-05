@@ -18,7 +18,6 @@
 #include <string>
 #include <iostream>
 #include "Base.hh"
-#include "Geohash.hh"
 
 namespace litecore {
 
@@ -34,10 +33,7 @@ namespace litecore {
             kString,
             kArray,
             kMap,
-            kGeohash,           // Geohash string
             kSpecial,           // Placeholder for doc (Only used in values, not keys)
-            kFullTextKey,       // String to be full-text-indexed (Only used in emit() calls)
-            kGeoJSONKey,        // GeoJSON to be indexed (only used in emit() calls)
             kError = 255        // Something went wrong. (Never stored, only returned from peekTag)
         } Tag;
     };
@@ -92,12 +88,6 @@ namespace litecore {
         CollatableBuilder& operator<< (const std::string &s)  {return operator<<(slice(s));}
         CollatableBuilder& operator<< (const char* cstr)   {return operator<<(slice(cstr));}
         CollatableBuilder& operator<< (slice s)            {addString(kString, s); return *this;}
-
-        CollatableBuilder& operator<< (const geohash::hash& h) {addString(kGeohash, (slice)h);
-                                                                return *this;}
-
-        CollatableBuilder& addFullTextKey(slice text, slice languageCode = nullslice);
-        CollatableBuilder& addGeoKey(slice geoJSON, geohash::area bbox);
 
         CollatableBuilder& beginArray()                    {addTag(kArray); return *this;}
         CollatableBuilder& endArray()                      {addTag(kEndSequence); return *this;}
@@ -173,10 +163,8 @@ namespace litecore {
         int64_t readInt();
         double readDouble();
         alloc_slice readString()            {return readString(kString);}
-        geohash::hash readGeohash();
-        
+
         std::pair<alloc_slice, alloc_slice> readFullTextKey();  // pair is <text, langCode>
-        alloc_slice readGeoKey(geohash::area &outBBox);
 
         /** Reads (skips) an entire object of any type, returning its data in Collatable form. */
         slice read();

@@ -29,18 +29,6 @@ public class QueryIterator {
     public String docID()                           {return docID(_handle);}
     public long   sequence()                        {return sequence(_handle);}
 
-    public FullTextResult fullTextResult() {
-        return new FullTextResult(_view, docID(), sequence(),
-                                  fullTextID(_handle), fullTextTerms(_handle));
-    }
-
-    /** Returns the bounding box of a geo-query match as an array of coordinates,
-        in the order (xmin, ymin, xmax, ymax). */
-    public double[] geoBoundingBox()                {return geoBoundingBox(_handle);}
-
-    /** Returns the GeoJSON of a geo-query match, exactly as it was emitted from the map function. */
-    public byte[] geoJSON()                         {return geoJSON(_handle);}
-
     protected void finalize() {
         if (_handle != 0)
             free(_handle);
@@ -51,10 +39,6 @@ public class QueryIterator {
     private static native byte[] valueJSON(long handle);
     private static native String docID(long handle);
     private static native long sequence(long handle);
-    private static native int fullTextID(long handle);
-    private static native int[] fullTextTerms(long handle);
-    private static native double[] geoBoundingBox(long handle);
-    private static native byte[] geoJSON(long handle);
     private static native void free(long handle);
 
     private View _view;

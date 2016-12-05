@@ -24,7 +24,6 @@
 #include "c4KeyInternal.hh"
 
 #include "DataFile.hh"
-#include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
 using namespace litecore;
@@ -178,23 +177,11 @@ void c4view_setOnCompactCallback(C4View *view, C4OnCompactCallback cb, void *con
 #pragma mark - INDEXING:
 
 
-static void initTokenizer() {
-    static bool sInitializedTokenizer = false;
-    if (!sInitializedTokenizer) {
-        Tokenizer::defaultStemmer = "english";
-        Tokenizer::defaultRemoveDiacritics = true;
-        sInitializedTokenizer = true;
-    }
-}
-
-
 struct c4Indexer : public MapReduceIndexer, InstanceCounted {
     c4Indexer(C4Database *db)
     :MapReduceIndexer(),
      _db(db)
-    {
-        initTokenizer();
-    }
+    { }
 
     virtual ~c4Indexer() {
 #if C4DB_THREADSAFE
@@ -339,12 +326,4 @@ bool c4indexer_end(C4Indexer *indexer, bool commit, C4Error *outError) noexcept 
             indexer->finished();
         delete indexer;
     });
-}
-
-
-bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) noexcept {
-    initTokenizer();
-    Tokenizer::defaultStemmer = string(languageName);
-    Tokenizer::defaultRemoveDiacritics = stripDiacriticals;
-    return true;
 }

@@ -11,6 +11,7 @@
 #include "c4Internal.hh"
 #include "c4Key.h"
 #include "Collatable.hh"
+#include <vector>
 
 
 // Structs below are in the global namespace because they are forward-declared in the C API.

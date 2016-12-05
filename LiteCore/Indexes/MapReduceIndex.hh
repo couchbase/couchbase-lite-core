@@ -15,7 +15,6 @@
 
 #pragma once
 #include "Index.hh"
-#include "Geohash.hh"
 #include <set>
 #include <vector>
 
@@ -57,11 +56,6 @@ namespace litecore {
 
         /** Reads the value that was emitted along with a full-text key. */
         alloc_slice readFullTextValue(slice docID, sequence seq, unsigned fullTextID) const;
-
-        void readGeoArea(slice docID, sequence seq, unsigned geoID,
-                         geohash::area &outArea,
-                         alloc_slice& outGeoJSON,
-                         alloc_slice& outValue);
 
     private:
         bool checkForPurge();

@@ -94,84 +94,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_QueryIterator_sequence
     return ((C4QueryEnumerator*)handle)->docSequence;
 }
 
-JNIEXPORT jint JNICALL Java_com_couchbase_litecore_QueryIterator_fullTextID
-  (JNIEnv *env, jclass clazz, jlong handle)
-{
-    if (!handle)
-        return 0;
-    return ((C4QueryEnumerator*)handle)->fullTextID;
-}
-
-JNIEXPORT jintArray JNICALL Java_com_couchbase_litecore_QueryIterator_fullTextTerms
-  (JNIEnv *env, jclass clazz, jlong handle)
-{
-    if (!handle)
-        return nullptr;
-    auto e = (C4QueryEnumerator*)handle;
-    jintArray jterms = env->NewIntArray(3 * e->fullTextTermCount);
-    if (!jterms)
-        return nullptr;
-    jboolean isCopy;
-    jint *term = env->GetIntArrayElements(jterms, &isCopy);
-    for (uint32_t i = 0; i < e->fullTextTermCount; i++) {
-        auto &src = e->fullTextTerms[i];
-        term[0] = src.termIndex;
-        term[1] = src.start;
-        term[2] = src.length;
-        term += 3;
-    }
-    return jterms;
-}
-
-JNIEXPORT jdoubleArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoBoundingBox
-  (JNIEnv *env, jclass clazz, jlong handle)
-{
-    if (!handle)
-        return nullptr;
-    auto e = (C4QueryEnumerator*)handle;
-    jdoubleArray jbox = env->NewDoubleArray(4);
-    if (!jbox)
-        return nullptr;
-    jboolean isCopy;
-    jdouble *bp = env->GetDoubleArrayElements(jbox, &isCopy);
-    bp[0] = e->geoBBox.xmin;
-    bp[1] = e->geoBBox.ymin;
-    bp[2] = e->geoBBox.xmax;
-    bp[3] = e->geoBBox.ymax;
-    return jbox;
-}
-
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_QueryIterator_geoJSON
-  (JNIEnv *env, jclass clazz, jlong handle)
-{
-    if (!handle)
-        return nullptr;
-    auto e = (C4QueryEnumerator*)handle;
-    return toJByteArray(env, e->geoJSON);
-}
-
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_QueryIterator_free
 (JNIEnv *env, jclass clazz, jlong handle)
 {
     C4QueryEnumerator *e = (C4QueryEnumerator*)handle;
     c4queryenum_free(e);
-}
-
-
-JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_FullTextResult_getFullText
-  (JNIEnv *env, jclass clazz, jlong viewHandle, jstring jdocID, jlong sequence, jint fullTextID)
-{
-    if (!viewHandle)
-        return nullptr;
-    jstringSlice docID(env, jdocID);
-    C4Error err;
-    C4SliceResult text = c4view_fullTextMatched((C4View*)viewHandle, docID, sequence, fullTextID,
-                                                &err);
-    if (!text.buf) {
-        throwError(env, err);
-        return nullptr;
-    }
-    jstring result = toJString(env, text);
-    free((void*)text.buf);
-    return result;
 }

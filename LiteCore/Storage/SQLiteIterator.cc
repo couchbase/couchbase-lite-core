@@ -171,7 +171,7 @@ namespace litecore {
         }
 
 
-        alloc_slice matchedText(slice recordID, sequence_t seq) override {
+        alloc_slice getMatchedText(slice recordID, sequence_t seq) override {
             alloc_slice result;
             if (_ftsProperties.size() > 0) {
                 keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
@@ -263,9 +263,12 @@ namespace litecore {
             if (!_statement->executeStep())
                 return false;
             outSequence = (int64_t)_statement->getColumn(0);
-            outRecordID.buf = _statement->getColumn(1);
-            outRecordID.size = _statement->getColumn(1).size();
+            outRecordID = recordID();
             return true;
+        }
+
+        slice recordID() {
+            return {(const void*)_statement->getColumn(1), (size_t)_statement->getColumn(1).size()};
         }
 
         slice meta() override {
@@ -295,6 +298,9 @@ namespace litecore {
             }
          }
 
+        alloc_slice getMatchedText() override {
+            return _query.getMatchedText(recordID(), (int64_t)_statement->getColumn(0));
+        }
 
     private:
         SQLiteQuery &_query;

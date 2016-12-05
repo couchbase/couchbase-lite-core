@@ -365,7 +365,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
             auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
             CHECK(word == "search");
         }
-        CHECK((string)query->matchedText(e.recordID(), e.sequence()) == strings[expectedOrder[rows]]);
+        CHECK((string)e.getMatchedText() == strings[expectedOrder[rows]]);
         ++rows;
     }
     CHECK(rows == 3);

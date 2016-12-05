@@ -86,8 +86,6 @@ _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions
 
 _c4key_new
-_c4key_newFullTextString
-_c4key_newGeoJSON
 _c4key_withBytes
 _c4key_reset
 _c4key_free
@@ -130,11 +128,7 @@ _c4indexer_emitList
 _c4indexer_end
 
 _c4view_query
-_c4view_fullTextQuery
-_c4view_geoQuery
-_c4view_fullTextMatched
 _c4queryenum_next
-_c4queryenum_fullTextMatched
 _c4queryenum_close
 _c4queryenum_free
 

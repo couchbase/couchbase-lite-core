@@ -261,8 +261,8 @@ extern "C" {
     } C4FullTextTerm;
 
 
-    /** A view query result enumerator. Created by c4view_query, c4view_fullTextQuery, or
-        c4view_geoQuery. Must be freed with c4queryenum_free.
+    /** A view query result enumerator. 
+        Created by c4view_query or c4db_query. Must be freed with c4queryenum_free.
         The fields of this struct represent the current matched index row, and are replaced by the
         next call to c4queryenum_next or c4queryenum_free.
         The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
@@ -276,13 +276,8 @@ extern "C" {
         C4KeyReader key;                     ///< Encoded emitted key
 
         // Full-text only:
-        unsigned fullTextID;                 ///< opaque 'cookie' for getting the full text string
         uint32_t fullTextTermCount;          ///< The number of terms that were matched
         const C4FullTextTerm *fullTextTerms; ///< Array of terms that were matched
-
-        // Geo-query only:
-        C4GeoArea geoBBox;                   ///< Bounding box of emitted geoJSON shape
-        C4Slice geoJSON;                     ///< GeoJSON description of the shape
     } C4QueryEnumerator;
 
 
@@ -296,44 +291,10 @@ extern "C" {
                                     const C4QueryOptions *options,
                                     C4Error *outError) C4API;
 
-    /** Runs a full-text query and returns an enumerator for the results.
-        The enumerator's fields are not valid until you call c4queryenum_next(), though.
-        @param view  The view to query.
-        @param queryString  A string containing the words to search for, separated by whitespace.
-        @param queryStringLanguage  The human language of the query string as an ISO-639 code like
-                    "en"; or kC4LanguageNone to disable language-specific transformations like
-                    stemming; or kC4LanguageDefault to fall back to the default language (as set by
-                    c4key_setDefaultFullTextLanguage.)
-        @param c4options  Query options. Only skip, limit, descending, rankFullText are used.
-        @param outError  On failure, error info will be stored here.
-        @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */
-    C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
-                                            C4Slice queryString,
-                                            C4Slice queryStringLanguage,
-                                            const C4QueryOptions *c4options,
-                                            C4Error *outError) C4API;
-
-    /** Runs a geo-query and returns an enumerator for the results.
-        The enumerator's fields are not valid until you call c4queryenum_next(), though.
-        @param view  The view to query.
-        @param area  The bounding box to search for. Rows intersecting this will be returned.
-        @param outError  On failure, error info will be stored here.
-        @return  A new query enumerator. Fields are invalid until c4queryenum_next is called. */
-    C4QueryEnumerator* c4view_geoQuery(C4View *view,
-                                       C4GeoArea area,
-                                       C4Error *outError) C4API;
-
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */
-    C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) C4API;
-
-    /** Given a document and the fullTextID from the enumerator, returns the text that was emitted
-        during indexing. */
-    C4SliceResult c4view_fullTextMatched(C4View *view,
-                                         C4Slice docID,
-                                         C4SequenceNumber seq,
-                                         unsigned fullTextID,
-                                         C4Error *outError) C4API;
+    C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
+                                              C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */

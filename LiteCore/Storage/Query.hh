@@ -44,14 +44,19 @@ namespace litecore {
             _impl->getFullTextTerms(_fullTextTerms); return _fullTextTerms;
         }
 
+        alloc_slice getMatchedText() const {
+            return _impl->getMatchedText();
+        }
+
         class Impl {
         public:
             virtual ~Impl() = default;
             virtual bool next(slice &docID, sequence_t &sequence) =0;
             virtual slice meta() =0;
             virtual size_t bodyLength() =0;
-            virtual bool hasFullText()  {return false;}
+            virtual bool hasFullText()                                  {return false;}
             virtual void getFullTextTerms(std::vector<FullTextTerm>& t) {}
+            virtual alloc_slice getMatchedText()                        {return alloc_slice();}
         };
 
     private:
@@ -70,7 +75,7 @@ namespace litecore {
 
         KeyStore& keyStore() const      {return _keyStore;}
 
-        virtual alloc_slice matchedText(slice recordID, sequence_t) {return alloc_slice();}
+        virtual alloc_slice getMatchedText(slice recordID, sequence_t) {return alloc_slice();}
 
     protected:
         Query(KeyStore &keyStore) noexcept

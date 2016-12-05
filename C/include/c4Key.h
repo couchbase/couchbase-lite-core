@@ -17,18 +17,6 @@ extern "C" {
         @{ */
 
 
-    // Language code denoting "the default language"
-    #define kC4LanguageDefault  kC4SliceNull
-
-    // Language code denoting "no language"
-    #define kC4LanguageNone     C4STR("")
-
-    /** A 2D bounding box used for geo queries */
-    typedef struct {
-        double xmin, ymin, xmax, ymax;
-    } C4GeoArea;
-
-
     //////// KEYS:
 
 
@@ -45,22 +33,6 @@ extern "C" {
 
     /** Creates a C4Key by copying the data, which must be in the C4Key binary format. */
     C4Key* c4key_withBytes(C4Slice) C4API;
-
-    /** Creates a C4Key containing a string of text to be full-text-indexed by a view.
-        @param text  The text to be indexed.
-        @param language  The human language of the string as an ISO-639 code like "en";
-                    or kC4LanguageNone to disable language-specific transformations such as
-                    stemming; or kC4LanguageDefault to fall back to the default language
-                    (as set by c4key_setDefaultFullTextLanguage.)
-        @return  A new C4Key representing this key. */
-    C4Key* c4key_newFullTextString(C4Slice text, C4Slice language) C4API;
-
-    /** Creates a C4Key containing a 2D shape to be geo-indexed.
-        Caller must provide a bounding box (which is what's actually used for searching.)
-        @param geoJSON  GeoJSON describing the shape.
-        @param boundingBox  A conservative bounding box of the shape.
-        @return  A new C4Key for the shape. */
-    C4Key* c4key_newGeoJSON(C4Slice geoJSON, C4GeoArea boundingBox) C4API;
 
     /** Resets a C4Key to the empty state so it can be reused. */
     void c4key_reset(C4Key*) C4API;
@@ -91,14 +63,6 @@ extern "C" {
         preceded by a key. */
     void c4key_addMapKey(C4Key*, C4Slice) C4API;
 
-
-    /** Sets the process-wide default (human) language for full-text keys. This affects how
-        words are "stemmed" (stripped of suffixes like "-ing" or "-est" in English) when indexed.
-        @param languageName  An ISO language name like 'english'.
-        @param stripDiacriticals  True if accents and other diacriticals should be stripped from
-                                  letters. Appropriate for English but not for most other languages.
-        @return  True if the languageName was recognized, false if not. */
-    bool c4key_setDefaultFullTextLanguage(C4Slice languageName, bool stripDiacriticals) C4API;
 
     /** @} */
 

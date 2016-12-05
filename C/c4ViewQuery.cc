@@ -24,9 +24,6 @@
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Collatable.hh"
-#include "FullTextIndex.hh"
-#include "GeoIndex.hh"
-#include "Tokenizer.hh"
 #include <math.h>
 #include <limits.h>
 #include <mutex>
@@ -236,130 +233,6 @@ C4QueryEnumerator* c4view_query(C4View *view,
 }
 
 
-#pragma mark FULL-TEXT QUERIES:
-
-
-struct C4FullTextEnumerator : public C4ViewQueryEnumInternal {
-    C4FullTextEnumerator(C4View *view,
-                         slice queryString,
-                         slice queryStringLanguage,
-                         bool ranked,
-                         const IndexEnumerator::Options &options)
-    :C4ViewQueryEnumInternal(view),
-     _enum(view->_index, queryString, queryStringLanguage, ranked, options)
-    { }
-
-    virtual bool next() override {
-        if (!_enum.next())
-            return C4QueryEnumInternal::next();
-        auto match = _enum.match();
-        docID = match->recordID;
-        docSequence = match->sequence;
-        _allocatedValue = match->value();
-        value = _allocatedValue;
-        fullTextID = match->fullTextID();
-        fullTextTermCount = (uint32_t)match->textMatches.size();
-        fullTextTerms = (const C4FullTextTerm*)match->textMatches.data();
-        return true;
-    }
-
-    alloc_slice fullTextMatched() {
-        return _enum.match()->matchedText();
-    }
-
-    virtual void close() noexcept override {
-        _enum.close();
-    }
-
-private:
-    FullTextIndexEnumerator _enum;
-    alloc_slice _allocatedValue;
-};
-
-
-C4QueryEnumerator* c4view_fullTextQuery(C4View *view,
-                                        C4Slice queryString,
-                                        C4Slice queryStringLanguage,
-                                        const C4QueryOptions *c4options,
-                                        C4Error *outError) noexcept
-{
-    return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        WITH_LOCK(view);
-        if (queryStringLanguage == kC4LanguageDefault)
-            queryStringLanguage = Tokenizer::defaultStemmer;
-        return new C4FullTextEnumerator(view, queryString, queryStringLanguage,
-                                        (c4options ? c4options->rankFullText : true),
-                                        convertOptions(c4options));
-    });
-}
-
-
-C4SliceResult c4view_fullTextMatched(C4View *view,
-                                     C4Slice docID,
-                                     C4SequenceNumber seq,
-                                     unsigned fullTextID,
-                                     C4Error *outError) noexcept
-{
-    return tryCatch<C4SliceResult>(outError, [&]{
-        WITH_LOCK(view);
-        return sliceResult(FullTextMatch::matchedText(&view->_index, docID, seq, fullTextID));
-    });
-}
-
-
-C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e) noexcept {
-    return tryCatch<C4SliceResult>(nullptr, [&]{
-        return sliceResult(((C4FullTextEnumerator*)e)->fullTextMatched());
-    });
-}
-
-
-#pragma mark GEO-QUERIES:
-
-
-struct C4GeoEnumerator : public C4ViewQueryEnumInternal {
-    C4GeoEnumerator(C4View *view, const geohash::area &bbox)
-    :C4ViewQueryEnumInternal(view),
-     _enum(view->_index, bbox)
-    { }
-
-    virtual bool next() override {
-        if (!_enum.next())
-            return C4ViewQueryEnumInternal::next();
-        docID = _enum.recordID();
-        docSequence = _enum.sequence();
-        value = _enum.value();
-        auto bbox = _enum.keyBoundingBox();
-        geoBBox.xmin = bbox.min().longitude;
-        geoBBox.ymin = bbox.min().latitude;
-        geoBBox.xmax = bbox.max().longitude;
-        geoBBox.ymax = bbox.max().latitude;
-        geoJSON = _enum.keyGeoJSON();
-        return true;
-    }
-
-    virtual void close() noexcept override {
-        _enum.close();
-    }
-
-private:
-    GeoIndexEnumerator _enum;
-};
-
-
-C4QueryEnumerator* c4view_geoQuery(C4View *view,
-                                   C4GeoArea area,
-                                   C4Error *outError) noexcept
-{
-    return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        WITH_LOCK(view);
-        geohash::area ga(geohash::coord(area.ymin, area.xmin),
-                         geohash::coord(area.ymax, area.xmax));
-        return new C4GeoEnumerator(view, ga);
-    });
-}
-
-
 #pragma mark EXPRESSION-BASED QUERIES:
 
 
@@ -421,6 +294,10 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
+    alloc_slice getMatchedText() {
+        return _enum.getMatchedText();
+    }
+
     virtual void close() noexcept override {
         _enum.close();
     }
@@ -456,9 +333,22 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
 {
     return tryCatch<C4SliceResult>(outError, [&]{
         WITH_LOCK(query->database());
-        return sliceResult(query->query()->matchedText(docID, seq));
+        return sliceResult(query->query()->getMatchedText(docID, seq));
     });
 }
+
+
+C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
+                                          C4Error *outError) noexcept
+{
+    return tryCatch<C4SliceResult>(outError, [&]{
+        WITH_LOCK(asInternal(e));
+        return sliceResult(((C4DBQueryEnumerator*)e)->getMatchedText());
+    });
+}
+
+
+#pragma mark - INDEXES:
 
 
 bool c4db_createIndex(C4Database *database,
