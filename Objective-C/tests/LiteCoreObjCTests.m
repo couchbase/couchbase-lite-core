@@ -324,7 +324,7 @@
         XCTAssertEqual(n, 1);
 
         if (pass == 0) {
-            XCTAssert([db createIndexOn: @"name.first" type: kLCValueIndex error: &error]);
+            XCTAssert([db createIndexOn: @"name.first" type: kLCValueIndex options: NULL error: &error]);
         }
     }
     XCTAssert([db deleteIndexOn: @"name.first" type: kLCValueIndex]);

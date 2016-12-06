@@ -26,13 +26,13 @@ extern NSString* const LCDatabaseChangedNotification;
 
 
 /** Callback that resolves document conflicts during a save.
-    @param myVersion  The LCDocument's current in-memory properties
-    @param theirVersion  The document's current revision
-    @param baseVersion  The common ancestor, if available
+    @param myVersion  The LCDocument's current in-memory properties; nil if you deleted it
+    @param theirVersion  The document's current saved revision; nil if it's been deleted
+    @param baseVersion  The common ancestor, if available (else nil)
     @return  The merged properties to save, or nil to give up */
-typedef NSDictionary* __nullable (^LCConflictResolver)(NSDictionary* myVersion,
-                                                       NSDictionary* theirVersion,
-                                                       NSDictionary* baseVersion);
+typedef NSDictionary* _Nullable (^LCConflictResolver)(NSDictionary* _Nullable myVersion,
+                                                      NSDictionary* _Nullable theirVersion,
+                                                      NSDictionary* _Nullable baseVersion);
 
 
 typedef NS_ENUM(uint32_t, LCIndexType) {
@@ -40,6 +40,12 @@ typedef NS_ENUM(uint32_t, LCIndexType) {
     kLCFullTextIndex,      ///< Full-text index
     kLCGeoIndex,           ///< Geospatial index of GeoJSON values
 };
+
+
+typedef struct {
+    const char * _Nullable language;    ///< Language code, for FTS index, e.g. "en" or "de".
+    bool ignoreDiacritics;              ///< True to ignore accents/diacritical marks.
+} LCIndexOptions;
 
 
 /** LiteCore database object. (Unlike CBL 1.x there is no Manager.) */
@@ -92,6 +98,7 @@ typedef NS_ENUM(uint32_t, LCIndexType) {
 
 - (bool) createIndexOn: (NSString*)propertyPath
                   type: (LCIndexType)type
+               options: (nullable const LCIndexOptions*)options
                  error: (NSError**)error;
 
 - (bool) deleteIndexOn: (NSString*)propertyPath

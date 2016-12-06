@@ -294,11 +294,16 @@ static void dbObserverCallback(C4DatabaseObserver* observer, void *context) {
 
 - (bool) createIndexOn: (NSString*)propertyPath
                   type: (LCIndexType)type
+               options: (const LCIndexOptions*)options
                  error: (NSError**)outError
 {
+    static_assert(sizeof(LCIndexOptions) == sizeof(C4IndexOptions), "Index options incompatible");
     stringBytes propertyBytes(propertyPath);
     C4Error c4err;
-    return c4db_createIndex(_c4db, propertyBytes, (C4IndexType)type, &c4err)
+    return c4db_createIndex(_c4db, propertyBytes,
+                            (C4IndexType)type,
+                            (const C4IndexOptions*)options,
+                            &c4err)
                 || convertError(c4err, outError);
 }
 
