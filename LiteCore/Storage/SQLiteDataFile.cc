@@ -32,6 +32,8 @@ extern "C" {
 
 #if __APPLE__
 #include <TargetConditionals.h>
+#else
+#include <arc4random.h>
 #endif
 
 using namespace std;

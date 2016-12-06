@@ -120,7 +120,7 @@ namespace litecore {
     :_store(store)
     {
         FILE *file;
-        _tmpPath = store.dir()["incoming_"].mkTempFile("_~", &file);
+        _tmpPath = store.dir()["incoming_"].mkTempFile(&file);
         _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
         auto &options = _store.options();
         if (options.encryptionAlgorithm != kNoEncryption) {

@@ -14,7 +14,7 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                     
 aux_source_directory(.  TEST_SRC)
 if(WIN32)
-	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
+	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.c)
 endif()
 
 add_executable(CppTests ${TEST_SRC})

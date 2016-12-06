@@ -29,7 +29,7 @@
 #else
 #include <direct.h>
 #include <io.h>
-#include "mkstemps.h"
+#include "mkstemp.h"
 #endif
 
 
@@ -243,10 +243,10 @@ namespace litecore {
     }
 
 
-    FilePath FilePath::mkTempFile(const string &suffix, FILE* *outHandle) const {
+    FilePath FilePath::mkTempFile(FILE* *outHandle) const {
         char templ[1024]; // MAXPATHLEN
-        sprintf(templ, "%sXXXXXX%s", path().c_str(), suffix.c_str());
-        int fd = mkstemps(templ, (int)suffix.length());
+        sprintf(templ, "%sXXXXXX", path().c_str());
+        int fd = mkstemp(templ);
         if (fd < 0)
             error::_throwErrno();
         if (outHandle)

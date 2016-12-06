@@ -22,7 +22,6 @@ else()
 endif()
 
 if(WIN32)
-    set(_ENCRYPTION openssl)
     if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015")
         set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/x86/)
     elseif(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015 Win64")
@@ -30,6 +29,7 @@ if(WIN32)
     endif()
     set(OPENSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/include)
     set(SQLITE3_WIN_INCLUDE ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
+    include(FindOpenSSL)
 endif()
 
 ### SUBMODULES:
@@ -42,7 +42,7 @@ if(WIN32)
      vendor/SQLiteCpp/sqlite3/sqlite3.c
      vendor/SQLiteCpp/sqlite3/sqlite3.h
     )
-    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS -DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4)
+    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
     set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
                 "/def:${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def")	
 endif()
@@ -90,7 +90,8 @@ set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
 		"LiteCore/Support/Error.cc"
 		"LiteCore/Support/FilePath.cc"
 		"LiteCore/Support/Logging.cc"
-		"LiteCore/Support/RefCounted.cc")
+		"LiteCore/Support/RefCounted.cc"
+        "LiteCore/Support/PlatformIO.cc")
 
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 
@@ -106,8 +107,8 @@ set(ALL_SRC_FILES ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
 							  
 if(MSVC)
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
-			     MSVC/memmem.cc MSVC/mkstemps.cc MSVC/strlcat.c MSVC/strlcat.c
-			     MSVC/vasprintf-msvc.c)
+			     MSVC/memmem.cc MSVC/mkstemp.cc MSVC/strlcat.c MSVC/strlcat.c
+			     MSVC/vasprintf-msvc.c MSVC/arc4random.c)
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})

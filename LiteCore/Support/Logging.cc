@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <mutex>
+#include "PlatformIO.hh"
 #if __APPLE__
 #include <sys/time.h>
 #endif

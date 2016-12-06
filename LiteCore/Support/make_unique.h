@@ -18,6 +18,7 @@
 // http://llvm.org/viewvc/llvm-project/libcxx/trunk/include/memory?r1=185352&r2=185351&pathrev=185352
 //
 
+#ifndef _MSC_VER
 #pragma once
 
 #if __cplusplus < 201402L
@@ -71,3 +72,4 @@ make_unique(size_t __n)
 #else
 #warning make_unique.h not intended for C++14 upwards.
 #endif  // __cplusplus < 201402L
+#endif
