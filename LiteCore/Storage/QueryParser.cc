@@ -18,6 +18,7 @@
 #include "Fleece.hh"
 #include "Path.hh"
 #include <utility>
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;
