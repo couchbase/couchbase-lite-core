@@ -337,8 +337,10 @@ namespace litecore {
     }
 
     
-    void SQLiteKeyStore::createIndex(const string &propertyExpression, IndexType type) {
-        ((SQLiteDataFile&)dataFile()).registerFleeceFunctions();
+    void SQLiteKeyStore::createIndex(const string &propertyExpression,
+                                     IndexType type,
+                                     const IndexOptions *options) {
+        db().registerFleeceFunctions();
 
         Transaction t(db());
         auto indexName = SQLIndexName(propertyExpression);
@@ -356,8 +358,16 @@ namespace litecore {
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
                 auto tableName = SQLFTSTableName(propertyExpression);
-                db().exec(string("CREATE VIRTUAL TABLE \"") + tableName + "\" USING fts4(text)");
-                // TODO: Use tokenizer
+                stringstream sql;
+                sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
+                if (options) {
+                    if (options->stemmer)
+                        sql << " \"stemmer=" << options->stemmer << "\"";
+                    if (options->ignoreDiacritics)
+                        sql << " \"remove_diacritics=1\"";
+                }
+                sql << ")";
+                db().exec(sql.str());
 
                 // Index existing records:
                 db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::propertyGetter(propertyExpression, "body") + " FROM kv_" + name());

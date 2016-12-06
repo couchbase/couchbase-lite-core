@@ -354,12 +354,16 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
 bool c4db_createIndex(C4Database *database,
                       C4Slice propertyPath,
                       C4IndexType indexType,
+                      const C4IndexOptions *indexOptions,
                       C4Error *outError) noexcept
 {
+    static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
+                  "IndexOptions types must match");
     return tryCatch(outError, [&]{
         WITH_LOCK(database);
         database->defaultKeyStore().createIndex((string)propertyPath,
-                                                (KeyStore::IndexType)indexType);
+                                                (KeyStore::IndexType)indexType,
+                                                (const KeyStore::IndexOptions*)indexOptions);
     });
 }
 

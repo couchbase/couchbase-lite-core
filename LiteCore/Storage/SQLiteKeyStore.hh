@@ -38,7 +38,9 @@ namespace litecore {
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
-        void createIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
+        void createIndex(const std::string &propertyPath,
+                         IndexType =kValueIndex,
+                         const IndexOptions* = nullptr) override;
         void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
         bool hasIndex(const std::string &propertyPath, IndexType =kValueIndex);
 

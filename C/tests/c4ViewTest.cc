@@ -337,7 +337,7 @@ TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
 
 TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, nullptr, &err));
     compile("{\"contact.address.street\": {\"$match\": \"Hwy\"}}");
     CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 

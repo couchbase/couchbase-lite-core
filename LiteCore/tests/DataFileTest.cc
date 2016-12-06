@@ -326,13 +326,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
 
 
 TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Query]") {
-    store->createIndex("$.sentence", KeyStore::kFullTextIndex);
-
     // Add some text to the database:
     static const char* strings[] = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.",
         "In their most elementary form, full-text search engines allow the user to efficiently search a large collection of documents for the subset that contain one or more instances of a search term.",
         "The search functionality provided to world wide web users by Google is, among other things, a full-text search engine, as it allows users to search for all documents on the web that contain, for example, the term \"fts5\".",
-        "To use FTS5, the user creates an FTS5 virtual table with one or more columns."};
+        "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
+        "Looking for things, searching for things, going on adventures..."};
     {
         Transaction t(store->dataFile());
         for (int i = 0; i < sizeof(strings)/sizeof(strings[0]); i++) {
@@ -350,12 +349,15 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
         t.commit();
     }
 
+    KeyStore::IndexOptions options = {"en", true};
+    store->createIndex("$.sentence", KeyStore::kFullTextIndex, &options);
+
     unique_ptr<Query> query{ store->compileQuery(enquotify("{`sentence`: {`$match`: `search`}}"),
                                                  enquotify("[`sentence`]")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
-    int expectedOrder[3] = {1, 2, 0};
-    int expectedTerms[3] = {3, 3, 1};
+    int expectedOrder[] = {1, 2, 0, 4};
+    int expectedTerms[] = {3, 3, 1, 1};
     for (QueryEnumerator e(query.get()); e.next(); ) {
         Log("key = %s", e.recordID().cString());
         CHECK(e.hasFullText());
@@ -363,12 +365,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
         for (auto term : e.fullTextTerms()) {
             CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
             auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
-            CHECK(word == "search");
+            CHECK(word == (rows == 3 ? "searching" : "search"));
         }
         CHECK((string)e.getMatchedText() == strings[expectedOrder[rows]]);
         ++rows;
     }
-    CHECK(rows == 3);
+    CHECK(rows == 4);
 }
 
 

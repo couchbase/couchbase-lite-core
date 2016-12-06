@@ -94,8 +94,15 @@ namespace litecore {
             kGeoIndex,           ///< Geo index of GeoJSON values
         };
 
+        struct IndexOptions {
+            const char *stemmer;
+            bool ignoreDiacritics;
+        };
+
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual void createIndex(const std::string &propertyPath, IndexType =kValueIndex);
+        virtual void createIndex(const std::string &propertyPath,
+                                 IndexType =kValueIndex,
+                                 const IndexOptions* = nullptr);
         virtual void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex);
 
         // public for complicated reasons; clients should never call it

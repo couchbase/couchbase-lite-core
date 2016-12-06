@@ -26,6 +26,10 @@
 #include <sstream>
 #include <mutex>
 
+extern "C" {
+#include "sqlite3_unicodesn_tokenizer.h"
+}
+
 #if __APPLE__
 #include <TargetConditionals.h>
 #endif
@@ -148,6 +152,7 @@ namespace litecore {
             RegisterFleeceFunctions    (sqlite, fleeceAccessor(), documentKeys());
             RegisterFleeceEachFunctions(sqlite, fleeceAccessor(), documentKeys());
             RegisterFTSRankFunction(sqlite);
+            register_unicodesn_tokenizer(sqlite);
             _registeredFleeceFunctions = true;
         }
     }

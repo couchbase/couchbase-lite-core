@@ -581,7 +581,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
             if (pass == 0) {
                 Stopwatch st2;
                 C4Error error;
-                REQUIRE(c4db_createIndex(db, C4STR("contact.address.state"), kC4ValueIndex, &error));
+                REQUIRE(c4db_createIndex(db, C4STR("contact.address.state"), kC4ValueIndex, nullptr, &error));
                 st2.printReport("Creating SQL index of state", 1, "index");
             }
         }

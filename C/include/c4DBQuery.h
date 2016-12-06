@@ -90,11 +90,29 @@ extern "C" {
      @{ */
 
 
+    /** Types of indexes. */
     typedef C4_ENUM(uint32_t, C4IndexType) {
         kC4ValueIndex,         ///< Regular index of property value
         kC4FullTextIndex,      ///< Full-text index
-        kC4GeoIndex,           ///< Geospatial index of GeoJSON values
+        kC4GeoIndex,           ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
     };
+
+
+    /** Options for indexes; these each apply to specific types of indexes. */
+    typedef struct {
+        /** Dominant language of text to be indexed; setting this enables word stemming, i.e.
+            matching different cases of the same word ("big" and "bigger", for instance.)
+            Can be an ISO-639 language code or a lowercase (English) language name; supported
+            languages are: da/danish, nl/dutch, en/english, fi/finnish, fr/french, de/german,
+            hu/hungarian, it/italian, no/norwegian, pt/portuguese, ro/romanian, ru/russian,
+            es/spanish, sv/swedish, tr/turkish.
+            If left null, no stemming occurs.*/
+        const char *language;
+
+        /** Should diacritical marks (accents) be ignored? Defaults to false.
+            Generally this should be left false for non-English text. */
+        bool ignoreDiacritics;
+    } C4IndexOptions;
 
 
     /** Creates an index on a document property, to speed up subsequent queries.
@@ -104,11 +122,13 @@ extern "C" {
         @param propertyPath  The property to index: a path expression such as "address.street"
                             or "coords[0]".
         @param indexType  The type of index (regular, full-text or geospatial.)
+        @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database,
                           C4Slice propertyPath,
                           C4IndexType indexType,
+                          const C4IndexOptions *indexOptions,
                           C4Error *outError) C4API;
 
     /** Deletes an index that was created by `c4db_createIndex`.
