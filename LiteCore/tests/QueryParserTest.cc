@@ -16,18 +16,19 @@
 using namespace std;
 
 
-static QueryParser parserWith(string whereJson, slice sortJson = nullslice) {
-    QueryParser qp("kv_default");
+static QueryParser& parse(QueryParser &qp, string whereJson, slice sortJson = nullslice) {
     qp.parseJSON(slice(enquotify(whereJson)), sortJson);
     return qp;
 }
 
 static string parseWhere(string json) {
-    return parserWith(json).whereClause();
+    QueryParser qp("kv_default");
+    return parse(qp, json).whereClause();
 }
 
 static string parseSort(string sortJson) {
-    return parserWith("{}", slice(enquotify(sortJson))).orderByClause();
+    QueryParser qp("kv_default");
+    return parse(qp, "{}", slice(enquotify(sortJson))).orderByClause();
 }
 
 
@@ -102,11 +103,15 @@ TEST_CASE("QueryParser elemMatch", "[Query]") {
 
 
 TEST_CASE("QueryParser FTS", "[Query]") {
-    auto p = parserWith("{`bio`: {`$match`: `architect`}}");
-    CHECK(p.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1");
-    CHECK(p.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence)");
-
-    p = parserWith("{`bio`: {`$match`: `architect`}, `skills`: {`$match`: `mobile`}}");
-    CHECK(p.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1, \"kv_default::skills\" AS FTS2");
-    CHECK(p.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence) AND (FTS2.text MATCH 'mobile' AND FTS2.rowid = kv_default.sequence)");
+    QueryParser qp("kv_default");
+    SECTION("Single match") {
+        parse(qp, "{`bio`: {`$match`: `architect`}}");
+        CHECK(qp.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1");
+        CHECK(qp.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence)");
+    }
+    SECTION("Multiple matches") {
+        parse(qp, "{`bio`: {`$match`: `architect`}, `skills`: {`$match`: `mobile`}}");
+        CHECK(qp.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1, \"kv_default::skills\" AS FTS2");
+        CHECK(qp.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence) AND (FTS2.text MATCH 'mobile' AND FTS2.rowid = kv_default.sequence)");
+    }
 }
