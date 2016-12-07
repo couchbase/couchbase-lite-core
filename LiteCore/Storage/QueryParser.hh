@@ -43,6 +43,9 @@ namespace litecore {
         static void writeSQLString(std::ostream &out, slice str);
 
     private:
+        QueryParser(const QueryParser&) =delete;
+        QueryParser& operator=(const QueryParser&) =delete;
+        
         void writePropertyPathString(slice property);
         void writePropertyGetter(const char *fn, slice property);
         void writeSQLString(slice str)      {writeSQLString(_sql, str);}
