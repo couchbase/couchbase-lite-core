@@ -225,7 +225,7 @@ C4QueryEnumerator* c4view_query(C4View *view,
             for (size_t i = 0; i < c4options->keysCount; i++) {
                 const C4Key* key = c4options->keys[i];
                 if (key)
-                    keyRanges.push_back(KeyRange(*key));
+                    keyRanges.emplace_back(*key);
             }
             return new C4MapReduceEnumerator(view, keyRanges, options);
         }
