@@ -217,15 +217,33 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 - (void) setDouble:  (double)d forKey: (NSString*)key    {self[key] = @(d);}
 
 
+- (NSData*) JSONData {
+    if (_hasUnsavedChanges) {
+        return assertNonNull([NSJSONSerialization dataWithJSONObject: _properties
+                                                             options: 0 error: NULL]);
+    } else {
+        return convertSliceResult(c4doc_bodyAsJSON(_c4doc, NULL));
+    }
+}
+
+
+- (void) setJSONData:(NSData *)json {
+    NSDictionary* properties = [NSJSONSerialization JSONObjectWithData: json options: 0 error: NULL];
+    NSAssert(properties, @"Couldn't parse JSON");
+    NSAssert([properties isKindOfClass: [NSDictionary class]], @"Properties must be a dictionary");
+    self.properties = properties;
+}
+
+
+#pragma mark - SAVING:
+
+
 - (void) noteChanged {
     if (!_hasUnsavedChanges)
         self.hasUnsavedChanges = true;
     [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentChangedNotification
                                                       object: self];
 }
-
-
-#pragma mark - SAVING:
 
 
 - (bool) hasUnsavedChanges {
@@ -283,8 +301,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
             .save = true,
         };
         if (propertiesToSave.count) {
-            auto enc = FLEncoder_New();
-            FLEncoder_SetSharedKeys(enc, c4db_getFLSharedKeys(_c4db));
+            auto enc = c4db_createFleeceEncoder(_c4db);
             FLEncoder_WriteNSObject(enc, propertiesToSave);
             FLError flErr;
             auto body = FLEncoder_Finish(enc, &flErr);
@@ -356,8 +373,7 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
 
 
 - (void) postSavedNotificationExternal: (bool)external {
-    NSLog(@"DocumentSaved: %@ @%llu%s", _documentID, self.sequence,
-          (external ? " EXT" : ""));
+    C4Debug("DocumentSaved: %s @%llu%s", _documentID.UTF8String, self.sequence, (external ? " EXT" : ""));
     NSDictionary* userInfo = external ? @{@"external": @YES} : nil;
     [NSNotificationCenter.defaultCenter postNotificationName: LCDocumentSavedNotification
                                                       object: self

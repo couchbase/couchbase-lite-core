@@ -49,7 +49,7 @@ static void logCallback(C4LogLevel level, C4Slice message) {
 
 + (void) initialize {
     if (self == [LCDatabase class]) {
-        c4log_register(kC4LogInfo, &logCallback);
+        c4log_register(kC4LogWarning, &logCallback);
     }
 }
 
@@ -86,6 +86,14 @@ static void logCallback(C4LogLevel level, C4Slice message) {
 
 
 - (bool) close: (NSError**)outError {
+    [NSObject cancelPreviousPerformRequestsWithTarget: self
+                                             selector: @selector(postDatabaseChanged)
+                                               object: nil];
+    if (_unsavedDocuments.count > 0)
+        C4Warn("Closing database with %lu unsaved docs", (unsigned long)_unsavedDocuments.count);
+    _documents = nil;
+    _unsavedDocuments = nil;
+
     C4Error err;
     if (!c4db_close(_c4db, &err))
         return convertError(err, outError);
@@ -115,8 +123,9 @@ static void logCallback(C4LogLevel level, C4Slice message) {
 
 - (NSString*) path {
     C4SliceResult str = c4db_getPath(_c4db);
-    NSString* path = [NSFileManager.defaultManager stringWithFileSystemRepresentation: (const char*)str.buf
-                                                                     length: str.size];
+    NSString* path = [NSFileManager.defaultManager
+                                        stringWithFileSystemRepresentation: (const char*)str.buf
+                                                                    length: str.size];
     c4slice_free(str);
     return path;
 }

@@ -36,3 +36,14 @@ bool convertError(const FLError &flErr, NSError **outError) {
         *outError = [NSError errorWithDomain: FLErrorDomain code: flErr userInfo: nil];
     return false;
 }
+
+
+NSData* convertSliceResult(C4SliceResult s) {
+    if (!s.buf)
+        return nil;
+    return [[NSData alloc] initWithBytesNoCopy: (void*)s.buf
+                                        length: s.size
+                                   deallocator: ^(void *bytes, NSUInteger length) {
+                                       c4slice_free({bytes, length});
+                                   }];
+}

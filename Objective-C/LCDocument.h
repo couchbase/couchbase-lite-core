@@ -34,6 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (readwrite, nullable, nonatomic) NSDictionary* properties;
 
+@property (readwrite, copy, nonatomic) NSData* JSONData;
+
 - (nullable id)objectForKeyedSubscript:(NSString*)key;
 - (void) setObject: (nullable id)value forKeyedSubscript:(NSString*)key;
 
