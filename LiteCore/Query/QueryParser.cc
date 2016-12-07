@@ -335,8 +335,18 @@ namespace litecore {
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(const char *fn, slice property) {
-        writePropertyGetterLeftOpen(fn, property);
-        _sql << ")";
+        if (property == "_id"_sl) {
+            if (strcmp(fn, "fl_value") != 0)
+                fail();
+            _sql << "key";
+        } else if (property == "_sequence"_sl) {
+            if (strcmp(fn, "fl_value") != 0)
+                fail();
+            _sql << "sequence";
+        } else {
+            writePropertyGetterLeftOpen(fn, property);
+            _sql << ")";
+        }
     }
 
 
