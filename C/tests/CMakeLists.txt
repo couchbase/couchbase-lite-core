@@ -28,6 +28,8 @@ if(MSVC)
         -DFilesToCopy="${FilesToCopy}"
         -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
         -P ${TOP}MSVC/copy_artifacts.cmake)
+elseif(ANDROID)
+    target_link_libraries(C4Tests "log")
 elseif(UNIX AND NOT APPLE)
     target_link_libraries(C4Tests "pthread")
 endif()

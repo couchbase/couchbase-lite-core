@@ -29,7 +29,11 @@
 #define kTestDir "C:\\tmp\\"
 #define kPathSeparator "\\"
 #else
+#ifdef __ANDROID__
+#define kTestDir "/data/local/tmp/"
+#else
 #define kTestDir "/tmp/"
+#endif
 #define kPathSeparator "/"
 #endif
 

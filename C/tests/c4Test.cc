@@ -155,10 +155,12 @@ C4Test::~C4Test() {
     c4db_delete(db, &error);
     c4db_free(db);
 
+#if ATOMIC_INT_LOCK_FREE > 1
     if (!current_exception()) {
         // Check for leaks:
         REQUIRE(c4_getObjectCount() == objectCount);
     }
+#endif
 }
 
 

@@ -15,6 +15,8 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
 aux_source_directory(.  TEST_SRC)
 if(WIN32)
 	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.c)
+elseif(ANDROID)
+  set(TEST_SRC ${TEST_SRC} ../Android/arc4random.cc)
 endif()
 
 add_executable(CppTests ${TEST_SRC})
@@ -24,8 +26,10 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 sqlite3
                                 SQLite3_UnicodeSN)
 if(NOT APPLE)
-    if(UNIX)
+    if(UNIX AND NOT ANDROID)
         target_link_libraries(CppTests  crypto  bsd)
+    elseif(ANDROID)
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
     else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
         if(MSVC)

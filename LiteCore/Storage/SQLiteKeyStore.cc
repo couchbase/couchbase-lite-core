@@ -15,6 +15,7 @@
 #include "Error.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -28,8 +29,10 @@ namespace litecore {
                                                     " WHERE type='table' AND name GLOB 'kv_*'"));
         LogStatement(allStores);
         while (allStores.executeStep()) {
-            names.push_back(allStores.getColumn(0));
+            string storeName = allStores.getColumn(0).getString();
+            names.push_back(storeName);
         }
+        
         return names;
     }
 

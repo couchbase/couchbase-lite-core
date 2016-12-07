@@ -11,12 +11,16 @@
 using namespace litecore;
 
 
-const VersionVector kTestVers {"2@*,3@$,1@bob"_sl};
-const VersionVector kTestCASVers {"3@$,2@*"_sl};
+inline const VersionVector kTestVers() {
+    return VersionVector{"2@*,3@$,1@bob"_sl};
+}
+inline const VersionVector kTestCASVers() {
+    return VersionVector{"3@$,2@*"_sl};
+}
 
 static void verifyRev(const Revision &rev) {
     REQUIRE(rev.docID() == "DOC"_sl);
-    REQUIRE(rev.version() == kTestVers);
+    REQUIRE(rev.version() == kTestVers());
     REQUIRE(rev.flags() == Revision::kHasAttachments);
     REQUIRE(rev.hasAttachments());
     REQUIRE_FALSE(rev.isDeleted());
@@ -26,7 +30,7 @@ static void verifyRev(const Revision &rev) {
 }
 
 TEST_CASE("CreateRev", "[Revision]") {
-    Revision rev("DOC"_sl, kTestVers,
+    Revision rev("DOC"_sl, kTestVers(),
                  Revision::BodyParams{"{\"foo\":true}"_sl, "O-"_sl, false, true},
                  true);
     verifyRev(rev);

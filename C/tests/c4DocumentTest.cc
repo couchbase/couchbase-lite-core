@@ -11,7 +11,7 @@
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
-#ifdef CMAKE
+#if defined(CMAKE) && !defined(__ANDROID__)
     importJSONLines("../../../C/tests/names_100.json");
 #else
     importJSONLines("C/tests/names_100.json");

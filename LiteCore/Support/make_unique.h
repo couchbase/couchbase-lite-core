@@ -72,4 +72,4 @@ make_unique(size_t __n)
 #else
 #warning make_unique.h not intended for C++14 upwards.
 #endif  // __cplusplus < 201402L
-#endif
+#endif // !_MSC_VER

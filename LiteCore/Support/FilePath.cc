@@ -47,7 +47,11 @@ namespace litecore {
     static const char  kSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
+#ifdef __ANDROID__
+    static const char* kTempDir = "/data/local/tmp/";
+#else
     static const char* kTempDir = "/tmp/";
+#endif
 #endif
 
 
