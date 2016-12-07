@@ -101,8 +101,8 @@ protected:
     void reopenDB();
 
     // Creates a new document revision with the given revID as a child of the current rev
-    void createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
-    static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, bool isNew = true);
+    void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
+    static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
 
     FLSlice readFile(const char *path); // caller must free buf when done
     bool readFileByLines(const char *path, std::function<bool(FLSlice)>);

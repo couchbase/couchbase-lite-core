@@ -249,7 +249,8 @@ C4Document* c4doc_put(C4Database *database,
                 parentRevID = rq->history[0];
             else if (rq->historyCount > 1)
                 error::_throw(error::InvalidParameter);
-            doc = c4doc_getForPut(database, rq->docID, parentRevID, rq->deletion, rq->allowConflict,
+            bool deletion = (rq->revFlags & kRevDeleted) != 0;
+            doc = c4doc_getForPut(database, rq->docID, parentRevID, deletion, rq->allowConflict,
                                   outError);
             if (!doc)
                 return nullptr;
@@ -264,6 +265,12 @@ C4Document* c4doc_put(C4Database *database,
         c4doc_free(doc);
         return nullptr;
     }
+}
+
+
+bool c4doc_removeRevisionBody(C4Document* doc) noexcept {
+    auto idoc = internal(doc);
+    return idoc->mustBeInTransaction(NULL) && idoc->removeSelectedRevBody();
 }
 
 

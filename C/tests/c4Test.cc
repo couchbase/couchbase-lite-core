@@ -173,11 +173,11 @@ void C4Test::reopenDB() {
 }
 
 
-void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
-    C4Test::createRev(db, docID, revID, body, isNew);
+void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
+    C4Test::createRev(db, docID, revID, body, flags);
 }
 
-void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, bool isNew) {
+void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     TransactionHelper t(db);
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);
@@ -191,7 +191,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     rq.history = history;
     rq.historyCount = 1 + (curDoc->revID.buf != nullptr);
     rq.body = body;
-    rq.deletion = (body.buf == nullptr);
+    rq.revFlags = flags;
     rq.save = true;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     REQUIRE(doc != nullptr);

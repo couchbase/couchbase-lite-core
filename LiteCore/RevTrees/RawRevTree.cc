@@ -86,7 +86,7 @@ namespace litecore {
         this->size = _enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
         memcpy(this->revID, rev.revID.buf, rev.revID.size);
-        this->parentIndex = htons(rev.parentIndex);
+        this->parentIndex = htons(rev._parentIndex);
 
         uint8_t dstFlags = rev.flags & RawRevision::kPublicPersistentFlags;
         if (rev._body.size > 0)
@@ -105,7 +105,7 @@ namespace litecore {
         dst.revID.buf = (char*)this->revID;
         dst.revID.size = this->revIDLen;
         dst.flags = (Rev::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
-        dst.parentIndex = ntohs(this->parentIndex);
+        dst._parentIndex = ntohs(this->parentIndex);
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
         data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));

@@ -33,7 +33,8 @@ extern "C" {
         kRevDeleted        = 0x01, ///< Is this revision a deletion/tombstone?
         kRevLeaf           = 0x02, ///< Is this revision a leaf (no children?)
         kRevNew            = 0x04, ///< Has this rev been inserted since the doc was read?
-        kRevHasAttachments = 0x08  ///< Does this rev's body contain attachments?
+        kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
+        kRevKeepBody       = 0x10  ///< Revision's body should not be discarded when non-leaf
     }; // Note: Same as Revision::Flags
 
 
@@ -122,7 +123,7 @@ extern "C" {
                                 C4Error *outError) C4API;
 
     /** Transfers ownership of the document's `selectedRev.body` to the caller, without copying.
-        The C4Document's field is cleared, and the value returned from this function. As witt
+        The C4Document's field is cleared, and the value returned from this function. As with
         all C4SliceResult values, the caller is responsible for freeing it when finished. */
     C4SliceResult c4doc_detachRevisionBody(C4Document* doc) C4API;
 
@@ -149,6 +150,12 @@ extern "C" {
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4Slice revID) C4API;
 
+
+    /** Removes the body of the selected revision and clears its kKeepBody flag.
+        Must be called within a transaction. Remember to save the document afterwards.
+        @param doc  The document to operate on.
+        @return  True if successful, false if unsuccessful. */
+    bool c4doc_removeRevisionBody(C4Document* doc) C4API;
 
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
@@ -211,8 +218,7 @@ extern "C" {
         C4Slice body;               ///< Revision's body
         C4Slice docID;              ///< Document ID
         C4Slice docType;            ///< Document type if any (used by indexer)
-        bool deletion;              ///< Is this revision a deletion?
-        bool hasAttachments;        ///< Does this revision have attachments?
+        C4RevisionFlags revFlags;   ///< Revision flags (deletion, attachments, keepBody)
         bool existingRevision;      ///< Is this an already-existing rev coming from replication?
         bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?
         const C4Slice *history;     ///< Array of ancestor revision IDs

@@ -46,7 +46,7 @@ class C4DatabaseTest : public C4Test {
             createRev(c4str(docID), kRevID, kBody);
         }
         // Add a deleted doc to make sure it's skipped by default:
-        createRev(c4str("doc-005DEL"), kRevID, kC4SliceNull);
+        createRev(c4str("doc-005DEL"), kRevID, kC4SliceNull, kRevDeleted);
     }
 };
 
@@ -204,9 +204,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateVersionedDoc", "[Database
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Database][C]") {
     const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
+    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
     createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody2);
-    createRev(kDocID, kRev2ID, kBody2, false); // test redundant insert
+    createRev(kDocID, kRev2ID, kBody2, kRevKeepBody);
+    createRev(kDocID, kRev2ID, kBody2); // test redundant insert
 
     // Reload the doc:
     C4Error error;
@@ -225,36 +226,28 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateMultipleRevisions", "[Dat
         REQUIRE(doc->selectedRev.revID == kRevID);
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)1);
         REQUIRE(doc->selectedRev.body == kC4SliceNull);
-#if 1
-        // No longer keeping non-leaf revisions around. --jpa 12/1/2016
         REQUIRE(!c4doc_hasRevisionBody(doc));
-#else
-        REQUIRE(c4doc_hasRevisionBody(doc));
-        REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(doc->selectedRev.body == kBody);
-#endif
         REQUIRE(!c4doc_selectParentRevision(doc));
         c4doc_free(doc);
 
-        // Compact database:
-        REQUIRE(c4db_compact(db, &error));
-
+        // Add a 3rd revision:
+        createRev(kDocID, kRev3ID, kBody3);
+        // Revision 2 should keep its body due to the kRevKeepBody flag:
         doc = c4doc_get(db, kDocID, true, &error);
         REQUIRE(doc != nullptr);
         REQUIRE(c4doc_selectParentRevision(doc));
-        REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)1);
-        if (!isSQLite()) {
-            REQUIRE(doc->selectedRev.body == kC4SliceNull);
-            REQUIRE(!c4doc_hasRevisionBody(doc));
-            REQUIRE(!c4doc_loadRevisionBody(doc, &error));
-        }
+        REQUIRE(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
+        REQUIRE(doc->selectedRev.flags == kRevKeepBody);
+        REQUIRE(doc->selectedRev.body == kBody2);
+        c4doc_free(doc);
 
         // Purge doc
         {
             TransactionHelper t(db);
-            int nPurged = c4doc_purgeRevision(doc, kRev2ID, &error);
-            REQUIRE(nPurged == 2);
+            doc = c4doc_get(db, kDocID, true, &error);
+            int nPurged = c4doc_purgeRevision(doc, kRev3ID, &error);
+            REQUIRE(nPurged == 3);
             REQUIRE(c4doc_save(doc, 20, &error));
         }
     }
@@ -333,7 +326,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database GetForPut", "[Database][C]") {
     c4doc_free(doc);
     
     // Actually delete it:
-    createRev(kDocID, kRev3ID, kC4SliceNull);
+    createRev(kDocID, kRev3ID, kC4SliceNull, kRevDeleted);
 
     // Re-creating the doc (no revID given):
     doc = c4doc_getForPut(db, kDocID, kC4SliceNull, false, false, &error);

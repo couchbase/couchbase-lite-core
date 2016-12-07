@@ -85,7 +85,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     revidBuffer rev1ID("1-aaaa"_sl);
     litecore::slice rev1Data("body of revision");
     int httpStatus;
-    rev = tree.insert(rev1ID, rev1Data, false, false,
+    rev = tree.insert(rev1ID, rev1Data, (Rev::Flags)0,
                       revid(), false, httpStatus);
     REQUIRE(rev);
     REQUIRE(httpStatus == 201);
@@ -96,7 +96,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
 
     revidBuffer rev2ID("2-bbbb"_sl);
     litecore::slice rev2Data("second revision");
-    auto rev2 = tree.insert(rev2ID, rev2Data, false, false, rev1ID, false, httpStatus);
+    auto rev2 = tree.insert(rev2ID, rev2Data, (Rev::Flags)0, rev1ID, false, httpStatus);
     REQUIRE(rev2);
     REQUIRE(httpStatus == 201);
     REQUIRE(rev2->revID == rev2ID);
@@ -131,7 +131,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[
     revidBuffer revIDBuf(revID);
     VersionedDocument v(*store, "foo"_sl);
     int httpStatus;
-    v.insert(revIDBuf, body, false, false, nullptr, false, httpStatus);
+    v.insert(revIDBuf, body, (Rev::Flags)0, nullptr, false, httpStatus);
     REQUIRE(httpStatus == 201);
 
     const Rev* node = v.get(stringToRev(revID));
@@ -152,7 +152,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[Vers
 
         litecore::slice rev1Data("body of revision");
         int httpStatus;
-        v.insert(rev1ID, rev1Data, true /*deleted*/, false,
+        v.insert(rev1ID, rev1Data, Rev::kDeleted,
                  revid(), false, httpStatus);
 
         v.setDocType("moose"_sl);

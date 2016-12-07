@@ -32,7 +32,7 @@ namespace litecore {
         sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
         slice body() const          {return _body;}
-        bool isBodyAvailable() const {return _body.buf != nullptr;}
+        bool isBodyAvailable() const{return _body.buf != nullptr;}
 
         bool isLeaf() const         {return (flags & kLeaf) != 0;}
         bool isDeleted() const      {return (flags & kDeleted) != 0;}
@@ -51,18 +51,20 @@ namespace litecore {
             kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
             kLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
             kNew            = 0x04, /**< Has this rev been inserted since decoding? */
-            kHasAttachments = 0x08  /**< Does this rev's body contain attachments? */
+            kHasAttachments = 0x08, /**< Does this rev's body contain attachments? */
+            kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
         };
         Flags flags;
 
     private:
         static const uint16_t kNoParent = UINT16_MAX;
         
-        slice       _body;           /**< Revision body (JSON), or empty if not stored in this tree*/
-        uint16_t    parentIndex;    /**< Index in tree's rev[] array of parent revision, if any */
+        slice       _body;          /**< Revision body (JSON), or empty if not stored in this tree*/
+        uint16_t    _parentIndex;   /**< Index in tree's rev[] array of parent revision, if any */
 
-        void addFlag(Flags f)      {flags = (Flags)(flags | f);}
-        void clearFlag(Flags f)    {flags = (Flags)(flags & ~f);}
+        void addFlag(Flags f)       {flags = (Flags)(flags | f);}
+        void clearFlag(Flags f)     {flags = (Flags)(flags & ~f);}
+        void removeBody()           {clearFlag(kKeepBody); _body = nullslice;}
 #if DEBUG
         void dump(std::ostream&);
 #endif
@@ -94,21 +96,25 @@ namespace litecore {
         std::vector<const Rev*> currentRevisions() const;
         bool hasConflict() const;
 
-        const Rev* insert(revid, slice body,
-                               bool deleted, bool hasAttachments,
-                               revid parentRevID,
-                               bool allowConflict,
-                               int &httpStatus);
-        const Rev* insert(revid, slice body,
-                               bool deleted, bool hasAttachments,
-                               const Rev* parent,
-                               bool allowConflict,
-                               int &httpStatus);
+        const Rev* insert(revid,
+                          slice body,
+                          Rev::Flags,
+                          revid parentRevID,
+                          bool allowConflict,
+                          int &hshipttpStatus);
+        const Rev* insert(revid,
+                          slice body,
+                          Rev::Flags,
+                          const Rev* parent,
+                          bool allowConflict,
+                          int &httpStatus);
         int insertHistory(const std::vector<revidBuffer> history,
                           slice body,
-                          bool deleted, bool hasAttachments);
+                          Rev::Flags);
 
         unsigned prune(unsigned maxDepth);
+
+        void removeBody(const Rev*);
 
         void removeNonLeafBodies();
 
@@ -133,8 +139,7 @@ namespace litecore {
 
     private:
         friend class Rev;
-        const Rev* _insert(revid, slice body, const Rev *parentRev,
-                                bool deleted, bool hasAttachments);
+        const Rev* _insert(revid, slice body, const Rev *parentRev, Rev::Flags);
         bool confirmLeaf(Rev* testRev);
         void compact();
         RevTree(const RevTree&) = delete;

@@ -110,6 +110,10 @@ namespace c4Internal {
             error::_throw(error::Unimplemented);
         }
 
+        virtual bool removeSelectedRevBody() noexcept {
+            return false;
+        }
+
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;

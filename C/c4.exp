@@ -47,6 +47,7 @@ _c4doc_selectRevision
 _c4doc_selectCurrentRevision
 _c4doc_loadRevisionBody
 _c4doc_hasRevisionBody
+_c4doc_removeRevisionBody
 _c4doc_selectParentRevision
 _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision

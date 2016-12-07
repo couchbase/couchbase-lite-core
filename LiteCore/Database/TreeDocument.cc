@@ -190,6 +190,13 @@ namespace c4Internal {
             initRevID();
         }
 
+        bool removeSelectedRevBody() noexcept override {
+            if (!_selectedRev)
+                return false;
+            _versionedDoc.removeBody(_selectedRev);
+            return true;
+        }
+
         void save(unsigned maxRevTreeDepth) {
             _versionedDoc.prune(maxRevTreeDepth);
             {
@@ -284,8 +291,7 @@ namespace c4Internal {
             revIDBuffers[i].parse(rq.history[i]);
         commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
                                                      rq.body,
-                                                     rq.deletion,
-                                                     rq.hasAttachments);
+                                                     (Rev::Flags)rq.revFlags);
         if (commonAncestor < 0)
             error::_throw(error::InvalidParameter); // must be invalid revision IDs
         updateMeta();
@@ -344,12 +350,12 @@ namespace c4Internal {
 
 
     bool TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
-        revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, rq.deletion);
+        bool deletion = (rq.revFlags & kRevDeleted) != 0;
+        revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
         int httpStatus;
         auto newRev = _versionedDoc.insert(encodedRevID,
                                            rq.body,
-                                           rq.deletion,
-                                           rq.hasAttachments,
+                                           (Rev::Flags)rq.revFlags,
                                            _selectedRev,
                                            rq.allowConflict,
                                            httpStatus);

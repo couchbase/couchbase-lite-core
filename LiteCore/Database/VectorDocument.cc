@@ -186,8 +186,10 @@ namespace c4Internal {
 
 
         virtual int32_t putExistingRevision(const C4DocPutRequest &rq) override {
+            bool deletion = (rq.revFlags & kRevDeleted) != 0;
+            bool hasAttachments = (rq.revFlags & kRevHasAttachments) != 0;
             VersionVector vers(rq.history[0]);
-            Revision::BodyParams bodyParams {rq.body, rq.docType, rq.deletion, rq.hasAttachments};
+            Revision::BodyParams bodyParams {rq.body, rq.docType, deletion, hasAttachments};
             shared_ptr<Revision> newRev(new Revision(rq.docID, vers, bodyParams, true));
             auto order = _store.insert(*newRev, _db->transaction());
             if (order == kOlder || order == kSame)
@@ -202,7 +204,9 @@ namespace c4Internal {
 
 
         virtual bool putNewRevision(const C4DocPutRequest &rq) override {
-            Revision::BodyParams bodyParams {rq.body, rq.docType, rq.deletion, rq.hasAttachments};
+            bool deletion = (rq.revFlags & kRevDeleted) != 0;
+            bool hasAttachments = (rq.revFlags & kRevHasAttachments) != 0;
+            Revision::BodyParams bodyParams {rq.body, rq.docType, deletion, hasAttachments};
             shared_ptr<Revision> newRev = _store.create(rq.docID, _selected->version(), bodyParams,
                                                         _db->transaction());
             if (!newRev)
