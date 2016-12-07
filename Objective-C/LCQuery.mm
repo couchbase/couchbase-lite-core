@@ -45,16 +45,19 @@ static inline T* _Nonnull  assertNonNull(T* _Nullable t) {
                             error: (NSError**)outError
 {
     NSParameterAssert(db != nil);
-    NSParameterAssert(where != nil);
     self = [super init];
     if (self) {
         _db = db;
         _limit = UINT64_MAX;
 
-        NSData* whereData = [NSJSONSerialization dataWithJSONObject: where options: 0
-                                                              error: outError];
-        if (!whereData)
-            return nil;
+        NSData* whereData = nil;
+        if (where) {
+            whereData = [NSJSONSerialization dataWithJSONObject: (NSDictionary*)where
+                                                        options: 0
+                                                          error: outError];
+            if (!whereData)
+                return nil;
+        }
 
         NSData* sortData = nil;
         if (sortDescriptors) {

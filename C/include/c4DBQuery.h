@@ -34,6 +34,7 @@ extern "C" {
         @param database  The database to be queried.
         @param queryExpression  JSON data describing a predicate that documents must match.
                     The syntax is too complex to describe here; see full documentation elsewhere.
+                    If this is NULL, all documents match.
         @param sortExpression  Optional JSON array of strings, describing the property path(s)
                     to sort by. The first path is the primary sort, the second secondary, etc.
                     A path can be prefixed with "-" to denote descending order, or "+" (a no-op.)

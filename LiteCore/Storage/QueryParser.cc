@@ -141,7 +141,8 @@ namespace litecore {
 
 
     void QueryParser::parse(const Value *whereExpression, const Value *sortExpression) {
-        parsePredicate(whereExpression);
+        if (whereExpression)
+            parsePredicate(whereExpression);
         parseSort(sortExpression);
     }
 
@@ -149,9 +150,11 @@ namespace litecore {
     void QueryParser::parseJSON(slice whereJSON, slice sortJSON) {
         const Value *whereValue = nullptr, *sortValue = nullptr;
         alloc_slice whereFleece, sortFleece;
-        whereFleece = JSONConverter::convertJSON(whereJSON);
-        whereValue = Value::fromTrustedData(whereFleece);
-        if (sortJSON.buf) {
+        if (whereJSON) {
+            whereFleece = JSONConverter::convertJSON(whereJSON);
+            whereValue = Value::fromTrustedData(whereFleece);
+        }
+        if (sortJSON) {
             sortFleece = JSONConverter::convertJSON(sortJSON);
             sortValue = Value::fromTrustedData(sortFleece);
         }

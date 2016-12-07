@@ -158,8 +158,10 @@ namespace litecore {
                     error::_throw(error::LiteCore, error::NoSuchIndex);
                 sql << ", offsets(\"" << keyStore.tableName() << "::" << property << "\")";
             }
-            sql << " FROM " << qp.fromClause() <<
-                   " WHERE (" << qp.whereClause() << ")";
+            sql << " FROM " << qp.fromClause();
+            auto where = qp.whereClause();
+            if (!where.empty())
+                   sql << " WHERE (" << where << ")";
 
             auto orderBy = qp.orderByClause();
             if (!orderBy.empty())

@@ -294,7 +294,7 @@
     __block int n = 0;
     [db inTransaction: NULL do: ^bool{
         [contents enumerateLinesUsingBlock: ^(NSString *line, BOOL *stop) {
-            LCDocument* doc = [self->db documentWithID: [NSString stringWithFormat: @"person-%d", ++n]];
+            LCDocument* doc = [self->db documentWithID: [NSString stringWithFormat: @"person-%03d", ++n]];
             doc.properties = [NSJSONSerialization JSONObjectWithData: (NSData*)[line dataUsingEncoding: NSUTF8StringEncoding] options: 0 error: NULL];
             NSError* error;
             XCTAssert([doc save: &error]);
@@ -302,24 +302,47 @@
         return true;
     }];
 
-    for (int pass = 0; pass < 2; ++pass) {
-        NSError* error;
-        LCQuery* q = [[LCQuery alloc] initWithDatabase: db
-                                                 where: @{@"name.first": @[@1]}
-                                               orderBy: nil error: &error];
+    // All-docs query:
+    NSError* error;
+    {
+        LCQuery* q = [[LCQuery alloc] initWithDatabase: db where: nil orderBy: nil error: &error];
         XCTAssert(q, @"Couldn't create query: %@", error);
-        q.parameters = @{@"1": @"Claude"};
         NSEnumerator* e = [q run: &error];
         XCTAssert(e);
         n = 0;
         for (LCQueryRow *row in e) {
             ++n;
             NSLog(@"Row: docID='%@', sequence=%llu", row.documentID, row.sequence);
-            XCTAssertEqualObjects(row.documentID, @"person-9");
+            NSString* expectedID = [NSString stringWithFormat: @"person-%03d", n];
+            XCTAssertEqualObjects(row.documentID, expectedID);
+            XCTAssertEqual(row.sequence, n);
+            LCDocument* doc = row.document;
+            XCTAssertEqualObjects(doc.documentID, expectedID);
+            XCTAssertEqual(doc.sequence, n);
+        }
+        XCTAssertEqual(n, 100);
+    }
+
+    // Try a query involving a property:
+    for (int pass = 0; pass < 2; ++pass) {
+        LCQuery *q = [[LCQuery alloc] initWithDatabase: db
+                                        where: @{@"name.first": @[@1]}
+                                      orderBy: nil error: &error];
+        XCTAssert(q, @"Couldn't create query: %@", error);
+        q.parameters = @{@"1": @"Claude"};
+        NSEnumerator* e = [q run: &error];
+        XCTAssert(e);
+        n = 0;
+        for (LCQueryRow *row in e) {
+            @autoreleasepool {
+            ++n;
+            NSLog(@"Row: docID='%@', sequence=%llu", row.documentID, row.sequence);
+            XCTAssertEqualObjects(row.documentID, @"person-009");
             XCTAssertEqual(row.sequence, 9);
             LCDocument* doc = row.document;
-            XCTAssertEqualObjects(doc.documentID, @"person-9");
+            XCTAssertEqualObjects(doc.documentID, @"person-009");
             XCTAssertEqual(doc.sequence, 9);
+            }
         }
         XCTAssertEqual(n, 1);
 
