@@ -35,23 +35,18 @@ namespace litecore {
         return w.extractOutput();
     }
 
-    Version::Version(slice string, bool validateAuthor) {
+    Version::Version(slice string) {
         if (string[0] == '^') {
             _gen = 0;
             _author = string;
             _author.moveStart(1);
-            if (validateAuthor)
-                validate();
         } else {
             _gen = string.readDecimal();                             // read generation
-            if (_gen == 0 || string.readByte() != '@'                // read '@'
-                         || string.size < 1 || string.size > kMaxAuthorSize)
+            if (_gen == 0 || string.readByte() != '@')               // read '@'
                 error::_throw(error::BadVersionVector);
-            if (validateAuthor)
-                if (_author.findByte(',') || _author.findByte('\0'))
-                    error::_throw(error::BadVersionVector);
             _author = string;                                        // read peer ID
         }
+        validate();
     }
 
     void Version::validate() const {
@@ -126,7 +121,7 @@ namespace litecore {
             if (comma == nullptr) {
                 comma = string.end();
             }
-            _vers.push_back( Version(string.upTo(comma), false) );
+            _vers.emplace_back(string.upTo(comma));
             string = string.from(comma);
             if (string.size > 0)
                 string.moveStart(1); // skip comma
@@ -173,7 +168,7 @@ namespace litecore {
         if (i.count() % 2 != 0)
             error::_throw(error::BadVersionVector);
         for (; i; i += 2)
-            _vers.push_back( Version((generation)i[0]->asUnsigned(), i[1]->asString()) );
+            _vers.emplace_back((generation)i[0]->asUnsigned(), i[1]->asString());
     }
 
 

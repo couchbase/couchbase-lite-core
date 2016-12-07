@@ -108,7 +108,7 @@ C4KeyValueList* c4kv_new() noexcept {
 
 void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) noexcept {
     kv->keys.push_back(*key);
-    kv->values.push_back(alloc_slice(value));
+    kv->values.emplace_back(value);
 }
 
 void c4kv_free(C4KeyValueList *kv) noexcept {

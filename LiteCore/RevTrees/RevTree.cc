@@ -173,9 +173,9 @@ namespace litecore {
     {
         Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
-        _insertedData.push_back(alloc_slice(unownedRevID));
+        _insertedData.emplace_back(unownedRevID);
         revid revID = revid(_insertedData.back());
-        _insertedData.push_back(alloc_slice(body));
+        _insertedData.emplace_back(body);
         body = _insertedData.back();
 
         Rev newRev;

@@ -38,7 +38,7 @@ public:
             CollatableBuilder key;
             key << body[i];
             keys.push_back(key);
-            values.push_back(alloc_slice(body[0]));
+            values.emplace_back(body[0]);
         }
         bool changed = writer.update(recordID, 1, keys, values, _rowCount);
         REQUIRE(changed);
@@ -135,8 +135,8 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index Basics", "[Index]") {
     // Enumerate a vector of key ranges:
     Log("--- Enumerating a vector of key ranges");
     std::vector<KeyRange> ranges;
-    ranges.push_back(KeyRange(CollatableBuilder("Port"), CollatableBuilder(u8"Port\uFFFE")));
-    ranges.push_back(KeyRange(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti")));
+    ranges.emplace_back(CollatableBuilder("Port"), CollatableBuilder(u8"Port\uFFFE"));
+    ranges.emplace_back(CollatableBuilder("Vernon"), CollatableBuilder("Ypsilanti"));
     nRows = 0;
     for (IndexEnumerator e(*index, ranges); e.next(); ) {
         nRows++;
@@ -165,9 +165,9 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         std::vector<alloc_slice> values;
         CollatableBuilder key("Schlage");
         keys.push_back(key);
-        values.push_back(alloc_slice("purple"));
+        values.emplace_back("purple");
         keys.push_back(key);
-        values.push_back(alloc_slice("red"));
+        values.emplace_back("red");
         bool changed = writer.update("record1"_sl, 1, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 2);
@@ -182,11 +182,11 @@ N_WAY_TEST_CASE_METHOD (IndexTest, "Index DuplicateKeys", "[Index]") {
         std::vector<alloc_slice> values;
         CollatableBuilder key("Schlage");
         keys.push_back(key);
-        values.push_back(alloc_slice("purple"));
+        values.emplace_back("purple");
         keys.push_back(key);
-        values.push_back(alloc_slice("crimson"));
-        keys.push_back(CollatableBuilder("Master"));
-        values.push_back(alloc_slice("gray"));
+        values.emplace_back("crimson");
+        keys.emplace_back(CollatableBuilder("Master"));
+        values.emplace_back("gray");
         bool changed = writer.update("record1"_sl, 2, keys, values, _rowCount);
         REQUIRE(changed);
         REQUIRE(_rowCount == 3);

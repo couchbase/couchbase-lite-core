@@ -49,7 +49,7 @@ namespace litecore {
         static alloc_slice peerIDFromBinary(slice binaryPeerID);
 
         Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
-        explicit Version(slice string)          :Version(string, true) { }
+        explicit Version(slice string);
 
         peerID author() const                   {return _author;}
         generation gen() const                  {return _gen;}
@@ -77,7 +77,6 @@ namespace litecore {
         friend class VersionVector;
 
         Version()                               {}
-        Version(slice string, bool validateAuthor);
         void validate() const;
 
         peerID      _author;        // The ID of the peer who created this revision
