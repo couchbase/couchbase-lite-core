@@ -101,9 +101,9 @@ namespace c4Internal {
                 _selectedRevIDBuf = rev->revID();
                 selectedRev.revID = _selectedRevIDBuf;
                 selectedRev.flags = kRevLeaf;   //FIX: Not true of CAS common-ancestor rev
-                if (rev->flags() & Revision::kDeleted)
+                if (rev->flags() & DocumentFlags::kDeleted)
                     selectedRev.flags |= kRevDeleted;
-                if (rev->flags() & Revision::kHasAttachments)
+                if (rev->flags() & DocumentFlags::kHasAttachments)
                     selectedRev.flags |= kRevHasAttachments;
                 selectedRev.sequence = rev->sequence();
                 selectedRev.body = rev->body();
@@ -261,20 +261,8 @@ namespace c4Internal {
         return new VectorDocument(this, doc);
     }
 
-
-    bool VectorDocumentFactory::readDocMeta(const Record &doc,
-                                            C4DocumentFlags *outFlags,
-                                            alloc_slice *outRevID,
-                                            slice *outDocType)
-    {
-        Revision rev(doc);
-        if (outFlags)
-            *outFlags = rev.flags();
-        if (outRevID)
-            *outRevID = rev.revID();
-        if (outDocType)
-            *outDocType = rev.docType();
-        return true;
+    alloc_slice VectorDocumentFactory::revIDFromMeta(const DocumentMeta &meta) {
+        return alloc_slice( VersionVector::extractCurrentVersionFromString(meta.version) );
     }
 
 }

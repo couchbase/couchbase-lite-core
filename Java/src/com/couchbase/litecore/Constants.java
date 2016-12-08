@@ -205,7 +205,7 @@ public interface Constants {
     //////// DOCUMENTS:
 
     // Flags describing a document.
-    // Note: Superset of VersionedDocument::Flags
+    // Note: Superset of DocumentFlags
     interface C4DocumentFlags {
         int kDeleted = 0x01;        // The document's current revision is deleted.
         int kConflicted = 0x02;     // The document is in conflict.

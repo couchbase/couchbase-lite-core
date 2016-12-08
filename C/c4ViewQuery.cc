@@ -24,6 +24,7 @@
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Collatable.hh"
+#include "DocumentMeta.hh"
 #include <math.h>
 #include <limits.h>
 #include <mutex>
@@ -276,6 +277,7 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         query->database()->_mutex
 #endif
     )
+    ,_database(query->database())
     ,_enum(query->query(), options)
     ,_hasFullText(_enum.hasFullText())
     { }
@@ -285,6 +287,9 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
             return C4QueryEnumInternal::next();
         docID = _enum.recordID();
         docSequence = _enum.sequence();
+        DocumentMeta meta(_enum.meta());
+        docFlags = meta.flags;
+        revID = _revIDBuf = _database->documentFactory().revIDFromMeta(meta);
 
         if (_hasFullText) {
             auto ft = _enum.fullTextTerms();
@@ -303,7 +308,9 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
     }
 
 private:
+    Retained<Database> _database;
     QueryEnumerator _enum;
+    alloc_slice _revIDBuf;
     bool _hasFullText;
 };
 

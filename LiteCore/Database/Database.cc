@@ -20,6 +20,7 @@
 #include "DataFile.hh"
 #include "Collatable.hh"
 #include "CASRevisionStore.hh"
+#include "DocumentMeta.hh"
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
 
@@ -253,10 +254,9 @@ namespace c4Internal {
         opts.contentOptions = kMetaOnly;
 
         uint64_t count = 0;
-        for (RecordEnumerator e(defaultKeyStore(), nullslice, nullslice, opts);
-             e.next(); ) {
-            C4DocumentFlags flags;
-            if (documentFactory().readDocMeta(e.record(), &flags) && !(flags & kDeleted))
+        for (RecordEnumerator e(defaultKeyStore(), nullslice, nullslice, opts); e.next(); ) {
+            DocumentMeta meta(e.record());
+            if (!(meta.flags & DocumentFlags::kDeleted))
                 ++count;
         }
         return count;

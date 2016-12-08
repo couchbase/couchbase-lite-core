@@ -37,10 +37,10 @@ namespace litecore {
     {
         // Create metadata:
         if (p.deleted)
-            _flags = kDeleted;
+            _meta.flags = kDeleted;
         if (p.hasAttachments)
-            _flags = (Flags)(_flags | kHasAttachments);
-        _recType = p.docType;
+            _meta.setFlag(kHasAttachments);
+        _meta.docType = p.docType;
 
         writeMeta(vers);
 
@@ -52,37 +52,23 @@ namespace litecore {
 
     Revision::Revision(Revision &&old) noexcept
     :_rec(std::move(old._rec)),
-     _flags(old._flags),
-     _vers(std::move(old._vers)),
-     _recType(std::move(old._recType))
+     _meta(old._meta),
+     _vers(std::move(old._vers))
     { }
 
 
     void Revision::writeMeta(const VersionVector &vers) {
-        fleece::Encoder enc;
-        enc.beginArray(3);
-        enc << _flags;
-        enc << vers;
-        enc << _recType;
-        enc.endArray();
-        _rec.setMeta(enc.extractOutput());
+        std::string versStr = vers.asString();
+        _meta.version = slice(versStr);
+        _rec.setMeta(_meta.encode());
         // Read it back in, to set up my pointers into it:
         readMeta();
     }
 
 
     void Revision::readMeta() {
-        slice metaBytes = _rec.meta();
-        if (metaBytes.size < 2)
-            error::_throw(error::CorruptRevisionData);
-
-        auto metaValue = fleece::Value::fromTrustedData(metaBytes);
-        fleece::Array::iterator meta(metaValue->asArray());
-        _flags = (Flags)meta.read()->asUnsigned();
-        _vers.readFrom(meta.read());
-        _recType = meta.read()->asString();
-        if (_recType.size == 0)
-            _recType.buf = nullptr;
+        _meta.decode(_rec.meta());
+        _vers = VersionVector(_meta.version);
     }
 
 
@@ -90,9 +76,9 @@ namespace litecore {
         if (conflicted == isConflicted())
             return false;
         if (conflicted)
-            _flags = (Flags)(_flags | kConflicted);
+            _meta.setFlag(kConflicted);
         else
-            _flags = (Flags)(_flags & ~kConflicted);
+            _meta.clearFlag(kConflicted);
         writeMeta(_vers);
         return true;
     }

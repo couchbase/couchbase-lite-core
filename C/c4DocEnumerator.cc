@@ -19,6 +19,7 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "DataFile.hh"
+#include "DocumentMeta.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "Logging.hh"
@@ -112,15 +113,13 @@ private:
             _docRevID = nullslice;
             return (!_filter || _filter(_e.record(), 0, nullslice));
         }
-        C4DocumentFlags flags;
-        slice docType;
-        if (!_database->documentFactory().readDocMeta(_e.record(), &flags, &_docRevID, &docType))
-            return false;
-        _docFlags = flags | kExists;
+        DocumentMeta meta(_e.record());
+        _docRevID = _database->documentFactory().revIDFromMeta(meta);
+        _docFlags = (unsigned)meta.flags | kExists;
         auto optFlags = _options.flags;
-        return (optFlags & kC4IncludeDeleted       || !(_docFlags & kDeleted))
-            && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & kConflicted))
-            && (!_filter || _filter(_e.record(), _docFlags, docType));
+        return (optFlags & kC4IncludeDeleted       || !(_docFlags & ::kDeleted))
+            && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kConflicted))
+            && (!_filter || _filter(_e.record(), _docFlags, meta.docType));
     }
 
     Retained<Database> _database;

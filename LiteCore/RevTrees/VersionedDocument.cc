@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "VersionedDocument.hh"
+#include "DocumentMeta.hh"
 #include "Error.hh"
 #include "varint.hh"
 #include <ostream>
@@ -54,73 +55,36 @@ namespace litecore {
             _unknown = true;        // i.e. rec was read as meta-only
 
         if (_rec.exists()) {
-            slice docType;
-            if (!readMeta(_rec, _flags, _revID, docType))
-                error::_throw(error::CorruptRevisionData);
-            _recType = docType; // allocate buf for it
+            _meta.decode(_rec.meta());
         } else {
-            _flags = 0;
+            _meta.flags = DocumentFlags::kNone;
         }
-    }
-
-    bool VersionedDocument::readMeta(const Record& rec,
-                                     Flags& flags, revid& revID, slice& docType)
-    {
-        slice meta = rec.meta();
-        if (meta.size < 2)
-            return false;
-        flags = meta.read(1)[0];
-        uint8_t length = meta.read(1)[0];
-        revID = revid(meta.read(length));
-        if (!revID.buf)
-            error::_throw(error::CorruptRevisionData);
-        if (meta.size > 0) {
-            uint64_t docTypeLength;
-            if (!ReadUVarInt(&meta, &docTypeLength))
-                error::_throw(error::CorruptRevisionData);
-            docType = meta.read((size_t)docTypeLength);
-        } else {
-            docType = nullslice;
-        }
-        return true;
     }
 
     void VersionedDocument::updateMeta() {
-        slice revID;
-        Flags flags = 0;
-
+        _meta.flags = kNone;
         const Rev* curRevision = currentRevision();
         if (curRevision) {
-            revID = curRevision->revID;
+            _meta.version = curRevision->revID;
 
             // Compute flags:
             if (curRevision->isDeleted())
-                flags |= kDeleted;
+                _meta.setFlag(DocumentFlags::kDeleted);
             if (hasConflict())
-                flags |= kConflicted;
+                _meta.setFlag(DocumentFlags::kConflicted);
             for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
                 if (rev->hasAttachments()) {
-                    flags |= kHasAttachments;
+                    _meta.setFlag(DocumentFlags::kHasAttachments);
                     break;
                 }
             }
         } else {
-            flags = kDeleted;
+            _meta.setFlag(kDeleted);
+            _meta.version = nullslice;
         }
 
-        // update _flags instance variable
-        _flags = flags;
-
         // Write to _rec.meta:
-        slice meta = _rec.resizeMeta(2 + revID.size + SizeOfVarInt(_recType.size) + _recType.size);
-        meta.writeFrom(slice(&flags,1));
-        uint8_t revIDSize = (uint8_t)revID.size;
-        meta.writeFrom(slice(&revIDSize, 1));
-        _revID = revid(meta.buf, revID.size);
-        meta.writeFrom(revID);
-        WriteUVarInt(&meta, _recType.size);
-        meta.writeFrom(_recType);
-        Assert(meta.size == 0);
+        _rec.setMeta(_meta.encodeAndUpdate());
     }
 
     void VersionedDocument::save(Transaction& transaction) {

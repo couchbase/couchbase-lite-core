@@ -74,7 +74,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Empty", "[Versio
     VersionedDocument v(*store, "foo"_sl);
     REQUIRE(v.docID() == "foo"_sl);
     REQUIRE(v.revID() == revid());
-    REQUIRE(v.flags() == (VersionedDocument::Flags)0);
+    REQUIRE(v.flags() == DocumentFlags::kNone);
     REQUIRE(v.get(stringToRev("1-aaaa")) == nullptr);
 }
 
@@ -163,7 +163,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[Vers
     }
     {
         VersionedDocument v(*store, "foo"_sl);
-        REQUIRE((int)v.flags() == (int)VersionedDocument::kDeleted);
+        REQUIRE(v.flags() == DocumentFlags::kDeleted);
         REQUIRE(v.revID() == (revid)rev1ID);
         REQUIRE(v.docType() == "moose"_sl);
     }

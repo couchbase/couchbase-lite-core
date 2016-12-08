@@ -16,20 +16,13 @@
 #pragma once
 #include "RevTree.hh"
 #include "Record.hh"
+#include "DocumentMeta.hh"
 
 namespace litecore {
 
     /** Manages storage of a serialized RevTree in a Record. */
     class VersionedDocument : public RevTree {
     public:
-
-        /** Flags that apply to the record as a whole */
-        typedef uint8_t Flags;
-        enum {
-            kDeleted    = 0x01,
-            kConflicted = 0x02,
-            kHasAttachments = 0x04
-        };
 
         VersionedDocument(KeyStore&, slice docID);
         VersionedDocument(KeyStore&, const Record&);
@@ -41,8 +34,8 @@ namespace litecore {
         bool revsAvailable() const {return !_unknown;}
 
         const alloc_slice& docID() const {return _rec.key();}
-        revid revID() const         {return _revID;}
-        Flags flags() const         {return _flags;}
+        revid revID() const         {return revid(_meta.version);}
+        DocumentFlags flags() const {return _meta.flags;}
         bool isDeleted() const      {return (flags() & kDeleted) != 0;}
         bool isConflicted() const   {return (flags() & kConflicted) != 0;}
         bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
@@ -52,14 +45,11 @@ namespace litecore {
 
         const Record& record() const    {return _rec;}
 
-        slice docType() const       {return _recType;}
-        void setDocType(slice type) {_recType = type;}
+        slice docType() const       {return _meta.docType;}
+        void setDocType(slice type) {_meta.docType = _docTypeBuf = type;}
 
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
-
-        /** Gets the metadata of a record without having to instantiate a VersionedDocument */
-        static bool readMeta(const Record&, Flags&, revid&, slice& docType);
 
         void updateMeta();
 
@@ -75,10 +65,9 @@ namespace litecore {
         void decode();
         VersionedDocument(const VersionedDocument&) = delete;
 
-        KeyStore&   _db;
-        Record    _rec;
-        Flags       _flags;
-        revid       _revID;
-        alloc_slice _recType;
+        KeyStore&       _db;
+        Record          _rec;
+        DocumentMeta    _meta;
+        alloc_slice     _docTypeBuf;
     };
 }

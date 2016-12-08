@@ -89,6 +89,9 @@
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		274D04251BA8A58200FF7C35 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
+		274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
+		274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
+		274D5BAC1DF9CCDE00BDAF9D /* DocumentMeta.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDED1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
@@ -702,6 +705,8 @@
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04241BA8A58200FF7C35 /* c4View.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4View.cc; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
+		274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentMeta.cc; sourceTree = "<group>"; };
+		274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentMeta.hh; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
 		274EDDF11DA2F63C003AD158 /* SQLiteIterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteIterator.cc; sourceTree = "<group>"; };
@@ -1522,6 +1527,8 @@
 				27DF46C31A12CF46007BB4A4 /* Record.hh */,
 				27E609A11951E4C000202B72 /* RecordEnumerator.cc */,
 				27E609A41951E53F00202B72 /* RecordEnumerator.hh */,
+				274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */,
+				274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */,
 				27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */,
 				27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */,
 				274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */,
@@ -1866,6 +1873,7 @@
 				278963641D7A376900493096 /* EncryptedStream.hh in Headers */,
 				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
+				274D5BAC1DF9CCDE00BDAF9D /* DocumentMeta.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
 				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
@@ -2557,6 +2565,7 @@
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				279794A61D307626001D0F3A /* RevisionStore.cc in Sources */,
+				274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
@@ -2615,6 +2624,7 @@
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
+				274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,

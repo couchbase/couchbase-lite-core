@@ -270,10 +270,14 @@ extern "C" {
         // All query types:
         C4Slice docID;                       ///< ID of doc that emitted this row
         C4SequenceNumber docSequence;        ///< Sequence number of doc that emitted row
-        C4Slice value;                       ///< Encoded emitted value
 
         // Map/reduce only:
         C4KeyReader key;                     ///< Encoded emitted key
+        C4Slice value;                       ///< Encoded emitted value
+
+        // Expression-based only:
+        C4Slice revID;
+        C4DocumentFlags docFlags;
 
         // Full-text only:
         uint32_t fullTextTermCount;          ///< The number of terms that were matched

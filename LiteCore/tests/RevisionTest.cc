@@ -21,7 +21,7 @@ inline const VersionVector kTestCASVers() {
 static void verifyRev(const Revision &rev) {
     REQUIRE(rev.docID() == "DOC"_sl);
     REQUIRE(rev.version() == kTestVers());
-    REQUIRE(rev.flags() == Revision::kHasAttachments);
+    REQUIRE(rev.flags() == DocumentFlags::kHasAttachments);
     REQUIRE(rev.hasAttachments());
     REQUIRE_FALSE(rev.isDeleted());
     REQUIRE_FALSE(rev.isConflicted());

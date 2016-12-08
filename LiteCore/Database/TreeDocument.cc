@@ -17,6 +17,7 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
+#include "DocumentMeta.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "VersionedDocument.hh"
@@ -244,37 +245,12 @@ namespace c4Internal {
         return new TreeDocument(database(), doc);
     }
 
-
-    bool TreeDocumentFactory::readDocMeta(const Record &doc,
-                                          C4DocumentFlags *outFlags,
-                                          alloc_slice *outRevID,
-                                          slice *outDocType)
-    {
-        VersionedDocument::Flags vdocFlags;
-        revidBuffer packedRevID;
-        slice docType;
-        if (!VersionedDocument::readMeta(doc, vdocFlags, packedRevID, docType))
-            return false;
-        if (outFlags) {
-            C4DocumentFlags c4flags = 0;
-            if (vdocFlags & VersionedDocument::kDeleted)
-                c4flags |= kDeleted;
-            if (vdocFlags & VersionedDocument::kConflicted)
-                c4flags |= kConflicted;
-            if (vdocFlags & VersionedDocument::kHasAttachments)
-                c4flags |= kHasAttachments;
-            *outFlags = c4flags;
-        }
-        if (outRevID)
-            *outRevID = packedRevID.expanded();
-        if (outDocType)
-            *outDocType = docType;
-        return true;
-    }
-
-
     DataFile::FleeceAccessor TreeDocumentFactory::fleeceAccessor() const {
         return RawRevision::getCurrentRevBody;
+    }
+
+    alloc_slice TreeDocumentFactory::revIDFromMeta(const DocumentMeta &meta) {
+        return revid(meta.version).expanded();
     }
 
 

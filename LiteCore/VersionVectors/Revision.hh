@@ -9,6 +9,7 @@
 #pragma once
 #include "Record.hh"
 #include "VersionVector.hh"
+#include "DocumentMeta.hh"
 
 
 namespace litecore {
@@ -27,14 +28,6 @@ namespace litecore {
             bool conflicted;
         };
 
-        /** Flags applying to the record if this is the current rev. Matches C4DocumentFlags. */
-        enum Flags : uint8_t {
-            kNone           = 0x00,
-            kDeleted        = 0x01,
-            kConflicted     = 0x02,
-            kHasAttachments = 0x04,
-        };
-
         /** Creates a Revision from a pre-populated Record read from a DataFile. */
         explicit Revision(const Record& rec);
 
@@ -51,7 +44,7 @@ namespace litecore {
                                                           : alloc_slice();}
         const VersionVector& version() const{return _vers;}
 
-        Flags flags() const                 {return _flags;}
+        DocumentFlags flags() const         {return _meta.flags;}
         bool isDeleted() const              {return (flags() & kDeleted) != 0;}
         bool isConflicted() const           {return (flags() & kConflicted) != 0;}
         bool hasAttachments() const         {return (flags() & kHasAttachments) != 0;}
@@ -59,7 +52,7 @@ namespace litecore {
         bool exists() const                 {return _rec.exists();}
         sequence_t sequence() const         {return _rec.sequence();}
 
-        slice docType() const               {return _recType;}
+        slice docType() const               {return _meta.docType;}
         slice body() const                  {return _rec.body();}
 
         Record& record()                    {return _rec;}
@@ -78,9 +71,8 @@ namespace litecore {
         Revision& operator= (const Revision&) =delete;
 
         Record          _rec;               // The record
-        Flags           _flags {kNone};     // Flags
+        DocumentMeta    _meta;              // Decoded metadata
         VersionVector   _vers;              // Version vector
-        slice           _recType;           // Record type
     };
 
 }

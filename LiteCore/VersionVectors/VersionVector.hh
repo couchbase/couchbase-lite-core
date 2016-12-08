@@ -168,6 +168,11 @@ namespace litecore {
         std::string canonicalString(peerID myPeerID) const;
         void insertMergeRevID(peerID myPeerID, slice revisionBody);
 
+        /** Given a string-encoded VersonVector, returns its current version. */
+        static slice extractCurrentVersionFromString(slice versionVectorString) {
+            return versionVectorString.upTo(versionVectorString.findByteOrEnd(','));
+        }
+
     private:
         std::vector<Version>::iterator findPeerIter(peerID);
         slice copyAuthor(peerID);

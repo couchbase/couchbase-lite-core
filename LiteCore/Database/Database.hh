@@ -29,6 +29,7 @@ namespace fleece {
 namespace litecore {
     class CASRevisionStore;
     class SequenceTracker;
+    struct DocumentMeta;
 }
 
 
@@ -139,10 +140,7 @@ namespace c4Internal {
         virtual ~DocumentFactory() { }
         virtual Document* newDocumentInstance(C4Slice docID) =0;
         virtual Document* newDocumentInstance(const Record&) =0;
-        virtual bool readDocMeta(const Record&,
-                                 C4DocumentFlags*,
-                                 alloc_slice *revID =nullptr,
-                                 slice *docType =nullptr) =0;
+        virtual alloc_slice revIDFromMeta(const DocumentMeta&) =0;
         virtual DataFile::FleeceAccessor fleeceAccessor() const {return nullptr;}
 
     private:
@@ -156,10 +154,7 @@ namespace c4Internal {
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
         Document* newDocumentInstance(C4Slice docID) override;
         Document* newDocumentInstance(const Record&) override;
-        bool readDocMeta(const Record&,
-                         C4DocumentFlags*,
-                         alloc_slice *revID =nullptr,
-                         slice *docType =nullptr) override;
+        alloc_slice revIDFromMeta(const DocumentMeta&) override;
         DataFile::FleeceAccessor fleeceAccessor() const override;
     };
 
@@ -170,13 +165,10 @@ namespace c4Internal {
         VectorDocumentFactory(Database *db);
         Document* newDocumentInstance(C4Slice docID) override;
         Document* newDocumentInstance(const Record&) override;
+        alloc_slice revIDFromMeta(const DocumentMeta&) override;
 
         CASRevisionStore& revisionStore();
 
-        bool readDocMeta(const Record&,
-                         C4DocumentFlags*,
-                         alloc_slice *revID =nullptr,
-                         slice *docType =nullptr) override;
     private:
         unique_ptr<CASRevisionStore> _revisionStore;
     };

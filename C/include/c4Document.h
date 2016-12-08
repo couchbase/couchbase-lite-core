@@ -26,7 +26,7 @@ extern "C" {
         kHasAttachments = 0x04,     ///< The document's current revision has attachments.
 
         kExists         = 0x1000    ///< The document exists (i.e. has revisions.)
-    }; // Note: Superset of VersionedDocument::Flags
+    }; // Note: Superset of DocumentFlags
 
     /** Flags that apply to a revision. */
     typedef C4_OPTIONS(uint8_t, C4RevisionFlags) {
