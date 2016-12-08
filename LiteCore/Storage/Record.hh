@@ -26,7 +26,6 @@ namespace litecore {
         explicit Record(slice key);
         Record(const Record&);
         Record(Record&&) noexcept;
-        Record& operator=(const Record&);
 
         const alloc_slice& key() const          {return _key;}
         const alloc_slice& meta() const         {return _meta;}

@@ -89,6 +89,8 @@
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		274D04251BA8A58200FF7C35 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
+		274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
+		274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
 		274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
 		274D5BAC1DF9CCDE00BDAF9D /* DocumentMeta.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */; };
@@ -705,6 +707,7 @@
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04241BA8A58200FF7C35 /* c4View.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4View.cc; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
+		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentMeta.cc; sourceTree = "<group>"; };
 		274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentMeta.hh; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
@@ -1327,6 +1330,7 @@
 				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
+				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
@@ -2383,14 +2387,14 @@
 			files = (
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
+				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
+				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
 				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
-				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
-				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 			);
@@ -2569,6 +2573,7 @@
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				27E487331924242C007D8940 /* Index.cc in Sources */,
+				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				273E9F751C51612E003115A6 /* c4View.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2628,6 +2633,7 @@
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
+				274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

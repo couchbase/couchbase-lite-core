@@ -169,6 +169,8 @@ typedef struct {
     typedef C4Slice C4SliceResult;
 #endif
 
+#endif // C4_IMPL
+
 /** Creates a slice pointing to the contents of a C string. */
 static C4INLINE C4Slice c4str(const char *str) {
     C4Slice foo = { str, str ? strlen(str) : 0 };
@@ -186,11 +188,9 @@ static C4INLINE C4Slice c4str(const char *str) {
 // A convenient constant denoting a null slice.
 #ifdef _MSC_VER
 const C4Slice kC4SliceNull = { NULL, 0 };
-#else
+#elif !defined(kC4SliceNull)
 #define kC4SliceNull ((C4Slice){NULL, 0})
 #endif
-
-#endif // C4_IMPL
 
 /** Returns true if two slices have equal contents. */
 bool c4SliceEqual(C4Slice a, C4Slice b) C4API;

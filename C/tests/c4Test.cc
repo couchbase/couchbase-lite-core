@@ -136,7 +136,7 @@ C4Test::C4Test(int testOption)
     }
 #endif
     static C4DatabaseConfig sLastConfig = { };
-    if (config.flags != sLastConfig.flags || config.storageEngine != sLastConfig.storageEngine) {
+    if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning) {
         fprintf(stderr, "            %s, %s\n",
                 config.storageEngine,
                 (config.versioning==kC4VersionVectors ? "version-vectors" : "rev-trees"));

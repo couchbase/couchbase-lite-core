@@ -24,8 +24,12 @@
 #include "RecordEnumerator.hh"
 #include "Logging.hh"
 
+#include "SecureRandomize.hh"
 #include "Collatable.hh"
 #include "FilePath.hh"
+
+using namespace fleece;
+
 
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
@@ -149,6 +153,45 @@ uint64_t c4db_getDocumentCount(C4Database* database) noexcept {
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) noexcept {
     return tryCatch<sequence_t>(nullptr, bind(&Database::lastSequence, database));
+}
+
+
+static void getUUID(Database *database, slice key, C4UUID *uuid) {
+    auto &store = database->getKeyStore((string)kC4InfoStore);
+    Record r = store.get(key);
+    if (r.exists()) {
+        *uuid = *(C4UUID*)r.body().buf;
+        return;
+    }
+    
+    database->beginTransaction();
+    try {
+        Record r2 = store.get(key);
+        if (r2.exists()) {
+            *uuid = *(C4UUID*)r2.body().buf;
+        } else {
+            // Create the UUIDs:
+            slice uuidSlice{uuid, sizeof(*uuid)};
+            GenerateUUID(uuidSlice);
+            store.set(key, nullslice, uuidSlice, database->transaction());
+        }
+    } catch (...) {
+        database->endTransaction(false);
+        throw;
+    }
+    database->endTransaction(true);
+}
+
+
+bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID,
+                   C4Error *outError) noexcept
+{
+    return tryCatch(outError, [&]{
+        if (publicUUID)
+            getUUID(database, "publicUUID"_sl, publicUUID);
+        if (privateUUID)
+            getUUID(database, "privateUUID"_sl, privateUUID);
+    });
 }
 
 

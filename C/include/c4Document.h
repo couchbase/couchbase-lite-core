@@ -146,6 +146,16 @@ extern "C" {
                                       bool withBody,
                                       C4Error *outError) C4API;
 
+    /** Selects the first revision that could be an ancestor of the given revID, or returns false
+        if there is none. */
+    bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc,
+                                             C4Slice revID) C4API;
+
+    /** Selects the next revision (after the selected one) that could be an ancestor of the given
+        revID, or returns false if there are no more. */
+    bool c4doc_selectNextPossibleAncestorOf(C4Document* doc,
+                                            C4Slice revID) C4API;
+
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4Slice revID) C4API;

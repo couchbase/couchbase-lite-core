@@ -21,6 +21,7 @@ c4db_getPath
 c4db_getConfig
 c4db_getDocumentCount
 c4db_getLastSequence
+c4db_getUUIDs
 c4db_beginTransaction
 c4db_endTransaction
 c4db_isInTransaction
@@ -46,6 +47,8 @@ c4doc_removeRevisionBody
 c4doc_selectParentRevision
 c4doc_selectNextRevision
 c4doc_selectNextLeafRevision
+c4doc_selectFirstPossibleAncestorOf
+c4doc_selectNextPossibleAncestorOf
 c4doc_getForPut
 c4doc_generateRevID
 c4doc_generateOldStyleRevID

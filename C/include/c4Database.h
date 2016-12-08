@@ -128,6 +128,15 @@ extern "C" {
     /** Returns the timestamp at which the next document expiration should take place. */
     uint64_t c4db_nextDocExpiration(C4Database *database) C4API;
 
+    typedef struct {
+        uint8_t bytes[32];
+    } C4UUID;
+
+    /** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.) */
+    bool c4db_getUUIDs(C4Database* database,
+                       C4UUID *publicUUID, C4UUID *privateUUID,
+                       C4Error *outError) C4API;
+
 
     /** @} */
     /** \name Compaction

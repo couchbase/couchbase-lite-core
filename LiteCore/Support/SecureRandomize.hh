@@ -8,6 +8,7 @@
 
 #pragma once
 #include "slice.hh"
+#include "Error.hh"
 
 
 #if defined(_CRYPTO_CC)
@@ -40,7 +41,18 @@
 
 #else
 
+    static inline void SecureRandomize(fleece::slice s) {
+        error::_throw(error::Unimplemented);
+    }
+
     #define SECURE_RANDOMIZE_AVAILABLE 0
 
 #endif
 
+
+namespace litecore {
+
+    static const size_t SizeOfUUID = 32;
+    void GenerateUUID(fleece::slice);
+
+}

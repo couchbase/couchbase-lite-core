@@ -147,11 +147,36 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 }
 
 
+bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
+    if (internal(doc)->database()->config.versioning != kC4RevisionTrees) {
+        Warn("c4doc_selectFirstPossibleAncestorOf only works with revision trees");
+        return false;
+    }
+    // Start at first (current) revision; return it if it's a candidate, else go to the next:
+    c4doc_selectCurrentRevision(doc);
+    auto generation = c4rev_getGeneration(revID);
+    if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
+        return true;
+    else
+        return c4doc_selectNextPossibleAncestorOf(doc, revID);
+}
+
+
+bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
+    auto generation = c4rev_getGeneration(revID);
+    while (c4doc_selectNextRevision(doc)) {
+        // A possible ancestor is one with a lower generation number:
+        if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
+            return true;
+    }
+    return false;
+}
+
+
 #pragma mark - SAVING:
 
 
 static alloc_slice createDocUUID() {
-#if SECURE_RANDOMIZE_AVAILABLE
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
                                     "0123456789-_";
     const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
@@ -164,9 +189,6 @@ static alloc_slice createDocUUID() {
     for (unsigned i = 0; i < kLength; ++i)
         docID[i+1] = kBase64[r[i] % 64];
     return docIDSlice;
-#else
-    error::_throw(error::Unimplemented);
-#endif
 }
 
 
