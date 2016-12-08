@@ -63,7 +63,19 @@ Open **Xcode/LiteCore.xcodeproj**. Select the scheme **LiteCore dylib**. Build.
 | libsqlite3 | libsqlite3-dev | n/a           | https://sqlite.org/download.html          |
 | libcrypto  | libssl-dev     | openssl-devel | https://github.com/openssl/openssl        |
 | libbsd     | libbsd-dev     | libbsd        | https://libbsd.freedesktop.org/releases/  |
-| libsnappy  | libsnappy-dev  | n/a           | https://github.com/google/snappy/releases |
+
+#### CentOS Users
+
+The compiler currently in the CentOS repos (GCC 4.8.5) is too old to build this library.  You will need to get a later version by doing the following:
+
+```
+#One time
+sudo yum install centos-release-scl
+sudo yum install devtoolset-3-gcc* #devtoolset-3 == 4.9.2, devtoolset-4 == 5.2.1 (don't forget the trailing '*')
+
+#After each login
+scl enable devtoolset-3 bash #or devtoolset-4 
+```
 
 ### Windows
 
