@@ -172,14 +172,16 @@ public:
             keys[0] = c4key_new();
             c4key_addString(keys[0], doc->docID);
             values[0] = c4str("1234");
-            REQUIRE(c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error));
+            bool emitted = c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error);
+            REQUIRE(emitted);
             c4key_free(keys[0]);
             c4doc_free(doc);
         }
         REQUIRE(error.code == 0);
         c4enum_free(e);
         if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
-        REQUIRE(c4indexer_end(ind, true, &error));
+        bool ended = c4indexer_end(ind, true, &error);
+        REQUIRE(ended);
 
         C4SequenceNumber newLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         if (newLastSeqIndexed != lastSeq)
