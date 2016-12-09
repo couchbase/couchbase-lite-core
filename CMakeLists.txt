@@ -47,7 +47,7 @@ if(WIN32 OR ANDROID)
     set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
     if(WIN32)
         set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
-                "/def:${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def")	
+                "/def:\"${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def\"")	
     endif()
 endif()
 
