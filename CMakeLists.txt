@@ -99,7 +99,8 @@ set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
 		"LiteCore/Support/FilePath.cc"
 		"LiteCore/Support/Logging.cc"
 		"LiteCore/Support/RefCounted.cc"
-        "LiteCore/Support/PlatformIO.cc")
+    "LiteCore/Support/PlatformIO.cc"
+    "LiteCore/Support/SecureRandomize.cc")
 
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 
