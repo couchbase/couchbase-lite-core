@@ -26,7 +26,11 @@
 using namespace fleece;
 
 #if defined(CMAKE) && !defined(__ANDROID__)
+#ifdef _MSC_VER
+static const char* kJSONFilePath = "../../../../C/tests/iTunesMusicLibrary.json";
+#else
 static const char* kJSONFilePath = "../../../C/tests/iTunesMusicLibrary.json";
+#endif
 #else
 static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 #endif
