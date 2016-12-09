@@ -18,10 +18,14 @@
 
 
 #ifdef NDEBUG
-#undef REQUIRE  // it slows down the tests significantly
-#define REQUIRE(X) do {if (!(X)) abort();} while (0)
-#undef INFO
-#define INFO(X)
+    // Catch's assertion macros are pretty slow, and affect benchmark times.
+    // So replace them with quick-n-dirty alternatives in an optimized build.
+    #undef REQUIRE
+    #define REQUIRE(X) do {if (!(X)) abort();} while (0)
+    #undef CHECK
+    #define CHECK(X) do {if (!(X)) abort();} while (0)
+    #undef INFO
+    #define INFO(X)
 #endif
 
 

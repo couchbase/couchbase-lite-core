@@ -20,10 +20,13 @@
 using namespace std;
 
 
+// The Catch library is not thread-safe, so we can't use it in this test.
 #undef REQUIRE
-#define REQUIRE assert
+#define REQUIRE(X) do {if (!(X)) abort();} while (0)
 #undef CHECK
-#define CHECK assert
+#define CHECK(X) do {if (!(X)) abort();} while (0)
+#undef INFO
+#define INFO(X)
 
 
 static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
@@ -172,16 +175,14 @@ public:
             keys[0] = c4key_new();
             c4key_addString(keys[0], doc->docID);
             values[0] = c4str("1234");
-            bool emitted = c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error);
-            REQUIRE(emitted);
+            REQUIRE(c4indexer_emit(ind, doc, 0, 1/*2*/, keys, values, &error));
             c4key_free(keys[0]);
             c4doc_free(doc);
         }
         REQUIRE(error.code == 0);
         c4enum_free(e);
         if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
-        bool ended = c4indexer_end(ind, true, &error);
-        REQUIRE(ended);
+        REQUIRE(c4indexer_end(ind, true, &error));
 
         C4SequenceNumber newLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         if (newLastSeqIndexed != lastSeq)
