@@ -95,7 +95,7 @@ mkstemp(char *tmpl)
         XXXXXX[5] = letters[v % 62];
 
         CA2WEX<256> wtmpl(tmpl, CP_UTF8);
-        fd = _wopen(wtmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
+        fd = _wopen(wtmpl, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
         if (fd >= 0)
         {
             errno = save_errno;

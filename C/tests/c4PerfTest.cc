@@ -33,7 +33,7 @@ static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
 
 // Download from https://github.com/arangodb/example-datasets and update this path accordingly:
 #ifdef WIN32
-#define kLargeDataSetsDir "D:\\Couchbase\\example-datasets-master\\"
+#define kLargeDataSetsDir "C:\\Couchbase\\example-datasets-master\\"
 #elif defined(__ANDROID__)
 #define kLargeDataSetsDir "Couchbase/example-datasets-master/"
 #else
