@@ -11,6 +11,11 @@
 #include <math.h>
 #include <float.h>
 #include "PlatformCompat.hh"
+#ifdef __ANDROID__
+#define LIBSTD
+#else
+#define LIBSTD std
+#endif
 
 using namespace litecore;
 
@@ -43,7 +48,7 @@ static double randf() {
     do {
         n.u1 = (uint32_t)random();
         n.u2 = (uint32_t)random();
-    } while (::isnan(n.d) || ::isinf(n.d));
+    } while (LIBSTD::isnan(n.d) || LIBSTD::isinf(n.d));
     return n.d;
 }
 
