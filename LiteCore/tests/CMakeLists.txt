@@ -31,15 +31,14 @@ if(NOT APPLE)
     elseif(ANDROID)
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
     else()
+        set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
-        if(MSVC)
-            set(FilesToCopy ${TOP}build_cmake/\$\(Configuration\)/sqlite3)
-            add_custom_command(TARGET CppTests POST_BUILD
-                COMMAND ${CMAKE_COMMAND}
-                -DFilesToCopy="${FilesToCopy}"
-                -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
-                -P ${TOP}MSVC/copy_artifacts.cmake)
-        endif()
+        set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3)
+        add_custom_command(TARGET CppTests POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -DFilesToCopy="${FilesToCopy}"
+            -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
+            -P ${TOP}MSVC/copy_artifacts.cmake)
     endif()
 endif()
 

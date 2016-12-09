@@ -21,8 +21,9 @@ add_executable(C4Tests ${TEST_SRC} )
 
 target_link_libraries(C4Tests  LiteCore)
 if(MSVC)
-    set(FilesToCopy ${TOP}build_cmake/\$\(Configuration\)/sqlite3
-                    ${TOP}build_cmake/\$\(Configuration\)/LiteCore)
+    set(BIN_TOP "${PROJECT_BIN_DIR}/../..")
+    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3
+                    ${BIN_TOP}/\$\(Configuration\)/LiteCore)
     add_custom_command(TARGET C4Tests POST_BUILD
         COMMAND ${CMAKE_COMMAND}
         -DFilesToCopy="${FilesToCopy}"

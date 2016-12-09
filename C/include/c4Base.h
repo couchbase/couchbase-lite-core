@@ -186,10 +186,13 @@ static C4INLINE C4Slice c4str(const char *str) {
 #endif
 
 // A convenient constant denoting a null slice.
+
+#if !defined(kC4SliceNull)
 #ifdef _MSC_VER
 const C4Slice kC4SliceNull = { NULL, 0 };
-#elif !defined(kC4SliceNull)
+#else
 #define kC4SliceNull ((C4Slice){NULL, 0})
+#endif
 #endif
 
 /** Returns true if two slices have equal contents. */
