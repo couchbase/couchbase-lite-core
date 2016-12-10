@@ -158,6 +158,9 @@ namespace litecore {
         const char *tmpDir = "C:\\tmp\\";
 #else
         const char *tmpDir = getenv("TMPDIR");
+        if(tmpDir == nullptr) {
+            tmpDir = "/tmp/";
+        }
 #endif
         return FilePath(tmpDir, "");
     }

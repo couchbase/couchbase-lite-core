@@ -10,12 +10,9 @@
 #include "LiteCoreTest.hh"
 #include <math.h>
 #include <float.h>
+#include <random>
+#include <limits>
 #include "PlatformCompat.hh"
-#ifdef __ANDROID__
-#define LIBSTD
-#else
-#define LIBSTD std
-#endif
 
 using namespace litecore;
 
@@ -37,19 +34,17 @@ static int compareCollated(T1 obj1, T2 obj2) {
     return sgn(litecore::slice(c1).compare(litecore::slice(c2)));
 }
 
+static std::random_device r;
+static std::default_random_engine random_eng(r());
+static std::uniform_int_distribution<uint64_t> uniform_int(0, std::numeric_limits<uint64_t>::max());
+static std::uniform_real_distribution<double> uniform_real(0, std::numeric_limits<double>::max());
+
 static uint64_t randn(uint64_t limit) {
-    uint64_t n;
-    randomBytes(slice(&n, sizeof(n)));
-    return n % limit;
+    return uniform_int(random_eng);
 }
 
 static double randf() {
-    union {double d; struct {uint32_t u1, u2;};} n;
-    do {
-        n.u1 = (uint32_t)random();
-        n.u2 = (uint32_t)random();
-    } while (LIBSTD::isnan(n.d) || LIBSTD::isinf(n.d));
-    return n.d;
+    return uniform_real(random_eng);
 }
 
 template <typename T>
