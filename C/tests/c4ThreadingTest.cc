@@ -29,7 +29,7 @@ using namespace std;
 #define INFO(X)
 
 
-static const char *kViewIndexPath = kTestDir "forest_temp.view.index";
+#define kViewIndexPath = TEMPDIR("litecore_temp.view.index")
 
 
 class C4ThreadingTest : public C4Test {

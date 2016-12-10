@@ -42,16 +42,10 @@ namespace litecore {
     static const char  kSeparatorChar = '\\';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
-    static const char* kTempDir = "C:\\tmp\\";
 #else
     static const char  kSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
-#ifdef __ANDROID__
-    static const char* kTempDir = "/data/local/tmp/";
-#else
-    static const char* kTempDir = "/tmp/";
-#endif
 #endif
 
 
@@ -160,7 +154,12 @@ namespace litecore {
 
 
     FilePath FilePath::tempDirectory() {
-        return FilePath(kTempDir, "");
+#ifdef _MSC_VER
+        const char *tmpDir = "C:\\tmp\\";
+#else
+        const char *tmpDir = getenv("TMPDIR");
+#endif
+        return FilePath(tmpDir, "");
     }
 
 

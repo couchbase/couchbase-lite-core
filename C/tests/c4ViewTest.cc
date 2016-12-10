@@ -261,15 +261,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurgeWithCompact", "[View][C]")  {te
 class QueryTest : public C4Test {
 public:
     QueryTest() :C4Test(2) {  // always use SQLite + version vectors
-#if defined(CMAKE) && !defined(__ANDROID__)
-#ifdef _MSC_VER
-        importJSONLines("../../../../C/tests/names_100.json");
-#else
-        importJSONLines("../../../C/tests/names_100.json");
-#endif
-#else
-        importJSONLines("C/tests/names_100.json");
-#endif
+        importJSONLines(sFixturesDir + "names_100.json");
     }
 
     ~QueryTest() {

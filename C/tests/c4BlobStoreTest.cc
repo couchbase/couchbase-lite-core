@@ -31,7 +31,7 @@ public:
         }
 
         C4Error error;
-        store = c4blob_openStore(c4str(kTestDir "cbl_blob_test" kPathSeparator),
+        store = c4blob_openStore(TEMPDIR("cbl_blob_test" + kPathSeparator),
                                  kC4DB_Create,
                                  encryption,
                                  &error);

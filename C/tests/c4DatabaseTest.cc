@@ -98,13 +98,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     auto config = *c4db_getConfig(db);
     config.flags |= kC4DB_Bundled;
 
-    C4Slice bundlePath = c4str(kTestDir "cbl_core_test_bundle");
+    std::string bundlePathStr = TempDir() + "cbl_core_test_bundle";
+    C4Slice bundlePath = c4str(bundlePathStr.c_str());
     c4db_deleteAtPath(bundlePath, &config, nullptr);
     C4Error error;
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
     C4SliceResult path = c4db_getPath(bundle);
-    REQUIRE(path == c4str(kTestDir "cbl_core_test_bundle" kPathSeparator)); // note trailing '/'
+    REQUIRE(path == TEMPDIR("cbl_core_test_bundle" kPathSeparator)); // note trailing '/'
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
     c4db_free(bundle);
@@ -124,7 +125,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     config.storageEngine = engine;
 
     // Open nonexistent bundle:
-    REQUIRE(!c4db_open(c4str(kTestDir "no_such_bundle"), &config, &error));
+    REQUIRE(!c4db_open(TEMPDIR("no_such_bundle"), &config, &error));
     c4log_warnOnErrors(true);
 }
 

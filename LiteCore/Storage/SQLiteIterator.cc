@@ -278,7 +278,7 @@ namespace litecore {
         }
         
         size_t bodyLength() override {
-            return (int64_t)_statement->getColumn(3);
+            return (size_t)_statement->getColumn(3).getInt64();
         }
 
         bool hasFullText() override {

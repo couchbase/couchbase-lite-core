@@ -12,6 +12,8 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
+#import "c4Test.hh"
+
 
 @interface Catch_Tests : XCTestCase
 @end
@@ -20,6 +22,8 @@
 @implementation Catch_Tests
 
 - (void)testCatchTests {
+    C4Test::sFixturesDir = std::string([[NSBundle bundleForClass: [self class]] resourcePath].UTF8String) + "/";
+
     Catch::Session session;
     session.configData().reporterNames.push_back("list");
 

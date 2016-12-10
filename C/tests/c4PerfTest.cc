@@ -25,16 +25,6 @@
 
 using namespace fleece;
 
-#if defined(CMAKE) && !defined(__ANDROID__)
-#ifdef _MSC_VER
-static const char* kJSONFilePath = "../../../../C/tests/iTunesMusicLibrary.json";
-#else
-static const char* kJSONFilePath = "../../../C/tests/iTunesMusicLibrary.json";
-#endif
-#else
-static const char* kJSONFilePath = "C/tests/iTunesMusicLibrary.json";
-#endif
-
 // Download from https://github.com/arangodb/example-datasets and update this path accordingly:
 #ifdef WIN32
 #define kLargeDataSetsDir "C:\\Couchbase\\example-datasets-master\\"
@@ -483,7 +473,7 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
-    auto jsonData = readFile(kJSONFilePath);
+    auto jsonData = readFile(sFixturesDir + "iTunesMusicLibrary.json");
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
     free((void*)jsonData.buf);

@@ -30,16 +30,15 @@
 
 
 #ifdef _MSC_VER
-#define kTestDir "C:\\tmp\\"
-#define kPathSeparator "\\"
+    #define kPathSeparator "\\"
 #else
-#ifdef __ANDROID__
-#define kTestDir "/data/local/tmp/"
-#else
-#define kTestDir "/tmp/"
+    #define kPathSeparator "/"
 #endif
-#define kPathSeparator "/"
-#endif
+
+
+#define TEMPDIR(PATH) c4str((TempDir() + PATH).c_str())
+
+std::string TempDir();
 
 
 // Some operators to make C4Slice work with Catch assertions:
@@ -91,11 +90,13 @@ class TransactionHelper {
 class C4Test {
 public:
     static const int numberOfOptions = 2;       // rev-trees or version vectors
+
+    static std::string sFixturesDir;            // directory where test files live
     
     C4Test(int testOption);
     ~C4Test();
 
-    C4Slice databasePath() const;
+    C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
 
 protected:
     C4Database *db;
@@ -112,9 +113,9 @@ protected:
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
 
-    FLSlice readFile(const char *path); // caller must free buf when done
-    bool readFileByLines(const char *path, std::function<bool(FLSlice)>);
-    unsigned importJSONLines(const char *path, double timeout =15.0, bool verbose =false);
+    FLSlice readFile(std::string path); // caller must free buf when done
+    bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
+    unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
     
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
@@ -127,5 +128,6 @@ private:
     const C4StorageEngine _storage;
     const C4DocumentVersioning _versioning;
     const bool _bundled;
+    std::string _dbPath;
     int objectCount;
 };

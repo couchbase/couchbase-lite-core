@@ -21,6 +21,11 @@
 using namespace std;
 
 
+std::string TempDir() {
+    return string(getenv("TMPDIR")) + kPathSeparator;
+}
+
+
 // Debugging utility to print a slice -- in LLDB enter "call ps(___)"
 void ps(C4Slice s);
 void ps(C4Slice s) {
@@ -89,16 +94,16 @@ static void log(C4LogLevel level, C4Slice message) {
 #pragma mark - C4TEST CLASS
 
 
-C4Slice C4Test::databasePath() const {
-    if (_bundled)
-        return c4str(kTestDir "cbl_core_test");
-    else if (storageType() == kC4SQLiteStorageEngine)
-        return c4str(kTestDir "cbl_core_test.sqlite3");
-    else {
-        FAIL("Unknown storage type");
-        return c4str(kTestDir "cbl_core_test");
-    }
-}
+#if defined(CMAKE) && !defined(__ANDROID__)
+    #ifdef _MSC_VER
+        string C4Test::sFixturesDir = "../../../../C/tests/");
+    #else
+        string C4Test::sFixturesDir = "../../../C/tests/";
+    #endif
+#else
+    string C4Test::sFixturesDir = "C/tests/";
+#endif
+
 
 
 C4Test::C4Test(int testOption)
@@ -141,6 +146,15 @@ C4Test::C4Test(int testOption)
                 config.storageEngine,
                 (config.versioning==kC4VersionVectors ? "version-vectors" : "rev-trees"));
         sLastConfig = config;
+    }
+
+    _dbPath = TempDir();
+    if (_bundled)
+        _dbPath += "cbl_core_test";
+    else if (storageType() == kC4SQLiteStorageEngine)
+        _dbPath += "cbl_core_test.sqlite3";
+    else {
+        FAIL("Unknown storage type");
     }
 
     C4Error error;
@@ -203,9 +217,9 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 
 
 // Reads a file into memory.
-FLSlice C4Test::readFile(const char *path) {
+FLSlice C4Test::readFile(std::string path) {
     INFO("Opening file " << path);
-    FILE *fd = fopen(path, "rb");
+    FILE *fd = fopen(path.c_str(), "rb");
     REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);
     auto size = (size_t)ftello(fd);
@@ -219,9 +233,9 @@ FLSlice C4Test::readFile(const char *path) {
 }
 
 
-bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback) {
+bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
     INFO("Reading lines from " << path);
-    fstream fd(path, ios_base::in);
+    fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
     char buf[10000];
     while (fd.good()) {
@@ -240,8 +254,8 @@ bool C4Test::readFileByLines(const char *path, function<bool(FLSlice)> callback)
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(const char *path, double timeout, bool verbose) {
-    C4Log("Reading %s ...  ", path);
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
+    C4Log("Reading %s ...  ", path.c_str());
     Stopwatch st;
     unsigned numDocs = 0;
     {
