@@ -22,7 +22,7 @@
 @implementation Catch_Tests
 
 - (void)testCatchTests {
-    C4Test::sFixturesDir = std::string([[NSBundle bundleForClass: [self class]] resourcePath].UTF8String) + "/";
+    C4Test::sFixturesDir = std::string([[NSBundle bundleForClass: [self class]] resourcePath].UTF8String) + "/data/";
 
     Catch::Session session;
     session.configData().reporterNames.push_back("list");

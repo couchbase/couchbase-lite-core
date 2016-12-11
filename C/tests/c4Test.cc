@@ -96,12 +96,12 @@ static void log(C4LogLevel level, C4Slice message) {
 
 #if defined(CMAKE) && !defined(__ANDROID__)
     #ifdef _MSC_VER
-        string C4Test::sFixturesDir = "../../../../C/tests/");
+        string C4Test::sFixturesDir = "../../../../C/tests/data/");
     #else
-        string C4Test::sFixturesDir = "../../../C/tests/";
+        string C4Test::sFixturesDir = "../../../C/tests/data/";
     #endif
 #else
-    string C4Test::sFixturesDir = "C/tests/";
+    string C4Test::sFixturesDir = "C/tests/data/";
 #endif
 
 
