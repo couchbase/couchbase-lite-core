@@ -18,3 +18,4 @@ FOUNDATION_EXPORT const unsigned char LiteCoreObjCVersionString[];
 
 #import <LiteCoreObjC/LCDatabase.h>
 #import <LiteCoreObjC/LCDocument.h>
+#import <LiteCoreObjC/LCQuery.h>

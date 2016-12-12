@@ -182,7 +182,7 @@
 
 
 - (void) test05_ImportITunes {
-    NSURL* libraryURL = [[NSBundle bundleForClass: [self class]] URLForResource: @"iTunesMusicLibrary"
+    NSURL* libraryURL = [[NSBundle bundleForClass: [self class]] URLForResource: @"data/iTunesMusicLibrary"
                                                 withExtension: @"json"];
     NSData* jsonData = [NSData dataWithContentsOfURL: libraryURL];
     NSArray* tracks = [NSJSONSerialization JSONObjectWithData: jsonData options: 0 error:NULL];
@@ -287,7 +287,7 @@
 
 
 - (void) test08_Query {
-    NSString* path = [[NSBundle bundleForClass: [self class]] pathForResource: @"names_100" ofType: @"json"];
+    NSString* path = [[NSBundle bundleForClass: [self class]] pathForResource: @"data/names_100" ofType: @"json"];
     XCTAssert(path);
     NSString* contents = (NSString*)[NSString stringWithContentsOfFile: path encoding: NSUTF8StringEncoding error: NULL];
     XCTAssert(contents);

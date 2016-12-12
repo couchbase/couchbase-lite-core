@@ -295,11 +295,12 @@ static NSNumber* numberProperty(UU NSDictionary *root, UU NSString* key) {
         stringBytes docTypeSlice;
         C4DocPutRequest put = {
             .docID = _c4doc->docID,
-            .deletion = deletion,
             .history = &_c4doc->revID,
             .historyCount = 1,
             .save = true,
         };
+        if (deletion)
+            put.revFlags = kDeleted;
         if (propertiesToSave.count) {
             auto enc = c4db_createFleeceEncoder(_c4db);
             FLEncoder_WriteNSObject(enc, propertiesToSave);

@@ -181,9 +181,9 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
-		27B738021DEF65C900A8A6B1 /* LCQuery.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B738001DEF65C900A8A6B1 /* LCQuery.h */; };
+		27B738021DEF65C900A8A6B1 /* LCQuery.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B738001DEF65C900A8A6B1 /* LCQuery.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B738031DEF65C900A8A6B1 /* LCQuery.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B738011DEF65C900A8A6B1 /* LCQuery.mm */; };
-		27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */; };
+		27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */ = {isa = PBXBuildFile; fileRef = 27BA04BE1DC12DCA000BA8E5 /* LCDocument.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27BA04C11DC12DCA000BA8E5 /* LCDocument.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */; };
 		27BA04CD1DC26FB9000BA8E5 /* LC_Internal.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27BA04CC1DC26FB9000BA8E5 /* LC_Internal.mm */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -220,7 +220,7 @@
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
 		27E3DCFD1DB0583E00F2872D /* LiteCoreObjC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27E3DCF41DB0583E00F2872D /* LiteCoreObjC.framework */; };
-		27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD0C1DB058DD00F2872D /* LiteCoreObjC.h */; };
+		27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD0C1DB058DD00F2872D /* LiteCoreObjC.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27E3DD151DB058E700F2872D /* LiteCoreObjCTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD0F1DB058DD00F2872D /* LiteCoreObjCTests.m */; };
 		27E3DD181DB0594400F2872D /* LCDatabase.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD161DB0594400F2872D /* LCDatabase.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27E3DD191DB0594400F2872D /* LCDatabase.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD171DB0594400F2872D /* LCDatabase.mm */; };
@@ -1808,11 +1808,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */,
 				27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */,
 				27E3DD181DB0594400F2872D /* LCDatabase.h in Headers */,
 				27B738021DEF65C900A8A6B1 /* LCQuery.h in Headers */,
 				27E3DD1D1DB05AD200F2872D /* StringBytes.hh in Headers */,
-				27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2143,6 +2143,7 @@
 		2750723318E3E52800A80C5A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				CLASSPREFIX = LC;
 				LastSwiftUpdateCheck = 0730;
 				LastUpgradeCheck = 0820;
 				ORGANIZATIONNAME = Couchbase;
@@ -3045,7 +3046,7 @@
 		27E3DD061DB0583E00F2872D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
@@ -3071,7 +3072,7 @@
 		27E3DD071DB0583E00F2872D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
