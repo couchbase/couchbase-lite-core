@@ -81,14 +81,16 @@ endif()
 
 ### SOURCE FILES:
               
-include_directories(LiteCore/BlobStore LiteCore/Database LiteCore/Indexes LiteCore/RevTrees LiteCore/Storage
-                    LiteCore/Support LiteCore/VersionVectors C/include C)
+include_directories(LiteCore/BlobStore LiteCore/Database LiteCore/Indexes LiteCore/Query
+                    LiteCore/RevTrees LiteCore/Storage LiteCore/Support LiteCore/VersionVectors
+                    C/include C)
 
 # TODO: CMake docs say it's better to list the source files explicitly than use aux_source_directory
 aux_source_directory(C                        C_SRC)
 aux_source_directory(LiteCore/BlobStore       BLOBSTORE_SRC)
 aux_source_directory(LiteCore/Database        DATABASE_SRC)
 aux_source_directory(LiteCore/Indexes         INDEXES_SRC)
+aux_source_directory(LiteCore/Query           QUERY_SRC)
 aux_source_directory(LiteCore/RevTrees        REVTREES_SRC)
 aux_source_directory(LiteCore/Storage         STORAGE_SRC)
 aux_source_directory(LiteCore/VersionVectors  VERSIONVECTORS_SRC)
@@ -110,9 +112,10 @@ endif()
 
 ### BUILDING THE LIBRARY:
 
-set(ALL_SRC_FILES ${SUPPORT_SRC} ${STORAGE_SRC} ${INDEXES_SRC}
-                              ${REVTREES_SRC} ${VERSIONVECTORS_SRC} ${BLOBSTORE_SRC} ${C_SRC}
-                              ${SQLITECPP_SRC} ${DATABASE_SRC})
+set(ALL_SRC_FILES ${BLOBSTORE_SRC} ${DATABASE_SRC} ${INDEXES_SRC} ${QUERY_SRC} ${REVTREES_SRC} 
+                  ${STORAGE_SRC} ${SUPPORT_SRC} ${VERSIONVECTORS_SRC}
+                  ${C_SRC}
+                  ${SQLITECPP_SRC} )
 							  
 if(MSVC)
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c

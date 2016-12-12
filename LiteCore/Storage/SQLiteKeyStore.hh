@@ -69,7 +69,7 @@ namespace litecore {
 
     private:
         friend class SQLiteDataFile;
-        friend class SQLiteIterator;
+        friend class SQLiteEnumerator;
         friend class SQLiteQuery;
         
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
