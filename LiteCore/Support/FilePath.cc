@@ -168,6 +168,21 @@ namespace litecore {
 
 #pragma mark - ENUMERATION:
 
+    static bool is_dir(const struct dirent *entry, const string &basePath) {
+        bool isDir = false;
+#ifdef _DIRENT_HAVE_D_TYPE
+        if(entry->d_type != DT_UNKNOWN && entry->d_type != DT_LNK) {
+            isDir = (entry->d_type == DT_DIR);
+        } else
+#endif
+        {
+            struct stat stbuf;
+            stat_u8((basePath + entry->d_name).c_str(), &stbuf);
+            isDir = S_ISDIR(stbuf.st_mode);
+        }
+
+        return isDir;
+    }
 
     void FilePath::forEachMatch(function<void(const FilePath&)> fn) const {
         auto dir = opendir(_dir.c_str());
@@ -180,7 +195,7 @@ namespace litecore {
                     break;
                 string name(result->d_name);
                 if (_file.empty() || name.find(_file) == 0) {
-                    if (result->d_type == DT_DIR) {
+                    if (is_dir(result, _dir)) {
                         if (name == "." || name == "..")
                             continue;
                         fn(FilePath(_dir + name + '/', ""));
