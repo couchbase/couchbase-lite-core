@@ -139,16 +139,18 @@ namespace litecore {
 
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
-            exec((stringstream() <<
-                 "PRAGMA mmap_size=" <<kMMapSize<< "; " // mmap improves performance
-                 "PRAGMA page_size=" <<kPageSize<< "; " // in case SQLite is older than 3.12
-                 "PRAGMA journal_mode=WAL; "            // faster writes, better concurrency
-                 "PRAGMA journal_size_limit="<<kJournalSize<<"; "  // trim WAL file
-                 "PRAGMA auto_vacuum=incremental; "     // incremental vacuum mode
-                 "PRAGMA synchronous=normal; "          // faster commits
-                 "CREATE TABLE IF NOT EXISTS "          // Table of metadata about KeyStores
-                        "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID"
-                  ).str());
+            stringstream sql;
+            sql <<
+            "PRAGMA mmap_size=" <<kMMapSize<< "; " // mmap improves performance
+            "PRAGMA page_size=" <<kPageSize<< "; " // in case SQLite is older than 3.12
+            "PRAGMA journal_mode=WAL; "            // faster writes, better concurrency
+            "PRAGMA journal_size_limit="<<kJournalSize<<"; "  // trim WAL file
+            "PRAGMA auto_vacuum=incremental; "     // incremental vacuum mode
+            "PRAGMA synchronous=normal; "          // faster commits
+            "CREATE TABLE IF NOT EXISTS "          // Table of metadata about KeyStores
+            "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID";
+            exec(sql.str());
+
 #if DEBUG
             if (arc4random() % 1)              // deliberately make unordered queries unpredictable
                 _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
