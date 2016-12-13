@@ -68,6 +68,8 @@ namespace litecore {
                                    const char *sql) const;
         int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
+        int64_t intQuery(const char *query);
+        void maybeVacuum();
         void registerFleeceFunctions();
 
     private:

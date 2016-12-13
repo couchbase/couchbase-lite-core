@@ -40,6 +40,22 @@ using namespace std;
 
 namespace litecore {
 
+    static const int64_t MB = 1024 * 1024;
+
+    // SQLite page size
+    static const int64_t kPageSize = 4096;
+
+    // Maximum size WAL journal will be left at after a commit
+    static const int64_t kJournalSize = 5 * MB;
+
+    // Amount of file to memory-map
+    static const int64_t kMMapSize = 50 * MB;
+
+    // If this fraction of the database is composed of free pages, vacuum it
+    static const float kVacuumFractionThreshold = 0.25;
+    // If the database has many bytes of free space, vacuum it
+    static const int64_t kVacuumSizeThreshold = 50 * MB;
+
 
     LogDomain SQL("SQL");
 
@@ -123,12 +139,16 @@ namespace litecore {
 
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
-            exec("PRAGMA mmap_size=50000000; "          // mmap improves performance
+            exec((stringstream() <<
+                 "PRAGMA mmap_size=" <<kMMapSize<< "; " // mmap improves performance
+                 "PRAGMA page_size=" <<kPageSize<< "; " // in case SQLite is older than 3.12
                  "PRAGMA journal_mode=WAL; "            // faster writes, better concurrency
-                 "PRAGMA journal_size_limit=5000000; "  // trim WAL file to 5MB
+                 "PRAGMA journal_size_limit="<<kJournalSize<<"; "  // trim WAL file
+                 "PRAGMA auto_vacuum=incremental; "     // incremental vacuum mode
                  "PRAGMA synchronous=normal; "          // faster commits
                  "CREATE TABLE IF NOT EXISTS "          // Table of metadata about KeyStores
-                        "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID");
+                        "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID"
+                  ).str());
 #if DEBUG
             if (arc4random() % 1)              // deliberately make unordered queries unpredictable
                 _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
@@ -169,7 +189,10 @@ namespace litecore {
         DataFile::close(); // closes all the KeyStores
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
-        _sqlDb.reset();
+        if (_sqlDb) {
+            maybeVacuum();
+            _sqlDb.reset();
+        }
     }
 
 
@@ -208,13 +231,7 @@ namespace litecore {
             error::_throw(error::UnsupportedEncryption);
 
         // Get the userVersion of the db:
-        int userVersion = 0;
-        {
-            SQLite::Statement st(*_sqlDb, "PRAGMA user_version");
-            LogStatement(st);
-            if (st.executeStep())
-                userVersion = st.getColumn(0);
-        }
+        int64_t userVersion = intQuery("PRAGMA user_version");
 
         // Make a path for a temporary database file:
         const FilePath &realPath = filePath();
@@ -327,6 +344,13 @@ namespace litecore {
     }
 
 
+    int64_t SQLiteDataFile::intQuery(const char *query) {
+        SQLite::Statement st(*_sqlDb, query);
+        LogStatement(st);
+        return st.executeStep() ? st.getColumn(0) : 0;
+    }
+
+
     SQLite::Statement& SQLiteDataFile::compile(const unique_ptr<SQLite::Statement>& ref,
                                                const char *sql) const
     {
@@ -382,21 +406,40 @@ namespace litecore {
     }
 
 
+    void SQLiteDataFile::maybeVacuum() {
+        // For info, see https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/
+        try {
+            int64_t pageCount = intQuery("PRAGMA page_count");
+            int64_t freePages = intQuery("PRAGMA freelist_count");
+            LogTo(DBLog, "%lld of %lld pages free (%.0f%%)",
+                  freePages, pageCount, (float)freePages / pageCount);
+            if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
+                    || (freePages * kPageSize >= kVacuumSizeThreshold)) {
+                Log("Vacuuming database '%s'...", filePath().dirName().c_str());
+                exec("PRAGMA incremental_vacuum");
+            }
+        } catch (const SQLite::Exception &x) {
+            Warn("Caught SQLite exception while vacuuming: %s", x.what());
+        }
+    }
+
+
     void SQLiteDataFile::compact() {
         checkOpen();
         beganCompacting();
         {
             Transaction t(this);
             for (auto& name : allKeyStoreNames()) {
-                exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
+                auto removed = exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
                 if (options().keyStores.getByOffset) {
-                    exec(string("DELETE FROM kvold_")+name);
+                    removed += exec(string("DELETE FROM kvold_")+name);
                 }
+                LogTo(DBLog, "Removed %d deleted keys from kv_%s", removed, name.c_str());
             }
             updatePurgeCount(t);
             t.commit();
         }
-        exec(string("VACUUM"));     // Vacuum can't be called in a transaction
+        maybeVacuum();
         finishedCompacting();
     }
 
