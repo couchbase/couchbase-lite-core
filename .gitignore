@@ -33,3 +33,5 @@ build_cmake/*
 Release_Testing/
 Debug_Testing/
 empty.cpp
+C/include/config.pyc
+*.template
