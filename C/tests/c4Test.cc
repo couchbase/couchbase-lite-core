@@ -22,7 +22,15 @@ using namespace std;
 
 
 std::string TempDir() {
-    return string(getenv("TMPDIR")) + kPathSeparator;
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir == nullptr) {
+#ifdef _MSC_VER
+        tmpDir = "C:\\tmp";
+#else
+        tmpDir = "/tmp";
+#endif
+    }
+    return string(tmpDir) + kPathSeparator;
 }
 
 
