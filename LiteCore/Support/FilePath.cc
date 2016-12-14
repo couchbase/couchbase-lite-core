@@ -154,14 +154,14 @@ namespace litecore {
 
 
     FilePath FilePath::tempDirectory() {
-#ifdef _MSC_VER
-        const char *tmpDir = "C:\\tmp\\";
-#else
         const char *tmpDir = getenv("TMPDIR");
         if(tmpDir == nullptr) {
-            tmpDir = "/tmp/";
-        }
+#ifdef _MSC_VER
+            tmpDir = "C:\\tmp";
+#else
+            tmpDir = "/tmp";
 #endif
+        }
         return FilePath(tmpDir, "");
     }
 
