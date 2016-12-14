@@ -73,7 +73,7 @@ TEST_CASE("QueryParser simple", "[Query]") {
     CHECK(parseWhere("{name: ['name']}")
           == "fl_value(body, 'name') = :_name");
 
-    CHECK(parseWhere("{`_id`: {`$like`: `foo:%`}, `_sequence`: {`$gt`: 1000}}")
+    CHECK(parseWhere("{'_id': {'$like': 'foo:%'}, '_sequence': {'$gt': 1000}}")
           == "key LIKE 'foo:%' AND sequence > 1000");
 }
 
