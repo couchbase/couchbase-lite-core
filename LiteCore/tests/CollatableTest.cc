@@ -36,15 +36,15 @@ static int compareCollated(T1 obj1, T2 obj2) {
 
 static std::random_device r;
 static std::default_random_engine random_eng(r());
-static std::uniform_int_distribution<uint64_t> uniform_int(0, std::numeric_limits<uint64_t>::max());
-static std::uniform_real_distribution<double> uniform_real(0, std::numeric_limits<double>::max());
+static std::uniform_int_distribution<uint64_t> rand_int;
+static std::uniform_real_distribution<double> rand_float(0, numeric_limits<double>::max());
 
 static uint64_t randn(uint64_t limit) {
-    return uniform_int(random_eng);
+    return rand_int(random_eng);
 }
 
 static double randf() {
-    return uniform_real(random_eng);
+    return rand_float(random_eng);
 }
 
 template <typename T>
