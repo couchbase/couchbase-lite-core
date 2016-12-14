@@ -352,8 +352,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     KeyStore::IndexOptions options = {"en", true};
     store->createIndex("$.sentence", KeyStore::kFullTextIndex, &options);
 
-    unique_ptr<Query> query{ store->compileQuery(enquotify("{`sentence`: {`$match`: `search`}}"),
-                                                 enquotify("[`sentence`]")) };
+    unique_ptr<Query> query{ store->compileQuery(json5("{sentence: {$match: 'search'}}"),
+                                                 json5("['sentence']")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
     int expectedOrder[] = {1, 2, 0, 4};

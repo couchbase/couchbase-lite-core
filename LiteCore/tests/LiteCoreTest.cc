@@ -44,15 +44,6 @@ string stringWithFormat(const char *format, ...) {
 }
 
 
-string enquotify(string json) {
-    for (auto i = json.begin(); i != json.end(); ++i) {
-        if (*i == '`')
-            *i = '"';
-    }
-    return json;
-}
-
-
 std::string sliceToHex(slice result) {
     std::string hex;
     for (size_t i = 0; i < result.size; i++) {

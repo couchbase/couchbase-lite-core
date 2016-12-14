@@ -12,6 +12,7 @@
 #include "slice.hh"
 #include "PlatformCompat.hh"
 #include "Logging.hh"
+#include "JSON5.hh"
 
 #ifdef DEBUG
 #define CHECK_IF_DEBUG CHECK
@@ -26,8 +27,8 @@ using namespace fleece;
 
 std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
 
-// Converts back-quotes to double-quotes; useful for JSON strings
-std::string enquotify(std::string);
+// Converts JSON5 to JSON; helps make JSON test input more readable!
+static inline std::string json5(const std::string &s)      {return fleece::ConvertJSON5(s);}
 
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);
