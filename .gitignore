@@ -1,37 +1,51 @@
-.DS_Store
 *~
-*.xccheckout
-xcuserdata/
-build/
-DerivedData/
-*.userprefs
+*.o
+.DS_Store
 bin/
 obj/
 [dD]ebug
-*.o
-*.class
-packages/
-*.sdf
-*.opensdf
-[Rr]elease
+
+# Xcode:
+*.xccheckout
 *.xcscmblueprint
+*.userprefs
+xcuserdata/
+build/
+DerivedData/
+
+# Java:
+*.class
+Java/jni/com_couchbase_cbforest_*.h
+
+# CMake:
+/build_cmake/*
+!/build_cmake/build.sh
+!/build_cmake/strip.sh
+!/build_cmake/iOS.cmake
+
+# Huge performance-test files that have to be manually installed:
+C/tests/data/geoblocks.json
+C/tests/data/names_300000.json
+
+# Visual Studio / C#
+*VC.*db
 CSharp/prebuilt/*
 !CSharp/prebuilt/README.txt
-stripopts
-Java/jni/com_couchbase_cbforest_*.h
-*VC.*db
-/C/Documentation
-Debug_Static/
-Release_Static/
 CSharp/.vscode
 CSharp/test/LiteCore.Tests/.vscode
 CSharp/native
-build_cmake/*
-!build_cmake/build.sh
-!build_cmake/strip.sh
-!build_cmake/iOS.cmake
+
+# Misc / Uncategorized:
+*.sdf
+*.opensdf
+*.template
+packages/
+[Rr]elease
+stripopts
+/C/include/config.pyc
+/C/Documentation
+Debug_Static/
+Release_Static/
 Release_Testing/
 Debug_Testing/
 empty.cpp
-C/include/config.pyc
-*.template
