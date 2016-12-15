@@ -301,7 +301,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         t.commit();
     }
 
-    unique_ptr<Query> query{ store->compileQuery("{\"$and\": [{\"num\": {\"$gte\": 30}}, {\"num\": {\"$lte\": 40}}]}"_sl, nullslice) };
+    unique_ptr<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]"), nullslice) };
 
     // Use a (SQL) query based on the Fleece "num" property:
     for (int pass = 0; pass < 2; ++pass) {
@@ -352,7 +352,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     KeyStore::IndexOptions options = {"en", true};
     store->createIndex("$.sentence", KeyStore::kFullTextIndex, &options);
 
-    unique_ptr<Query> query{ store->compileQuery(json5("{sentence: {$match: 'search'}}"),
+    unique_ptr<Query> query{ store->compileQuery(json5("['MATCH', ['.', 'sentence'], 'search']"),
                                                  json5("['sentence']")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;

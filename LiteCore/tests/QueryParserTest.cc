@@ -26,17 +26,81 @@ static string parseWhere(string json) {
     return parse(qp, json).whereClause();
 }
 
-static string parseSort(string sortJson) {
-    QueryParser qp("kv_default");
-    return parse(qp, "{}", slice(json5(sortJson))).orderByClause();
+//static string parseSort(string sortJson) {
+//    QueryParser qp("kv_default");
+//    return parse(qp, "{}", slice(json5(sortJson))).orderByClause();
+//}
+
+
+TEST_CASE("QueryParser basic", "[Query]") {
+    CHECK(parseWhere("['=', ['.', 'name'], 'Puddin\\' Tane']")
+          == "fl_value(body, 'name') = 'Puddin'' Tane'");
+    CHECK(parseWhere("['AND', ['=', ['.', 'again'], true], ['=', ['.', 'name'], 'Puddin\\' Tane']]")
+          == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
+    CHECK(parseWhere("['=', ['+', 2, 2], 5]")
+          == "2 + 2 = 5");
+    CHECK(parseWhere("['=', ['pow()', 25, ['/', 1, 2]], 5]")
+          == "pow(25, 1 / 2) = 5");
+    CHECK(parseWhere("['NOT', ['<', 2, 1]]")
+          == "NOT (2 < 1)");
+    CHECK(parseWhere("['-', ['+', 2, 1]]")
+          == "-(2 + 1)");
+    CHECK(parseWhere("['*', ['+', 1, 2], ['+', 3, ['-', 4]]]")
+          == "(1 + 2) * (3 + -4)");
+    CHECK(parseWhere("['*', ['+', 1, 2], ['-', ['+', 3, 4]]]")
+          == "(1 + 2) * -(3 + 4)");
+    CHECK(parseWhere("['BETWEEN', 10, 0, 100]")
+          == "10 BETWEEN 0 AND 100");
+    CHECK(parseWhere("['IN', ['.', 'name'], 'Webbis', 'Wowbagger']")
+          == "fl_value(body, 'name') IN ('Webbis', 'Wowbagger')");
+    CHECK(parseWhere("['NOT IN', ['.', 'age'], 6, 7, 8]")
+          == "fl_value(body, 'age') NOT IN (6, 7, 8)");
+    CHECK(parseWhere("['.', 'addresses', [1], 'zip']")
+          == "fl_value(body, 'addresses[1].zip')");
 }
 
 
-TEST_CASE("QueryParser simple", "[Query]") {
-    CHECK(parseWhere("{name: 'Puddin\\' Tane'}")
-          == "fl_value(body, 'name') = 'Puddin'' Tane'");
-    CHECK(parseWhere("{name: 'Puddin\\' Tane', again: true}")
-          == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
+TEST_CASE("QueryParser bindings", "[Query]") {
+    CHECK(parseWhere("['=', ['$', 'X'], ['$', 7]]")
+          == "$_X = $_7");
+}
+
+
+TEST_CASE("QueryParser special properties", "[Query]") {
+    CHECK(parseWhere("['foo()', ['.', '_id'], ['.', '_sequence']]")
+          == "foo(key, sequence)");
+}
+
+
+TEST_CASE("QueryParser property contexts", "[Query]") {
+    // Special cases where a property access uses a different function than fl_value()
+    CHECK(parseWhere("['EXISTS', 17]")
+          == "EXISTS 17");
+    CHECK(parseWhere("['EXISTS', ['.', 'addresses']]")
+          == "fl_exists(body, 'addresses')");
+    CHECK(parseWhere("['count()', ['$', 'X']]")
+          == "count($_X)");
+    CHECK(parseWhere("['count()', ['.', 'addresses']]")
+          == "fl_count(body, 'addresses')");
+}
+
+
+TEST_CASE("QueryParser SELECT", "[Query]") {
+    CHECK(parseWhere("['SELECT', {/*WHAT: ['.', 'first'],*/\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]")
+          == "SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+    CHECK(parseWhere("['count()', ['SELECT', {/*WHAT: ['.', 'first'],*/\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
+          == "count(SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+    CHECK(parseWhere("['EXISTS', ['SELECT', {/*WHAT: ['.', 'first'],*/\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
+          == "EXISTS (SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+}
+
+#if 0
     CHECK(parseWhere("{$and: [{name: 'Puddin\\' Tane'}, {again: true}]}")
           == "fl_value(body, 'name') = 'Puddin'' Tane' AND fl_value(body, 'again') = 1");
     CHECK(parseWhere("{$nor: [{name: 'Puddin\\' Tane'}, {again: true}]}")
@@ -55,10 +119,6 @@ TEST_CASE("QueryParser simple", "[Query]") {
     CHECK(parseWhere("{name: {$type: 'string'}}")
           == "fl_type(body, 'name')=3");
 
-    CHECK(parseWhere("{name: {$in: ['Webbis', 'Wowbagger']}}")
-          == "fl_value(body, 'name') IN ('Webbis', 'Wowbagger')");
-    CHECK(parseWhere("{age: {$nin: [6, 7, 8]}}")
-          == "fl_value(body, 'age') NOT IN (6, 7, 8)");
 
     CHECK(parseWhere("{coords: {$size: 2}}")
           == "fl_count(body, 'coords')=2");
@@ -75,17 +135,10 @@ TEST_CASE("QueryParser simple", "[Query]") {
 
     CHECK(parseWhere("{'_id': {'$like': 'foo:%'}, '_sequence': {'$gt': 1000}}")
           == "key LIKE 'foo:%' AND sequence > 1000");
-}
+#endif
 
 
-TEST_CASE("QueryParser bindings", "[Query]") {
-    CHECK(parseWhere("{age: {$gte: [1]}}")
-          == "fl_value(body, 'age') >= :_1");
-    CHECK(parseWhere("{address: {state: ['state'], zip: {$lt: ['zip']}}}")
-          == "(fl_value(body, 'address.state') = :_state AND fl_value(body, 'address.zip') < :_zip)");
-}
-
-
+#if 0
 TEST_CASE("QueryParser sort", "[Query]") {
     CHECK(parseSort("['size']")
           == "fl_value(body, 'size')");
@@ -93,15 +146,6 @@ TEST_CASE("QueryParser sort", "[Query]") {
           == "fl_value(body, 'size'), fl_value(body, 'price') DESC");
     CHECK(parseSort("['_id', '-_sequence']")
           == "key, sequence DESC");
-}
-
-
-TEST_CASE("QueryParser elemMatch", "[Query]") {
-    CHECK(parseWhere("{tags: {$elemMatch: {$eq: 'moist'}}}")
-          == "EXISTS (SELECT 1 FROM fl_each(body, 'tags') WHERE fl_each.value = 'moist')");
-    CHECK(parseWhere("{prices: {$elemMatch: {$ge: 3.95}}, "
-                             "tags: {$elemMatch: {$eq: 'moist'}}}")
-          == "EXISTS (SELECT 1 FROM fl_each(body, 'prices') WHERE fl_each.value >= 3.95) AND EXISTS (SELECT 1 FROM fl_each(body, 'tags') WHERE fl_each.value = 'moist')");
 }
 
 
@@ -118,3 +162,5 @@ TEST_CASE("QueryParser FTS", "[Query]") {
         CHECK(qp.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence) AND (FTS2.text MATCH 'mobile' AND FTS2.rowid = kv_default.sequence)");
     }
 }
+#endif
+

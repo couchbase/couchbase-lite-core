@@ -75,7 +75,8 @@ namespace litecore {
         Domain const domain;
         int const code;
 
-        error (Domain d, int c );
+        error (Domain, int code );
+        error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
 
         /** Returns an equivalent error in the LiteCore or POSIX domain. */

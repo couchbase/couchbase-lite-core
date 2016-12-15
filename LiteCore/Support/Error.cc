@@ -154,8 +154,13 @@ namespace litecore {
     bool error::sWarnOnError = true;
 
     
-    error::error (error::Domain d, int c )
-    :runtime_error(_what(d, c)),
+    error::error(error::Domain d, int c)
+    :error(d, c, _what(d, c))
+    { }
+
+
+    error::error(error::Domain d, int c, const std::string &what)
+    :runtime_error(what),
     domain(d),
     code(c)
     { }

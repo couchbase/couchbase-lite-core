@@ -8,7 +8,9 @@
 
 #pragma once
 #include "Base.hh"
+#include "Array.hh"
 #include <memory>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -24,9 +26,9 @@ namespace litecore {
 
     class QueryParser {
     public:
-        QueryParser(const std::string& tableName, const std::string& jsonColumnName = "body")
+        QueryParser(const std::string& tableName, const std::string& bodyColumnName = "body")
         :_tableName(tableName)
-        ,_jsonColumnName(jsonColumnName)
+        ,_bodyColumnName(bodyColumnName)
         { }
 
         void parse(const fleece::Value *whereExpression, const fleece::Value *sortExpression);
@@ -39,36 +41,57 @@ namespace litecore {
         const std::vector<std::string>& ftsProperties() const   {return _ftsProperties;}
         std::vector<std::string> ftsTableNames() const;
 
-        static std::string propertyGetter(slice property, const char *sqlColumn = "body");
+        static std::string propertyGetter(slice property, const char *bodyColumnName = "body");
         static void writeSQLString(std::ostream &out, slice str);
 
     private:
+        struct Operation;
+        static const Operation kOperationList[];
+        static const Operation kOuterOperation, kArgListOperation, kOrderByOperation;
+        struct JoinedOperations;
+        static const JoinedOperations kJoinedOperationsList[];
+
         QueryParser(const QueryParser&) =delete;
         QueryParser& operator=(const QueryParser&) =delete;
         
-        void writePropertyPathString(slice property);
+        void parseNode(const fleece::Value*);
+        void parseOpNode(const fleece::Array*);
+        void handleOperation(const Operation*, slice actualOperator, fleece::Array::iterator& operands);
+
+        void prefixOp(slice, fleece::Array::iterator&);
+        void infixOp(slice, fleece::Array::iterator&);
+        void betweenOp(slice, fleece::Array::iterator&);
+        void existsOp(slice, fleece::Array::iterator&);
+        void inOp(slice, fleece::Array::iterator&);
+        void matchOp(slice, fleece::Array::iterator&);
+        void parameterOp(slice, fleece::Array::iterator&);
+        void propertyOp(slice, fleece::Array::iterator&);
+        void selectOp(slice, fleece::Array::iterator&);
+        void fallbackOp(slice, fleece::Array::iterator&);
+
+        void countPropertyOp(slice, fleece::Array::iterator&);
+        void existsPropertyOp(slice, fleece::Array::iterator&);
+
+        bool writeNestedPropertyOpIfAny(const char *fnName, fleece::Array::iterator &operands);
+        void writePropertyOp(const char *fnName, fleece::Array::iterator& operands);
         void writePropertyGetter(const char *fn, slice property);
         void writeSQLString(slice str)      {writeSQLString(_sql, str);}
+        void writeArgList(fleece::Array::iterator& operands);
 
-        void parsePredicate(const fleece::Value*);
-        void parseTerm(slice key, const fleece::Value*);
-        void parseSubPropertyTerm(slice key, const fleece::Dict*);
-        void parseElemMatch(slice property, const fleece::Value*);
-        void parseElemMatchTerm(const std::string &key, const fleece::Value*);
         void parseFTSMatch(slice property, const fleece::Value *match);
         size_t FTSPropertyIndex(const std::string &propertyPath);
-        void writeBooleanExpr(const fleece::Value *terms, const char *op);
-        void writeLiteral(const fleece::Value *literal);
-        void writePropertyGetterLeftOpen(const char *fn, slice property);
-        void parseSort(const fleece::Value*);
+        size_t AddFTSPropertyIndex(const std::string &propertyPath);
+        void parseOrderBy(const fleece::Value*);
         void writeOrderBy(const fleece::Value*);
         void writeOrderByFTSRank(slice property);
 
         std::string _tableName;
-        std::string _jsonColumnName;
+        std::string _bodyColumnName;
         std::stringstream _sql;
         std::stringstream _sortSQL;
         std::string _propertyPath;
+        std::vector<const Operation*> _context;
+        std::set<std::string> _parameters;
         std::vector<std::string> _ftsProperties;
     };
 
