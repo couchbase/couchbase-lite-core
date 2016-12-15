@@ -1,0 +1,2 @@
+c4stream_read
+       public static extern UIntPtr c4stream_read(C4ReadStream* stream, [Out]byte[] buffer, UIntPtr maxBytesToRead, C4Error* outError);

@@ -13,6 +13,7 @@ via an external config file (--config) which has the following properties:
 'param_bridge_types': []    A list of parameters that will trigger a bridge
 'return_bridge_types': []   A list of return types that will trigger a bridge
 'literals': []              A list of functions to take a predefined definition for
+'reserved':[]               A list of keywords that cannot be used as parameter names
 'default_param_name': {}    A map of types to default parameter names (useful for anonymous C parameters)
 'type_map': {}              A map of C types to C# types
 """
@@ -32,7 +33,6 @@ if __name__ == "__main__":
     output_dir = args.output_dir if args.output_dir is not None else ""
     config_module = {}
     if args.config is not None:
-        print args.config
         config_module = importlib.import_module(args.config)
     
     for file in glob.iglob("./*.h"):
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         lines = []
         cppHeader = CppHeaderParser.CppHeader(file_contents, "string")
 
-        for variable in ["excluded", "force_no_bridge", "param_bridge_types", "return_bridge_types", "literals"]:
+        for variable in ["excluded", "force_no_bridge", "param_bridge_types", "return_bridge_types", "literals", "reserved"]:
             locals()[variable] = []
             if hasattr(config_module, variable):
                  locals()[variable] = getattr(config_module, variable)
@@ -68,12 +68,15 @@ if __name__ == "__main__":
             if return_type in type_map:
                 return_type = type_map[return_type]
                 
-            bridge_def = [".nobridge", ".{}".format(return_type.replace(" ","").replace("struct_","").replace("struct","").replace("const",""), fn_name]
+            bridge_def = [".nobridge", ".{}".format(return_type.replace(" ","").replace("struct_","").replace("struct","").replace("const","")), fn_name]
             if return_type in return_bridge_types:
                 bridge_def[0] = ".bridge"
                 
             for param in function["parameters"]:
                 type = param["type"].replace("const","").replace(" ","")
+                if param["array"]:
+                    type += "[]"
+                    
                 if type == "void":
                     continue
                     
@@ -87,13 +90,15 @@ if __name__ == "__main__":
                 if type in type_map:
                     type = type_map[type] 
                     
+                if name in reserved:
+                    name = "@{}".format(name)
+                    
                 bridge_def.append("{}:{}".format(type, name))
             
             if fn_name in force_no_bridge:
                 bridge_def[0] = ".nobridge"
                 
             line = " ".join(bridge_def)
-            print line
             lines.append(line)
         
         if len(lines) == 0:

@@ -40,18 +40,17 @@ namespace LiteCore.Interop
 """
 
 METHOD_DECORATION = "        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]\n"
+bridge_literals = {}
+raw_literals = {}
 
-def transform_raw(arg_type):
-    if(arg_type.startswith("bool")):
-        return "[MarshalAs(UnmanagedType.U1)]bool"
+def transform_raw(arg_info):
+    if(arg_info[0] == "bool"):
+        return "[MarshalAs(UnmanagedType.U1)]bool {}".format(arg_info[1])
 
-    if(arg_type.startswith("C4Slice_b")):
-        return arg_type[:-2]
-        
-    if(arg_type.startswith("void*")):
-        return "[Out]byte[]"
+    if(arg_info[0] == "C4Slice_b"):
+        return "{} {}".format(arg_info[0][:-2], arg_info[1])
 
-    return arg_type
+    return " ".join(arg_info)
     
 def transform_raw_return(arg_type):
     if(arg_type.endswith("_b")):
@@ -68,9 +67,6 @@ def transform_bridge(arg_type):
     
     if arg_type == "UIntPtr":
         return "ulong"
-        
-    if(arg_type == "void*"):
-        return "byte[]"
         
     return arg_type
     
@@ -90,24 +86,17 @@ def generate_bridge_sig(pieces, bridge_args):
     retVal = ""
     if(len(pieces) > 2):
         for args in pieces[2:-1]:
-            arg = ""
             if(args.startswith("C4Slice")):
-                if(args.startswith("C4Slice_b") or args.startswith("C4SliceResult_b")):
-                    bridge_args.append(args)
-                    arg = "byte[] {}".format(args[args.index(':') + 1:])
-                else:
-                    bridge_args.append(args)
-                    arg = "string {}".format(args[args.index(':') + 1:])
-            elif args.startswith("UIntPtr"):
-                arg = "ulong {}".format(args[args.index(':') + 1:])
-            elif args.startswith("void*"):
-                arg = "byte[] {}".format(args[args.index(':') + 1:])
-            else:    
-                arg = args.replace(':', ' ')
+                bridge_args.append(args)
                 
+            arg = "{} {}".format(transform_bridge(args[:args.index(':')]), args[args.index(':') + 1:])   
             retVal += "{}, ".format(arg)
         
-        retVal += pieces[-1].replace(':', ' ')
+        args = pieces[-1]
+        if(args.startswith("C4Slice")):
+            bridge_args.append(args)
+
+        retVal += "{} {}".format(transform_bridge(args[:args.index(':')]), args[args.index(':') + 1:]) 
        
     retVal += ")\n        {\n"
     return retVal
@@ -174,7 +163,11 @@ def generate_return_value(pieces):
     return return_statement
     
 def insert_bridge(collection, pieces):
-    line = "        public static {} {}(".format(transform_bridge(pieces[0][1:]), pieces[1])    
+    if pieces[1] in bridge_literals:
+        collection.append(bridge_literals[pieces[1]])
+        return
+    
+    line = "        public static {} {}(".format(transform_bridge(pieces[0][1:]), pieces[1]) 
     bridge_args = []
     line += generate_bridge_sig(pieces, bridge_args)
     line += generate_using_parameters_begin(bridge_args)
@@ -185,21 +178,48 @@ def insert_bridge(collection, pieces):
     
 def insert_raw(collection, pieces):
     collection.append(METHOD_DECORATION)
+    if(pieces[1] in raw_literals):
+        collection.append(raw_literals[pieces[1]])
+        return
+        
     if(pieces[0] == ".bool"):
         collection.append("        [return: MarshalAs(UnmanagedType.U1)]\n")
     
     line = "        public static extern {} {}(".format(transform_raw_return(pieces[0][1:]), pieces[1])
     if(len(pieces) > 2):
         for args in pieces[2:-1]:
-            arg = args.replace(':', ' ')
+            arg = args.split(':')
             line += "{}, ".format(transform_raw(arg))
         
         line += pieces[-1].replace(':', ' ')
     
     line += ');\n\n'
     collection.append(line)
+    
+def read_literals(filename, collection):
+    try:
+        fin = open(filename, "r")
+    except IOError:
+        return
 
-for filename in glob.iglob("*.cs.template"):
+    key = ""
+    value = ""
+    for line in fin:
+        if not line.startswith(" ") and len(line) > 2:
+            if len(value) > 0:
+                collection[key] = value
+            
+            key = line.strip("\n")
+            value = ""
+        else:
+            value += line
+            
+    fin.close()
+    collection[key] = value
+        
+read_literals("bridge_literals.txt", bridge_literals)
+read_literals("raw_literals.txt", raw_literals)
+for filename in glob.iglob("*.template"):
     native = []
     native_raw = []
     out_filename = os.path.splitext(filename)[0]
