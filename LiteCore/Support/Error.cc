@@ -123,6 +123,7 @@ namespace litecore {
             "encryption/decryption error",
             "query syntax error",
             "missing database index",
+            "invalid query parameter name/number",
         };
         static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
                         error::NumLiteCoreErrorsPlus1, "Incomplete error message table");

@@ -68,6 +68,7 @@ namespace litecore {
             CryptoError,
             InvalidQuery,
             NoSuchIndex,
+            InvalidQueryParam,
             
             NumLiteCoreErrorsPlus1
         };

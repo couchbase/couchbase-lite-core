@@ -16,6 +16,7 @@
 #include "Fleece.hh"
 #include "Path.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include <sqlite3.h>
 #include <sstream>
 #include <iostream>
 
@@ -121,28 +122,33 @@ namespace litecore {
             if (!root)
                 error::_throw(error::InvalidParameter);
             for (Dict::iterator it(root); it; ++it) {
-                string key = string(":_") + (string)it.key()->asString();
+                string key = string("$_") + (string)it.key()->asString();
                 const Value *val = it.value();
-                switch (val->type()) {
-                    case kNull:
-                        break;
-                    case kBoolean:
-                    case kNumber:
-                        if (val->isInteger() && !val->isUnsigned())
-                            _statement->bind(key, (long long)val->asInt());
-                        else
-                            _statement->bind(key, val->asDouble());
-                        break;
-                    case kString:
-                        _statement->bind(key, (string)val->asString());
-                        break;
-                    case kData: {
-                        slice str = val->asString();
-                        _statement->bind(key, str.buf, (int)str.size);
-                        break;
+                try {
+                    switch (val->type()) {
+                        case kNull:
+                            break;
+                        case kBoolean:
+                        case kNumber:
+                            if (val->isInteger() && !val->isUnsigned())
+                                _statement->bind(key, (long long)val->asInt());
+                            else
+                                _statement->bind(key, val->asDouble());
+                            break;
+                        case kString:
+                            _statement->bind(key, (string)val->asString());
+                            break;
+                        case kData: {
+                            slice str = val->asString();
+                            _statement->bind(key, str.buf, (int)str.size);
+                            break;
+                        }
+                        default:
+                            error::_throw(error::InvalidParameter);
                     }
-                    default:
-                        error::_throw(error::InvalidParameter);
+                } catch (const SQLite::Exception &x) {
+                    if (x.getErrorCode() == SQLITE_RANGE)
+                        error::_throw(error::InvalidQueryParam);
                 }
             }
         }

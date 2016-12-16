@@ -33,6 +33,9 @@ using namespace litecore;
 
 namespace c4Internal {
 
+    static_assert(kC4NumErrorCodesPlus1 == error::NumLiteCoreErrorsPlus1,
+                  "C4 error codes are not in sync with C++ ones");
+
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
         if (outError) {
             outError->domain = domain;

@@ -129,6 +129,9 @@ enum {
     kC4ErrorCrypto,                 // Encryption/decryption error
     kC4ErrorInvalidQuery,           // Invalid query
     kC4ErrorMissingIndex,           // No such index, or query requires a nonexistent index
+    kC4ErrorInvalidQueryParam,      // Unknown query param name, or param number out of range
+
+    kC4NumErrorCodesPlus1
 };
 
 
