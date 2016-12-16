@@ -49,3 +49,4 @@ Release_Static/
 Release_Testing/
 Debug_Testing/
 empty.cpp
+*.pyc

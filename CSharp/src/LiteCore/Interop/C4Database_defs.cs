@@ -28,6 +28,28 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    [Flags]
+    public enum C4DatabaseFlags : uint
+    {
+        Create        = 1,
+        ReadOnly      = 2,
+        AutoCompact   = 4,
+        Bundled       = 8,
+        SharedKeys    = 0x10,
+    }
+
+    public enum C4EncryptionAlgorithm : uint
+    {
+        None = 0,
+        AES256 = 1,
+    }
+
+    public enum C4DocumentVersioning : uint
+    {
+        RevisionTrees,
+        VersionVectors,
+    }
+
     public unsafe partial struct C4DatabaseConfig
     {
         public C4DatabaseFlags flags;
@@ -68,6 +90,4 @@ namespace LiteCore.Interop
     public unsafe struct C4Database
     {
     }
-
-
 }

@@ -12,13 +12,13 @@ namespace LiteCore.Tests
         [Fact]
         public void TestErrorMessages()
         {
-            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.ForestDB, 0));
+            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.ForestDBDomain, 0));
             msg.Should().BeNull("because there was no error");
 
-            AssertMessage(C4ErrorDomain.SQLite, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
-            AssertMessage(C4ErrorDomain.LiteCore, (int)LiteCoreError.InvalidParameter, "invalid parameter");
-            AssertMessage(C4ErrorDomain.POSIX, (int)PosixStatus.NOENT, "No such file or directory");
-            AssertMessage(C4ErrorDomain.LiteCore, (int)LiteCoreError.IndexBusy, "index busy; can't close view");
+            AssertMessage(C4ErrorDomain.SQLiteDomain, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.InvalidParameter, "invalid parameter");
+            AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.IndexBusy, "index busy; can't close view");
             AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
 
@@ -95,8 +95,8 @@ namespace LiteCore.Tests
                 C4Error error;
                 ((long)Native.c4raw_get(Db, "test", "bogus", &error)).Should().Be(0, 
                     "because the document does not exist");
-                error.Domain.Should().Be(C4ErrorDomain.LiteCore, "because that is the correct domain");
-                error.Code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code");
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain, "because that is the correct domain");
+                error.code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code");
             });
         }
 
@@ -108,8 +108,8 @@ namespace LiteCore.Tests
                 C4Error error;
                 C4Document* doc = NativeRaw.c4doc_get(Db, DocID, true, &error);
                 ((long)doc).Should().Be(0, "because the document does not exist");
-                error.Domain.Should().Be(C4ErrorDomain.LiteCore);
-                error.Code.Should().Be((int)LiteCoreError.NotFound);
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int)LiteCoreError.NotFound);
                 Native.c4doc_free(doc);
 
                 // Now get the doc with mustExist=false, which returns an empty doc:
@@ -295,7 +295,7 @@ namespace LiteCore.Tests
                     "doc-007", "doc-090", null, err));
                 i = 7;
                 while(Native.c4enum_next(e, &error)) {
-                    error.Code.Should().Be(0, "because otherwise an enumeration error occurred");
+                    error.code.Should().Be(0, "because otherwise an enumeration error occurred");
                     var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
                     var docID = $"doc-{i:D3}";
                     doc->docID.CreateString().Should().Be(docID, "because the doc should have the correct doc ID");
@@ -317,7 +317,7 @@ namespace LiteCore.Tests
 
                 i = 0;
                 while(Native.c4enum_next(e, &error)) {
-                    error.Code.Should().Be(0, "because otherwise an enumeration error occurred");
+                    error.code.Should().Be(0, "because otherwise an enumeration error occurred");
                     var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
                     doc->docID.CreateString().Should().Be(docIDs[i], "because the doc should have the correct sorted doc ID");
                     if(doc->sequence != 0) {
@@ -393,7 +393,7 @@ namespace LiteCore.Tests
                 }
 
                 Native.c4enum_free(e);
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+                error.code.Should().Be(0, "because otherwise an error occurred somewhere");
                 i.Should().Be(100, "because all docs should be iterated, even deleted ones");
             });
         }

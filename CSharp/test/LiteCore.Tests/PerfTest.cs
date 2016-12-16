@@ -161,7 +161,7 @@ namespace LiteCore.Tests
                             }
                             if(pass == 0) {
                                 var st2 = Stopwatch.StartNew();
-                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", C4IndexType.Value, null, err));
+                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", C4IndexType.ValueIndex, null, err));
                                 st2.PrintReport("Creating SQL index of state", 1, "index");
                             }
                         }
@@ -416,7 +416,7 @@ namespace LiteCore.Tests
             }
 
             Native.c4enum_free(e);
-            error.Code.Should().Be(0, "because otherwise an error occurred");
+            error.code.Should().Be(0, "because otherwise an error occurred");
             Native.c4indexer_end(indexer, true, &error).Should().BeTrue("because otherwise the indexer failed to end");
             Native.FLEncoder_Free(enc);
             Native.c4key_free(key);
@@ -453,7 +453,7 @@ namespace LiteCore.Tests
                 }
 
                 Native.c4enum_free(e);
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+                error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             } finally {
                 LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
                 Native.c4key_free(key);
@@ -507,7 +507,7 @@ namespace LiteCore.Tests
             }
 
             Native.c4enum_free(e);
-            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
             for(uint i = 0; i < 3; i++) {
                 Native.c4key_free(keys[i]);
@@ -558,7 +558,7 @@ namespace LiteCore.Tests
             }
 
             Native.c4enum_free(e);
-            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
             Native.c4key_free(key);
             return totalStates;

@@ -120,7 +120,7 @@ namespace LiteCore.Tests
             }
 
             Native.c4queryenum_free(e);
-            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             return i < NumDocs;
         }
 
@@ -163,7 +163,7 @@ namespace LiteCore.Tests
                 Native.c4doc_free(doc);
             }
 
-            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             Native.c4enum_free(e);
             if(Log) {
                 Console.Write($">>indexed_to:{lastSeq} ");

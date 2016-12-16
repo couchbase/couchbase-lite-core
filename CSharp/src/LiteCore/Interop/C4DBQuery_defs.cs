@@ -28,6 +28,13 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    public enum C4IndexType : uint
+    {
+        ValueIndex,
+        FullTextIndex,
+        GeoIndex,
+    }
+
     public unsafe struct C4Query
     {
     }
@@ -58,6 +65,4 @@ namespace LiteCore.Interop
             }
         }
     }
-
-
 }

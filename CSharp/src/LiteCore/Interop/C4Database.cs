@@ -20,7 +20,6 @@
 //
 using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace LiteCore
 {
@@ -32,27 +31,6 @@ namespace LiteCore
 
 namespace LiteCore.Interop
 {
-    [Flags]
-    public enum C4DatabaseFlags : uint
-    {
-        Create = 1,
-        ReadOnly = 2,
-        AutoCompact = 4,
-        Bundled = 8
-    }
-
-    public enum C4DocumentVersioning : uint
-    {
-        RevisionTrees,
-        VersionVectors
-    }
-
-    public enum C4EncryptionAlgorithm : uint
-    {
-        None = 0,
-        AES256 = 1
-    }
-
     public unsafe partial struct C4EncryptionKey
     {
         private const int _Size = 32;
@@ -79,7 +57,7 @@ namespace LiteCore.Interop
             retVal.flags = source->flags;
             retVal.versioning = source->versioning;
             retVal.encryptionKey = source->encryptionKey;
-            retVal._storageEngine = source->_storageEngine;
+            retVal._storageEngine = source->_storageEngine; // Note: raw copy!
 
             return retVal;
         }

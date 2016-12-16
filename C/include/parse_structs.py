@@ -3,6 +3,7 @@
 import glob
 import re
 from datetime import date
+import parse_enums
 
 type_map = {"uint32_t":"uint","size_t":"UIntPtr","int32_t":"int","uint8_t":"byte","C4StorageEngine":"string", 
             "char*":"string","uint64_t":"ulong","C4SequenceNumber":"ulong"}
@@ -19,6 +20,7 @@ def make_property(name, type):
 
 if __name__ == "__main__":
     for file in glob.iglob("./*.h"):
+        enums = parse_enums.parse_enum(file)
         fin = open(file, "r")
         variables = []
         structs = {}
@@ -44,7 +46,6 @@ if __name__ == "__main__":
                     
                     if "/*" in line:
                         in_comment += 1
-                        continue
                         
                     stripped = re.search("([^ ]*?)\\s*(\\*+)?\\s*([^ ]*?);", line)
                     if not stripped:
@@ -72,7 +73,7 @@ if __name__ == "__main__":
             continue
             
         fout = open(file[2].upper() + file[3:-2] + "_defs.cs", "w");
-        out_text = ""
+        out_text = "{}\n\n".format(enums)
         tin = open("templates/header.cs")
         template = tin.read()
         tin.close()
@@ -118,7 +119,7 @@ if __name__ == "__main__":
                 
             out_text += "    }\n\n"
                 
-        final_text = template % {"filename":file[2].upper() + file[3:-2] + "_defs.cs","year":date.today().year,"structs":out_text}
+        final_text = template % {"filename":file[2].upper() + file[3:-2] + "_defs.cs","year":date.today().year,"structs":out_text[:-2]}
         fout.write(final_text)
         fout.close()        
         

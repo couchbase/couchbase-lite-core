@@ -203,8 +203,8 @@ namespace LiteCore.Interop
 
         private static bool IsBusy(C4Error err)
         {
-            return (err.domain == C4ErrorDomain.LiteCore && err.code == (int)LiteCoreError.Busy) ||
-            (err.domain == C4ErrorDomain.SQLite && err.code == (int)SQLiteStatus.Busy);
+            return (err.domain == C4ErrorDomain.LiteCoreDomain && err.code == (int)LiteCoreError.Busy) ||
+            (err.domain == C4ErrorDomain.SQLiteDomain && err.code == (int)SQLiteStatus.Busy);
         }
 
         private unsafe bool Execute(C4TryLogicDelegate1 block, int attemptCount)
@@ -220,7 +220,7 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(err.domain == C4ErrorDomain.LiteCore && err.code == (int)LiteCoreError.Busy) {
+            if(IsBusy(err)) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }
@@ -301,7 +301,7 @@ namespace LiteCore.Interop
         private void ThrowOrHandle()
         {
             foreach(var error in _allowedErrors) {
-                if(error.Equals(Exception.Error) || (error.domain == C4ErrorDomain.Any &&
+                if(error.Equals(Exception.Error) || (error.domain == (C4ErrorDomain)0 &&
                     error.code.Equals(Exception.Error.code))) {
                     return;
                 }

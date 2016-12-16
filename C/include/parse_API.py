@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-parse_headers.py
+parse_API.py
 
 This file is meant to parse C++ headers into a syntax that is parseable 
 into other things like C# bindings and export symbol lists.  It is customizable

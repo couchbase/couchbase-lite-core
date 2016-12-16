@@ -18,27 +18,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-using System;
-
 namespace LiteCore.Interop
 {
-    [Flags]
-    public enum C4EnumeratorFlags : ushort
-    {
-        Descending = 0x01,
-        InclusiveStart = 0x02,
-        InclusiveEnd = 0x04,
-        IncludeDeleted = 0x08,
-        IncudeNonConflicted = 0x10,
-        IncludeBodies = 0x20
-    }
-
     public unsafe partial struct C4EnumeratorOptions
     {
         public static readonly C4EnumeratorOptions Default = new C4EnumeratorOptions {
             skip = 0,
             flags = C4EnumeratorFlags.InclusiveStart | C4EnumeratorFlags.InclusiveEnd |
-                                     C4EnumeratorFlags.IncudeNonConflicted | C4EnumeratorFlags.IncludeBodies
+                                     C4EnumeratorFlags.IncludeNonConflicted | C4EnumeratorFlags.IncludeBodies
         };
     }
 }

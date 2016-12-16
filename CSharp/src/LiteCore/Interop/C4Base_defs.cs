@@ -28,6 +28,23 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    public enum C4ErrorDomain : uint
+    {
+        LiteCoreDomain = 1,
+        POSIXDomain,
+        ForestDBDomain,
+        SQLiteDomain,
+        FleeceDomain,
+    }
+
+    public enum C4LogLevel : byte
+    {
+        Debug,
+        Verbose,
+        Info,
+        Warning,
+    }
+
     public unsafe partial struct C4Error
     {
         public C4ErrorDomain domain;
@@ -49,6 +66,4 @@ namespace LiteCore.Interop
             }
         }
     }
-
-
 }

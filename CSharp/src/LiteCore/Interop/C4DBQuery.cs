@@ -35,11 +35,4 @@ namespace LiteCore.Interop
             }
         }
     }
-
-    public enum C4IndexType : uint
-    {
-        Value,     // Regular index of property ValueIndex
-        FullText,  // Full-text index
-        Geo        // Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
-    }
 }

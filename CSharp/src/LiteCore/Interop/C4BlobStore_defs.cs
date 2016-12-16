@@ -28,6 +28,8 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+
+
     public unsafe struct C4BlobStore
     {
     }
@@ -44,6 +46,4 @@ namespace LiteCore.Interop
     public unsafe struct C4ReadStream
     {
     }
-
-
 }

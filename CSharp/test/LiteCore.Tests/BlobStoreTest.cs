@@ -61,7 +61,7 @@ namespace LiteCore.Tests
                 C4Error error;
                 var data = Native.c4blob_getContents(_store, _bogusKey, &error);
                 data.Should().BeNull("because the attachment doesn't exist");
-                error.Code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code for a missing attachment");
+                error.code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code for a missing attachment");
             });
         }
 
@@ -136,7 +136,7 @@ namespace LiteCore.Tests
                     bytesRead.Should().BeGreaterThan(0, "because there should be new bytes");
                     readBack.AddRange(buffer.Take((int)bytesRead));
                 } while(bytesRead == (ulong)buffer.Length);
-                error.Code.Should().Be(0, "because otherwise an error occurred");
+                error.code.Should().Be(0, "because otherwise an error occurred");
                 readBack.Should().Equal(blob, "because the data should persist correctly");
 
                 // Try seeking:

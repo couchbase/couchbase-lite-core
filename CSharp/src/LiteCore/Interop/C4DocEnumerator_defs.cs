@@ -28,6 +28,17 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    [Flags]
+    public enum C4EnumeratorFlags : ushort
+    {
+        Descending           = 0x01,
+        InclusiveStart       = 0x02,
+        InclusiveEnd         = 0x04,
+        IncludeDeleted       = 0x08,
+        IncludeNonConflicted = 0x10,
+        IncludeBodies        = 0x20,
+    }
+
     public unsafe partial struct C4EnumeratorOptions
     {
         public ulong skip;
@@ -45,6 +56,4 @@ namespace LiteCore.Interop
     public unsafe struct C4DocEnumerator
     {
     }
-
-
 }

@@ -98,7 +98,7 @@ namespace LiteCore.Tests
             }
         }
 
-        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = C4RevisionFlags.None)
+        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
         {
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {

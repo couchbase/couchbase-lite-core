@@ -28,6 +28,8 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+
+
     public unsafe struct C4View
     {
     }
@@ -135,6 +137,4 @@ namespace LiteCore.Interop
         public uint termIndex;
         public uint start, length;
     }
-
-
 }

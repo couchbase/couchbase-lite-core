@@ -28,6 +28,8 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+
+
     public unsafe struct C4DocumentObserver
     {
     }
@@ -35,6 +37,4 @@ namespace LiteCore.Interop
     public unsafe struct C4DatabaseObserver
     {
     }
-
-
 }

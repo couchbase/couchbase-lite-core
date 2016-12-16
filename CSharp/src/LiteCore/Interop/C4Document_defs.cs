@@ -28,6 +28,25 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    [Flags]
+    public enum C4DocumentFlags : uint
+    {
+        Deleted        = 0x01,
+        Conflicted     = 0x02,
+        HasAttachments = 0x04,
+        Exists         = 0x1000,
+    }
+
+    [Flags]
+    public enum C4RevisionFlags : byte
+    {
+        Deleted        = 0x01,
+        Leaf           = 0x02,
+        New            = 0x04,
+        HasAttachments = 0x08,
+        KeepBody       = 0x10,
+    }
+
     public unsafe struct C4Revision
     {
         public C4Slice revID;
@@ -98,6 +117,4 @@ namespace LiteCore.Interop
         public ulong sequence;
         public C4Revision selectedRev;
     }
-
-
 }

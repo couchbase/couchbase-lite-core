@@ -27,15 +27,6 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum C4ErrorDomain : uint
-    {
-        LiteCore = 1,
-        POSIX,
-        ForestDB,
-        SQLite,
-        Any = UInt32.MaxValue
-    }
-
     public enum LiteCoreError {
         AssertionFailed = 1,    // Internal assertion failure
         Unimplemented,          // Oops, an unimplemented API call
@@ -80,12 +71,12 @@ namespace LiteCore.Interop
             this.domain = domain;
         }
 
-        public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLite, (int)code)
+        public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLiteDomain, (int)code)
         {
             
         }
 
-        public C4Error(LiteCoreError code) : this(C4ErrorDomain.LiteCore, (int)code)
+        public C4Error(LiteCoreError code) : this(C4ErrorDomain.LiteCoreDomain, (int)code)
         {
             
         }
@@ -229,15 +220,6 @@ namespace LiteCore.Interop
         {
             Native.c4slice_free(this);
         }
-    }
-
-    public enum C4LogLevel : byte
-    {
-        Debug,
-        Verbose,
-        Info,
-        Warning,
-        Error
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

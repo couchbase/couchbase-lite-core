@@ -91,7 +91,7 @@ namespace LiteCore.Tests
                 }
 
                 Native.c4queryenum_free(e);
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+                error.code.Should().Be(0, "because otherwise an error occurred somewhere");
                 i.Should().Be(200, "because all index entries should be covered");
             });
         }
@@ -124,7 +124,7 @@ namespace LiteCore.Tests
                 // No more rows:
                 Native.c4queryenum_next(e, &error).Should().BeFalse("because the reduce function only contains one row");
                 Native.c4queryenum_free(e);
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+                error.code.Should().Be(0, "because otherwise an error occurred somewhere");
 ;            });
         }
 
@@ -204,7 +204,7 @@ namespace LiteCore.Tests
                 Native.c4doc_free(doc);
             }
 
-            error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
+            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             Native.c4enum_free(e);
             LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
         }

@@ -28,6 +28,18 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+    public enum C4KeyToken : byte
+    {
+        Null,
+        Bool,
+        Number,
+        String,
+        Array,
+        Map,
+        EndSequence,
+        Special,
+    }
+
     public unsafe struct C4KeyReader
     {
         public void* bytes;
@@ -51,6 +63,4 @@ namespace LiteCore.Interop
     public unsafe struct C4Key
     {
     }
-
-
 }
