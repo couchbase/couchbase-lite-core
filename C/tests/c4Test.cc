@@ -93,6 +93,16 @@ string toJSON(C4KeyReader r) {
 }
 
 
+std::string json5(std::string str) {
+    FLError err;
+    FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
+    REQUIRE(json.buf);
+    std::string result((char*)json.buf, json.size);
+    FLSliceResult_Free(json);
+    return result;
+}
+
+
 static void log(C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
     fprintf(stderr, "LiteCore-C %s: %.*s\n", kLevelNames[level], (int)message.size, (char*)message.buf);

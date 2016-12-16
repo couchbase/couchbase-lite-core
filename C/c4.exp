@@ -195,6 +195,8 @@ _FLValue_AsArray
 _FLValue_AsDict
 _FLValue_ToString
 _FLValue_ToJSON
+_FLValue_ToJSON5
+_FLJSON5_ToJSON
 _FLArray_Count
 _FLArray_Get
 _FLArrayIterator_Begin

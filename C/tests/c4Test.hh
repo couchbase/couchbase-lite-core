@@ -63,6 +63,10 @@ static inline std::string toJSON(C4Key* key)    {return toJSON(c4key_read(key));
 static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
 
 
+// Converts JSON5 to JSON; helps make JSON test input more readable!
+std::string json5(std::string);
+
+
 // This helper is necessary because it ends an open transaction if an assertion fails.
 // If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.
 class TransactionHelper {
