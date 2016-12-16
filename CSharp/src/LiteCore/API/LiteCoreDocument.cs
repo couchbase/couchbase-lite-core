@@ -42,7 +42,7 @@ namespace LiteCore
             C4Error err;
             C4Document* native = Native.c4doc_get(parent, docID, mustExist, &err);
             if(native == null) {
-                if(err.Code != 0) {
+                if(err.code != 0) {
                     throw new LiteCoreException(err);
                 }
 
@@ -57,7 +57,7 @@ namespace LiteCore
             C4Error err;
             C4Document* native = Native.c4doc_getBySequence(parent, seq, &err);
             if(native == null) {
-                if(err.Code != 0) {
+                if(err.code != 0) {
                     throw new LiteCoreException(err);
                 }
 

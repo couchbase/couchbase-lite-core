@@ -21,12 +21,11 @@
 
 namespace LiteCore.Interop
 {
-    public unsafe struct C4BlobKey
+    public unsafe partial struct C4BlobKey
     {
         public static readonly int Size = _Size;
         private const int _Size = 20;
-        public fixed byte bytes[_Size];
-
+        
         public override int GetHashCode()
         {
             int hash = 17;
@@ -58,21 +57,6 @@ namespace LiteCore.Interop
 
             return true;
         }
-    }
-
-    public struct C4BlobStore
-    {
-        
-    }
-
-    public struct C4ReadStream
-    {
-        
-    }
-
-    public struct C4WriteStream
-    {
-        
     }
     
     public static unsafe partial class Native

@@ -1,5 +1,5 @@
-﻿//
-// C4ExpiryEnumerator.cs
+//
+// C4Observer_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -19,10 +19,22 @@
 // limitations under the License.
 //
 
+using System;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+using LiteCore.Util;
+
 namespace LiteCore.Interop
 {
-    public struct C4ExpiryEnumerator
+    public unsafe struct C4DocumentObserver
     {
-        
     }
+
+    public unsafe struct C4DatabaseObserver
+    {
+    }
+
+
 }

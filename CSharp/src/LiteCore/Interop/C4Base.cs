@@ -72,29 +72,12 @@ namespace LiteCore.Interop
         MissingIndex            // No such index, or query requires a nonexistent index
     };
 
-    public struct C4Error
+    public unsafe partial struct C4Error
     {
-        C4ErrorDomain _domain;
-        int _code;
-
-        public C4ErrorDomain Domain
-        {
-            get {
-                return _domain;
-            }
-        }
-
-        public int Code
-        {
-            get {
-                return _code;
-            }
-        }
-
         public C4Error(C4ErrorDomain domain, int code)
         {
-            _code = code;
-            _domain = domain;
+            this.code = code;
+            this.domain = domain;
         }
 
         public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLite, (int)code)
@@ -108,22 +91,9 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4Slice : IEnumerable<byte>
+    public unsafe partial struct C4Slice : IEnumerable<byte>
     {
         public static readonly C4Slice Null = new C4Slice(null, 0);
-
-        public void* buf;
-        private UIntPtr _size;
-
-        public ulong size
-        {
-            get {
-                return _size.ToUInt64();
-            }
-            set {
-                _size = (UIntPtr)value;
-            }
-        }
 
         public C4Slice(void* buf, ulong size)
         {

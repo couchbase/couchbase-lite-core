@@ -22,32 +22,6 @@ using System;
 
 namespace LiteCore.Interop
 {
-    public struct C4GeoArea
-    {
-        public double xmin, ymin, xmax, ymax;
-    }
-
-    public struct C4Key
-    {
-        
-    }
-
-    public unsafe struct C4KeyReader
-    {
-        public void* bytes;
-        private UIntPtr _length;
-
-        public ulong length
-        {
-            get {
-                return _length.ToUInt64();
-            }
-            set {
-                _length = (UIntPtr)value;
-            }
-        }
-    }
-
     public enum C4KeyToken : byte
     {
         Null,
@@ -59,10 +33,5 @@ namespace LiteCore.Interop
         EndSequence,
         Special,
         Error = 255
-    }
-
-    public struct C4KeyValueList
-    {
-        
     }
 }

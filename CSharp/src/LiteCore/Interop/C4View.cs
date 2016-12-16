@@ -26,16 +26,6 @@ using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore.Interop
 {
-    public struct C4View
-    {
-        
-    }
-
-    public struct C4Indexer
-    {
-        
-    }
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public unsafe delegate void AccumulateDelegate(void* context, C4Key* key, C4Slice value);
 
@@ -45,20 +35,6 @@ namespace LiteCore.Interop
     public unsafe delegate C4Slice ReduceDelegate(void* context);
 
     public unsafe delegate string ManagedReduceDelegate(object context);
-
-    public unsafe struct C4ReduceFunction
-    {
-        public IntPtr accumulate;
-        public IntPtr reduce;
-        public void* context;
-
-        public C4ReduceFunction(AccumulateDelegate accumulate, ReduceDelegate reduce, void* context)
-        {
-            this.accumulate = Marshal.GetFunctionPointerForDelegate(accumulate);
-            this.reduce = Marshal.GetFunctionPointerForDelegate(reduce);
-            this.context = context;
-        }
-    }
 
     public sealed class C4ManagedReduceFunction : IDisposable
     {
@@ -106,7 +82,7 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4QueryOptions
+    public unsafe partial struct C4QueryOptions
     {
         public static readonly C4QueryOptions Default = new C4QueryOptions {
             limit = UInt64.MaxValue,
@@ -114,99 +90,6 @@ namespace LiteCore.Interop
             inclusiveEnd = true,
             rankFullText = true
         };
-
-        public ulong skip;
-        public ulong limit;
-        private byte _descending;
-        private byte _inclusiveStart;
-        private byte _inclusiveEnd;
-        private byte _rankFullText;
-
-        public C4Key* startKey;
-        public C4Key* endKey;
-        public C4Slice startKeyDocID;
-        public C4Slice endKeyDocID;
-
-        public C4Key** keys;
-        private UIntPtr _keysCount;
-
-        public C4ReduceFunction* reduce;
-        public uint groupLevel;
-
-        public bool descending 
-        {
-            get {
-                return Convert.ToBoolean(_descending);
-            }
-            set {
-                _descending = Convert.ToByte(value);
-            }
-        }
-
-        public bool inclusiveStart
-        {
-            get {
-                return Convert.ToBoolean(_inclusiveStart);
-            }
-            set {
-                _inclusiveStart = Convert.ToByte(value);
-            }
-        }
-
-        public bool inclusiveEnd
-        {
-            get {
-                return Convert.ToBoolean(_inclusiveEnd);
-            }
-            set {
-                _inclusiveEnd = Convert.ToByte(value);
-            }
-        }
-
-        public bool rankFullText
-        {
-            get {
-                return Convert.ToBoolean(_rankFullText);
-            }
-            set {
-                _rankFullText = Convert.ToByte(value);
-            }
-        }
-
-        public ulong keysCount
-        {
-            get {
-                return _keysCount.ToUInt64();
-            }
-            set {
-                _keysCount = (UIntPtr)value;
-            }
-        }
-    }
-
-    public struct C4FullTextTerm
-    {
-        public uint termIndex;
-        public uint start, length;
-    }
-
-    public unsafe struct C4QueryEnumerator
-    {
-        // All query types:
-        public C4Slice docID;
-        public C4SequenceNumber docSequence;
-
-        // Map/reduce only
-        public C4KeyReader key;
-        public C4Slice value;
-
-        // Expression-based only:
-        public C4Slice revID;
-        public C4DocumentFlags docFlags;
-
-        // Full-text only:
-        public uint fullTextTermCount;
-        public C4FullTextTerm* fullTextTerms;
     }
     
     public static unsafe partial class Native

@@ -1,5 +1,5 @@
 //
-// C4Observer.cs
+// C4BlobStore_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -19,13 +19,31 @@
 // limitations under the License.
 //
 
+using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
+    public unsafe struct C4BlobStore
+    {
+    }
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context);
+    public unsafe struct C4WriteStream
+    {
+    }
+
+    public unsafe partial struct C4BlobKey
+    {
+        public fixed byte bytes[20];
+    }
+
+    public unsafe struct C4ReadStream
+    {
+    }
+
+
 }

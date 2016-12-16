@@ -203,8 +203,8 @@ namespace LiteCore.Interop
 
         private static bool IsBusy(C4Error err)
         {
-            return (err.Domain == C4ErrorDomain.LiteCore && err.Code == (int)LiteCoreError.Busy) ||
-            (err.Domain == C4ErrorDomain.SQLite && err.Code == (int)SQLiteStatus.Busy);
+            return (err.domain == C4ErrorDomain.LiteCore && err.code == (int)LiteCoreError.Busy) ||
+            (err.domain == C4ErrorDomain.SQLite && err.code == (int)SQLiteStatus.Busy);
         }
 
         private unsafe bool Execute(C4TryLogicDelegate1 block, int attemptCount)
@@ -214,13 +214,13 @@ namespace LiteCore.Interop
             }
 
             var err = default(C4Error);
-            if(block(&err) || err.Code == 0) {
+            if(block(&err) || err.code == 0) {
                 Exception = null;
                 return true;
             }
 
             Exception = new LiteCoreException(err);
-            if(err.Domain == C4ErrorDomain.LiteCore && err.Code == (int)LiteCoreError.Busy) {
+            if(err.domain == C4ErrorDomain.LiteCore && err.code == (int)LiteCoreError.Busy) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }
@@ -237,7 +237,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal != null || err.Code == 0) {
+            if(retVal != null || err.code == 0) {
                 Exception = null;
                 return retVal;
             }
@@ -260,7 +260,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal >= 0 || err.Code == 0) {
+            if(retVal >= 0 || err.code == 0) {
                 Exception = null;
                 return retVal;
             }
@@ -283,7 +283,7 @@ namespace LiteCore.Interop
 
             var err = default(C4Error);
             var retVal = block(&err);
-            if(retVal.buf != null || err.Code == 0) {
+            if(retVal.buf != null || err.code == 0) {
                 Exception = null;
                 return retVal;
             }
@@ -301,8 +301,8 @@ namespace LiteCore.Interop
         private void ThrowOrHandle()
         {
             foreach(var error in _allowedErrors) {
-                if(error.Equals(Exception.Error) || (error.Domain == C4ErrorDomain.Any &&
-                    error.Code.Equals(Exception.Error.Code))) {
+                if(error.Equals(Exception.Error) || (error.domain == C4ErrorDomain.Any &&
+                    error.code.Equals(Exception.Error.code))) {
                     return;
                 }
             }

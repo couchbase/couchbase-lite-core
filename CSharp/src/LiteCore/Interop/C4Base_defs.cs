@@ -1,5 +1,5 @@
 //
-// C4Observer.cs
+// C4Base_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -19,13 +19,36 @@
 // limitations under the License.
 //
 
+using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
+    public unsafe partial struct C4Error
+    {
+        public C4ErrorDomain domain;
+        public int code;
+    }
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context);
+    public unsafe partial struct C4Slice
+    {
+        public void* buf;
+        private UIntPtr _size;
+
+        public ulong size
+        {
+            get {
+                return _size.ToUInt64();
+            }
+            set {
+                _size = (UIntPtr)value;
+            }
+        }
+    }
+
+
 }

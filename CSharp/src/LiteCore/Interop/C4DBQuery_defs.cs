@@ -1,5 +1,5 @@
-﻿//
-// C4DBQuery.cs
+//
+// C4DBQuery_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -20,26 +20,44 @@
 //
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using LiteCore.Util;
+
 namespace LiteCore.Interop
 {
-    public unsafe partial struct C4IndexOptions : IDisposable
+    public unsafe struct C4Query
     {
-        public void Dispose()
+    }
+
+    public unsafe partial struct C4IndexOptions
+    {
+        private IntPtr _language;
+        private byte _ignoreDiacritics;
+
+        public string language
         {
-            var old = Interlocked.Exchange(ref _language, IntPtr.Zero);
-            if(old != IntPtr.Zero) {
+            get {
+                return Marshal.PtrToStringAnsi(_language);
+            }
+            set {
+                var old = Interlocked.Exchange(ref _language, Marshal.StringToHGlobalAnsi(value));
                 Marshal.FreeHGlobal(old);
+            }
+        }
+
+        public bool ignoreDiacritics
+        {
+            get {
+                return Convert.ToBoolean(_ignoreDiacritics);
+            }
+            set {
+                _ignoreDiacritics = Convert.ToByte(value);
             }
         }
     }
 
-    public enum C4IndexType : uint
-    {
-        Value,     // Regular index of property ValueIndex
-        FullText,  // Full-text index
-        Geo        // Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
-    }
+
 }

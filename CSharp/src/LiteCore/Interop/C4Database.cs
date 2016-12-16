@@ -53,23 +53,15 @@ namespace LiteCore.Interop
         AES256 = 1
     }
 
-    public unsafe struct C4EncryptionKey
+    public unsafe partial struct C4EncryptionKey
     {
         private const int _Size = 32;
 
         public static readonly int Size = 32;
-
-        public C4EncryptionAlgorithm algorithm;
-        public fixed byte bytes[_Size];
     }
 
-    public unsafe struct C4DatabaseConfig : IDisposable
+    public unsafe partial struct C4DatabaseConfig : IDisposable
     {
-        public C4DatabaseFlags flags;
-        private IntPtr _storageEngine;
-        public C4DocumentVersioning versioning;
-        public C4EncryptionKey encryptionKey;
-
         public static C4DatabaseConfig Clone(C4DatabaseConfig *source)
         {
             var retVal = new C4DatabaseConfig();
@@ -92,35 +84,12 @@ namespace LiteCore.Interop
             return retVal;
         }
 
-        public string storageEngine
-        {
-            get {
-                return Marshal.PtrToStringAnsi(_storageEngine);
-            }
-            set {
-                var old = Interlocked.Exchange(ref _storageEngine, Marshal.StringToHGlobalAnsi(value));
-                Marshal.FreeHGlobal(old);
-            }
-        }
-
         public void Dispose()
         {
             storageEngine = null;
         }
     }
 
-    public struct C4Database
-    {
-        
-    }
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public unsafe delegate void C4OnCompactCallback(void* context, [MarshalAs(UnmanagedType.U1)]bool compacting);
-
-    public struct C4RawDocument
-    {
-        public C4Slice key;
-        public C4Slice meta;
-        public C4Slice body;
-    }
 }

@@ -1,10 +1,10 @@
 //
-// C4Observer.cs
+// %(filename)s
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) %(year)d Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@
 // limitations under the License.
 //
 
+using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context);
+%(structs)s
 }

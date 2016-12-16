@@ -28,7 +28,7 @@ namespace LiteCore
     {
         public C4Error Error { get; }
 
-        public LiteCoreException(C4Error err) : base($"LiteCoreException ({err.Code}): {Native.c4error_getMessage(err)}")
+        public LiteCoreException(C4Error err) : base($"LiteCoreException ({err.code}): {Native.c4error_getMessage(err)}")
         {
             Error = err;
         }

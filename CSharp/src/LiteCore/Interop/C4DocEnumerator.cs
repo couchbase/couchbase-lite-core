@@ -33,28 +33,12 @@ namespace LiteCore.Interop
         IncludeBodies = 0x20
     }
 
-    public struct C4EnumeratorOptions
+    public unsafe partial struct C4EnumeratorOptions
     {
         public static readonly C4EnumeratorOptions Default = new C4EnumeratorOptions {
             skip = 0,
             flags = C4EnumeratorFlags.InclusiveStart | C4EnumeratorFlags.InclusiveEnd |
                                      C4EnumeratorFlags.IncudeNonConflicted | C4EnumeratorFlags.IncludeBodies
         };
-
-        public ulong skip;
-        public C4EnumeratorFlags flags;
-    }
-
-    public struct C4DocumentInfo
-    {
-        public C4DocumentFlags flags;
-        public C4Slice docID;
-        public C4Slice revID;
-        public ulong sequence;
-    }
-
-    public struct C4DocEnumerator
-    {
-        
     }
 }
