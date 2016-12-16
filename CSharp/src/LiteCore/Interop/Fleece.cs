@@ -47,6 +47,16 @@ namespace LiteCore.Interop
         
     }
 
+    public struct FLSharedKeys
+    {
+
+    }
+
+    public struct FLKeyPath
+    {
+        
+    }
+
     public enum FLValueType
     {
         Undefined = -1,
@@ -191,29 +201,41 @@ namespace LiteCore.Interop
 
     public unsafe struct FLArrayIterator
     {
+        #pragma warning disable CS0169
+
         private void* _private1;
         private uint _private2;
         private byte _private3;
         private void* _private4;
+
+        #pragma warning restore CS0169
     }
 
     public unsafe struct FLDictIterator
     {
+        #pragma warning disable CS0169
+
         private void* _private1;
         private uint _private2;
         private byte _private3;
         private void* _private4;
         private void* _private5;
+
+        #pragma warning restore CS0169
     }
 
     public unsafe struct FLDictKey
     {
+        #pragma warning disable CS0169
+
         //HACK: Cannot have an inline array of pointers
         private void* _private1a;
         private void* _private1b;
         private void* _private1c;
         private uint _private2;
         private byte _private3;
+
+        #pragma warning restore CS0169
     }
 
     public static unsafe partial class Native

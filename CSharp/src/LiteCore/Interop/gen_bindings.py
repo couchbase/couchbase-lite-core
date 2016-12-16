@@ -23,7 +23,11 @@ TEMPLATE = """//
 // limitations under the License.
 //
 
+using System;
+using System.Linq;
 using System.Runtime.InteropServices;
+
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
@@ -48,7 +52,10 @@ def transform_raw(arg_info):
         return "[MarshalAs(UnmanagedType.U1)]bool {}".format(arg_info[1])
 
     if(arg_info[0] == "C4Slice_b"):
-        return "{} {}".format(arg_info[0][:-2], arg_info[1])
+        return "C4Slice {}".format(arg_info[1])
+        
+    if arg_info[0].endswith("*[]"):
+        return "{}** {}".format(arg_info[0][:-3], arg_info[1])
 
     return " ".join(arg_info)
     
@@ -124,10 +131,10 @@ def bridge_parameter(param, return_space):
         return "{}_.AsC4Slice(), ".format(splitPiece[1])
     elif splitPiece[0] == "C4Slice_b":
         return_space[0] = "                "
-        return "new C4Slice({0}_, {0}.Length), ".format(splitPiece[1])
+        return "new C4Slice({0}_, (ulong){0}.Length), ".format(splitPiece[1])
     elif splitPiece[0] == "UIntPtr":
         return "(UIntPtr){}, ".format(splitPiece[1])
-        
+    
     return "{}, ".format(splitPiece[1])
     
 def generate_return_value(pieces):
@@ -191,7 +198,7 @@ def insert_raw(collection, pieces):
             arg = args.split(':')
             line += "{}, ".format(transform_raw(arg))
         
-        line += pieces[-1].replace(':', ' ')
+        line += transform_raw(pieces[-1].split(':'))
     
     line += ');\n\n'
     collection.append(line)

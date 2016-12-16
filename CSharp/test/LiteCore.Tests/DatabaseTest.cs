@@ -15,12 +15,10 @@ namespace LiteCore.Tests
             var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.ForestDB, 0));
             msg.Should().BeNull("because there was no error");
 
-            AssertMessage(C4ErrorDomain.ForestDB, (int)ForestDBStatus.KeyNotFound, "key not found");
             AssertMessage(C4ErrorDomain.SQLite, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
             AssertMessage(C4ErrorDomain.LiteCore, (int)LiteCoreError.InvalidParameter, "invalid parameter");
             AssertMessage(C4ErrorDomain.POSIX, (int)PosixStatus.NOENT, "No such file or directory");
             AssertMessage(C4ErrorDomain.LiteCore, (int)LiteCoreError.IndexBusy, "index busy; can't close view");
-            AssertMessage(C4ErrorDomain.ForestDB, -1234, "unknown error");
             AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
 
@@ -32,7 +30,7 @@ namespace LiteCore.Tests
                 config.flags |= C4DatabaseFlags.Bundled;
                 var tmp = config;
 
-                var bundlePath = Path.Combine(TestDir, "cbl_core_test_bundle") + "/";
+                var bundlePath = Path.Combine(TestDir, $"cbl_core_test_bundle{Path.DirectorySeparatorChar}");
                 Native.c4db_deleteAtPath(bundlePath, &config, null);
                 var bundle = (C4Database *)LiteCoreBridge.Check(err => {
                     var localConfig = tmp;
@@ -53,22 +51,7 @@ namespace LiteCore.Tests
                 });
                 LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
                 Native.c4db_free(bundle);
-
-                // Reopen with wrong storage type:
-                Native.c4log_warnOnErrors(false);
-                if(config.storageEngine == C4StorageEngine.SQLite) {
-                    config.storageEngine = C4StorageEngine.ForestDB;
-                } else {
-                    config.storageEngine = C4StorageEngine.SQLite;
-                }
-
-                C4Error error;
-                ((long)Native.c4db_open(bundlePath, &config, &error)).Should().Be(0, 
-                    "because the storage engine is invalid");
-
-                ((long)Native.c4db_open(Path.Combine(TestDir, "no_such_bundle"), &config, &error)).Should().Be(0, 
-                    "because the storage engine is invalid");
-                Native.c4log_warnOnErrors(true);
+                NativePrivate.c4log_warnOnErrors(true);
                 config.Dispose();
             });
         }
@@ -181,155 +164,6 @@ namespace LiteCore.Tests
                 doc->selectedRev.sequence.Should().Be(1, "because it is the first stored document");
                 doc->selectedRev.body.Equals(Body).Should().BeTrue("because the doc should have the stored body");
                 Native.c4doc_free(doc);
-            });
-        }
-
-        [Fact]
-        public void TestCreateMultipleRevisions()
-        {
-            RunTestVariants(() => {
-                var docID = DocID.CreateString();
-                var Body2 = C4Slice.Constant("{\"ok\":\"go\"}");
-                CreateRev(docID, RevID, Body);
-                CreateRev(docID, Rev2ID, Body2);
-                CreateRev(docID, Rev2ID, Body2, false); // test redundant insert
-
-                // Reload the doc:
-                var doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, true, err));
-                doc->flags.Should().Be(C4DocumentFlags.Exists);
-                doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the stored doc ID");
-                doc->revID.Equals(Rev2ID).Should().BeTrue("because the doc should have the current rev ID");
-                doc->selectedRev.revID.Equals(Rev2ID).Should().BeTrue("because the current revision is selected");
-                doc->selectedRev.sequence.Should().Be(2L, "because the current revision is the second one");
-                doc->selectedRev.body.Equals(Body2).Should().BeTrue("because the selected rev should have the correct body");
-
-                if(Versioning == C4DocumentVersioning.RevisionTrees) {
-                    // Select 1st revision:
-                    Native.c4doc_selectParentRevision(doc).Should().BeTrue("because otherwise selecting the parent revision failed");
-                    doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the first revision is selected");
-                    doc->selectedRev.sequence.Should().Be(1L, "because the first revision is selected");
-                    doc->selectedRev.body.Equals(C4Slice.Null).Should().BeTrue("because the body hasn't been loaded");
-                    Native.c4doc_hasRevisionBody(doc).Should().BeTrue("because the body still exists");
-                    LiteCoreBridge.Check(err => Native.c4doc_loadRevisionBody(doc, err));
-                    doc->selectedRev.body.Equals(Body).Should().BeTrue("because the body is loaded");
-                    Native.c4doc_selectParentRevision(doc).Should().BeFalse("because the root revision is selected");
-                    Native.c4doc_free(doc);
-
-                    // Compact database:
-                    LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
-
-                    doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, true, err));
-                    Native.c4doc_selectParentRevision(doc).Should().BeTrue("because otherwise selecting the parent revision failed");
-                    doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the first revision is selected");
-                    doc->selectedRev.sequence.Should().Be(1L, "because the first revision is selected");
-                    if(Storage != C4StorageEngine.SQLite) {
-                        doc->selectedRev.body.Equals(C4Slice.Null).Should().BeTrue("because the body is not available");
-                        Native.c4doc_hasRevisionBody(doc).Should().BeFalse("because the body has been compacted");
-                        C4Error error;
-                        Native.c4doc_loadRevisionBody(doc, &error).Should().BeFalse("because the body is unavailable");
-                    }
-
-                    LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                    try {
-                        C4Error error;
-                        NativeRaw.c4doc_purgeRevision(doc, Rev2ID, &error).Should().Be(2);
-                        LiteCoreBridge.Check(err => Native.c4doc_save(doc, 20, err));
-                    } finally {
-                        LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                    }
-                }
-
-                Native.c4doc_free(doc);
-            });
-        }
-
-        [Fact]
-        public void TestGetForPut()
-        {
-            RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                try {
-                    // Creating doc given ID:
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db,
-                        DocID, C4Slice.Null, false, false, err));
-                    doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                    doc->revID.Equals(C4Slice.Null).Should().BeTrue("because a rev ID has not been assigned yet");
-                    ((int)doc->flags).Should().Be(0, "because the document has no flags yet");
-                    doc->selectedRev.revID.Equals(C4Slice.Null).Should().BeTrue("because no rev ID has been assigned yet");
-                    Native.c4doc_free(doc);
-
-                    // Creating doc, no ID:
-                    doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db,
-                        C4Slice.Null, C4Slice.Null, false, false, err));
-                    doc->docID.size.Should().BeGreaterOrEqualTo(20, "because the document should be assigned a random ID");
-                    doc->revID.Equals(C4Slice.Null).Should().BeTrue("because the doc doesn't have a rev ID yet");
-                    ((int)doc->flags).Should().Be(0, "because the document has no flags yet");
-                    doc->selectedRev.revID.Equals(C4Slice.Null).Should().BeTrue("because no rev ID has been assigned yet");
-                    Native.c4doc_free(doc);
-
-                    // Delete with no revID given
-                    C4Error error;
-                    doc = NativeRaw.c4doc_getForPut(Db, C4Slice.Null, C4Slice.Null, true, false, &error);
-                    ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.Code.Should().Be((int)LiteCoreError.NotFound, "because the correct error should be returned");
-
-                    // Adding new rev of nonexistent doc:
-                    doc = NativeRaw.c4doc_getForPut(Db, DocID, RevID, false, false, &error);
-                    ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.Code.Should().Be((int)LiteCoreError.NotFound, "because the correct error should be returned");
-
-                    // Adding new rev of existing doc:
-                    CreateRev(DocID.CreateString(), RevID, Body);
-                    doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db, DocID, RevID, false,
-                        false, err));
-                    doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                    doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document has no flags yet");
-                    doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the selected rev should have the correct rev ID");
-                    Native.c4doc_free(doc);
-
-                    // Adding new rev, with nonexistent parent
-                    doc = NativeRaw.c4doc_getForPut(Db, DocID, Rev2ID, false, false, &error);
-                    ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.Code.Should().Be((int)LiteCoreError.Conflict, "because the correct error should be returned");
-
-                    // Conflict -- try & fail to update non-current rev:
-                    var body2 = C4Slice.Constant("{\"ok\":\"go\"}");
-                    CreateRev(DocID.CreateString(), Rev2ID, body2);
-                    doc = NativeRaw.c4doc_getForPut(Db, DocID, RevID, false, false, &error);
-                    ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.Code.Should().Be((int)LiteCoreError.Conflict, "because the correct error should be returned");
-
-                    if(Versioning == C4DocumentVersioning.RevisionTrees) {
-                        // Conflict -- force an update of non-current rev:
-                        doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db, DocID, 
-                            RevID, false, true, err));
-                        doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                        doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the doc should have the correct rev ID");
-                        Native.c4doc_free(doc);
-                    }
-
-                    // Deleting the doc:
-                    doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db, DocID, 
-                        Rev2ID, true, false, err));
-                    doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                    doc->selectedRev.revID.Equals(Rev2ID).Should().BeTrue("because the doc should have the correct rev ID");
-                    Native.c4doc_free(doc);
-
-                    // Actually tdelete it:
-                    CreateRev(DocID.CreateString(), Rev3ID, C4Slice.Null);
-
-                    // Re-creating the doc (no revID given):
-                    doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_getForPut(Db, DocID, 
-                        C4Slice.Null, false, false, err));
-                    doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                    doc->selectedRev.revID.Equals(Rev3ID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists|C4DocumentFlags.Deleted, "because the document was deleted");
-                    doc->selectedRev.revID.Equals(Rev3ID).Should().BeTrue("because the doc should have the correct rev ID");
-                    Native.c4doc_free(doc);
-                } finally {
-                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                }
             });
         }
 
@@ -706,7 +540,7 @@ namespace LiteCore.Tests
             }
 
             // Add a deleted doc to make sure it's skipped by default:
-            CreateRev("doc-005DEL", RevID, C4Slice.Null);
+            CreateRev("doc-005DEL", RevID, C4Slice.Null, C4RevisionFlags.Deleted);
         }
 
         private void AssertMessage(C4ErrorDomain domain, int code, string expected)

@@ -18,10 +18,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 using System;
 using System.Runtime.InteropServices;
-
-using LiteCore.Util;
+using System.Threading;
 
 namespace LiteCore.Interop
 {
@@ -30,62 +30,38 @@ namespace LiteCore.Interop
         
     }
 
-    public static unsafe partial class Native
+    public struct C4IndexOptions : IDisposable
     {
-        public static C4Query* c4query_new(C4Database* db, string queryExpression, string sortExpression, C4Error *outError)
-        {
-            using(var queryExpression_ = new C4String(queryExpression))
-            using(var sortExpression_ = new C4String(sortExpression)) {
-                return NativeRaw.c4query_new(db, queryExpression_.AsC4Slice(), sortExpression_.AsC4Slice(), outError);
-            }
-        }
-        
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4query_free(C4Query* query);
+        private IntPtr _language;
 
-        public static C4QueryEnumerator* c4query_run(C4Query* query,
-                                                     C4QueryOptions* options,
-                                                     byte[] encodedParams,
-                                                     C4Error* outError)
+        public bool ignoreDiacritics;
+
+        public string language
         {
-            fixed(byte *b = encodedParams) {
-                var length = encodedParams == null ? 0UL : (ulong)encodedParams.Length;
-                return NativeRaw.c4query_run(query, options, new C4Slice(b, length), outError);
+            get {
+                return Marshal.PtrToStringAnsi(_language);
+            }
+            set {
+                var old = Interlocked.Exchange(ref _language, Marshal.StringToHGlobalAnsi(value));
+                if(old != IntPtr.Zero) {
+                    Marshal.FreeHGlobal(old);
+                }
             }
         }
 
-        public static bool c4db_createIndex(C4Database* db, string expression, C4Error* outError)
+        public void Dispose()
         {
-            using(var expression_ = new C4String(expression)) {
-                return NativeRaw.c4db_createIndex(db, expression_.AsC4Slice(), outError);
-            }
-        }
-
-        public static bool c4db_deleteIndex(C4Database* db, string expression, C4Error* outError)
-        {
-            using(var expression_ = new C4String(expression)) {
-                return NativeRaw.c4db_deleteIndex(db, expression_.AsC4Slice(), outError);
+            var old = Interlocked.Exchange(ref _language, IntPtr.Zero);
+            if(old != IntPtr.Zero) {
+                Marshal.FreeHGlobal(old);
             }
         }
     }
 
-    public static unsafe partial class NativeRaw
+    public enum C4IndexType : uint
     {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Query* c4query_new(C4Database* db, C4Slice queryExpression, C4Slice sortExpression, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4QueryEnumerator* c4query_run(C4Query* query,
-                                                            C4QueryOptions* options,
-                                                            C4Slice encodedParams,
-                                                            C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_createIndex(C4Database* db, C4Slice expression, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_deleteIndex(C4Database* db, C4Slice expression, C4Error* outError);
+        Value,     // Regular index of property ValueIndex
+        FullText,  // Full-text index
+        Geo        // Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
     }
 }

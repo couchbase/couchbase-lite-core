@@ -67,6 +67,9 @@ namespace LiteCore.Interop
         Unsupported,            // Operation not supported in this database
         NotADatabaseFile,       // File is not a database, or encryption key is wrong
         WrongFormat, /*30*/     // Database exists but not in the format/storage requested
+        Crypto,                 // Encryption/decryption error
+        InvalidQuery,           // Invalid query
+        MissingIndex            // No such index, or query requires a nonexistent index
     };
 
     public struct C4Error
@@ -92,11 +95,6 @@ namespace LiteCore.Interop
         {
             _code = code;
             _domain = domain;
-        }
-
-        public C4Error(ForestDBStatus code) : this(C4ErrorDomain.ForestDB, (int)code)
-        {
-            
         }
 
         public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLite, (int)code)
@@ -266,6 +264,7 @@ namespace LiteCore.Interop
     public enum C4LogLevel : byte
     {
         Debug,
+        Verbose,
         Info,
         Warning,
         Error
@@ -273,42 +272,4 @@ namespace LiteCore.Interop
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void C4LogCallback(C4LogLevel level, C4Slice message);
-
-    public unsafe static partial class Native
-    {
-        private static readonly byte[] _ErrorBuf = new byte[50];
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4SliceEqual(C4Slice a, C4Slice b);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4slice_free(C4Slice slice);
-
-        public static string c4error_getMessage(C4Error err)
-        {
-            using(var retVal = NativeRaw.c4error_getMessage(err)) {
-                return ((C4Slice)retVal).CreateString();
-            }
-        }
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4log_setLevel(C4LogLevel level);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4log_warnOnErrors([MarshalAs(UnmanagedType.U1)]bool warn);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int c4_getObjectCount();
-    }
-
-    public unsafe static partial class NativeRaw
-    {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4error_getMessage(C4Error error);
-    }
-
 }

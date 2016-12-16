@@ -1,0 +1,77 @@
+//
+// Document+Fleece_native.cs
+//
+// Author:
+// 	Jim Borden  <jim.borden@couchbase.com>
+//
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+using System;
+using System.Linq;
+using System.Runtime.InteropServices;
+
+using LiteCore.Util;
+
+namespace LiteCore.Interop
+{
+    public unsafe static partial class Native
+    {
+        public static string c4doc_bodyAsJSON(C4Document* doc, C4Error* outError)
+        {
+            using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, outError)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLEncoder* c4db_createFleeceEncoder(C4Database* db);
+
+        public static string c4db_encodeJSON(C4Database* db, string jsonData, C4Error* outError)
+        {
+            using(var jsonData_ = new C4String(jsonData)) {
+                using(var retVal = NativeRaw.c4db_encodeJSON(db, jsonData_.AsC4Slice(), outError)) {
+                    return ((C4Slice)retVal).CreateString();
+                }
+            }
+        }
+
+        public static FLDictKey c4db_initFLDictKey(C4Database* db, string @string)
+        {
+            using(var @string_ = new C4String(@string)) {
+                return NativeRaw.c4db_initFLDictKey(db, @string_.AsC4Slice());
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLSharedKeys c4db_getFLSharedKeys(C4Database* db);
+
+
+    }
+    
+    public unsafe static partial class NativeRaw
+    {
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4doc_bodyAsJSON(C4Document* doc, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4db_encodeJSON(C4Database* db, C4Slice jsonData, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLDictKey c4db_initFLDictKey(C4Database* db, C4Slice @string);
+
+
+    }
+}

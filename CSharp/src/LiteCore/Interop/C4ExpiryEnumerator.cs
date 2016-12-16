@@ -18,45 +18,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-using System.Runtime.InteropServices;
 
 namespace LiteCore.Interop
 {
     public struct C4ExpiryEnumerator
     {
         
-    }
-
-    public unsafe static partial class Native
-    {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4ExpiryEnumerator* c4db_enumerateExpired(C4Database* database, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4exp_next(C4ExpiryEnumerator* e, C4Error* outError);
-
-        public static string c4exp_getDocID(C4ExpiryEnumerator* e)
-        {
-            using(var retVal = NativeRaw.c4exp_getDocID(e)) {
-                return ((C4Slice)retVal).CreateString();
-            }
-        }
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4exp_purgeExpired(C4ExpiryEnumerator* e, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4exp_close(C4ExpiryEnumerator* e);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4exp_free(C4ExpiryEnumerator* e);
-    }
-
-    public unsafe static partial class NativeRaw
-    {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4exp_getDocID(C4ExpiryEnumerator* e);
     }
 }

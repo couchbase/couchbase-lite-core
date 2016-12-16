@@ -161,7 +161,7 @@ namespace LiteCore.Tests
                             }
                             if(pass == 0) {
                                 var st2 = Stopwatch.StartNew();
-                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", err));
+                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", C4IndexType.Value, null, err));
                                 st2.PrintReport("Creating SQL index of state", 1, "index");
                             }
                         }
@@ -381,7 +381,7 @@ namespace LiteCore.Tests
                     Native.c4key_endArray(key);
                 }
 
-                Native.c4indexer_emit(indexer, doc, 0, nKeys, new[] { key }, new[] { value }, &error).Should()
+                NativeRaw.c4indexer_emit(indexer, doc, 0, nKeys, &key, new[] { value }, &error).Should()
                     .BeTrue("because otherwise the emit to the artists view failed");
                 Native.c4key_reset(key);
 
@@ -407,7 +407,7 @@ namespace LiteCore.Tests
                     Native.c4key_endArray(key);
                 }
 
-                Native.c4indexer_emit(indexer, doc, 1, nKeys, new[] { key }, new[] { value }, &error).Should()
+                NativeRaw.c4indexer_emit(indexer, doc, 1, nKeys, &key, new[] { value }, &error).Should()
                     .BeTrue("because otherwise the emit to the artists view failed");
                 Native.c4key_reset(key);
 
@@ -447,7 +447,7 @@ namespace LiteCore.Tests
                     Native.c4key_addString(key, name);
 
                     var value = C4Slice.Null;
-                    LiteCoreBridge.Check(err => Native.c4indexer_emit(indexer, doc, 0, new[] { key }, new[] { value }, err));
+                    LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(indexer, doc, 0, new[] { key }, new[] { value }, err));
                     Native.c4key_reset(key);
                     Native.c4doc_free(doc);
                 }
@@ -496,7 +496,13 @@ namespace LiteCore.Tests
                 }
 
                 totalLikes += nLikes;
-                LiteCoreBridge.Check(err => Native.c4indexer_emit(indexer, doc, 0, nLikes, keys, values, err));
+                LiteCoreBridge.Check(err => {
+                    var localKeys = keys;
+                    fixed(C4Key** keys_ = localKeys) {
+                        return NativeRaw.c4indexer_emit(indexer, doc, 0, nLikes, keys_, values, err);
+                    }
+                });
+        
                 Native.c4doc_free(doc);
             }
 
@@ -543,8 +549,11 @@ namespace LiteCore.Tests
                 }
 
                 var value = C4Slice.Null;
-                LiteCoreBridge.Check(err => Native.c4indexer_emit(indexer, doc, 0, nStates, new[] { key }, 
-                new[] { value }, err));
+                LiteCoreBridge.Check(err => {
+                    var localKey = key;
+                    return NativeRaw.c4indexer_emit(indexer, doc, 0, nStates, &localKey, 
+                        new[] { value }, err);
+                });
                 Native.c4doc_free(doc);
             }
 

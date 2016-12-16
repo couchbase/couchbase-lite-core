@@ -1,2 +1,6 @@
 c4stream_read
-       public static extern UIntPtr c4stream_read(C4ReadStream* stream, [Out]byte[] buffer, UIntPtr maxBytesToRead, C4Error* outError);
+        public static extern UIntPtr c4stream_read(C4ReadStream* stream, [Out]byte[] buffer, UIntPtr maxBytesToRead, C4Error* outError);
+
+c4stream_write
+        [return:MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4stream_write(C4WriteStream* stream, byte[] bytes, UIntPtr length, C4Error* outError);

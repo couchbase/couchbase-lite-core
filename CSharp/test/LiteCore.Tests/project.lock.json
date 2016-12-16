@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     ".NETCoreApp,Version=v1.0": {
-      "dotnet-test-xunit/1.0.0-rc2-build10015": {
+      "dotnet-test-xunit/1.0.0-rc2-build10025": {
         "type": "package",
         "dependencies": {
           "Microsoft.Extensions.Testing.Abstractions": "1.0.0-preview1-002702",
@@ -46,7 +46,7 @@
           "lib/dotnet/FluentAssertions.dll": {}
         }
       },
-      "Libuv/1.9.0": {
+      "Libuv/1.9.1": {
         "type": "package",
         "dependencies": {
           "Microsoft.NETCore.Platforms": "1.0.1"
@@ -303,10 +303,10 @@
           "lib/netstandard1.5/Microsoft.Extensions.Testing.Abstractions.dll": {}
         }
       },
-      "Microsoft.NETCore.App/1.0.1": {
+      "Microsoft.NETCore.App/1.1.0": {
         "type": "package",
         "dependencies": {
-          "Libuv": "1.9.0",
+          "Libuv": "1.9.1",
           "Microsoft.CSharp": "4.0.1",
           "Microsoft.CodeAnalysis.CSharp": "1.3.0",
           "Microsoft.CodeAnalysis.VisualBasic": "1.3.0",
@@ -2603,12 +2603,12 @@
     }
   },
   "libraries": {
-    "dotnet-test-xunit/1.0.0-rc2-build10015": {
-      "sha512": "2traZWYeJiFzau+1j9HcnSZ3rQLDyIrqKyYKCTbPPmu6lsQAtaOG5q+fuKS9Vaxczmh0IcvZ2hdWEuYmtVb9zw==",
+    "dotnet-test-xunit/1.0.0-rc2-build10025": {
+      "sha512": "MhxfSjj6z/dpct/9zsssDAXKxWXhAx9s39080Qm+59k2vLJafUjUTzl4cs2rKHK7BYty2EyNxir68v7cJcaBEA==",
       "type": "package",
-      "path": "dotnet-test-xunit/1.0.0-rc2-build10015",
+      "path": "dotnet-test-xunit/1.0.0-rc2-build10025",
       "files": [
-        "dotnet-test-xunit.1.0.0-rc2-build10015.nupkg.sha512",
+        "dotnet-test-xunit.1.0.0-rc2-build10025.nupkg.sha512",
         "dotnet-test-xunit.nuspec",
         "lib/net451/dotnet-test-xunit.exe",
         "lib/netcoreapp1.0/dotnet-test-xunit.dll",
@@ -2719,12 +2719,12 @@
         "lib/xamarin.ios/FluentAssertions.Core.xml"
       ]
     },
-    "Libuv/1.9.0": {
-      "sha512": "C0PQ8MalkhXjBkRW91xDp5gf1+LlGm1UrLfWJx82KUkP6HrMYiDw4K6j4EtCVX6CCaxqOyM+5dLURM+sFp2CVg==",
+    "Libuv/1.9.1": {
+      "sha512": "uqX2Frwf9PW8MaY7PRNY6HM5BpW1D8oj1EdqzrmbEFD5nH63Yat3aEjN/tws6Tw6Fk7LwmLBvtUh32tTeTaHiA==",
       "type": "package",
-      "path": "Libuv/1.9.0",
+      "path": "Libuv/1.9.1",
       "files": [
-        "Libuv.1.9.0.nupkg.sha512",
+        "Libuv.1.9.1.nupkg.sha512",
         "Libuv.nuspec",
         "License.txt",
         "runtimes/debian-x64/native/libuv.so",
@@ -2931,12 +2931,12 @@
         "lib/netstandard1.5/Microsoft.Extensions.Testing.Abstractions.dll"
       ]
     },
-    "Microsoft.NETCore.App/1.0.1": {
-      "sha512": "jYfa/35ENhkgLw0hJqdZoeAOMUZUDFHcGX9ax6VRSE2WgWLmWrU/mUNe1u/9M9K0cCjirTtLd6DWBYRaZYw1AQ==",
+    "Microsoft.NETCore.App/1.1.0": {
+      "sha512": "DFec+OUojDVocn1GxAL9uJg4qwsgkvKiQpv6BKd9ljGezvc9p6GpFv51IIakiujkVW/wBtQ0xlfjVSgS1UG/uw==",
       "type": "package",
-      "path": "Microsoft.NETCore.App/1.0.1",
+      "path": "Microsoft.NETCore.App/1.1.0",
       "files": [
-        "Microsoft.NETCore.App.1.0.1.nupkg.sha512",
+        "Microsoft.NETCore.App.1.1.0.nupkg.sha512",
         "Microsoft.NETCore.App.nuspec",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
@@ -7728,11 +7728,11 @@
       "FluentAssertions >= 4.1.0",
       "LiteCore",
       "System.Runtime.Serialization.Primitives >= 4.1.1",
-      "dotnet-test-xunit >= 1.0.0-rc2-192208-24",
+      "dotnet-test-xunit >= 1.0.0-*",
       "xunit >= 2.1.0"
     ],
     ".NETCoreApp,Version=v1.0": [
-      "Microsoft.NETCore.App >= 1.0.1"
+      "Microsoft.NETCore.App >= 1.1.0"
     ]
   },
   "tools": {},

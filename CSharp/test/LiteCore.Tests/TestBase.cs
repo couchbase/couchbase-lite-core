@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -17,6 +20,7 @@ namespace LiteCore.Tests
 
         protected void RunTestVariants(Action a, [CallerMemberName]string caller = null)
         {
+            var exceptions = new ConcurrentDictionary<int, List<Exception>>();
             Console.WriteLine($"Begin {caller}");
             for(int i = 0; i < NumberOfOptions; i++) {
                 CurrentException = null;
@@ -25,6 +29,7 @@ namespace LiteCore.Tests
                     a();
                 } catch(Exception e) {
                     CurrentException = e;
+                    throw;
                 } finally {
                     try {
                         Console.WriteLine("Finished variant");
@@ -34,7 +39,6 @@ namespace LiteCore.Tests
                     }
                 }
             }
-            Console.WriteLine($"End {caller}");
         }
     }
 }

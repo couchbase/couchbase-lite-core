@@ -201,6 +201,12 @@ namespace LiteCore.Interop
 
         #region Private Methods
 
+        private static bool IsBusy(C4Error err)
+        {
+            return (err.Domain == C4ErrorDomain.LiteCore && err.Code == (int)LiteCoreError.Busy) ||
+            (err.Domain == C4ErrorDomain.SQLite && err.Code == (int)SQLiteStatus.Busy);
+        }
+
         private unsafe bool Execute(C4TryLogicDelegate1 block, int attemptCount)
         {
             if(attemptCount > _maxAttempts) {
@@ -237,7 +243,7 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(err.Domain == C4ErrorDomain.ForestDB && err.Code == (int)ForestDBStatus.HandleBusy) {
+            if(IsBusy(err)) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }
@@ -260,7 +266,7 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(err.Domain == C4ErrorDomain.ForestDB && err.Code == (int)ForestDBStatus.HandleBusy) {
+            if(IsBusy(err)) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }
@@ -283,7 +289,7 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(err.Domain == C4ErrorDomain.ForestDB && err.Code == (int)ForestDBStatus.HandleBusy) {
+            if(IsBusy(err)) {
                 Task.Delay(RetryTime).Wait();
                 return Execute(block, attemptCount + 1);
             }

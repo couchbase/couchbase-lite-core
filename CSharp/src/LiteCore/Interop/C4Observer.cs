@@ -1,5 +1,5 @@
-﻿//
-// C4Key.cs
+//
+// C4Observer.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -18,51 +18,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-using System;
+
+using System.Runtime.InteropServices;
+
+using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore.Interop
 {
-    public struct C4GeoArea
+    public struct C4DatabaseObserver
     {
-        public double xmin, ymin, xmax, ymax;
+
     }
 
-    public struct C4Key
+    public struct C4DocumentObserver
     {
-        
+
     }
 
-    public unsafe struct C4KeyReader
-    {
-        public void* bytes;
-        private UIntPtr _length;
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
 
-        public ulong length
-        {
-            get {
-                return _length.ToUInt64();
-            }
-            set {
-                _length = (UIntPtr)value;
-            }
-        }
-    }
-
-    public enum C4KeyToken : byte
-    {
-        Null,
-        Bool,
-        Number,
-        String,
-        Array,
-        Map,
-        EndSequence,
-        Special,
-        Error = 255
-    }
-
-    public struct C4KeyValueList
-    {
-        
-    }
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, C4SequenceNumber sequence, void* context);
 }

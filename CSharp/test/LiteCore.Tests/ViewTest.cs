@@ -172,121 +172,6 @@ namespace LiteCore.Tests
             });
         }
 
-        [Fact]
-        public void TestCreateFullTextIndex()
-        {
-            RunTestVariants(() => {
-                CreateFullTextIndex(100);
-            });
-        }
-
-        [Fact]
-        public void TestQueryFullTextIndex()
-        {
-            RunTestVariants(() => {
-                CreateFullTextIndex(3);
-
-                // Search for "somewhere":
-                var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_fullTextQuery(_view, 
-                    "somewhere", null, null, err));
-                
-                C4Error error;
-                Native.c4queryenum_next(e, &error).Should().BeTrue("because otherwise the full text query failed");
-                e->docID.Equals(C4Slice.Constant("doc-001")).Should().BeTrue("because doc-001 contains the text");
-                e->docSequence.Should().Be(1, "because the enumerator should have the correct sequence for the current doc");
-                e->fullTextTermCount.Should().Be(1, "because the full text information should be correct");
-                e->fullTextTerms[0].termIndex.Should().Be(0, "because the full text information should be correct");
-                e->fullTextTerms[0].start.Should().Be(8, "because the full text information should be correct");
-                e->fullTextTerms[0].length.Should().Be(9, "because the full text information should be correct");
-
-                Native.c4queryenum_next(e, &error).Should().BeFalse("beacuse the query only has one row");
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
-                Native.c4queryenum_free(e);
-
-                // Search for "cat":
-                e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_fullTextQuery(_view, 
-                    "cat", null, null, err));
-                int i = 0;
-                while(Native.c4queryenum_next(e, &error)) {
-                    ++i;
-                    e->fullTextTermCount.Should().Be(1, "because the full text information should be correct");
-                    e->fullTextTerms[0].termIndex.Should().Be(0, "because the full text information should be correct");
-                    if(e->docSequence == 1) {
-                        e->fullTextTerms[0].start.Should().Be(20, "because the full text information should be correct");
-                        e->fullTextTerms[0].length.Should().Be(4, "because the full text information should be correct");
-                    } else {
-                        e->docSequence.Should().Be(3, "because the correct document should be indexed");
-                        e->fullTextTerms[0].start.Should().Be(4, "because the full text information should be correct");
-                        e->fullTextTerms[0].length.Should().Be(3, "because the full text information should be correct");
-                    }
-                }
-
-                Native.c4queryenum_free(e);
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
-                i.Should().Be(2, "because there are two documents valid for the query");
-
-                // Search for "cat bark":
-                e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_fullTextQuery(_view, 
-                    "cat bark", null, null, err));
-                Native.c4queryenum_next(e, &error).Should().BeTrue("because otherwise the full text query failed");
-                e->docID.Equals(C4Slice.Constant("doc-001")).Should().BeTrue("because doc-001 contains the text");
-                e->docSequence.Should().Be(1, "because the enumerator should have the correct sequence for the current doc");
-                e->fullTextTermCount.Should().Be(2, "because the full text information should be correct");
-                e->fullTextTerms[0].termIndex.Should().Be(0, "because the full text information should be correct");
-                e->fullTextTerms[0].start.Should().Be(20, "because the full text information should be correct");
-                e->fullTextTerms[0].length.Should().Be(4, "because the full text information should be correct");
-                e->fullTextTerms[1].termIndex.Should().Be(1, "because the full text information should be correct");
-                e->fullTextTerms[1].start.Should().Be(29, "because the full text information should be correct");
-                e->fullTextTerms[1].length.Should().Be(7, "because the full text information should be correct");
-
-                Native.c4queryenum_next(e, &error).Should().BeFalse("beacuse the query only has one row");
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
-                Native.c4queryenum_free(e);
-            });
-        }
-
-        private void CreateFullTextIndex(uint docCount)
-        {
-            for(uint i = 1; i <= docCount; i++) {
-                    string docID = $"doc-{i:D3}";
-                    var body = C4Slice.Null;
-                    switch(i % 3) {
-                        case 0:
-                        body = C4Slice.Constant("The cat sat on the mat");
-                        break;
-                        case 1:
-                        body = C4Slice.Constant("Outside SomeWhere a c\u00e4t was barking");
-                        break;
-                        case 2:
-                        body = C4Slice.Constant("The bark of a tree is rough?");
-                        break;
-                    }
-
-                    CreateRev(docID, RevID, body);
-                }
-
-                var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, 
-                    new[] { _view }, err));
-                var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
-
-                C4Document* doc;
-                C4Error error;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
-                    // Index 'doc':
-                    var keys = new C4Key*[1];
-                    var values = new C4Slice[1];
-                    keys[0] = NativeRaw.c4key_newFullTextString(doc->selectedRev.body, C4Slice.Constant("en"));
-                    values[0] = C4Slice.Constant("1234");
-                    LiteCoreBridge.Check(err => Native.c4indexer_emit(ind, doc, 0, keys, values, err));
-                    Native.c4key_free(keys[0]);
-                    Native.c4doc_free(doc);
-                }
-
-                error.Code.Should().Be(0, "because otherwise an error occurred somewhere");
-                Native.c4enum_free(e);
-                LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
-        }
-
         private void CreateIndex()
         {
             for(int i = 1; i <= 100; i++) {
@@ -313,7 +198,7 @@ namespace LiteCore.Tests
                 NativeRaw.c4key_addString(keys[0], doc->docID);
                 Native.c4key_addNumber(keys[1], doc->sequence);
                 values[0] = values[1] = C4Slice.Constant("1234");
-                LiteCoreBridge.Check(err => Native.c4indexer_emit(ind, doc, 0, keys, values, err));
+                LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(ind, doc, 0, keys, values, err));
                 Native.c4key_free(keys[0]);
                 Native.c4key_free(keys[1]);
                 Native.c4doc_free(doc);

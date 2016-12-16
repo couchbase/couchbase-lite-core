@@ -13,13 +13,13 @@ namespace LiteCore.Tests
     public unsafe class Test : TestBase
     {
         public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-            "C:\\tmp" : "/tmp";
+            "C:\\tmp\\" : "/tmp/";
         protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
         
         protected override int NumberOfOptions
         {
             get {
-                return 4;
+                return 2;
             }
         }
         
@@ -58,11 +58,6 @@ namespace LiteCore.Tests
             }
         }
 
-        public Test()
-        {
-            Native.c4log_setLevel(C4LogLevel.Warning);
-        }
-
         protected bool IsRevTrees()
         {
             return Versioning == C4DocumentVersioning.RevisionTrees;
@@ -71,8 +66,7 @@ namespace LiteCore.Tests
         protected override void SetupVariant(int option)
         {
             _objectCount = Native.c4_getObjectCount();
-            Storage = (option & 1) != 0 ? C4StorageEngine.ForestDB : C4StorageEngine.SQLite;
-            Versioning = (option & 2) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
+            Versioning = (option & 1) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
             Native.c4_shutdown(null);
 
             var config = new C4DatabaseConfig();
@@ -83,10 +77,10 @@ namespace LiteCore.Tests
                 config.flags |= C4DatabaseFlags.Bundled;
             }
 
-            Console.WriteLine($"Opening {Storage} database using {Versioning}");
+            Console.WriteLine($"Opening SQLite database using {Versioning}");
 
             C4Error err;
-            config.storageEngine = Storage;
+            config.storageEngine = C4StorageEngine.SQLite;
             Native.c4db_deleteAtPath(DatabasePath(), &config, null);
             Db = Native.c4db_open(DatabasePath(), &config, &err);
             ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
@@ -104,7 +98,7 @@ namespace LiteCore.Tests
             }
         }
 
-        protected void CreateRev(string docID, C4Slice revID, C4Slice body, bool isNew = true)
+        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = C4RevisionFlags.None)
         {
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
@@ -118,7 +112,7 @@ namespace LiteCore.Tests
                         history = h,
                         historyCount = curDoc->revID.buf != null ? 2UL : 1UL,
                         body = body,
-                        deletion = body.buf == null,
+                        revFlags = flags,
                         save = true
                     };
 

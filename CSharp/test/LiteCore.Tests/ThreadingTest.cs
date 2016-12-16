@@ -158,7 +158,7 @@ namespace LiteCore.Tests
                 keys[0] = Native.c4key_new();
                 NativeRaw.c4key_addString(keys[0], doc->docID);
                 values[0] = C4Slice.Constant("1234");
-                LiteCoreBridge.Check(err => Native.c4indexer_emit(ind, doc, 0, keys, values, err));
+                LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(ind, doc, 0, keys, values, err));
                 Native.c4key_free(keys[0]);
                 Native.c4doc_free(doc);
             }

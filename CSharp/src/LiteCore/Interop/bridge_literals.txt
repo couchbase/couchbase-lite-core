@@ -5,6 +5,13 @@ c4stream_read
         }
 
 
+c4stream_write
+        public static bool c4stream_write(C4WriteStream* stream, byte[] bytes, ulong length, C4Error* outError)
+        {
+            return NativeRaw.c4stream_write(stream, bytes, (UIntPtr)length, outError);
+        }
+
+
 c4db_enumerateSomeDocs
         public static C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
                                                               string[] docIDs,
@@ -44,16 +51,40 @@ c4doc_put
 
 
 c4dbobs_getChanges
-        public static uint c4dbobs_getChanges(C4DatabaseObserver* observer, C4Slice[] outDocIDs, uint maxChanges, C4SequenceNumber* outLastSequence, bool* outExternal)
+        public static uint c4dbobs_getChanges(C4DatabaseObserver* observer, string[] outDocIDs, ulong* outLastSequence, bool* outExternal)
         {
-            var c4Strings = new C4String[outDocIDs.Length];
-            for(int i = 0; i < outDocIDs.Length; i++) {
-                c4Strings[i] = new C4String(outDocIDs[i]);
+            var c4Slices = new C4Slice[outDocIDs.Length];
+            var retVal =  NativeRaw.c4dbobs_getChanges(observer, c4Slices, (uint)c4Slices.Length, outLastSequence, outExternal);
+
+            var i = 0;
+            foreach(var slice in c4Slices.Take((int)retVal)) {
+                outDocIDs[i++] = slice.CreateString();
             }
 
+            return retVal;
+        }
+
+c4indexer_begin
+        public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, C4Error* outError)
+        {
+            fixed(C4View** views_ = views) {
+                return NativeRaw.c4indexer_begin(db, views_, (UIntPtr)views.Length, outError);
+            }
+        }
+
+c4indexer_emit
+        public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, uint emitCount, C4Key*[] emittedKeys, string[] emittedValues, C4Error* outError)
+        {
+            var c4Strings = new C4String[emittedValues.Length];
+            for(int i = 0; i < emittedValues.Length; i++) {
+                c4Strings[i] = new C4String(emittedValues[i]);
+            }
+            
             try {
                 var c4Slices = c4Strings.Select(x => x.AsC4Slice()).ToArray();
-                return NativeRaw.c4dbobs_getChanges(observer, c4Slices, (UIntPtr)c4Slices.Length, maxChanges, outLastSequence, outExternal);
+                fixed(C4Key** emittedKeys_ = emittedKeys) {
+                    return NativeRaw.c4indexer_emit(indexer, document, viewNumber, emitCount, emittedKeys_, c4Slices, outError);
+                }
             } finally {
                 foreach(var s in c4Strings) {
                     s.Dispose();

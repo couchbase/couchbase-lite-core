@@ -44,13 +44,13 @@ namespace LiteCore.Tests
         [Fact]
         public void TestParseInvalidBlobKeys()
         {
-            Native.c4log_warnOnErrors(false);
+            NativePrivate.c4log_warnOnErrors(false);
             C4BlobKey key2;
             foreach(var invalid in new[] { "", "rot13-xxxx", "sha1-", "sha1-VVVVVVVVVVVVVVVVVVVVVV", "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU" }) {
                 Native.c4blob_keyFromString(invalid, &key2).Should().BeFalse($"because '{invalid}' is an invalid string");
             }
 
-            Native.c4log_warnOnErrors(true);
+            NativePrivate.c4log_warnOnErrors(true);
         }
 
         [Fact]
@@ -129,15 +129,15 @@ namespace LiteCore.Tests
                 
                 // Read it back, 6 bytes at a time:
                 var buffer = new byte[6];
-                var completed = new List<byte>();
-                long bytesRead = 0;
+                var readBack = new List<byte>();
+                ulong bytesRead = 0;
                 do {
                     bytesRead = Native.c4stream_read(stream, buffer, &error);
                     bytesRead.Should().BeGreaterThan(0, "because there should be new bytes");
-                    completed.AddRange(buffer.Take((int)bytesRead));
-                } while(bytesRead == buffer.Length);
+                    readBack.AddRange(buffer.Take((int)bytesRead));
+                } while(bytesRead == (ulong)buffer.Length);
                 error.Code.Should().Be(0, "because otherwise an error occurred");
-                completed.Should().Equal(blob, "because the data should persist correctly");
+                readBack.Should().Equal(blob, "because the data should persist correctly");
 
                 // Try seeking:
                 LiteCoreBridge.Check(err => Native.c4stream_seek(stream, 10, err));
@@ -256,7 +256,7 @@ namespace LiteCore.Tests
             }
 
             _store = (C4BlobStore *)LiteCoreBridge.Check(err => Native.c4blob_openStore(Path.Combine(
-                Test.TestDir, "cbl_blob_test/"), C4DatabaseFlags.Create, encryption, err));
+                Test.TestDir, $"cbl_blob_test{Path.DirectorySeparatorChar}"), C4DatabaseFlags.Create, encryption, err));
             var bogusKey = _bogusKey;
             for(int i = 0; i < C4BlobKey.Size; i++) {
                 bogusKey.bytes[i] = 0x55;
