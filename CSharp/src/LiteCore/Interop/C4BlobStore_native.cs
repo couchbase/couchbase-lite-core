@@ -69,7 +69,7 @@ namespace LiteCore.Interop
 
         public static bool c4blob_create(C4BlobStore* store, byte[] contents, C4BlobKey* outKey, C4Error* outError)
         {
-            fixed(byte* contents_ = contents) {
+            fixed(byte *contents_ = contents) {
                 return NativeRaw.c4blob_create(store, new C4Slice(contents_, (ulong)contents.Length), outKey, outError);
             }
         }
@@ -144,5 +144,7 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return:MarshalAs(UnmanagedType.U1)]
         public static extern bool c4stream_write(C4WriteStream* stream, byte[] bytes, UIntPtr length, C4Error* outError);
+
+
     }
 }

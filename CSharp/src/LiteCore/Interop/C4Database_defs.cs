@@ -69,7 +69,7 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4UUID
+    public unsafe partial struct C4UUID
     {
         public fixed byte bytes[32];
     }

@@ -4,3 +4,12 @@ c4stream_read
 c4stream_write
         [return:MarshalAs(UnmanagedType.U1)]
         public static extern bool c4stream_write(C4WriteStream* stream, byte[] bytes, UIntPtr length, C4Error* outError);
+
+FLDict_GetWithKeys
+        public static extern UIntPtr FLDict_GetWithKeys(FLDict* dict, [Out]FLDictKey[] keys, [Out]FLValue[] values, UIntPtr count);
+
+FLEncoder_GetErrorMessage
+        [return: MarshalAs(UnmanagedType.LPStr)]
+        public static extern string FLEncoder_GetErrorMessage(FLEncoder* encoder);
+
+

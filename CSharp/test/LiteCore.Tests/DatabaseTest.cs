@@ -23,6 +23,50 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestDatabaseInfo()
+        {
+            RunTestVariants(() => {
+                Native.c4db_getDocumentCount(Db).Should().Be(0, "because the database is empty");
+                Native.c4db_getLastSequence(Db).Should().Be(0, "because the database is empty");
+                var publicID = new C4UUID();
+                var privateID = new C4UUID();
+                LiteCoreBridge.Check(err => {
+                    var publicID_ = publicID;
+                    var privateID_ = privateID;
+                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
+                    publicID = publicID_;
+                    privateID = privateID_;
+                    return retVal;
+                });
+
+                // Odd quirk of C# means we need an additional copy
+                var p1 = publicID;
+                var p2 = privateID;
+                publicID.Should().NotBe(privateID, "because public UUID and private UUID should differ");
+                (p1.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
+                (p1.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
+                (p2.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
+                (p2.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
+
+                // Make sure the UUIDs are persistent
+                ReopenDB();
+                var publicID2 = new C4UUID();
+                var privateID2 = new C4UUID();
+                LiteCoreBridge.Check(err => {
+                    var publicID_ = publicID2;
+                    var privateID_ = privateID2;
+                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
+                    publicID2 = publicID_;
+                    privateID2 = privateID_;
+                    return retVal;
+                });
+
+                publicID2.Should().Be(publicID, "because the public UUID should persist");
+                privateID2.Should().Be(privateID, "because the private UUID should persist");
+            });
+        }
+
+        [Fact]
         public void TestOpenBundle()
         {
             RunTestVariants(() => {
@@ -51,7 +95,18 @@ namespace LiteCore.Tests
                 });
                 LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
                 Native.c4db_free(bundle);
+
+                // Reopen with wrong storage type:
+                NativePrivate.c4log_warnOnErrors(false);
+                var engine = config.storageEngine;
+                config.storageEngine = "b0gus";
+                ((long)Native.c4db_open(bundlePath, &config, null)).Should().Be(0, "because the storage engine is nonsense");
+                config.storageEngine = engine;
+
+                // Open nonexistent bundle
+                ((long)Native.c4db_open($"no_such_bundle{Path.DirectorySeparatorChar}", &config, null)).Should().Be(0, "because the bundle does not exist");
                 NativePrivate.c4log_warnOnErrors(true);
+
                 config.Dispose();
             });
         }
@@ -164,88 +219,6 @@ namespace LiteCore.Tests
                 doc->selectedRev.sequence.Should().Be(1, "because it is the first stored document");
                 doc->selectedRev.body.Equals(Body).Should().BeTrue("because the doc should have the stored body");
                 Native.c4doc_free(doc);
-            });
-        }
-
-        [Fact]
-        public void TestPut()
-        {
-            RunTestVariants(() => {
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                try {
-                    // Creating doc given ID:
-                    var rq = new C4DocPutRequest {
-                        docID = DocID,
-                        body = Body,
-                        save = true
-                    };
-
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => {
-                        var localRq = rq;
-                        return Native.c4doc_put(Db, &localRq, null, err);
-                    });
-
-                    doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
-                    var expectedRevID = IsRevTrees() ? C4Slice.Constant("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab") :
-                        C4Slice.Constant("1@*");
-                    doc->revID.Equals(expectedRevID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document exists");
-                    doc->selectedRev.revID.Equals(expectedRevID).Should().BeTrue("because the selected rev should have the correct rev ID");
-                    Native.c4doc_free(doc);
-
-                    // Update doc:
-                    var tmp = new[] { expectedRevID };
-                    rq.body = C4Slice.Constant("{\"ok\":\"go\"}");
-                    rq.historyCount = 1;
-                    ulong commonAncestorIndex = 0UL;
-                    fixed(C4Slice* history = tmp) {
-                        rq.history = history;
-                        doc = (C4Document *)LiteCoreBridge.Check(err => {
-                            var localRq = rq;
-                            ulong cai;
-                            var retVal = Native.c4doc_put(Db, &localRq, &cai, err);
-                            commonAncestorIndex = cai;
-                            return retVal;
-                        });
-                    }
-
-                    commonAncestorIndex.Should().Be(1UL, "because the common ancestor is at sequence 1");
-                    var expectedRev2ID = IsRevTrees() ? C4Slice.Constant("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b") :
-                        C4Slice.Constant("2@*");
-                    doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the doc should have the updated rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document exists");
-                    doc->selectedRev.revID.Equals(expectedRev2ID).Should().BeTrue("because the selected rev should have the correct rev ID");
-                    Native.c4doc_free(doc);
-
-                    // Insert existing rev that conflicts:
-                    rq.body = C4Slice.Constant("{\"from\":\"elsewhere\"}");
-                    rq.existingRevision = true;
-                    var conflictRevID = IsRevTrees() ? C4Slice.Constant("2-deadbeef") : C4Slice.Constant("1@binky");
-                    tmp = new[] { conflictRevID, expectedRevID };
-                    rq.historyCount = 2;
-                    fixed(C4Slice* history = tmp) {
-                        rq.history = history;
-                        doc = (C4Document *)LiteCoreBridge.Check(err => {
-                            var localRq = rq;
-                            ulong cai;
-                            var retVal = Native.c4doc_put(Db, &localRq, &cai, err);
-                            commonAncestorIndex = cai;
-                            return retVal;
-                        });
-                    }
-
-                    commonAncestorIndex.Should().Be(1UL, "because the common ancestor is at sequence 1");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists|C4DocumentFlags.Conflicted, "because the document exists");
-                    doc->selectedRev.revID.Equals(conflictRevID).Should().BeTrue("because the selected rev should have the correct rev ID");
-                    if(IsRevTrees()) {
-                        doc->revID.Equals(conflictRevID).Should().BeTrue("because the doc should have the conflicted rev ID");
-                    } else {
-                        doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the doc should have the winning rev ID");
-                    }
-                    Native.c4doc_free(doc);
-                } finally {
-                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                }
             });
         }
 

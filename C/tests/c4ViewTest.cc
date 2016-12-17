@@ -260,7 +260,7 @@ N_WAY_TEST_CASE_METHOD(C4ViewTest, "View DocPurgeWithCompact", "[View][C]")  {te
 
 class QueryTest : public C4Test {
 public:
-    QueryTest() :C4Test(2) {  // always use SQLite + version vectors
+    QueryTest() :C4Test(1) {  // always use SQLite + version vectors
         importJSONLines(sFixturesDir + "names_100.json");
     }
 

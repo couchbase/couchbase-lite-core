@@ -92,3 +92,20 @@ c4indexer_emit
             }
         }
 
+FLData_Dump
+				public static string FLData_Dump(FLSlice data)
+        {
+            using(var retVal = NativeRaw.FLData_Dump(data)) {
+                return ((FLSlice)retVal).CreateString();
+            }
+        }
+
+
+FLDictKey_Init
+				// Note: Allocates unmanaged heap memory; should only be used with constants
+        public static FLDictKey FLDictKey_Init(string str, bool cachePointers)
+        {
+            return NativeRaw.FLDictKey_Init(FLSlice.Constant(str), cachePointers);
+        }
+
+

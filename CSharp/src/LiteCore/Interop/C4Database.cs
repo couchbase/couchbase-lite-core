@@ -38,6 +38,45 @@ namespace LiteCore.Interop
         public static readonly int Size = 32;
     }
 
+    public unsafe partial struct C4UUID
+    {
+        private const int _Size = 32;
+
+        public static readonly int Size = 32;
+
+        public override int GetHashCode()
+        {
+						int hash = 17;
+            unchecked {
+                fixed(byte* b = bytes) {
+                    for(int i = 0; i < _Size; i++) {
+                        hash = hash * 23 + b[i];
+                    }
+                }
+            }
+
+            return hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+						if(!(obj is C4UUID)) {
+                return false;
+            }
+
+            var other = (C4UUID)obj;
+            fixed(byte* b = bytes) {
+                for(int i = 0; i < _Size; i++) {
+                    if(b[i] != other.bytes[i]) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+    }
+
     public unsafe partial struct C4DatabaseConfig : IDisposable
     {
         public static C4DatabaseConfig Clone(C4DatabaseConfig *source)

@@ -98,6 +98,20 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_selectNextLeafRevision(C4Document* doc, [MarshalAs(UnmanagedType.U1)]bool includeDeleted, [MarshalAs(UnmanagedType.U1)]bool withBody, C4Error* outError);
 
+        public static bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, string revID)
+        {
+            using(var revID_ = new C4String(revID)) {
+                return NativeRaw.c4doc_selectFirstPossibleAncestorOf(doc, revID_.AsC4Slice());
+            }
+        }
+
+        public static bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, string revID)
+        {
+            using(var revID_ = new C4String(revID)) {
+                return NativeRaw.c4doc_selectNextPossibleAncestorOf(doc, revID_.AsC4Slice());
+            }
+        }
+
         public static uint c4rev_getGeneration(string revID)
         {
             using(var revID_ = new C4String(revID)) {
@@ -185,6 +199,14 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_detachRevisionBody(C4Document* doc);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint c4rev_getGeneration(C4Slice revID);

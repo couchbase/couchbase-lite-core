@@ -1,5 +1,6 @@
 import os
 import glob
+import re
 from datetime import date
 
 TEMPLATE = """//
@@ -46,18 +47,20 @@ namespace LiteCore.Interop
 METHOD_DECORATION = "        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]\n"
 bridge_literals = {}
 raw_literals = {}
+bridge_params = []
 
-def transform_raw(arg_info):
-    if(arg_info[0] == "bool"):
-        return "[MarshalAs(UnmanagedType.U1)]bool {}".format(arg_info[1])
-
-    if(arg_info[0] == "C4Slice_b"):
-        return "C4Slice {}".format(arg_info[1])
+def transform_raw(arg_type, arg_name):
+    template = get_template(arg_type, "raw")
+    if template:
+        return template.format(arg_name)
         
-    if arg_info[0].endswith("*[]"):
-        return "{}** {}".format(arg_info[0][:-3], arg_info[1])
+    if arg_type.endswith("*[]"):
+        return "{}** {}".format(arg_type[:-3], arg_name)
 
-    return " ".join(arg_info)
+    if arg_type.endswith("_b"):
+        return " ".join([arg_type[:-2], arg_name])
+
+    return " ".join([arg_type, arg_name])
     
 def transform_raw_return(arg_type):
     if(arg_type.endswith("_b")):
@@ -66,76 +69,75 @@ def transform_raw_return(arg_type):
     return arg_type
 
 def transform_bridge(arg_type):
-    if(arg_type == "C4SliceResult" or arg_type == "C4Slice"):
-        return "string"
-        
-    if(arg_type == "C4SliceResult_b" or arg_type == "C4Slice_b"):
-        return "byte[]"
-    
-    if arg_type == "UIntPtr":
-        return "ulong"
-        
+    template = get_template(arg_type, "bridge")
+    if template:
+        return template
+
     return arg_type
     
-def transform_using(arg_info):
-    tmp = arg_info.split(':')
-    arg_type = tmp[0]
-    arg_name = tmp[1]
-    if(arg_type == "C4SliceResult" or arg_type == "C4Slice"):
-        return "            using(var {0}_ = new C4String({0}))".format(arg_name)
+def get_template(name, template_type):
+    try:
+        fin = open("templates/{}_{}.template".format(name, template_type), "r")
+        retVal = fin.read().strip("\n")
+        #print "Got {} template for '{}':\n{}".format(template_type, name, retVal)
+    except:
+        return None
     
-    if arg_type == "C4SliceResult_b" or arg_type == "C4Slice_b":
-        return "            fixed(byte* {0}_ = {0})".format(arg_name)
-        
-    return ""
+    return retVal
     
 def generate_bridge_sig(pieces, bridge_args):
     retVal = ""
     if(len(pieces) > 2):
-        for args in pieces[2:-1]:
-            if(args.startswith("C4Slice")):
-                bridge_args.append(args)
-                
-            arg = "{} {}".format(transform_bridge(args[:args.index(':')]), args[args.index(':') + 1:])   
-            retVal += "{}, ".format(arg)
-        
-        args = pieces[-1]
-        if(args.startswith("C4Slice")):
-            bridge_args.append(args)
+        for args in pieces[2:]:
+            arg_info = args.split(":")
+	    bridge = transform_bridge(arg_info[0])
+            if bridge != arg_info[0]:
+	        bridge_args.append(args)
 
-        retVal += "{} {}".format(transform_bridge(args[:args.index(':')]), args[args.index(':') + 1:]) 
-       
+            retVal += "{} {}, ".format(bridge, arg_info[1])
+
+        retVal = retVal[:-2]
+
     retVal += ")\n        {\n"
     return retVal
-    
+
 def generate_using_parameters_begin(bridge_args):
     retVal = ""
     if len(bridge_args) > 0:
         for bridge_arg in bridge_args[:-1]:
-            retVal += "{}\n".format(transform_using(bridge_arg))
-        retVal += "{} {{\n".format(transform_using(bridge_args[-1]))
-        
+            split_args = bridge_arg.split(':')
+            template = get_template(split_args[0], "using")
+            if template:
+                template = template.format(split_args[1])
+                retVal += "            {}\n".format(template)
+
+        split_args = bridge_args[-1].split(':')
+        template = get_template(split_args[0], "using")
+        if template:
+            template = template.format(split_args[1])
+            retVal += "            {} {{\n".format(template) 
+
     return retVal
-        
+
 def generate_using_parameters_end(bridge_args):
     retVal = ""
-    if len(bridge_args) > 0:
-        retVal += "            }\n"
+    for arg in bridge_args:
+        if not arg.startswith("UIntPtr"):
+            retVal += "            }\n"
+            break
     
     return retVal
     
 def bridge_parameter(param, return_space):
-    splitPiece = param.split(':')
-    if splitPiece[0] == "C4Slice":
+    splitPiece = param.split(":")
+    template = get_template(splitPiece[0], "bridge_param")
+    if not template:
+        return "{}, ".format(splitPiece[1])
+
+    if splitPiece[0] != "UIntPtr":
         return_space[0] = "                "
-        return "{}_.AsC4Slice(), ".format(splitPiece[1])
-    elif splitPiece[0] == "C4Slice_b":
-        return_space[0] = "                "
-        return "new C4Slice({0}_, (ulong){0}.Length), ".format(splitPiece[1])
-    elif splitPiece[0] == "UIntPtr":
-        return "(UIntPtr){}, ".format(splitPiece[1])
-    
-    return "{}, ".format(splitPiece[1])
+
+    return template.format(splitPiece[1]) + ", "
     
 def generate_return_value(pieces):
     raw_call_params = "("
@@ -151,23 +153,11 @@ def generate_return_value(pieces):
     if retval_type == "void":
         return "{}NativeRaw.{}{};\n".format(return_space[0], pieces[1], raw_call_params)
         
-    if retval_type == "UIntPtr":
-        return "{}return (NativeRaw.{}{}).ToUInt64();\n".format(return_space[0], pieces[1], raw_call_params)
-        
-    if not retval_type.startswith("C4Slice"):
-        return "{}return NativeRaw.{}{};\n".format(return_space[0], pieces[1], raw_call_params)
- 
-    return_statement = "{0}using(var retVal = NativeRaw.{1}{2}) {{\n{0}    ".format(return_space[0], pieces[1], raw_call_params)
-    if retval_type == "C4SliceResult":
-        return_statement += "return ((C4Slice)retVal).CreateString();\n{}}}\n".format(return_space[0])
-    elif retval_type == "C4SliceResult_b":
-        return_statement += "return ((C4Slice)retVal).ToArrayFast();\n{}}}\n".format(return_space[0])
-    elif retval_type == "C4Slice_b":
-        return_statement += "return retVal.ToArrayFast();\n{}}}\n".format(return_space[0])
-    else:
-        return_statement += "return retVal.CreateString();\n{}}}\n".format(return_space[0])
-        
-    return return_statement
+    template = get_template(retval_type, "return")
+    if template:
+        return template.format(return_space[0], pieces[1], raw_call_params) + "\n"
+    
+    return "{}return NativeRaw.{}{};\n".format(return_space[0], pieces[1], raw_call_params)
     
 def insert_bridge(collection, pieces):
     if pieces[1] in bridge_literals:
@@ -194,11 +184,11 @@ def insert_raw(collection, pieces):
     
     line = "        public static extern {} {}(".format(transform_raw_return(pieces[0][1:]), pieces[1])
     if(len(pieces) > 2):
-        for args in pieces[2:-1]:
-            arg = args.split(':')
-            line += "{}, ".format(transform_raw(arg))
+        for args in pieces[2:]:
+            split_args = args.split(':')
+            line += "{}, ".format(transform_raw(split_args[0], split_args[1]))
         
-        line += transform_raw(pieces[-1].split(':'))
+        line = line[:-2]
     
     line += ');\n\n'
     collection.append(line)
@@ -212,11 +202,11 @@ def read_literals(filename, collection):
     key = ""
     value = ""
     for line in fin:
-        if not line.startswith(" ") and len(line) > 2:
+        if re.match(r'\S', line):
             if len(value) > 0:
-                collection[key] = value
+                collection[key] = value.replace("\t","    ")
             
-            key = line.strip("\n")
+            key = line.rstrip("\n")
             value = ""
         else:
             value += line
@@ -236,6 +226,7 @@ for filename in glob.iglob("*.template"):
     for line in ins:
         pieces = line.split()
         if(pieces[0] == ".bridge"):
+            bridge_params.append(pieces[1:])
             insert_bridge(native, pieces[1:])
             insert_raw(native_raw, pieces[1:])
         else:

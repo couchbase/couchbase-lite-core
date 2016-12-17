@@ -23,7 +23,7 @@ namespace LiteCore.Tests
             public ulong count;
         }
 
-        private const string JsonFilePath = "../../../C/tests/iTunesMusicLibrary.json";
+        private const string JsonFilePath = "../../../C/tests/data/iTunesMusicLibrary.json";
         private C4View *_artistsView;
         private C4View *_albumsView;
         private C4View *_tracksView;
@@ -79,7 +79,7 @@ namespace LiteCore.Tests
         {
             var rng = new Random();
             RunTestVariants(() => {
-                var numDocs = ImportJSONLines("/Couchbase/example-datasets-master/IPRanges/geoblocks.json",
+                var numDocs = ImportJSONLines("../../../C/tests/data/geoblocks.json",
                     TimeSpan.FromSeconds(15), true);
                 ReopenDB();
                 var st = Stopwatch.StartNew();
@@ -103,7 +103,7 @@ namespace LiteCore.Tests
             // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
             RunTestVariants(() => {
-                var numDocs = ImportJSONLines("/Couchbase/example-datasets-master/RandomUsers/names_300000.json",
+                var numDocs = ImportJSONLines("../../../C/tests/data/names_300000.json",
                     TimeSpan.FromSeconds(15), true);
                 var complete = numDocs == 300000;
                 #if !DEBUG

@@ -34,7 +34,7 @@ namespace LiteCore.Interop
 
         public static C4Key* c4key_withBytes(byte[] slice)
         {
-            fixed(byte* slice_ = slice) {
+            fixed(byte *slice_ = slice) {
                 return NativeRaw.c4key_withBytes(new C4Slice(slice_, (ulong)slice.Length));
             }
         }
