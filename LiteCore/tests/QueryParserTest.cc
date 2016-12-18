@@ -16,20 +16,12 @@
 using namespace std;
 
 
-static QueryParser& parse(QueryParser &qp, string whereJson, slice sortJson = nullslice) {
-    qp.parseJSON(slice(json5(whereJson)), sortJson);
-    return qp;
-}
-
 static string parseWhere(string json) {
     QueryParser qp("kv_default");
-    return parse(qp, json).whereClause();
+    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
+    qp.parseJustExpression(Value::fromTrustedData(fleece));
+    return qp.SQL();
 }
-
-//static string parseSort(string sortJson) {
-//    QueryParser qp("kv_default");
-//    return parse(qp, "{}", slice(json5(sortJson))).orderByClause();
-//}
 
 
 TEST_CASE("QueryParser basic", "[Query]") {
@@ -89,15 +81,15 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
     CHECK(parseWhere("['SELECT', {/*WHAT: ['.', 'first'],*/\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]")
-          == "SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+          == "SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
     CHECK(parseWhere("['count()', ['SELECT', {/*WHAT: ['.', 'first'],*/\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
-          == "count(SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "count(SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT', {/*WHAT: ['.', 'first'],*/\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT * WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
 }
 
 #if 0
@@ -137,18 +129,7 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
           == "key LIKE 'foo:%' AND sequence > 1000");
 #endif
 
-
 #if 0
-TEST_CASE("QueryParser sort", "[Query]") {
-    CHECK(parseSort("['size']")
-          == "fl_value(body, 'size')");
-    CHECK(parseSort("['+size', '-price']")
-          == "fl_value(body, 'size'), fl_value(body, 'price') DESC");
-    CHECK(parseSort("['_id', '-_sequence']")
-          == "key, sequence DESC");
-}
-
-
 TEST_CASE("QueryParser FTS", "[Query]") {
     QueryParser qp("kv_default");
     SECTION("Single match") {
@@ -163,4 +144,3 @@ TEST_CASE("QueryParser FTS", "[Query]") {
     }
 }
 #endif
-

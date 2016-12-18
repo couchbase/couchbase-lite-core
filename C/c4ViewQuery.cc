@@ -239,9 +239,9 @@ C4QueryEnumerator* c4view_query(C4View *view,
 
 // This is the same as C4Query
 struct c4Query : InstanceCounted {
-    c4Query(Database *db, C4Slice queryExpression, C4Slice sortExpression)
+    c4Query(Database *db, C4Slice queryExpression)
     :_database(db),
-     _query(db->defaultKeyStore().compileQuery(queryExpression, sortExpression))
+     _query(db->defaultKeyStore().compileQuery(queryExpression))
     { }
 
     Database* database() const      {return _database;}
@@ -254,12 +254,11 @@ private:
 
 
 C4Query* c4query_new(C4Database *database,
-                     C4Slice queryExpression,
-                     C4Slice sortExpression,
+                     C4Slice expression,
                      C4Error *outError) noexcept
 {
     return tryCatch<C4Query*>(outError, [&]{
-        return new c4Query(database, queryExpression, sortExpression);
+        return new c4Query(database, expression);
     });
 }
 

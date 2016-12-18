@@ -28,32 +28,24 @@ namespace litecore {
 
     class SQLiteQuery : public Query {
     public:
-        SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression, slice sortExpression)
+        SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression)
         :Query(keyStore)
         {
             QueryParser qp(keyStore.tableName());
-            qp.parseJSON(selectorExpression, sortExpression);
+            qp.setBaseResultColumns({"sequence", "key", "meta", "length(body)"});
+            qp.setDefaultOffset("$offset");
+            qp.setDefaultLimit("$limit");
+            qp.parseJSON(selectorExpression);
 
-            stringstream sql;
-            sql << "SELECT sequence, key, meta, length(body)";
+            string sql = qp.SQL();
+            LogTo(SQL, "Compiled Query: %s", sql.c_str());
+            _statement.reset(keyStore.compile(sql));
+            
             _ftsProperties = qp.ftsProperties();
             for (auto property : _ftsProperties) {
                 if (!keyStore.hasIndex(property, KeyStore::kFullTextIndex))
                     error::_throw(error::LiteCore, error::NoSuchIndex);
-                sql << ", offsets(\"" << keyStore.tableName() << "::" << property << "\")";
             }
-            sql << " FROM " << qp.fromClause();
-            auto where = qp.whereClause();
-            if (!where.empty())
-                   sql << " WHERE (" << where << ")";
-
-            auto orderBy = qp.orderByClause();
-            if (!orderBy.empty())
-                sql << " ORDER BY " << orderBy;
-
-            sql << " LIMIT $limit OFFSET $offset";
-            LogTo(SQL, "Compiled Query: %s", sql.str().c_str());
-            _statement.reset(keyStore.compile(sql.str()));
         }
 
 
@@ -207,9 +199,9 @@ namespace litecore {
     }
 
 
-    Query* SQLiteKeyStore::compileQuery(slice selectorExpression, slice sortExpression) {
+    Query* SQLiteKeyStore::compileQuery(slice selectorExpression) {
         ((SQLiteDataFile&)dataFile()).registerFleeceFunctions();
-        return new SQLiteQuery(*this, selectorExpression, sortExpression);
+        return new SQLiteQuery(*this, selectorExpression);
     }
 
 }

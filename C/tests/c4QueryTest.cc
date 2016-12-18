@@ -15,7 +15,9 @@ using namespace std;
 
 class QueryTest : public C4Test {
 public:
-    QueryTest() :C4Test(1) {  // always use SQLite + version vectors
+    QueryTest(int which)
+    :C4Test(which)
+    {
         importJSONLines(sFixturesDir + "names_100.json");
     }
 
@@ -23,18 +25,22 @@ public:
         c4query_free(query);
     }
 
-    C4Query* compile(const char *expr, const char *sort =nullptr) {
+    C4Query* compile(const std::string &whereExpr, const std::string &sortExpr ="") {
+        string queryStr;
+        if (sortExpr.empty()) {
+            queryStr = whereExpr;
+        } else {
+            queryStr = string("[\"SELECT\", {\"WHERE\": ") + whereExpr
+                                        + ", \"ORDER BY\": " + sortExpr + "}]";
+        }
+        INFO("Query = " << queryStr);
         C4Error error;
         c4query_free(query);
-        query = c4query_new(db, c4str(expr), c4str(sort), &error);
+        query = c4query_new(db, c4str(queryStr.c_str()), &error);
         char errbuf[256];
         INFO("error " << error.domain << "/" << error.code << ": " << c4error_getMessageC(error, errbuf, sizeof(errbuf)));
         REQUIRE(query);
         return query;
-    }
-
-    C4Query* compile(const std::string &expr, const std::string &sort ="") {
-        return compile(expr.c_str(), (sort.empty() ? nullptr : sort.c_str()));
     }
 
     std::vector<std::string> run(uint64_t skip =0, uint64_t limit =UINT64_MAX,
@@ -63,7 +69,7 @@ private:
 };
 
 
-TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     CHECK(run(1, 8) == (vector<string>{"0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
@@ -80,14 +86,14 @@ TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
         "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"}));
 }
 
-TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"),
-            "[\"name.last\"]");
+            json5("[['.', 'name', 'last']]"));
     CHECK(run() == (vector<string>{"0000015", "0000036", "0000072", "0000043", "0000001", "0000064", "0000073", "0000053"}));
 }
 
 
-TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
     CHECK(run(0, UINT64_MAX, "{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
@@ -95,7 +101,7 @@ TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
 }
 
 
- TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
+ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));

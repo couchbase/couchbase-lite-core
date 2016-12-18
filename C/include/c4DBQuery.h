@@ -32,29 +32,11 @@ extern "C" {
         NOTE: Queries are only supported on SQLite-based databases.
         Queries are currently not supported on databases whose documents use revision trees.
         @param database  The database to be queried.
-        @param queryExpression  JSON data describing a predicate that documents must match.
-                    The syntax is too complex to describe here; see full documentation elsewhere.
-                    If this is NULL, all documents match.
-        @param sortExpression  Optional JSON array of strings, describing the property path(s)
-                    to sort by. The first path is the primary sort, the second secondary, etc.
-                    A path can be prefixed with "-" to denote descending order, or "+" (a no-op.)
-
-                    The special path "_id" denotes the document ID, and "_sequence" denotes the
-                    sequence number.
-
-                    An empty array suppresses sorting; this is slightly faster, but the order of
-                    results is _undefined_ and should be assumed to be randomized.
-
-                    As a convenience, the JSON may be a single string, which is treated as though
-                    it were a one-element array. (Of course, it's still JSON, so it must still
-                    be enclosed in double-quotes and escaped.)
-     
-                    If this parameter is left null, results are ordered by document ID.
+        @param expression  JSON data describing the query. (Schema is documented elsewhere.)
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
     C4Query* c4query_new(C4Database *database,
-                         C4Slice queryExpression,
-                         C4Slice sortExpression,
+                         C4Slice expression,
                          C4Error *error) C4API;
 
     /** Frees a query.  It is legal to pass NULL. */

@@ -31,15 +31,18 @@ namespace litecore {
         ,_bodyColumnName(bodyColumnName)
         { }
 
-        void parse(const fleece::Value *whereExpression, const fleece::Value *sortExpression);
-        void parseJSON(slice whereJSON, slice sortJSON);
+        void setBaseResultColumns(const std::vector<std::string>& c){_baseResultColumns = c;}
+        void setDefaultOffset(const std::string &o)                 {_defaultOffset = o;}
+        void setDefaultLimit(const std::string &l)                  {_defaultLimit = l;}
 
-        std::string fromClause();
-        std::string whereClause()               {return _sql.str();}
-        std::string orderByClause()             {return _sortSQL.str();}
+        void parse(const fleece::Value*);
+        void parseJSON(slice);
 
-        const std::vector<std::string>& ftsProperties() const   {return _ftsProperties;}
-        std::vector<std::string> ftsTableNames() const;
+        void parseJustExpression(const fleece::Value *expression);
+
+        std::string SQL()                                           {return _sql.str();}
+
+        const std::vector<std::string>& ftsProperties() const       {return _ftsProperties;}
 
         static std::string propertyGetter(slice property, const char *bodyColumnName = "body");
         static void writeSQLString(std::ostream &out, slice str);
@@ -51,14 +54,19 @@ namespace litecore {
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
-        QueryParser(const QueryParser&) =delete;
+        QueryParser(const QueryParser &qp) =delete;
         QueryParser& operator=(const QueryParser&) =delete;
-        
+
+        void reset();
         void parseNode(const fleece::Value*);
         void parseOpNode(const fleece::Array*);
         void handleOperation(const Operation*, slice actualOperator, fleece::Array::iterator& operands);
 
+        void writeSelect(const fleece::Dict *dict);
+        void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
+
         void prefixOp(slice, fleece::Array::iterator&);
+        void postfixOp(slice, fleece::Array::iterator&);
         void infixOp(slice, fleece::Array::iterator&);
         void betweenOp(slice, fleece::Array::iterator&);
         void existsOp(slice, fleece::Array::iterator&);
@@ -69,26 +77,21 @@ namespace litecore {
         void selectOp(slice, fleece::Array::iterator&);
         void fallbackOp(slice, fleece::Array::iterator&);
 
-        void countPropertyOp(slice, fleece::Array::iterator&);
-        void existsPropertyOp(slice, fleece::Array::iterator&);
-
         bool writeNestedPropertyOpIfAny(const char *fnName, fleece::Array::iterator &operands);
         void writePropertyOp(const char *fnName, fleece::Array::iterator& operands);
-        void writePropertyGetter(const char *fn, slice property);
-        void writeSQLString(slice str)      {writeSQLString(_sql, str);}
+        void writePropertyGetter(const std::string &fn, const std::string &property);
+        void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
 
-        void parseFTSMatch(slice property, const fleece::Value *match);
+        void findFTSProperties(const fleece::Value *node);
         size_t FTSPropertyIndex(const std::string &propertyPath);
         size_t AddFTSPropertyIndex(const std::string &propertyPath);
-        void parseOrderBy(const fleece::Value*);
-        void writeOrderBy(const fleece::Value*);
-        void writeOrderByFTSRank(slice property);
 
         std::string _tableName;
         std::string _bodyColumnName;
+        std::vector<std::string> _baseResultColumns;
+        std::string _defaultOffset, _defaultLimit;
         std::stringstream _sql;
-        std::stringstream _sortSQL;
         std::string _propertyPath;
         std::vector<const Operation*> _context;
         std::set<std::string> _parameters;

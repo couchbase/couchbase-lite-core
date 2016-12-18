@@ -71,7 +71,7 @@ namespace litecore {
                 {return Record();}
 
         /** Creates a database query object. */
-        virtual Query* compileQuery(slice selectExpr, slice sortExpr);
+        virtual Query* compileQuery(slice expr);
 
         //////// Writing:
 

@@ -94,7 +94,7 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    Query* KeyStore::compileQuery(slice selectorExpression, slice sortExpression) {
+    Query* KeyStore::compileQuery(slice expr) {
         error::_throw(error::Unimplemented);
     }
 

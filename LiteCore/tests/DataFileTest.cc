@@ -301,7 +301,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile EnumerateDocsQuery", "[DataFile]
         t.commit();
     }
 
-    unique_ptr<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]"), nullslice) };
+    unique_ptr<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
 
     // Use a (SQL) query based on the Fleece "num" property:
     for (int pass = 0; pass < 2; ++pass) {
@@ -352,8 +352,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     KeyStore::IndexOptions options = {"en", true};
     store->createIndex("$.sentence", KeyStore::kFullTextIndex, &options);
 
-    unique_ptr<Query> query{ store->compileQuery(json5("['MATCH', ['.', 'sentence'], 'search']"),
-                                                 json5("['sentence']")) };
+    unique_ptr<Query> query{ store->compileQuery(json5(
+        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
+                     'ORDER BY': [['DESC', ['rank()', ['.', 'sentence']]]]}]")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
     int expectedOrder[] = {1, 2, 0, 4};

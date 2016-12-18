@@ -44,6 +44,14 @@ namespace litecore {
     }
 
 
+    static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
+        auto a = v ? v->asArray() : nullptr;
+        if (!a)
+            fail(elseMessage);
+        return a;
+    }
+
+
     // Appends two property-path strings.
     static string appendPaths(const string &parent, string child) {
         if (child[0] == '$') {
@@ -88,9 +96,111 @@ namespace litecore {
     static string propertyFromNode(const Value *node);
 
 
-#pragma mark - QUERY PARSER:
+#pragma mark - QUERY PARSER TOP LEVEL:
 
 
+    void QueryParser::reset() {
+        _context.clear();
+        _context.push_back(&kOuterOperation);
+    }
+
+
+    void QueryParser::parseJSON(slice expressionJSON) {
+        alloc_slice expressionFleece = JSONConverter::convertJSON(expressionJSON);
+        return parse(Value::fromTrustedData(expressionFleece));
+    }
+    
+    
+    void QueryParser::parse(const Value *expression) {
+        reset();
+        if (expression->asDict()) {
+            // Given a dict; assume it's the operands of a SELECT:
+            writeSelect(expression->asDict());
+        } else {
+            const Array *a = expression->asArray();
+            if (a && a->count() > 0 && a->get(0)->asString() == "SELECT"_sl) {
+                // Given an entire SELECT statement:
+                parseNode(expression);
+            } else {
+                // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
+                writeSelect(expression, nullptr);
+            }
+        }
+    }
+
+
+    void QueryParser::parseJustExpression(const Value *expression) {
+        reset();
+        parseNode(expression);
+    }
+
+    
+    void QueryParser::writeSelect(const Dict *operands) {
+        writeSelect(operands->get("WHERE"_sl), operands);
+    }
+
+
+    void QueryParser::writeSelect(const Value *where, const Dict *operands) {
+        // Have to find all properties involved in MATCH before emitting the FROM clause:
+        if (where)
+            findFTSProperties(where);
+
+        // 'What' clause:
+        _sql << "SELECT";
+        int nCol = 0;
+        for (auto &col : _baseResultColumns)
+            _sql << (nCol++ ? ", " : " ") << col;
+        for (auto propertyPath : _ftsProperties) {
+            _sql << (nCol++ ? ", " : " ") << "offsets(\"" << _tableName << "::" << propertyPath << "\")";
+        }
+
+        auto what = operands ? operands->get("WHAT"_sl) : nullptr;
+        if (what)
+            fail("WHAT parameter to SELECT isn't supported yet, sorry");
+        if (nCol == 0)
+            _sql << " *";
+
+        // FROM clause:
+        _sql << " FROM ";
+        auto from = operands ? operands->get(" FROM"_sl) : nullptr;
+        if (from) {
+            fail("FROM parameter to SELECT isn't supported yet, sorry");
+        } else {
+            _sql << _tableName;
+            unsigned ftsTableNo = 0;
+            for (auto propertyPath : _ftsProperties) {
+                _sql << ", \"" << _tableName << "::" << propertyPath << "\" AS FTS" << ++ftsTableNo;
+            }
+        }
+
+        // WHERE clause:
+        if (where) {
+            _sql << " WHERE ";
+            parseNode(where);
+        }
+
+        // ORDER BY clause:
+        auto order = operands ? operands->get("ORDER BY"_sl) : nullptr;
+        if (order) {
+            _sql << " ORDER BY ";
+            _context.push_back(&kOrderByOperation); // suppress parens around arg list
+            Array::iterator orderBys(mustBeArray(order));
+            writeArgList(orderBys);
+            _context.pop_back();
+        }
+
+        // LIMIT, OFFSET clauses:
+        // TODO: Use the ones from operands
+        if (!_defaultLimit.empty())
+            _sql << " LIMIT " << _defaultLimit;
+        if (!_defaultOffset.empty())
+            _sql << " OFFSET " << _defaultOffset;
+    }
+
+
+#pragma mark - PARSING:
+    
+    
     // This table defines the operators and their characteristics.
     // Each operator has a name, min/max argument count, precedence, and a handler method.
     // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
@@ -134,6 +244,8 @@ namespace litecore {
 
         {"SELECT"_sl,  1, 1,  1,  &QueryParser::selectOp},
 
+        {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
+
         {nullslice,    0, 0, 10,  &QueryParser::fallbackOp} // fallback; must come last
     };
 
@@ -143,31 +255,6 @@ namespace litecore {
         {"ORDER BY"_sl,1, 9, -3, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kOuterOperation
         {nullslice,    1, 1, -1};
-
-
-    void QueryParser::parse(const Value *whereExpression, const Value *sortExpression) {
-        _context.clear();
-        _context.push_back(&kOuterOperation);
-
-        if (whereExpression)
-            parseNode(whereExpression);
-        parseOrderBy(sortExpression);
-    }
-
-
-    void QueryParser::parseJSON(slice whereJSON, slice sortJSON) {
-        const Value *whereValue = nullptr, *sortValue = nullptr;
-        alloc_slice whereFleece, sortFleece;
-        if (whereJSON) {
-            whereFleece = JSONConverter::convertJSON(whereJSON);
-            whereValue = Value::fromTrustedData(whereFleece);
-        }
-        if (sortJSON) {
-            sortFleece = JSONConverter::convertJSON(sortJSON);
-            sortValue = Value::fromTrustedData(sortFleece);
-        }
-        parse(whereValue, sortValue);
-    }
 
 
     void QueryParser::parseNode(const Value *node) {
@@ -252,6 +339,13 @@ namespace litecore {
     }
 
 
+    // Handles postfix operators
+    void QueryParser::postfixOp(slice op, Array::iterator& operands) {
+        parseNode(operands[0]);
+        _sql << " " << op;
+    }
+
+    
     // Handles infix operators
     void QueryParser::infixOp(slice op, Array::iterator& operands) {
         int n = 0;
@@ -336,38 +430,18 @@ namespace litecore {
 
     // Handles SELECT
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
-        _sql << op;  // "SELECT"
         // SELECT is unusual in that its operands are encoded as an object
         auto dict = operands[0]->asDict();
         if (!dict)
-            fail("Argument to SElECT must be an object");
-
-        auto what = dict->get("WHAT"_sl);
-        if (what) {
-            fail("WHAT parameter to SELECT isn't supported yet, sorry");
+            fail("Argument to SELECT must be an object");
+        if (_context.size() <= 2) {
+            // Outer SELECT
+            writeSelect(dict);
         } else {
-            _sql << " *";
-        }
-
-        auto from = dict->get(" FROM"_sl);
-        if (from) {
-            _sql << "FROM ";
-            fail("FROM parameter to SELECT isn't supported yet, sorry");
-        }
-
-        auto where = dict->get("WHERE"_sl);
-        if (where) {
-            _sql << " WHERE ";
-            parseNode(where);
-        }
-
-        auto order = dict->get("ORDER BY"_sl);
-        if (order) {
-            _sql << " ORDER BY ";
-            _context.push_back(&kOrderByOperation); // suppress parens around arg list
-            Array::iterator orderBys(order->asArray());
-            writeArgList(orderBys);
-            _context.pop_back();
+            // Nested SELECT; use a fresh parser
+            QueryParser nested(_tableName, _bodyColumnName);
+            nested.parse(dict);
+            _sql << nested.SQL();
         }
     }
 
@@ -386,7 +460,10 @@ namespace litecore {
 
         // Special case: "count(propertyname)" turns into a call to fl_count:
         if (op == "count"_sl && writeNestedPropertyOpIfAny("fl_count", operands))
-                return;
+            return;
+        else if (op == "rank"_sl && writeNestedPropertyOpIfAny("rank", operands)) {
+            return;
+        }
 
         _sql << op;
         writeArgList(operands);
@@ -466,18 +543,23 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(const char *fn, slice property) {
-        if (property == "_id"_sl) {
-            if (strcmp(fn, "fl_value") != 0)
+    void QueryParser::writePropertyGetter(const string &fn, const string &property) {
+        if (property == "_id") {
+            if (fn != "fl_value")
                 fail("can't use '_id' in this context");
             _sql << "key";
-        } else if (property == "_sequence"_sl) {
-            if (strcmp(fn, "fl_value") != 0)
+        } else if (property == "_sequence") {
+            if (fn != "fl_value")
                 fail("can't use '_sequence' in this context");
             _sql << "sequence";
+        } else if (fn == "rank") {
+            // FTS rank() needs special treatment
+            if (FTSPropertyIndex(property) == 0)
+                fail("rank() can only be used with FTS properties");
+            _sql << "rank(matchinfo(\"" << _tableName << "::" << property << "\"))";
         } else {
             _sql << fn << "(" << _bodyColumnName << ", ";
-            auto path = appendPaths(_propertyPath, (string)property);
+            auto path = appendPaths(_propertyPath, property);
             writeSQLString(_sql, slice(path));
             _sql << ")";
         }
@@ -486,12 +568,33 @@ namespace litecore {
 
     /*static*/ string QueryParser::propertyGetter(slice property, const char *bodyColumnName) {
         QueryParser qp("XXX", bodyColumnName);
-        qp.writePropertyGetter("fl_value", property);
-        return qp.whereClause();
+        qp.writePropertyGetter("fl_value", (string)property);
+        return qp.SQL();
     }
 
 
 #pragma mark - FULL-TEXT-SEARCH MATCH:
+
+
+    void QueryParser::findFTSProperties(const Value *node) {
+        Array::iterator i(node->asArray());
+        if (i.count() == 0)
+            return;
+        slice op = i.value()->asString();
+        ++i;
+        if (op == "MATCH"_sl && i) {
+            auto propertyNode = i.value()->asArray();
+            if (propertyNode) {
+                string property = propertyFromNode(propertyNode);
+                AddFTSPropertyIndex(property);
+            }
+            ++i;
+        }
+
+        // Recurse into operands:
+        for (; i; ++i)
+            findFTSProperties(i.value());
+    }
 
 
     size_t QueryParser::FTSPropertyIndex(const string &propertyPath) {
@@ -511,85 +614,6 @@ namespace litecore {
             index = _ftsProperties.size();
         }
         return index;
-    }
-
-    string QueryParser::fromClause() {
-        stringstream from;
-        from << _tableName;
-        unsigned ftsTableNo = 0;
-        for (auto propertyPath : _ftsProperties) {
-            from << ", \"" << _tableName << "::" << propertyPath << "\" AS FTS" << ++ftsTableNo;
-        }
-        return from.str();
-    }
-
-
-    vector<string> QueryParser::ftsTableNames() const {
-        vector<string> names;
-        for (auto propertyPath : _ftsProperties) {
-            stringstream s;
-            s << "\"" << _tableName << "::" << propertyPath << "\"";
-            names.push_back(s.str());
-        }
-        return names;
-    }
-
-
-#pragma mark - SORTING:
-
-
-    void QueryParser::parseOrderBy(const Value *expr) {
-        if (!expr) {
-            _sortSQL << "key";
-        } else switch (expr->type()) {
-            case kString:
-                writeOrderBy(expr);
-                break;
-            case kArray: {
-                int n = 0;
-                for (Array::iterator it(expr->asArray()); it; ++it) {
-                    if (n++)
-                        _sortSQL << ", ";
-                    writeOrderBy(it.value());
-                }
-                break;
-            }
-            default:
-                fail("Sort descriptor must be string or array");
-        }
-    }
-
-
-    void QueryParser::writeOrderBy(const Value *property) {
-        slice str = property->asString();
-        if (str.size < 1)
-            fail("Empty sort array");
-
-        if (FTSPropertyIndex((string)str) > 0) {
-            writeOrderByFTSRank(str);
-            return;
-        }
-        
-        bool ascending = true;
-        char prefix = str.peekByte();
-        if (prefix == '-' || prefix == '+') {
-            ascending = (prefix == '+');
-            str.readByte();
-        }
-        
-        if (str == "_id"_sl)
-            _sortSQL << "key";
-        else if (str == "_sequence"_sl)
-            _sortSQL << "sequence";
-        else
-            _sortSQL << propertyGetter(str);
-        if (!ascending)
-            _sortSQL << " DESC";
-    }
-
-
-    void QueryParser::writeOrderByFTSRank(slice property) {
-        _sortSQL << "rank(matchinfo(\"" << _tableName << "::" << (string)property << "\")) DESC";
     }
 
 }

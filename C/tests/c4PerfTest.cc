@@ -437,7 +437,7 @@ public:
         docIDs.reserve(1200);
 
         C4Error error;
-        C4Query *query = c4query_new(db, c4str(whereStr), kC4SliceNull, &error);
+        C4Query *query = c4query_new(db, c4str(whereStr), &error);
         REQUIRE(query);
         auto e = c4query_run(query, nullptr, kC4SliceNull, &error);
         C4SliceResult artistSlice;
