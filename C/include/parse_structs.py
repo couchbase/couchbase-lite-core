@@ -18,6 +18,16 @@ def make_property(name, type):
     tin.close()
     return ret_val
 
+def make_literal(type):
+    try:
+        fin = open("templates/{}_literal.cs".format(type))
+    except:
+        return None
+
+    ret_val = fin.read().rstrip('\n')
+    fin.close()
+    return ret_val
+
 if __name__ == "__main__":
     for file in glob.iglob("./*.h"):
         enums = parse_enums.parse_enum(file)
@@ -28,12 +38,13 @@ if __name__ == "__main__":
         in_comment = 0
         for line in fin:
             if in_struct:
-                if "}" in line:
-                    stripped = re.search("\\}\\s*(\\S*?);", line)
-                    if stripped.group(1) in skip_types:
-                        structs[stripped.group(1)] = ["skip"]
+                end = re.search(r'} ([A-Za-z0-9]+);', line)
+                if end:
+                    struct_type = end.group(1)
+                    if struct_type in skip_types:
+                        structs[struct_type] = ["skip"]
                     else:
-                        structs[stripped.group(1)] = variables
+                        structs[struct_type] = variables
                     
                     variables = []
                     in_struct = False
@@ -65,7 +76,7 @@ if __name__ == "__main__":
             elif re.search("typedef struct.*?{", line):
                 in_struct = True
             else:
-                opaque = re.search("typedef struct (\\S*) (\\S*);", line)
+                opaque = re.search("typedef (?:const )?struct (\\S*)\\s+(\\S*);", line)
                 if opaque:
                     structs[opaque.group(2)] = []
         
@@ -79,6 +90,11 @@ if __name__ == "__main__":
         tin.close()
         for name, variables in structs.iteritems():
             properties = []
+            literal = make_literal(name)
+            if literal:
+                out_text += "{}\n\n".format(literal)
+                continue
+
             if len(variables) == 1 and variables[0] == "skip":
                 try:
                     tin = open("templates/{}.cs".format(name))

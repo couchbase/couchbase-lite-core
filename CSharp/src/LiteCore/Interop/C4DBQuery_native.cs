@@ -29,11 +29,10 @@ namespace LiteCore.Interop
 {
     public unsafe static partial class Native
     {
-        public static C4Query* c4query_new(C4Database* database, string queryExpression, string sortExpression, C4Error* error)
+        public static C4Query* c4query_new(C4Database* database, string expression, C4Error* error)
         {
-            using(var queryExpression_ = new C4String(queryExpression))
-            using(var sortExpression_ = new C4String(sortExpression)) {
-                return NativeRaw.c4query_new(database, queryExpression_.AsC4Slice(), sortExpression_.AsC4Slice(), error);
+            using(var expression_ = new C4String(expression)) {
+                return NativeRaw.c4query_new(database, expression_.AsC4Slice(), error);
             }
         }
 
@@ -76,7 +75,7 @@ namespace LiteCore.Interop
     public unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Query* c4query_new(C4Database* database, C4Slice queryExpression, C4Slice sortExpression, C4Error* error);
+        public static extern C4Query* c4query_new(C4Database* database, C4Slice expression, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, C4Slice encodedParameters, C4Error* outError);

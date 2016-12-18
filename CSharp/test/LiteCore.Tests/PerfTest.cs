@@ -174,7 +174,7 @@ namespace LiteCore.Tests
         {
             var docIDs = new List<string>(1200);
 
-            var query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, whereStr, null, err));
+            var query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, whereStr, err));
             var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4query_run(query, null, null, err));
             string artist;
             C4Error error;

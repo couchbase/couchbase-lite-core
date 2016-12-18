@@ -12,16 +12,21 @@ def parse_enum(filename):
     current_name = ""
     entries = []
     flags = []
-    in_enum = False
+    in_enum = 0
     in_comment = 0
     for line in fin:
-        if line.strip().startswith("//"):
+        if line.lstrip().startswith("//"):
             continue
-        if in_enum:
-            if "};" in line:
+        if in_enum > 0:
+            match = re.match(r'[ |\t]*} ?([A-Za-z]*);', line)
+            if match:
+                if in_enum == 2:
+                    current_name = match.group(1)
+                    name_to_type[current_name] = None
+                
                 name_to_entries[current_name] = entries
                 entries = [] 
-                in_enum = False
+                in_enum = 0
             else:
                 if in_comment > 0:
                     if "*/" in line:
@@ -37,16 +42,18 @@ def parse_enum(filename):
                     continue
                     
                 entry = stripped.group(1)
-                stripped = re.search("(?:k)?(?:C4|Rev)?(?:Log|DB_|Encryption)?(.*)", entry)
+                stripped = re.search("(?:k)?(?:C4|Rev)?(?:FL|Log|DB_|Encryption)?(.*)", entry)
                 entries.append(stripped.group(1).rstrip())
         else:
             definition = re.search("typedef C4_(ENUM|OPTIONS)\((.*?), (.*?)\) {", line)
             if definition:
-                in_enum = True
+                in_enum = 1
                 current_name = definition.group(3)
                 name_to_type[current_name] = type_map[definition.group(2)]
                 if definition.group(1) == "OPTIONS":
                     flags.append(current_name)
+            elif re.match(r'\s*typedef enum {', line):
+                in_enum = 2
 
         if len(name_to_type) == 0:
             continue
@@ -55,7 +62,11 @@ def parse_enum(filename):
     for name in name_to_type:
         if name in flags:
             out_text += "    [Flags]\n"
-        out_text += "    public enum {} : {}\n    {{\n".format(name, name_to_type[name])
+        if name_to_type[name]:
+            out_text += "    public enum {} : {}\n    {{\n".format(name, name_to_type[name])
+        else:
+            out_text += "    public enum {}\n    {{\n".format(name)
+
         for entry in name_to_entries[name]:
             out_text += "        {},\n".format(entry)
 

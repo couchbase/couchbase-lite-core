@@ -9,13 +9,6 @@ namespace LiteCore.Tests
     {
         private C4Query *_query;
 
-        protected override int NumberOfOptions
-        {
-            get {
-                return 1;
-            }
-        }
-
         [Fact]
         public void TestQueryDB()
         {
@@ -46,7 +39,7 @@ namespace LiteCore.Tests
         public void TestQueryDBSorted()
         {
             RunTestVariants(() => {
-                Compile(Json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), "[\"name.last\"]");
+                Compile(Json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), Json5("[['.', 'name', 'last']]"));
                 Run().Should().Equal(new[] { "0000015", "0000036", "0000072", "0000043", "0000001", "0000064", 
                 "0000073", "0000053" }, "because otherwise the query returned incorrect results");
             });
@@ -110,23 +103,29 @@ namespace LiteCore.Tests
             return json;
         }
 
-        private C4Query* Compile(string expr, string sort = null)
+        private C4Query* Compile(string whereExpr, string sortExpr = null)
         {
+            string queryString = whereExpr;
+            if(sortExpr != null) {
+                queryString = $"[\"SELECT\", {{\"WHERE\": {whereExpr}, \"ORDER BY\": {sortExpr}}}]";
+            } 
+
             Native.c4query_free(_query);
-            _query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, expr, sort, err));
+            _query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, queryString, err));
             return _query;
         }
 
         protected override void SetupVariant(int option)
         {
-            base.SetupVariant(1); // always use SQLite + version vectors
+            base.SetupVariant(option);
             ImportJSONLines("../../../C/tests/data/names_100.json");
         }
 
         protected override void TeardownVariant(int option)
         {
-            base.TeardownVariant(option);
             Native.c4query_free(_query);
+            _query = null;
+            base.TeardownVariant(option);
         }
     }
 }
