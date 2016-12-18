@@ -37,7 +37,7 @@ def parse_enum(filename):
                 if "/*" in line:
                     in_comment += 1
                         
-                stripped = re.search("\\s*(.*?)(?:,|\\/)", line)
+                stripped = re.search(r'\s*([A-Za-z0-9=\- ]+,?)', line)
                 if not stripped:
                     continue
                     
@@ -68,7 +68,7 @@ def parse_enum(filename):
             out_text += "    public enum {}\n    {{\n".format(name)
 
         for entry in name_to_entries[name]:
-            out_text += "        {},\n".format(entry)
+            out_text += "        {}\n".format(entry)
 
         out_text += "    }\n\n"
                 

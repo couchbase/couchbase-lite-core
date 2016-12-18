@@ -27,78 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public struct FLValue
-    {
-        
-    }
-
-    public struct FLArray
-    {
-        
-    }
-
-    public struct FLDict
-    {
-        
-    }
-
-    public struct FLEncoder
-    {
-        
-    }
-
-    public struct FLSharedKeys
-    {
-
-    }
-
-    public struct FLKeyPath
-    {
-        
-    }
-
-    public enum FLValueType
-    {
-        Undefined = -1,
-        Null,
-        Boolean,
-        Number,
-        String,
-        Data,
-        Array,
-        Dict
-    }
-
-    public enum FLError
-    {
-        NoError = 0,
-        MemoryError,
-        OutOfRange,
-        InvalidData,
-        EncodeError,
-        JSONError,
-        UnknownValue,
-        InternalError
-    }
-
-    public unsafe struct FLSlice
+    public unsafe partial struct FLSlice
     {
         public static readonly FLSlice Null = new FLSlice(null, 0);
-        public void* buf;
-        private UIntPtr _size;
 
         private static readonly ConcurrentDictionary<string, FLSlice> _Constants =
             new ConcurrentDictionary<string, FLSlice>();
-
-        public ulong size
-        {
-            get {
-                return _size.ToUInt64();
-            }
-            set {
-                _size = (UIntPtr)value;
-            }
-        }
 
         public FLSlice(void* buf, ulong size)
         {
@@ -168,21 +102,8 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct FLSliceResult : IDisposable
+    public unsafe partial struct FLSliceResult : IDisposable
     {
-        public void* buf;
-        private UIntPtr _size;
-
-        public ulong size
-        {
-            get {
-                return _size.ToUInt64();
-            }
-            set {
-                _size = (UIntPtr)value;
-            }
-        }
-
         public static implicit operator FLSlice(FLSliceResult input)
         {
             return new FLSlice(input.buf, input.size);
@@ -197,45 +118,6 @@ namespace LiteCore.Interop
         {
             Native.FLSliceResult_Free(this);
         }
-    }
-
-    public unsafe struct FLArrayIterator
-    {
-        #pragma warning disable CS0169
-
-        private void* _private1;
-        private uint _private2;
-        private byte _private3;
-        private void* _private4;
-
-        #pragma warning restore CS0169
-    }
-
-    public unsafe struct FLDictIterator
-    {
-        #pragma warning disable CS0169
-
-        private void* _private1;
-        private uint _private2;
-        private byte _private3;
-        private void* _private4;
-        private void* _private5;
-
-        #pragma warning restore CS0169
-    }
-
-    public unsafe struct FLDictKey
-    {
-        #pragma warning disable CS0169
-
-        //HACK: Cannot have an inline array of pointers
-        private void* _private1a;
-        private void* _private1b;
-        private void* _private1c;
-        private uint _private2;
-        private byte _private3;
-
-        #pragma warning restore CS0169
     }
 
     public static unsafe partial class Native
