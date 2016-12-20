@@ -31,6 +31,7 @@ namespace LiteCore.Tests
         private C4View *_statesView;
 
         [Fact]
+        [Trait("Slow", "true")]
         public void TestPerformance()
         {
             var jsonData = File.ReadAllBytes(JsonFilePath);
@@ -75,6 +76,7 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        [Trait("Slow", "true")]
         public void TestImportGeoBlocks()
         {
             var rng = new Random();
@@ -97,6 +99,7 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        [Trait("Slow", "true")]
         public void TestImportNames()
         {
             // Docs look like:

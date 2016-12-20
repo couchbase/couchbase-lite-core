@@ -16,6 +16,7 @@ namespace LiteCore.Tests
         private const int NumDocuments = 100000;
 
         [Fact]
+        [Trait("Slow", "true")]
         public void TestAllDocsPerformance() 
         {
             RunTestVariants(() => {
