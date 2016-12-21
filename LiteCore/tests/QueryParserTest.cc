@@ -27,6 +27,8 @@ static string parseWhere(string json) {
 TEST_CASE("QueryParser basic", "[Query]") {
     CHECK(parseWhere("['=', ['.', 'name'], 'Puddin\\' Tane']")
           == "fl_value(body, 'name') = 'Puddin'' Tane'");
+    CHECK(parseWhere("['=', ['.name'], 'Puddin\\' Tane']")
+          == "fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['AND', ['=', ['.', 'again'], true], ['=', ['.', 'name'], 'Puddin\\' Tane']]")
           == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['=', ['+', 2, 2], 5]")
@@ -55,11 +57,15 @@ TEST_CASE("QueryParser basic", "[Query]") {
 TEST_CASE("QueryParser bindings", "[Query]") {
     CHECK(parseWhere("['=', ['$', 'X'], ['$', 7]]")
           == "$_X = $_7");
+    CHECK(parseWhere("['=', ['$X'], ['$', 7]]")
+          == "$_X = $_7");
 }
 
 
 TEST_CASE("QueryParser special properties", "[Query]") {
     CHECK(parseWhere("['foo()', ['.', '_id'], ['.', '_sequence']]")
+          == "foo(key, sequence)");
+    CHECK(parseWhere("['foo()', ['._id'], ['.', '_sequence']]")
           == "foo(key, sequence)");
 }
 
@@ -70,9 +76,13 @@ TEST_CASE("QueryParser property contexts", "[Query]") {
           == "EXISTS 17");
     CHECK(parseWhere("['EXISTS', ['.', 'addresses']]")
           == "fl_exists(body, 'addresses')");
+    CHECK(parseWhere("['EXISTS', ['.addresses']]")
+          == "fl_exists(body, 'addresses')");
     CHECK(parseWhere("['count()', ['$', 'X']]")
           == "count($_X)");
     CHECK(parseWhere("['count()', ['.', 'addresses']]")
+          == "fl_count(body, 'addresses')");
+    CHECK(parseWhere("['count()', ['.addresses']]")
           == "fl_count(body, 'addresses')");
 }
 

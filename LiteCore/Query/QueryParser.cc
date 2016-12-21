@@ -107,6 +107,7 @@ namespace litecore {
     }
 
     
+    static string propertyFromOperands(Array::iterator &operands);
     static string propertyFromNode(const Value *node);
 
 
@@ -462,19 +463,29 @@ namespace litecore {
         _variables.erase(var);
     }
 
-    // Handles document property accessors, e.g. [".", "prop"] --> fl_value(body, "prop")
+
+    // Handles doc property accessors, e.g. [".", "prop"] or [".prop"] --> fl_value(body, "prop")
     void QueryParser::propertyOp(slice op, Array::iterator& operands) {
-        writePropertyOp("fl_value", operands);
+        writePropertyGetter("fl_value", propertyFromOperands(operands));
     }
 
 
-    // Handles substituted query parameters, e.g. ["$", "x"] --> $_x
+    // Handles substituted query parameters, e.g. ["$", "x"] or ["$x"] --> $_x
     void QueryParser::parameterOp(slice op, Array::iterator& operands) {
-        string parameter = (string)operands[0]->toString();
+        alloc_slice parameter;
+        if (op.size == 1) {
+            parameter = operands[0]->toString();
+        } else {
+            parameter = op;
+            parameter.moveStart(1);
+            if (operands.count() > 0)
+                fail((string)"extra operands to " + string(parameter));
+        }
+        auto paramStr = (string)parameter;
         if (!isAlphanumericOrUnderscore(parameter))
             fail("Invalid query parameter name");
-        _parameters.insert(parameter);
-        _sql << "$_" << parameter;
+        _parameters.insert(paramStr);
+        _sql << "$_" << paramStr;
     }
 
 
@@ -509,13 +520,26 @@ namespace litecore {
 
     // Handles unrecognized operators. If op ends in "()" it's a function call; else fail.
     void QueryParser::fallbackOp(slice op, Array::iterator& operands) {
-        if (!(op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')'))
-            fail(string("Unknown operator: ") + (string)op);
-
+        // Put the actual op into the context instead of a null
         auto operation = *_context.back();
         operation.op = op;
         _context.back() = &operation;
 
+        if (op.size > 0 && op[0] == '.') {
+            op.moveStart(1);  // skip '.'
+            writePropertyGetter("fl_value", string(op));
+        } else if (op.size > 0 && op[0] == '$') {
+            parameterOp(op, operands);
+        } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
+            functionOp(op, operands);
+        } else {
+            fail(string("Unknown operator: ") + (string)op);
+        }
+    }
+
+
+    // Handles function calls, where the op ends with "()"
+    void QueryParser::functionOp(slice op, Array::iterator& operands) {
         op.size -= 2;
         // TODO: Validate that this is a known function
 
@@ -540,8 +564,8 @@ namespace litecore {
 #pragma mark - PROPERTIES:
 
 
-    // Given the operands of a valid property node, returns the property
-    static string propertyFromNode(Array::iterator &operands) {
+    // Concatenates property operands to produce the property path string
+    static string propertyFromOperands(Array::iterator &operands) {
         stringstream property;
         int n = 0;
         for (auto &i = operands; i; ++i,++n) {
@@ -573,16 +597,19 @@ namespace litecore {
     // Returns the property represented by a node, or "" if it's not a property node
     static string propertyFromNode(const Value *node) {
         Array::iterator i(node->asArray());
-        if (i.count() < 2 || i[0]->asString() != "."_sl)
-            return "";              // not a valid property node
-        ++i;  // skip "." item
-        return propertyFromNode(i);
-    }
-
-
-    // Writes a property-access function call given the JSON operands and a SQL fn name
-    void QueryParser::writePropertyOp(const char *fnName, Array::iterator& operands) {
-        writePropertyGetter(fnName, propertyFromNode(operands));
+        if (i.count() >= 1) {
+            auto op = i[0]->asString();
+            if (op && op[0] == '.') {
+                if (op.size == 1) {
+                    ++i;  // skip "." item
+                    return propertyFromOperands(i);
+                } else {
+                    op.moveStart(1);
+                    return (string)op;
+                }
+            }
+        }
+        return "";              // not a valid property node
     }
 
 
@@ -591,15 +618,10 @@ namespace litecore {
     bool QueryParser::writeNestedPropertyOpIfAny(const char *fnName, Array::iterator &operands) {
         if (operands.count() == 0 )
             return false;
-        auto arr = operands[0]->asArray();
-        if (!arr || arr->count() == 0)
+        auto property = propertyFromNode(operands[0]);
+        if (property.empty())
             return false;
-        Array::iterator nestedOperands(arr);
-        if (nestedOperands[0]->asString() != "."_sl)
-            return false;
-
-        ++nestedOperands; // skip "."
-        writePropertyOp(fnName, nestedOperands);
+        writePropertyGetter(fnName, property);
         return true;
     }
 
