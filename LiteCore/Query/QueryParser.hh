@@ -72,8 +72,10 @@ namespace litecore {
         void existsOp(slice, fleece::Array::iterator&);
         void inOp(slice, fleece::Array::iterator&);
         void matchOp(slice, fleece::Array::iterator&);
+        void anyEveryOp(slice, fleece::Array::iterator&);
         void parameterOp(slice, fleece::Array::iterator&);
         void propertyOp(slice, fleece::Array::iterator&);
+        void variableOp(slice, fleece::Array::iterator&);
         void selectOp(slice, fleece::Array::iterator&);
         void fallbackOp(slice, fleece::Array::iterator&);
 
@@ -95,6 +97,7 @@ namespace litecore {
         std::string _propertyPath;
         std::vector<const Operation*> _context;
         std::set<std::string> _parameters;
+        std::set<std::string> _variables;
         std::vector<std::string> _ftsProperties;
     };
 

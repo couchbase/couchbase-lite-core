@@ -38,6 +38,20 @@ namespace litecore {
     }
 
 
+    static bool isAlphanumericOrUnderscore(slice str) {
+        if (str.size == 0)
+            return false;
+        for (size_t i = 0; i < str.size; i++)
+            if (!isalnum(str[i]) && str[i] != '_')
+                return false;
+        return true;
+    }
+
+    static bool isValidIdentifier(slice str) {
+        return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
+    }
+
+
     static inline std::ostream& operator<< (std::ostream& o, slice s) {
         o.write((const char*)s.buf, s.size);
         return o;
@@ -211,6 +225,7 @@ namespace litecore {
     const QueryParser::Operation QueryParser::kOperationList[] = {
         {"."_sl,       1, 9,  9,  &QueryParser::propertyOp},
         {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
+        {"?"_sl,       1, 1,  9,  &QueryParser::variableOp},
 
         {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},
 
@@ -241,6 +256,10 @@ namespace litecore {
         {"NOT"_sl,     1, 1,  9,  &QueryParser::prefixOp},
         {"AND"_sl,     2, 9,  2,  &QueryParser::infixOp},
         {"OR"_sl,      2, 9,  2,  &QueryParser::infixOp},
+
+        {"ANY"_sl,     3, 3,  1,  &QueryParser::anyEveryOp},
+        {"EVERY"_sl,   3, 3,  1,  &QueryParser::anyEveryOp},
+        {"ANY AND EVERY"_sl, 3, 3,  1,  &QueryParser::anyEveryOp},
 
         {"SELECT"_sl,  1, 1,  1,  &QueryParser::selectOp},
 
@@ -403,7 +422,46 @@ namespace litecore {
         _sql << " AND FTS" << ftsTableNo << ".rowid = " << _tableName << ".sequence)";
     }
 
-    
+
+    // Handles "ANY var IN array SATISFIES expr" (and EVERY, and ANY AND EVERY)
+    void QueryParser::anyEveryOp(slice op, Array::iterator& operands) {
+        auto var = (string)operands[0]->asString();
+        if (!isValidIdentifier(var))
+            fail("ANY/EVERY first parameter must be an identifier");
+        if (_variables.count(var) > 0)
+            fail(string("Variable '") + var + "' is already in use");
+        _variables.insert(var);
+
+        string property = propertyFromNode(operands[1]);
+        if (property.empty())
+            fail("ANY/EVERY only supports a property as its source");
+
+        bool every = (op != "ANY"_sl);
+        bool anyAndEvery = (op == "ANY AND EVERY"_sl);
+
+        if (anyAndEvery) {
+            _sql << '(';
+            writePropertyGetter("fl_count", property);
+            _sql << " > 0 AND ";
+        }
+
+        if (every)
+            _sql << "NOT ";
+        _sql << "EXISTS (SELECT 1 FROM ";
+        writePropertyGetter("fl_each", property);
+        _sql << " AS _" << var << " WHERE ";
+        if (every)
+            _sql << "NOT (";
+        parseNode(operands[2]);
+        if (every)
+            _sql << ')';
+        _sql << ')';
+        if (anyAndEvery)
+            _sql << ')';
+
+        _variables.erase(var);
+    }
+
     // Handles document property accessors, e.g. [".", "prop"] --> fl_value(body, "prop")
     void QueryParser::propertyOp(slice op, Array::iterator& operands) {
         writePropertyOp("fl_value", operands);
@@ -412,22 +470,25 @@ namespace litecore {
 
     // Handles substituted query parameters, e.g. ["$", "x"] --> $_x
     void QueryParser::parameterOp(slice op, Array::iterator& operands) {
-        auto operand = operands[0];
-        switch (operand->type()) {
-            case kNumber:
-            case kString: {
-                // TODO: Validate name
-                string parameter = (string)operand->toString();
-                _parameters.insert(parameter);
-                _sql << "$_" << parameter;
-                break;
-            }
-            default:
-                fail("Query parameter name must be number or string");
-        }
+        string parameter = (string)operands[0]->toString();
+        if (!isAlphanumericOrUnderscore(parameter))
+            fail("Invalid query parameter name");
+        _parameters.insert(parameter);
+        _sql << "$_" << parameter;
     }
 
 
+    // Handles variables used in ANY/EVERY predicates
+    void QueryParser::variableOp(slice op, Array::iterator& operands) {
+        auto var = (string)operands[0]->asString();
+        if (!isValidIdentifier(var))
+            fail("Invalid variable name");
+        if (_variables.count(var) == 0)
+            fail(string("No such variable '") + var + "'");
+        _sql << '_' << var << ".value";
+    }
+
+    
     // Handles SELECT
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
         // SELECT is unusual in that its operands are encoded as an object
@@ -492,13 +553,14 @@ namespace litecore {
                 // TODO: Support ranges (2 numbers)
                 if (arr->count() != 1)
                     fail("Property array index must have exactly one item");
+                if (index < 0 || !arr->get(0)->isInteger())
+                    fail("Property array index must be an integer");
                 auto index = arr->get(0)->asInt();
                 property << '[' << index << ']';
             } else {
                 slice name = item->asString();
                 if (!name)
                     fail("Invalid JSON value in property path");
-                // TODO: Validate name
                 if (n > 0)
                     property << '.';
                 property << name;

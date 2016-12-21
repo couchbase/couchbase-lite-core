@@ -92,6 +92,17 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
           == "EXISTS (SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
 }
 
+
+TEST_CASE("QueryParser ANY", "[Query]") {
+    CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE _X.value = 'Smith')");
+    CHECK(parseWhere("['EVERY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
+          == "NOT EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE NOT (_X.value = 'Smith'))");
+    CHECK(parseWhere("['ANY AND EVERY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
+          == "(fl_count(body, 'names') > 0 AND NOT EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE NOT (_X.value = 'Smith')))");
+}
+
+
 #if 0
     CHECK(parseWhere("{$and: [{name: 'Puddin\\' Tane'}, {again: true}]}")
           == "fl_value(body, 'name') = 'Puddin'' Tane' AND fl_value(body, 'again') = 1");

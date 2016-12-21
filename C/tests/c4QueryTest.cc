@@ -86,6 +86,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
         "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"}));
 }
 
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"),
             json5("[['.', 'name', 'last']]"));
@@ -98,6 +99,26 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
     CHECK(run(0, UINT64_MAX, "{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
     CHECK(run(0, UINT64_MAX, "{\"state\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
+    compile(json5("['ANY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'climbing']]"));
+    CHECK(run() == (vector<string>{"0000017", "0000021", "0000023", "0000045", "0000060"}));
+
+    // This EVERY query has lots of results because every empty `likes` array matches it
+    compile(json5("['EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
+    auto result = run();
+    REQUIRE(result.size() == 42);
+    CHECK(result[0] == "0000007");
+
+    // Changing the op to ANY AND EVERY returns no results
+    compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
+    CHECK(run() == (vector<string>{}));
+
+    // Look for people where every like contains an L:
+    compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
+    CHECK(run() == (vector<string>{ "0000017", "0000027", "0000060", "0000068" }));
 }
 
 
