@@ -113,6 +113,12 @@ TEST_CASE("QueryParser ANY", "[Query]") {
 }
 
 
+TEST_CASE("QueryParser ANY complex", "[Query]") {
+    CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X', 'last'], 'Smith']]")
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_value(_X.pointer, 'last') = 'Smith')");
+}
+
+
 #if 0
     CHECK(parseWhere("{$and: [{name: 'Puddin\\' Tane'}, {again: true}]}")
           == "fl_value(body, 'name') = 'Puddin'' Tane' AND fl_value(body, 'again') = 1");

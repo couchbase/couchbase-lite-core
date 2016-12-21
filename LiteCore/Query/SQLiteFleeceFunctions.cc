@@ -26,6 +26,35 @@ using namespace std;
 namespace litecore {
 
 
+    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        slice fleece = valueAsSlice(arg);
+        if (sqlite3_value_subtype(arg) == kFleecePointerSubtype) {
+            // Data is just a Value* (4 or 8 bytes), so extract it:
+            if (fleece.size == sizeof(Value*)) {
+                return *(const Value**)fleece.buf;
+            } else {
+                sqlite3_result_error(ctx, "invalid Fleece pointer", -1);
+                sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+                return nullptr;
+            }
+        } else {
+            if (sqlite3_value_subtype(arg) != kFleeceDataSubtype) {
+                // Pull the Fleece data out of a raw document body:
+                auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+                if (funcCtx->accessor)
+                    fleece = funcCtx->accessor(fleece);
+            }
+            const Value *root = Value::fromTrustedData(fleece);
+            if (!root) {
+                Warn("Invalid Fleece data in SQLite table");
+                sqlite3_result_error(ctx, "invalid Fleece data", -1);
+                sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+            }
+            return root;
+        }
+    }
+
+
     int evaluatePath(slice path, SharedKeys *sharedKeys, const Value **pValue) noexcept {
         if (!path.buf)
             return SQLITE_FORMAT;
@@ -78,19 +107,9 @@ namespace litecore {
                     setResultBlobFromSlice(ctx, val->asString());
                     break;
                 case kArray:
-                case kDict: {
-                    // Encode dict/array as Fleece:
-                    try {
-                        Encoder enc;
-                        enc.writeValue(val);
-                        setResultBlobFromSlice(ctx, enc.extractOutput());
-                    } catch (const bad_alloc&) {
-                        sqlite3_result_error_code(ctx, SQLITE_NOMEM);
-                    } catch (...) {
-                        sqlite3_result_error_code(ctx, SQLITE_ERROR);
-                    }
+                case kDict:
+                    setResultBlobFromEncodedValue(ctx, val);
                     break;
-                }
             }
         }
     }
@@ -113,6 +132,21 @@ namespace litecore {
             sqlite3_result_blob(ctx, blob.buf, (int)blob.size, SQLITE_TRANSIENT);
         else
             sqlite3_result_null(ctx);
+    }
+
+
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
+        try {
+            Encoder enc;
+            enc.writeValue(val);
+            setResultBlobFromSlice(ctx, enc.extractOutput());
+            return true;
+        } catch (const bad_alloc&) {
+            sqlite3_result_error_code(ctx, SQLITE_NOMEM);
+        } catch (...) {
+            sqlite3_result_error_code(ctx, SQLITE_ERROR);
+        }
+        return false;
     }
 
 
@@ -157,10 +191,17 @@ namespace litecore {
         if (!root)
             return;
         const Value *val = evaluatePath(ctx, valueAsSlice(argv[1]), root);
-        if (val->type() == kArray)
-            sqlite3_result_int(ctx, val->asArray()->count());
-        else
-            sqlite3_result_null(ctx);
+        switch (val->type()) {
+            case kArray:
+                sqlite3_result_int(ctx, val->asArray()->count());
+                break;
+            case kDict:
+                sqlite3_result_int(ctx, val->asDict()->count());
+                break;
+            default:
+                sqlite3_result_null(ctx);
+                break;
+        }
     }
 
 

@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "Fleece.hh"
 #include "Path.hh"
+#include "Logging.hh"
 #include <utility>
 #include <algorithm>
 
@@ -30,10 +31,12 @@ namespace litecore {
 
 
     [[noreturn]] static void fail(const char *message) {
+        Warn("Invalid query: %s", message);
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
     [[noreturn]] static void fail(const string &message) {
+        Warn("Invalid query: %s", message.c_str());
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
@@ -226,7 +229,7 @@ namespace litecore {
     const QueryParser::Operation QueryParser::kOperationList[] = {
         {"."_sl,       1, 9,  9,  &QueryParser::propertyOp},
         {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
-        {"?"_sl,       1, 1,  9,  &QueryParser::variableOp},
+        {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
 
         {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},
 
@@ -496,7 +499,15 @@ namespace litecore {
             fail("Invalid variable name");
         if (_variables.count(var) == 0)
             fail(string("No such variable '") + var + "'");
-        _sql << '_' << var << ".value";
+
+        if (operands.count() == 1) {
+            _sql << '_' << var << ".value";
+        } else {
+            auto property = propertyFromOperands(++operands);
+            _sql << "fl_value(_" << var << ".pointer, ";
+            writeSQLString(_sql, slice(property));
+            _sql << ")";
+        }
     }
 
     

@@ -35,11 +35,13 @@ using namespace fleece;
 namespace litecore {
 
 
-// Column numbers
+// Column numbers; these correspond to the CREATE TABLE statement below
 enum {
     kKeyColumn = 0,         // 'key':   The dictionary key (null for array items)
     kValueColumn,           // 'value': The item as a SQL value
     kTypeColumn,            // 'type':  The item's type, an integer
+    kDataColumn,            // 'data':  The item as encoded Fleece data
+    kPointerColumn,         // 'data':  The item as a raw Value*
     kRootFleeceDataColumn,  // 'root_data': The Fleece data of the root [hidden]
     kRootPathColumn,        // 'root_path': Path from the root to the item being iterated [hidden]
 };
@@ -91,7 +93,7 @@ private:
         /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
-        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type,"
+        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type, data, pointer,"
                                           " root_data HIDDEN, root_path HIDDEN)");
         if( rc!=SQLITE_OK )
             return rc;
@@ -256,6 +258,16 @@ private:
             case kTypeColumn:
                 setResultFromValueType(ctx, currentValue());
                 break;
+            case kDataColumn:
+                setResultBlobFromEncodedValue(ctx, currentValue());
+                sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+                break;
+            case kPointerColumn: {
+                auto value = currentValue();
+                sqlite3_result_blob(ctx, &value, sizeof(value), SQLITE_TRANSIENT);
+                sqlite3_result_subtype(ctx, kFleecePointerSubtype);
+                break;
+            }
             case kRootFleeceDataColumn:
                 setResultBlobFromSlice(ctx, _fleeceData);
                 break;

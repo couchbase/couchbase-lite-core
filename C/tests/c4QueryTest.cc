@@ -15,11 +15,15 @@ using namespace std;
 
 class QueryTest : public C4Test {
 public:
-    QueryTest(int which)
+    QueryTest(int which, string filename)
     :C4Test(which)
     {
-        importJSONLines(sFixturesDir + "names_100.json");
+        importJSONLines(sFixturesDir + filename);
     }
+
+    QueryTest(int which)
+    :QueryTest(which, "names_100.json")
+    { }
 
     ~QueryTest() {
         c4query_free(query);
@@ -122,10 +126,24 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
 }
 
 
- N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
     CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 
+}
+
+
+class NestedQueryTest : public QueryTest {
+public:
+    NestedQueryTest(int which)
+    :QueryTest(which, "nested.json")
+    { }
+};
+
+
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query ANY nested", "[Query][C]") {
+    compile(json5("['ANY', 'Shape', ['.', 'shapes'], ['=', ['?', 'Shape', 'color'], 'red']]"));
+    CHECK(run() == (vector<string>{"0000001", "0000003"}));
 }
