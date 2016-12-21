@@ -43,6 +43,7 @@ namespace litecore {
     int evaluatePath(slice path, fleece::SharedKeys*, const fleece::Value **pValue) noexcept;
     void setResultFromValue(sqlite3_context *ctx, const fleece::Value *val) noexcept;
     void setResultFromValueType(sqlite3_context *ctx, const fleece::Value *val) noexcept;
-
+    void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
+    void setResultBlobFromSlice(sqlite3_context*, slice) noexcept;
 
 }

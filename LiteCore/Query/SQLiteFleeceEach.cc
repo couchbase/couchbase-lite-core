@@ -53,6 +53,7 @@ enum {
 };
 
 
+// Registered virtual-table instance that hangs onto the necessary per-database context info.
 struct FleeceVTab : public sqlite3_vtab {
     fleeceFuncContext context;
 };
@@ -82,54 +83,54 @@ private:
     
     // Creates a new sqlite3_vtab that describes the virtual table.
     static int connect(sqlite3 *db,
-                       void *pAux,
+                       void *aux,
                        int argc, const char *const*argv,
-                       sqlite3_vtab **ppVtab,
-                       char **pzErr) noexcept
+                       sqlite3_vtab **outVtab,
+                       char **outErr) noexcept
     {
         /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
         int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type,"
                                           " root_data HIDDEN, root_path HIDDEN)");
-        if( rc==SQLITE_OK ) {
-            auto vtab = (FleeceVTab*) malloc(sizeof(FleeceVTab));
-            if (vtab) {
-                vtab->context = *(fleeceFuncContext*)pAux;
-                *ppVtab = vtab;
-            } else {
-                rc = SQLITE_NOMEM;
-            }
-        }
-        return rc;
+        if( rc!=SQLITE_OK )
+            return rc;
+
+        // Allocate a new FleeceVTab and copy the context into it:
+        auto vtab = (FleeceVTab*) malloc(sizeof(FleeceVTab));
+        if (!vtab)
+            return SQLITE_NOMEM;
+        vtab->context = *(fleeceFuncContext*)aux;
+        *outVtab = vtab;
+        return SQLITE_OK;
     }
 
 
     // Destructor for sqlite3_vtab
-    static int disconnect(sqlite3_vtab *pVtab) noexcept {
-        free(pVtab);
+    static int disconnect(sqlite3_vtab *vtab) noexcept {
+        free(vtab);
         return SQLITE_OK;
     }
 
 
     // Creates a new FleeceCursor object.
-    static int open(sqlite3_vtab *vtab, sqlite3_vtab_cursor **ppCursor) noexcept {
-        *ppCursor = new FleeceCursor((FleeceVTab*)vtab);
-        return *ppCursor ? SQLITE_OK : SQLITE_NOMEM;
+    static int open(sqlite3_vtab *vtab, sqlite3_vtab_cursor **outCursor) noexcept {
+        *outCursor = new FleeceCursor((FleeceVTab*)vtab);
+        return *outCursor ? SQLITE_OK : SQLITE_NOMEM;
     }
 
 
     // Frees a FleeceCursor.
-    static int close(sqlite3_vtab_cursor *cur) noexcept {
-        delete (FleeceCursor*)cur;
+    static int close(sqlite3_vtab_cursor *cursor) noexcept {
+        delete (FleeceCursor*)cursor;
         return SQLITE_OK;
     }
 
 
-    // SQLite will invoke this method one or more times while planning a query
+    // "SQLite will invoke this method one or more times while planning a query
     // that uses this virtual table.  This routine needs to create
-    // a query plan for each invocation and compute an estimated cost for that plan.
-    static int bestIndex(sqlite3_vtab *tab, sqlite3_index_info *info) noexcept
+    // a query plan for each invocation and compute an estimated cost for that plan."
+    static int bestIndex(sqlite3_vtab *vtab, sqlite3_index_info *info) noexcept
     {
         /* "Arguments on the virtual table name are matched to hidden columns in order. The number
            of arguments can be less than the number of hidden columns, in which case the latter
@@ -173,8 +174,8 @@ private:
 #pragma mark - INSTANCE METHODS:
 
 
-    FleeceCursor(FleeceVTab *table)
-    :_vtab(table)
+    FleeceCursor(FleeceVTab *vtab)
+    :_vtab(vtab)
     { }
 
 
@@ -242,9 +243,8 @@ private:
             case kKeyColumn: {
                 auto key = currentKey();
                 if (key && key->isInteger()) {
-                    slice str = _vtab->context.sharedKeys->decode((int)key->asInt());
-                    sqlite3_result_text(ctx, (const char*)str.buf, (int)str.size,
-                                        SQLITE_TRANSIENT);
+                    setResultTextFromSlice(ctx,
+                                           _vtab->context.sharedKeys->decode((int)key->asInt()));
                 } else {
                     setResultFromValue(ctx, key);
                 }
@@ -257,14 +257,10 @@ private:
                 setResultFromValueType(ctx, currentValue());
                 break;
             case kRootFleeceDataColumn:
-                sqlite3_result_blob(ctx, _fleeceData.buf, (int)_fleeceData.size, SQLITE_STATIC);
+                setResultBlobFromSlice(ctx, _fleeceData);
                 break;
             case kRootPathColumn:
-                if (_rootPath.buf)
-                    sqlite3_result_text(ctx, (const char*)_rootPath.buf, (int)_rootPath.size,
-                                        SQLITE_STATIC);
-                else
-                    sqlite3_result_null(ctx);
+                setResultTextFromSlice(ctx, _rootPath);
                 break;
             default:
                 return SQLITE_ERROR;
@@ -300,8 +296,8 @@ private:
 
 
     // Return the rowid for the current row.
-    int rowid(int64_t *pRowid) noexcept {
-        *pRowid = _rowid;
+    int rowid(int64_t *outRowid) noexcept {
+        *outRowid = _rowid;
         return SQLITE_OK;
     }
 
@@ -322,8 +318,8 @@ private:
     static int cursorColumn(sqlite3_vtab_cursor *cur, sqlite3_context *ctx, int i) noexcept {
         return ((FleeceCursor*)cur)->column(ctx, i);
     }
-    static int cursorRowid(sqlite3_vtab_cursor *cur, long long *pRowid) noexcept {
-        return ((FleeceCursor*)cur)->rowid((int64_t *)pRowid);
+    static int cursorRowid(sqlite3_vtab_cursor *cur, long long *outRowid) noexcept {
+        return ((FleeceCursor*)cur)->rowid((int64_t *)outRowid);
     }
     static int cursorEof(sqlite3_vtab_cursor *cur) noexcept {
         return ((FleeceCursor*)cur)->atEOF();

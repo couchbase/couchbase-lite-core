@@ -71,25 +71,19 @@ namespace litecore {
                     else
                         sqlite3_result_double(ctx, val->asDouble());
                     break;
-                case kString: {
-                    slice str = val->asString();
-                    sqlite3_result_text(ctx, (const char*)str.buf, (int)str.size,
-                                        SQLITE_TRANSIENT);
+                case kString:
+                    setResultTextFromSlice(ctx, val->asString());
                     break;
-                }
-                case kData:{
-                    slice str = val->asString();
-                    sqlite3_result_blob(ctx, str.buf, (int)str.size, SQLITE_TRANSIENT);
+                case kData:
+                    setResultBlobFromSlice(ctx, val->asString());
                     break;
-                }
                 case kArray:
                 case kDict: {
                     // Encode dict/array as Fleece:
                     try {
                         Encoder enc;
                         enc.writeValue(val);
-                        auto data = enc.extractOutput();
-                        sqlite3_result_blob(ctx, data.buf, (int)data.size, SQLITE_TRANSIENT);
+                        setResultBlobFromSlice(ctx, enc.extractOutput());
                     } catch (const bad_alloc&) {
                         sqlite3_result_error_code(ctx, SQLITE_NOMEM);
                     } catch (...) {
@@ -104,6 +98,21 @@ namespace litecore {
 
     void setResultFromValueType(sqlite3_context *ctx, const Value *val) noexcept {
         sqlite3_result_int(ctx, (val ? val->type() : -1));
+    }
+
+
+    void setResultTextFromSlice(sqlite3_context *ctx, slice text) noexcept {
+        if (text)
+            sqlite3_result_text(ctx, (const char*)text.buf, (int)text.size, SQLITE_TRANSIENT);
+        else
+            sqlite3_result_null(ctx);
+    }
+
+    void setResultBlobFromSlice(sqlite3_context *ctx, slice blob) noexcept {
+        if (blob)
+            sqlite3_result_blob(ctx, blob.buf, (int)blob.size, SQLITE_TRANSIENT);
+        else
+            sqlite3_result_null(ctx);
     }
 
 
