@@ -19,6 +19,10 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4068")
 endif()
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" AND NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message(WARNING "${CMAKE_CXX_COMPILER_ID} is not supported for building!")
+endif()
+
 if(WIN32 OR ANDROID)
     if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015")
         set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/x86/)

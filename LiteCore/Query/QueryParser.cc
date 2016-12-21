@@ -553,7 +553,7 @@ namespace litecore {
                 // TODO: Support ranges (2 numbers)
                 if (arr->count() != 1)
                     fail("Property array index must have exactly one item");
-                if (index < 0 || !arr->get(0)->isInteger())
+                if (!arr->get(0)->isInteger())
                     fail("Property array index must be an integer");
                 auto index = arr->get(0)->asInt();
                 property << '[' << index << ']';

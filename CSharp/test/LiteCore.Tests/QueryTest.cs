@@ -62,6 +62,31 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestDBQueryAny()
+        {
+            RunTestVariants(() => {
+                Compile(Json5("['ANY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'climbing']]"));
+                Run().Should().Equal(new[] { "0000017", "0000021", "0000023", "0000045", "0000060" }, 
+                    "because otherwise the query returned incorrect results");
+
+                // This EVERY query has lots of results because every empty `likes` array matches it
+                Compile(Json5("['EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
+                var results = Run();
+                results.Count.Should().Be(42, "because otherwise the query returned incorrect results");
+                results[0].Should().Be("0000007", "because otherwise the query returned incorrect results");
+
+                // Changing the op to ANY AND EVERY returns no results
+                Compile(Json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
+                Run().Should().BeEmpty("because otherwise the query returned incorrect results");
+
+                // Look for people where every like contains an L:
+                Compile(Json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
+                Run().Should().Equal(new[] { "0000017", "0000027", "0000060", "0000068" }, 
+                    "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
         public void TestFullTextQuery()
         {
             RunTestVariants(() => {
