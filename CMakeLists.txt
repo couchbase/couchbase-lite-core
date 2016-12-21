@@ -21,6 +21,8 @@ endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" AND NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message(WARNING "${CMAKE_CXX_COMPILER_ID} is not supported for building!")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
 if(WIN32 OR ANDROID)
