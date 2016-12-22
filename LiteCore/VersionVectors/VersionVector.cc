@@ -75,7 +75,7 @@ namespace litecore {
             return alloc_slice(buf, sprintf(buf, "^%.*s", (int)_author.size, (const char*)_author.buf));
         } else {
             char buf[30 + kMaxAuthorSize];
-            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", _gen, (int)_author.size, (const char*)_author.buf));
+            return alloc_slice(buf, sprintf(buf, "%llu@%.*s", (unsigned long long)_gen, (int)_author.size, (const char*)_author.buf));
         }
     }
 

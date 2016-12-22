@@ -315,7 +315,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     C4SequenceNumber seq = 1;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        sprintf(docID, "doc-%03llu", seq);
+        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_free(doc);
         seq++;
@@ -328,7 +328,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     seq = 7;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        sprintf(docID, "doc-%03llu", seq);
+        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_free(doc);
         seq++;

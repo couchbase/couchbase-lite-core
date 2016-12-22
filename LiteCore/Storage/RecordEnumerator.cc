@@ -76,7 +76,7 @@ namespace litecore {
     :RecordEnumerator(store, options)
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
-                store.name().c_str(), start, end, this);
+                store.name().c_str(), (unsigned long long)start, (unsigned long long)end, this);
 
         sequence minSeq = start, maxSeq = end;
         if (options.descending)

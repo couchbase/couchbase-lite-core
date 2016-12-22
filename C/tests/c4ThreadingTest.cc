@@ -166,7 +166,7 @@ public:
         C4SequenceNumber lastSeq = oldLastSeqIndexed;
         while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
             // Index 'doc':
-            if (kLog) fprintf(stderr, "(#%lld) ", doc->sequence);
+            if (kLog) fprintf(stderr, "(#%llu) ", (unsigned long long)doc->sequence);
             if (lastSeq)
                 REQUIRE(doc->sequence == lastSeq+1);
             lastSeq = doc->sequence;
@@ -181,12 +181,12 @@ public:
         }
         REQUIRE(error.code == 0);
         c4enum_free(e);
-        if (kLog) fprintf(stderr, ">>indexed_to:%lld ", lastSeq);
+        if (kLog) fprintf(stderr, ">>indexed_to:%llu ", (unsigned long long)lastSeq);
         REQUIRE(c4indexer_end(ind, true, &error));
 
         C4SequenceNumber newLastSeqIndexed = c4view_getLastSequenceIndexed(view);
         if (newLastSeqIndexed != lastSeq)
-            if (kLog) fprintf(stderr, "BUT view.lastSequenceIndexed=%lld! (Started as %lld) ", newLastSeqIndexed, oldLastSeqIndexed);
+            if (kLog) fprintf(stderr, "BUT view.lastSequenceIndexed=%llu! (Started as %llu) ", (unsigned long long)newLastSeqIndexed, (unsigned long long)oldLastSeqIndexed);
         REQUIRE(newLastSeqIndexed == lastSeq);
         REQUIRE(c4view_getLastSequenceChangedAt(view) == lastSeq);
     }
@@ -219,7 +219,7 @@ public:
             ++i;
             //std::cerr << "Key: " << toJSON(e->key) << "\n";
             char buf[20];
-            sprintf(buf, "\"doc-%05llu\"", i);
+            sprintf(buf, "\"doc-%05llu\"", (unsigned long long)i);
 #if 1
             if (e->docSequence != i) {
                 if (kLog) fprintf(stderr,"\n*** Expected %s, got %s ***\n", buf, toJSON(e->key).c_str());
@@ -233,7 +233,7 @@ public:
             REQUIRE(e->value == c4str("1234"));
 
         }
-        if (kLog) fprintf(stderr, "}queried_to:%llu ", i);
+        if (kLog) fprintf(stderr, "}queried_to:%llu ", (unsigned long long)i);
         c4queryenum_free(e);
         REQUIRE(error.code == 0);
         return (i < kNumDocs);

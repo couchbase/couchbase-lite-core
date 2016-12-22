@@ -1,7 +1,7 @@
 #!/bin/bash
 
 core_count=`getconf _NPROCESSORS_ONLN`
-for arch in x86; do
+for arch in x86 armeabi-v7a arm64-v8a; do
   mkdir -p lib/$arch
   cd lib/$arch
   version=16

@@ -75,7 +75,7 @@ namespace litecore {
     }
 
     bool KeyStore::del(sequence s, Transaction &t) {
-        LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), s);
+        LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)s);
         bool ok = _del(s, t);
         if (ok && _capabilities.softDeletes)
             t.incrementDeletionCount();

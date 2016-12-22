@@ -57,8 +57,8 @@ namespace litecore {
             if (reader.peekTag() != CollatableTypes::kEndSequence)
                 _lastPurgeCount = (uint64_t)reader.readInt();
         }
-        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Read state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
-              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
+        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Read state (lastSeq=%llu, lastChanged=%llu, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
+              this, (unsigned long long)_lastSequenceIndexed, (unsigned long long)_lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, (unsigned long long)_rowCount, (unsigned long long)_lastPurgeCount);
     }
 
     void MapReduceIndex::saveState(Transaction& t) {
@@ -75,8 +75,8 @@ namespace litecore {
         state.endArray();
 
         _stateReadAt = _store.set(stateKey, state, t).seq;
-        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Saved state (lastSeq=%lld, lastChanged=%lld, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
-              this, _lastSequenceIndexed, _lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, _rowCount, _lastPurgeCount);
+        LogToAt(IndexLog, Debug, "MapReduceIndex<%p>: Saved state (lastSeq=%llu, lastChanged=%llu, lastMapVersion='%s', indexType=%d, rowCount=%llu, lastPurgeCount=%llu)",
+              this, (unsigned long long)_lastSequenceIndexed, (unsigned long long)_lastSequenceChangedAt, _lastMapVersion.c_str(), _indexType, (unsigned long long)_rowCount, (unsigned long long)_lastPurgeCount);
     }
 
     void MapReduceIndex::deleted() {

@@ -414,7 +414,7 @@ namespace litecore {
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
             LogTo(DBLog, "%lld of %lld pages free (%.0f%%)",
-                  freePages, pageCount, (float)freePages / pageCount);
+                  (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
                 Log("Vacuuming database '%s'...", filePath().dirName().c_str());
