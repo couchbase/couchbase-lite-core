@@ -12,8 +12,13 @@ namespace LiteCore.Tests
 {
     public unsafe class Test : TestBase
     {
+#if __ANDROID__
+        public static readonly string TestDir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        #else
         public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
             "C:\\tmp\\" : "/tmp/";
+        #endif
+
         protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
         
         protected override int NumberOfOptions

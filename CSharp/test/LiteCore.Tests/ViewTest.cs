@@ -184,7 +184,7 @@ namespace LiteCore.Tests
         private void UpdateIndex()
         {
             var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, 
-                new[] { _view }, err));
+                new C4View*[] { _view }, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
             C4Document* doc;
             C4Error error;

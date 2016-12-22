@@ -337,7 +337,7 @@ namespace LiteCore.Tests
                     Native.c4db_getConfig(Db), err));
             }
 
-            var views = new[] { _artistsView, _albumsView };
+            var views = new C4View*[] { _artistsView, _albumsView };
             var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
             while(Native.c4enum_next(e, &error)) {
@@ -436,7 +436,7 @@ namespace LiteCore.Tests
                     Native.c4db_getConfig(Db), err));
             }
 
-            var views = new[] { _tracksView };
+            var views = new C4View*[] { _tracksView };
             var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             try {
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
@@ -450,7 +450,7 @@ namespace LiteCore.Tests
                     Native.c4key_addString(key, name);
 
                     var value = C4Slice.Null;
-                    LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(indexer, doc, 0, new[] { key }, new[] { value }, err));
+                    LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(indexer, doc, 0, new C4Key*[] { key }, new C4Slice[] { value }, err));
                     Native.c4key_reset(key);
                     Native.c4doc_free(doc);
                 }
@@ -466,7 +466,7 @@ namespace LiteCore.Tests
         private uint IndexLikesView()
         {
             var likesKey = Native.FLDictKey_Init("likes", true);
-            var keys = new[] { Native.c4key_new(), Native.c4key_new(), Native.c4key_new() };
+            var keys = new C4Key*[] { Native.c4key_new(), Native.c4key_new(), Native.c4key_new() };
             var values = new C4Slice[3];
             uint totalLikes = 0;
 
@@ -475,7 +475,7 @@ namespace LiteCore.Tests
                     "1", Native.c4db_getConfig(Db), err));
             }
 
-            var views = new[] { _likesView };
+            var views = new C4View*[] { _likesView };
             var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
             C4Error error;
@@ -532,7 +532,7 @@ namespace LiteCore.Tests
                     "1", Native.c4db_getConfig(Db), err));
             }
 
-            var views = new[] { _statesView };
+            var views = new C4View*[] { _statesView };
             var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
             C4Error error;

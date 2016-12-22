@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
@@ -9,7 +8,7 @@ namespace LiteCore.Tests
 {
     public unsafe class ThreadingTest : Test
     {
-        private const bool Log = false;
+        private bool Log = false;
         private const int NumDocs = 10000;
         private const bool SharedHandle = false; // Use same C4Database on all threads_
 
@@ -129,7 +128,7 @@ namespace LiteCore.Tests
             var oldLastSeqIndexed = Native.c4view_getLastSequenceIndexed(view);
             var lastSeq = oldLastSeqIndexed;
             var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(updateDB, 
-            new[] { view }, err));
+            new C4View*[] { view }, err));
             var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
             if(e == null) {
                 LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
