@@ -88,6 +88,14 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
                            ['=', ['.', 'gender'], 'male']]"));
     CHECK(run() == (vector<string>{"0000002", "0000014", "0000017", "0000027", "0000031", "0000033", "0000038", "0000039", "0000045", "0000047",
         "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"}));
+
+    // MISSING means no value is present (at that array index or dict key)
+    compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"));
+    CHECK(run(0, 4) == (vector<string>{"0000004", "0000006", "0000008", "0000015"}));
+
+    // ...wherease null is a JSON null value
+    compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"));
+    CHECK(run(0, 4) == (vector<string>{}));
 }
 
 

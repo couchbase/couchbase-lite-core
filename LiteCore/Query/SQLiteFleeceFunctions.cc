@@ -89,7 +89,9 @@ namespace litecore {
         } else {
             switch (val->type()) {
                 case kNull:
-                    sqlite3_result_null(ctx);
+                    // Fleece/JSON null isn't the same as a SQL null, which means 'missing value'.
+                    // We can't add new data types to SQLite, but let's use an empty blob for null.
+                    sqlite3_result_zeroblob(ctx, 0);
                     break;
                 case kBoolean:
                     sqlite3_result_int(ctx, val->asBool());
@@ -250,8 +252,19 @@ namespace litecore {
                     }
                     break;
                 }
-                case SQLITE_TEXT:
-                case SQLITE_BLOB: {
+                case SQLITE_BLOB:
+                    if (sqlite3_value_bytes(arg) == 0) {
+                        // A zero-length blob represents a Fleece/JSON 'null'.
+                        for (Array::iterator j(array); j; ++j) {
+                            if (j->type() == kNull) {
+                                ++found;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    // ... else fall through to match blobs:
+                case SQLITE_TEXT: {
                     valueType type = (argType == SQLITE_TEXT) ? kString : kData;
                     slice blobVal;
                     blobVal.buf = sqlite3_value_blob(arg);
@@ -265,12 +278,7 @@ namespace litecore {
                     break;
                 }
                 case SQLITE_NULL: {
-                    for (Array::iterator j(array); j; ++j) {
-                        if (j->type() == kNull) {
-                            ++found;
-                            break;
-                        }
-                    }
+                    // A SQL null doesn't match anything
                     break;
                 }
             }

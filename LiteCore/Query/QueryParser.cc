@@ -231,6 +231,8 @@ namespace litecore {
         {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
         {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
 
+        {"MISSING"_sl, 0, 0,  9,  &QueryParser::missingOp},
+
         {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},
 
         {"*"_sl,       2, 9,  7,  &QueryParser::infixOp},
@@ -283,7 +285,8 @@ namespace litecore {
     void QueryParser::parseNode(const Value *node) {
         switch (node->type()) {
             case kNull:
-                _sql << "null";     //TODO: How do we represent JSON null in SQL?
+                _sql << "x''";        // Represent a Fleece/JSON/N1QL null as an empty blob (?)
+                break;
             case kNumber:
                 _sql << node->toString();
                 break;
@@ -443,6 +446,8 @@ namespace litecore {
         bool every = (op != "ANY"_sl);
         bool anyAndEvery = (op == "ANY AND EVERY"_sl);
 
+        //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead 
+
         if (anyAndEvery) {
             _sql << '(';
             writePropertyGetter("fl_count", property);
@@ -510,7 +515,13 @@ namespace litecore {
         }
     }
 
-    
+
+    // Handles MISSING, which is the N1QL equivalent of NULL
+    void QueryParser::missingOp(slice op, Array::iterator& operands) {
+        _sql << "NULL";
+    }
+
+
     // Handles SELECT
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
         // SELECT is unusual in that its operands are encoded as an object
