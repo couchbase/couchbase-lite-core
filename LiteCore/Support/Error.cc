@@ -27,8 +27,8 @@
 #include "asprintf.h"
 #endif
 
-#if __APPLE__   // For logBacktrace:
-#include <execinfo.h>   // Not available in Linux or Windows?
+#ifdef __clang__  // For logBacktrace:
+#include <execinfo.h>   // Not available in Windows?
 #include <unistd.h>
 #include <cxxabi.h>
 #endif
@@ -271,7 +271,7 @@ namespace litecore {
 
 
     /*static*/ void error::logBacktrace(unsigned skip) {
-#if __APPLE__
+#ifdef __clang__
         ++skip;     // skip the logBacktrace frame itself
         void* addrs[50];
         int n = backtrace(addrs, 50) - skip;
@@ -286,7 +286,9 @@ namespace litecore {
             size_t pc;
             int offset;
             if (sscanf(lines[i], "%*d %100s %zi %200s + %i",
-                       library, &pc, functionBuf, &offset) == 4) {
+                       library, &pc, functionBuf, &offset) == 4 ||
+                sscanf(lines[i], "%100[^(](%200[^+]+%i) ""[""%zi""]",
+                       library, functionBuf, &offset, &pc) == 4) {
                 const char *function = functionBuf;
                 int status;
                 unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);

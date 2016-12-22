@@ -19,7 +19,7 @@ Java/jni/com_couchbase_cbforest_*.h
 
 # CMake:
 /build_cmake/*
-!/build_cmake/build.sh
+!/build_cmake/build*
 !/build_cmake/strip.sh
 !/build_cmake/iOS.cmake
 
