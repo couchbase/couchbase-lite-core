@@ -108,6 +108,7 @@ aux_source_directory(LiteCore/VersionVectors  VERSIONVECTORS_SRC)
 set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
 		"LiteCore/Support/EncryptedStream.cc"
 		"LiteCore/Support/Error.cc"
+    "LiteCore/Support/Error_android.cc"
 		"LiteCore/Support/FilePath.cc"
 		"LiteCore/Support/Logging.cc"
 		"LiteCore/Support/RefCounted.cc"

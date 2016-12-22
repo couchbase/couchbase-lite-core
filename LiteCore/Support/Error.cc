@@ -27,7 +27,7 @@
 #include "asprintf.h"
 #endif
 
-#ifdef __clang__  // For logBacktrace:
+#if defined(__clang__) && !defined(__ANDROID__) // For logBacktrace:
 #include <execinfo.h>   // Not available in Windows?
 #include <unistd.h>
 #include <cxxabi.h>
@@ -269,7 +269,7 @@ namespace litecore {
         throw error(error::AssertionFailed);
     }
 
-
+#ifndef __ANDROID__
     /*static*/ void error::logBacktrace(unsigned skip) {
 #ifdef __clang__
         ++skip;     // skip the logBacktrace frame itself
@@ -303,5 +303,5 @@ namespace litecore {
         free(lines);
 #endif
     }
-
+#endif
 }
