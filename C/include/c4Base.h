@@ -233,7 +233,7 @@ typedef struct c4LogDomain *C4LogDomain;
 typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, C4Slice message);
 
 /** The default log domain. */
-extern const C4LogDomain kC4DefaultLog;
+CBL_CORE_API extern const C4LogDomain kC4DefaultLog;
 
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.

@@ -76,7 +76,7 @@ if __name__ == "__main__":
             elif re.search("typedef struct.*?{", line):
                 in_struct = True
             else:
-                opaque = re.search("typedef (?:const )?struct (\\S*)\\s+(\\S*);", line)
+                opaque = re.search("typedef (?:const )?struct (\\S*)\\s+\\*?(\\S*);", line)
                 if opaque:
                     structs[opaque.group(2)] = []
         

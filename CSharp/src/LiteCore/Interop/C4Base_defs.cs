@@ -66,4 +66,8 @@ namespace LiteCore.Interop
             }
         }
     }
+    
+    public unsafe struct C4LogDomain
+    {
+    }
 }

@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,7 +47,16 @@ namespace LiteCore.Interop
         public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4log_setLevel(char* domainName, C4LogLevel level);
+        public static extern C4LogDomain c4log_getDomain(char* name, [MarshalAs(UnmanagedType.U1)]bool create);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern char* c4log_getDomainName(C4LogDomain x);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4LogLevel c4log_getLevel(C4LogDomain x);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int c4_getObjectCount();

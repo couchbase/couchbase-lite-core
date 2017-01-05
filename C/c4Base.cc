@@ -150,7 +150,7 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
 }
 
 
-const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;
+CBL_CORE_API const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;
 
 
 C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {
