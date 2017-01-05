@@ -38,7 +38,7 @@ CSharp/native
 # Misc / Uncategorized:
 *.sdf
 *.opensdf
-*.template
+*.cs.template
 packages/
 [Rr]elease
 stripopts
