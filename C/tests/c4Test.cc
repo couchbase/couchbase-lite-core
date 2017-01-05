@@ -103,9 +103,12 @@ std::string json5(std::string str) {
 }
 
 
-static void log(C4LogLevel level, C4Slice message) {
+static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
     static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
-    fprintf(stderr, "LiteCore-C %s: %.*s\n", kLevelNames[level], (int)message.size, (char*)message.buf);
+    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
+            c4log_getDomainName(domain),
+            kLevelNames[level],
+            (int)message.size, (char*)message.buf);
 }
 
 
@@ -133,7 +136,7 @@ C4Test::C4Test(int testOption)
 
     objectCount = c4_getObjectCount();
     c4log_register(kC4LogWarning, log);
-    c4log_setLevel("", kC4LogInfo);
+    c4log_setLevel(kC4DefaultLog, kC4LogInfo);
 
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys;

@@ -226,8 +226,15 @@ typedef C4_ENUM(uint8_t, C4LogLevel) {
     kC4LogError
 };
 
+/** A log domain, a specific source of logs that can be enabled or disabled. */
+typedef struct c4LogDomain *C4LogDomain;
+
 /** A logging callback that the application can register. */
-typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
+typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, C4Slice message);
+
+/** The default log domain. */
+extern const C4LogDomain kC4DefaultLog;
+
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
     Before this is called, logs are by default written to stderr for warnings and errors.
@@ -236,29 +243,40 @@ typedef void (*C4LogCallback)(C4LogLevel level, C4Slice message);
     @param callback  The logging callback, or NULL to disable logging entirely. */
 void c4log_register(C4LogLevel level, C4LogCallback callback) C4API;
 
-/** Changes the level of the given log domain (use "" for the default domain).
-    NOTE: this setting is global to the entire process. */
-void c4log_setLevel(const char *domainName, C4LogLevel level) C4API;
+/** Looks up a named log domain.
+    If `create` is true, the domain will be created if it doesn't exist. */
+C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
 
-/** Logs a message/warning/error to the default domain, if its current level is less than
-    or equal to the given level. */
-void c4log(C4LogLevel level, const char *fmt, ...);
+/** Returns the name of a log domain. (The default domain's name is an empty string.) */
+const char* c4log_getDomainName(C4LogDomain) C4API;
+
+/** Returns the current log level of a domain, the minimum level of message it will log. */
+C4LogLevel c4log_getLevel(C4LogDomain) C4API;
+
+/** Changes the level of the given log domain.
+    NOTE: this setting is global to the entire process. */
+void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
+
+/** Logs a message/warning/error to a specific domain, if its current level is less than
+    or equal to the given level.
+    @param domain  The domain to log to.
+    @param level  The level of the message. If the domain's level is greater than this,
+                    nothing will be logged.
+    @param fmt  printf-style format string, followed by arguments (if any). */
+void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API;
 
 // Convenient aliases for c4log:
-#ifdef _MSC_VER
-    #define C4Debug(FMT, ...)           c4log(kC4LogDebug,   FMT, ##__VA_ARGS__)
-    #define C4Log(FMT, ...)             c4log(kC4LogInfo,    FMT, ##__VA_ARGS__)
-    #define C4Warn(FMT, ...)            c4log(kC4LogWarning, FMT, ##__VA_ARGS__)
-    #define C4WarnError(FMT, ...)       c4log(kC4LogError,   FMT, ##__VA_ARGS__)
-#else
-    #define C4Debug(FMT, ARGS...)       c4log(kC4LogDebug,   FMT, ##ARGS)
-    #define C4Log(FMT, ARGS...)         c4log(kC4LogInfo,    FMT, ##ARGS)
-    #define C4Warn(FMT, ARGS...)        c4log(kC4LogWarning, FMT, ##ARGS)
-    #define C4WarnError(FMT, ARGS...)   c4log(kC4LogError,   FMT, ##ARGS)
-#endif
+#define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
+        {if (c4log_getLevel(DOMAIN) <= LEVEL)   \
+            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}
+#define C4Debug(FMT, ...)           C4LogToAt(kC4DefaultLog, kC4LogDebug,   FMT, ## __VA_ARGS__)
+#define C4Log(FMT, ...)             C4LogToAt(kC4DefaultLog, kC4LogInfo,    FMT, ## __VA_ARGS__)
+#define C4Warn(FMT, ...)            C4LogToAt(kC4DefaultLog, kC4LogWarning, FMT, ## __VA_ARGS__)
+#define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
 
 
-/** Returns the number of objects that have been created but not yet freed. */
+/** Returns the number of objects that have been created but not yet freed.
+    This can be used as a debugging/testing tool to detect leaks. */
 int c4_getObjectCount(void) C4API;
 
 

@@ -134,7 +134,7 @@ static C4LogCallback clientLogCallback;
 static void logCallback(const LogDomain &domain, LogLevel level, const char *message) {
     auto cb = clientLogCallback;
     if (cb)
-        cb((C4LogLevel)level, toc4slice(slice(message)));
+        cb((C4LogDomain)&domain, (C4LogLevel)level, toc4slice(slice(message)));
 }
 
 
@@ -150,12 +150,34 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
 }
 
 
-void c4log_setLevel(const char *domainName, C4LogLevel level) noexcept {
-    auto domain = LogDomain::named(domainName);
-    if (domain)
-        domain->setLevel((LogLevel)level);
-    else
-        Warn("c4log_setLevel: No log domain named \"%s\"", domainName);
+const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;
+
+
+C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {
+    if (!name)
+        return kC4DefaultLog;
+    auto domain = LogDomain::named(name);
+    if (!domain && create)
+        domain = new LogDomain(name);
+    return (C4LogDomain)domain;
+}
+
+
+const char* c4log_getDomainName(C4LogDomain c4Domain) noexcept {
+    auto domain = (LogDomain*)c4Domain;
+    return domain->name();
+}
+
+
+C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept {
+    auto domain = (LogDomain*)c4Domain;
+    return (C4LogLevel) domain->level();
+}
+
+
+void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
+    auto domain = (LogDomain*)c4Domain;
+    domain->setLevel((LogLevel)level);
 }
 
 
@@ -164,12 +186,13 @@ void c4log_warnOnErrors(bool warn) noexcept {
 }
 
 
-void c4log(C4LogLevel level, const char *fmt, ...) {
-    if (_usuallyFalse(DefaultLog.willLog((LogLevel)level))) {
+void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
+    auto domain = (LogDomain*)c4Domain;
+    if (domain->willLog((LogLevel)level)) {
         va_list args;
         va_start(args, fmt);
         try {
-            DefaultLog.vlog((LogLevel)level, fmt, args);
+            domain->vlog((LogLevel)level, fmt, args);
         } catch (...) { }
         va_end(args);
     }
