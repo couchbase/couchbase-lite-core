@@ -2,7 +2,7 @@
 
 All platform implementations of Couchbase Lite 2.0 will be built atop this core, adding replication and higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing and queries, but don't need the higher-level features of Couchbase Lite.
 
-**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE, OR EVEN ALPHA.** This is currently (October 2016) a work in progress. See "Status" section below.
+**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE.** This is currently (December 2016) a work in progress. See "Status" section below.
 
 # Features
 
@@ -48,7 +48,6 @@ An earlier version of LiteCore, known as CBForest, has been in use since mid-201
 **Very Important:**
 
 * This repo has **submodules**. Make sure they're checked out. Either use `git clone --recursive` to download LiteCore, or else after the clone run `git submodule update --init --recursive`.
-* To run the tests you'll need to install [Git Large File Support (LFS)](https://git-lfs.github.com), because some of the tests read huge JSON files that are checked into the repo using LFS. If you don't have LFS installed, Git will instead check out some little stub files at those locations, which will confuse the tests.
 
 Once you've cloned or downloaded the source tree...
 
@@ -120,11 +119,12 @@ The main page is then located at `Documentation/html/modules.html`.
 
 # Status
 
-**As of December 2016:** Under heavy development. Watch out for falling I-beams! 
+**As of December 2016:** Under heavy development. Almost all features are implemented, and seem pretty solid, but APIs may still change and there may be short-term build problems if one compiler or another dislikes a recent commit. 
 
-* The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac.
+* The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too since it's so similar to Mac at this level.
 * The CMake build is generally up to date but may fall behind.
-* The Java / C# bindings may be out of date or incomplete.
+* The C# bindings may be out of date or incomplete.
+* The Java bindings compile, but none of the newer API calls have been added to them.
 
 # Authors
 
