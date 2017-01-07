@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 bool convertError(const C4Error&, NSError **outError);
 bool convertError(const FLError&, NSError **outError);
 
+bool mkError(NSError **outError, NSString *message);
+
 /** Transforms a C4SliceResult into NSData. No need to call c4slice_free. */
 NSData* convertSliceResult(C4SliceResult);
 

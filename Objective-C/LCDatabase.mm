@@ -42,8 +42,8 @@ static const C4DatabaseConfig kDBConfig = {
 };
 
 
-static void logCallback(C4LogLevel level, C4Slice message) {
-    NSLog(@"C4Log: %.*s", (int)message.size, (char*)message.buf);
+static void logCallback(C4LogDomain domain, C4LogLevel level, C4Slice message) {
+    NSLog(@"C4Log: %s %.*s", c4log_getDomainName(domain), (int)message.size, (char*)message.buf);
 }
 
 

@@ -22,9 +22,14 @@ NS_ASSUME_NONNULL_BEGIN
 @interface LCQuery : NSObject
 
 - (nullable instancetype) initWithDatabase: (LCDatabase*)db
-                                     where: (nullable NSDictionary*)where
+                                     where: (nullable NSArray*)where
                                    orderBy: (nullable NSArray*)sortDescriptors
                                      error: (NSError**)error;
+
+- (instancetype) initWithDatabase: (LCDatabase*)db
+                   wherePredicate: (NSPredicate*)where
+                          orderBy: (nullable NSArray*)sortDescriptors
+                            error: (NSError**)outError;
 
 @property (nonatomic) LCDatabase* database;
 @property (nonatomic) NSUInteger skip;

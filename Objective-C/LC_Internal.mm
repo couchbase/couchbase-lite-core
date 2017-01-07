@@ -38,6 +38,15 @@ bool convertError(const FLError &flErr, NSError **outError) {
 }
 
 
+bool mkError(NSError **outError, NSString *message) {
+    if (outError)
+        *outError = [NSError errorWithDomain: @"LiteCore"
+                                        code: -1
+                                    userInfo: @{NSLocalizedDescriptionKey: message}];
+    return false;
+}
+
+
 NSData* convertSliceResult(C4SliceResult s) {
     if (!s.buf)
         return nil;
