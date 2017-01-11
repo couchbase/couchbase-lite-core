@@ -9,6 +9,7 @@
 #pragma once
 
 #include <string>
+#include <tuple> // for std::tie
 #include "function_ref.hh"
 
 namespace litecore {

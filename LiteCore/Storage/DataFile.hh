@@ -20,6 +20,7 @@
 #include <vector>
 #include <unordered_map>
 #include <atomic> // for std::atomic_uint
+#include <functional> // for std::function
 #ifdef check
 #undef check
 #endif
