@@ -11,6 +11,15 @@
 #import "LCDocument.h"
 #import "LCQuery.h"
 #import "c4Base.h"
+#import "Fleece.h"
+
+
+@interface LCQuery (Testing)
++ (NSString*) json5ToJSON: (const char*)json5;
++ (void) dumpPredicate: (NSPredicate*)pred;
+@end
+
+
 
 
 #define Assert XCTAssert
@@ -286,7 +295,39 @@
 }
 
 
-- (void) test08_Query {
+- (void) test08_Predicates {
+    const struct {const char *pred; const char *json5;} kTests[] = {
+        {"nickname == 'Bobo'", "{WHERE: ['=', ['.nickname'],'Bobo']}"},
+        {"name.first == $FIRSTNAME", "{WHERE: ['=', ['.name.first'],['$FIRSTNAME']]}"},
+        {"ALL children.age < 18", "{WHERE: ['EVERY', 'X', ['.children'], ['<', ['?X','age'], 18]]}"},
+        {"ANY children == 'Bobo'", "{WHERE: ['ANY', 'X', ['.children'], ['=', ['?X'], 'Bobo']]}"},
+        {"'Bobo' in children", "{WHERE: ['ANY', 'X', ['.children'], ['=', ['?X'], 'Bobo']]}"},
+        {"name in $NAMES", "{WHERE: ['IN', ['.name'], ['$NAMES']]}"},
+        {"fruit matches 'bana(na)+'", "{WHERE: ['REGEXP_LIKE()', ['.fruit'], 'bana(na)+']}"},
+        {"fruit contains 'ran'", "{WHERE: ['CONTAINS()', ['.fruit'], 'ran']}"},
+        {"age between {13, 19}", "{WHERE: ['BETWEEN', ['.age'], 13, 19]}"},
+        {"coords[0] < 90", "{WHERE: ['<', ['.coords[0]'], 90]}"},
+        {"coords[FIRST] < 90", "{WHERE: ['<', ['.coords[0]'], 90]}"},
+        {"coords[LAST] < 180", "{WHERE: ['<', ['.coords[-1]'], 180]}"},
+        {"coords[SIZE] == 2", "{WHERE: ['=', ['ARRAY_COUNT()', ['.coords']], 2]}"},
+    };
+    for (int i = 0; i < sizeof(kTests)/sizeof(kTests[0]); ++i) {
+        NSString* pred = @(kTests[i].pred);
+        [LCQuery dumpPredicate: [NSPredicate predicateWithFormat: pred argumentArray: nil]];
+        NSString* expectedJson = [LCQuery json5ToJSON: kTests[i].json5];
+        NSError *error;
+        NSData* actual = [LCQuery encodeQuery: pred orderBy: nil error: &error];
+        XCTAssert(actual, @"Encode failed: %@", error);
+        NSString* actualJSON = [[NSString alloc] initWithData: actual encoding: NSUTF8StringEncoding];
+        XCTAssertEqualObjects(actualJSON, expectedJson);
+
+        LCQuery* query = [[LCQuery alloc] initWithDatabase: db where: pred orderBy: nil error: &error];
+        XCTAssert(query, @"Couldn't create LCQuery: %@", error);
+    }
+}
+
+
+- (void) test09_Query {
     NSString* path = [[NSBundle bundleForClass: [self class]] pathForResource: @"data/names_100" ofType: @"json"];
     XCTAssert(path);
     NSString* contents = (NSString*)[NSString stringWithContentsOfFile: path encoding: NSUTF8StringEncoding error: NULL];
@@ -326,10 +367,10 @@
     // Try a query involving a property:
     for (int pass = 0; pass < 2; ++pass) {
         LCQuery *q = [[LCQuery alloc] initWithDatabase: db
-                                        where: @{@"name.first": @[@1]}
+                                        where: @"name.first == $FIRSTNAME"
                                       orderBy: nil error: &error];
         XCTAssert(q, @"Couldn't create query: %@", error);
-        q.parameters = @{@"1": @"Claude"};
+        q.parameters = @{@"FIRSTNAME": @"Claude"};
         NSEnumerator* e = [q run: &error];
         XCTAssert(e);
         n = 0;

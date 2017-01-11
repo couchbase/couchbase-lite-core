@@ -499,16 +499,23 @@ namespace litecore {
 
     // Handles variables used in ANY/EVERY predicates
     void QueryParser::variableOp(slice op, Array::iterator& operands) {
-        auto var = (string)operands[0]->asString();
+        string var;
+        if (op.size == 1) {
+            var = (string)operands[0]->asString();
+            ++operands;
+        } else {
+            op.moveStart(1);
+            var = op.asString();
+        }
         if (!isValidIdentifier(var))
             fail("Invalid variable name");
         if (_variables.count(var) == 0)
             fail(string("No such variable '") + var + "'");
 
-        if (operands.count() == 1) {
+        if (operands.count() == 0) {
             _sql << '_' << var << ".value";
         } else {
-            auto property = propertyFromOperands(++operands);
+            auto property = propertyFromOperands(operands);
             _sql << "fl_value(_" << var << ".pointer, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";
@@ -552,6 +559,8 @@ namespace litecore {
             writePropertyGetter("fl_value", string(op));
         } else if (op.size > 0 && op[0] == '$') {
             parameterOp(op, operands);
+        } else if (op.size > 0 && op[0] == '?') {
+            variableOp(op, operands);
         } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
             functionOp(op, operands);
         } else {
@@ -563,12 +572,18 @@ namespace litecore {
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
         op.size -= 2;
+        string opStr = op.asString();
+        for (unsigned i = 0; i < opStr.size(); ++i) {
+            if (!isalnum(opStr[i]) && opStr[i] != '_')
+                fail("Illegal non-alphanumeric character in function name");
+            opStr[i] = (char)tolower(opStr[i]);
+        }
         // TODO: Validate that this is a known function
 
-        // Special case: "count(propertyname)" turns into a call to fl_count:
-        if (op == "count"_sl && writeNestedPropertyOpIfAny("fl_count", operands))
+        // Special case: "array_count(propertyname)" turns into a call to fl_count:
+        if (opStr == "array_count" && writeNestedPropertyOpIfAny("fl_count", operands))
             return;
-        else if (op == "rank"_sl && writeNestedPropertyOpIfAny("rank", operands)) {
+        else if (opStr == "rank" && writeNestedPropertyOpIfAny("rank", operands)) {
             return;
         }
 

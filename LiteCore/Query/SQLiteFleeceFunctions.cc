@@ -291,6 +291,22 @@ namespace litecore {
     }
 
 
+#pragma mark - NON-FLEECE FUNCTIONS:
+
+
+    static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg0 = valueAsStringSlice(argv[0]);
+        auto arg1 = valueAsStringSlice(argv[1]);
+        sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
+    }
+
+    
+    static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Warn("Calling unimplemented N1QL function; query will fail");
+        sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
+    }
+
+    
 #pragma mark - REGISTRATION:
 
 
@@ -306,11 +322,22 @@ namespace litecore {
             int nArg;
             void (*xFunc)(sqlite3_context*,int,sqlite3_value**);
         } aFunc[] = {
-            { "fl_value",                 2,   fl_value  },
-            { "fl_exists",                2,   fl_exists },
-            { "fl_type",                  2,   fl_type },
-            { "fl_count",                 2,   fl_count },
-            { "fl_contains",             -1,   fl_contains },
+            { "fl_value",          2, fl_value  },
+            { "fl_exists",         2, fl_exists },
+            { "fl_type",           2, fl_type },
+            { "fl_count",          2, fl_count },
+            { "fl_contains",      -1, fl_contains },
+
+            { "contains",          2, contains },
+            { "regexp_like",       2, unimplemented },
+
+            { "sqrt",              1, unimplemented },
+            { "log",               1, unimplemented },
+            { "ln",                1, unimplemented },
+            { "exp",               1, unimplemented },
+            { "power",             2, unimplemented },
+            { "floor",             1, unimplemented },
+            { "ceil",              1, unimplemented },
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){

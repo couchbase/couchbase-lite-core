@@ -19,28 +19,49 @@ NS_ASSUME_NONNULL_BEGIN
  ********/
 
 
+/** A compiled database query. Can be run multiple times with different parameters. */
 @interface LCQuery : NSObject
 
+/** Compiles a LiteCore query, from any of several input formats.
+    @param db  The database to query
+    @param query  The query specification. This can be an NSPredicate, an NSString (interpreted as
+                    an NSPredicate format string), an NSArray (interpreted as the WHERE property of
+                    a raw LiteCore JSON query), an NSDictionary (interpreted as a raw LiteCore JSON
+                    query), or NSData (pre-encoded JSON query).
+    @param error  If the query cannot be parsed, an error will be stored here.
+    @return  The LCQuery, or nil on error. */
 - (nullable instancetype) initWithDatabase: (LCDatabase*)db
-                                     where: (nullable NSArray*)where
+                                     query: (nullable id)query
+                                     error: (NSError**)error;
+
+/** Compiles a LiteCore query, from any of several input formats, specifying sorting.
+    @param db  The database to query
+    @param where  The query specification; see above for details.
+    @param sortDescriptors  An array of NSSortDescriptors specifying how to sort the result.
+    @param error  If the query cannot be parsed, an error will be stored here.
+    @return  The LCQuery, or nil on error. */
+- (nullable instancetype) initWithDatabase: (LCDatabase*)db
+                                     where: (nullable id)where
                                    orderBy: (nullable NSArray*)sortDescriptors
                                      error: (NSError**)error;
 
-- (instancetype) initWithDatabase: (LCDatabase*)db
-                   wherePredicate: (NSPredicate*)where
-                          orderBy: (nullable NSArray*)sortDescriptors
-                            error: (NSError**)outError;
+@property (nonatomic, readonly) LCDatabase* database;
 
-@property (nonatomic) LCDatabase* database;
 @property (nonatomic) NSUInteger skip;
 @property (nonatomic) NSUInteger limit;
 @property (copy, nonatomic, nullable) NSDictionary* parameters;
 
 - (nullable NSEnumerator<LCQueryRow*>*) run: (NSError**)error;
 
+// Just encodes the query into JSON data; exposed for testing
++ (nullable NSData*) encodeQuery: (nullable id)where
+                         orderBy: (nullable NSArray*)sortDescriptors
+                           error: (NSError**)outError;
+
 @end
 
 
+/** A single result from an LCQuery. */
 @interface LCQueryRow : NSObject
 
 @property (readonly, nonatomic) NSString* documentID;

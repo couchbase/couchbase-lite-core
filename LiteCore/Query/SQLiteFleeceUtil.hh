@@ -26,9 +26,15 @@ namespace litecore {
     };
 
 
-    // Returns the data of a SQLite string or blob value as a slice
+    // Returns the data of a SQLite blob value as a slice
     static inline slice valueAsSlice(sqlite3_value *arg) noexcept {
         const void *blob = sqlite3_value_blob(arg); // must be called _before_ sqlite3_value_bytes
+        return slice(blob, sqlite3_value_bytes(arg));
+    }
+
+    // Returns the data of a SQLite string value as a slice
+    static inline slice valueAsStringSlice(sqlite3_value *arg) noexcept {
+        auto blob = sqlite3_value_text(arg); // must be called _before_ sqlite3_value_bytes
         return slice(blob, sqlite3_value_bytes(arg));
     }
 

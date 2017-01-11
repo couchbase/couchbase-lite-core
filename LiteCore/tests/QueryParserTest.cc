@@ -78,11 +78,11 @@ TEST_CASE("QueryParser property contexts", "[Query]") {
           == "fl_exists(body, 'addresses')");
     CHECK(parseWhere("['EXISTS', ['.addresses']]")
           == "fl_exists(body, 'addresses')");
-    CHECK(parseWhere("['count()', ['$', 'X']]")
-          == "count($_X)");
-    CHECK(parseWhere("['count()', ['.', 'addresses']]")
+    CHECK(parseWhere("['array_count()', ['$', 'X']]")
+          == "array_count($_X)");
+    CHECK(parseWhere("['array_count()', ['.', 'addresses']]")
           == "fl_count(body, 'addresses')");
-    CHECK(parseWhere("['count()', ['.addresses']]")
+    CHECK(parseWhere("['array_count()', ['.addresses']]")
           == "fl_count(body, 'addresses')");
 }
 
@@ -92,10 +92,10 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]")
           == "SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
-    CHECK(parseWhere("['count()', ['SELECT', {/*WHAT: ['.', 'first'],*/\
+    CHECK(parseWhere("['array_count()', ['SELECT', {/*WHAT: ['.', 'first'],*/\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
-          == "count(SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "array_count(SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT', {/*WHAT: ['.', 'first'],*/\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                  'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
@@ -117,57 +117,3 @@ TEST_CASE("QueryParser ANY complex", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X', 'last'], 'Smith']]")
           == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_value(_X.pointer, 'last') = 'Smith')");
 }
-
-
-#if 0
-    CHECK(parseWhere("{$and: [{name: 'Puddin\\' Tane'}, {again: true}]}")
-          == "fl_value(body, 'name') = 'Puddin'' Tane' AND fl_value(body, 'again') = 1");
-    CHECK(parseWhere("{$nor: [{name: 'Puddin\\' Tane'}, {again: true}]}")
-          == "NOT (fl_value(body, 'name') = 'Puddin'' Tane' OR fl_value(body, 'again') = 1)");
-
-    CHECK(parseWhere("{age: {$gte: 21}}")
-          == "fl_value(body, 'age') >= 21");
-    CHECK(parseWhere("{address: {state: 'CA', zip: {$lt: 95000}}}")
-          == "(fl_value(body, 'address.state') = 'CA' AND fl_value(body, 'address.zip') < 95000)");
-
-    CHECK(parseWhere("{name: {$exists: true}}")
-          == "fl_exists(body, 'name')");
-    CHECK(parseWhere("{name: {$exists: false}}")
-          == "NOT fl_exists(body, 'name')");
-
-    CHECK(parseWhere("{name: {$type: 'string'}}")
-          == "fl_type(body, 'name')=3");
-
-
-    CHECK(parseWhere("{coords: {$size: 2}}")
-          == "fl_count(body, 'coords')=2");
-
-    CHECK(parseWhere("{tags: {$all: ['mind-bending', 'heartwarming']}}")
-          == "fl_contains(body, 'tags', 1, 'mind-bending', 'heartwarming')");
-    CHECK(parseWhere("{tags: {$any: ['mind-bending', 'heartwarming']}}")
-          == "fl_contains(body, 'tags', 0, 'mind-bending', 'heartwarming')");
-
-    CHECK(parseWhere("{name: [1]}")
-          == "fl_value(body, 'name') = :_1");
-    CHECK(parseWhere("{name: ['name']}")
-          == "fl_value(body, 'name') = :_name");
-
-    CHECK(parseWhere("{'_id': {'$like': 'foo:%'}, '_sequence': {'$gt': 1000}}")
-          == "key LIKE 'foo:%' AND sequence > 1000");
-#endif
-
-#if 0
-TEST_CASE("QueryParser FTS", "[Query]") {
-    QueryParser qp("kv_default");
-    SECTION("Single match") {
-        parse(qp, "{bio: {$match: 'architect'}}");
-        CHECK(qp.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1");
-        CHECK(qp.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence)");
-    }
-    SECTION("Multiple matches") {
-        parse(qp, "{bio: {$match: 'architect'}, skills: {$match: 'mobile'}}");
-        CHECK(qp.fromClause() == "kv_default, \"kv_default::bio\" AS FTS1, \"kv_default::skills\" AS FTS2");
-        CHECK(qp.whereClause() == "(FTS1.text MATCH 'architect' AND FTS1.rowid = kv_default.sequence) AND (FTS2.text MATCH 'mobile' AND FTS2.rowid = kv_default.sequence)");
-    }
-}
-#endif

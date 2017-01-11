@@ -38,11 +38,16 @@ bool convertError(const FLError &flErr, NSError **outError) {
 }
 
 
-bool mkError(NSError **outError, NSString *message) {
-    if (outError)
+bool mkError(NSError **outError, NSString *format, ...) {
+    if (outError) {
+        va_list args;
+        va_start(args, format);
+        NSString* message = [[NSString alloc] initWithFormat: format arguments: args];
+        va_end(args);
         *outError = [NSError errorWithDomain: @"LiteCore"
                                         code: -1
                                     userInfo: @{NSLocalizedDescriptionKey: message}];
+    }
     return false;
 }
 

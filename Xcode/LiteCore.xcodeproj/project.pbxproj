@@ -108,6 +108,8 @@
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
+		276862CD1E25992300E9E0E1 /* LCQuery+Predicates.h in Headers */ = {isa = PBXBuildFile; fileRef = 276862CB1E25992300E9E0E1 /* LCQuery+Predicates.h */; };
+		276862CE1E25992300E9E0E1 /* LCQuery+Predicates.mm in Sources */ = {isa = PBXBuildFile; fileRef = 276862CC1E25992300E9E0E1 /* LCQuery+Predicates.mm */; };
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
@@ -738,6 +740,8 @@
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TreeDocument.cc; path = Database/TreeDocument.cc; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequenceTracker.cc; path = Database/SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SequenceTracker.hh; path = Database/SequenceTracker.hh; sourceTree = "<group>"; };
+		276862CB1E25992300E9E0E1 /* LCQuery+Predicates.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "LCQuery+Predicates.h"; sourceTree = "<group>"; };
+		276862CC1E25992300E9E0E1 /* LCQuery+Predicates.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "LCQuery+Predicates.mm"; sourceTree = "<group>"; };
 		276943881DCD4AAD00DB2555 /* c4Observer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Observer.h; sourceTree = "<group>"; };
 		2769438B1DCD502A00DB2555 /* c4Observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Observer.cc; sourceTree = "<group>"; };
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
@@ -1607,6 +1611,8 @@
 				27BA04BF1DC12DCA000BA8E5 /* LCDocument.mm */,
 				27B738001DEF65C900A8A6B1 /* LCQuery.h */,
 				27B738011DEF65C900A8A6B1 /* LCQuery.mm */,
+				276862CB1E25992300E9E0E1 /* LCQuery+Predicates.h */,
+				276862CC1E25992300E9E0E1 /* LCQuery+Predicates.mm */,
 				27E3DD1A1DB05AD200F2872D /* StringBytes.mm */,
 				27E3DD1B1DB05AD200F2872D /* StringBytes.hh */,
 				27BA04C41DC12E5F000BA8E5 /* LC_Internal.h */,
@@ -1823,6 +1829,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				276862CD1E25992300E9E0E1 /* LCQuery+Predicates.h in Headers */,
 				27E3DD111DB058DD00F2872D /* LiteCoreObjC.h in Headers */,
 				27BA04C01DC12DCA000BA8E5 /* LCDocument.h in Headers */,
 				27E3DD181DB0594400F2872D /* LCDatabase.h in Headers */,
@@ -2476,6 +2483,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27E3DD1C1DB05AD200F2872D /* StringBytes.mm in Sources */,
+				276862CE1E25992300E9E0E1 /* LCQuery+Predicates.mm in Sources */,
 				27BA04C11DC12DCA000BA8E5 /* LCDocument.mm in Sources */,
 				27B738031DEF65C900A8A6B1 /* LCQuery.mm in Sources */,
 				27E3DD191DB0594400F2872D /* LCDatabase.mm in Sources */,
@@ -3133,7 +3141,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -3154,6 +3162,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/Fleece/",
+					"$(SRCROOT)/../vendor/fleece/ObjC/",
+				);
 				INFOPLIST_FILE = "../Objective-C/tests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
@@ -3185,7 +3198,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -3200,6 +3213,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/Fleece/",
+					"$(SRCROOT)/../vendor/fleece/ObjC/",
+				);
 				INFOPLIST_FILE = "../Objective-C/tests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
