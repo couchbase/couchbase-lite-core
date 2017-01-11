@@ -310,6 +310,11 @@
         {"coords[FIRST] < 90", "{WHERE: ['<', ['.coords[0]'], 90]}"},
         {"coords[LAST] < 180", "{WHERE: ['<', ['.coords[-1]'], 180]}"},
         {"coords[SIZE] == 2", "{WHERE: ['=', ['ARRAY_COUNT()', ['.coords']], 2]}"},
+        {"lowercase(name) == 'bobo'", "{WHERE: ['=', ['LOWER()', ['.name']], 'bobo']}"},
+        {"name ==[c] 'Bobo'", "{WHERE: ['=', ['LOWER()', ['.name']], ['LOWER()', 'Bobo']]}"},
+        {"sum(prices) > 100", "{WHERE: ['>', ['ARRAY_SUM()', ['.prices']], 100]}"},
+        {"age + 10 == 62", "{WHERE: ['=', ['+', ['.age'], 10], 62]}"},
+        {"foo + 'bar' == 'foobar'", "{WHERE: ['=', ['||', ['.foo'], 'bar'], 'foobar']}"},
     };
     for (int i = 0; i < sizeof(kTests)/sizeof(kTests[0]); ++i) {
         NSString* pred = @(kTests[i].pred);

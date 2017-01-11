@@ -291,6 +291,29 @@ namespace litecore {
     }
 
 
+    // array_sum() function adds up numbers. Any argument that's a number will be added.
+    // Any argument that's a Fleece array will have all numeric values in it added.
+    static void fl_array_sum(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double sum = 0.0;
+        for (int i = 0; i < argc; ++i) {
+            sqlite3_value *arg = argv[i];
+            switch (sqlite3_value_type(arg)) {
+                case SQLITE_BLOB: {
+                    const Value *root = fleeceParam(ctx, arg);
+                    if (!root)
+                        return;
+                    for (Array::iterator item(root->asArray()); item; ++item)
+                        sum += item->asDouble();
+                }
+                case SQLITE_INTEGER:
+                case SQLITE_FLOAT:
+                    sum += sqlite3_value_double(arg);
+            }
+        }
+        sqlite3_result_double(ctx, sum);
+    }
+
+
 #pragma mark - NON-FLEECE FUNCTIONS:
 
 
@@ -327,6 +350,8 @@ namespace litecore {
             { "fl_type",           2, fl_type },
             { "fl_count",          2, fl_count },
             { "fl_contains",      -1, fl_contains },
+
+            { "array_sum",        -1, fl_array_sum },
 
             { "contains",          2, contains },
             { "regexp_like",       2, unimplemented },

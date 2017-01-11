@@ -42,7 +42,7 @@ static NSString* const kPredicateOpNames99[] = {
 // Maps NSExpression function selector to query operator.
 // See <Foundation/NSExpression.h> lines 55-94
 // https://developer.couchbase.com/documentation/server/4.5/n1ql/n1ql-language-reference/functions.html
-static NSDictionary* const  kFunctionNames = @{ @"sum":            @"+",
+static NSDictionary* const  kFunctionNames = @{ @"sum:":           @"ARRAY_SUM()",
                                                 @"add:to:":        @"+",
                                                 @"from:subtract:": @"-",
                                                 @"multiply:by:":   @"*",
@@ -61,8 +61,8 @@ static NSDictionary* const  kFunctionNames = @{ @"sum":            @"+",
                                                 @"lowercase:":     @"LOWER()",
                                                 @"length:":        @"LENGTH()",
                                                 // special cases (undocumented by Apple):
-                                                @"valueForKeyPath:": @".",
-                                                @"objectFrom:withIndex:": @"[]",
+                                                @"valueForKeyPath:":        @".",
+                                                @"objectFrom:withIndex:":   @"[]",
                                               };
 
 
@@ -74,6 +74,7 @@ static NSDictionary* const  kFunctionNames = @{ @"sum":            @"+",
 }
 
 
+// Encodes an NSPredicate.
 static id EncodePredicate(NSPredicate* pred, NSError** outError) {
     if ([pred isKindOfClass: [NSComparisonPredicate class]]) {
         // Comparison of expressions, e.g. "a < b":
@@ -83,11 +84,25 @@ static id EncodePredicate(NSPredicate* pred, NSError** outError) {
         if (!op)
             return mkError(outError, @"Unsupported comparison operator %d", opType), nil;
 
+        NSExpression* leftExpression = cp.leftExpression;
+        NSExpression* rightExpression = cp.rightExpression;
+        if (cp.options & NSCaseInsensitivePredicateOption) {
+            // N1QL doesn't have case-insensitive comparions, so lowercase both sides instead:
+            leftExpression = [NSExpression expressionForFunction: @"lowercase:"
+                                                       arguments: @[leftExpression]];
+            rightExpression = [NSExpression expressionForFunction: @"lowercase:"
+                                                        arguments: @[rightExpression]];
+        }
+        if (cp.options & NSDiacriticInsensitivePredicateOption) {
+            // TODO: Support NSDiacriticInsensitivePredicateOption
+            return mkError(outError, @"Diacritic-insensitive comparison not supported yet"), nil;
+        }
+
         if (opType == NSBetweenPredicateOperatorType) {
             // BETWEEN needs some translation -- the range is in an array encoded in the RHS
-            NSExpression* lhs = EncodeExpression(cp.leftExpression, outError);
+            NSExpression* lhs = EncodeExpression(leftExpression, outError);
             if (!lhs) return nil;
-            NSArray* range = cp.rightExpression.collection;
+            NSArray* range = rightExpression.collection;
             id min = EncodeExpression(range[0], outError);
             if (!min) return nil;
             id max = EncodeExpression(range[1], outError);
@@ -95,15 +110,14 @@ static id EncodePredicate(NSPredicate* pred, NSError** outError) {
             return @[op, lhs, min, max];
         }
 
-        // TODO: Support NSCaseInsensitivePredicateOption etc.
-        NSExpression* rhs = EncodeExpression(cp.rightExpression, outError);
+        NSExpression* rhs = EncodeExpression(rightExpression, outError);
         if (!rhs) return nil;
 
         if (opType == NSInPredicateOperatorType) {
             // IN needs translation if RHS is not a literal or property
-            NSExpressionType rtype = cp.rightExpression.expressionType;
+            NSExpressionType rtype = rightExpression.expressionType;
             if (rtype != NSVariableExpressionType && rtype != NSAggregateExpressionType) {
-                NSExpression* lhs = EncodeExpression(cp.leftExpression, outError);
+                NSExpression* lhs = EncodeExpression(leftExpression, outError);
                 if (!lhs) return nil;
                 return @[@"ANY", @"X", rhs, @[@"=", @[@"?X"], lhs]];
             }
@@ -112,12 +126,12 @@ static id EncodePredicate(NSPredicate* pred, NSError** outError) {
         static NSString* const kModifiers[3] = {nil, @"EVERY", @"ANY"};
         NSString* mod = kModifiers[cp.comparisonPredicateModifier];
         if (mod == nil) {
-            NSExpression* lhs = EncodeExpression(cp.leftExpression, outError);
+            NSExpression* lhs = EncodeExpression(leftExpression, outError);
             if (!lhs) return nil;
             return @[op, lhs, rhs];
         } else {
             // ANY or EVERY modifiers: (I'm assuming they will always have a key-path as the LHS.)
-            NSString* keyPath = cp.leftExpression.keyPath;
+            NSString* keyPath = leftExpression.keyPath;
             NSString* lastProp = nil;
             NSRange dot = [keyPath rangeOfString: @"." options: NSBackwardsSearch];
             if (dot.length > 0) {
@@ -150,6 +164,7 @@ static id EncodePredicate(NSPredicate* pred, NSError** outError) {
 }
 
 
+// Encodes an NSExpression.
 static id EncodeExpression(NSExpression* expr, NSError **outError) {
     switch (expr.expressionType) {
         case NSConstantValueExpressionType:
@@ -174,8 +189,8 @@ static id EncodeExpression(NSExpression* expr, NSError **outError) {
                                      expr.arguments[0].description.lowercaseString];
                 return encodeKeyPath(keyPath);
             } else if ([fn isEqualToString: @"[]"]) {
-                // Array indexing: Weirdly, the operand is some internal object and the array
-                // and index are the two elements of the arguments
+                // Array indexing: Ignore `operand`, it's undocumented _NSPredicateUtilities object.
+                // The array and the index are the two elements of `arguments`.
                 NSArray *operand = EncodeExpression(expr.arguments[0], outError);
                 if (!operand) return nil;
                 NSString* keyPath = operand[0];
@@ -197,12 +212,18 @@ static id EncodeExpression(NSExpression* expr, NSError **outError) {
                 return @[ [NSString stringWithFormat: @"%@[%ld]", keyPath, index] ];
             } else {
                 // Regular function call:
-                id p = EncodeExpression(expr.operand, outError);
-                if (!p) return nil;
+                if ([fn isEqualToString: @"+"] && hasStringArgs(expr))
+                    fn = @"||";
                 NSMutableArray* result = [NSMutableArray arrayWithObject: fn];
-                [result addObject: p];
+                NSExpression* operand = expr.operand;
+                if (!isPredicateUtilities(operand)) {
+                    // some fn calls have an undocumented _NSPredicateUtilities constant as operand
+                    id p = EncodeExpression(operand, outError);
+                    if (!p) return nil;
+                    [result addObject: p];
+                }
                 for(NSExpression* param in expr.arguments) {
-                    p = EncodeExpression(param, outError);
+                    id p = EncodeExpression(param, outError);
                     if (!p) return nil;
                     [result addObject: p];
                 }
@@ -229,11 +250,13 @@ static id EncodeExpression(NSExpression* expr, NSError **outError) {
 }
 
 
+// Encodes a key-path as a property reference.
 static NSArray* encodeKeyPath(NSString *keyPath) {
     return @[ [@"." stringByAppendingString: keyPath] ];
 }
 
 
+// Returns the N1QL operator name for a predicate operator type.
 static NSString* predicateOperatorName(NSPredicateOperatorType op) {
     int iop = (int)op;
     NSString* const * table = kPredicateOpNames;
@@ -244,6 +267,40 @@ static NSString* predicateOperatorName(NSPredicateOperatorType op) {
         n = sizeof(kPredicateOpNames99) / sizeof(NSString*);
     }
     return (iop < n) ? table[iop] : nil;
+}
+
+
+// Returns true if the expression is known to have a string value.
+static bool isStringValued(NSExpression* expr) {
+    switch (expr.expressionType) {
+        case NSConstantValueExpressionType:
+            return [expr.constantValue isKindOfClass: [NSString class]];
+        case NSFunctionExpressionType:
+            return [@[@"uppercase:", @"lowercase:"] containsObject: expr.function];
+        case NSConditionalExpressionType:
+            return isStringValued(expr.trueExpression) || isStringValued(expr.falseExpression);
+        default:
+            return false;
+    }
+}
+
+
+// Returns true if any of a function expression's arguments are known to be strings.
+static bool hasStringArgs(NSExpression* expr) {
+    if (isStringValued(expr.operand))
+        return true;
+    for (NSExpression* arg in expr.arguments)
+        if (isStringValued(arg))
+            return true;
+    return false;
+}
+
+
+// Returns true if an expression represents the undocumented _NSPredicateUtilities object.
+static bool isPredicateUtilities(NSExpression *expr) {
+    return expr.expressionType == NSConstantValueExpressionType
+        && [NSStringFromClass((Class)[expr.constantValue class])
+                                                        isEqualToString: @"_NSPredicateUtilities"];
 }
 
 
