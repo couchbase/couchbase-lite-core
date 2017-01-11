@@ -19,7 +19,6 @@
 #include "Collatable.hh"
 #include "Encoder.hh"
 #include <atomic>
-#include <functional>
 
 namespace litecore {
     

@@ -51,7 +51,7 @@ namespace c4Internal {
     }
 
 
-    bool tryCatch(C4Error *error, std::function<void()> fn) noexcept {
+    bool tryCatch(C4Error *error, function_ref<void()> fn) noexcept {
         try {
             fn();
             return true;

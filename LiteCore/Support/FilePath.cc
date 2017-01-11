@@ -184,7 +184,7 @@ namespace litecore {
         return isDir;
     }
 
-    void FilePath::forEachMatch(function<void(const FilePath&)> fn) const {
+    void FilePath::forEachMatch(function_ref<void(const FilePath&)> fn) const {
         auto dir = opendir(_dir.c_str());
         if (!dir)
             error::_throwErrno();
@@ -212,7 +212,7 @@ namespace litecore {
     }
 
 
-    void FilePath::forEachFile(function<void(const FilePath&)> fn) const {
+    void FilePath::forEachFile(function_ref<void(const FilePath&)> fn) const {
         dir().forEachMatch(fn);
     }
 

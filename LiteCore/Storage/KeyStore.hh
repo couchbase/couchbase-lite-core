@@ -9,7 +9,7 @@
 #pragma once
 #include "Base.hh"
 #include "RecordEnumerator.hh"
-#include <functional>
+#include "function_ref.hh"
 
 namespace litecore {
 
@@ -57,8 +57,8 @@ namespace litecore {
         Record get(slice key, ContentOptions = kDefaultContent) const;
         virtual Record get(sequence, ContentOptions = kDefaultContent) const =0;
 
-        virtual void get(slice key, ContentOptions, std::function<void(const Record&)>);
-        virtual void get(sequence, ContentOptions, std::function<void(const Record&)>);
+        virtual void get(slice key, ContentOptions, function_ref<void(const Record&)>);
+        virtual void get(sequence, ContentOptions, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
         virtual bool read(Record &rec, ContentOptions options = kDefaultContent) const =0;

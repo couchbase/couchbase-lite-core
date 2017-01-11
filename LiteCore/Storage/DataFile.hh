@@ -97,7 +97,7 @@ namespace litecore {
         void* owner()                                       {return _owner;}
         void setOwner(void* owner)                          {_owner = owner;}
 
-        void forOtherDataFiles(std::function<void(DataFile*)> fn);
+        void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
         //////// KEY-STORES:
 
@@ -168,7 +168,7 @@ namespace litecore {
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
             is in a transaction, nor starts a transaction while the function is running. */
-        void withFileLock(std::function<void(void)> fn);
+        void withFileLock(function_ref<void(void)> fn);
 
         void updatePurgeCount(Transaction&);
 
@@ -177,7 +177,7 @@ namespace litecore {
 
         void setOptions(const Options &o)               {_options = o;}
 
-        void forOpenKeyStores(std::function<void(KeyStore&)> fn);
+        void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
 
     private:
         class File;

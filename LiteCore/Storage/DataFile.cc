@@ -104,7 +104,7 @@ namespace litecore {
 
         void addDataFile(DataFile *dataFile);
         void removeDataFile(DataFile*, bool deleteIfUnused);
-        void forOpenDataFiles(DataFile *except, std::function<void(DataFile*)> fn);
+        void forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn);
 
         void setTransaction(Transaction*);
         void unsetTransaction(Transaction*);
@@ -169,7 +169,7 @@ namespace litecore {
     }
 
 
-    void DataFile::File::forOpenDataFiles(DataFile *except, std::function<void(DataFile*)> fn) {
+    void DataFile::File::forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn) {
         unique_lock<mutex> lock(_dataFilesMutex);
         for (auto df : _dataFiles)
             if (df != except)
@@ -243,7 +243,7 @@ namespace litecore {
     }
 
 
-    void DataFile::forOtherDataFiles(std::function<void(DataFile*)> fn) {
+    void DataFile::forOtherDataFiles(function_ref<void(DataFile*)> fn) {
         _file->forOpenDataFiles(this, fn);
     }
 
@@ -299,7 +299,7 @@ namespace litecore {
         return *_defaultKeyStore;
     }
 
-    void DataFile::forOpenKeyStores(std::function<void(KeyStore&)> fn) {
+    void DataFile::forOpenKeyStores(function_ref<void(KeyStore&)> fn) {
         for (auto& ks : _keyStores)
             fn(*ks.second);
     }
@@ -378,7 +378,7 @@ namespace litecore {
     }
 
 
-    void DataFile::withFileLock(function<void(void)> fn) {
+    void DataFile::withFileLock(function_ref<void(void)> fn) {
         if (_inTransaction) {
             fn();
         } else {

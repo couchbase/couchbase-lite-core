@@ -34,14 +34,14 @@ namespace litecore {
         return rec;
     }
 
-    void KeyStore::get(slice key, ContentOptions options, function<void(const Record&)> fn) {
+    void KeyStore::get(slice key, ContentOptions options, function_ref<void(const Record&)> fn) {
         // Subclasses can implement this differently for better memory management.
         Record rec(key);
         read(rec, options);
         fn(rec);
     }
 
-    void KeyStore::get(sequence seq, ContentOptions options, function<void(const Record&)> fn) {
+    void KeyStore::get(sequence seq, ContentOptions options, function_ref<void(const Record&)> fn) {
         fn(get(seq, options));
     }
 
