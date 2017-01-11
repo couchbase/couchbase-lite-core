@@ -31,7 +31,7 @@ namespace LiteCore.Tests
                 "0000070", "0000085", "0000096" }, "because otherwise the query returned incorrect results");
 #endif
 
-                Compile(Json5("['AND', ['=', ['count()', ['.', 'contact', 'phone']], 2]," +
+                Compile(Json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2]," +
                            "['=', ['.', 'gender'], 'male']]"));
                 Run().Should().Equal(new[] { "0000002", "0000014", "0000017", "0000027", "0000031", "0000033", 
                 "0000038", "0000039", "0000045", "0000047", "0000049", "0000056", "0000063", "0000065", "0000075", 
