@@ -1,0 +1,6 @@
+[submodule "vendor/libws"]
+	path = vendor/libws
+	url = https://github.com/couchbasedeps/libws.git
+[submodule "vendor/fleece"]
+	path = vendor/fleece
+	url = git@github.com:couchbaselabs/fleece.git
