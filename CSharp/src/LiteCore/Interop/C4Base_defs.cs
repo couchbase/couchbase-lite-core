@@ -43,6 +43,7 @@ namespace LiteCore.Interop
         Verbose,
         Info,
         Warning,
+        Error
     }
 
     public unsafe partial struct C4Error

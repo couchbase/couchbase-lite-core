@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{52A6D1D6-4E98-4368-9D11-DC6057A63D12}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LiteCore</RootNamespace>
+    <AssemblyName>LiteCore-Interop</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Interop\bridge_literals.txt" />
+    <Content Include="Interop\gen_bindings.py" />
+    <Content Include="Interop\raw_literals.txt" />
+    <Content Include="Interop\templates\bool_raw.template" />
+    <Content Include="Interop\templates\C4Slice_b_bridge.template" />
+    <Content Include="Interop\templates\C4Slice_b_bridge_param.template" />
+    <Content Include="Interop\templates\C4Slice_b_raw.template" />
+    <Content Include="Interop\templates\C4Slice_b_return.template" />
+    <Content Include="Interop\templates\C4Slice_b_using.template" />
+    <Content Include="Interop\templates\C4Slice_bridge.template" />
+    <Content Include="Interop\templates\C4Slice_bridge_param.template" />
+    <Content Include="Interop\templates\C4Slice_return.template" />
+    <Content Include="Interop\templates\C4Slice_using.template" />
+    <Content Include="Interop\templates\C4SliceResult_b_bridge.template" />
+    <Content Include="Interop\templates\C4SliceResult_b_return.template" />
+    <Content Include="Interop\templates\C4SliceResult_bridge.template" />
+    <Content Include="Interop\templates\C4SliceResult_return.template" />
+    <Content Include="Interop\templates\FLSlice_b_bridge.template" />
+    <Content Include="Interop\templates\FLSlice_b_bridge_param.template" />
+    <Content Include="Interop\templates\FLSlice_b_return.template" />
+    <Content Include="Interop\templates\FLSlice_b_using.template" />
+    <Content Include="Interop\templates\FLSlice_bridge.template" />
+    <Content Include="Interop\templates\FLSlice_bridge_param.template" />
+    <Content Include="Interop\templates\FLSlice_return.template" />
+    <Content Include="Interop\templates\FLSlice_using.template" />
+    <Content Include="Interop\templates\FLSliceResult_b_bridge.template" />
+    <Content Include="Interop\templates\FLSliceResult_b_return.template" />
+    <Content Include="Interop\templates\FLSliceResult_bridge.template" />
+    <Content Include="Interop\templates\FLSliceResult_return.template" />
+    <Content Include="Interop\templates\UIntPtr_bridge.template" />
+    <Content Include="Interop\templates\UIntPtr_bridge_param.template" />
+    <Content Include="Interop\templates\UIntPtr_return.template" />
+    <Content Include="Interop\C4Base_native.cs.template" />
+    <None Include="project.json" />
+    <!-- A reference to the entire .NET Framework is automatically included -->
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="API\InteropObject.cs" />
+    <Compile Include="API\LiteCoreDocEnumerator.cs" />
+    <Compile Include="API\LiteCoreException.cs" />
+    <Compile Include="API\LiteCoreExpiryEnumerator.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="Interop\C4Base.cs" />
+    <Compile Include="Interop\C4Base_defs.cs" />
+    <Compile Include="Interop\C4Base_native.cs" />
+    <Compile Include="Interop\C4BlobStore.cs" />
+    <Compile Include="Interop\C4BlobStore_defs.cs" />
+    <Compile Include="Interop\C4BlobStore_native.cs" />
+    <Compile Include="Interop\C4Database.cs" />
+    <Compile Include="Interop\C4Database_defs.cs" />
+    <Compile Include="Interop\C4Database_native.cs" />
+    <Compile Include="Interop\C4DBQuery.cs" />
+    <Compile Include="Interop\C4DBQuery_defs.cs" />
+    <Compile Include="Interop\C4DBQuery_native.cs" />
+    <Compile Include="Interop\C4DocEnumerator.cs" />
+    <Compile Include="Interop\C4DocEnumerator_defs.cs" />
+    <Compile Include="Interop\C4DocEnumerator_native.cs" />
+    <Compile Include="Interop\C4Document+Fleece_native.cs" />
+    <Compile Include="Interop\C4Document_defs.cs" />
+    <Compile Include="Interop\C4Document_native.cs" />
+    <Compile Include="Interop\C4ExpiryEnumerator_defs.cs" />
+    <Compile Include="Interop\C4ExpiryEnumerator_native.cs" />
+    <Compile Include="Interop\C4Key_defs.cs" />
+    <Compile Include="Interop\C4Key_native.cs" />
+    <Compile Include="Interop\C4Observer.cs" />
+    <Compile Include="Interop\C4Observer_defs.cs" />
+    <Compile Include="Interop\C4Observer_native.cs" />
+    <Compile Include="Interop\C4Private.cs" />
+    <Compile Include="Interop\C4View.cs" />
+    <Compile Include="Interop\C4View_defs.cs" />
+    <Compile Include="Interop\C4View_native.cs" />
+    <Compile Include="Interop\Fleece.cs" />
+    <Compile Include="Interop\Fleece_defs.cs" />
+    <Compile Include="Interop\Fleece_native.cs" />
+    <Compile Include="Interop\LiteCoreBridge.cs" />
+    <Compile Include="Interop\PosixStatus.cs" />
+    <Compile Include="Interop\RetryHandler.cs" />
+    <Compile Include="Interop\SQLiteStatus.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\C4String.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

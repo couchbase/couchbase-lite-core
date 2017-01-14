@@ -80,6 +80,11 @@ namespace LiteCore.Interop
         {
             
         }
+
+        public C4Error(FLError code) : this(C4ErrorDomain.FleeceDomain, (int)code)
+        {
+
+        }
     }
 
     public unsafe partial struct C4Slice : IEnumerable<byte>

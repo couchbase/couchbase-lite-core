@@ -18,9 +18,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Threading;
 using LiteCore.Interop;
 using C4SequenceNumber = System.UInt64;
 
@@ -28,7 +29,16 @@ namespace LiteCore
 {
     public unsafe sealed class LiteCoreDocEnumerator : InteropObject
     {
-        private C4DocEnumerator* _native;
+        private long p_native;
+        private C4DocEnumerator* _native
+        {
+            get {
+                return (C4DocEnumerator*)p_native;
+            }
+            set {
+                p_native = (long)value;
+            }
+        }
 
         internal LiteCoreDocEnumerator(C4Database* parent, string startDocID, string endDocID, C4EnumeratorOptions options)
         {
@@ -59,8 +69,7 @@ namespace LiteCore
 
         protected override void Dispose(bool finalizing)
         {
-            var native = _native;
-            _native = null;
+            var native = (C4DocEnumerator *)Interlocked.Exchange(ref p_native, 0);
             if(native != null) {
                 Native.c4enum_close(native);
                 Native.c4enum_free(native);

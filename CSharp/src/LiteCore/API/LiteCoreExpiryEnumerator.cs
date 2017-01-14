@@ -20,14 +20,23 @@
 //
 using System;
 using System.Collections.Generic;
-
+using System.Threading;
 using LiteCore.Interop;
 
 namespace LiteCore
 {
     public unsafe sealed class LiteCoreExpiryEnumerable : InteropObject, IEnumerable<string>
     {
-        private C4ExpiryEnumerator* _native;
+        private long p_native;
+        private C4ExpiryEnumerator* _native
+        {
+            get {
+                return (C4ExpiryEnumerator*)p_native;
+            }
+            set {
+                p_native = (long)value;
+            }
+        }
 
         public LiteCoreExpiryEnumerable(C4Database* parent)
         {
@@ -36,8 +45,7 @@ namespace LiteCore
 
         protected override void Dispose(bool finalizing)
         {
-            var native = _native;
-            _native = null;
+            var native = (C4ExpiryEnumerator*)Interlocked.Exchange(ref p_native, 0);
             if(native != null) {
                 Native.c4exp_close(native);
                 Native.c4exp_free(native);
