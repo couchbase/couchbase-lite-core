@@ -36,39 +36,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Interop\bridge_literals.txt" />
-    <Content Include="Interop\gen_bindings.py" />
-    <Content Include="Interop\raw_literals.txt" />
-    <Content Include="Interop\templates\bool_raw.template" />
-    <Content Include="Interop\templates\C4Slice_b_bridge.template" />
-    <Content Include="Interop\templates\C4Slice_b_bridge_param.template" />
-    <Content Include="Interop\templates\C4Slice_b_raw.template" />
-    <Content Include="Interop\templates\C4Slice_b_return.template" />
-    <Content Include="Interop\templates\C4Slice_b_using.template" />
-    <Content Include="Interop\templates\C4Slice_bridge.template" />
-    <Content Include="Interop\templates\C4Slice_bridge_param.template" />
-    <Content Include="Interop\templates\C4Slice_return.template" />
-    <Content Include="Interop\templates\C4Slice_using.template" />
-    <Content Include="Interop\templates\C4SliceResult_b_bridge.template" />
-    <Content Include="Interop\templates\C4SliceResult_b_return.template" />
-    <Content Include="Interop\templates\C4SliceResult_bridge.template" />
-    <Content Include="Interop\templates\C4SliceResult_return.template" />
-    <Content Include="Interop\templates\FLSlice_b_bridge.template" />
-    <Content Include="Interop\templates\FLSlice_b_bridge_param.template" />
-    <Content Include="Interop\templates\FLSlice_b_return.template" />
-    <Content Include="Interop\templates\FLSlice_b_using.template" />
-    <Content Include="Interop\templates\FLSlice_bridge.template" />
-    <Content Include="Interop\templates\FLSlice_bridge_param.template" />
-    <Content Include="Interop\templates\FLSlice_return.template" />
-    <Content Include="Interop\templates\FLSlice_using.template" />
-    <Content Include="Interop\templates\FLSliceResult_b_bridge.template" />
-    <Content Include="Interop\templates\FLSliceResult_b_return.template" />
-    <Content Include="Interop\templates\FLSliceResult_bridge.template" />
-    <Content Include="Interop\templates\FLSliceResult_return.template" />
-    <Content Include="Interop\templates\UIntPtr_bridge.template" />
-    <Content Include="Interop\templates\UIntPtr_bridge_param.template" />
-    <Content Include="Interop\templates\UIntPtr_return.template" />
-    <Content Include="Interop\C4Base_native.cs.template" />
     <None Include="project.json" />
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>

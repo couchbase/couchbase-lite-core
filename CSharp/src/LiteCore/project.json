@@ -11,13 +11,6 @@
   "buildOptions": {
     "allowUnsafe": true,
     "outputName": "LiteCore-Interop",
-    "debugType": "portable",
-    "copyToOutput": {
-       "include": ["libLiteCore.dylib", "LiteCore.dll"],
-       "mappings": {
-         "libLiteCore.dylib": "../../native/libLiteCore.dylib", 
-         "LiteCore.dll": "../../native/LiteCore.dll"
-       }
-    }
+    "debugType": "portable"
   }
 }

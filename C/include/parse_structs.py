@@ -58,8 +58,11 @@ if __name__ == "__main__":
                     if "/*" in line:
                         in_comment += 1
                         
-                    stripped = re.search(r'([^ ;{}]+) (\**)([^ ;{}*]+);', line)
+                    stripped = re.search(r'([^ ;{}]+) +(\**)([^ ;{}*]+);', line)
                     if not stripped:
+                        continue
+
+                    if in_comment > 0 and stripped.start(1) > line.find("/*"):
                         continue
                     
                     if(stripped.group(2)):

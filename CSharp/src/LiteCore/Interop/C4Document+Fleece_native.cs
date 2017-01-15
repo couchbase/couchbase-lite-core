@@ -56,7 +56,7 @@ namespace LiteCore.Interop
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern FLSharedKeys c4db_getFLSharedKeys(C4Database* db);
+        public static extern FLSharedKeys* c4db_getFLSharedKeys(C4Database* db);
 
 
     }

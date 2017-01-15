@@ -37,7 +37,7 @@ def parse_enum(filename):
                 if "/*" in line:
                     in_comment += 1
                         
-                stripped = re.search(r'\s*([A-Za-z0-9=\- ]+,?)', line)
+                stripped = re.search(r'\s*([A-Za-z0-9=\- _]+,?)', line)
                 if not stripped:
                     continue
                     
