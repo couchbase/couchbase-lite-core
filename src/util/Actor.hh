@@ -24,6 +24,9 @@ namespace litecore {
     class Scheduler {
     public:
 
+        /** Returns a per-process shared instance. */
+        static Scheduler* sharedScheduler();
+
         /** Starts the background threads that will run queued Actors. */
         void start(unsigned numThreads =0);
 

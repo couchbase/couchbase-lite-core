@@ -57,16 +57,16 @@ namespace litecore {
 
         WebSocketConnection* connection() const   {return _connection;}
 
-        virtual void onStart()       { }
-        virtual void onConnect() =0;
-        virtual void onError(int status, fleece::slice reason) =0;
-        virtual void onClose(int status, fleece::slice reason) =0;
+        virtual void onWebSocketStart()       { }
+        virtual void onWebSocketConnect() =0;
+        virtual void onWebSocketError(int status, fleece::slice reason) =0;
+        virtual void onWebSocketClose(int status, fleece::slice reason) =0;
 
         /** A message has arrived. */
-        virtual void onMessage(fleece::slice message, bool binary) =0;
+        virtual void onWebSocketMessage(fleece::slice message, bool binary) =0;
 
         /** The socket has room to send more messages. */
-        virtual void onWriteable()       { }
+        virtual void onWebSocketWriteable()       { }
 
     private:
         WebSocketConnection* _connection {nullptr};

@@ -23,6 +23,17 @@ namespace litecore {
     template class Channel<std::function<void()>>;
 
 
+    Scheduler* Scheduler::sharedScheduler() {
+        static Scheduler *sSched;
+        static once_flag once;
+        call_once(once, [] {
+            // One-time initialization:
+            sSched = new Scheduler;
+            sSched->start();
+        });
+        return sSched;
+    }
+
 
     void Scheduler::start(unsigned numThreads) {
         if (numThreads == 0) {
@@ -34,6 +45,7 @@ namespace litecore {
         for (unsigned id = 1; id <= numThreads; id++)
             _threadPool.emplace_back([this,id]{task(id);});
     }
+    
 
     void Scheduler::stop() {
         LogTo(ActorLog, "Stopping Scheduler<%p>...", this);
@@ -43,6 +55,7 @@ namespace litecore {
         }
         LogTo(ActorLog, "Scheduler<%p> has stopped", this);
     }
+
 
     void Scheduler::task(unsigned taskID) {
         LogTo(ActorLog, "   task %d starting", taskID);
