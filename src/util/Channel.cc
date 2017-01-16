@@ -58,10 +58,19 @@ namespace litecore {
     }
 
 
+    template <class T>
+    const T& Channel<T>::front() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
+        assert(!_queue.empty());
+        return _queue.front();
+    }
+
+
+
     /** Returns true if the queue is currently empty. */
     template <class T>
     bool Channel<T>::empty() const {
-        std::unique_lock<std::mutex> lock((std::mutex&)_mutex);
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
         return _queue.empty();
     }
 

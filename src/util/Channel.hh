@@ -38,6 +38,9 @@ namespace litecore {
             @return  True if a value was popped, or false if the queue was empty. */
         bool popNoWaiting(T &t);
 
+        /** Returns the front item of the queue without popping it. The queue MUST be non-empty. */
+        const T& front() const;
+
         /** Returns true if the queue is currently empty. */
         bool empty() const;
 

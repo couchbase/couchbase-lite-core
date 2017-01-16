@@ -88,13 +88,21 @@ namespace litecore {
 
     void Actor::performNextMessage() {
         LogTo(ActorLog, "Actor<%p> performNextMessage", this);
-        bool nowEmpty;
+#if DEBUG
+        assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
+#endif
         try {
-            _mailbox.pop(nowEmpty)();
+            _mailbox.front()();
         } catch (...) {
             Warn("EXCEPTION thrown from actor method");
         }
-        if (!nowEmpty)
+#if DEBUG
+        assert(--_active == 0);
+#endif
+
+        bool empty;
+        _mailbox.pop(empty);
+        if (!empty)
             reschedule();
     }
 

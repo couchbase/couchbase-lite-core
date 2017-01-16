@@ -127,6 +127,9 @@ namespace litecore {
 
         Channel<std::function<void()>> _mailbox;
         Scheduler *_scheduler {nullptr};
+#if DEBUG
+        std::atomic_int _active {0};
+#endif
     };
 
 
