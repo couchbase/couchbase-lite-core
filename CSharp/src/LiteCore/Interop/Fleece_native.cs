@@ -176,6 +176,11 @@ namespace LiteCore.Interop
             }
         }
 
+        public static string FLSharedKey_GetStringKey(FLSharedKeys* sk, int keyCode, FLError* outError)
+        {
+            return NativeRaw.FLSharedKey_GetKeyString(sk, keyCode, outError).CreateString();
+        }
+
         public static FLValue* FLDict_GetUnsorted(FLDict* dict, byte[] keyString)
         {
             fixed(byte *keyString_ = keyString) {
@@ -389,6 +394,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDict_GetSharedKey(FLDict* d, FLSlice keyString, FLSharedKeys* sk);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLSlice FLSharedKey_GetKeyString(FLSharedKeys* sk, int keyCode, FLError* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDict_GetUnsorted(FLDict* dict, FLSlice keyString);

@@ -50,6 +50,7 @@ namespace LiteCore.Interop
         JSONError,
         UnknownValue,
         InternalError,
+        NotFound
     }
 
 		public unsafe struct FLDictIterator
