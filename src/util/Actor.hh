@@ -14,21 +14,34 @@
 #include <string>
 #include <thread>
 
+#if __APPLE__
+#define ACTORS_USE_GCD
+#endif
+
+#ifdef ACTORS_USE_GCD
+#include <dispatch/dispatch.h>
+#endif
+
 namespace litecore {
 
     class Actor;
+    class ThreadedMailbox;
 
 
-    /** The Scheduler is reponsible for calling Actors.
-        It managers a thread pool on which Actor methods will run. */
+    /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.
+        It managers a thread pool on which Mailboxes and Actors will run. */
     class Scheduler {
     public:
+
+        Scheduler(unsigned numThreads =0)
+        :_numThreads(numThreads)
+        { }
 
         /** Returns a per-process shared instance. */
         static Scheduler* sharedScheduler();
 
         /** Starts the background threads that will run queued Actors. */
-        void start(unsigned numThreads =0);
+        void start();
 
         /** Stops the background threads. Blocks until all pending messages are handled. */
         void stop();
@@ -38,17 +51,86 @@ namespace litecore {
         void runSynchronous()                               {task(0);}
 
     protected:
-        friend class Actor;
+        friend class ThreadedMailbox;
 
         /** A request for an Actor's performNextMessage method to be called. */
-        void schedule(Retained<Actor> actor)                {_queue.push(actor);}
+        void schedule(ThreadedMailbox* mbox)                {_queue.push(mbox);}
 
     private:
         void task(unsigned taskID);
 
-        Channel<Retained<Actor>> _queue;
+        unsigned _numThreads;
+        Channel<ThreadedMailbox*> _queue;
         std::vector<std::thread> _threadPool;
+        std::atomic_flag _started;
     };
+
+
+
+    /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
+    class ThreadedMailbox : Channel<std::function<void()>> {
+    public:
+        ThreadedMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr)
+        :_actor(a)
+        ,_name(name)
+        ,_scheduler(s)
+        { }
+
+        Scheduler* scheduler() const                        {return _scheduler;}
+        void setScheduler(Scheduler *s);
+
+        void enqueue(std::function<void()> f);
+
+        static void startScheduler(Scheduler *s)            {s->start();}
+
+    private:
+        friend class Scheduler;
+        
+        void reschedule()                                   {_scheduler->schedule(this);}
+        void performNextMessage();
+
+        Actor* const _actor;
+        std::string const _name;
+        Scheduler *_scheduler {nullptr};
+#if DEBUG
+        std::atomic_int _active {0};
+#endif
+    };
+
+
+#ifdef ACTORS_USE_GCD
+    /** Actor mailbox that uses a Grand Central Dispatch (GCD) serial dispatch_queue.
+        Available on Apple platforms, or elsewhere if libdispatch is installed. */
+    class GCDMailbox {
+    public:
+        GCDMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr);
+        ~GCDMailbox();
+
+        Scheduler* scheduler() const                        {return nullptr;}
+        void setScheduler(Scheduler *s)                     { }
+
+        void enqueue(std::function<void()> f) {
+            dispatch_async(_queue, ^{ f(); });
+        }
+
+        void enqueue(void (^block)()) {
+            dispatch_async(_queue, block);
+        }
+
+        static void startScheduler(Scheduler *)             { }
+
+    private:
+        dispatch_queue_t _queue;
+    };
+#endif
+
+
+    // Use GCD if available, as it's more efficient and has better integration with OS & debugger.
+#ifdef ACTORS_USE_GCD
+    typedef GCDMailbox Mailbox;
+#else
+    typedef ThreadedMailbox Mailbox;
+#endif
 
 
 
@@ -66,19 +148,22 @@ namespace litecore {
     class Actor : public RefCounted {
     public:
 
-        Scheduler* scheduler() const                        {return _scheduler;}
-        void setScheduler(Scheduler *s);
+        Scheduler* scheduler() const                        {return _mailbox.scheduler();}
+        void setScheduler(Scheduler *s)                     {_mailbox.setScheduler(s);}
 
     protected:
-        Actor() { }
-
-        Actor(Scheduler *sched)
-        :_scheduler(sched)
+        Actor(const std::string &name ="", Scheduler *sched =nullptr)
+        :_mailbox(this, name, sched)
         { }
 
         template <class Rcvr, class... Args>
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
-            enqueue(std::bind(fn, (Rcvr*)this, args...));
+#ifdef ACTORS_USE_GCD
+            // not strictly necessary, but more efficient
+            _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); } );
+#else
+            _mailbox.enqueue(std::bind(fn, (Rcvr*)this, args...));
+#endif
         }
 
         template <class T>
@@ -121,15 +206,7 @@ namespace litecore {
     private:
         friend class Scheduler;
 
-        void reschedule()                                   {_scheduler->schedule(this);}
-        void enqueue(std::function<void()> f);
-        void performNextMessage();
-
-        Channel<std::function<void()>> _mailbox;
-        Scheduler *_scheduler {nullptr};
-#if DEBUG
-        std::atomic_int _active {0};
-#endif
+        Mailbox _mailbox;
     };
 
 

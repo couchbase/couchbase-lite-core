@@ -89,7 +89,7 @@ namespace litecore { namespace blip {
     public:
 
         BLIPIO(Connection *connection, Scheduler *scheduler)
-        :Actor(scheduler)
+        :Actor(connection->name(), scheduler)
         ,_connection(connection)
         ,_outbox(10)
         {
@@ -361,16 +361,25 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
+    static string makeName(const string &hostname, uint16_t port) {
+        char portStr[10];
+        sprintf(portStr, ":%u", port);
+        return string("BLIP->") + hostname + portStr;
+    }
+
+
     Connection::Connection(const std::string &hostname, uint16_t port,
                            WebSocketProvider &provider,
                            ConnectionDelegate &delegate)
-    :_delegate(delegate)
+    :_name(makeName(hostname, port))
+    ,_delegate(delegate)
     ,_io(new BLIPIO(this, Scheduler::sharedScheduler()))
     {
-        LogTo(BLIPLog, "Opening connection to %s:%u ...", hostname.c_str(), port);
+        LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
         delegate._connection = this;
         provider.addProtocol("BLIP");
         provider.connect(hostname, port, *_io);
+        Mailbox::startScheduler(_io->scheduler());
     }
 
 

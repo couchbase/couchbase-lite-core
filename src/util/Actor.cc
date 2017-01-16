@@ -19,31 +19,27 @@ namespace litecore {
 
     // Explicitly instantiate the Channel specializations we need; this corresponds to the
     // "extern template..." declarations at the bottom of Actor.hh
-    template class Channel<Retained<Actor>>;
+    template class Channel<ThreadedMailbox*>;
     template class Channel<std::function<void()>>;
 
 
     Scheduler* Scheduler::sharedScheduler() {
-        static Scheduler *sSched;
-        static once_flag once;
-        call_once(once, [] {
-            // One-time initialization:
-            sSched = new Scheduler;
-            sSched->start();
-        });
+        static Scheduler *sSched = new Scheduler;
         return sSched;
     }
 
 
-    void Scheduler::start(unsigned numThreads) {
-        if (numThreads == 0) {
-            numThreads = thread::hardware_concurrency();
-            if (numThreads == 0)
-                numThreads = 2;
+    void Scheduler::start() {
+        if (!_started.test_and_set()) {
+            if (_numThreads == 0) {
+                _numThreads = thread::hardware_concurrency();
+                if (_numThreads == 0)
+                    _numThreads = 2;
+            }
+            LogTo(ActorLog, "Starting Scheduler<%p> with %u threads", this, _numThreads);
+            for (unsigned id = 1; id <= _numThreads; id++)
+                _threadPool.emplace_back([this,id]{task(id);});
         }
-        LogTo(ActorLog, "Starting Scheduler<%p> with %u threads", this, numThreads);
-        for (unsigned id = 1; id <= numThreads; id++)
-            _threadPool.emplace_back([this,id]{task(id);});
     }
     
 
@@ -54,45 +50,59 @@ namespace litecore {
             t.join();
         }
         LogTo(ActorLog, "Scheduler<%p> has stopped", this);
+        _started.clear();
     }
 
 
     void Scheduler::task(unsigned taskID) {
         LogTo(ActorLog, "   task %d starting", taskID);
-        Retained<Actor> actor;
-        while ((actor = _queue.pop()) != nullptr) {
-            LogTo(ActorLog, "   task %d calling Actor<%p>", taskID, actor.get());
-            actor->performNextMessage();
-            actor = nullptr;
+        ThreadedMailbox *mailbox;
+        while ((mailbox = _queue.pop()) != nullptr) {
+            LogTo(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
+            mailbox->performNextMessage();
+            mailbox = nullptr;
         }
         LogTo(ActorLog, "   task %d finished", taskID);
     }
 
 
+#ifdef ACTORS_USE_GCD
 
-    void Actor::setScheduler(Scheduler *s) {
+    GCDMailbox::GCDMailbox(Actor *a, const std::string &name, Scheduler *s)
+    :_queue(dispatch_queue_create((name.empty() ? nullptr : name.c_str()), DISPATCH_QUEUE_SERIAL))
+    { }
+
+    GCDMailbox::~GCDMailbox() {
+        dispatch_release(_queue);
+    }
+
+#endif // ACTORS_USE_GCD
+
+
+    void ThreadedMailbox::setScheduler(Scheduler *s) {
         assert(s);
         assert(!_scheduler);
         _scheduler = s;
-        if (!_mailbox.empty())
+        if (!empty())
             reschedule();
     }
 
 
-    void Actor::enqueue(std::function<void()> f) {
-        if (_mailbox.push(f))
+    void ThreadedMailbox::enqueue(std::function<void()> f) {
+        retain(_actor);
+        if (push(f))
             if (_scheduler)
                 reschedule();
     }
 
 
-    void Actor::performNextMessage() {
-        LogTo(ActorLog, "Actor<%p> performNextMessage", this);
+    void ThreadedMailbox::performNextMessage() {
+        LogTo(ActorLog, "Mailbox<%p> performNextMessage", this);
 #if DEBUG
         assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
 #endif
         try {
-            _mailbox.front()();
+            front()();
         } catch (...) {
             Warn("EXCEPTION thrown from actor method");
         }
@@ -101,9 +111,10 @@ namespace litecore {
 #endif
 
         bool empty;
-        _mailbox.pop(empty);
+        pop(empty);
         if (!empty)
             reschedule();
+        release(_actor);
     }
 
 }

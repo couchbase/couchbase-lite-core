@@ -24,6 +24,8 @@ namespace litecore { namespace blip {
                    ConnectionDelegate&);
         virtual ~Connection();
 
+        std::string name() const                                {return _name;}
+
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
         MessageIn* sendRequest(MessageBuilder&);
@@ -37,6 +39,7 @@ namespace litecore { namespace blip {
         void send(MessageOut*);
 
     private:
+        std::string _name;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
     };
