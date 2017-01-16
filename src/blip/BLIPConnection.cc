@@ -36,6 +36,39 @@ namespace litecore { namespace blip {
     static LogDomain BLIPLog("BLIP");
 
 
+    class MessageQueue : public vector<Retained<MessageOut>> {
+    public:
+        MessageQueue()                          { }
+        MessageQueue(size_t rsrv)               {reserve(rsrv);}
+
+        bool contains(MessageOut *msg) const    {return find(begin(), end(), msg) != end();}
+
+        MessageOut* findMessage(MessageNo msgNo, bool isResponse) const {
+            auto i = find_if(begin(), end(), [&](const Retained<MessageOut> &msg) {
+                return msg->number() == msgNo && msg->isResponse() == isResponse;
+            });
+            return (i != end()) ? *i : nullptr;
+        }
+
+        Retained<MessageOut> pop() {
+            if (empty())
+                return nullptr;
+            Retained<MessageOut> msg(front());
+            erase(begin());
+            return msg;
+        }
+
+        bool remove(MessageOut *msg) {
+            auto i = find(begin(), end(), msg);
+            if (i == end())
+                return false;
+            erase(i);
+            return true;
+        }
+
+    };
+
+
 #pragma mark - BLIP I/O:
 
 
@@ -44,20 +77,25 @@ namespace litecore { namespace blip {
     private:
         typedef unordered_map<MessageNo, Retained<MessageIn>> MessageMap;
 
-        Retained<Connection>            _connection;
-        vector<Retained<MessageOut>>    _queue;
-        bool                            _hungry {false};
-        MessageMap                      _pendingRequests, _pendingResponses;
-        atomic<MessageNo>               _lastMessageNo {0};
-        MessageNo                       _numRequestsReceived {0};
-        uint8_t*                        _frameBuf {nullptr};
+        Retained<Connection>    _connection;
+        MessageQueue            _outbox;
+        MessageQueue            _icebox;
+        bool                    _hungry {false};
+        MessageMap              _pendingRequests, _pendingResponses;
+        atomic<MessageNo>       _lastMessageNo {0};
+        MessageNo               _numRequestsReceived {0};
+        unique_ptr<uint8_t[]>   _frameBuf;
 
     public:
 
         BLIPIO(Connection *connection, Scheduler *scheduler)
         :Actor(scheduler)
         ,_connection(connection)
-        { }
+        ,_outbox(10)
+        {
+            _pendingRequests.reserve(10);
+            _pendingResponses.reserve(10);
+        }
 
         void queueMessage(MessageOut *msg) {
             if (msg->type() == kRequestType) {
@@ -112,44 +150,51 @@ namespace litecore { namespace blip {
 
         // Adds a message to the outgoing queue
         void requeue(MessageOut *msg) {
-            auto i = _queue.end();
-            if (msg->urgent() && !_queue.empty()) {
+            assert(!_outbox.contains(msg));
+            auto i = _outbox.end();
+            if (msg->urgent() && !_outbox.empty()) {
                 // High-priority gets queued after the last existing high-priority message,
                 // leaving one regular-priority message in between if possible:
                 do {
                     --i;
                     if ((*i)->urgent()) {
-                        if ((i+1) != _queue.end())
+                        if ((i+1) != _outbox.end())
                             ++i;
                         break;
                     } else if (msg->_bytesSent == 0 && (*i)->_bytesSent == 0) {
                         // But make sure to keep the 1st frames of messages in chronological order:
                         break;
                     }
-                } while (i != _queue.begin());
+                } while (i != _outbox.begin());
                 ++i;
             }
-            _queue.emplace(i, msg);  // inserts _at_ position i
+            _outbox.emplace(i, msg);  // inserts _at_ position i
         }
         
 
-        // Removes the next message from the queue and returns it (or null if the queue is empty.)
-        Retained<MessageOut> popNextMessage() {
-            if (_queue.empty())
-                return nullptr;
-            Retained<MessageOut> msg(_queue.front());
-            _queue.erase(_queue.begin());
-            return msg;
+        void freezeMessage(MessageOut *msg) {
+            LogTo(BLIPLog, "Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+            assert(!_outbox.contains(msg));
+            assert(!_icebox.contains(msg));
+            _icebox.push_back(msg);
         }
 
-        
+
+        void unfreezeMessage(MessageOut *msg) {
+            LogTo(BLIPLog, "Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+            bool removed = _icebox.remove(msg);
+            assert(removed);
+            _queueMessage(msg);
+        }
+
+
         // Sends the next frame:
         void _onWebSocketWriteable() {
             LogTo(BLIPLog, "Writing to WebSocket...");
             size_t sentBytes = 0;
             while (sentBytes < kMaxSendSize) {
                 // Get the next message from the queue:
-                Retained<MessageOut> msg(popNextMessage());
+                Retained<MessageOut> msg(_outbox.pop());
 
                 // If there's nothing to send, just remember that I'm ready:
                 _hungry = (msg == nullptr);
@@ -167,7 +212,7 @@ namespace litecore { namespace blip {
 
                     // Read a frame from it:
                     size_t maxSize = kDefaultFrameSize;
-                    if (msg->urgent() || _queue.empty() || !_queue.front()->urgent())
+                    if (msg->urgent() || _outbox.empty() || !_outbox.front()->urgent())
                         maxSize = kBigFrameSize;
 
                     slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
@@ -180,20 +225,24 @@ namespace litecore { namespace blip {
 
                     // Copy header and frame to a buffer, and send over the WebSocket:
                     if (!_frameBuf)
-                        _frameBuf = new uint8_t[2*kMaxVarintLen64 + kBigFrameSize];
-                    uint8_t *end = _frameBuf;
+                        _frameBuf.reset(new uint8_t[2*kMaxVarintLen64 + kBigFrameSize]);
+                    uint8_t *end = _frameBuf.get();
                     end += PutUVarInt(end, msg->_number);
                     end += PutUVarInt(end, frameFlags);
                     memcpy(end, body.buf, body.size);
                     end += body.size;
-                    slice frame {_frameBuf, end};
+                    slice frame {_frameBuf.get(), end};
                     connection()->send(frame);
                     sentBytes += frame.size;
                 }
                 
                 // Return message to the queue if it has more frames left to send:
-                if (frameFlags & kMoreComing)
-                    requeue(msg);
+                if (frameFlags & kMoreComing) {
+                    if (msg->needsAck())
+                        freezeMessage(msg);
+                    else
+                        requeue(msg);
+                }
             }
         }
 
@@ -215,23 +264,52 @@ namespace litecore { namespace blip {
                   (flags & ~kTypeMask), (long)frame.size);
 
             Retained<MessageIn> msg;
-            {
-                switch (flags & kTypeMask) {
-                    case kRequestType:
-                        msg = pendingRequest(msgNo, flags);
-                        break;
-                    case kResponseType:
-                    case kErrorType: {
-                        msg = pendingResponse(msgNo, flags);
-                        break;
-                    default:
-                        LogTo(BLIPLog, "  Unknown frame type received");
-                        break;
-                    }
+            auto type = (MessageType)(flags & kTypeMask);
+            switch (type) {
+                case kRequestType:
+                    msg = pendingRequest(msgNo, flags);
+                    break;
+                case kResponseType:
+                case kErrorType: {
+                    msg = pendingResponse(msgNo, flags);
+                    break;
+                case kAckRequestType:
+                case kAckResponseType:
+                    receivedAck(msgNo, (type == kAckResponseType), frame);
+                    break;
+                default:
+                    LogTo(BLIPLog, "  Unknown frame type received");
+                    break;
                 }
             }
             if (msg)
                 msg->receivedFrame(frame, flags);
+        }
+
+
+        void receivedAck(MessageNo msgNo, bool onResponse, slice body) {
+            // Find the MessageOut in either _outbox or _icebox:
+            bool frozen = false;
+            MessageOut *msg = _outbox.findMessage(msgNo, onResponse);
+            if (!msg) {
+                msg = _icebox.findMessage(msgNo, onResponse);
+                if (!msg) {
+                    LogTo(BLIPLog, "Received ACK of non-current message (%s #%llu)",
+                          (onResponse ? "RES" : "REQ"), msgNo);
+                    return;
+                }
+                frozen = true;
+            }
+
+            uint32_t byteCount;
+            if (!ReadUVarInt32(&body, &byteCount)) {
+                LogToAt(BLIPLog, Warning, "Couldn't parse body of ACK");
+                return;
+            }
+            
+            msg->receivedAck(byteCount);
+            if (frozen && !msg->needsAck())
+                unfreezeMessage(msg);
         }
 
 
@@ -289,6 +367,7 @@ namespace litecore { namespace blip {
     :_delegate(delegate)
     ,_io(new BLIPIO(this, Scheduler::sharedScheduler()))
     {
+        LogTo(BLIPLog, "Opening connection to %s:%u ...", hostname.c_str(), port);
         delegate._connection = this;
         provider.addProtocol("BLIP");
         provider.connect(hostname, port, *_io);

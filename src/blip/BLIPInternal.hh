@@ -28,12 +28,17 @@ namespace litecore { namespace blip {
         { }
 
         fleece::slice nextFrameToSend(size_t maxSize, FrameFlags &outFlags);
+        void receivedAck(uint32_t byteCount);
+        bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* pendingResponse();
 
     private:
+        static const uint32_t kMaxUnackedBytes = 128000;
+
         Connection* const _connection;
         fleece::alloc_slice _payload;
-        size_t _bytesSent {0};
+        uint32_t _bytesSent {0};
+        uint32_t _unackedBytes {0};
         Retained<MessageIn> _pendingResponse;
     };
 

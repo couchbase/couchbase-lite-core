@@ -16,7 +16,7 @@ using namespace litecore;
 using namespace fleece;
 
 
-static const size_t kMessageSize = 100 * 1024;
+static const size_t kMessageSize = 300 * 1024;
 
 
 class BlipTest : public litecore::blip::ConnectionDelegate {

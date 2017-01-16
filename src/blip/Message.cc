@@ -184,6 +184,7 @@ namespace litecore { namespace blip {
     ,_connection(connection)
     ,_payload(payload)
     {
+        assert(payload.size < 1ull<<32);
         assert(!(_flags & kCompressed));    //TODO: Implement compression
     }
 
@@ -192,10 +193,17 @@ namespace litecore { namespace blip {
         size_t size = min(maxSize, _payload.size - _bytesSent);
         slice frame = _payload(_bytesSent, size);
         _bytesSent += size;
+        _unackedBytes += size;
         outFlags = flags();
         if (_bytesSent < _payload.size)
             outFlags = (FrameFlags)(outFlags | kMoreComing);
         return frame;
+    }
+
+
+    void MessageOut::receivedAck(uint32_t byteCount) {
+        if (byteCount <= _bytesSent)
+            _unackedBytes = min(_unackedBytes, (uint32_t)(_bytesSent - byteCount));
     }
 
 
@@ -255,7 +263,7 @@ namespace litecore { namespace blip {
             uint8_t buf[kMaxVarintLen64];
             alloc_slice payload(buf, PutUVarInt(buf, bytesReceived));
             Retained<MessageOut> ack = new MessageOut(_connection,
-                                                      (FrameFlags)msgType,
+                                                      (FrameFlags)(msgType | kUrgent | kNoReply),
                                                       payload,
                                                       _number);
             _connection->send(ack);
