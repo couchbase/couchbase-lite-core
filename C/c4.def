@@ -205,6 +205,7 @@ FLDict_Count
 FLDict_Get
 FLDict_GetUnsorted
 FLDict_GetSharedKey
+FLSharedKey_GetKeyString
 FLDictIterator_Begin
 FLDictIterator_GetKey
 FLDictIterator_GetValue
