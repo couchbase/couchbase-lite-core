@@ -45,9 +45,15 @@ namespace litecore { namespace blip {
     };
 
 
+    // How many bytes to receive before sending an ACK
+    static const size_t kIncomingAckThreshold = 50000;
+
     static const size_t kPropertiesSizeReserved = 1;
 
 
+#pragma mark - MESSAGE BUILDER:
+
+    
     MessageBuilder::MessageBuilder()
     {
         _propertiesSizePos = _out.reserveSpace(kPropertiesSizeReserved);
@@ -170,12 +176,14 @@ namespace litecore { namespace blip {
 #pragma mark - MESSAGE OUT:
 
 
-    MessageOut::MessageOut(Connection *connection, MessageBuilder &builder, MessageNo number)
-    :Message(builder.flags())
+    MessageOut::MessageOut(Connection *connection,
+                           FrameFlags flags,
+                           alloc_slice payload,
+                           MessageNo number)
+    :Message(flags, number)
     ,_connection(connection)
-    ,_payload(builder.extractOutput())
+    ,_payload(payload)
     {
-        _number = number;
         assert(!(_flags & kCompressed));    //TODO: Implement compression
     }
 
@@ -207,22 +215,24 @@ namespace litecore { namespace blip {
 
 
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n)
-    :Message(flags)
+    :Message(flags, n)
     ,_connection(connection)
     {
         assert(n > 0);
-        _number = n;
     }
 
 
     bool MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
-        if (!_in) {
+        size_t bytesReceived = frame.size;
+        if (_in) {
+            bytesReceived += _in->length();
+        } else {
             // On first frame, update my flags and allocate the Writer:
             _flags = frameFlags;
             if (_flags & kCompressed)
                 throw "compression isn't supported yet";  //TODO: Implement compression
             _in.reset(new Writer);
-            // Get the length of the properties:
+            // Get the length of the properties, and move `frame` past the length field:
             if (!ReadUVarInt32(&frame, &_propertiesSize))
                 throw "frame too small";
         }
@@ -236,6 +246,20 @@ namespace litecore { namespace blip {
             if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
                 throw "message properties not null-terminated";
             _in->reset();
+        }
+
+        _unackedBytes += frame.size;
+        if (_unackedBytes >= kIncomingAckThreshold) {
+            // Send an ACK every 50k bytes:
+            MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
+            uint8_t buf[kMaxVarintLen64];
+            alloc_slice payload(buf, PutUVarInt(buf, bytesReceived));
+            Retained<MessageOut> ack = new MessageOut(_connection,
+                                                      (FrameFlags)msgType,
+                                                      payload,
+                                                      _number);
+            _connection->send(ack);
+            _unackedBytes = 0;
         }
 
         _in->write(frame);

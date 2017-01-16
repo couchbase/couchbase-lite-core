@@ -9,10 +9,14 @@
 #include "LibWSProvider.hh"
 #include "BLIPConnection.hh"
 #include "Logging.hh"
+#include <algorithm>
 #include <iostream>
 
 using namespace litecore;
 using namespace fleece;
+
+
+static const size_t kMessageSize = 100 * 1024;
 
 
 class BlipTest : public litecore::blip::ConnectionDelegate {
@@ -24,11 +28,12 @@ public:
         uint8_t buffer[256];
         for (int i=0; i<256; i++)
             buffer[i] = (uint8_t)i;
-        for (int i = 0; i < 100; i++)
-            msg << slice(buffer, sizeof(buffer));
+        for (ssize_t remaining = kMessageSize; remaining > 0; remaining -= sizeof(buffer))
+            msg << slice(buffer, std::min((ssize_t)sizeof(buffer), remaining));
         blip::MessageIn *r = connection()->sendRequest(msg);
+        std::cerr << "** Sent BLIP request #" << r->number() << "\n";
         r->onComplete = [](blip::MessageIn *response) {
-            std::cerr << "** BLIP response onComplete callback\n";
+            std::cerr << "** BLIP response #" << response->number() << " onComplete callback\n";
             slice body = response->body();
             bool ok = true;
             for (size_t i = 0; i < body.size; i++) {
@@ -50,11 +55,11 @@ public:
     }
 
     virtual void onRequestReceived(blip::MessageIn *msg) override {
-        std::cerr << "** BLIP request received\n";
+        std::cerr << "** BLIP request #" << msg->number() << " received\n";
     }
 
     virtual void onResponseReceived(blip::MessageIn *msg) override {
-        std::cerr << "** BLIP response received\n";
+        std::cerr << "** BLIP response #" << msg->number() << " received\n";
     }
 };
 
@@ -63,7 +68,7 @@ int main(int argc, const char * argv[]) {
     BlipTest test;
     LibWSProvider provider;
     Retained<blip::Connection> connection(new blip::Connection("localhost", 1234, provider, test));
-    std::cerr << "Starting event loop...";
+    std::cerr << "Starting event loop...\n";
     provider.runEventLoop();
     return 0;
 }

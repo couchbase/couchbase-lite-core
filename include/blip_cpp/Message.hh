@@ -31,14 +31,16 @@ namespace litecore { namespace blip {
         bool urgent() const                 {return hasFlag(kUrgent);}
         bool noReply() const                {return hasFlag(kNoReply);}
 
+        MessageNo number() const            {return _number;}
+
     protected:
-        Message(FrameFlags f)               :_flags(f) { }
+        Message(FrameFlags f, MessageNo n)  :_flags(f), _number(n) { }
         FrameFlags flags() const            {return _flags;}
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
 
         FrameFlags _flags;
-        MessageNo _number {0};
+        MessageNo _number;
     };
 
 
@@ -72,6 +74,7 @@ namespace litecore { namespace blip {
         Connection* const _connection;
         std::unique_ptr<fleece::Writer> _in;
         uint32_t _propertiesSize {0};
+        uint32_t _unackedBytes {0};
         alloc_slice _properties;
         alloc_slice _body;
     };

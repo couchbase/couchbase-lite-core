@@ -18,7 +18,15 @@ namespace litecore { namespace blip {
         friend class Connection;
         friend class BLIPIO;
 
-        MessageOut(Connection*, MessageBuilder&, MessageNo =0);
+        MessageOut(Connection *connection,
+                   FrameFlags flags,
+                   alloc_slice payload,
+                   MessageNo number);
+
+        MessageOut(Connection *connection, MessageBuilder &builder, MessageNo number =0)
+        :MessageOut(connection, builder.flags(), builder.extractOutput(), number)
+        { }
+
         fleece::slice nextFrameToSend(size_t maxSize, FrameFlags &outFlags);
         MessageIn* pendingResponse();
 

@@ -25,8 +25,13 @@ using namespace litecore;
 
 namespace litecore { namespace blip {
 
-    static size_t kDefaultFrameSize = 4096;
-    static size_t kBigFrameSize = 16384;
+    static const size_t kDefaultFrameSize = 4096;       // Default size of frame
+    static const size_t kBigFrameSize = 16384;          // Max size of frame
+
+    static const size_t kMaxSendSize = 50*1024;         // How much to send at once
+
+    const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?",
+                                              "ACKREQ", "AKRES", "?6?", "?7?"};
 
     static LogDomain BLIPLog("BLIP");
 
@@ -55,7 +60,12 @@ namespace litecore { namespace blip {
         { }
 
         void queueMessage(MessageOut *msg) {
-            msg->_number = ++_lastMessageNo;
+            if (msg->type() == kRequestType) {
+                assert(msg->_number == 0);
+                msg->_number = ++_lastMessageNo;
+            } else {
+                assert(msg->_number > 0);
+            }
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
         }
 
@@ -135,49 +145,56 @@ namespace litecore { namespace blip {
         
         // Sends the next frame:
         void _onWebSocketWriteable() {
-            LogTo(BLIPLog, "Socket is writeable");
-            // Get the next message from the queue:
-            Retained<MessageOut> msg(popNextMessage());
+            LogTo(BLIPLog, "Writing to WebSocket...");
+            size_t sentBytes = 0;
+            while (sentBytes < kMaxSendSize) {
+                // Get the next message from the queue:
+                Retained<MessageOut> msg(popNextMessage());
 
-            // If there's nothing to send, just remember that I'm ready:
-            _hungry = (msg == nullptr);
-            if (_hungry)
-                return;
+                // If there's nothing to send, just remember that I'm ready:
+                _hungry = (msg == nullptr);
+                if (_hungry)
+                    return;
 
-            FrameFlags frameFlags;
-            {
-                // On first frame of a request, add its response message to _pendingResponses:
-                if (msg->_bytesSent == 0) {
-                    MessageIn *response = msg->pendingResponse();
-                    if (response)
-                        _pendingResponses.emplace(msg->_number, response);
+                FrameFlags frameFlags;
+                {
+                    // On first frame of a request, add its response message to _pendingResponses:
+                    if (msg->_bytesSent == 0) {
+                        MessageIn *response = msg->pendingResponse();
+                        if (response)
+                            _pendingResponses.emplace(msg->_number, response);
+                    }
+
+                    // Read a frame from it:
+                    size_t maxSize = kDefaultFrameSize;
+                    if (msg->urgent() || _queue.empty() || !_queue.front()->urgent())
+                        maxSize = kBigFrameSize;
+
+                    slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
+
+                    LogTo(BLIPLog, "Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
+                          kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
+                          (frameFlags & ~kTypeMask),
+                          (uint64_t)(msg->_bytesSent - body.size),
+                          (uint64_t)(msg->_bytesSent - 1));
+
+                    // Copy header and frame to a buffer, and send over the WebSocket:
+                    if (!_frameBuf)
+                        _frameBuf = new uint8_t[2*kMaxVarintLen64 + kBigFrameSize];
+                    uint8_t *end = _frameBuf;
+                    end += PutUVarInt(end, msg->_number);
+                    end += PutUVarInt(end, frameFlags);
+                    memcpy(end, body.buf, body.size);
+                    end += body.size;
+                    slice frame {_frameBuf, end};
+                    connection()->send(frame);
+                    sentBytes += frame.size;
                 }
-
-                // Read a frame from it:
-                size_t maxSize = kDefaultFrameSize;
-                if (msg->urgent() || _queue.empty() || !_queue.front()->urgent())
-                    maxSize = kBigFrameSize;
-
-                slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
-
-                LogTo(BLIPLog, "Sending frame: Msg #%llu, flags %02x, bytes %llu--%llu",
-                      msg->_number, frameFlags,
-                      (uint64_t)(msg->_bytesSent - body.size), (uint64_t)(msg->_bytesSent - 1));
-
-                // Copy header and frame to a buffer, and send over the WebSocket:
-                if (!_frameBuf)
-                    _frameBuf = new uint8_t[2*kMaxVarintLen64 + kBigFrameSize];
-                uint8_t *end = _frameBuf;
-                end += PutUVarInt(end, msg->_number);
-                end += PutUVarInt(end, frameFlags);
-                memcpy(end, body.buf, body.size);
-                end += body.size;
-                connection()->send({_frameBuf, end});
+                
+                // Return message to the queue if it has more frames left to send:
+                if (frameFlags & kMoreComing)
+                    requeue(msg);
             }
-            
-            // Return message to the queue if it has more frames left to send:
-            if (frameFlags & kMoreComing)
-                requeue(msg);
         }
 
 
@@ -193,8 +210,9 @@ namespace litecore { namespace blip {
                 return;
             }
             auto flags = (FrameFlags)flagsInt;
-            LogTo(BLIPLog, "Received frame: Msg #%llu, flags %02x, length %ld",
-                  msgNo, flags, (long)frame.size);
+            LogTo(BLIPLog, "Received frame: %s #%llu, flags %02x, length %ld",
+                  kMessageTypeNames[flags & kTypeMask], msgNo,
+                  (flags & ~kTypeMask), (long)frame.size);
 
             Retained<MessageIn> msg;
             {
@@ -207,7 +225,7 @@ namespace litecore { namespace blip {
                         msg = pendingResponse(msgNo, flags);
                         break;
                     default:
-                        LogTo(BLIPLog, "Unknown frame type received");
+                        LogTo(BLIPLog, "  Unknown frame type received");
                         break;
                     }
                 }

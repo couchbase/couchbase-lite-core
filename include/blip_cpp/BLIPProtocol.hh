@@ -11,6 +11,8 @@
 
 namespace litecore { namespace blip {
 
+    // https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md
+
     enum MessageType: uint8_t {
         kRequestType     = 0,  // A message initiated by a peer
         kResponseType    = 1,  // A response to a Request
@@ -19,14 +21,19 @@ namespace litecore { namespace blip {
         kAckResponseType = 5,  // Acknowledgement of data received from a Response (internal)
     };
 
+    // Array mapping MessageType to a short mnemonic like "REQ".
+    extern const char* const kMessageTypeNames[8];
+
+
     enum FrameFlags: uint8_t {
-        kTypeMask   = 0x07,
-        kCompressed = 0x08,
-        kUrgent     = 0x10,
-        kNoReply    = 0x20,
+        kTypeMask   = 0x07,     // These 3 bits hold a MessageType
+        kCompressed = 0x08,     // Message payload is gzip-deflated
+        kUrgent     = 0x10,     // Message is given priority delivery
+        kNoReply    = 0x20,     // Request only: no response desired
         kMoreComing = 0x40,     // Used only in frames, not in messages
-        kMeta       = 0x80,
+        kMeta       = 0x80,     // Denotes special message type used internally
     };
+
 
     typedef uint64_t MessageNo;
 
