@@ -37,6 +37,8 @@ namespace litecore { namespace blip {
         Message(FrameFlags f, MessageNo n)  :_flags(f), _number(n) { }
         FrameFlags flags() const            {return _flags;}
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
+        bool isAck() const                  {return type() == kAckRequestType ||
+                                                    type() == kAckResponseType;}
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
 
         FrameFlags _flags;
@@ -51,7 +53,14 @@ namespace litecore { namespace blip {
         alloc_slice body() const            {return _body;}
 
         /** Gets a property value */
-        slice operator[] (slice property) const;
+        slice property(slice property) const;
+        long intProperty(slice property, long defaultValue =0) const;
+
+        /** The error domain (if this message is an error.) */
+        slice errorDomain() const;
+
+         /** The error code (if this message is an error.) */
+         int errorCode() const;
 
         /** A callback that will be invoked when the message has been completely received. */
         std::function<void(MessageIn*)> onComplete;
@@ -88,11 +97,11 @@ namespace litecore { namespace blip {
         /** Constructs a MessageBuilder for a request. */
         MessageBuilder();
 
-        /** Constructs a MessageBuilder for a response. */
-        MessageBuilder(MessageIn *inReplyTo);
-
         /** Constructs a MessageBuilder for a request, with a list of properties. */
         MessageBuilder(std::initializer_list<property>);
+
+        /** Constructs a MessageBuilder for a response. */
+        MessageBuilder(MessageIn *inReplyTo);
 
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
@@ -106,7 +115,7 @@ namespace litecore { namespace blip {
         /** Makes a response an error. */
         void makeError(slice domain, int code, slice message);
 
-        /** Adds data to the body of the message. */
+        /** Adds data to the body of the message. No more properties can be added afterwards. */
         MessageBuilder& write(slice);
         MessageBuilder& operator<< (slice s)  {return write(s);}
 

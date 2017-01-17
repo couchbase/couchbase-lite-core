@@ -33,7 +33,7 @@ namespace litecore { namespace blip {
     const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?",
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
-    static LogDomain BLIPLog("BLIP");
+    LogDomain BLIPLog("BLIP");
 
 
     class MessageQueue : public vector<Retained<MessageOut>> {
@@ -139,17 +139,15 @@ namespace litecore { namespace blip {
 
         // Adds a new message to the outgoing queue and wakes up the queue
         void _queueMessage(Retained<MessageOut> msg) {
-            {
-                LogTo(BLIPLog, "Enqueuing message #%llu, flags=%02x", msg->_number, msg->flags());
-                requeue(msg);
-            }
-            if (_hungry)
-                onWebSocketWriteable();
+            BLIPLog.log((msg->isAck() ? LogLevel::Verbose : LogLevel::Info),
+                        "Sending %s #%llu, flags=%02x",
+                        kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+            requeue(msg, true);
         }
 
 
         // Adds a message to the outgoing queue
-        void requeue(MessageOut *msg) {
+        void requeue(MessageOut *msg, bool andWrite =false) {
             assert(!_outbox.contains(msg));
             auto i = _outbox.end();
             if (msg->urgent() && !_outbox.empty()) {
@@ -169,28 +167,31 @@ namespace litecore { namespace blip {
                 ++i;
             }
             _outbox.emplace(i, msg);  // inserts _at_ position i
+
+            if (_hungry && andWrite)
+                onWebSocketWriteable();
         }
         
 
         void freezeMessage(MessageOut *msg) {
-            LogTo(BLIPLog, "Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+            LogVerbose(BLIPLog, "Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
             assert(!_outbox.contains(msg));
             assert(!_icebox.contains(msg));
             _icebox.push_back(msg);
         }
 
 
-        void unfreezeMessage(MessageOut *msg) {
-            LogTo(BLIPLog, "Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+        void thawMessage(MessageOut *msg) {
+            LogVerbose(BLIPLog, "Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
             bool removed = _icebox.remove(msg);
             assert(removed);
-            _queueMessage(msg);
+            requeue(msg, true);
         }
 
 
         // Sends the next frame:
         void _onWebSocketWriteable() {
-            LogTo(BLIPLog, "Writing to WebSocket...");
+            LogVerbose(BLIPLog, "Writing to WebSocket...");
             size_t sentBytes = 0;
             while (sentBytes < kMaxSendSize) {
                 // Get the next message from the queue:
@@ -217,7 +218,7 @@ namespace litecore { namespace blip {
 
                     slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
 
-                    LogTo(BLIPLog, "Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
+                    LogVerbose(BLIPLog, "Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
                           kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
                           (frameFlags & ~kTypeMask),
                           (uint64_t)(msg->_bytesSent - body.size),
@@ -242,6 +243,10 @@ namespace litecore { namespace blip {
                         freezeMessage(msg);
                     else
                         requeue(msg);
+                } else {
+                    BLIPLog.log((msg->isAck() ? LogLevel::Verbose : LogLevel::Info),
+                                "Finished sending %s #%llu, flags=%02x",
+                                kMessageTypeNames[msg->type()], msg->_number, msg->flags());
                 }
             }
         }
@@ -259,7 +264,7 @@ namespace litecore { namespace blip {
                 return;
             }
             auto flags = (FrameFlags)flagsInt;
-            LogTo(BLIPLog, "Received frame: %s #%llu, flags %02x, length %ld",
+            LogVerbose(BLIPLog, "Received frame: %s #%llu, flags %02x, length %5ld",
                   kMessageTypeNames[flags & kTypeMask], msgNo,
                   (flags & ~kTypeMask), (long)frame.size);
 
@@ -294,7 +299,7 @@ namespace litecore { namespace blip {
             if (!msg) {
                 msg = _icebox.findMessage(msgNo, onResponse);
                 if (!msg) {
-                    LogTo(BLIPLog, "Received ACK of non-current message (%s #%llu)",
+                    LogVerbose(BLIPLog, "Received ACK of non-current message (%s #%llu)",
                           (onResponse ? "RES" : "REQ"), msgNo);
                     return;
                 }
@@ -309,7 +314,7 @@ namespace litecore { namespace blip {
             
             msg->receivedAck(byteCount);
             if (frozen && !msg->needsAck())
-                unfreezeMessage(msg);
+                thawMessage(msg);
         }
 
 

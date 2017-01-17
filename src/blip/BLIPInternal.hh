@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Message.hh"
+#include "Logging.hh"
 
 namespace litecore { namespace blip {
 
@@ -41,5 +42,7 @@ namespace litecore { namespace blip {
         uint32_t _unackedBytes {0};
         Retained<MessageIn> _pendingResponse;
     };
+
+    extern LogDomain BLIPLog;
 
 } }

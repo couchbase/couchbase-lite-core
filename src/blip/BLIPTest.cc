@@ -55,7 +55,12 @@ public:
     }
 
     virtual void onRequestReceived(blip::MessageIn *msg) override {
-        std::cerr << "** BLIP request #" << msg->number() << " received\n";
+        std::cerr << "** BLIP request #" << msg->number() << " received: " << msg->body().size << " bytes\n";
+        if (!msg->noReply()) {
+            blip::MessageBuilder out(msg);
+            out << msg->body();
+            msg->respond(out);
+        }
     }
 
     virtual void onResponseReceived(blip::MessageIn *msg) override {

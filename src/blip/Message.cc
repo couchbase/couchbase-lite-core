@@ -63,6 +63,8 @@ namespace litecore { namespace blip {
     MessageBuilder::MessageBuilder(MessageIn *inReplyTo)
     :MessageBuilder()
     {
+        assert(!inReplyTo->isResponse());
+        assert(!inReplyTo->noReply());
         type = kResponseType;
         urgent = inReplyTo->urgent();
     }
@@ -114,12 +116,12 @@ namespace litecore { namespace blip {
 
 
     MessageBuilder& MessageBuilder::addProperty(slice name, slice value) {
+        assert(_propertiesSizePos != nullptr);      // already finished properties
+
         assert(name.findByte('\0') == nullptr);
         assert(value.findByte('\0') == nullptr);
         assert(name.size == 0  || name[0] >= 32);
         assert(value.size == 0 || value[0] >= 32);
-
-        assert(_propertiesSizePos != nullptr);      // already finished properties
 
         uint8_t nameToken, valueToken;
         _out << tokenize(name, nameToken) << '\0' << tokenize(value, valueToken) << '\0';
@@ -236,6 +238,8 @@ namespace litecore { namespace blip {
             bytesReceived += _in->length();
         } else {
             // On first frame, update my flags and allocate the Writer:
+            LogTo(BLIPLog, "Receiving %s #%llu, flags=%02x",
+                  kMessageTypeNames[type()], _number, flags());
             _flags = frameFlags;
             if (_flags & kCompressed)
                 throw "compression isn't supported yet";  //TODO: Implement compression
@@ -287,9 +291,27 @@ namespace litecore { namespace blip {
     }
 
 
+    slice MessageIn::errorDomain() const {
+        if (!isError())
+            return nullslice;
+        return property("Error-Domain"_sl);
+    }
+
+
+    int MessageIn::errorCode() const {
+        if (!isError())
+            return 0;
+        return (int) intProperty("Error-Code"_sl);
+    }
+
+
     void MessageIn::messageComplete() {
-        if (onComplete)
+        LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
+              kMessageTypeNames[type()], _number, flags());
+        if (onComplete) {
             onComplete(this);
+            onComplete = nullptr;
+        }
         if (type() == kRequestType)
             _connection->delegate().onRequestReceived(this);
         else
@@ -313,7 +335,7 @@ namespace litecore { namespace blip {
     }
 
 
-    slice MessageIn::operator[] (slice property) const {
+    slice MessageIn::property(slice property) const {
         // Note: using strlen here is safe. It can't fall off the end of _properties, because the
         // receivedFrame() method has already verified that _properties ends with a zero byte.
         // OPT: This lookup isn't very efficient. If it turns out to be a hot-spot, we could cache
@@ -334,4 +356,16 @@ namespace litecore { namespace blip {
     }
 
 
+    long MessageIn::intProperty(slice name, long defaultValue) const {
+        string value = property(name).asString();
+        if (value.empty())
+            return defaultValue;
+        char *end;
+        long result = strtol(value.c_str(), &end, 10);
+        if (*end != '\0')
+            return defaultValue;
+        return result;
+    }
+
+    
 } }

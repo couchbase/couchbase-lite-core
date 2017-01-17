@@ -63,6 +63,8 @@ namespace litecore {
                 _level = LogLevel::Warning;
             else if (0 == strcasecmp(val, "debug"))
                 _level = LogLevel::Debug;
+            else if (0 == strcasecmp(val, "verbose"))
+                _level = LogLevel::Verbose;
             else
                 _level = LogLevel::Info;
             if (_level > MinLevel)
