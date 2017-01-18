@@ -185,6 +185,7 @@ FLValue_IsInteger
 FLValue_IsUnsigned
 FLValue_IsDouble
 FLValue_AsBool
+FLValue_AsData
 FLValue_AsInt
 FLValue_AsUnsigned
 FLValue_AsFloat

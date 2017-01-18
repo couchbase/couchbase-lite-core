@@ -190,6 +190,7 @@ _FLValue_IsInteger
 _FLValue_IsUnsigned
 _FLValue_IsDouble
 _FLValue_AsBool
+_FLValue_AsData
 _FLValue_AsInt
 _FLValue_AsUnsigned
 _FLValue_AsFloat
