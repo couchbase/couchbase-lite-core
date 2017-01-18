@@ -26,13 +26,22 @@ using namespace fleece;
 namespace litecore {
 
 
+    // Default columns in query result
+    enum {
+        kSeqCol = 0,
+        kDocIDCol,
+        kMetaCol,
+        kFTSOffsetsCol,     // only if there is a MATCH expression
+    };
+
+
     class SQLiteQuery : public Query {
     public:
         SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression)
         :Query(keyStore)
         {
             QueryParser qp(keyStore.tableName());
-            qp.setBaseResultColumns({"sequence", "key", "meta", "length(body)"});
+            qp.setBaseResultColumns({"sequence", "key", "meta"});
             qp.setDefaultOffset("$offset");
             qp.setDefaultLimit("$limit");
             qp.parseJSON(selectorExpression);
@@ -46,6 +55,7 @@ namespace litecore {
                 if (!keyStore.hasIndex(property, KeyStore::kFullTextIndex))
                     error::_throw(error::LiteCore, error::NoSuchIndex);
             }
+            _1stCustomResultColumn = qp.firstCustomResultColumn();
         }
 
 
@@ -65,17 +75,16 @@ namespace litecore {
             return result;
         }
         
-        
-    protected:
-        QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override;
+        vector<string> _ftsProperties;
+        unsigned _1stCustomResultColumn;
         
         shared_ptr<SQLite::Statement> statement() {return _statement;}
 
-    private:
-        friend class SQLiteQueryEnumImpl;
+    protected:
+        QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override;
 
+    private:
         shared_ptr<SQLite::Statement> _statement;
-        vector<string> _ftsProperties;
     };
 
 
@@ -148,31 +157,29 @@ namespace litecore {
         bool next(slice &outRecordID, sequence_t &outSequence) override {
             if (!_statement->executeStep())
                 return false;
-            outSequence = (int64_t)_statement->getColumn(0);
+            outSequence = (int64_t)_statement->getColumn(kSeqCol);
             outRecordID = recordID();
             return true;
         }
 
         slice recordID() {
-            return {(const void*)_statement->getColumn(1), (size_t)_statement->getColumn(1).size()};
+            return {(const void*)_statement->getColumn(kDocIDCol),
+                    (size_t)_statement->getColumn(kDocIDCol).size()};
         }
 
         slice meta() override {
-            return {_statement->getColumn(2), (size_t)_statement->getColumn(2).size()};
+            return {_statement->getColumn(kMetaCol),
+                    (size_t)_statement->getColumn(kMetaCol).size()};
         }
         
-        size_t bodyLength() override {
-            return (size_t)_statement->getColumn(3).getInt64();
-        }
-
         bool hasFullText() override {
-            return _statement->getColumnCount() >= 5;
+            return !_query._ftsProperties.empty();
         }
 
         void getFullTextTerms(std::vector<QueryEnumerator::FullTextTerm>& terms) override {
             terms.clear();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
-            const char *str = _statement->getColumn(4);
+            const char *str = _statement->getColumn(kFTSOffsetsCol);
             while (*str) {
                 uint32_t n[4];
                 for (int i = 0; i < 4; ++i) {
@@ -185,7 +192,38 @@ namespace litecore {
          }
 
         alloc_slice getMatchedText() override {
-            return _query.getMatchedText(recordID(), (int64_t)_statement->getColumn(0));
+            return _query.getMatchedText(recordID(), (int64_t)_statement->getColumn(kSeqCol));
+        }
+
+        alloc_slice getCustomColumns() override {
+            int nCols = _statement->getColumnCount();
+            if (_query._1stCustomResultColumn >= nCols)
+                return alloc_slice();
+
+            Encoder enc;
+            enc.beginArray();
+            for (int i = _query._1stCustomResultColumn; i < nCols; ++i) {
+                SQLite::Column col = _statement->getColumn(i);
+                switch (col.getType()) {
+                    case SQLITE_NULL:
+                        enc.writeNull();
+                        break;
+                    case SQLITE_INTEGER:
+                        enc.writeInt(col.getInt64());
+                        break;
+                    case SQLITE_FLOAT:
+                        enc.writeDouble(col.getDouble());
+                        break;
+                    case SQLITE_TEXT:
+                        enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                        break;
+                    case SQLITE_BLOB:
+                        error::_throw(error::UnsupportedOperation);    //TODO: Array/dict value??
+                        break;
+                }
+            }
+            enc.endArray();
+            return enc.extractOutput();
         }
 
     private:

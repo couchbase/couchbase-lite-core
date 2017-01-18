@@ -278,6 +278,7 @@ extern "C" {
         // Expression-based only:
         C4Slice revID;
         C4DocumentFlags docFlags;
+        C4Slice customColumns;
 
         // Full-text only:
         uint32_t fullTextTermCount;          ///< The number of terms that were matched

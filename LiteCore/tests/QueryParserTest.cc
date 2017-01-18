@@ -87,22 +87,6 @@ TEST_CASE("QueryParser property contexts", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser SELECT", "[Query]") {
-    CHECK(parseWhere("['SELECT', {/*WHAT: ['.', 'first'],*/\
-                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
-                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]")
-          == "SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
-    CHECK(parseWhere("['array_count()', ['SELECT', {/*WHAT: ['.', 'first'],*/\
-                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
-                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
-          == "array_count(SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
-    CHECK(parseWhere("['EXISTS', ['SELECT', {/*WHAT: ['.', 'first'],*/\
-                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
-                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT * FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
-}
-
-
 TEST_CASE("QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE _X.value = 'Smith')");
@@ -116,4 +100,38 @@ TEST_CASE("QueryParser ANY", "[Query]") {
 TEST_CASE("QueryParser ANY complex", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X', 'last'], 'Smith']]")
           == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_value(_X.pointer, 'last') = 'Smith')");
+}
+
+
+TEST_CASE("QueryParser SELECT", "[Query]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'],\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]")
+          == "SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+    CHECK(parseWhere("['array_count()', ['SELECT', {WHAT: ['._id'],\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
+          == "array_count(SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+    CHECK(parseWhere("['EXISTS', ['SELECT', {WHAT: ['._id'],\
+                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
+                                 'ORDER BY': [['.', 'first'], ['.', 'age']]}]]")
+          == "EXISTS (SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+}
+
+
+TEST_CASE("QueryParser SELECT FTS", "[Query]") {
+    CHECK(parseWhere("['SELECT', {\
+                     WHERE: ['MATCH', ['.', 'bio'], 'mobile']}]")
+          == "SELECT offsets(\"kv_default::bio\") FROM kv_default, \"kv_default::bio\" AS FTS1 WHERE (FTS1.text MATCH 'mobile' AND FTS1.rowid = kv_default.sequence)");
+}
+
+TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+    CHECK(parseWhere("['SELECT', {WHAT: [['.first']],\
+                                 WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT fl_value(body, 'first') FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+    CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
+                                 WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT fl_value(body, 'first'), length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
 }

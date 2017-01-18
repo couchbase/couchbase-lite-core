@@ -43,6 +43,7 @@ namespace litecore {
         std::string SQL()                                           {return _sql.str();}
 
         const std::vector<std::string>& ftsProperties() const       {return _ftsProperties;}
+        unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
 
         static std::string propertyGetter(slice property, const char *bodyColumnName = "body");
         static void writeSQLString(std::ostream &out, slice str);
@@ -86,6 +87,7 @@ namespace litecore {
         void writePropertyGetter(const std::string &fn, const std::string &property);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
+        void writeResultColumn(const fleece::Value*);
 
         void findFTSProperties(const fleece::Value *node);
         size_t FTSPropertyIndex(const std::string &propertyPath);
@@ -101,6 +103,7 @@ namespace litecore {
         std::set<std::string> _parameters;
         std::set<std::string> _variables;
         std::vector<std::string> _ftsProperties;
+        unsigned _1stCustomResultCol {0};
     };
 
 }

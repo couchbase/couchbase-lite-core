@@ -68,7 +68,7 @@ public:
         return docIDs;
     }
 
-private:
+protected:
     C4Query *query {nullptr};
 };
 
@@ -140,6 +140,34 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
     CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
+    vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
+    vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
+    compile(json5("{WHAT: ['.name.first', '.name.last'], \
+                   WHERE: ['>=', ['length()', ['.name.first']], 9],\
+              'ORDER BY': [['.name.first']]}"));
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        REQUIRE(e->customColumns.buf);
+        FLValue cols = FLValue_FromData(e->customColumns);
+        FLArray colsArray = FLValue_AsArray(cols);
+        REQUIRE(FLArray_Count(colsArray) == 2);
+        auto first = FLValue_AsString(FLArray_Get(colsArray, 0));
+        auto last  = FLValue_AsString(FLArray_Get(colsArray, 1));
+        CHECK(string((char*)first.buf, first.size) == expectedFirst[i]);
+        CHECK(string((char*)last.buf,  last.size)  == expectedLast[i]);
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == 3);
+    c4queryenum_free(e);
 }
 
 

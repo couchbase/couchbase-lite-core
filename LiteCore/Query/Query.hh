@@ -30,7 +30,6 @@ namespace litecore {
         slice recordID() const          {return _recordID;}
         sequence_t sequence() const     {return _sequence;}
         slice meta()                    {return _impl->meta();}
-        size_t bodyLength()             {return _impl->bodyLength();}
 
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
@@ -48,15 +47,17 @@ namespace litecore {
             return _impl->getMatchedText();
         }
 
+        alloc_slice getCustomColumns()  {return _impl->getCustomColumns();}
+
         class Impl {
         public:
             virtual ~Impl() = default;
             virtual bool next(slice &docID, sequence_t &sequence) =0;
             virtual slice meta() =0;
-            virtual size_t bodyLength() =0;
             virtual bool hasFullText()                                  {return false;}
             virtual void getFullTextTerms(std::vector<FullTextTerm>& t) {}
             virtual alloc_slice getMatchedText()                        {return alloc_slice();}
+            virtual alloc_slice getCustomColumns()                      {return alloc_slice();}
         };
 
     private:

@@ -289,6 +289,7 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         DocumentMeta meta(_enum.meta());
         docFlags = meta.flags;
         revID = _revIDBuf = _database->documentFactory().revIDFromMeta(meta);
+        customColumns = _customColumnsBuf = _enum.getCustomColumns();
 
         if (_hasFullText) {
             auto ft = _enum.fullTextTerms();
@@ -311,6 +312,7 @@ private:
     QueryEnumerator _enum;
     alloc_slice _revIDBuf;
     bool _hasFullText;
+    alloc_slice _customColumnsBuf;
 };
 
 

@@ -164,19 +164,28 @@ namespace litecore {
             findFTSProperties(where);
 
         // 'What' clause:
-        _sql << "SELECT";
+        _sql << "SELECT ";
         int nCol = 0;
         for (auto &col : _baseResultColumns)
-            _sql << (nCol++ ? ", " : " ") << col;
+            _sql << (nCol++ ? ", " : "") << col;
         for (auto propertyPath : _ftsProperties) {
-            _sql << (nCol++ ? ", " : " ") << "offsets(\"" << _tableName << "::" << propertyPath << "\")";
+            _sql << (nCol++ ? ", " : "") << "offsets(\"" << _tableName << "::" << propertyPath << "\")";
         }
+        _1stCustomResultCol = nCol;
 
         auto what = operands ? operands->get("WHAT"_sl) : nullptr;
-        if (what)
-            fail("WHAT parameter to SELECT isn't supported yet, sorry");
+        if (what) {
+            const Array *whats = what->asArray();
+            if (!whats)
+                fail("WHAT must be an array");
+            for (Array::iterator i(whats); i; ++i) {
+                if (nCol++)
+                    _sql << ", ";
+                writeResultColumn(i.value());
+            }
+        }
         if (nCol == 0)
-            _sql << " *";
+            fail("No result columns");
 
         // FROM clause:
         _sql << " FROM ";
@@ -216,7 +225,32 @@ namespace litecore {
     }
 
 
-#pragma mark - PARSING:
+    void QueryParser::writeResultColumn(const Value *val) {
+        switch (val->type()) {
+            case kArray:
+                parseNode(val);
+                return;
+            case kString: {
+                slice str = val->asString();
+                if (str == "*"_sl) {
+                    fail("'*' result column isn't supported");
+                    return;
+                } else if (str.size > 0 && str[0] == '.') {
+                    // "."-prefixed string becomes a property
+                    str.moveStart(1);
+                    writePropertyGetter("fl_value", str.asString());
+                    return;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        fail("Invalid item type in WHAT clause; must be array or '*' or '.property'");
+    }
+
+
+#pragma mark - PARSING THE "WHERE" CLAUSE:
     
     
     // This table defines the operators and their characteristics.
