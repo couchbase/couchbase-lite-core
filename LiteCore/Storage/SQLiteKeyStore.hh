@@ -11,6 +11,7 @@
 
 namespace fleece {
     class Value;
+    class Array;
 }
 namespace SQLite {
     class Column;
@@ -38,11 +39,11 @@ namespace litecore {
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
-        void createIndex(const std::string &propertyPath,
+        void createIndex(slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr) override;
-        void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex) override;
-        bool hasIndex(const std::string &propertyPath, IndexType =kValueIndex);
+        void deleteIndex(slice expressionJSON, IndexType =kValueIndex) override;
+        bool hasIndex(slice expressionJSON, IndexType =kValueIndex);
 
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}
@@ -78,8 +79,7 @@ namespace litecore {
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options &options);
         void setLastSequence(sequence seq);
-        std::string SQLIndexName(const std::string &propertyPath, const char *suffix = NULL);
-        std::string SQLFTSTableName(const std::string &propertyPath);
+        std::string SQLIndexName(const fleece::Array*, IndexType, bool quoted =false);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

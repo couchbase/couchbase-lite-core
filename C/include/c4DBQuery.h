@@ -98,30 +98,39 @@ extern "C" {
     } C4IndexOptions;
 
 
-    /** Creates an index on a document property, to speed up subsequent queries.
-        Nested properties can be indexed, but their values must be scalar (string, number, bool.)
-        It's fine if not every document in the database has such a property.
+    /** Creates a database index, to speed up subsequent queries.
+
+        The index is on one or more expressions, encoded in the same form as in a query. The first
+        expression becomes the primary key. These expressions are evaluated for every document in
+        the database and stored in the index. The values must be scalars (no arrays or objects),
+        although it's OK if they're `missing` in some documents.
+     
+        An example `expressionsJSON` is `[[".name.first"]]`, to index on the first-name property.
+
+        It is not an error if the index already exists.
+
         @param database  The database to index.
-        @param propertyPath  The property to index: a path expression such as "address.street"
-                            or "coords[0]".
+        @param expressionsJSON  A JSON array of one or more expressions to index; the first is the
+                            primary key. Each expression takes the same form as in a query, which
+                            means it's a JSON array as well; don't get mixed up by the nesting.
         @param indexType  The type of index (regular, full-text or geospatial.)
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database,
-                          C4Slice propertyPath,
+                          C4Slice expressionsJSON,
                           C4IndexType indexType,
                           const C4IndexOptions *indexOptions,
                           C4Error *outError) C4API;
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.
-        @param propertyPath  The property path used when creating the index.
+        @param expressionsJSON  The same JSON array value used when creating the index.
         @param indexType  The type of the index.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_deleteIndex(C4Database *database,
-                          C4Slice propertyPath,
+                          C4Slice expressionsJSON,
                           C4IndexType indexType,
                           C4Error *outError) C4API;
 

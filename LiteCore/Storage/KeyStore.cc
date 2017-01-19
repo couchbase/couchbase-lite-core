@@ -86,15 +86,15 @@ namespace litecore {
         return del(rec.key(), t);
     }
 
-    void KeyStore::createIndex(const std::string &propertyPath, IndexType, const IndexOptions*) {
+    void KeyStore::createIndex(slice expressionJSON, IndexType, const IndexOptions*) {
         error::_throw(error::Unimplemented);
     }
 
-    void KeyStore::deleteIndex(const std::string &propertyPath, IndexType) {
+    void KeyStore::deleteIndex(slice expressionJSON, IndexType) {
         error::_throw(error::Unimplemented);
     }
 
-    Query* KeyStore::compileQuery(slice expr) {
+    Query* KeyStore::compileQuery(slice expressionJSON) {
         error::_throw(error::Unimplemented);
     }
 

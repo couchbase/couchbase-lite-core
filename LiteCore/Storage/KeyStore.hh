@@ -100,10 +100,10 @@ namespace litecore {
         };
 
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual void createIndex(const std::string &propertyPath,
+        virtual void createIndex(slice expressionJSON,
                                  IndexType =kValueIndex,
                                  const IndexOptions* = nullptr);
-        virtual void deleteIndex(const std::string &propertyPath, IndexType =kValueIndex);
+        virtual void deleteIndex(slice expressionJSON, IndexType =kValueIndex);
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }

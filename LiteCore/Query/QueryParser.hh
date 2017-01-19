@@ -42,16 +42,22 @@ namespace litecore {
 
         std::string SQL()                                           {return _sql.str();}
 
-        const std::vector<std::string>& ftsProperties() const       {return _ftsProperties;}
+        const std::vector<std::string>& ftsTablesUsed() const       {return _ftsTables;}
         unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
 
-        static std::string propertyGetter(slice property, const char *bodyColumnName = "body");
+        void writeCreateIndex(const fleece::Array *expressions);
+
+        static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
+        std::string indexName(const fleece::Array *keys);
+        std::string FTSIndexName(const fleece::Value *key);
+        std::string FTSIndexName(const std::string &property);
+
         static void writeSQLString(std::ostream &out, slice str);
 
     private:
         struct Operation;
         static const Operation kOperationList[];
-        static const Operation kOuterOperation, kArgListOperation, kOrderByOperation;
+        static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kOrderByOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
@@ -87,11 +93,12 @@ namespace litecore {
         void writePropertyGetter(const std::string &fn, const std::string &property);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
+        void writeColumnList(fleece::Array::iterator& operands);
         void writeResultColumn(const fleece::Value*);
+        void writeStringLiteralAsProperty(slice str);
 
         void findFTSProperties(const fleece::Value *node);
-        size_t FTSPropertyIndex(const std::string &propertyPath);
-        size_t AddFTSPropertyIndex(const std::string &propertyPath);
+        size_t FTSPropertyIndex(const fleece::Value *matchLHS, bool canAdd =false);
 
         std::string _tableName;
         std::string _bodyColumnName;
@@ -102,7 +109,7 @@ namespace litecore {
         std::vector<const Operation*> _context;
         std::set<std::string> _parameters;
         std::set<std::string> _variables;
-        std::vector<std::string> _ftsProperties;
+        std::vector<std::string> _ftsTables;
         unsigned _1stCustomResultCol {0};
     };
 

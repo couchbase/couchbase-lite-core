@@ -321,8 +321,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT query", "[DataFile][Query
         // Add an index after the first pass:
         if (pass == 0) {
             Stopwatch st2;
-            store->createIndex("$.num");
-            st2.printReport("Index on $.num", 1, "index");
+            store->createIndex("[\".num\"]"_sl);
+            st2.printReport("Index on .num", 1, "index");
         }
     }
 }
@@ -374,7 +374,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     }
 
     KeyStore::IndexOptions options = {"en", true};
-    store->createIndex("$.sentence", KeyStore::kFullTextIndex, &options);
+    store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
 
     unique_ptr<Query> query{ store->compileQuery(json5(
         "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\

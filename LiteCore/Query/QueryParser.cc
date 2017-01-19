@@ -168,8 +168,8 @@ namespace litecore {
         int nCol = 0;
         for (auto &col : _baseResultColumns)
             _sql << (nCol++ ? ", " : "") << col;
-        for (auto propertyPath : _ftsProperties) {
-            _sql << (nCol++ ? ", " : "") << "offsets(\"" << _tableName << "::" << propertyPath << "\")";
+        for (auto ftsTable : _ftsTables) {
+            _sql << (nCol++ ? ", " : "") << "offsets(\"" << ftsTable << "\")";
         }
         _1stCustomResultCol = nCol;
 
@@ -195,8 +195,8 @@ namespace litecore {
         } else {
             _sql << _tableName;
             unsigned ftsTableNo = 0;
-            for (auto propertyPath : _ftsProperties) {
-                _sql << ", \"" << _tableName << "::" << propertyPath << "\" AS FTS" << ++ftsTableNo;
+            for (auto ftsTable : _ftsTables) {
+                _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
             }
         }
 
@@ -212,7 +212,7 @@ namespace litecore {
             _sql << " ORDER BY ";
             _context.push_back(&kOrderByOperation); // suppress parens around arg list
             Array::iterator orderBys(mustBeArray(order));
-            writeArgList(orderBys);
+            writeColumnList(orderBys);
             _context.pop_back();
         }
 
@@ -222,6 +222,15 @@ namespace litecore {
             _sql << " LIMIT " << _defaultLimit;
         if (!_defaultOffset.empty())
             _sql << " OFFSET " << _defaultOffset;
+    }
+
+
+    void QueryParser::writeCreateIndex(const Array *expressions) {
+        reset();
+        _sql << "CREATE INDEX IF NOT EXISTS \"" << indexName(expressions) << "\" ON " << _tableName << " ";
+        Array::iterator iter(expressions);
+        writeColumnList(iter);
+        // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
 
 
@@ -235,10 +244,9 @@ namespace litecore {
                 if (str == "*"_sl) {
                     fail("'*' result column isn't supported");
                     return;
-                } else if (str.size > 0 && str[0] == '.') {
+                } else {
                     // "."-prefixed string becomes a property
-                    str.moveStart(1);
-                    writePropertyGetter("fl_value", str.asString());
+                    writeStringLiteralAsProperty(str);
                     return;
                 }
                 break;
@@ -247,6 +255,14 @@ namespace litecore {
                 break;
         }
         fail("Invalid item type in WHAT clause; must be array or '*' or '.property'");
+    }
+
+
+    void QueryParser::writeStringLiteralAsProperty(slice str) {
+        if (str.size == 0 || str[0] != '.')
+            fail("Invalid property name; must start with '.'");
+        str.moveStart(1);
+        writePropertyGetter("fl_value", str.asString());
     }
 
 
@@ -310,6 +326,8 @@ namespace litecore {
 
     const QueryParser::Operation QueryParser::kArgListOperation
         {","_sl,       0, 9, -2, &QueryParser::infixOp};
+    const QueryParser::Operation QueryParser::kColumnListOperation
+        {","_sl,       0, 9, -2, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kOrderByOperation
         {"ORDER BY"_sl,1, 9, -3, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kOuterOperation
@@ -327,9 +345,14 @@ namespace litecore {
             case kBoolean:
                 _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
                 break;
-            case kString:
-                writeSQLString(node->asString());
+            case kString: {
+                slice str = node->asString();
+                if (_context.back() == &kColumnListOperation)
+                    writeStringLiteralAsProperty(str);
+                else
+                    writeSQLString(str);
                 break;
+            }
             case kData:
                 fail("Binary data not supported in query");
             case kArray:
@@ -453,11 +476,9 @@ namespace litecore {
 
     // Handles "property MATCH pattern" expressions (FTS)
     void QueryParser::matchOp(slice op, Array::iterator& operands) {
-        string property = propertyFromNode(operands[0]);
-        if (property.empty())
-            fail("Source of MATCH must be a property");
         // Write the match expression (using an implicit join):
-        auto ftsTableNo = AddFTSPropertyIndex((string)property);
+        auto ftsTableNo = FTSPropertyIndex(operands[0]);
+        Assert(ftsTableNo > 0);
         _sql << "(FTS" << ftsTableNo << ".text MATCH ";
         parseNode(operands[1]);
         _sql << " AND FTS" << ftsTableNo << ".rowid = " << _tableName << ".sequence)";
@@ -581,7 +602,7 @@ namespace litecore {
     }
 
 
-    // Handles unrecognized operators. If op ends in "()" it's a function call; else fail.
+    // Handles unrecognized operators, based on prefix ('.', '$', '?') or suffix ('()').
     void QueryParser::fallbackOp(slice op, Array::iterator& operands) {
         // Put the actual op into the context instead of a null
         auto operation = *_context.back();
@@ -629,6 +650,10 @@ namespace litecore {
     // Writes operands as a comma-separated list (parenthesized depending on current precedence)
     void QueryParser::writeArgList(Array::iterator& operands) {
         handleOperation(&kArgListOperation, kArgListOperation.op, operands);
+    }
+
+    void QueryParser::writeColumnList(Array::iterator& operands) {
+        handleOperation(&kColumnListOperation, kColumnListOperation.op, operands);
     }
 
 
@@ -709,9 +734,10 @@ namespace litecore {
             _sql << "sequence";
         } else if (fn == "rank") {
             // FTS rank() needs special treatment
-            if (FTSPropertyIndex(property) == 0)
+            string fts = FTSIndexName(property);
+            if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
                 fail("rank() can only be used with FTS properties");
-            _sql << "rank(matchinfo(\"" << _tableName << "::" << property << "\"))";
+            _sql << "rank(matchinfo(\"" << fts << "\"))";
         } else {
             _sql << fn << "(" << _bodyColumnName << ", ";
             auto path = appendPaths(_propertyPath, property);
@@ -721,9 +747,11 @@ namespace litecore {
     }
 
 
-    /*static*/ string QueryParser::propertyGetter(slice property, const char *bodyColumnName) {
+    /*static*/ std::string QueryParser::expressionSQL(const fleece::Value* expr,
+                                                      const char *bodyColumnName)
+    {
         QueryParser qp("XXX", bodyColumnName);
-        qp.writePropertyGetter("fl_value", (string)property);
+        qp.parseJustExpression(expr);
         return qp.SQL();
     }
 
@@ -738,11 +766,7 @@ namespace litecore {
         slice op = i.value()->asString();
         ++i;
         if (op == "MATCH"_sl && i) {
-            auto propertyNode = i.value()->asArray();
-            if (propertyNode) {
-                string property = propertyFromNode(propertyNode);
-                AddFTSPropertyIndex(property);
-            }
+            FTSPropertyIndex(i.value(), true); // add LHS
             ++i;
         }
 
@@ -752,23 +776,42 @@ namespace litecore {
     }
 
 
-    size_t QueryParser::FTSPropertyIndex(const string &propertyPath) {
-        auto i = find(_ftsProperties.begin(), _ftsProperties.end(), propertyPath);
-        if (i == _ftsProperties.end())
-            return 0;
-        return i - _ftsProperties.begin() + 1;
+    string QueryParser::indexName(const Array *keys) {
+        string name = keys->toJSON().asString();
+        for (int i = (int)name.size(); i >= 0; --i) {
+            if (name[i] == '"')
+                name[i] = '\'';
+        }
+        return _tableName + "::" + name;
+    }
+
+    
+    string QueryParser::FTSIndexName(const Value *key) {
+        slice op = mustBeArray(key)->get(0)->asString();
+        if (op.size == 0)
+            fail("Invalid left-hand-side of MATCH");
+        else if (op[0] == '.')
+            return FTSIndexName(propertyFromNode(key));     // abbreviation for common case
+        else
+            return _tableName + "::" + indexName(key->asArray());
+    }
+
+    string QueryParser::FTSIndexName(const string &property) {
+        return _tableName + "::." + property;
     }
 
 
-    size_t QueryParser::AddFTSPropertyIndex(const string &property) {
-        // The FTS index is a separate (virtual) table. Get the table name and add it to FROM:
-        auto propertyPath = appendPaths(_propertyPath, property);
-        size_t index = FTSPropertyIndex(propertyPath);
-        if (index == 0) {
-            _ftsProperties.push_back(propertyPath);
-            index = _ftsProperties.size();
+    size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
+        string key = FTSIndexName(matchLHS);
+        auto i = find(_ftsTables.begin(), _ftsTables.end(), key);
+        if (i != _ftsTables.end()) {
+            return i - _ftsTables.begin() + 1;
+        } else if (canAdd) {
+            _ftsTables.push_back(key);
+            return _ftsTables.size();
+        } else {
+            return 0;
         }
-        return index;
     }
 
 }

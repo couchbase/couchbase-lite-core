@@ -14,10 +14,12 @@
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "Fleece.hh"
 #include <sstream>
 #include <iostream>
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore {
 
@@ -309,58 +311,67 @@ namespace litecore {
 #pragma mark - INDEXES:
 
 
-    static string stripPathDollar(string propertyPath) {
-        unsigned start = 0;
-        if (propertyPath[0] == '$') {
-            if (propertyPath[1] == '.')
-                start = 2;
-            else
-                start = 1;
+    // Returns a unique name for the FTS table that indexes the given property path.
+    string SQLiteKeyStore::SQLIndexName(const Array *expression, IndexType type, bool quoted) {
+        stringstream sql;
+        if (quoted)
+            sql << '"';
+        QueryParser qp(tableName());
+        sql << (type == kFullTextIndex ? qp.FTSIndexName(expression) : qp.indexName(expression));
+        if (quoted)
+            sql << '"';
+        return sql.str();
+    }
+
+
+    // Parses the JSON index-spec expression into an Array:
+    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression,
+                                                          KeyStore::IndexType type)
+    {
+        alloc_slice expressionFleece;
+        const Array *params = nullptr;
+        try {
+            expressionFleece = JSONConverter::convertJSON(expression);
+            auto f = Value::fromTrustedData(expressionFleece);
+            if (f)
+                params = f->asArray();
+        } catch (const FleeceException &x) { }
+        if (!params || params->count() == 0)
+            error::_throw(error::InvalidQuery);
+
+        if (type == KeyStore::kFullTextIndex) {
+            // Full-text index can only have one key, so use that:
+            if (params->count() != 1)
+                error::_throw(error::InvalidQuery);
+            params = params->get(0)->asArray();
+            if (!params)
+                error::_throw(error::InvalidQuery);
         }
-        return propertyPath.substr(start);
+
+        return {expressionFleece, params};
     }
 
 
-    // Returns a SQL string containing a unique name for the index with the given path.
-    string SQLiteKeyStore::SQLIndexName(const string &propertyPath, const char *suffix) {
-        stringstream sql;
-        sql << "'" << name() << "::" << stripPathDollar(propertyPath);
-        if (suffix)
-            sql << "::" << suffix;
-        sql << "'";
-        return sql.str();
-    }
-
-    
-    // Returns a SQL string containing a unique name for the index with the given path.
-    string SQLiteKeyStore::SQLFTSTableName(const string &propertyPath) {
-        stringstream sql;
-        sql << tableName() << "::" << stripPathDollar(propertyPath);
-        return sql.str();
-    }
-
-    
-    void SQLiteKeyStore::createIndex(const string &propertyExpression,
+    void SQLiteKeyStore::createIndex(slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
         db().registerFleeceFunctions();
 
+        alloc_slice expressionFleece;
+        const Array *params;
+        tie(expressionFleece, params) = parseIndexExpr(expression, type);
+
         Transaction t(db());
-        auto indexName = SQLIndexName(propertyExpression);
         switch (type) {
             case  kValueIndex: {
-                stringstream sql;
-                sql << "CREATE INDEX IF NOT EXISTS " << indexName;
-                sql << " ON kv_" << name() << " (";
-                sql << QueryParser::propertyGetter(propertyExpression);
-                sql << ")";
-                // TODO: Add 'WHERE' clause for use with SQLite 3.15+
-                db().exec(sql.str());
+                QueryParser qp(tableName());
+                qp.writeCreateIndex(params);
+                db().exec(qp.SQL());
                 break;
             }
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
-                auto tableName = SQLFTSTableName(propertyExpression);
+                auto tableName = SQLIndexName(params, type);
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
@@ -373,14 +384,15 @@ namespace litecore {
                 db().exec(sql.str());
 
                 // Index existing records:
-                db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::propertyGetter(propertyExpression, "body") + " FROM kv_" + name());
+                db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
 
                 // Set up triggers to keep the FTS5 table up to date:
-                string ins = "INSERT INTO \"" + tableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::propertyGetter(propertyExpression, "new.body") + "); ";
+                string ins = "INSERT INTO \"" + tableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::expressionSQL(params, "new.body") + "); ";
                 string del = "DELETE FROM \"" + tableName + "\" WHERE rowid = old.sequence; ";
-                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "ins") + " AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
-                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "del") + " AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
-                db().exec(string("CREATE TRIGGER ") + SQLIndexName(propertyExpression, "upd") + " AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
+
+                db().exec(string("CREATE TRIGGER \"") + tableName + "::ins\" AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
+                db().exec(string("CREATE TRIGGER \"") + tableName + "::del\" AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
+                db().exec(string("CREATE TRIGGER \"") + tableName + "::upd\" AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
                 break;
             }
             default:
@@ -390,9 +402,13 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::deleteIndex(const string &propertyPath, IndexType type) {
+    void SQLiteKeyStore::deleteIndex(slice expression, IndexType type) {
+        alloc_slice expressionFleece;
+        const Array *params;
+        tie(expressionFleece, params) = parseIndexExpr(expression, type);
+        string indexName = SQLIndexName(params, type, true);
+
         Transaction t(db());
-        string indexName = SQLIndexName(propertyPath);
         switch (type) {
             case  kValueIndex:
                 db().exec(string("DROP INDEX ") + indexName);
@@ -409,10 +425,15 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::hasIndex(const string &propertyPath, IndexType type) {
+    bool SQLiteKeyStore::hasIndex(slice expression, IndexType type) {
+        alloc_slice expressionFleece;
+        const Array *params;
+        tie(expressionFleece, params) = parseIndexExpr(expression, type);
+        string indexName = SQLIndexName(params, type);
+
         switch (type) {
             case kFullTextIndex: {
-                return db().tableExists(SQLFTSTableName(propertyPath));
+                return db().tableExists(indexName);
                 break;
             }
             default:

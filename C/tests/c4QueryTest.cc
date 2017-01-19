@@ -79,11 +79,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     CHECK(run(1, 8) == (vector<string>{"0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     CHECK(run(1, 4) == (vector<string>{"0000015", "0000036", "0000043", "0000053"}));
 
-#if 0 //TEMP: Not currently supported until I add array operators
-    compile("{\"contact.phone\": {\"$elemMatch\": {\"$like\": \"%97%\"}}}");
-    CHECK(run() == (vector<string>{"0000013", "0000014", "0000027", "0000029", "0000045", "0000048", "0000070", "0000085", "0000096"}));
-#endif
-
     compile(json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2],\
                            ['=', ['.', 'gender'], 'male']]"));
     CHECK(run() == (vector<string>{"0000002", "0000014", "0000017", "0000027", "0000031", "0000033", "0000038", "0000039", "0000045", "0000047",
@@ -134,9 +129,18 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    compile(json5("['=', ['length()', ['.name.first']], 9]"));
+    CHECK(run(0, UINT64_MAX) == (vector<string>{ "0000015", "0000099" }));
+
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("contact.address.street"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
     CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 

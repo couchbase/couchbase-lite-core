@@ -50,9 +50,9 @@ namespace litecore {
             LogTo(SQL, "Compiled Query: %s", sql.c_str());
             _statement.reset(keyStore.compile(sql));
             
-            _ftsProperties = qp.ftsProperties();
-            for (auto property : _ftsProperties) {
-                if (!keyStore.hasIndex(property, KeyStore::kFullTextIndex))
+            _ftsTables = qp.ftsTablesUsed();
+            for (auto ftsTable : _ftsTables) {
+                if (!keyStore.db().tableExists(ftsTable))
                     error::_throw(error::LiteCore, error::NoSuchIndex);
             }
             _1stCustomResultColumn = qp.firstCustomResultColumn();
@@ -60,22 +60,35 @@ namespace litecore {
 
 
         alloc_slice getMatchedText(slice recordID, sequence_t seq) override {
-            alloc_slice result;
-            if (_ftsProperties.size() > 0) {
-                keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
-                    if (rec.body() && rec.sequence() == seq) {
-                        auto root = fleece::Value::fromTrustedData(rec.body());
-                        //TODO: Support multiple FTS properties in a query
-                        auto textObj = fleece::Path::eval(_ftsProperties[0], nullptr, root);
-                        if (textObj)
-                            result = textObj->asString();
-                    }
-                });
+            // Get the expression that generated the text
+            if (_ftsTables.size() == 0)
+                error::_throw(error::NoSuchIndex);
+            string expr = _ftsTables[0];    // TODO: Support for multiple matches in a query
+            auto delim = expr.find("::");
+            Assert(delim != string::npos);
+
+            // FIXME: Currently only property expressions are supported:
+            if (expr[delim+2] != '.') {
+                Warn("Unable to get matched text from expression %s", expr.c_str());
+                error::_throw(error::Unimplemented);
             }
+            string path = expr.substr(delim+3);
+
+            // Now load the document and evaluate the expression:
+            alloc_slice result;
+            keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
+                if (rec.body() && rec.sequence() == seq) {
+                    auto root = fleece::Value::fromTrustedData(rec.body());
+                    //TODO: Support multiple FTS properties in a query
+                    auto textObj = fleece::Path::eval(path, nullptr, root);
+                    if (textObj)
+                        result = textObj->asString();
+                }
+            });
             return result;
         }
         
-        vector<string> _ftsProperties;
+        vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
         
         shared_ptr<SQLite::Statement> statement() {return _statement;}
@@ -173,7 +186,7 @@ namespace litecore {
         }
         
         bool hasFullText() override {
-            return !_query._ftsProperties.empty();
+            return !_query._ftsTables.empty();
         }
 
         void getFullTextTerms(std::vector<QueryEnumerator::FullTextTerm>& terms) override {
