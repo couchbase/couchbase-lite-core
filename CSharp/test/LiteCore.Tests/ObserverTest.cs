@@ -148,6 +148,8 @@ namespace LiteCore.Tests
             _dbObserver = null;
             _docObserver?.Dispose();
             _docObserver = null;
+
+            base.TeardownVariant(option);
         }
     }
 }
