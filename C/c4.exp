@@ -252,4 +252,5 @@ _FLDict_GetWithCFString
 _FLEncoder_WriteNSObject
 _FLValue_GetNSObject
 _FLDict_GetWithNSString
+_FLCreateSharedStringsTable
 _FLErrorDomain
