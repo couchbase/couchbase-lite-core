@@ -3,7 +3,6 @@
 .DS_Store
 bin/
 obj/
-[dD]ebug
 
 # Xcode:
 *.xccheckout
@@ -13,15 +12,13 @@ xcuserdata/
 build/
 DerivedData/
 
-# Java:
-*.class
-Java/jni/com_couchbase_cbforest_*.h
-
 # CMake:
 /build_cmake/*
 !/build_cmake/build*
 !/build_cmake/strip.sh
 !/build_cmake/iOS.cmake
+stripopts
+empty.cpp
 
 # Huge performance-test files that have to be manually installed:
 C/tests/data/geoblocks.json
@@ -29,25 +26,15 @@ C/tests/data/names_300000.json
 
 # Visual Studio / C#
 *VC.*db
-CSharp/prebuilt/*
 !CSharp/prebuilt/README.txt
-CSharp/.vscode
-CSharp/test/LiteCore.Tests/.vscode
+.vscode/
 CSharp/native
+project.lock.json
+*.cs.template
 
 # Misc / Uncategorized:
 *.sdf
 *.opensdf
-*.cs.template
 packages/
-[Rr]elease
-stripopts
-/C/include/config.pyc
 /C/Documentation
-Debug_Static/
-Release_Static/
-Release_Testing/
-Debug_Testing/
-empty.cpp
 *.pyc
-.vscode/
