@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ namespace LiteCore.Interop
         InclusiveEnd         = 0x04,
         IncludeDeleted       = 0x08,
         IncludeNonConflicted = 0x10,
-        IncludeBodies        = 0x20,
+        IncludeBodies        = 0x20
     }
 
     public unsafe partial struct C4EnumeratorOptions

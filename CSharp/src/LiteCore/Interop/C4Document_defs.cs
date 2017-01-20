@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ namespace LiteCore.Interop
         Deleted        = 0x01,
         Conflicted     = 0x02,
         HasAttachments = 0x04,
-        Exists         = 0x1000,
+        Exists         = 0x1000
     }
 
     [Flags]
@@ -44,7 +44,7 @@ namespace LiteCore.Interop
         Leaf           = 0x02,
         New            = 0x04,
         HasAttachments = 0x08,
-        KeepBody       = 0x10,
+        KeepBody       = 0x10
     }
 
     public unsafe struct C4Revision

@@ -64,7 +64,7 @@ namespace LiteCore.Interop
     public unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, C4Slice[] outDocIDs, uint maxChanges, ulong* outLastSequence, bool* outExternal);
+        public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4Slice[] outDocIDs, uint maxChanges, ulong* outLastSequence, bool* outExternal);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4DocumentObserver* c4docobs_create(C4Database* database, C4Slice docID, C4DocumentObserverCallback callback, void* context);

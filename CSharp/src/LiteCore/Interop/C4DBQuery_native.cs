@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,17 +55,17 @@ namespace LiteCore.Interop
             }
         }
 
-        public static bool c4db_createIndex(C4Database* database, string propertyPath, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
+        public static bool c4db_createIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
         {
-            using(var propertyPath_ = new C4String(propertyPath)) {
-                return NativeRaw.c4db_createIndex(database, propertyPath_.AsC4Slice(), indexType, indexOptions, outError);
+            using(var expressionsJSON_ = new C4String(expressionsJSON)) {
+                return NativeRaw.c4db_createIndex(database, expressionsJSON_.AsC4Slice(), indexType, indexOptions, outError);
             }
         }
 
-        public static bool c4db_deleteIndex(C4Database* database, string propertyPath, C4IndexType indexType, C4Error* outError)
+        public static bool c4db_deleteIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4Error* outError)
         {
-            using(var propertyPath_ = new C4String(propertyPath)) {
-                return NativeRaw.c4db_deleteIndex(database, propertyPath_.AsC4Slice(), indexType, outError);
+            using(var expressionsJSON_ = new C4String(expressionsJSON)) {
+                return NativeRaw.c4db_deleteIndex(database, expressionsJSON_.AsC4Slice(), indexType, outError);
             }
         }
 
@@ -85,11 +85,11 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_createIndex(C4Database* database, C4Slice propertyPath, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError);
+        public static extern bool c4db_createIndex(C4Database* database, C4Slice expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_deleteIndex(C4Database* database, C4Slice propertyPath, C4IndexType indexType, C4Error* outError);
+        public static extern bool c4db_deleteIndex(C4Database* database, C4Slice expressionsJSON, C4IndexType indexType, C4Error* outError);
 
 
     }

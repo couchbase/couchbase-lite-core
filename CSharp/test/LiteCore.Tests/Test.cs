@@ -103,11 +103,11 @@ namespace LiteCore.Tests
             }
         }
 
-        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
+        protected void CreateRev(C4Database *db, string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
         {
-            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(db, err));
             try {
-                var curDoc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, docID, 
+                var curDoc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(db, docID, 
                     false, err));
                 var history = new[] { revID, curDoc->revID };
                 fixed(C4Slice* h = history) {
@@ -123,14 +123,19 @@ namespace LiteCore.Tests
 
                     var doc = (C4Document *)LiteCoreBridge.Check(err => {
                         var localRq = rq;
-                        return Native.c4doc_put(Db, &localRq, null, err);
+                        return Native.c4doc_put(db, &localRq, null, err);
                     });
                     Native.c4doc_free(doc);
                     Native.c4doc_free(curDoc);
                 }
             } finally {
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(db, true, err));
             }
+        }
+
+        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
+        {
+            CreateRev(Db, docID, revID, body, flags);
         }
 
         protected string DatabasePath()

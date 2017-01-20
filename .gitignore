@@ -50,3 +50,4 @@ Release_Testing/
 Debug_Testing/
 empty.cpp
 *.pyc
+.vscode/

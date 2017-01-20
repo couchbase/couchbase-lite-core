@@ -25,12 +25,6 @@ namespace LiteCore.Tests
                 Run(1, 4).Should().Equal(new[] { "0000015", "0000036", "0000043", "0000053" }, 
                 "because otherwise the query returned incorrect results");
 
-#if false
-                Compile("{\"contact.phone\": {\"$elemMatch\": {\"$like\": \"%97%\"}}}");
-                Run().Should().Equal(new[] { "0000013", "0000014", "0000027", "0000029", "0000045", "0000048", 
-                "0000070", "0000085", "0000096" }, "because otherwise the query returned incorrect results");
-#endif
-
                 Compile(Json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2]," +
                            "['=', ['.', 'gender'], 'male']]"));
                 Run().Should().Equal(new[] { "0000002", "0000014", "0000017", "0000027", "0000031", "0000033", 
@@ -94,11 +88,58 @@ namespace LiteCore.Tests
         public void TestFullTextQuery()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.street", 
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "[[\".contact.address.street\"]]", 
                 C4IndexType.FullTextIndex, null, err));
                 Compile(Json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
                 Run().Should().Equal(new[] { "0000013", "0000015", "0000043", "0000044", "0000052" }, 
                 "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryExpressionIndex()
+        {
+            RunTestVariants(() => {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
+                    C4IndexType.ValueIndex, null, err));
+                Compile(Json5("['=', ['length()', ['.name.first']], 9]"));
+                Run().Should().Equal(new[] { "0000015", "0000099" }, "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryWhat()
+        {
+            RunTestVariants(() => {
+                var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
+                var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
+                var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
+                            "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
+                            "'ORDER BY': [['.name.first']]}"));
+                
+                var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => 
+                {
+                    var localOpts = C4QueryOptions.Default;
+                    return Native.c4query_run(query, &localOpts, null, err);
+                });
+
+                int i = 0;
+                C4Error error;
+                while(Native.c4queryenum_next(e, &error)) {
+                    ((long)e->customColumns.buf).Should().NotBe(0, "because otherwise the query failed to produce results");
+                    FLValue* cols = NativeRaw.FLValue_FromData((FLSlice)e->customColumns);
+                    FLArray* colsArray = Native.FLValue_AsArray(cols);
+                    Native.FLArray_Count(colsArray).Should().Be(2, "because that is the number of 'WHAT' parameters provided");
+                    var first = Native.FLValue_AsString(Native.FLArray_Get(colsArray, 0));
+                    var last = Native.FLValue_AsString(Native.FLArray_Get(colsArray, 1));
+                    first.Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
+                    last.Should().Be(expectedLast[i], "beacuse otherwise the query returned incorrect results");
+                    ++i;
+                }
+
+                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+                i.Should().Be(3, "because that is the number of expected rows");
+                Native.c4queryenum_free(e);
             });
         }
     }
