@@ -136,6 +136,7 @@ _c4indexer_emitList
 _c4indexer_end
 
 _c4view_query
+_c4queryenum_customColumns
 _c4queryenum_next
 _c4queryenum_close
 _c4queryenum_free

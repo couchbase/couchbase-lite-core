@@ -159,14 +159,16 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
-        REQUIRE(e->customColumns.buf);
-        FLValue cols = FLValue_FromData(e->customColumns);
+        auto customColumns = c4queryenum_customColumns(e);
+        REQUIRE(customColumns.buf);
+        FLValue cols = FLValue_FromData({customColumns.buf, customColumns.size});
         FLArray colsArray = FLValue_AsArray(cols);
         REQUIRE(FLArray_Count(colsArray) == 2);
         auto first = FLValue_AsString(FLArray_Get(colsArray, 0));
         auto last  = FLValue_AsString(FLArray_Get(colsArray, 1));
         CHECK(string((char*)first.buf, first.size) == expectedFirst[i]);
         CHECK(string((char*)last.buf,  last.size)  == expectedLast[i]);
+        c4slice_free(customColumns);
         ++i;
     }
     CHECK(error.code == 0);
