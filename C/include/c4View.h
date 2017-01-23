@@ -278,7 +278,6 @@ extern "C" {
         // Expression-based only:
         C4Slice revID;
         C4DocumentFlags docFlags;
-        C4Slice customColumns;
 
         // Full-text only:
         uint32_t fullTextTermCount;          ///< The number of terms that were matched
@@ -295,6 +294,10 @@ extern "C" {
     C4QueryEnumerator* c4view_query(C4View *view,
                                     const C4QueryOptions *options,
                                     C4Error *outError) C4API;
+
+    /** In an expression-based query enumerator, returns the values of the custom columns of the
+        query (the "WHAT" expressions), as a Fleece-encoded array. */
+    C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) C4API;
 
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */

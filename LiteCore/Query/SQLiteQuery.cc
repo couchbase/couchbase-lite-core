@@ -230,9 +230,14 @@ namespace litecore {
                     case SQLITE_TEXT:
                         enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
                         break;
-                    case SQLITE_BLOB:
-                        error::_throw(error::UnsupportedOperation);    //TODO: Array/dict value??
+                    case SQLITE_BLOB: {
+                        slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
+                        const Value *value = Value::fromData(fleeceData);
+                        if (!value)
+                            error::_throw(error::CorruptData);
+                        enc.writeValue(value);
                         break;
+                    }
                 }
             }
             enc.endArray();

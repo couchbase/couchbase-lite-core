@@ -289,7 +289,6 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         DocumentMeta meta(_enum.meta());
         docFlags = meta.flags;
         revID = _revIDBuf = _database->documentFactory().revIDFromMeta(meta);
-        customColumns = _customColumnsBuf = _enum.getCustomColumns();
 
         if (_hasFullText) {
             auto ft = _enum.fullTextTerms();
@@ -299,20 +298,16 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         return true;
     }
 
-    alloc_slice getMatchedText() {
-        return _enum.getMatchedText();
-    }
+    alloc_slice getCustomColumns()          {return _enum.getCustomColumns();}
+    alloc_slice getMatchedText()            {return _enum.getMatchedText();}
 
-    virtual void close() noexcept override {
-        _enum.close();
-    }
+    virtual void close() noexcept override  {_enum.close();}
 
 private:
     Retained<Database> _database;
     QueryEnumerator _enum;
     alloc_slice _revIDBuf;
     bool _hasFullText;
-    alloc_slice _customColumnsBuf;
 };
 
 
@@ -330,6 +325,14 @@ C4QueryEnumerator* c4query_run(C4Query *query,
         }
         qeOpts.paramBindings = encodedParameters;
         return new C4DBQueryEnumerator(query, &qeOpts);
+    });
+}
+
+
+C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]{
+        WITH_LOCK(asInternal(e));
+        return sliceResult(((C4DBQueryEnumerator*)e)->getCustomColumns());
     });
 }
 
