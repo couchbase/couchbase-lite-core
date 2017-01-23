@@ -119,18 +119,4 @@ namespace LiteCore.Interop
             Native.FLSliceResult_Free(this);
         }
     }
-
-    public static unsafe partial class Native
-    {
-        public static byte[] FLData_ConvertJSON(byte[] json, FLError* outError)
-        {
-            fixed(byte* b = json) {
-                var slice = new FLSlice(b, (ulong)json.Length);
-                using(var retVal = NativeRaw.FLData_ConvertJSON(slice, outError)) {
-                    FLSlice r = retVal;
-                    return ((C4Slice)r).ToArrayFast();
-                }
-            }
-        }
-    }
 }
