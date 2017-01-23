@@ -78,9 +78,15 @@ namespace litecore {
             alloc_slice result;
             keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
                 if (rec.body() && rec.sequence() == seq) {
-                    auto root = fleece::Value::fromTrustedData(rec.body());
+                    slice fleeceData = rec.body();
+                    auto accessor = keyStore().dataFile().fleeceAccessor();
+                    if (accessor)
+                        fleeceData = accessor(fleeceData);
+                    auto root = fleece::Value::fromTrustedData(fleeceData);
                     //TODO: Support multiple FTS properties in a query
-                    auto textObj = fleece::Path::eval(path, nullptr, root);
+                    auto textObj = fleece::Path::eval(path,
+                                                      keyStore().dataFile().documentKeys(),
+                                                      root);
                     if (textObj)
                         result = textObj->asString();
                 }
