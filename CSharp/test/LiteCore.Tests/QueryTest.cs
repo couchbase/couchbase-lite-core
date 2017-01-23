@@ -126,8 +126,9 @@ namespace LiteCore.Tests
                 int i = 0;
                 C4Error error;
                 while(Native.c4queryenum_next(e, &error)) {
-                    ((long)e->customColumns.buf).Should().NotBe(0, "because otherwise the query failed to produce results");
-                    FLValue* cols = NativeRaw.FLValue_FromData((FLSlice)e->customColumns);
+                    var customColumns = Native.c4queryenum_customColumns(e);
+                    customColumns.Should().NotBeNull("because otherwise the query failed to produce results");
+                    FLValue* cols = Native.FLValue_FromData(customColumns);
                     FLArray* colsArray = Native.FLValue_AsArray(cols);
                     Native.FLArray_Count(colsArray).Should().Be(2, "because that is the number of 'WHAT' parameters provided");
                     var first = Native.FLValue_AsString(Native.FLArray_Get(colsArray, 0));

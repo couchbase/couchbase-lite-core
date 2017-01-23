@@ -64,11 +64,11 @@ if __name__ == "__main__":
                 lines.append(literals[fn_name])
                 continue
                 
-            return_type = function["rtnType"]
+            return_type = function["rtnType"].replace(" ","").replace("struct_","").replace("struct","").replace("const","")
             if return_type in type_map:
                 return_type = type_map[return_type]
                 
-            bridge_def = [".nobridge", ".{}".format(return_type.replace(" ","").replace("struct_","").replace("struct","").replace("const","")), fn_name]
+            bridge_def = [".nobridge", ".{}".format(return_type), fn_name]
             if return_type in return_bridge_types:
                 bridge_def[0] = ".bridge"
                 

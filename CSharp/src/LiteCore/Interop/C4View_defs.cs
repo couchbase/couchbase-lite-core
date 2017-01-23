@@ -110,7 +110,6 @@ namespace LiteCore.Interop
         public C4Slice value;
         public C4Slice revID;
         public C4DocumentFlags docFlags;
-        public C4Slice customColumns;
         public uint fullTextTermCount;
         public C4FullTextTerm* fullTextTerms;
     }

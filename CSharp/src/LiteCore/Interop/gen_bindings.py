@@ -77,7 +77,7 @@ def transform_bridge(arg_type):
     
 def get_template(name, template_type):
     try:
-        fin = open("templates/{}_{}.template".format(name, template_type), "r")
+        fin = open("templates/{}_{}.template".format(name.replace("*", "_ptr"), template_type), "r")
         retVal = fin.read().strip("\n")
         #print "Got {} template for '{}':\n{}".format(template_type, name, retVal)
     except:

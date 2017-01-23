@@ -12,4 +12,6 @@ FLEncoder_GetErrorMessage
         [return: MarshalAs(UnmanagedType.LPStr)]
         public static extern string FLEncoder_GetErrorMessage(FLEncoder* encoder);
 
+c4dbobs_getChanges
+        public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4Slice[] outDocIDs, uint maxChanges, ulong* outLastSequence, bool* outExternal);
 

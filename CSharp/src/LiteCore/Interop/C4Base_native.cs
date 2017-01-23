@@ -47,10 +47,13 @@ namespace LiteCore.Interop
         public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4LogDomain c4log_getDomain(char* name, [MarshalAs(UnmanagedType.U1)]bool create);
+        public static extern C4LogDomain c4log_getDomain([MarshalAs(UnmanagedType.LPStr)]string name, [MarshalAs(UnmanagedType.U1)]bool create);
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern char* c4log_getDomainName(C4LogDomain x);
+        public static string c4log_getDomainName(C4LogDomain x)
+        {
+            var retVal = NativeRaw.c4log_getDomainName(x);
+            return Marshal.PtrToStringAnsi((IntPtr)retVal);
+        }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4LogLevel c4log_getLevel(C4LogDomain x);
@@ -68,6 +71,9 @@ namespace LiteCore.Interop
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4error_getMessage(C4Error error);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern byte* c4log_getDomainName(C4LogDomain x);
 
 
     }

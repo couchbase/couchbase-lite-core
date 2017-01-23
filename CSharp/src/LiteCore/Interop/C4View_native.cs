@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -144,6 +144,13 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4QueryEnumerator* c4view_query(C4View* view, C4QueryOptions* options, C4Error* outError);
 
+        public static byte[] c4queryenum_customColumns(C4QueryEnumerator* e)
+        {
+            using(var retVal = NativeRaw.c4queryenum_customColumns(e)) {
+                return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
         public static string c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError)
         {
             using(var retVal = NativeRaw.c4queryenum_fullTextMatched(e, outError)) {
@@ -189,6 +196,9 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, uint emitCount, C4Key** emittedKeys, C4Slice[] emittedValues, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4queryenum_customColumns(C4QueryEnumerator* e);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError);
