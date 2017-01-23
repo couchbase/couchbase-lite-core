@@ -1,1 +1,1 @@
-using(var {0}_ = new C4String({0}))
+fixed(byte *{0}_ = {0})

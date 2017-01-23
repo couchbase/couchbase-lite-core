@@ -52,7 +52,7 @@ extern "C" {
         @return  The number of changes written to `outDocIDs`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
     uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer,
-                                C4Slice outDocIDs[],
+                                C4String outDocIDs[],
                                 uint32_t maxChanges,
                                 C4SequenceNumber* outLastSequence,
                                 bool *outExternal) C4API;
@@ -71,7 +71,7 @@ extern "C" {
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
     typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
-                                               C4Slice docID,
+                                               C4String docID,
                                                C4SequenceNumber sequence,
                                                void *context);
 
@@ -83,7 +83,7 @@ extern "C" {
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
     C4DocumentObserver* c4docobs_create(C4Database* database,
-                                        C4Slice docID,
+                                        C4String docID,
                                         C4DocumentObserverCallback callback,
                                         void *context) C4API;
 

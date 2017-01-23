@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,11 +49,11 @@ namespace LiteCore.Interop
             }
         }
 
-        public static string FLData_ConvertJSON(string json, FLError* outError)
+        public static byte[] FLData_ConvertJSON(byte[] json, FLError* outError)
         {
-            using(var json_ = new C4String(json)) {
-                using(var retVal = NativeRaw.FLData_ConvertJSON((FLSlice)json_.AsC4Slice(), outError)) {
-                    return ((FLSlice)retVal).CreateString();
+            fixed(byte *json_ = json) {
+                using(var retVal = NativeRaw.FLData_ConvertJSON(new FLSlice(json_, (ulong)json.Length), outError)) {
+                    return ((C4Slice)retVal).ToArrayFast();
                 }
             }
         }
@@ -176,7 +176,7 @@ namespace LiteCore.Interop
             }
         }
 
-        public static string FLSharedKey_GetStringKey(FLSharedKeys* sk, int keyCode, FLError* outError)
+        public static string FLSharedKey_GetKeyString(FLSharedKeys* sk, int keyCode, FLError* outError)
         {
             return NativeRaw.FLSharedKey_GetKeyString(sk, keyCode, outError).CreateString();
         }
@@ -289,10 +289,10 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLEncoder_WriteDouble(FLEncoder* encoder, double d);
 
-        public static bool FLEncoder_WriteString(FLEncoder* encoder, string slice)
+        public static bool FLEncoder_WriteString(FLEncoder* encoder, string str)
         {
-            using(var slice_ = new C4String(slice)) {
-                return NativeRaw.FLEncoder_WriteString(encoder, (FLSlice)slice_.AsC4Slice());
+            using(var str_ = new C4String(str)) {
+                return NativeRaw.FLEncoder_WriteString(encoder, (FLSlice)str_.AsC4Slice());
             }
         }
 
@@ -317,10 +317,10 @@ namespace LiteCore.Interop
             return NativeRaw.FLEncoder_BeginDict(encoder, (UIntPtr)reserveCount);
         }
 
-        public static bool FLEncoder_WriteKey(FLEncoder* encoder, string slice)
+        public static bool FLEncoder_WriteKey(FLEncoder* encoder, string str)
         {
-            using(var slice_ = new C4String(slice)) {
-                return NativeRaw.FLEncoder_WriteKey(encoder, (FLSlice)slice_.AsC4Slice());
+            using(var str_ = new C4String(str)) {
+                return NativeRaw.FLEncoder_WriteKey(encoder, (FLSlice)str_.AsC4Slice());
             }
         }
 
@@ -352,7 +352,6 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.LPStr)]
         public static extern string FLEncoder_GetErrorMessage(FLEncoder* encoder);
-
 
 
     }
@@ -424,7 +423,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool FLEncoder_WriteString(FLEncoder* encoder, FLSlice slice);
+        public static extern bool FLEncoder_WriteString(FLEncoder* encoder, FLSlice str);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -440,7 +439,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool FLEncoder_WriteKey(FLEncoder* encoder, FLSlice slice);
+        public static extern bool FLEncoder_WriteKey(FLEncoder* encoder, FLSlice str);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

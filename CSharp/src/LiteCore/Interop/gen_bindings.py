@@ -57,15 +57,13 @@ def transform_raw(arg_type, arg_name):
     if arg_type.endswith("*[]"):
         return "{}** {}".format(arg_type[:-3], arg_name)
 
-    if arg_type.endswith("_b"):
-        return " ".join([arg_type[:-2], arg_name])
-
     return " ".join([arg_type, arg_name])
     
 def transform_raw_return(arg_type):
-    if(arg_type.endswith("_b")):
-        return arg_type[:-2]
-        
+    template = get_template(arg_type, "raw_return")
+    if template:
+        return template.format(arg_type)
+    
     return arg_type
 
 def transform_bridge(arg_type):

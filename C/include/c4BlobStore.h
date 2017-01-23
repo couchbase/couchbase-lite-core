@@ -29,10 +29,10 @@ extern "C" {
 
     
     /** Decodes a string of the form "sha1-"+base64 into a raw key. */
-    bool c4blob_keyFromString(C4Slice str, C4BlobKey*) C4API;
+    bool c4blob_keyFromString(C4String str, C4BlobKey*) C4API;
 
     /** Encodes a blob key to a string of the form "sha1-"+base64. */
-    C4SliceResult c4blob_keyToString(C4BlobKey) C4API;
+    C4StringResult c4blob_keyToString(C4BlobKey) C4API;
 
 
     /** Opaque handle for an object that manages storage of blobs. */
@@ -53,7 +53,7 @@ extern "C" {
         @param encryptionKey  Optional encryption algorithm & key
         @param outError  Error is returned here
         @return  The BlobStore reference, or NULL on error */
-    C4BlobStore* c4blob_openStore(C4Slice dirPath,
+    C4BlobStore* c4blob_openStore(C4String dirPath,
                                   C4DatabaseFlags flags,
                                   const C4EncryptionKey* encryptionKey,
                                   C4Error* outError) C4API;
