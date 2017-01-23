@@ -50,8 +50,8 @@ extern "C" {
     /** Metadata about a document (actually about its current revision.) */
     typedef struct {
         C4DocumentFlags flags;      ///< Document flags
-        C4Slice docID;              ///< Document ID
-        C4Slice revID;              ///< RevID of current revision
+        C4String docID;              ///< Document ID
+        C4String revID;              ///< RevID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
     } C4DocumentInfo;
 
@@ -90,8 +90,8 @@ extern "C" {
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
-                                           C4Slice startDocID,
-                                           C4Slice endDocID,
+                                           C4String startDocID,
+                                           C4String endDocID,
                                            const C4EnumeratorOptions *options,
                                            C4Error *outError) C4API;
 
@@ -105,7 +105,7 @@ extern "C" {
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
-                                            const C4Slice docIDs[],
+                                            const C4String docIDs[],
                                             size_t docIDsCount,
                                             const C4EnumeratorOptions *options,
                                             C4Error *outError) C4API;

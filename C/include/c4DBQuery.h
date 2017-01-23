@@ -36,7 +36,7 @@ extern "C" {
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
     C4Query* c4query_new(C4Database *database,
-                         C4Slice expression,
+                         C4String expression,
                          C4Error *error) C4API;
 
     /** Frees a query.  It is legal to pass NULL. */
@@ -54,13 +54,13 @@ extern "C" {
         @return  An enumerator for reading the rows, or NULL on error. */
     C4QueryEnumerator* c4query_run(C4Query *query,
                                    const C4QueryOptions *options,
-                                   C4Slice encodedParameters,
+                                   C4String encodedParameters,
                                    C4Error *outError) C4API;
 
     /** Given a docID and sequence number from the enumerator, returns the text that was emitted
         during indexing. */
-    C4SliceResult c4query_fullTextMatched(C4Query *query,
-                                          C4Slice docID,
+    C4StringResult c4query_fullTextMatched(C4Query *query,
+                                          C4String docID,
                                           C4SequenceNumber seq,
                                           C4Error *outError) C4API;
     /** @} */
@@ -118,7 +118,7 @@ extern "C" {
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database,
-                          C4Slice expressionsJSON,
+                          C4String expressionsJSON,
                           C4IndexType indexType,
                           const C4IndexOptions *indexOptions,
                           C4Error *outError) C4API;
@@ -130,7 +130,7 @@ extern "C" {
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_deleteIndex(C4Database *database,
-                          C4Slice expressionsJSON,
+                          C4String expressionsJSON,
                           C4IndexType indexType,
                           C4Error *outError) C4API;
 

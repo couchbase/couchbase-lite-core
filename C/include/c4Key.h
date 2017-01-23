@@ -43,7 +43,7 @@ extern "C" {
     void c4key_addNull(C4Key*) C4API;             ///< Adds a JSON null value to a C4Key. */
     void c4key_addBool(C4Key*, bool) C4API;       ///< Adds a boolean value to a C4Key. */
     void c4key_addNumber(C4Key*, double) C4API;   ///< Adds a number to a C4Key. */
-    void c4key_addString(C4Key*, C4Slice) C4API;  ///< Adds a UTF-8 string to a C4Key. */
+    void c4key_addString(C4Key*, C4String) C4API;  ///< Adds a UTF-8 string to a C4Key. */
 
     /** Adds an array to a C4Key.
         Subsequent values added will go into the array, until c4key_endArray is called. */
@@ -61,7 +61,7 @@ extern "C" {
 
     /** Adds a map key, before the next value. When adding to a map, every value must be
         preceded by a key. */
-    void c4key_addMapKey(C4Key*, C4Slice) C4API;
+    void c4key_addMapKey(C4Key*, C4String) C4API;
 
 
     /** @} */
@@ -117,10 +117,10 @@ extern "C" {
 
     bool c4key_readBool(C4KeyReader*) C4API;              ///< Reads a boolean value.
     double c4key_readNumber(C4KeyReader*) C4API;          ///< Reads a numeric value.
-    C4SliceResult c4key_readString(C4KeyReader*) C4API;   ///< Reads a string (remember to free it!)
+    C4StringResult c4key_readString(C4KeyReader*) C4API;   ///< Reads a string (remember to free it!)
 
     /** Converts a C4KeyReader to JSON. Remember to free the result. */
-    C4SliceResult c4key_toJSON(const C4KeyReader*) C4API;
+    C4StringResult c4key_toJSON(const C4KeyReader*) C4API;
 
     /** @} */
 
@@ -139,7 +139,7 @@ extern "C" {
     C4KeyValueList* c4kv_new(void) C4API;
 
     /** Adds a key/value pair to a list. The key and value are copied. */
-    void c4kv_add(C4KeyValueList *kv, C4Key *key, C4Slice value) C4API;
+    void c4kv_add(C4KeyValueList *kv, C4Key *key, C4String value) C4API;
 
     /** Removes all keys and values from a list. */
     void c4kv_reset(C4KeyValueList *kv) C4API;

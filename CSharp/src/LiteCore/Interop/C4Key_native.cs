@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,10 +54,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4key_addNumber(C4Key* key, double d);
 
-        public static void c4key_addString(C4Key* key, string slice)
+        public static void c4key_addString(C4Key* key, string str)
         {
-            using(var slice_ = new C4String(slice)) {
-                NativeRaw.c4key_addString(key, slice_.AsC4Slice());
+            using(var str_ = new C4String(str)) {
+                NativeRaw.c4key_addString(key, str_.AsC4Slice());
             }
         }
 
@@ -73,10 +73,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4key_endMap(C4Key* key);
 
-        public static void c4key_addMapKey(C4Key* key, string slice)
+        public static void c4key_addMapKey(C4Key* key, string str)
         {
-            using(var slice_ = new C4String(slice)) {
-                NativeRaw.c4key_addMapKey(key, slice_.AsC4Slice());
+            using(var str_ = new C4String(str)) {
+                NativeRaw.c4key_addMapKey(key, str_.AsC4Slice());
             }
         }
 
@@ -141,10 +141,10 @@ namespace LiteCore.Interop
         public static extern C4Key* c4key_withBytes(C4Slice slice);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4key_addString(C4Key* key, C4Slice slice);
+        public static extern void c4key_addString(C4Key* key, C4Slice str);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4key_addMapKey(C4Key* key, C4Slice slice);
+        public static extern void c4key_addMapKey(C4Key* key, C4Slice str);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4key_readString(C4KeyReader* reader);

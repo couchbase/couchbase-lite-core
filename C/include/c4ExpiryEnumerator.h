@@ -39,7 +39,7 @@ extern "C" {
         @param e The enumerator.
         @return A slice representing the doc ID (caller must free)
     */
-    C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e) C4API;
+    C4StringResult c4exp_getDocID(const C4ExpiryEnumerator *e) C4API;
     
     /** Purges the processed entries from the expiration key value store */
     bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError) C4API;

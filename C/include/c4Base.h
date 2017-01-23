@@ -173,6 +173,10 @@ typedef struct {
 #endif
 
 #endif // C4_IMPL
+    
+    
+typedef C4Slice C4String;
+typedef C4SliceResult C4StringResult;
 
 /** Creates a slice pointing to the contents of a C string. */
 static C4INLINE C4Slice c4str(const char *str) {
@@ -206,7 +210,7 @@ void c4slice_free(C4SliceResult) C4API;
 
 
 /** Returns an error message describing a C4Error. Remember to free the result. */
-C4SliceResult c4error_getMessage(C4Error error) C4API;
+C4StringResult c4error_getMessage(C4Error error) C4API;
 
 /** Writes an error message describing a C4Error to a buffer, as a C string.
     It will not write past the end of the buffer; the message will be truncated if necessary.

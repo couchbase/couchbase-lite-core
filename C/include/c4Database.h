@@ -79,7 +79,7 @@ extern "C" {
 
 
     /** Opens a database. */
-    C4Database* c4db_open(C4Slice path,
+    C4Database* c4db_open(C4String path,
                           const C4DatabaseConfig *config,
                           C4Error *outError) C4API;
 
@@ -95,7 +95,7 @@ extern "C" {
 
     /** Deletes the file(s) for the database at the given path.
         All C4Databases at that path should be closed first. */
-    bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
+    bool c4db_deleteAtPath(C4String dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
 
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */
@@ -114,7 +114,7 @@ extern "C" {
 
 
     /** Returns the path of the database. */
-    C4SliceResult c4db_getPath(C4Database*) C4API;
+    C4StringResult c4db_getPath(C4Database*) C4API;
 
     /** Returns the configuration the database was opened with. */
     const C4DatabaseConfig* c4db_getConfig(C4Database*) C4API;
@@ -192,9 +192,9 @@ extern "C" {
 
     /** Contents of a raw document. */
     typedef struct {
-        C4Slice key;    ///< The key (document ID)
-        C4Slice meta;   ///< Metadata (usage is up to the caller)
-        C4Slice body;   ///< Body data
+        C4String key;    ///< The key (document ID)
+        C4String meta;   ///< Metadata (usage is up to the caller)
+        C4String body;   ///< Body data
     } C4RawDocument;
 
     /** Frees the storage occupied by a raw document. */
@@ -202,16 +202,16 @@ extern "C" {
 
     /** Reads a raw document from the database. In Couchbase Lite the store named "info" is used for per-database key/value pairs, and the store "_local" is used for local documents. */
     C4RawDocument* c4raw_get(C4Database* database,
-                             C4Slice storeName,
-                             C4Slice docID,
+                             C4String storeName,
+                             C4String docID,
                              C4Error *outError) C4API;
 
     /** Writes a raw document to the database, or deletes it if both meta and body are NULL. */
     bool c4raw_put(C4Database* database,
-                   C4Slice storeName,
-                   C4Slice key,
-                   C4Slice meta,
-                   C4Slice body,
+                   C4String storeName,
+                   C4String key,
+                   C4String meta,
+                   C4String body,
                    C4Error *outError) C4API;
 
     // Store used for database metadata.

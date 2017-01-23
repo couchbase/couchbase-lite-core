@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLEncoder* c4db_createFleeceEncoder(C4Database* db);
 
-        public static string c4db_encodeJSON(C4Database* db, string jsonData, C4Error* outError)
+        public static byte[] c4db_encodeJSON(C4Database* db, string jsonData, C4Error* outError)
         {
             using(var jsonData_ = new C4String(jsonData)) {
                 using(var retVal = NativeRaw.c4db_encodeJSON(db, jsonData_.AsC4Slice(), outError)) {
-                    return ((C4Slice)retVal).CreateString();
+                    return ((C4Slice)retVal).ToArrayFast();
                 }
             }
         }

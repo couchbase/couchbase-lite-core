@@ -44,9 +44,9 @@ extern "C" {
         @param outError  On failure, error info will be stored here.
         @return  The new C4View, or NULL on failure. */
     C4View* c4view_open(C4Database *database,
-                        C4Slice path,
-                        C4Slice viewName,
-                        C4Slice version,
+                        C4String path,
+                        C4String viewName,
+                        C4String version,
                         const C4DatabaseConfig *config,
                         C4Error *outError) C4API;
 
@@ -69,12 +69,12 @@ extern "C" {
 
     /** Deletes the file(s) for the view at the given path.
         All C4Views at that path should be closed first. */
-    bool c4view_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
+    bool c4view_deleteAtPath(C4String dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
 
     /** Deletes the file(s) for a view given its name and parent database.
         Its path is assumed to be the same default path as used by c4view_open when no explicit
         path is given. */
-    bool c4view_deleteByName(C4Database *database, C4Slice viewName, C4Error *outError) C4API;
+    bool c4view_deleteByName(C4Database *database, C4String viewName, C4Error *outError) C4API;
 
     /** @} */
 
@@ -88,7 +88,7 @@ extern "C" {
 
     /** Sets the persistent version string associated with the map function. If the new value is
         different from the one previously stored, the index is invalidated. */
-    void c4view_setMapVersion(C4View *view, C4Slice version) C4API;
+    void c4view_setMapVersion(C4View *view, C4String version) C4API;
 
     /** Returns the total number of rows in the view index. */
     uint64_t c4view_getTotalRows(C4View*) C4API;
@@ -103,7 +103,7 @@ extern "C" {
 
     /** Sets a documentType filter on the view. If non-null, only documents whose
         documentType matches will be indexed by this view. */
-    void c4view_setDocumentType(C4View*, C4Slice docType) C4API;
+    void c4view_setDocumentType(C4View*, C4String docType) C4API;
 
     /** Registers a callback to be invoked when the view's index db starts or finishes compacting.
         May be called on a background thread, so be careful of thread safety. */
@@ -175,7 +175,7 @@ extern "C" {
                         unsigned viewNumber,
                         unsigned emitCount,
                         C4Key* const emittedKeys[],
-                        C4Slice const emittedValues[],
+                        C4String const emittedValues[],
                         C4Error *outError) C4API;
 
     /** Alternate form of c4indexer_emit that takes a C4KeyValueList instead of C arrays. */
@@ -215,12 +215,12 @@ extern "C" {
     typedef struct {
         /** Callback that receives a key/value pair from the index and accumulates it into the
             ongoing reduced result. */
-        void (*accumulate)(void *context, C4Key *key, C4Slice value);
+        void (*accumulate)(void *context, C4Key *key, C4String value);
         /** Callback that returns reduced result as encoded data.
             The data must remain valid until the next call to the reduce() callback!
             This function should also clear the internal accumulation state, in preparation for
             subsequent calls to the `accumulate` callback. */
-        C4Slice (*reduce)(void *context);
+        C4String (*reduce)(void *context);
         /** Arbitrary pointer to caller-supplied storage space for the accumulation state.
             This value is passed to the callbacks for their use. */
         void *context;
@@ -238,8 +238,8 @@ extern "C" {
 
         C4Key *startKey;        ///< Key to start at (the minimum, or maximum if descending=true)
         C4Key *endKey;          ///< Key to end at (the maximum, or minimum if descending=true)
-        C4Slice startKeyDocID;  ///< If multiple rows have startKey, start at one with this docID
-        C4Slice endKeyDocID;    ///< If multiple rows have endKey, end at one with this docID
+        C4String startKeyDocID;  ///< If multiple rows have startKey, start at one with this docID
+        C4String endKeyDocID;    ///< If multiple rows have endKey, end at one with this docID
         
         const C4Key **keys;     ///< List of keys to iterate (overrides start/endKey)
         size_t keysCount;       ///< Number of keys pointed to by `keys`
@@ -268,15 +268,15 @@ extern "C" {
         The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
     typedef struct {
         // All query types:
-        C4Slice docID;                       ///< ID of doc that emitted this row
+        C4String docID;                       ///< ID of doc that emitted this row
         C4SequenceNumber docSequence;        ///< Sequence number of doc that emitted row
 
         // Map/reduce only:
         C4KeyReader key;                     ///< Encoded emitted key
-        C4Slice value;                       ///< Encoded emitted value
+        C4String value;                       ///< Encoded emitted value
 
         // Expression-based only:
-        C4Slice revID;
+        C4String revID;
         C4DocumentFlags docFlags;
 
         // Full-text only:
@@ -301,7 +301,7 @@ extern "C" {
 
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */
-    C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
+    C4StringResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
                                               C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.
