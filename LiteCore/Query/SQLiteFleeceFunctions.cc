@@ -142,6 +142,7 @@ namespace litecore {
             Encoder enc;
             enc.writeValue(val);
             setResultBlobFromSlice(ctx, enc.extractOutput());
+            sqlite3_result_subtype(ctx, kFleeceDataSubtype);
             return true;
         } catch (const bad_alloc&) {
             sqlite3_result_error_code(ctx, SQLITE_NOMEM);

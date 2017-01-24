@@ -260,7 +260,6 @@ private:
                 break;
             case kDataColumn:
                 setResultBlobFromEncodedValue(ctx, currentValue());
-                sqlite3_result_subtype(ctx, kFleeceDataSubtype);
                 break;
             case kPointerColumn: {
                 auto value = currentValue();

@@ -69,7 +69,7 @@ protected:
 };
 
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains", "[query]") {
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"hey\": [1, \"T\", 3.1416, []]}");
@@ -84,7 +84,19 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_sum of fl_value", "[query]") {
+    insert("a",   "{\"hey\": [1, 2, 3, 4]}");
+    insert("b",   "{\"hey\": [2, 4, 6, 8]}");
+    insert("c",   "{\"hey\": []}");
+    insert("d",   "{\"hey\": [1, 2, true, \"foo\"]}");
+    insert("e",   "{\"xxx\": [1, 2, 3, 4]}");
+
+    REQUIRE(query("SELECT ARRAY_SUM(fl_value(body, 'hey')) FROM kv")
+            == (vector<string>{"10.0", "20.0", "0.0", "4.0", "0.0"}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
     insert("two",   "[2, 4, 6, 8]");
     insert("three", "[3, 6, 9, \"dozen\"]");
@@ -100,7 +112,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[fl_each]")
 }
 
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[fl_each]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[query][fl_each]") {
     insert("a",   "{\"one\": 1, \"two\": 2, \"three\": 3}");
     insert("b",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
     insert("c",   "{\"one\": 3, \"two\": 6, \"three\": 9}");
@@ -116,7 +128,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[fl_each]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[fl_each]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[query][fl_each]") {
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"xxx\": [1, 2, 3, 4]}");
