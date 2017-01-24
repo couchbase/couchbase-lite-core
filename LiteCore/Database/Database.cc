@@ -168,11 +168,6 @@ namespace c4Internal {
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
         WITH_LOCK(this);
-        if (refCount() > 1) {
-            Warn("Can't delete C4Database %p; some other object is still using it (refcount=%u)",
-                 this, refCount());
-            error::_throw(error::Busy);
-        }
         if (config.flags & kC4DB_Bundled) {
             FilePath bundle = path().dir();
             _db->close();

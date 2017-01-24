@@ -90,11 +90,12 @@ extern "C" {
         c4db_free() will fail with an error. */
     bool c4db_close(C4Database* database, C4Error *outError) C4API;
 
-    /** Closes the database, deletes the file, and frees the object. */
+    /** Closes the database and deletes the file/bundle. Does not free the handle, although any
+        operation other than c4db_free() will fail with an error. */
     bool c4db_delete(C4Database* database, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database at the given path.
-        All C4Databases at that path should be closed first. */
+        All C4Databases at that path must be closed first. */
     bool c4db_deleteAtPath(C4String dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
 
 
