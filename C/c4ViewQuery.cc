@@ -291,7 +291,7 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
         revID = _revIDBuf = _database->documentFactory().revIDFromMeta(meta);
 
         if (_hasFullText) {
-            auto ft = _enum.fullTextTerms();
+            auto &ft = _enum.fullTextTerms();
             fullTextTerms = (const C4FullTextTerm*)ft.data();
             fullTextTermCount = (uint32_t)ft.size();
         }
