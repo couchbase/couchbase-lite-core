@@ -23,6 +23,7 @@
 #include "DocumentMeta.hh"
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
+#include "BlobStore.hh"
 
 
 namespace c4Internal {
@@ -277,6 +278,24 @@ namespace c4Internal {
 
     KeyStore& Database::defaultKeyStore()                         {return _db->defaultKeyStore();}
     KeyStore& Database::getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
+
+
+    BlobStore* Database::blobStore() {
+        if (!_blobStore) {
+            if (!(config.flags & kC4DB_Bundled))
+                error::_throw(error::UnsupportedOperation);
+            FilePath blobStorePath = path().subdirectoryNamed("Attachments");
+            auto options = BlobStore::Options::defaults;
+            options.create = options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+            options.encryptionAlgorithm =(EncryptionAlgorithm)config.encryptionKey.algorithm;
+            if (options.encryptionAlgorithm != kNoEncryption) {
+                options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
+                                                    sizeof(config.encryptionKey.bytes));
+            }
+            _blobStore.reset(new BlobStore(blobStorePath, &options));
+        }
+        return _blobStore.get();
+    }
 
 
 #pragma mark - TRANSACTIONS:

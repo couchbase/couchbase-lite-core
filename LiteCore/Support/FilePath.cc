@@ -152,6 +152,10 @@ namespace litecore {
         return FilePath(_dir, filename);
     }
 
+    FilePath FilePath::subdirectoryNamed(const std::string &dirname) const {
+        return FilePath(_dir + dirname, "");
+    }
+
 
     FilePath FilePath::tempDirectory() {
         const char *tmpDir = getenv("TMPDIR");

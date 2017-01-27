@@ -46,8 +46,14 @@ extern "C" {
     /** \name Blob Store API
         @{ */
 
+    /** Returns the BlobStore associated with a bundled database.
+        Fails if the database is not bundled.
+        DO NOT call c4blob_freeStore on this! The C4Database will free it when it closes. */
+    C4BlobStore* c4db_getBlobStore(C4Database *db, C4Error* outError) C4API;
+
     /** Opens a BlobStore in a directory. If the flags allow creating, the directory will be
         created if necessary.
+        Call c4blob_freeStore() when finished using the BlobStore.
         @param dirPath  The filesystem path of the directory holding the attachments.
         @param flags  Specifies options like create, read-only
         @param encryptionKey  Optional encryption algorithm & key

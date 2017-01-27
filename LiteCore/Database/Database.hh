@@ -30,6 +30,7 @@ namespace litecore {
     class CASRevisionStore;
     class SequenceTracker;
     struct DocumentMeta;
+    class BlobStore;
 }
 
 
@@ -88,6 +89,8 @@ namespace c4Internal {
 
         SequenceTracker& sequenceTracker()                  {return *_sequenceTracker;}
 
+        BlobStore* blobStore();
+
 #if C4DB_THREADSAFE
         // Mutex for synchronizing DataFile calls. Non-recursive!
         mutex _mutex;
@@ -125,6 +128,7 @@ namespace c4Internal {
     #endif
         unique_ptr<fleece::Encoder> _encoder;
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
+        unique_ptr<BlobStore>       _blobStore;
     };
 
 

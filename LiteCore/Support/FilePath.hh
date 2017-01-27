@@ -76,6 +76,7 @@ namespace litecore {
         FilePath operator[] (const std::string &name) const;
 
         FilePath fileNamed(const std::string &filename) const;
+        FilePath subdirectoryNamed(const std::string &dirname) const;
 
         /////// FILESYSTEM OPERATIONS:
 

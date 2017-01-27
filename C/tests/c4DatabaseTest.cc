@@ -10,6 +10,7 @@
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4ExpiryEnumerator.h"
+#include "c4BlobStore.h"
 #include <cmath>
 #include <errno.h>
 #include <iostream>
@@ -423,4 +424,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     REQUIRE(c4exp_purgeExpired(e, &err));
     c4exp_free(e);
     REQUIRE(expiredCount == 0);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
+{
+    C4Error err;
+    C4BlobStore *blobs = c4db_getBlobStore(db, &err);
+    REQUIRE(blobs != nullptr);
 }

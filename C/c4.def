@@ -153,6 +153,7 @@ c4blob_openReadStream
 c4blob_create
 c4blob_delete
 c4blob_openWriteStream
+c4db_getBlobStore
 
 c4stream_read
 c4stream_getLength

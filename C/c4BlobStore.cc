@@ -16,9 +16,11 @@
 #include "c4Internal.hh"
 #include "c4BlobStore.h"
 #include "BlobStore.hh"
+#include "Database.hh"
 #include <libb64/decode.h>
 
 
+// This is a no-op class that just serves to make c4BlobStore type-compatible with BlobStore.
 struct c4BlobStore : public BlobStore {
 public:
     c4BlobStore(const FilePath &dirPath, const Options *options)
@@ -66,6 +68,14 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
             options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
         }
         return new c4BlobStore(FilePath((string)dirPath), &options);
+    } catchError(outError)
+    return nullptr;
+}
+
+
+C4BlobStore* c4db_getBlobStore(C4Database *db, C4Error* outError) noexcept {
+    try {
+        return (C4BlobStore*) db->blobStore();
     } catchError(outError)
     return nullptr;
 }
