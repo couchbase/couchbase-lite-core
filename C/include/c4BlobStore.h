@@ -78,9 +78,17 @@ extern "C" {
     /** Reads the entire contents of a blob into memory. Caller is responsible for freeing it. */
     C4SliceResult c4blob_getContents(C4BlobStore*, C4BlobKey, C4Error*) C4API;
 
+    /** Returns the path of the file that stores the blob, if possible. This call may fail with
+        error kC4ErrorWrongFormat if the blob is encrypted (in which case the file would be
+        unreadable by the caller) or with kC4ErrorUnsupported if for some implementation reason
+        the blob isn't stored as a standalone file.
+        Thus, the caller MUST use this function only as an optimization, and fall back to reading
+        the contents via the API if it fails.
+        Also, it goes without saying that the caller MUST not modify the file! */
+    C4StringResult c4blob_getFilePath(C4BlobStore*, C4BlobKey, C4Error*) C4API;
+
     /** Stores a blob. The associated key will be written to `outKey`. */
     bool c4blob_create(C4BlobStore*, C4Slice contents, C4BlobKey *outKey, C4Error*) C4API;
-
 
     /** Deletes a blob from the store given its key. */
     bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error*) C4API;

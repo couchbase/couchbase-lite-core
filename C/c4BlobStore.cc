@@ -102,6 +102,22 @@ C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* out
 }
 
 
+C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
+    try {
+        auto path = store->get(internal(key)).path();
+        if (!path.exists()) {
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            return {nullptr, 0};
+        } else if (store->isEncrypted()) {
+            recordError(LiteCoreDomain, kC4ErrorWrongFormat, outError);
+            return {nullptr, 0};
+        }
+        return sliceResult((string)path);
+    } catchError(outError)
+    return {nullptr, 0};
+}
+
+
 bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey *outKey, C4Error* outError) noexcept {
     try {
         Blob blob = store->put(contents);

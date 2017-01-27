@@ -84,6 +84,10 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
     CHECK(data.buf == nullptr);
     CHECK(data.size == 0);
     CHECK(error.code == kC4ErrorNotFound);
+    data = c4blob_getFilePath(store, bogusKey, &error);
+    CHECK(data.buf == nullptr);
+    CHECK(data.size == 0);
+    CHECK(error.code == kC4ErrorNotFound);
 }
 
 
@@ -110,6 +114,18 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
     REQUIRE(gotBlob.buf != nullptr);
     REQUIRE(gotBlob.size == blobToStore.size);
     CHECK(memcmp(gotBlob.buf, blobToStore.buf, gotBlob.size) == 0);
+
+    C4SliceResult p = c4blob_getFilePath(store, key, &error);
+    if (encrypted) {
+        CHECK(p.buf == nullptr);
+        CHECK(p.size == 0);
+        CHECK(error.code == kC4ErrorWrongFormat);
+    } else {
+        REQUIRE(p.buf != nullptr);
+        string path((char*)p.buf, p.size);
+        string filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";
+        CHECK(path.find(filename) == path.size() - filename.size());
+    }
 
     // Try storing it again
     C4BlobKey key2;

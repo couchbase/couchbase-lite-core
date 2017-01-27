@@ -109,6 +109,8 @@ namespace litecore {
 
         const FilePath& dir() const                 {return _dir;}
         const Options& options() const              {return _options;}
+        bool isEncrypted() const                    {return _options.encryptionAlgorithm !=
+                                                                kNoEncryption;}
         uint64_t count() const;
         uint64_t totalSize() const;
 

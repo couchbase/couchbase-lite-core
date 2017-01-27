@@ -148,6 +148,7 @@ c4blob_freeStore
 c4blob_deleteStore
 c4blob_getSize
 c4blob_getContents
+c4blob_getFilePath
 c4blob_openReadStream
 c4blob_create
 c4blob_delete
