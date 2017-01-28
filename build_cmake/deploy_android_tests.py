@@ -19,6 +19,7 @@ class cd:
 
 device_info = query_android_devices.query_android_devices(True)
 
+exit_code = 0
 for key, value in device_info.iteritems():
     adb = subprocess.Popen(["adb", "-s", key, "push", "run_android_tests.sh", "/data/local/tmp/LiteCore"])
     adb.communicate()
@@ -33,3 +34,6 @@ for key, value in device_info.iteritems():
         except subprocess.CalledProcessError as e:
             print e.output
             print "Tests failed!"
+            exit_code = exit_code + 1
+
+exit(exit_code)
