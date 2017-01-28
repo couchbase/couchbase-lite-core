@@ -41,7 +41,7 @@ def extract_props(device_id):
                     retVal[value] = match.group(2)
                     if VERBOSE:
                         print "\t{} = {}".format(value, match.group(2))
-                elif match.group(1) == "ro.build.characteristics" and "emulator" in match.group(2):
+                elif retVal["emulator"] == False and match.group(1) == "ro.build.characteristics" and "emulator" in match.group(2):
                     retVal["emulator"] = True
                     if VERBOSE:
                         print "\tEmulator detected ({} = {})".format(match.group(1), match.group(2))

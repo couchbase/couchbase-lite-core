@@ -23,13 +23,13 @@ for key, value in device_info.iteritems():
     adb = subprocess.Popen(["adb", "-s", key, "push", "run_android_tests.sh", "/data/local/tmp/LiteCore"])
     adb.communicate()
 
+    print "Running tests on {} (API {} / {})".format(key, value["api"], value["arch"])
     with cd("lib/{}".format(value["arch"])):
-        adb = subprocess.Popen(["adb", "-s", key, "push", "libLiteCore.so","libsqlite3.so",
+        subprocess.check_output(["adb", "-s", key, "push", "libLiteCore.so","libsqlite3.so",
                                 "LiteCore/tests/CppTests", "C/tests/C4Tests",
                                 "/data/local/tmp/LiteCore"])
-        adb.communicate()
-        adb = subprocess.Popen(["adb", "-s", key, "shell", "cd /data/local/tmp/LiteCore && ./run_android_tests.sh"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for output_line in iter(adb.stdout.readline, b''):
-            print output_line.rstrip()
-
-
+        try:
+            subprocess.check_output(["adb", "-s", key, "shell", "cd /data/local/tmp/LiteCore && ./run_android_tests.sh"], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            print e.output
+            print "Tests failed!"
