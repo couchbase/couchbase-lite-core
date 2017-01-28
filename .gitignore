@@ -17,6 +17,9 @@ DerivedData/
 !/build_cmake/build*
 !/build_cmake/strip.sh
 !/build_cmake/iOS.cmake
+!/build_cmake/deploy_android_tests.py
+!/build_cmake/query_android_devices.py
+!/build_cmake/run_android_tests.sh
 stripopts
 empty.cpp
 
