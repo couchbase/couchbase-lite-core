@@ -138,6 +138,37 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
+    // Create the same index as the above test:
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+
+    // Delete doc "0000015":
+    {
+        TransactionHelper t(db);
+
+        C4Error c4err;
+        C4Document *doc = c4doc_get(db, C4STR("0000015"), true, &c4err);
+        REQUIRE(doc);
+        C4DocPutRequest rq = {};
+        rq.docID = C4STR("0000015");
+        rq.history = &doc->revID;
+        rq.historyCount = 1;
+        rq.revFlags = kRevDeleted;
+        rq.save = true;
+        C4Document *updatedDoc = c4doc_put(db, &rq, nullptr, &c4err);
+        INFO("c4err = " << c4err.domain << "/" << c4err.code);
+        REQUIRE(updatedDoc != nullptr);
+        c4doc_free(doc);
+        c4doc_free(updatedDoc);
+    }
+
+    // Now run a query that would have returned the deleted doc, if it weren't deleted:
+    compile(json5("['=', ['length()', ['.name.first']], 9]"));
+    CHECK(run(0, UINT64_MAX) == (vector<string>{ "0000099" }));
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));

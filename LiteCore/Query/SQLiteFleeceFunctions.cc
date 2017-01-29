@@ -44,6 +44,8 @@ namespace litecore {
                 if (funcCtx->accessor)
                     fleece = funcCtx->accessor(fleece);
             }
+            if (!fleece)
+                return Dict::kEmpty;             // No body; may be deleted rev
             const Value *root = Value::fromTrustedData(fleece);
             if (!root) {
                 Warn("Invalid Fleece data in SQLite table");
