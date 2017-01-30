@@ -26,9 +26,11 @@ for key, value in device_info.iteritems():
 
     print "Running tests on {} (API {} / {})".format(key, value["api"], value["arch"])
     with cd("lib/{}".format(value["arch"])):
-        subprocess.check_output(["adb", "-s", key, "push", "libLiteCore.so","libsqlite3.so",
+        adb = subprocess.Popen(["adb", "-s", key, "push", "libLiteCore.so","libsqlite3.so",
                                 "LiteCore/tests/CppTests", "C/tests/C4Tests",
                                 "/data/local/tmp/LiteCore"])
+        adb.communicate()
+
         try:
             subprocess.check_output(["adb", "-s", key, "shell", "cd /data/local/tmp/LiteCore && ./run_android_tests.sh"], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:

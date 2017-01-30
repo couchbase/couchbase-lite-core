@@ -85,6 +85,52 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestDBQueryExpressionIndex()
+        {
+            RunTestVariants(() => {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
+                    C4IndexType.ValueIndex, null, err));
+                Compile(Json5("['=', ['length()', ['.name.first']], 9]"));
+                Run().Should().Equal(new[] { "0000015", "0000099" }, "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
+        public void TestDeleteIndexedDoc()
+        {
+            RunTestVariants(() => {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
+                    C4IndexType.ValueIndex, null, err));
+                
+                // Delete doc "0000015":
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, "0000015", true, err));
+                    var rq = new C4DocPutRequest {
+                        docID = C4Slice.Constant("0000015"),
+                        history = &doc->revID,
+                        historyCount = 1,
+                        revFlags = C4RevisionFlags.Deleted,
+                        save = true
+                    };
+                    var updatedDoc = (C4Document *)LiteCoreBridge.Check(err => {
+                        var localRq = rq;
+                        return Native.c4doc_put(Db, &localRq, null, err);
+                    });
+
+                    Native.c4doc_free(doc);
+                    Native.c4doc_free(updatedDoc);
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                // Now run a query that would have returned the deleted doc, if it weren't deleted:
+                Compile(Json5("['=', ['length()', ['.name.first']], 9]"));
+                Run().Should().Equal(new[] { "0000099" }, "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
         public void TestFullTextQuery()
         {
             RunTestVariants(() => {
@@ -93,17 +139,6 @@ namespace LiteCore.Tests
                 Compile(Json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
                 Run().Should().Equal(new[] { "0000013", "0000015", "0000043", "0000044", "0000052" }, 
                 "because otherwise the query returned incorrect results");
-            });
-        }
-
-        [Fact]
-        public void TestDBQueryExpressionIndex()
-        {
-            RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
-                    C4IndexType.ValueIndex, null, err));
-                Compile(Json5("['=', ['length()', ['.name.first']], 9]"));
-                Run().Should().Equal(new[] { "0000015", "0000099" }, "because otherwise the query returned incorrect results");
             });
         }
 

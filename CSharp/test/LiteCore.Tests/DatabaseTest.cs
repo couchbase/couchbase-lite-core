@@ -438,6 +438,14 @@ namespace LiteCore.Tests
             });
         }
 
+        [Fact]
+        public void TestDatabaseBlobStore()
+        {
+            RunTestVariants(() => {
+                LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+            });
+        }
+
         private void SetupAllDocs()
         {
             for(int i = 1; i < 100; i++) {

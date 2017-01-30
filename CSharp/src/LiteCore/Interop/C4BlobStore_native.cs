@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ namespace LiteCore.Interop
             }
         }
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4BlobStore* c4db_getBlobStore(C4Database* db, C4Error* outError);
+
         public static C4BlobStore* c4blob_openStore(string dirPath, C4DatabaseFlags flags, C4EncryptionKey* encryptionKey, C4Error* outError)
         {
             using(var dirPath_ = new C4String(dirPath)) {
@@ -64,6 +67,13 @@ namespace LiteCore.Interop
         {
             using(var retVal = NativeRaw.c4blob_getContents(store, key, outError)) {
                 return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
+        public static string c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError)
+        {
+            using(var retVal = NativeRaw.c4blob_getFilePath(store, key, outError)) {
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -133,6 +143,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
