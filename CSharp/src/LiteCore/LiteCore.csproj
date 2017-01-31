@@ -2,6 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+    <IsMac>false</IsMac>
+    <IsMac Condition=" '$(OS)' == 'Unix' AND Exists('/Library/Frameworks') ">true</IsMac>
+  </PropertyGroup>
+  <PropertyGroup>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -84,6 +88,52 @@
     <Compile Include="Interop\SQLiteStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\C4String.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' OR '$(Configuration)' == 'Packaging' ">
+    <None Include="..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.dll">
+      <Link>x86\LiteCore.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.pdb">
+      <Link>x86\LiteCore.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.dll">
+      <Link>x86\sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.pdb">
+      <Link>x86\sqlite3.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.dll">
+      <Link>x64\LiteCore.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.pdb">
+      <Link>x64\LiteCore.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.dll">
+      <Link>x64\sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.pdb">
+      <Link>x64\sqlite3.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition=" $(IsMac) OR '$(Configuration)' == 'Packaging' ">
+    <None Include="..\..\..\build_cmake\libLiteCore.dylib">
+      <Link>libLiteCore.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition=" (!$(IsMac) AND '$(OS)' == 'Unix') OR '$(Configuration)' == 'Packaging' ">
+    <None Include="..\..\..\build_cmake\libLiteCore.so">
+      <Link>libLiteCore.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

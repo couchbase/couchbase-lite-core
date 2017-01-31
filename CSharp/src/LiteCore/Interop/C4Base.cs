@@ -20,6 +20,9 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -78,7 +81,6 @@ namespace LiteCore.Interop
 
         public C4Error(LiteCoreError code) : this(C4ErrorDomain.LiteCoreDomain, (int)code)
         {
-            
         }
 
         public C4Error(FLError code) : this(C4ErrorDomain.FleeceDomain, (int)code)
@@ -227,6 +229,54 @@ namespace LiteCore.Interop
         }
     }
 
+    public static unsafe partial class Native
+    {
+        static Native()
+        {
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                var codeBase = AppContext.BaseDirectory;
+                if(!codeBase.EndsWith("\\"))
+                {
+                    codeBase = codeBase + "\\";
+                }
+
+                UriBuilder uri = new UriBuilder(codeBase);
+                var directory = Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+
+                Debug.Assert(Path.IsPathRooted(directory), "directory is not rooted.");
+                var architecture = IntPtr.Size == 4
+                    ? "x86"
+                    : "x64";
+
+                var dllPath = Path.Combine(directory, architecture, "LiteCore.dll");
+                var dllPathUWP = Path.Combine(directory, "LiteCore-Interop", architecture, "LiteCore.dll");
+                var dllPathASP = Path.Combine(directory, "bin", architecture, "LiteCore.dll");
+                var foundPath = default(string);
+                foreach(var path in new[] {  dllPath, dllPathUWP, dllPathASP }) {
+                    foundPath = File.Exists(path) ? path : null; 
+                    if(foundPath != null) {
+                        break;
+                    }
+                }
+
+                if(foundPath == null) {
+                    Console.WriteLine("Could not find LiteCore.dll!  Nothing is going to work!");
+                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
+                }
+
+                const uint LOAD_WITH_ALTERED_SEARCH_PATH = 8;
+                var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
+                if(ptr == IntPtr.Zero) {
+                    Console.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
+                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
+                }
+            }
+        }
+
+        [DllImport("kernel32")]
+        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void C4LogCallback(C4LogLevel level, C4Slice message);
+    public delegate void C4LogCallback(C4LogDomain domain, C4LogLevel level, C4Slice message);
 }
