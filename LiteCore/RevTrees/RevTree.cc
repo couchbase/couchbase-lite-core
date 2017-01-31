@@ -304,7 +304,8 @@ namespace litecore {
     }
 
     unsigned RevTree::prune(unsigned maxDepth) {
-        if (maxDepth == 0 || _revs.size() <= maxDepth)
+        Assert(maxDepth > 0);
+        if (_revs.size() <= maxDepth)
             return 0;
 
         // First find all the leaves, and walk from each one down to its root:

@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4Private.h"
+#include "Benchmark.hh"
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
@@ -153,6 +154,53 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
             REQUIRE(c4doc_save(doc, 20, &error));
         }
     }
+    c4doc_free(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
+    if (isRevTrees()) {
+        CHECK(c4db_getMaxRevTreeDepth(db) == 20);
+        c4db_setMaxRevTreeDepth(db, 30);
+        CHECK(c4db_getMaxRevTreeDepth(db) == 30);
+        reopenDB();
+        CHECK(c4db_getMaxRevTreeDepth(db) == 30);
+    }
+
+    static const unsigned kNumRevs = 10000;
+    Stopwatch st;
+    C4Error error;
+    auto doc = c4doc_get(db, kDocID, false, &error);
+    {
+        TransactionHelper t(db);
+        REQUIRE(doc != nullptr);
+        for (unsigned i = 0; i < kNumRevs; i++) {
+            C4DocPutRequest rq = {};
+            rq.docID = doc->docID;
+            rq.history = &doc->revID;
+            rq.historyCount = 1;
+            rq.body = kBody;
+            rq.save = true;
+            auto savedDoc = c4doc_put(db, &rq, nullptr, &error);
+            REQUIRE(savedDoc != nullptr);
+            c4doc_free(doc);
+            doc = savedDoc;
+        }
+    }
+    C4Log("Created %u revisions in %.3f ms", kNumRevs, st.elapsed());
+
+    // Check rev tree depth:
+    unsigned nRevs = 0;
+    c4doc_selectCurrentRevision(doc);
+    do {
+        if (isRevTrees())
+            CHECK(c4rev_getGeneration(doc->selectedRev.revID) == kNumRevs - nRevs);
+        ++nRevs;
+    } while (c4doc_selectParentRevision(doc));
+    C4Log("Document rev tree depth is %u", nRevs);
+    if (isRevTrees())
+        REQUIRE(nRevs == 30);
+
     c4doc_free(doc);
 }
 

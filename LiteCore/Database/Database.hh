@@ -56,6 +56,9 @@ namespace c4Internal {
         sequence_t lastSequence()       {WITH_LOCK(this); return defaultKeyStore().lastSequence();}
         time_t nextDocumentExpirationTime();
 
+        uint32_t maxRevTreeDepth();
+        void setMaxRevTreeDepth(uint32_t depth);
+
         void rekey(const C4EncryptionKey *newKey);
 
         void compact();
@@ -129,6 +132,7 @@ namespace c4Internal {
         unique_ptr<fleece::Encoder> _encoder;
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
         unique_ptr<BlobStore>       _blobStore;
+        uint32_t                    _maxRevTreeDepth {0};
     };
 
 

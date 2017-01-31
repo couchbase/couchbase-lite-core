@@ -156,6 +156,16 @@ C4SequenceNumber c4db_getLastSequence(C4Database* database) noexcept {
 }
 
 
+uint32_t c4db_getMaxRevTreeDepth(C4Database *database) noexcept {
+    return tryCatch<uint32_t>(nullptr, bind(&Database::maxRevTreeDepth, database));
+}
+
+
+void c4db_setMaxRevTreeDepth(C4Database *database, uint32_t depth) noexcept {
+    tryCatch(nullptr, bind(&Database::setMaxRevTreeDepth, database, depth));
+}
+
+
 static void getUUID(Database *database, slice key, C4UUID *uuid) {
     auto &store = database->getKeyStore((string)kC4InfoStore);
     Record r = store.get(key);

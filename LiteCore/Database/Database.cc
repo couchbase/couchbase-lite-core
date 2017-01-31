@@ -24,10 +24,16 @@
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
 #include "BlobStore.hh"
+#include "forestdb_endian.h"
 
 
 namespace c4Internal {
     using namespace litecore;
+    using namespace fleece;
+
+
+    static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
+    static uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
 #pragma mark - LIFECYCLE:
@@ -273,6 +279,31 @@ namespace c4Internal {
             return (time_t)r.readInt();
         }
         return 0;
+    }
+
+
+    uint32_t Database::maxRevTreeDepth() {
+        if (_maxRevTreeDepth == 0) {
+            auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+            _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
+            if (_maxRevTreeDepth == 0)
+                _maxRevTreeDepth = kDefaultMaxRevTreeDepth;
+        }
+        return _maxRevTreeDepth;
+    }
+
+    void Database::setMaxRevTreeDepth(uint32_t depth) {
+        if (depth == 0)
+            depth = kDefaultMaxRevTreeDepth;
+        KeyStore &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+        Record rec = info.get(kMaxRevTreeDepthKey);
+        if (depth != rec.bodyAsUInt()) {
+            rec.setBodyAsUInt(depth);
+            Transaction t(*_db);
+            info.write(rec, t);
+            t.commit();
+        }
+        _maxRevTreeDepth = depth;
     }
 
 
