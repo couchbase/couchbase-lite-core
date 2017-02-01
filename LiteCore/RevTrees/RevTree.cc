@@ -193,12 +193,22 @@ namespace litecore {
             ((Rev*)parentRev)->clearFlag(Rev::kLeaf);
         }
 
-        _revs.push_back(newRev);
-
         _changed = true;
-        if (_revs.size() > 1)
-            _sorted = false;
-        return &_revs.back();
+        bool firstRev = _revs.empty();
+        if (!firstRev && newRev.revID > _revs[0].revID) {
+            // If new rev is biggest, insert at start, so revs stay sorted
+            _revs.insert(_revs.begin(), newRev);
+            for (auto &rev : _revs)
+                if (rev._parentIndex != Rev::kNoParent)
+                    ++rev._parentIndex;
+            return &_revs[0];
+        } else {
+            // Else insert at end, which is locally cheapest:
+            if (!firstRev)
+                _sorted = false;
+            _revs.push_back(newRev);
+            return &_revs.back();
+        }
     }
 
     const Rev* RevTree::insert(revid revID, slice data, Rev::Flags revFlags,
