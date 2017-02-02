@@ -57,7 +57,8 @@ namespace litecore {
     private:
         struct Operation;
         static const Operation kOperationList[];
-        static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kOrderByOperation;
+        static const Operation kOuterOperation, kArgListOperation, kColumnListOperation,
+                               kExpressionListOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
@@ -71,6 +72,7 @@ namespace litecore {
 
         void writeSelect(const fleece::Dict *dict);
         void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
+        unsigned writeSelectListClause(const fleece::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
 
         void prefixOp(slice, fleece::Array::iterator&);
         void postfixOp(slice, fleece::Array::iterator&);
@@ -111,6 +113,7 @@ namespace litecore {
         std::set<std::string> _variables;
         std::vector<std::string> _ftsTables;
         unsigned _1stCustomResultCol {0};
+        bool _aggregatesOK {false};
     };
 
 }

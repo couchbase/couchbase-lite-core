@@ -75,8 +75,8 @@ namespace litecore {
         {","_sl,       0, 9, -2, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kColumnListOperation
         {","_sl,       0, 9, -2, &QueryParser::infixOp};
-    const QueryParser::Operation QueryParser::kOrderByOperation
-        {"ORDER BY"_sl,1, 9, -3, &QueryParser::infixOp};
+    const QueryParser::Operation QueryParser::kExpressionListOperation
+        {nullslice,    1, 9, -3, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kOuterOperation
         {nullslice,    1, 1, -1};
 

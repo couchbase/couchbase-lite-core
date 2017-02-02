@@ -35,7 +35,7 @@ public:
             queryStr = whereExpr;
         } else {
             queryStr = string("[\"SELECT\", {\"WHERE\": ") + whereExpr
-                                        + ", \"ORDER BY\": " + sortExpr + "}]";
+                                        + ", \"ORDER_BY\": " + sortExpr + "}]";
         }
         INFO("Query = " << queryStr);
         C4Error error;
@@ -178,12 +178,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
 }
 
 
+static string getColumn(C4SliceResult customColumns, unsigned i) {
+    REQUIRE(customColumns.buf);
+    FLValue cols = FLValue_FromData({customColumns.buf, customColumns.size});
+    FLArray colsArray = FLValue_AsArray(cols);
+    REQUIRE(FLArray_Count(colsArray) >= i+1);
+    auto s = FLValue_AsString(FLArray_Get(colsArray, i));
+    REQUIRE(s.buf);
+    return string((char*)s.buf, s.size);
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compile(json5("{WHAT: ['.name.first', '.name.last'], \
                    WHERE: ['>=', ['length()', ['.name.first']], 9],\
-              'ORDER BY': [['.name.first']]}"));
+                ORDER_BY: [['.name.first']]}"));
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
@@ -191,19 +202,65 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     int i = 0;
     while (c4queryenum_next(e, &error)) {
         auto customColumns = c4queryenum_customColumns(e);
-        REQUIRE(customColumns.buf);
-        FLValue cols = FLValue_FromData({customColumns.buf, customColumns.size});
-        FLArray colsArray = FLValue_AsArray(cols);
-        REQUIRE(FLArray_Count(colsArray) == 2);
-        auto first = FLValue_AsString(FLArray_Get(colsArray, 0));
-        auto last  = FLValue_AsString(FLArray_Get(colsArray, 1));
-        CHECK(string((char*)first.buf, first.size) == expectedFirst[i]);
-        CHECK(string((char*)last.buf,  last.size)  == expectedLast[i]);
+        CHECK(getColumn(customColumns, 0) == expectedFirst[i]);
+        CHECK(getColumn(customColumns, 1)  == expectedLast[i]);
         c4slice_free(customColumns);
         ++i;
     }
     CHECK(error.code == 0);
     CHECK(i == 3);
+    c4queryenum_free(e);
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
+    compile(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        auto customColumns = c4queryenum_customColumns(e);
+        CHECK(getColumn(customColumns, 0) == "Aerni");
+        CHECK(getColumn(customColumns, 1) == "Zirk");
+        c4slice_free(customColumns);
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == 1);
+    c4queryenum_free(e);
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
+    const vector<string> expectedState = {"AL",      "AR",        "AZ",       "CA"};
+    const vector<string> expectedMin   = {"Laidlaw", "Okorududu", "Kinatyan", "Bejcek"};
+    const vector<string> expectedMax   = {"Mulneix", "Schmith",   "Kinatyan", "Visnic"};
+    const int expectedRowCount = 42;
+
+    compile(json5("{WHAT: [['.contact.address.state'],\
+                           ['min()', ['.name.last']],\
+                           ['max()', ['.name.last']]],\
+                GROUP_BY: [['.contact.address.state']]}"));
+    C4Error error {};
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        auto customColumns = c4queryenum_customColumns(e);
+        C4Log("state=%s, first=%s, last=%s", getColumn(customColumns, 0).c_str(), getColumn(customColumns, 1).c_str(), getColumn(customColumns, 2).c_str());
+        if (i < expectedState.size()) {
+            CHECK(getColumn(customColumns, 0) == expectedState[i]);
+            CHECK(getColumn(customColumns, 1) == expectedMin[i]);
+            CHECK(getColumn(customColumns, 2) == expectedMax[i]);
+        }
+        c4slice_free(customColumns);
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == expectedRowCount);
     c4queryenum_free(e);
 }
 

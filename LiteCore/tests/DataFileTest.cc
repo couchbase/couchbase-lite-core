@@ -378,7 +378,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
 
     unique_ptr<Query> query{ store->compileQuery(json5(
         "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
-                     'ORDER BY': [['DESC', ['rank()', ['.', 'sentence']]]]}]")) };
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]]}]")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
     int expectedOrder[] = {1, 2, 0, 4};

@@ -47,7 +47,7 @@ namespace litecore {
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
-    // printf args for a slice; matching format spec should be %.*s
+    // expands to the printf-style args for a slice; matching format spec should be %.*s
     #define splat(SLICE)    (int)(SLICE).size, (SLICE).buf
 
 
@@ -130,6 +130,11 @@ namespace litecore {
     void QueryParser::reset() {
         _context.clear();
         _context.push_back(&kOuterOperation);
+        _parameters.clear();
+        _variables.clear();
+        _ftsTables.clear();
+        _1stCustomResultCol = 0;
+        _aggregatesOK = false;
     }
 
 
@@ -151,7 +156,7 @@ namespace litecore {
                 parseNode(expression);
             } else {
                 // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
-                writeSelect(expression, nullptr);
+                writeSelect(expression, Dict::kEmpty);
             }
         }
     }
@@ -173,8 +178,12 @@ namespace litecore {
         if (where)
             findFTSProperties(where);
 
-        // 'What' clause:
         _sql << "SELECT ";
+        auto distinct = operands->get("DISTINCT"_sl);
+        if (distinct && distinct->asBool())
+            _sql << "DISTINCT ";
+
+        // Default result columns:
         int nCol = 0;
         for (auto &col : _baseResultColumns)
             _sql << (nCol++ ? ", " : "") << col;
@@ -183,23 +192,14 @@ namespace litecore {
         }
         _1stCustomResultCol = nCol;
 
-        auto what = operands ? operands->get("WHAT"_sl) : nullptr;
-        if (what) {
-            const Array *whats = what->asArray();
-            if (!whats)
-                fail("WHAT must be an array");
-            for (Array::iterator i(whats); i; ++i) {
-                if (nCol++)
-                    _sql << ", ";
-                writeResultColumn(i.value());
-            }
-        }
+        // 'WHAT' clause:
+        nCol += writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
         if (nCol == 0)
             fail("No result columns");
 
         // FROM clause:
         _sql << " FROM ";
-        auto from = operands ? operands->get(" FROM"_sl) : nullptr;
+        auto from = operands->get(" FROM"_sl);
         if (from) {
             fail("FROM parameter to SELECT isn't supported yet, sorry");
         } else {
@@ -216,15 +216,9 @@ namespace litecore {
             parseNode(where);
         }
 
-        // ORDER BY clause:
-        auto order = operands ? operands->get("ORDER BY"_sl) : nullptr;
-        if (order) {
-            _sql << " ORDER BY ";
-            _context.push_back(&kOrderByOperation); // suppress parens around arg list
-            Array::iterator orderBys(mustBeArray(order));
-            writeColumnList(orderBys);
-            _context.pop_back();
-        }
+        // GROUP_BY, ORDER_BY clauses:
+        writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ");
+        writeSelectListClause(operands, "ORDER_BY"_sl, " ORDER BY ", true);
 
         // LIMIT, OFFSET clauses:
         // TODO: Use the ones from operands
@@ -232,6 +226,29 @@ namespace litecore {
             _sql << " LIMIT " << _defaultLimit;
         if (!_defaultOffset.empty())
             _sql << " OFFSET " << _defaultOffset;
+    }
+
+
+    // Writes a SELECT statement's 'WHAT', 'GROUP BY' or 'ORDER BY' clause:
+    unsigned QueryParser::writeSelectListClause(const Dict *operands,
+                                                slice key,
+                                                const char *sql,
+                                                bool aggregatesOK)
+    {
+        auto param = operands->get(key);
+        if (!param) return 0;
+        auto list = mustBeArray(param);
+        int count = list->count();
+        if (count == 0) return 0;
+
+        _sql << sql;
+        _context.push_back(&kExpressionListOperation); // suppresses parens around arg list
+        Array::iterator items(list);
+        _aggregatesOK = aggregatesOK;
+        writeColumnList(items);
+        _aggregatesOK = false;
+        _context.pop_back();
+        return count;
     }
 
 
@@ -270,7 +287,7 @@ namespace litecore {
 
     void QueryParser::writeStringLiteralAsProperty(slice str) {
         if (str.size == 0 || str[0] != '.')
-            fail("Invalid property name; must start with '.'");
+            fail("Invalid property name '%.*s'; must start with '.'", splat(str));
         str.moveStart(1);
         writePropertyGetter("fl_value", str.asString());
     }
@@ -581,6 +598,8 @@ namespace litecore {
         }
         if (!spec->name)
             fail("Unknown function '%.*s'", splat(op));
+        if (spec->aggregate && !_aggregatesOK)
+            fail("Cannot use aggregate function %.*s() here", splat(op));
         auto arity = operands.count();
         if (arity < spec->minArgs)
             fail("Too few arguments for function '%.*s'", splat(op));
