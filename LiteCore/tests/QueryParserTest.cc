@@ -7,6 +7,7 @@
 //
 
 #include "QueryParser.hh"
+#include "Error.hh"
 #include "Fleece.hh"
 #include <string>
 #include <vector>
@@ -23,6 +24,14 @@ static string parseWhere(string json) {
     return qp.SQL();
 }
 
+static void mustFail(string json) {
+    QueryParser qp("kv_default");
+    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
+    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+        qp.parseJustExpression(Value::fromTrustedData(fleece));
+    });
+}
+
 
 TEST_CASE("QueryParser basic", "[Query]") {
     CHECK(parseWhere("['=', ['.', 'name'], 'Puddin\\' Tane']")
@@ -33,8 +42,10 @@ TEST_CASE("QueryParser basic", "[Query]") {
           == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['=', ['+', 2, 2], 5]")
           == "2 + 2 = 5");
-    CHECK(parseWhere("['=', ['pow()', 25, ['/', 1, 2]], 5]")
-          == "pow(25, 1 / 2) = 5");
+    CHECK(parseWhere("['=', ['power()', 25, ['/', 1, 2]], 5]")
+          == "power(25, 1 / 2) = 5");
+    CHECK(parseWhere("['=', ['POWER()', 25, ['/', 1, 2]], 5]")
+          == "power(25, 1 / 2) = 5");
     CHECK(parseWhere("['NOT', ['<', 2, 1]]")
           == "NOT (2 < 1)");
     CHECK(parseWhere("['-', ['+', 2, 1]]")
@@ -63,10 +74,10 @@ TEST_CASE("QueryParser bindings", "[Query]") {
 
 
 TEST_CASE("QueryParser special properties", "[Query]") {
-    CHECK(parseWhere("['foo()', ['.', '_id'], ['.', '_sequence']]")
-          == "foo(key, sequence)");
-    CHECK(parseWhere("['foo()', ['._id'], ['.', '_sequence']]")
-          == "foo(key, sequence)");
+    CHECK(parseWhere("['ifnull()', ['.', '_id'], ['.', '_sequence']]")
+          == "ifnull(key, sequence)");
+    CHECK(parseWhere("['ifnull()', ['._id'], ['.', '_sequence']]")
+          == "ifnull(key, sequence)");
 }
 
 
@@ -134,4 +145,11 @@ TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
           == "SELECT fl_value(body, 'first'), length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+}
+
+
+TEST_CASE("QueryParser errors", "[Query][!throws]") {
+    mustFail("['poop()', 1]");
+    mustFail("['power()', 1]");
+    mustFail("['power()', 1, 2, 3]");
 }

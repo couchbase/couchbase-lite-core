@@ -13,7 +13,10 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+// https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
+
 #include "QueryParser.hh"
+#include "QueryParserTables.hh"
 #include "Error.hh"
 #include "Fleece.hh"
 #include "Path.hh"
@@ -276,71 +279,6 @@ namespace litecore {
 #pragma mark - PARSING THE "WHERE" CLAUSE:
     
     
-    // This table defines the operators and their characteristics.
-    // Each operator has a name, min/max argument count, precedence, and a handler method.
-    // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
-    // http://www.sqlite.org/lang_expr.html
-    typedef void (QueryParser::*OpHandler)(slice op, Array::iterator& args);
-    struct QueryParser::Operation {
-        slice op; int minArgs; int maxArgs; int precedence; OpHandler handler;};
-    const QueryParser::Operation QueryParser::kOperationList[] = {
-        {"."_sl,       1, 9,  9,  &QueryParser::propertyOp},
-        {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
-        {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
-
-        {"MISSING"_sl, 0, 0,  9,  &QueryParser::missingOp},
-
-        {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},
-
-        {"*"_sl,       2, 9,  7,  &QueryParser::infixOp},
-        {"/"_sl,       2, 2,  7,  &QueryParser::infixOp},
-        {"%"_sl,       2, 2,  7,  &QueryParser::infixOp},
-
-        {"+"_sl,       2, 9,  6,  &QueryParser::infixOp},
-        {"-"_sl,       2, 2,  6,  &QueryParser::infixOp},
-        {"-"_sl,       1, 1,  9,  &QueryParser::prefixOp},
-
-        {"<"_sl,       2, 2,  4,  &QueryParser::infixOp},
-        {"<="_sl,      2, 2,  4,  &QueryParser::infixOp},
-        {">"_sl,       2, 2,  4,  &QueryParser::infixOp},
-        {">="_sl,      2, 2,  4,  &QueryParser::infixOp},
-
-        {"="_sl,       2, 2,  3,  &QueryParser::infixOp},
-        {"!="_sl,      2, 2,  3,  &QueryParser::infixOp},
-        {"IS"_sl,      2, 2,  3,  &QueryParser::infixOp},
-        {"IS NOT"_sl,  2, 2,  3,  &QueryParser::infixOp},
-        {"IN"_sl,      2, 9,  3,  &QueryParser::inOp},
-        {"NOT IN"_sl,  2, 9,  3,  &QueryParser::inOp},
-        {"LIKE"_sl,    2, 2,  3,  &QueryParser::infixOp},
-        {"MATCH"_sl,   2, 2,  3,  &QueryParser::matchOp},
-        {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
-        {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
-
-        {"NOT"_sl,     1, 1,  9,  &QueryParser::prefixOp},
-        {"AND"_sl,     2, 9,  2,  &QueryParser::infixOp},
-        {"OR"_sl,      2, 9,  2,  &QueryParser::infixOp},
-
-        {"ANY"_sl,     3, 3,  1,  &QueryParser::anyEveryOp},
-        {"EVERY"_sl,   3, 3,  1,  &QueryParser::anyEveryOp},
-        {"ANY AND EVERY"_sl, 3, 3,  1,  &QueryParser::anyEveryOp},
-
-        {"SELECT"_sl,  1, 1,  1,  &QueryParser::selectOp},
-
-        {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
-
-        {nullslice,    0, 0, 10,  &QueryParser::fallbackOp} // fallback; must come last
-    };
-
-    const QueryParser::Operation QueryParser::kArgListOperation
-        {","_sl,       0, 9, -2, &QueryParser::infixOp};
-    const QueryParser::Operation QueryParser::kColumnListOperation
-        {","_sl,       0, 9, -2, &QueryParser::infixOp};
-    const QueryParser::Operation QueryParser::kOrderByOperation
-        {"ORDER BY"_sl,1, 9, -3, &QueryParser::infixOp};
-    const QueryParser::Operation QueryParser::kOuterOperation
-        {nullslice,    1, 1, -1};
-
-
     void QueryParser::parseNode(const Value *node) {
         switch (node->type()) {
             case kNull:
@@ -633,19 +571,31 @@ namespace litecore {
 
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
+        // Look up the function name:
         op.size -= 2;
-        string opStr = op.asString();
-        for (unsigned i = 0; i < opStr.size(); ++i) {
-            if (!isalnum(opStr[i]) && opStr[i] != '_')
-                fail("Illegal non-alphanumeric character in function name");
-            opStr[i] = (char)tolower(opStr[i]);
+        string fnName = op.asString();
+        const FunctionSpec *spec;
+        for (spec = kFunctionList; spec->name; ++spec) {
+            if (op.caseEquivalent(spec->name))
+                break;
         }
-        // TODO: Validate that this is a known function
+        if (!spec->name)
+            fail("Unknown function '%.*s'", splat(op));
+        auto arity = operands.count();
+        if (arity < spec->minArgs)
+            fail("Too few arguments for function '%.*s'", splat(op));
+        if (arity < 9 && arity > spec->maxArgs)
+            fail("Too many arguments for function '%.*s'", splat(op));
+
+        if (spec->sqlite_name)
+            op = spec->sqlite_name;
+        else
+            op = spec->name; // canonical case
 
         // Special case: "array_count(propertyname)" turns into a call to fl_count:
-        if (opStr == "array_count" && writeNestedPropertyOpIfAny("fl_count", operands))
+        if (op == "array_count"_sl && writeNestedPropertyOpIfAny("fl_count", operands))
             return;
-        else if (opStr == "rank" && writeNestedPropertyOpIfAny("rank", operands)) {
+        else if (op == "rank"_sl && writeNestedPropertyOpIfAny("rank", operands)) {
             return;
         }
 
