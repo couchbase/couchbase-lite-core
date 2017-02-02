@@ -30,15 +30,22 @@ namespace litecore {
 #pragma mark - UTILITY FUNCTIONS:
 
 
-    [[noreturn]] static void fail(const char *message) {
-        Warn("Invalid query: %s", message);
+    [[noreturn]] __printflike(1, 2)
+    static void fail(const char *format, ...) {
+        va_list args;
+        va_start(args, format);
+        char *cmessage;
+        vasprintf(&cmessage, format, args);
+        va_end(args);
+
+        Warn("Invalid query: %s", cmessage);
+        string message{cmessage};
+        free(cmessage);
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
-    [[noreturn]] static void fail(const string &message) {
-        Warn("Invalid query: %s", message.c_str());
-        throw error(error::LiteCore, error::InvalidQuery, message);
-    }
+    // printf args for a slice; matching format spec should be %.*s
+    #define splat(SLICE)    (int)(SLICE).size, (SLICE).buf
 
 
     static bool isAlphanumericOrUnderscore(slice str) {
@@ -64,7 +71,7 @@ namespace litecore {
     static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
         auto a = v ? v->asArray() : nullptr;
         if (!a)
-            fail(elseMessage);
+            fail("%s", elseMessage);
         return a;
     }
 
@@ -386,7 +393,7 @@ namespace litecore {
             }
         }
         if (nameMatched && !def->op)
-            fail(string("Wrong number of arguments to ") + (string)op);
+            fail("Wrong number of arguments to %.*s", splat(op));
         handleOperation(def, op, array);
     }
 
@@ -489,9 +496,9 @@ namespace litecore {
     void QueryParser::anyEveryOp(slice op, Array::iterator& operands) {
         auto var = (string)operands[0]->asString();
         if (!isValidIdentifier(var))
-            fail("ANY/EVERY first parameter must be an identifier");
+            fail("ANY/EVERY first parameter must be an identifier; '%s' is not", var.c_str());
         if (_variables.count(var) > 0)
-            fail(string("Variable '") + var + "' is already in use");
+            fail("Variable '%s' is already in use", var.c_str());
         _variables.insert(var);
 
         string property = propertyFromNode(operands[1]);
@@ -542,11 +549,11 @@ namespace litecore {
             parameter = op;
             parameter.moveStart(1);
             if (operands.count() > 0)
-                fail((string)"extra operands to " + string(parameter));
+                fail("extra operands to '%.*s'", splat(parameter));
         }
         auto paramStr = (string)parameter;
         if (!isAlphanumericOrUnderscore(parameter))
-            fail("Invalid query parameter name");
+            fail("Invalid query parameter name '%.*s'", splat(parameter));
         _parameters.insert(paramStr);
         _sql << "$_" << paramStr;
     }
@@ -563,9 +570,9 @@ namespace litecore {
             var = op.asString();
         }
         if (!isValidIdentifier(var))
-            fail("Invalid variable name");
+            fail("Invalid variable name '%.*s'", splat(op));
         if (_variables.count(var) == 0)
-            fail(string("No such variable '") + var + "'");
+            fail("No such variable '%.*s'", splat(op));
 
         if (operands.count() == 0) {
             _sql << '_' << var << ".value";
@@ -619,7 +626,7 @@ namespace litecore {
         } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
             functionOp(op, operands);
         } else {
-            fail(string("Unknown operator: ") + (string)op);
+            fail("Unknown operator '%.*s'", splat(op));
         }
     }
 
