@@ -124,13 +124,14 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                ORDER_BY: [['.', 'first'], ['.', 'age']]}]]")
           == "array_count(SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
-    CHECK(parseWhere("['EXISTS', ['SELECT',\
-                                  {WHAT: ['._id'],\
-                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
-                               ORDER_BY: [['.', 'first'], ['.', 'age']]}]]")
+    // note this query is lowercase, to test case-insensitivity
+    CHECK(parseWhere("['exists', ['select',\
+                                  {what: ['._id'],\
+                                  where: ['=', ['.', 'last'], 'Smith'],\
+                               order_by: [['.', 'first'], ['.', 'age']]}]]")
           == "EXISTS (SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT',\
-                                  {WHAT: [['max()', ['.weight']]],\
+                                  {WHAT: [['MAX()', ['.weight']]],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                DISTINCT: true,\
                                GROUP_BY: [['.', 'first'], ['.', 'age']]}]]")

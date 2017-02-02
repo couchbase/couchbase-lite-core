@@ -64,6 +64,13 @@ namespace litecore {
         return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
     }
 
+    static const Value* getCaseInsensitive(const Dict *dict, slice key) {
+        for (Dict::iterator i(dict); i; ++i)
+            if (i.key()->asString().caseEquivalent(key))
+                return i.value();
+        return nullptr;
+    }
+
 
     static inline std::ostream& operator<< (std::ostream& o, slice s) {
         o.write((const char*)s.buf, s.size);
@@ -169,7 +176,7 @@ namespace litecore {
 
     
     void QueryParser::writeSelect(const Dict *operands) {
-        writeSelect(operands->get("WHERE"_sl), operands);
+        writeSelect(getCaseInsensitive(operands, "WHERE"_sl), operands);
     }
 
 
@@ -179,7 +186,7 @@ namespace litecore {
             findFTSProperties(where);
 
         _sql << "SELECT ";
-        auto distinct = operands->get("DISTINCT"_sl);
+        auto distinct = getCaseInsensitive(operands, "DISTINCT"_sl);
         if (distinct && distinct->asBool())
             _sql << "DISTINCT ";
 
@@ -199,7 +206,7 @@ namespace litecore {
 
         // FROM clause:
         _sql << " FROM ";
-        auto from = operands->get(" FROM"_sl);
+        auto from = getCaseInsensitive(operands, "FROM"_sl);
         if (from) {
             fail("FROM parameter to SELECT isn't supported yet, sorry");
         } else {
@@ -235,7 +242,7 @@ namespace litecore {
                                                 const char *sql,
                                                 bool aggregatesOK)
     {
-        auto param = operands->get(key);
+        auto param = getCaseInsensitive(operands, key);
         if (!param) return 0;
         auto list = mustBeArray(param);
         int count = list->count();
@@ -341,7 +348,7 @@ namespace litecore {
         bool nameMatched = false;
         const Operation *def;
         for (def = kOperationList; def->op; ++def) {
-            if (op == def->op) {
+            if (op.caseEquivalent(def->op)) {
                 nameMatched = true;
                 if (nargs >= def->minArgs && nargs <= def->maxArgs)
                     break;
@@ -411,7 +418,7 @@ namespace litecore {
         if (writeNestedPropertyOpIfAny("fl_exists", operands))
             return;
 
-        _sql << op;
+        _sql << "EXISTS";
         if (isalpha(op[op.size-1]))
             _sql << ' ';
         parseNode(operands[0]);
@@ -460,8 +467,8 @@ namespace litecore {
         if (property.empty())
             fail("ANY/EVERY only supports a property as its source");
 
-        bool every = (op != "ANY"_sl);
-        bool anyAndEvery = (op == "ANY AND EVERY"_sl);
+        bool every = !op.caseEquivalent("ANY"_sl);
+        bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
 
         //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead 
 
@@ -612,9 +619,9 @@ namespace litecore {
             op = spec->name; // canonical case
 
         // Special case: "array_count(propertyname)" turns into a call to fl_count:
-        if (op == "array_count"_sl && writeNestedPropertyOpIfAny("fl_count", operands))
+        if (op.caseEquivalent("array_count"_sl) && writeNestedPropertyOpIfAny("fl_count", operands))
             return;
-        else if (op == "rank"_sl && writeNestedPropertyOpIfAny("rank", operands)) {
+        else if (op.caseEquivalent("rank"_sl) && writeNestedPropertyOpIfAny("rank", operands)) {
             return;
         }
 
@@ -741,7 +748,7 @@ namespace litecore {
             return;
         slice op = i.value()->asString();
         ++i;
-        if (op == "MATCH"_sl && i) {
+        if (op.caseEquivalent("MATCH"_sl) && i) {
             FTSPropertyIndex(i.value(), true); // add LHS
             ++i;
         }
