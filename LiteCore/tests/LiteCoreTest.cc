@@ -100,6 +100,24 @@ namespace fleece {
 }
 
 
+void ExpectException(litecore::error::Domain domain, int code, std::function<void()> lambda) {
+    try {
+        Log("NOTE: Expecting an exception to be thrown...");
+        error::sWarnOnError = false;
+        lambda();
+    } catch (std::runtime_error &x) {
+        Log("... caught exception %s", x.what());
+        error::sWarnOnError = true;
+        error err = error::convertRuntimeError(x).standardized();
+        CHECK(err.domain == domain);
+        CHECK(err.code == code);
+        return;
+    }
+    error::sWarnOnError = true;
+    FAIL("Should have thrown an exception");
+}
+
+
 DataFile::Factory& DataFileTestFixture::factory() {
     return SQLiteDataFile::factory();
 }

@@ -620,18 +620,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     db->close();
-    try {
-        INFO("NOTE: Expecting an invalid-handle exception to be thrown");
-        error::sWarnOnError = false;
+    ExpectException(error::LiteCore, error::NotOpen, [&]{
         Record rec = s.get(key);
-    } catch (std::runtime_error &x) {
-        error::sWarnOnError = true;
-        error e = error::convertRuntimeError(x).standardized();
-        REQUIRE(e.code == (int)error::NotOpen);
-        return;
-    }
-    error::sWarnOnError = true;
-    FAIL("Should have thrown exception");
+    });
 }
 
 
@@ -651,33 +642,16 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     REQUIRE(rec.exists());
 
     // Attempt to change a rec:
-    int code = 0;
-    try {
+    ExpectException(error::LiteCore, error::NotWriteable, [&]{
         Transaction t(db);
-        // This is expected to throw an exception:
-        INFO("NOTE: Expecting a read-only exception to be thrown");
-        error::sWarnOnError = false;
         store->set("key"_sl, "somethingelse"_sl, t);
         t.commit();
-    } catch (std::runtime_error &x) {
-        error e = error::convertRuntimeError(x).standardized();
-        code = e.code;
-    }
-    error::sWarnOnError = true;
-    REQUIRE(code == error::NotWriteable);
+    });
 
     // Now try to open a nonexistent db, read-only:
-    code = 0;
-    try {
-        INFO("NOTE: Expecting a no-such-file exception to be thrown");
-        error::sWarnOnError = false;
+    ExpectException(error::LiteCore, error::CantOpenFile, [&]{
         (void)newDatabase("/tmp/db_non_existent", &options);
-    } catch (std::runtime_error &x) {
-        error e = error::convertRuntimeError(x).standardized();
-        code = e.code;
-    }
-    error::sWarnOnError = true;
-    REQUIRE(code == error::CantOpenFile);
+    });
 }
 
 
@@ -733,18 +707,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
         {
             // Reopen without key:
             options.encryptionAlgorithm = kNoEncryption;
-            int code = 0;
-            try {
-                INFO("NOTE: Expecting a can't-open-file exception to be thrown");
-                error::sWarnOnError = false;
+            ExpectException(error::LiteCore, error::NotADatabaseFile, [&]{
                 unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-            } catch (std::runtime_error &x) {
-                error e = error::convertRuntimeError(x).standardized();
-                REQUIRE(e.domain == error::LiteCore);
-                code = e.code;
-            }
-            error::sWarnOnError = true;
-            REQUIRE(code == (int)error::NotADatabaseFile);
+            });
         }
     } catch (...) {
         deleteDatabase(dbPath);

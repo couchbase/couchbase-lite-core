@@ -11,8 +11,10 @@
 #include <iostream>
 #include "slice.hh"
 #include "PlatformCompat.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "JSON5.hh"
+#include <functional>
 
 #ifdef DEBUG
 #define CHECK_IF_DEBUG CHECK
@@ -40,6 +42,9 @@ void randomBytes(slice dst);
 namespace fleece {
     std::ostream& operator<< (std::ostream& o, slice s);
 }
+
+
+void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);
 
 
 #include "CatchHelper.hh"
