@@ -329,6 +329,16 @@ C4QueryEnumerator* c4query_run(C4Query *query,
 }
 
 
+C4StringResult c4query_explain(C4Query *query) noexcept {
+    return tryCatch<C4StringResult>(nullptr, [&]{
+        string result = query->query()->explain();
+        if (result.empty())
+            return C4StringResult{};
+        return sliceResult(result);
+    });
+}
+
+
 C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
         WITH_LOCK(asInternal(e));

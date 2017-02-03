@@ -63,6 +63,12 @@ extern "C" {
                                           C4String docID,
                                           C4SequenceNumber seq,
                                           C4Error *outError) C4API;
+
+    /** Returns a string describing the implementation of the compiled query.
+        This is intended to be read by a developer for purposes of optimizing the query, especially
+        to add database indexes. */
+    C4StringResult c4query_explain(C4Query *query) C4API;
+
     /** @} */
 
 

@@ -94,10 +94,28 @@ namespace litecore {
             });
             return result;
         }
-        
+
+
+        string explain() override {
+            stringstream result;
+            // https://www.sqlite.org/eqp.html
+            string query = _statement->getQuery();
+            result << query << "\n";
+
+            string sql = "EXPLAIN QUERY PLAN " + query;
+            auto &df = (SQLiteDataFile&) keyStore().dataFile();
+            SQLite::Statement x(df, sql);
+            while (x.executeStep()) {
+                for (int i = 0; i < 3; ++i)
+                    result << x.getColumn(i).getInt() << "|";
+                result << " " << x.getColumn(3).getText() << "\n";
+            }
+            return result.str();
+        }
+
         vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
-        
+
         shared_ptr<SQLite::Statement> statement() {return _statement;}
 
     protected:

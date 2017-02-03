@@ -78,6 +78,8 @@ namespace litecore {
 
         virtual alloc_slice getMatchedText(slice recordID, sequence_t) {return alloc_slice();}
 
+        virtual std::string explain()   {return "";}
+
     protected:
         Query(KeyStore &keyStore) noexcept
         :_keyStore(keyStore)
