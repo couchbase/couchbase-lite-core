@@ -141,7 +141,7 @@ namespace litecore {
         _variables.clear();
         _ftsTables.clear();
         _1stCustomResultCol = 0;
-        _aggregatesOK = false;
+        _isAggregateQuery = _aggregatesOK = false;
     }
 
 
@@ -186,10 +186,13 @@ namespace litecore {
             findFTSProperties(where);
 
         _sql << "SELECT ";
+
+        // DISTINCT:
         auto distinct = getCaseInsensitive(operands, "DISTINCT"_sl);
         if (distinct && distinct->asBool())
             _sql << "DISTINCT ";
 
+        // WHAT clause:
         // Default result columns:
         int nCol = 0;
         for (auto &col : _baseResultColumns)
@@ -199,7 +202,6 @@ namespace litecore {
         }
         _1stCustomResultCol = nCol;
 
-        // 'WHAT' clause:
         nCol += writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
         if (nCol == 0)
             fail("No result columns");
@@ -223,8 +225,23 @@ namespace litecore {
             parseNode(where);
         }
 
-        // GROUP_BY, ORDER_BY clauses:
-        writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ");
+        // GROUP_BY clause:
+        bool grouped = (writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ") > 0);
+        if (grouped)
+            _isAggregateQuery = true;
+
+        // HAVING clause:
+        auto having = getCaseInsensitive(operands, "HAVING"_sl);
+        if (having) {
+            if (!grouped)
+                fail("HAVING requires GROUP_BY");
+            _sql << " HAVING ";
+            _aggregatesOK = true;
+            parseNode(having);
+            _aggregatesOK = false;
+        }
+
+        // ORDER_BY clause:
         writeSelectListClause(operands, "ORDER_BY"_sl, " ORDER BY ", true);
 
         // LIMIT, OFFSET clauses:
@@ -605,8 +622,11 @@ namespace litecore {
         }
         if (!spec->name)
             fail("Unknown function '%.*s'", splat(op));
-        if (spec->aggregate && !_aggregatesOK)
-            fail("Cannot use aggregate function %.*s() here", splat(op));
+        if (spec->aggregate) {
+            if (!_aggregatesOK)
+                fail("Cannot use aggregate function %.*s() in this context", splat(op));
+            _isAggregateQuery = true;
+        }
         auto arity = operands.count();
         if (arity < spec->minArgs)
             fail("Too few arguments for function '%.*s'", splat(op));
@@ -759,7 +779,7 @@ namespace litecore {
     }
 
 
-    string QueryParser::indexName(const Array *keys) {
+    string QueryParser::indexName(const Array *keys) const {
         string name = keys->toJSON().asString();
         for (int i = (int)name.size(); i >= 0; --i) {
             if (name[i] == '"')
@@ -769,7 +789,7 @@ namespace litecore {
     }
 
     
-    string QueryParser::FTSIndexName(const Value *key) {
+    string QueryParser::FTSIndexName(const Value *key) const {
         slice op = mustBeArray(key)->get(0)->asString();
         if (op.size == 0)
             fail("Invalid left-hand-side of MATCH");
@@ -779,7 +799,7 @@ namespace litecore {
             return _tableName + "::" + indexName(key->asArray());
     }
 
-    string QueryParser::FTSIndexName(const string &property) {
+    string QueryParser::FTSIndexName(const string &property) const {
         return _tableName + "::." + property;
     }
 

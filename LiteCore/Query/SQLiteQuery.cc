@@ -57,10 +57,13 @@ namespace litecore {
                     error::_throw(error::LiteCore, error::NoSuchIndex);
             }
             _1stCustomResultColumn = qp.firstCustomResultColumn();
+            _isAggregate = qp.isAggregateQuery();
         }
 
 
         alloc_slice getMatchedText(slice recordID, sequence_t seq) override {
+            if (!recordID || seq == 0)
+                error::_throw(error::InvalidParameter);
             // Get the expression that generated the text
             if (_ftsTables.size() == 0)
                 error::_throw(error::NoSuchIndex);
@@ -115,6 +118,7 @@ namespace litecore {
 
         vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
+        bool _isAggregate;
 
         shared_ptr<SQLite::Statement> statement() {return _statement;}
 
@@ -139,8 +143,8 @@ namespace litecore {
         virtual int columnCount() =0;
         virtual slice getStringColumn(int col) =0;
 
-        slice recordID()        {return getStringColumn(kDocIDCol);}
-        slice meta() override   {return getStringColumn(kMetaCol);}
+        slice recordID()        {return _query._isAggregate ? nullslice : getStringColumn(kDocIDCol);}
+        slice meta() override   {return _query._isAggregate ? nullslice : getStringColumn(kMetaCol);}
 
         virtual sequence_t sequence() =0;
 
@@ -225,7 +229,7 @@ namespace litecore {
         }
 
         sequence_t sequence() override {
-            return _iter->asArray()->get(kSeqCol)->asInt();
+            return _query._isAggregate ? 0 : _iter->asArray()->get(kSeqCol)->asInt();
         }
 
         void encodeColumn(Encoder &enc, int col) override {
@@ -322,7 +326,7 @@ namespace litecore {
         }
 
         sequence_t sequence() override {
-            return (int64_t)_statement->getColumn(kSeqCol);
+            return _query._isAggregate ? 0 : (int64_t)_statement->getColumn(kSeqCol);
         }
 
         void encodeColumn(Encoder &enc, int i) override {

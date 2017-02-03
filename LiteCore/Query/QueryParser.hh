@@ -40,19 +40,21 @@ namespace litecore {
 
         void parseJustExpression(const fleece::Value *expression);
 
-        std::string SQL()                                           {return _sql.str();}
+        void writeCreateIndex(const fleece::Array *expressions);
+
+        static void writeSQLString(std::ostream &out, slice str);
+
+        std::string SQL()  const                                    {return _sql.str();}
 
         const std::vector<std::string>& ftsTablesUsed() const       {return _ftsTables;}
         unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
 
-        void writeCreateIndex(const fleece::Array *expressions);
+        bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
-        std::string indexName(const fleece::Array *keys);
-        std::string FTSIndexName(const fleece::Value *key);
-        std::string FTSIndexName(const std::string &property);
-
-        static void writeSQLString(std::ostream &out, slice str);
+        std::string indexName(const fleece::Array *keys) const;
+        std::string FTSIndexName(const fleece::Value *key) const;
+        std::string FTSIndexName(const std::string &property) const;
 
     private:
         struct Operation;
@@ -114,6 +116,7 @@ namespace litecore {
         std::vector<std::string> _ftsTables;
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
+        bool _isAggregateQuery {false};
     };
 
 }
