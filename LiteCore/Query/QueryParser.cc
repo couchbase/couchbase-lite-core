@@ -641,8 +641,11 @@ namespace litecore {
         // Special case: "array_count(propertyname)" turns into a call to fl_count:
         if (op.caseEquivalent("array_count"_sl) && writeNestedPropertyOpIfAny("fl_count", operands))
             return;
-        else if (op.caseEquivalent("rank"_sl) && writeNestedPropertyOpIfAny("rank", operands)) {
-            return;
+        else if (op.caseEquivalent("rank"_sl)) {
+            if (writeNestedPropertyOpIfAny("rank", operands))
+                return;
+            else
+                fail("rank() can only be called on FTS-indexed properties");
         }
 
         _sql << op;
@@ -739,7 +742,7 @@ namespace litecore {
             // FTS rank() needs special treatment
             string fts = FTSIndexName(property);
             if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
-                fail("rank() can only be used with FTS properties");
+                fail("rank() can only be called on FTS-indexed properties");
             _sql << "rank(matchinfo(\"" << fts << "\"))";
         } else {
             _sql << fn << "(" << _bodyColumnName << ", ";

@@ -61,7 +61,7 @@ namespace litecore {
          ** nPhrase to contain the number of reportable phrases in the users full-text
          ** query, and nCol to the number of columns in the table.
          */
-//        if( nVal<1 ) goto wrong_number_args;
+        if( nVal!=1 ) goto wrong_number_args;
         aMatchinfo = (int32_t *)sqlite3_value_blob(apVal[0]);
         nPhrase = aMatchinfo[0];
         nCol = aMatchinfo[1];
@@ -95,8 +95,8 @@ namespace litecore {
         return;
         
         /* Jump here if the wrong number of arguments are passed to this function */
-//    wrong_number_args:
-//        sqlite3_result_error(pCtx, "wrong number of arguments to function rank()", -1);
+    wrong_number_args:
+        sqlite3_result_error(pCtx, "wrong number of arguments to function rank()", -1);
     }
 
 
