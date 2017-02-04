@@ -161,12 +161,9 @@ if (APPLE)
                                     "-framework Foundation")
 elseif(UNIX AND NOT ANDROID)
     target_link_libraries(LiteCore PRIVATE crypto  bsd)
-    add_custom_command(TARGET LiteCore COMMAND ./strip.sh)
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_OPENSSL)
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
-    # TODO: Need to revisit later
-    # add_custom_command(TARGET LiteCore COMMAND ./strip.sh ${CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX})
 else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS

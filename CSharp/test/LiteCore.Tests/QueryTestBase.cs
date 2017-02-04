@@ -9,7 +9,7 @@ namespace LiteCore.Tests
 {
     public unsafe abstract class QueryTestBase : Test
     {
-        private C4Query *_query;
+        protected C4Query *_query;
 
         protected abstract string JsonPath
         {

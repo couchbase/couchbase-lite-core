@@ -150,7 +150,7 @@ namespace LiteCore.Tests
                 var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
                 var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
                             "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
-                            "'ORDER BY': [['.name.first']]}"));
+                            "ORDER_BY: [['.name.first']]}"));
                 
                 var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => 
                 {
@@ -162,14 +162,8 @@ namespace LiteCore.Tests
                 C4Error error;
                 while(Native.c4queryenum_next(e, &error)) {
                     var customColumns = Native.c4queryenum_customColumns(e);
-                    customColumns.Should().NotBeNull("because otherwise the query failed to produce results");
-                    FLValue* cols = Native.FLValue_FromData(customColumns);
-                    FLArray* colsArray = Native.FLValue_AsArray(cols);
-                    Native.FLArray_Count(colsArray).Should().Be(2, "because that is the number of 'WHAT' parameters provided");
-                    var first = Native.FLValue_AsString(Native.FLArray_Get(colsArray, 0));
-                    var last = Native.FLValue_AsString(Native.FLArray_Get(colsArray, 1));
-                    first.Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
-                    last.Should().Be(expectedLast[i], "beacuse otherwise the query returned incorrect results");
+                    GetColumn(customColumns, 0).Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
+                    GetColumn(customColumns, 1).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
                     ++i;
                 }
 
@@ -177,6 +171,40 @@ namespace LiteCore.Tests
                 i.Should().Be(3, "because that is the number of expected rows");
                 Native.c4queryenum_free(e);
             });
+        }
+
+        [Fact]
+        public void TestDBQueryAggregate()
+        {
+            RunTestVariants(() => {
+                Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+                var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                var i = 0;
+                C4Error error;
+                while(Native.c4queryenum_next(e, &error)) {
+                    var customColumns = Native.c4queryenum_customColumns(e);
+                    GetColumn(customColumns, 0).Should().Be("Aerni", "because otherwise the query returned incorrect results");
+                    GetColumn(customColumns, 1).Should().Be("Zirk", "because otherwise the query returned incorrect results");
+                    ++i;
+                }
+
+                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+                i.Should().Be(1, "because there is only one result for the query");
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        private static string GetColumn(byte[] customColumns, uint index)
+        {
+            customColumns.Should().NotBeNull("because otherwise we got bogus data from the DB");
+            var cols = Native.FLValue_FromData(customColumns);
+            var colsArray = Native.FLValue_AsArray(cols);
+            Native.FLArray_Count(colsArray).Should().BeGreaterOrEqualTo(index + 1, "because otherwise there aren't enough columns");
+            return Native.FLValue_AsString(Native.FLArray_Get(colsArray, index));
         }
     }
 }

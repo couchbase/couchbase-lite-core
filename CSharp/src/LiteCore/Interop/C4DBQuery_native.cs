@@ -55,6 +55,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static string c4query_explain(C4Query* query)
+        {
+            using(var retVal = NativeRaw.c4query_explain(query)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
         public static bool c4db_createIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
         {
             using(var expressionsJSON_ = new C4String(expressionsJSON)) {
@@ -82,6 +89,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4query_fullTextMatched(C4Query* query, C4Slice docID, ulong seq, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4query_explain(C4Query* query);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
