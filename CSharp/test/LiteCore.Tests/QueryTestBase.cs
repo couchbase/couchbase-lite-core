@@ -50,7 +50,7 @@ namespace LiteCore.Tests
         {
             string queryString = whereExpr;
             if(sortExpr != null) {
-                queryString = $"[\"SELECT\", {{\"WHERE\": {whereExpr}, \"ORDER BY\": {sortExpr}}}]";
+                queryString = $"[\"SELECT\", {{\"WHERE\": {whereExpr}, \"ORDER_BY\": {sortExpr}}}]";
             } 
 
             Native.c4query_free(_query);
