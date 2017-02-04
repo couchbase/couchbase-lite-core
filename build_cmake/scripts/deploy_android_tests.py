@@ -25,7 +25,7 @@ for key, value in device_info.iteritems():
     adb.communicate()
 
     print "Running tests on {} (API {} / {})".format(key, value["api"], value["arch"])
-    with cd("lib/{}".format(value["arch"])):
+    with cd("../android/lib/{}".format(value["arch"])):
         adb = subprocess.Popen(["adb", "-s", key, "push", "libLiteCore.so","libsqlite3.so",
                                 "LiteCore/tests/CppTests", "C/tests/C4Tests",
                                 "/data/local/tmp/LiteCore"])
