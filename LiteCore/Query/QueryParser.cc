@@ -573,6 +573,35 @@ namespace litecore {
     }
 
 
+    // Handles CASE
+    void QueryParser::caseOp(fleece::slice op, Array::iterator &operands) {
+        // First operand is either the expression being tested, or null if there isn't one.
+        // After that, operands come in pairs of 'when', 'then'.
+        // If there's one remaining, it's the 'else'.
+        _sql << "CASE";
+        if (operands[0]->type() != kNull) {
+            _sql << ' ';
+            parseNode(operands[0]);
+        }
+        ++operands;
+        while(operands) {
+            auto test = operands.value();
+            ++operands;
+            if (operands) {
+                _sql << " WHEN ";
+                parseNode(test);
+                _sql << " THEN ";
+                parseNode(operands.value());
+                ++operands;
+            } else {
+                _sql << " ELSE ";
+                parseNode(test);
+            }
+        }
+        _sql << " END";
+    }
+    
+    
     // Handles SELECT
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
         // SELECT is unusual in that its operands are encoded as an object

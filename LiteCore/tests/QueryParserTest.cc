@@ -62,6 +62,8 @@ TEST_CASE("QueryParser basic", "[Query]") {
           == "fl_value(body, 'age') NOT IN (6, 7, 8)");
     CHECK(parseWhere("['.', 'addresses', [1], 'zip']")
           == "fl_value(body, 'addresses[1].zip')");
+    CHECK(parseWhere("['.', 'addresses', [1], 'zip']")
+          == "fl_value(body, 'addresses[1].zip')");
 }
 
 
@@ -157,8 +159,22 @@ TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
 }
 
 
+TEST_CASE("QueryParser CASE", "[Query]") {
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2]")
+          == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 END");
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, 0]")
+          == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE 0 END");
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right']")
+          == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' END");
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', 'whatever']")
+          == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE 'whatever' END");
+}
+
+
 TEST_CASE("QueryParser errors", "[Query][!throws]") {
     mustFail("['poop()', 1]");
     mustFail("['power()', 1]");
     mustFail("['power()', 1, 2, 3]");
+    mustFail("['CASE', ['.color'], 'red']");
+    mustFail("['CASE', null, 'red']");
 }

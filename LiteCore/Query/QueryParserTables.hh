@@ -18,7 +18,6 @@ namespace litecore {
     // This table defines the operators and their characteristics.
     // Each operator has a name, min/max argument count, precedence, and a handler method.
     // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
-    // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
     // http://www.sqlite.org/lang_expr.html
     typedef void (QueryParser::*OpHandler)(slice op, Array::iterator& args);
     struct QueryParser::Operation {
@@ -59,6 +58,8 @@ namespace litecore {
         {"NOT"_sl,     1, 1,  9,  &QueryParser::prefixOp},
         {"AND"_sl,     2, 9,  2,  &QueryParser::infixOp},
         {"OR"_sl,      2, 9,  2,  &QueryParser::infixOp},
+
+        {"CASE"_sl,    3, 9,  2,  &QueryParser::caseOp},
 
         {"ANY"_sl,     3, 3,  1,  &QueryParser::anyEveryOp},
         {"EVERY"_sl,   3, 3,  1,  &QueryParser::anyEveryOp},
