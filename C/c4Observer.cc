@@ -69,6 +69,7 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
 
 void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
     if (obs) {
+        Retained<Database> retainDB((Database*)obs->_db);   // keep db from being deleted too early
         WITH_LOCK(obs->_db);
         lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         delete obs;

@@ -179,7 +179,8 @@ C4Test::C4Test(int testOption)
     }
 
     C4Error error;
-    c4db_deleteAtPath(databasePath(), &config, nullptr);
+    if (!c4db_deleteAtPath(databasePath(), &config, &error))
+        REQUIRE(error.code == 0);
     db = c4db_open(databasePath(), &config, &error);
     REQUIRE(db != nullptr);
 }

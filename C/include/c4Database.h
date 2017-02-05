@@ -95,7 +95,8 @@ extern "C" {
     bool c4db_delete(C4Database* database, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database at the given path.
-        All C4Databases at that path must be closed first. */
+        All C4Databases at that path must be closed first or an error will result.
+        Returns false, with no error, if the database doesn't exist. */
     bool c4db_deleteAtPath(C4String dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
 
 

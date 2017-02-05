@@ -101,8 +101,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
 
     std::string bundlePathStr = TempDir() + "cbl_core_test_bundle";
     C4Slice bundlePath = c4str(bundlePathStr.c_str());
-    c4db_deleteAtPath(bundlePath, &config, nullptr);
     C4Error error;
+    if (!c4db_deleteAtPath(bundlePath, &config, &error))
+        REQUIRE(error.code == 0);
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
     C4SliceResult path = c4db_getPath(bundle);

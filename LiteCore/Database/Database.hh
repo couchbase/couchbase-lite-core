@@ -48,7 +48,7 @@ namespace c4Internal {
 
         void close();
         void deleteDatabase();
-        static void deleteDatabaseAtPath(const string &dbPath, const C4DatabaseConfig*);
+        static bool deleteDatabaseAtPath(const string &dbPath, const C4DatabaseConfig*);
 
         DataFile* dataFile()                                {return _db.get();}
         FilePath path() const;

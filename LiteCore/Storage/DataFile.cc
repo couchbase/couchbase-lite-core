@@ -20,6 +20,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "Endian.hh"
+#include "RefCounted.hh"
 #include <errno.h>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
@@ -44,7 +45,10 @@ namespace litecore {
 
 #pragma mark - FACTORY:
 
+
     bool DataFile::Factory::deleteFile(const FilePath &path, const Options*) {
+        if (openCount(path) > 0)
+            error::_throw(error::Busy);
         return path.delWithAllExtensions();
     }
 
@@ -92,108 +96,126 @@ namespace litecore {
 
 
 
-#pragma mark - FILE:
+#pragma mark - SHARED:
 
 
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once. */
-    class DataFile::File {
+    class DataFile::Shared : public RefCounted<DataFile::Shared> {
     public:
-        static File* forPath(const FilePath &path, DataFile *dataFile);
-        File(const FilePath &p)      :path(p) { }
 
-        void addDataFile(DataFile *dataFile);
-        void removeDataFile(DataFile*, bool deleteIfUnused);
-        void forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn);
+        static Shared* forPath(const FilePath &path, DataFile *dataFile) {
+            unique_lock<mutex> lock(sFileMapMutex);
+            auto pathStr = path.path();
+            Shared* file = sFileMap[pathStr];
+            if (!file) {
+                file = new Shared(path);
+                sFileMap[pathStr] = file;
+                LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, path.path().c_str());
+            } else {
+                LogToAt(DBLog, Debug, "File %p: adding DataFile %p", file, dataFile);
+            }
+            lock.unlock();
 
-        void setTransaction(Transaction*);
-        void unsetTransaction(Transaction*);
-        Transaction* transaction()                      {return _transaction;}
+            file->addDataFile(dataFile);
+            return file;
+        }
+
+
+        static size_t openCountOnPath(const FilePath &path) {
+            unique_lock<mutex> lock(sFileMapMutex);
+            auto pathStr = path.path();
+            Shared* file = sFileMap[pathStr];
+            return file ? file->openCount() : 0;
+        }
+
+
+        ~Shared() {
+            LogToAt(DBLog, Debug, "File %p: destructing", this);
+            sFileMap.erase(path.path());
+        }
+
 
         const FilePath path;                            // The filesystem path
         atomic<bool> isCompacting {false};              // Is the database compacting?
 
-    private:
-        mutex _transactionMutex;                        // Mutex for transactions
-        condition_variable _transactionCond;            // For waiting on the mutex
-        Transaction* _transaction {nullptr};            // Currently active Transaction object
-        vector<DataFile*> _dataFiles;                   // Open DataFiles on this File
-        mutex _dataFilesMutex;
 
-        static unordered_map<string, File*> sFileMap;
+        Transaction* transaction() {
+            return _transaction;
+        }
+
+        void addDataFile(DataFile *dataFile) {
+            unique_lock<mutex> lock(_dataFilesMutex);
+            if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
+                _dataFiles.push_back(dataFile);
+        }
+
+        void removeDataFile(DataFile *dataFile) {
+            unique_lock<mutex> lock(_dataFilesMutex);
+            LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
+            auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
+            if (pos != _dataFiles.end())
+                _dataFiles.erase(pos);
+        }
+
+
+        void forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn) {
+            unique_lock<mutex> lock(_dataFilesMutex);
+            for (auto df : _dataFiles)
+                if (df != except)
+                    fn(df);
+        }
+
+
+        size_t openCount() {
+            unique_lock<mutex> lock(_dataFilesMutex);
+            return _dataFiles.size();
+        }
+
+
+        void setTransaction(Transaction* t) {
+            Assert(t);
+            unique_lock<mutex> lock(_transactionMutex);
+            while (_transaction != nullptr)
+                _transactionCond.wait(lock);
+            _transaction = t;
+        }
+
+
+        void unsetTransaction(Transaction* t) {
+            unique_lock<mutex> lock(_transactionMutex);
+            Assert(t && _transaction == t);
+            _transaction = nullptr;
+            _transactionCond.notify_one();
+        }
+
+
+    protected:
+        Shared(const FilePath &p)
+        :path(p)
+        { }
+
+    private:
+        mutex              _transactionMutex;       // Mutex for transactions
+        condition_variable _transactionCond;        // For waiting on the mutex
+        Transaction*       _transaction {nullptr};  // Currently active Transaction object
+        vector<DataFile*>  _dataFiles;              // Open DataFiles on this File
+        mutex              _dataFilesMutex;         // Mutex protecting _dataFiles
+
+        static unordered_map<string, Shared*> sFileMap;
         static mutex sFileMapMutex;
     };
 
 
-    unordered_map<string, DataFile::File*> DataFile::File::sFileMap;
-    mutex DataFile::File::sFileMapMutex;
+    unordered_map<string, DataFile::Shared*> DataFile::Shared::sFileMap;
+    mutex DataFile::Shared::sFileMapMutex;
 
 
-    DataFile::File* DataFile::File::forPath(const FilePath &path, DataFile *dataFile) {
-        unique_lock<mutex> lock(sFileMapMutex);
-        auto pathStr = path.path();
-        File* file = sFileMap[pathStr];
-        if (!file) {
-            file = new File(path);
-            sFileMap[pathStr] = file;
-            LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, path.path().c_str());
-        } else {
-            LogToAt(DBLog, Debug, "File %p: adding DataFile %p", file, dataFile);
-        }
-        lock.unlock();
-
-        file->addDataFile(dataFile);
-        return file;
+    size_t DataFile::Factory::openCount(const FilePath &path) {
+        return Shared::openCountOnPath(path);
     }
 
-
-    void DataFile::File::addDataFile(DataFile *dataFile) {
-        unique_lock<mutex> lock(_dataFilesMutex);
-        if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
-            _dataFiles.push_back(dataFile);
-    }
-
-    void DataFile::File::removeDataFile(DataFile *dataFile, bool deleteIfUnused) {
-        unique_lock<mutex> lock(_dataFilesMutex);
-        LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
-        auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
-        if (pos != _dataFiles.end())
-            _dataFiles.erase(pos);
-
-        if (deleteIfUnused && _dataFiles.empty()) {
-            LogToAt(DBLog, Debug, "File %p: destructing", this);
-            sFileMap.erase(path.path());
-            lock.unlock();
-            delete this;
-        }
-    }
-
-
-    void DataFile::File::forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn) {
-        unique_lock<mutex> lock(_dataFilesMutex);
-        for (auto df : _dataFiles)
-            if (df != except)
-                fn(df);
-    }
-
-
-    void DataFile::File::setTransaction(Transaction* t) {
-        Assert(t);
-        unique_lock<mutex> lock(_transactionMutex);
-        while (_transaction != nullptr)
-            _transactionCond.wait(lock);
-        _transaction = t;
-    }
-
-
-    void DataFile::File::unsetTransaction(Transaction* t) {
-        unique_lock<mutex> lock(_transactionMutex);
-        Assert(t && _transaction == t);
-        _transaction = nullptr;
-        _transactionCond.notify_one();
-    }
-
-
+    
 #pragma mark - DATAFILE:
 
 
@@ -203,18 +225,18 @@ namespace litecore {
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
-    :_file(File::forPath(path, this)),
+    :_shared(Shared::forPath(path, this)),
      _options(options ? *options : Options::defaults)
     { }
 
     DataFile::~DataFile() {
         LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile)");
         Assert(!_inTransaction);
-        _file->removeDataFile(this, true);
+        _shared->removeDataFile(this);
     }
 
     const FilePath& DataFile::filePath() const noexcept {
-        return _file->path;
+        return _shared->path;
     }
 
 
@@ -222,12 +244,12 @@ namespace litecore {
         for (auto& i : _keyStores) {
             i.second->close();
         }
-        _file->removeDataFile(this, false);
+        _shared->removeDataFile(this);
     }
 
 
     void DataFile::reopen() {
-        _file->addDataFile(this);
+        _shared->addDataFile(this);
     }
 
 
@@ -244,7 +266,7 @@ namespace litecore {
 
 
     void DataFile::forOtherDataFiles(function_ref<void(DataFile*)> fn) {
-        _file->forOpenDataFiles(this, fn);
+        _shared->forOpenDataFiles(this, fn);
     }
 
 
@@ -346,7 +368,7 @@ namespace litecore {
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();
-        _file->setTransaction(t);
+        _shared->setTransaction(t);
         _inTransaction = true;
     }
 
@@ -365,7 +387,7 @@ namespace litecore {
     }
     
     void DataFile::endTransactionScope(Transaction* t) {
-        _file->unsetTransaction(t);
+        _shared->unsetTransaction(t);
         _inTransaction = false;
         if (_documentKeys)
             _documentKeys->transactionEnded();
@@ -374,7 +396,7 @@ namespace litecore {
 
     Transaction& DataFile::transaction() {
         Assert(_inTransaction);
-        return *_file->transaction();
+        return *_shared->transaction();
     }
 
 
@@ -441,17 +463,17 @@ namespace litecore {
 
     void DataFile::beganCompacting() {
         ++sCompactCount;
-        _file->isCompacting = true;
+        _shared->isCompacting = true;
         if (_onCompactCallback) _onCompactCallback(true);
     }
     void DataFile::finishedCompacting() {
         --sCompactCount;
-        _file->isCompacting = false;
+        _shared->isCompacting = false;
         if (_onCompactCallback) _onCompactCallback(false);
     }
 
     bool DataFile::isCompacting() const noexcept {
-        return _file->isCompacting;
+        return _shared->isCompacting;
     }
 
     bool DataFile::isAnyCompacting() noexcept {

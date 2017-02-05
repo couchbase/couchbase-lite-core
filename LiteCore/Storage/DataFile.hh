@@ -17,6 +17,7 @@
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
+#include "RefCounted.hh"
 #include <vector>
 #include <unordered_map>
 #include <atomic> // for std::atomic_uint
@@ -129,10 +130,13 @@ namespace litecore {
             virtual std::string filenameExtension() =0;
             virtual bool encryptionEnabled(EncryptionAlgorithm) =0;
 
+            /** The number of currently open DataFiles on the given path. */
+            size_t openCount(const FilePath &path);
+
             /** Opens a DataFile. */
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
 
-            /** Deletes a non-open file. */
+            /** Deletes a non-open file. Returns false if it doesn't exist. */
             virtual bool deleteFile(const FilePath &path, const Options* =nullptr);
 
             /** Moves a non-open file. */
@@ -181,7 +185,7 @@ namespace litecore {
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
 
     private:
-        class File;
+        class Shared;
         friend class KeyStore;
         friend class Transaction;
         friend class DocumentKeys;
@@ -198,7 +202,7 @@ namespace litecore {
 
         void incrementDeletionCount(Transaction &t);
 
-        File* const             _file;                          // Shared state of file (lock)
+        Retained<Shared>        _shared;                        // Shared state of file (lock)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores

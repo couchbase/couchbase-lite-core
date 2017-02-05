@@ -175,23 +175,30 @@ namespace c4Internal {
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
         WITH_LOCK(this);
-        if (config.flags & kC4DB_Bundled) {
-            FilePath bundle = path().dir();
-            _db->close();
+        FilePath bundle = path().dir();
+        _db->deleteDataFile();
+        if (config.flags & kC4DB_Bundled)
             bundle.delRecursive();
-        } else {
-            _db->deleteDataFile();
-        }
     }
 
 
-    /*static*/ void Database::deleteDatabaseAtPath(const string &dbPath,
+    /*static*/ bool Database::deleteDatabaseAtPath(const string &dbPath,
                                                    const C4DatabaseConfig *config) {
         if (config == nullptr) {
-            FilePath(dbPath).delWithAllExtensions();
+            return FilePath(dbPath).delWithAllExtensions();
         } else if (config->flags & kC4DB_Bundled) {
-            FilePath bundle{dbPath, ""};
-            bundle.delRecursive();
+            // Find the db file in the bundle:
+            FilePath bundle {dbPath, ""};
+            if (bundle.exists()) {
+                auto tempConfig = *config;
+                tempConfig.flags &= ~kC4DB_Create;
+                auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
+                // Delete it:
+                tempConfig.flags &= ~kC4DB_Bundled;
+                deleteDatabaseAtPath(dbFilePath, &tempConfig);
+            }
+            // Delete the rest of the bundle:
+            return bundle.delRecursive();
         } else {
             FilePath path(dbPath);
             DataFile::Factory *factory = nullptr;
@@ -206,7 +213,7 @@ namespace c4Internal {
             }
             if (!factory)
                 error::_throw(error::WrongFormat);
-            factory->deleteFile(path);
+            return factory->deleteFile(path);
         }
     }
 
