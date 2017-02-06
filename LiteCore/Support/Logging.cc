@@ -56,7 +56,7 @@ namespace litecore {
     }
 
 
-    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+    LogLevel LogDomain::initLevel() {
         if (_level == LogLevel::Uninitialized) {
             char *val = getenv((string("LiteCoreLog") + _name).c_str());
             if (!val)
@@ -68,6 +68,13 @@ namespace litecore {
             if (_level > MinLevel)
                 _level = MinLevel;
         }
+        return _level;
+    }
+
+
+    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+        if (_level == LogLevel::Uninitialized)
+            initLevel();
         if (!willLog(level))
             return;
 

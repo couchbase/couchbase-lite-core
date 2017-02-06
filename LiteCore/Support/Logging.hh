@@ -63,7 +63,8 @@ public:
     }
 
     const char* name() const                        {return _name;}
-    LogLevel level() const                          {return _level;}
+    LogLevel level()                                {return _level == LogLevel::Uninitialized
+                                                                        ? initLevel() : _level;}
     void setLevel(LogLevel lvl)                     {_level = lvl;}
 
     bool willLog(LogLevel lv =LogLevel::Info) const {return _level <= lv;}
@@ -81,7 +82,9 @@ public:
     static LogDomain* named(const char *name);
 
 private:
-    std::atomic<LogLevel> _level;
+    LogLevel initLevel();
+    
+    LogLevel _level;
     const char* const _name;
     LogDomain* const _next;
 

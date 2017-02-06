@@ -222,7 +222,7 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) C4API
 
 
 /** Logging levels. */
-typedef C4_ENUM(uint8_t, C4LogLevel) {
+typedef C4_ENUM(int8_t, C4LogLevel) {
     kC4LogDebug,
     kC4LogVerbose,
     kC4LogInfo,
