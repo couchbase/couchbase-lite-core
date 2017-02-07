@@ -25,7 +25,12 @@ using LiteCore.Interop;
 
 namespace LiteCore
 {
-    public unsafe sealed class LiteCoreExpiryEnumerable : InteropObject, IEnumerable<string>
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe sealed class LiteCoreExpiryEnumerable : InteropObject, IEnumerable<string>
     {
         private long p_native;
         private C4ExpiryEnumerator* _native

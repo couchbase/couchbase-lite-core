@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum FLValueType
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum FLValueType
     {
         Undefined = -1,
         Null = 0,
@@ -40,7 +45,12 @@ namespace LiteCore.Interop
         Dict
     }
 
-    public enum FLError
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum FLError
     {
         NoError = 0,
         MemoryError,
@@ -69,7 +79,12 @@ namespace LiteCore.Interop
         #pragma warning restore CS0169
     }
 
-    public unsafe struct FLEncoder
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLEncoder
     {
     }
 
@@ -87,7 +102,12 @@ namespace LiteCore.Interop
         #pragma warning restore CS0169
     }
 
-    public unsafe struct FLArray
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLArray
     {
     }
 
@@ -103,7 +123,12 @@ namespace LiteCore.Interop
         #pragma warning restore CS0169
     }
 
-    public unsafe partial struct FLSliceResult
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct FLSliceResult
     {
         public void* buf;
         private UIntPtr _size;
@@ -119,19 +144,39 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct FLValue
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLValue
     {
     }
 
-    public unsafe struct FLKeyPath
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLKeyPath
     {
     }
 
-    public unsafe struct FLSharedKeys
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLSharedKeys
     {
     }
 
-    public unsafe partial struct FLSlice
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct FLSlice
     {
         public void* buf;
         private UIntPtr _size;
@@ -147,7 +192,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct FLDict
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLDict
     {
     }
 }

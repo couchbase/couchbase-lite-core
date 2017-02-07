@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum C4ErrorDomain : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4ErrorDomain : uint
     {
         LiteCoreDomain = 1,
         POSIXDomain,
@@ -37,7 +42,12 @@ namespace LiteCore.Interop
         FleeceDomain,
     }
 
-    public enum C4LogLevel : byte
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4LogLevel : sbyte
     {
         Debug,
         Verbose,
@@ -46,13 +56,23 @@ namespace LiteCore.Interop
         Error
     }
 
-    public unsafe partial struct C4Error
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4Error
     {
         public C4ErrorDomain domain;
         public int code;
     }
 
-    public unsafe partial struct C4Slice
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4Slice
     {
         public void* buf;
         private UIntPtr _size;
@@ -67,8 +87,13 @@ namespace LiteCore.Interop
             }
         }
     }
-    
-    public unsafe struct C4LogDomain
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4LogDomain
     {
     }
 }

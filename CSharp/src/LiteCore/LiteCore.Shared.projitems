@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>c37dc024-8762-4be4-9034-b2b5970c652c</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>LiteCore.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IsMac>false</IsMac>
+    <IsMac Condition=" '$(OS)' == 'Unix' AND Exists('/Library/Frameworks') ">true</IsMac>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)project.json" />
+    <!-- A reference to the entire .NET Framework is automatically included -->
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)API\InteropObject.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreDocEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreExpiryEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Base.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Base_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Base_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4BlobStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4BlobStore_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4BlobStore_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Database.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Database_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Database_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DBQuery.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DBQuery_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DBQuery_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DocEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DocEnumerator_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4DocEnumerator_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Document+Fleece_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Document_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Document_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4ExpiryEnumerator_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4ExpiryEnumerator_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Key_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Key_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Observer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Observer_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Observer_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Private.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4View.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4View_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4View_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\LiteCoreBridge.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\PosixStatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\RetryHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\SQLiteStatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\C4String.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' OR '$(Configuration)' == 'Packaging' ">
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.dll">
+      <Link>x86\LiteCore.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.pdb">
+      <Link>x86\LiteCore.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.dll">
+      <Link>x86\sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.pdb">
+      <Link>x86\sqlite3.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.dll">
+      <Link>x64\LiteCore.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.pdb">
+      <Link>x64\LiteCore.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.dll">
+      <Link>x64\sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.pdb">
+      <Link>x64\sqlite3.pdb</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition=" $(IsMac) OR '$(Configuration)' == 'Packaging' ">
+    <None Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\libLiteCore.dylib">
+      <Link>libLiteCore.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition=" (!$(IsMac) AND '$(OS)' == 'Unix') OR '$(Configuration)' == 'Packaging' ">
+    <None Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\libLiteCore.so">
+      <Link>libLiteCore.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

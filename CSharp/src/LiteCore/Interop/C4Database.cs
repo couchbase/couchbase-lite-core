@@ -23,7 +23,12 @@ using System.Runtime.InteropServices;
 
 namespace LiteCore
 {
-    public struct C4StorageEngine
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         struct C4StorageEngine
     {
         public static readonly string SQLite = "SQLite";
     }
@@ -31,14 +36,24 @@ namespace LiteCore
 
 namespace LiteCore.Interop
 {
-    public unsafe partial struct C4EncryptionKey
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4EncryptionKey
     {
         private const int _Size = 32;
 
         public static readonly int Size = 32;
     }
 
-    public unsafe partial struct C4UUID
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4UUID
     {
         private const int _Size = 32;
 
@@ -46,7 +61,7 @@ namespace LiteCore.Interop
 
         public override int GetHashCode()
         {
-						int hash = 17;
+                        int hash = 17;
             unchecked {
                 fixed(byte* b = bytes) {
                     for(int i = 0; i < _Size; i++) {
@@ -60,7 +75,7 @@ namespace LiteCore.Interop
 
         public override bool Equals(object obj)
         {
-						if(!(obj is C4UUID)) {
+                        if(!(obj is C4UUID)) {
                 return false;
             }
 
@@ -77,7 +92,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe partial struct C4DatabaseConfig : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4DatabaseConfig : IDisposable
     {
         public static C4DatabaseConfig Clone(C4DatabaseConfig *source)
         {
@@ -108,5 +128,10 @@ namespace LiteCore.Interop
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4OnCompactCallback(void* context, [MarshalAs(UnmanagedType.U1)]bool compacting);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void C4OnCompactCallback(void* context, [MarshalAs(UnmanagedType.U1)]bool compacting);
 }

@@ -22,7 +22,12 @@ using System;
 
 namespace LiteCore.Interop
 {
-    public enum SQLiteStatus
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         enum SQLiteStatus
     {
         Ok,  /* Successful result */
         Error,  /* SQL error or missing database */

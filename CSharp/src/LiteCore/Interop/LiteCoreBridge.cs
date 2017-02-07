@@ -22,13 +22,33 @@ using LiteCore.Interop;
 
 namespace LiteCore
 {
-    public unsafe delegate void C4DocumentActionDelegate(C4Document* doc);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void C4DocumentActionDelegate(C4Document* doc);
 
-    public unsafe delegate void C4RawDocumentActionDelegate(C4RawDocument* doc);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void C4RawDocumentActionDelegate(C4RawDocument* doc);
 
-    public unsafe delegate bool C4RevisionSelector(C4Document* doc);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate bool C4RevisionSelector(C4Document* doc);
 
-    public static unsafe class LiteCoreBridge
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static unsafe class LiteCoreBridge
     {
         public static void Check(C4TryLogicDelegate1 block)
         {

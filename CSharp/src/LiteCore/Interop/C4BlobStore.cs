@@ -21,7 +21,12 @@
 
 namespace LiteCore.Interop
 {
-    public unsafe partial struct C4BlobKey
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4BlobKey
     {
         public static readonly int Size = _Size;
         private const int _Size = 20;
@@ -58,8 +63,13 @@ namespace LiteCore.Interop
             return true;
         }
     }
-    
-    public static unsafe partial class Native
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static unsafe partial class Native
     {
         public static ulong c4stream_read(C4ReadStream *stream, byte[] buffer, C4Error *outError)
         {

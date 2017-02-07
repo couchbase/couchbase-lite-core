@@ -27,7 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public unsafe static partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class Native
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -67,7 +72,12 @@ namespace LiteCore.Interop
 
     }
     
-    public unsafe static partial class NativeRaw
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4error_getMessage(C4Error error);

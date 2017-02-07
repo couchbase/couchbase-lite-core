@@ -20,7 +20,12 @@
 //
 namespace LiteCore.Interop
 {
-    public unsafe partial struct C4EnumeratorOptions
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4EnumeratorOptions
     {
         public static readonly C4EnumeratorOptions Default = new C4EnumeratorOptions {
             skip = 0,

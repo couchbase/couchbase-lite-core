@@ -29,7 +29,12 @@ using LiteCore.Util;
 namespace LiteCore.Interop
 {
     [Flags]
-    public enum C4DocumentFlags : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4DocumentFlags : uint
     {
         Deleted        = 0x01,
         Conflicted     = 0x02,
@@ -38,7 +43,12 @@ namespace LiteCore.Interop
     }
 
     [Flags]
-    public enum C4RevisionFlags : byte
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4RevisionFlags : byte
     {
         Deleted        = 0x01,
         Leaf           = 0x02,
@@ -47,7 +57,12 @@ namespace LiteCore.Interop
         KeepBody       = 0x10
     }
 
-    public unsafe struct C4Revision
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Revision
     {
         public C4Slice revID;
         public C4RevisionFlags flags;
@@ -55,7 +70,12 @@ namespace LiteCore.Interop
         public C4Slice body;
     }
 
-    public unsafe struct C4DocPutRequest
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4DocPutRequest
     {
         public C4Slice body;
         public C4Slice docID;
@@ -109,7 +129,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4Document
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Document
     {
         public C4DocumentFlags flags;
         public C4Slice docID;

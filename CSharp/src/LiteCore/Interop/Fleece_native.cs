@@ -27,7 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public unsafe static partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class Native
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FLSliceResult_Free(FLSliceResult slice);
@@ -356,7 +361,12 @@ namespace LiteCore.Interop
 
     }
     
-    public unsafe static partial class NativeRaw
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLValue_FromData(FLSlice data);

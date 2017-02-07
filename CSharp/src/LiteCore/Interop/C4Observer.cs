@@ -25,16 +25,41 @@ using System.Runtime.InteropServices;
 namespace LiteCore.Interop
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void C4DatabaseObserverCallback(C4DatabaseObserver* observer, void* context);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void C4DocumentObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context);
 
-    public unsafe delegate void DatabaseObserverCallback(C4DatabaseObserver* observer, object context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void DatabaseObserverCallback(C4DatabaseObserver* observer, object context);
 
-    public unsafe delegate void DocumentObserverCallback(C4DocumentObserver* observer, string docID, ulong sequence, object context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void DocumentObserverCallback(C4DocumentObserver* observer, string docID, ulong sequence, object context);
 
-    public sealed unsafe class DatabaseObserver : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         sealed unsafe class DatabaseObserver : IDisposable
     {
         private readonly object _context;
         private readonly DatabaseObserverCallback _callback;
@@ -60,7 +85,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public sealed unsafe class DocumentObserver : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         sealed unsafe class DocumentObserver : IDisposable
     {
         private readonly object _context;
         private readonly DocumentObserverCallback _callback;
@@ -86,7 +116,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public static unsafe partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static unsafe partial class Native
     {
         public static DatabaseObserver c4dbobs_create(C4Database *db, DatabaseObserverCallback callback, object context)
         {

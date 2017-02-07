@@ -27,16 +27,41 @@ using C4SequenceNumber = System.UInt64;
 namespace LiteCore.Interop
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void AccumulateDelegate(void* context, C4Key* key, C4Slice value);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void AccumulateDelegate(void* context, C4Key* key, C4Slice value);
 
-    public unsafe delegate void ManagedAccumulateDelegate(object context, C4Key* key, C4Slice value);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void ManagedAccumulateDelegate(object context, C4Key* key, C4Slice value);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate C4Slice ReduceDelegate(void* context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate C4Slice ReduceDelegate(void* context);
 
-    public unsafe delegate string ManagedReduceDelegate(object context);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate string ManagedReduceDelegate(object context);
 
-    public sealed class C4ManagedReduceFunction : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         sealed class C4ManagedReduceFunction : IDisposable
     {
         private object _context;
         private readonly ManagedAccumulateDelegate _accumulate;
@@ -82,7 +107,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe partial struct C4QueryOptions
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4QueryOptions
     {
         public static readonly C4QueryOptions Default = new C4QueryOptions {
             limit = UInt64.MaxValue,
@@ -91,16 +121,26 @@ namespace LiteCore.Interop
             rankFullText = true
         };
     }
-    
-    public static unsafe partial class Native
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    static unsafe partial class Native
     {
         public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, C4Key*[] emittedKeys, string[] emittedValues, C4Error* outError)
         {
             return c4indexer_emit(indexer, document, viewNumber, (uint)emittedKeys.Length, emittedKeys, emittedValues, outError);
         }
     }
-    
-    public static unsafe partial class NativeRaw
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+     static unsafe partial class NativeRaw
     {
         public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, C4Key*[] emittedKeys, C4Slice[] emittedValues, C4Error* outError)
         {

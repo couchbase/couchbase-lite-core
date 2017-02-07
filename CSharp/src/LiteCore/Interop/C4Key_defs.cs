@@ -28,7 +28,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum C4KeyToken : byte
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4KeyToken : byte
     {
         Null,
         Bool,
@@ -41,7 +46,12 @@ namespace LiteCore.Interop
         Error = 255
     }
 
-    public unsafe struct C4KeyReader
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4KeyReader
     {
         public void* bytes;
         private UIntPtr _length;
@@ -57,11 +67,21 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4KeyValueList
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4KeyValueList
     {
     }
 
-    public unsafe struct C4Key
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Key
     {
     }
 }

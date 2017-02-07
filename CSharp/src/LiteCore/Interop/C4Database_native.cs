@@ -27,7 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public unsafe static partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class Native
     {
         public static C4Database* c4db_open(string path, C4DatabaseConfig* config, C4Error* outError)
         {
@@ -139,7 +144,12 @@ namespace LiteCore.Interop
 
     }
     
-    public unsafe static partial class NativeRaw
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Database* c4db_open(C4Slice path, C4DatabaseConfig* config, C4Error* outError);

@@ -27,7 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public unsafe static partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class Native
     {
         public static bool c4blob_keyFromString(string str, C4BlobKey* x)
         {
@@ -129,7 +134,12 @@ namespace LiteCore.Interop
 
     }
     
-    public unsafe static partial class NativeRaw
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe static partial class NativeRaw
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

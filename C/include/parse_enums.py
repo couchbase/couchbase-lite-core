@@ -4,7 +4,7 @@ import glob
 import re
 from datetime import date
 
-type_map = {"uint32_t":"uint","int32_t":"int","uint8_t":"byte","uint64_t":"ulong","uint16_t":"ushort"}
+type_map = {"uint32_t":"uint","int32_t":"int","uint8_t":"byte","uint64_t":"ulong","uint16_t":"ushort","int8_t":"sbyte"}
 def parse_enum(filename):
     fin = open(filename, "r")
     name_to_type = {}
@@ -63,9 +63,9 @@ def parse_enum(filename):
         if name in flags:
             out_text += "    [Flags]\n"
         if name_to_type[name]:
-            out_text += "    public enum {} : {}\n    {{\n".format(name, name_to_type[name])
+            out_text += "#if LITECORE_PACKAGED\n    internal\n#else\n    public\n#endif\n    enum {} : {}\n    {{\n".format(name, name_to_type[name])
         else:
-            out_text += "    public enum {}\n    {{\n".format(name)
+            out_text += "#if LITECORE_PACKAGED\n    internal\n#else\n    public\n#endif\n    enum {}\n    {{\n".format(name)
 
         for entry in name_to_entries[name]:
             out_text += "        {}\n".format(entry)

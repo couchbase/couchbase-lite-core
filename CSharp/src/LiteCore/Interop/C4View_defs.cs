@@ -30,11 +30,21 @@ namespace LiteCore.Interop
 {
 
 
-    public unsafe struct C4View
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4View
     {
     }
 
-    public unsafe partial struct C4QueryOptions
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4QueryOptions
     {
         public ulong skip;
         public ulong limit;
@@ -102,7 +112,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe struct C4QueryEnumerator
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4QueryEnumerator
     {
         public C4Slice docID;
         public ulong docSequence;
@@ -114,11 +129,21 @@ namespace LiteCore.Interop
         public C4FullTextTerm* fullTextTerms;
     }
 
-    public unsafe struct C4Indexer
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Indexer
     {
     }
 
-    public unsafe struct C4ReduceFunction
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe struct C4ReduceFunction
     {
         public IntPtr accumulate;
         public IntPtr reduce;
@@ -132,7 +157,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public struct C4FullTextTerm
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    struct C4FullTextTerm
     {
         public uint termIndex;
         public uint start, length;

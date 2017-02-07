@@ -29,7 +29,12 @@ using LiteCore.Util;
 namespace LiteCore.Interop
 {
     [Flags]
-    public enum C4DatabaseFlags : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4DatabaseFlags : uint
     {
         Create        = 1,
         ReadOnly      = 2,
@@ -38,19 +43,34 @@ namespace LiteCore.Interop
         SharedKeys    = 0x10,
     }
 
-    public enum C4EncryptionAlgorithm : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4EncryptionAlgorithm : uint
     {
         None = 0,
         AES256 = 1
     }
 
-    public enum C4DocumentVersioning : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4DocumentVersioning : uint
     {
         RevisionTrees,
         VersionVectors,
     }
 
-    public unsafe partial struct C4DatabaseConfig
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4DatabaseConfig
     {
         public C4DatabaseFlags flags;
         private IntPtr _storageEngine;
@@ -69,25 +89,45 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe partial struct C4UUID
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4UUID
     {
         public fixed byte bytes[32];
     }
 
-    public unsafe struct C4RawDocument
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4RawDocument
     {
         public C4Slice key;
         public C4Slice meta;
         public C4Slice body;
     }
 
-    public unsafe partial struct C4EncryptionKey
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4EncryptionKey
     {
         public C4EncryptionAlgorithm algorithm;
         public fixed byte bytes[32];
     }
 
-    public unsafe struct C4Database
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Database
     {
     }
 }

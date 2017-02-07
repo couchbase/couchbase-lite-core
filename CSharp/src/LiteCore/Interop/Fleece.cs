@@ -27,7 +27,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public unsafe partial struct FLSlice
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct FLSlice
     {
         public static readonly FLSlice Null = new FLSlice(null, 0);
 
@@ -102,7 +107,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe partial struct FLSliceResult : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct FLSliceResult : IDisposable
     {
         public static implicit operator FLSlice(FLSliceResult input)
         {

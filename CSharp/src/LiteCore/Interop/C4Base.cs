@@ -30,7 +30,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum LiteCoreError {
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        enum LiteCoreError {
         AssertionFailed = 1,    // Internal assertion failure
         Unimplemented,          // Oops, an unimplemented API call
         NoSequences,            // This KeyStore does not support sequences
@@ -66,7 +71,12 @@ namespace LiteCore.Interop
         MissingIndex            // No such index, or query requires a nonexistent index
     };
 
-    public unsafe partial struct C4Error
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        unsafe partial struct C4Error
     {
         public C4Error(C4ErrorDomain domain, int code)
         {
@@ -89,7 +99,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public unsafe partial struct C4Slice : IEnumerable<byte>
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4Slice : IEnumerable<byte>
     {
         public static readonly C4Slice Null = new C4Slice(null, 0);
 
@@ -159,7 +174,7 @@ namespace LiteCore.Interop
             return new FLSlice(input.buf, input.size);
         }
 
-        #pragma warning disable 1591
+#pragma warning disable 1591
 
         public override string ToString()
         {
@@ -203,7 +218,12 @@ namespace LiteCore.Interop
 #pragma warning restore 1591
     }
 
-    public unsafe struct C4SliceResult : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe struct C4SliceResult : IDisposable
     {
         public void* buf;
         private UIntPtr _size;
@@ -229,7 +249,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public static unsafe partial class Native
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    static unsafe partial class Native
     {
         static Native()
         {
@@ -249,7 +274,11 @@ namespace LiteCore.Interop
                     : "x64";
 
                 var dllPath = Path.Combine(directory, architecture, "LiteCore.dll");
+#if LITECORE_PACKAGED
+                var dllPathUWP = Path.Combine(directory, "Couchbase.Lite", architecture, "LiteCore.dll");
+#else
                 var dllPathUWP = Path.Combine(directory, "LiteCore-Interop", architecture, "LiteCore.dll");
+#endif
                 var dllPathASP = Path.Combine(directory, "bin", architecture, "LiteCore.dll");
                 var foundPath = default(string);
                 foreach(var path in new[] {  dllPath, dllPathUWP, dllPathASP }) {
@@ -278,5 +307,10 @@ namespace LiteCore.Interop
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void C4LogCallback(C4LogDomain domain, C4LogLevel level, C4Slice message);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         delegate void C4LogCallback(C4LogDomain domain, C4LogLevel level, C4Slice message);
 }

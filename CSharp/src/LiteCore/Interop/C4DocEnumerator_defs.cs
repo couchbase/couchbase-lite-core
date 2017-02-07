@@ -29,7 +29,12 @@ using LiteCore.Util;
 namespace LiteCore.Interop
 {
     [Flags]
-    public enum C4EnumeratorFlags : ushort
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4EnumeratorFlags : ushort
     {
         Descending           = 0x01,
         InclusiveStart       = 0x02,
@@ -39,13 +44,23 @@ namespace LiteCore.Interop
         IncludeBodies        = 0x20
     }
 
-    public unsafe partial struct C4EnumeratorOptions
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4EnumeratorOptions
     {
         public ulong skip;
         public C4EnumeratorFlags flags;
     }
 
-    public unsafe struct C4DocumentInfo
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4DocumentInfo
     {
         public C4DocumentFlags flags;
         public C4Slice docID;
@@ -53,7 +68,12 @@ namespace LiteCore.Interop
         public ulong sequence;
     }
 
-    public unsafe struct C4DocEnumerator
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4DocEnumerator
     {
     }
 }

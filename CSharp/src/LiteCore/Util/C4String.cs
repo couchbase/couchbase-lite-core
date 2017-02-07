@@ -31,7 +31,12 @@ namespace LiteCore.Util
     /// Helper class for marshalling string &lt;&gt; C4Slice without creating an extra copy
     /// of the bytes.  Not for storage or long-term use
     /// </summary>
-    public struct C4String : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         struct C4String : IDisposable
     {
         private GCHandle _handle; // Stores the UTF-8 bytes in a pinned location
 

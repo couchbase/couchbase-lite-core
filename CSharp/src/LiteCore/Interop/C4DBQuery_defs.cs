@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,18 +28,33 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public enum C4IndexType : uint
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4IndexType : uint
     {
         ValueIndex,
         FullTextIndex,
         GeoIndex,
     }
 
-    public unsafe struct C4Query
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Query
     {
     }
 
-    public unsafe partial struct C4IndexOptions
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe partial struct C4IndexOptions
     {
         private IntPtr _language;
         private byte _ignoreDiacritics;

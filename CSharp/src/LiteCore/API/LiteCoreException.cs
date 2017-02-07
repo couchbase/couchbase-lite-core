@@ -26,9 +26,19 @@ namespace LiteCore
 {
     public sealed class LiteCoreException : Exception
     {
-        public C4Error Error { get; }
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         C4Error Error { get; }
 
-        public LiteCoreException(C4Error err) : base($"LiteCoreException ({err.code}): {Native.c4error_getMessage(err)}")
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         LiteCoreException(C4Error err) : base($"LiteCoreException ({err.code}): {Native.c4error_getMessage(err)}")
         {
             Error = err;
         }

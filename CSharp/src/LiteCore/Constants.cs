@@ -25,14 +25,39 @@ namespace LiteCore
     {
         internal const string DllName = "LiteCore";
 
-        public static readonly string C4InfoStore = "info";
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         static readonly string C4InfoStore = "info";
 
-        public static readonly string C4LocalDocStore = "_local";
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         static readonly string C4LocalDocStore = "_local";
 
-        public static readonly string C4LanguageDefault = null;
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         static readonly string C4LanguageDefault = null;
 
-        public static readonly string C4LanguageNone = "";
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+         static readonly string C4LanguageNone = "";
 
-        public static readonly string C4PlaceholderValue = "*";
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static readonly string C4PlaceholderValue = "*";
     }
 }

@@ -25,7 +25,12 @@ using System.Threading;
 
 namespace LiteCore.Interop
 {
-    public unsafe partial struct C4IndexOptions : IDisposable
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe partial struct C4IndexOptions : IDisposable
     {
         public void Dispose()
         {

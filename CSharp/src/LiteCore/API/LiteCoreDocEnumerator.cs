@@ -27,7 +27,12 @@ using C4SequenceNumber = System.UInt64;
 
 namespace LiteCore
 {
-    public unsafe sealed class LiteCoreDocEnumerator : InteropObject
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe sealed class LiteCoreDocEnumerator : InteropObject
     {
         private long p_native;
         private C4DocEnumerator* _native

@@ -21,7 +21,12 @@
 using System;
 namespace LiteCore.Interop
 {
-    public enum PosixStatus
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         enum PosixStatus
     {
         PERM = 1,       /* Operation not permitted */
         NOENT = 2,       /* No such file or directory */

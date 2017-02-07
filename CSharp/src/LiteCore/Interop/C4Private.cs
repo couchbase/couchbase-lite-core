@@ -25,7 +25,12 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
-    public static unsafe class NativePrivate
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static unsafe class NativePrivate
     {
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern void c4log_warnOnErrors(bool warn);
@@ -39,7 +44,12 @@ namespace LiteCore.Interop
         }
     }
 
-    public static unsafe class NativeRawPrivate
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         static unsafe class NativeRawPrivate
     {
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern C4Document* c4doc_getForPut(C4Database* database, C4Slice docID, C4Slice parentRevID, [MarshalAs(UnmanagedType.U1)]bool deleting, 

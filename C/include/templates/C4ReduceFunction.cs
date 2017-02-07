@@ -1,4 +1,9 @@
-    public unsafe struct C4ReduceFunction
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    unsafe struct C4ReduceFunction
     {
         public IntPtr accumulate;
         public IntPtr reduce;

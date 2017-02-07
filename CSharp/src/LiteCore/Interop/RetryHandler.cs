@@ -31,21 +31,41 @@ namespace LiteCore.Interop
     /// A delegate for calling native functions that return
     /// a bool and have an out error parameter
     /// </summary>
-    public unsafe delegate bool C4TryLogicDelegate1(C4Error* err);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate bool C4TryLogicDelegate1(C4Error* err);
 
     /// <summary>
     /// A delegate for calling native functions that return
     /// a pointer and have an out error parameter
     /// </summary>
-    public unsafe delegate void* C4TryLogicDelegate2(C4Error* err);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate void* C4TryLogicDelegate2(C4Error* err);
 
     /// <summary>
     /// A delegate for calling native functions that return
     /// an int and have an out error parameter
     /// </summary>
-    public unsafe delegate int C4TryLogicDelegate3(C4Error* err);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate int C4TryLogicDelegate3(C4Error* err);
 
-    public unsafe delegate C4Slice C4TryLogicDelegate4(C4Error* err);
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         unsafe delegate C4Slice C4TryLogicDelegate4(C4Error* err);
 
     #endregion
 
@@ -53,7 +73,12 @@ namespace LiteCore.Interop
     /// A rudimentary retry handler with options for allowing specific errors
     /// and custom exception handling
     /// </summary>
-    public sealed class RetryHandler
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+         sealed class RetryHandler
     {
 
         #region Constants
