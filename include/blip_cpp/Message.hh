@@ -89,7 +89,8 @@ namespace litecore { namespace blip {
     };
 
 
-    /** A temporary object used to construct an outgoing message (request or response). */
+    /** A temporary object used to construct an outgoing message (request or response).
+        The message is sent by calling Connection::sendRequest() or MessageIn::respond(). */
     class MessageBuilder {
     public:
         typedef std::pair<slice, slice> property;

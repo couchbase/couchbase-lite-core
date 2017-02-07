@@ -166,6 +166,12 @@ namespace litecore {
 #endif
         }
 
+        /** Converts a parameterless lambda into a form that runs asynchronously,
+            i.e. when called it schedules a call of the orignal lambda on the actor's thread. */
+        std::function<void()> asynchronize(std::function<void()> fn) {
+            return [=]() { _mailbox.enqueue(fn); };
+        }
+
         template <class T>
         class PropertyImpl {
         public:
@@ -211,7 +217,7 @@ namespace litecore {
 
 
     // This prevents the compiler from specializing Channel in every compilation unit:
-    extern template class Channel<Retained<Actor>>;
+    extern template class Channel<ThreadedMailbox*>;
     extern template class Channel<std::function<void()>>;
 
 }
