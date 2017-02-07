@@ -73,6 +73,18 @@ protected:
 };
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!throws]") {
+    C4Error error;
+    query = c4query_new(db, c4str("[\"=\"]"), &error);
+    REQUIRE(query == nullptr);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorInvalidQuery);
+    C4StringResult msg = c4error_getMessage(error);
+    CHECK(string((char*)msg.buf, msg.size) == "Wrong number of arguments to =");
+    c4slice_free(msg);
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));

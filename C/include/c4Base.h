@@ -144,6 +144,7 @@ enum {
 typedef struct {
     C4ErrorDomain domain;
     int32_t code;
+    int32_t internal_info;
 } C4Error;
 
 

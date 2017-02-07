@@ -23,6 +23,7 @@
 #include "SQLiteCpp/Exception.h"
 #include <ctype.h>
 #include <algorithm>
+#include <deque>
 #include <mutex>
 
 using namespace litecore;
@@ -36,18 +37,49 @@ namespace c4Internal {
     static_assert(kC4NumErrorCodesPlus1 == error::NumLiteCoreErrorsPlus1,
                   "C4 error codes are not in sync with C++ ones");
 
-    void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
+    // A buffer that stores recently generated error messages, referenced by C4Error.internal_info
+    static uint32_t sFirstErrorMessageInternalInfo = 1000;  // internal_info of 1st item in deque
+    static deque<string> sErrorMessages;                    // last 10 error message strings
+
+
+    void recordError(C4ErrorDomain domain, int code, const char *message, C4Error* outError) noexcept {
         if (outError) {
             outError->domain = domain;
             outError->code = code;
+            outError->internal_info = 0;
+            if (message) {
+                try {
+                    sErrorMessages.emplace_back(message);
+                    if (sErrorMessages.size() > kMaxErrorMessagesToSave) {
+                        sErrorMessages.pop_front();
+                        ++sFirstErrorMessageInternalInfo;
+                    }
+                    outError->internal_info = (uint32_t)(sFirstErrorMessageInternalInfo +
+                                                         sErrorMessages.size() - 1);
+                } catch (...) { }
+            }
         }
     }
+
+    void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
+        recordError(domain, code, nullptr, outError);
+    }
+
+    static string lookupErrorMessage(C4Error &error) {
+        int32_t index = error.internal_info - sFirstErrorMessageInternalInfo;
+        if (index >= 0 && index < sErrorMessages.size()) {
+            return sErrorMessages[index];
+        } else {
+            return string();
+        }
+    }
+    
 
     void recordException(const exception &e, C4Error* outError) noexcept {
         static const C4ErrorDomain domainMap[] = {LiteCoreDomain, POSIXDomain,
                                                   ForestDBDomain, SQLiteDomain, FleeceDomain};
         error err = error::convertException(e).standardized();
-        recordError(domainMap[err.domain], err.code, outError);
+        recordError(domainMap[err.domain], err.code, e.what(), outError);
     }
 
 
@@ -68,6 +100,11 @@ C4SliceResult c4error_getMessage(C4Error err) noexcept {
     } else if (err.domain < 1 || err.domain > SQLiteDomain) {
         return sliceResult("unknown error domain");
     } else {
+        // Custom message referenced in info field?
+        string message = lookupErrorMessage(err);
+        if (!message.empty())
+            return sliceResult(message);
+        // No; get the regular error message for this domain/code:
         static constexpr error::Domain kDomains[] = {error::LiteCore, error::POSIX,
                                                      error::ForestDB, error::SQLite};
         error e(kDomains[err.domain - 1], err.code);
