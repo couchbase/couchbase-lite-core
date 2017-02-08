@@ -21,6 +21,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace LiteCore.Interop
 {
@@ -63,14 +64,27 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly DatabaseObserverCallback _callback;
+        private readonly C4DatabaseObserverCallback _nativeCallback;
 
-        public C4DatabaseObserver* Observer { get; private set; }
+        public C4DatabaseObserver* Observer
+        {
+            get {
+                return (C4DatabaseObserver*)_observer;
+            }
+        }
+        private long _observer;
 
         public DatabaseObserver(C4Database* database, DatabaseObserverCallback callback, object context)
         {
             _context = context;
             _callback = callback;
-            Observer = (C4DatabaseObserver *)LiteCoreBridge.Check(err => Native.c4dbobs_create(database, DBObserverCallback, null));
+            _nativeCallback = new C4DatabaseObserverCallback(DBObserverCallback);
+            _observer = (long)LiteCoreBridge.Check(err => Native.c4dbobs_create(database, _nativeCallback, null));
+        }
+
+        ~DatabaseObserver()
+        {
+            Dispose(false);
         }
 
         private void DBObserverCallback(C4DatabaseObserver* observer, void* context)
@@ -78,10 +92,16 @@ namespace LiteCore.Interop
             _callback?.Invoke(observer, _context);
         }
 
+        private void Dispose(bool disposing)
+        {
+            var old = (C4DatabaseObserver*)Interlocked.Exchange(ref _observer, 0);
+            Native.c4dbobs_free(old);
+        }
+
         public void Dispose()
         {
-            Native.c4dbobs_free(Observer);
-            Observer = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 
