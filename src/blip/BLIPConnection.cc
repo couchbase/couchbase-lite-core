@@ -97,13 +97,12 @@ namespace litecore { namespace blip {
             _pendingResponses.reserve(10);
         }
 
+        MessageNo newOutgoingMessageNumber() {
+            return ++_lastMessageNo;
+        }
+
         void queueMessage(MessageOut *msg) {
-            if (msg->type() == kRequestType) {
-                assert(msg->_number == 0);
-                msg->_number = ++_lastMessageNo;
-            } else {
-                assert(msg->_number > 0);
-            }
+            assert(msg->_number > 0);
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
         }
 
@@ -205,11 +204,9 @@ namespace litecore { namespace blip {
                 FrameFlags frameFlags;
                 {
                     // On first frame of a request, add its response message to _pendingResponses:
-                    if (msg->_bytesSent == 0) {
-                        MessageIn *response = msg->pendingResponse();
-                        if (response)
-                            _pendingResponses.emplace(msg->_number, response);
-                    }
+                    Retained<MessageIn> response = msg->detachResponse();
+                    if (response)
+                        _pendingResponses.emplace(msg->number(), response);
 
                     // Read a frame from it:
                     size_t maxSize = kDefaultFrameSize;
@@ -295,7 +292,7 @@ namespace litecore { namespace blip {
         void receivedAck(MessageNo msgNo, bool onResponse, slice body) {
             // Find the MessageOut in either _outbox or _icebox:
             bool frozen = false;
-            MessageOut *msg = _outbox.findMessage(msgNo, onResponse);
+            Retained<MessageOut> msg = _outbox.findMessage(msgNo, onResponse);
             if (!msg) {
                 msg = _icebox.findMessage(msgNo, onResponse);
                 if (!msg) {
@@ -393,11 +390,11 @@ namespace litecore { namespace blip {
 
 
     /** Public API to send a new request. */
-    MessageIn* Connection::sendRequest(MessageBuilder &mb) {
-        Retained<MessageOut> message = new MessageOut(this, mb);
+    FutureResponse Connection::sendRequest(MessageBuilder &mb) {
+        Retained<MessageOut> message = new MessageOut(this, mb, _io->newOutgoingMessageNumber());
         assert(message->type() == kRequestType);
         send(message);
-        return message->pendingResponse();
+        return message->futureResponse();
     }
 
 

@@ -10,6 +10,7 @@
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
 #include "Writer.hh"
+#include "Future.hh"
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -21,6 +22,7 @@ namespace litecore { namespace blip {
 
     class Connection;
     class MessageBuilder;
+    class MessageIn;
 
 
     /** Abstract base class of messages */
@@ -34,16 +36,24 @@ namespace litecore { namespace blip {
         MessageNo number() const            {return _number;}
 
     protected:
-        Message(FrameFlags f, MessageNo n)  :_flags(f), _number(n) { }
+        Message(FrameFlags f, MessageNo n)  :_flags(f), _number(n)
+                            {/*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/}
         FrameFlags flags() const            {return _flags;}
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
         bool isAck() const                  {return type() == kAckRequestType ||
                                                     type() == kAckResponseType;}
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
+        const char* typeName() const        {return kMessageTypeNames[type()];}
+
+//        ~Message()    {Log("DELETE Message<%p, %s #%llu>; now %d objects left",
+//                           this, typeName(), _number, gObjectCount-1);}
 
         FrameFlags _flags;
-        MessageNo _number;
+        const MessageNo _number;
     };
+
+
+    typedef Retained<Future<Retained<MessageIn>>> FutureResponse;
 
 
     /** An incoming message. */
@@ -62,9 +72,6 @@ namespace litecore { namespace blip {
          /** The error code (if this message is an error.) */
          int errorCode() const;
 
-        /** A callback that will be invoked when the message has been completely received. */
-        std::function<void(MessageIn*)> onComplete;
-
         /** Sends a response. */
         void respond(MessageBuilder&);
 
@@ -78,6 +85,7 @@ namespace litecore { namespace blip {
         MessageIn(Connection*, FrameFlags, MessageNo);
         bool receivedFrame(slice, FrameFlags);
         void messageComplete();
+        FutureResponse createFutureResponse();
 
     private:
         Connection* const _connection;
@@ -86,6 +94,7 @@ namespace litecore { namespace blip {
         uint32_t _unackedBytes {0};
         alloc_slice _properties;
         alloc_slice _body;
+        FutureResponse _future;
     };
 
 

@@ -69,6 +69,8 @@
 		27EF6AB01E2B0D9E004748DF /* FleeceException.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */; };
 		27EF6AB31E2B0E60004748DF /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF6AB11E2B0E60004748DF /* libevent_extra.a */; };
 		27EF6AB41E2B0E60004748DF /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF6AB21E2B0E60004748DF /* libevent_pthreads.a */; };
+		27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6ABA1E2E97B5004748DF /* Future.cc */; };
+		27EF6ABD1E2E97B5004748DF /* Future.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6ABB1E2E97B5004748DF /* Future.hh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -165,6 +167,8 @@
 		27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FleeceException.hh; path = Fleece/FleeceException.hh; sourceTree = "<group>"; };
 		27EF6AB11E2B0E60004748DF /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = ../../usr/local/Cellar/libevent/2.0.22/lib/libevent_extra.a; sourceTree = "<group>"; };
 		27EF6AB21E2B0E60004748DF /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = ../../usr/local/Cellar/libevent/2.0.22/lib/libevent_pthreads.a; sourceTree = "<group>"; };
+		27EF6ABA1E2E97B5004748DF /* Future.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
+		27EF6ABB1E2E97B5004748DF /* Future.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Future.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -265,6 +269,8 @@
 			children = (
 				27EF6A641E2858E7004748DF /* Actor.cc */,
 				27EF6A651E2858E7004748DF /* Actor.hh */,
+				27EF6ABA1E2E97B5004748DF /* Future.cc */,
+				27EF6ABB1E2E97B5004748DF /* Future.hh */,
 				27EF6A661E2858E7004748DF /* Channel.cc */,
 				27EF6A671E2858E7004748DF /* Channel.hh */,
 				27EF6A6C1E285916004748DF /* Logging.cc */,
@@ -374,6 +380,7 @@
 				27EF6A631E28587A004748DF /* encode.h in Headers */,
 				27EF6A6B1E2858E7004748DF /* Channel.hh in Headers */,
 				27EF6A611E28587A004748DF /* cencode.h in Headers */,
+				27EF6ABD1E2E97B5004748DF /* Future.hh in Headers */,
 				27EF6AB01E2B0D9E004748DF /* FleeceException.hh in Headers */,
 				27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */,
 				27EF69EC1E282662004748DF /* Message.hh in Headers */,
@@ -529,6 +536,7 @@
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A681E2858E7004748DF /* Actor.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
+				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
 				27EF69D91E28260D004748DF /* LibWSProvider.cc in Sources */,

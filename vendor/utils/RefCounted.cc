@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "RefCounted.hh"
-//#include "Logging.hh"
+#include "Logging.hh"
 #include <assert.h>
 
 namespace litecore {
@@ -23,20 +23,11 @@ namespace litecore {
 
 
     RefCounted::~RefCounted() {
-        if (_refCount > 0) {
-//            Warn("FATAL: RefCounted object at %p destructed while it still has a refCount of %d",
-//                 this, (int)_refCount);
+        if (_refCount != 0) {
+            Warn("FATAL: RefCounted object at %p destructed while it has a refCount of %d",
+                 this, (int)_refCount);
             abort();
         }
-    }
-
-    void RefCounted::dealloc() noexcept {
-        int newref = _refCount;
-        if (newref < 0)
-//            Warn("RefCounted object at %p released too many times; refcount now %d",
-//                 this, newref);
-//        else
-            delete this;
     }
 
 }

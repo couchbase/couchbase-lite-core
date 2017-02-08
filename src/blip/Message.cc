@@ -188,6 +188,12 @@ namespace litecore { namespace blip {
     {
         assert(payload.size < 1ull<<32);
         assert(!(_flags & kCompressed));    //TODO: Implement compression
+
+        if (type() == kRequestType && !noReply()) {
+            // The MessageIn's flags will be updated when the 1st frame of the response arrives;
+            // the type might become kErrorType, and kUrgent or kCompressed might be set.
+            _pendingResponse = new MessageIn(_connection, (FrameFlags)kResponseType, _number);
+        }
     }
 
 
@@ -209,15 +215,9 @@ namespace litecore { namespace blip {
     }
 
 
-    MessageIn* MessageOut::pendingResponse() {
-        if (!_pendingResponse) {
-            if (type() == kRequestType && !noReply()) {
-                // The flags will be updated when the first frame of the response arrives;
-                // the type might become kErrorType, and kUrgent or kCompressed might be set.
-                _pendingResponse = new MessageIn(_connection, (FrameFlags)kResponseType, _number);
-            }
-        }
-        return _pendingResponse;
+    FutureResponse MessageOut::futureResponse() {
+        auto response = _pendingResponse;
+        return response ? response->createFutureResponse() : FutureResponse{};
     }
 
 
@@ -229,6 +229,13 @@ namespace litecore { namespace blip {
     ,_connection(connection)
     {
         assert(n > 0);
+    }
+
+
+    FutureResponse MessageIn::createFutureResponse() {
+        assert(!_future);
+        _future = new Future<Retained<MessageIn>>;
+        return _future;
     }
 
 
@@ -308,9 +315,9 @@ namespace litecore { namespace blip {
     void MessageIn::messageComplete() {
         LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
               kMessageTypeNames[type()], _number, flags());
-        if (onComplete) {
-            onComplete(this);
-            onComplete = nullptr;
+        if (_future) {
+            _future->fulfil(this);
+            _future = nullptr;
         }
         if (type() == kRequestType)
             _connection->delegate().onRequestReceived(this);
@@ -367,5 +374,6 @@ namespace litecore { namespace blip {
         return result;
     }
 
-    
+
+
 } }

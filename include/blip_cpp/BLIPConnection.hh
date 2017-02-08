@@ -30,9 +30,9 @@ namespace litecore { namespace blip {
 
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
-        /** Sends a built message as a new request. Returns an empty MessageIn object representing
-            the response. */
-        MessageIn* sendRequest(MessageBuilder&);
+        /** Sends a built message as a new request.
+            Returns a Future that will asynchronously provide a MessageIn object with the reply. */
+        FutureResponse sendRequest(MessageBuilder&);
 
         void close();
 

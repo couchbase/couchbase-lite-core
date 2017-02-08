@@ -30,9 +30,9 @@ public:
             buffer[i] = (uint8_t)i;
         for (ssize_t remaining = kMessageSize; remaining > 0; remaining -= sizeof(buffer))
             msg << slice(buffer, std::min((ssize_t)sizeof(buffer), remaining));
-        blip::MessageIn *r = connection()->sendRequest(msg);
-        std::cerr << "** Sent BLIP request #" << r->number() << "\n";
-        r->onComplete = [](blip::MessageIn *response) {
+        auto r = connection()->sendRequest(msg);
+        std::cerr << "** Sent BLIP request #" /*<< r->number()*/ << "\n";
+        r->onReady([](blip::MessageIn *response) {
             std::cerr << "** BLIP response #" << response->number() << " onComplete callback\n";
             slice body = response->body();
             bool ok = true;
@@ -45,7 +45,7 @@ public:
             }
             if (ok)
                 std::cerr << "   Response OK!\n";
-        };
+        });
     }
     virtual void onError(int errcode, fleece::slice reason) override {
         std::cerr << "** BLIP error: " << reason.asString() << "(" << errcode << ")\n";

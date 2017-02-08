@@ -35,12 +35,11 @@ namespace litecore {
 
     private:
         template <typename T>
-        friend T* retain(T*);
-        friend void release(RefCounted*);
+        friend T* retain(T*) noexcept;
+        friend void release(RefCounted*) noexcept;
 
         inline void _retain() noexcept          { ++_refCount; }
-        inline void _release() noexcept         {if (--_refCount <= 0) dealloc();}
-        void dealloc() noexcept;
+        inline void _release() noexcept         {if (--_refCount <= 0) delete this;}
 
         std::atomic<int32_t> _refCount {0};
     };
@@ -48,13 +47,13 @@ namespace litecore {
 
     /** Retains a RefCounted object and returns the object. */
     template <typename REFCOUNTED>
-    inline REFCOUNTED* retain(REFCOUNTED *r) {
+    inline REFCOUNTED* retain(REFCOUNTED *r) noexcept {
         if (r) r->_retain();
         return r;
     }
 
     /** Retains a RefCounted object and returns the object. */
-    inline void release(RefCounted *r) {
+    inline void release(RefCounted *r) noexcept {
         if (r) r->_release();
     }
 
@@ -63,24 +62,28 @@ namespace litecore {
     template <typename T>
     class Retained {
     public:
-        Retained()                      :_ref(nullptr) { }
-        Retained(T *t)                  :_ref(retain(t)) { }
-        Retained(const Retained &r)     :_ref(retain(r._ref)) { }
-        Retained(Retained &&r)          :_ref(r._ref) {r._ref = nullptr;}
-        ~Retained()                     {release(_ref);}
+        Retained() noexcept                      :_ref(nullptr) { }
+        Retained(T *t) noexcept                  :_ref(retain(t)) { }
+        Retained(const Retained &r) noexcept     :_ref(retain(r._ref)) { }
+        Retained(Retained &&r) noexcept          :_ref(r._ref) {r._ref = nullptr;}
+        ~Retained()                              {release(_ref);}
 
-        operator T* () const            {return _ref;}
-        T* operator-> () const          {return _ref;}
-        T* get() const                  {return _ref;}
+        operator T* () const noexcept            {return _ref;}
+        T* operator-> () const noexcept          {return _ref;}
+        T* get() const noexcept                  {return _ref;}
 
-        Retained& operator=(const Retained &r) {
+        Retained& operator=(T *t) noexcept {
+            retain(t);
             release(_ref);
-            _ref = r._ref;
-            retain(_ref);
+            _ref = t;
             return *this;
         }
 
-        Retained& operator= (Retained &&r) {
+        Retained& operator=(const Retained &r) noexcept {
+            return *this = r._ref;
+        }
+
+        Retained& operator= (Retained &&r) noexcept {
             release(_ref);
             _ref = r._ref;
             r._ref = nullptr;
