@@ -289,14 +289,14 @@ namespace LiteCore.Interop
                 }
 
                 if(foundPath == null) {
-                    Console.WriteLine("Could not find LiteCore.dll!  Nothing is going to work!");
+                    Debug.WriteLine("Could not find LiteCore.dll!  Nothing is going to work!");
                     throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
                 }
 
                 const uint LOAD_WITH_ALTERED_SEARCH_PATH = 8;
                 var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
                 if(ptr == IntPtr.Zero) {
-                    Console.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
+                    Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
                     throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
                 }
             }
