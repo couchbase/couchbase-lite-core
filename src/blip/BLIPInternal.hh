@@ -31,7 +31,7 @@ namespace litecore { namespace blip {
         fleece::slice nextFrameToSend(size_t maxSize, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
-        Retained<MessageIn> detachResponse()    {return std::move(_pendingResponse);}
+        Retained<MessageIn> detachResponse();
         FutureResponse futureResponse();
 
     private:

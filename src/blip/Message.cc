@@ -215,6 +215,13 @@ namespace litecore { namespace blip {
     }
 
 
+    Retained<MessageIn> MessageOut::detachResponse() {
+        if (_pendingResponse)
+            _pendingResponse->_number = _number;
+        return std::move(_pendingResponse);
+    }
+
+
     FutureResponse MessageOut::futureResponse() {
         auto response = _pendingResponse;
         return response ? response->createFutureResponse() : FutureResponse{};
@@ -227,9 +234,7 @@ namespace litecore { namespace blip {
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n)
     :Message(flags, n)
     ,_connection(connection)
-    {
-        assert(n > 0);
-    }
+    { }
 
 
     FutureResponse MessageIn::createFutureResponse() {
@@ -245,6 +250,7 @@ namespace litecore { namespace blip {
             bytesReceived += _in->length();
         } else {
             // On first frame, update my flags and allocate the Writer:
+            assert(_number > 0);
             LogTo(BLIPLog, "Receiving %s #%llu, flags=%02x",
                   kMessageTypeNames[type()], _number, flags());
             _flags = frameFlags;

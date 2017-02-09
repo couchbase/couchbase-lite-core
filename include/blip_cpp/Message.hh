@@ -50,7 +50,7 @@ namespace litecore { namespace blip {
 //                           this, typeName(), _number);}
 
         FrameFlags _flags;
-        const MessageNo _number;
+        MessageNo _number;
     };
 
 

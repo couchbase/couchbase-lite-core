@@ -10,15 +10,18 @@
 #include "BLIPConnection.hh"
 #include "Logging.hh"
 #include <algorithm>
+#include <atomic>
 #include <iostream>
 
 using namespace litecore;
 using namespace fleece;
 
 
-static const size_t kNumEchoers = 1;
+static const size_t kNumEchoers = 100;
 static const size_t kMessageSize = 300 * 1024;
 
+static std::atomic<int> sResponsesToReceive(kNumEchoers);
+static std::atomic<int> sResponsesToSend(kNumEchoers);
 
 class Echoer : public Actor {
 public:
@@ -52,8 +55,12 @@ protected:
                     ok = false;
                 }
             }
-            if (ok)
-                Log("** Echoer %d got response OK!", _number);
+            if (ok) {
+                int n = --sResponsesToReceive;
+                Log("** Echoer %d got response OK! (%d remaining)", _number, n);
+                if (sResponsesToSend == 0 && sResponsesToReceive == 0)
+                    Log("******** DONE ********\n\n");
+            }
         }));
     }
 
@@ -80,12 +87,15 @@ public:
     }
 
     virtual void onRequestReceived(blip::MessageIn *msg) override {
-        Log("** BLIP request #%llu received: %zu bytes", msg->number(), msg->body().size);
+        int n = --sResponsesToSend;
+        Log("** BLIP request #%llu received: %zu bytes (%d remaining)", msg->number(), msg->body().size, n);
         if (!msg->noReply()) {
             blip::MessageBuilder out(msg);
             out << msg->body();
             msg->respond(out);
         }
+        if (sResponsesToSend == 0 && sResponsesToReceive == 0)
+            Log("******** DONE ********\n\n");
     }
 
     virtual void onResponseReceived(blip::MessageIn *msg) override {

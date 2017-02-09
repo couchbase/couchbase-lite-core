@@ -65,7 +65,8 @@ namespace litecore {
 
         void send(slice msg, bool binary) {
             slice copied = msg.copy();
-            ws_threadsafe_send_msg_ex(_ws, (char*)copied.buf, copied.size, binary);
+            if (ws_threadsafe_send_msg_ex(_ws, (char*)copied.buf, copied.size, binary) != 0)
+                Warn("ws_threadsafe_send_msg_ex failed!");
         }
 
         static void oncleanup(ws_t ws, const void *data, uint64_t datalen, void *extra) {

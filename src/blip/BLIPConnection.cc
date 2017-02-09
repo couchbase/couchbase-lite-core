@@ -97,12 +97,7 @@ namespace litecore { namespace blip {
             _pendingResponses.reserve(10);
         }
 
-        MessageNo newOutgoingMessageNumber() {
-            return ++_lastMessageNo;
-        }
-
         void queueMessage(MessageOut *msg) {
-            assert(msg->_number > 0);
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
         }
 
@@ -138,6 +133,8 @@ namespace litecore { namespace blip {
 
         // Adds a new message to the outgoing queue and wakes up the queue
         void _queueMessage(Retained<MessageOut> msg) {
+            if (msg->_number == 0)
+                msg->_number = ++_lastMessageNo;
             BLIPLog.log((msg->isAck() ? LogLevel::Verbose : LogLevel::Info),
                         "Sending %s #%llu, flags=%02x",
                         kMessageTypeNames[msg->type()], msg->_number, msg->flags());
@@ -168,7 +165,7 @@ namespace litecore { namespace blip {
             _outbox.emplace(i, msg);  // inserts _at_ position i
 
             if (_hungry && andWrite)
-                onWebSocketWriteable();
+                writeToWebSocket();
         }
         
 
@@ -190,7 +187,16 @@ namespace litecore { namespace blip {
 
         // Sends the next frame:
         void _onWebSocketWriteable() {
-            LogVerbose(BLIPLog, "Writing to WebSocket...");
+            LogVerbose(BLIPLog, "WebSocket is hungry!");
+            _hungry = true;
+            writeToWebSocket();
+        }
+
+
+        void writeToWebSocket() {
+            if (!_hungry)
+                return;
+            //LogVerbose(BLIPLog, "Writing to WebSocket...");
             size_t sentBytes = 0;
             while (sentBytes < kMaxSendSize) {
                 // Get the next message from the queue:
@@ -198,8 +204,9 @@ namespace litecore { namespace blip {
 
                 // If there's nothing to send, just remember that I'm ready:
                 _hungry = (msg == nullptr);
-                if (_hungry)
-                    return;
+                if (_hungry) {
+                    break;
+                }
 
                 FrameFlags frameFlags;
                 {
@@ -215,7 +222,7 @@ namespace litecore { namespace blip {
 
                     slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
 
-                    LogVerbose(BLIPLog, "Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
+                    LogVerbose(BLIPLog, "    Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
                           kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
                           (frameFlags & ~kTypeMask),
                           (uint64_t)(msg->_bytesSent - body.size),
@@ -246,6 +253,7 @@ namespace litecore { namespace blip {
                                 kMessageTypeNames[msg->type()], msg->_number, msg->flags());
                 }
             }
+            LogVerbose(BLIPLog, "...Wrote %zu bytes to WebSocket; _hungry=%d", sentBytes, _hungry);
         }
 
 
@@ -391,7 +399,7 @@ namespace litecore { namespace blip {
 
     /** Public API to send a new request. */
     FutureResponse Connection::sendRequest(MessageBuilder &mb) {
-        Retained<MessageOut> message = new MessageOut(this, mb, _io->newOutgoingMessageNumber());
+        Retained<MessageOut> message = new MessageOut(this, mb, 0);
         assert(message->type() == kRequestType);
         send(message);
         return message->futureResponse();
