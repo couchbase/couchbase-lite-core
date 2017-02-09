@@ -314,3 +314,16 @@ namespace LiteCore.Interop
 #endif
          delegate void C4LogCallback(C4LogDomain domain, C4LogLevel level, C4Slice message);
 }
+
+// EPIC HACK: This is required for iOS callbacks, but not available in .NET Standard
+// So I just reverse engineer it (Although reverse engineer is probably too strong a word)
+namespace ObjCRuntime
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    internal sealed class MonoPInvokeCallbackAttribute : Attribute
+    {
+        public MonoPInvokeCallbackAttribute(Type t)
+        {
+        }
+    }
+}

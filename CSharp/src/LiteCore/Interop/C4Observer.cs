@@ -22,6 +22,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using ObjCRuntime;
 
 namespace LiteCore.Interop
 {
@@ -65,6 +66,7 @@ namespace LiteCore.Interop
         private readonly object _context;
         private readonly DatabaseObserverCallback _callback;
         private readonly C4DatabaseObserverCallback _nativeCallback;
+        private GCHandle _self;
 
         public C4DatabaseObserver* Observer
         {
@@ -79,7 +81,8 @@ namespace LiteCore.Interop
             _context = context;
             _callback = callback;
             _nativeCallback = new C4DatabaseObserverCallback(DBObserverCallback);
-            _observer = (long)LiteCoreBridge.Check(err => Native.c4dbobs_create(database, _nativeCallback, null));
+            _self = GCHandle.Alloc(this, GCHandleType.Pinned);
+            _observer = (long)LiteCoreBridge.Check(err => Native.c4dbobs_create(database, _nativeCallback, GCHandle.ToIntPtr(_self).ToPointer()));
         }
 
         ~DatabaseObserver()
@@ -87,15 +90,19 @@ namespace LiteCore.Interop
             Dispose(false);
         }
 
-        private void DBObserverCallback(C4DatabaseObserver* observer, void* context)
+        [MonoPInvokeCallback(typeof(C4DatabaseObserverCallback))]
+        private static void DBObserverCallback(C4DatabaseObserver* observer, void* context)
         {
-            _callback?.Invoke(observer, _context);
+            var self = GCHandle.FromIntPtr((IntPtr)context);
+            var obj = self.Target as DatabaseObserver;
+            obj._callback?.Invoke(observer, obj._context);
         }
 
         private void Dispose(bool disposing)
         {
             var old = (C4DatabaseObserver*)Interlocked.Exchange(ref _observer, 0);
             Native.c4dbobs_free(old);
+            _self.Free();
         }
 
         public void Dispose()
@@ -114,6 +121,7 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly DocumentObserverCallback _callback;
+        private GCHandle _self;
 
         public C4DocumentObserver* Observer { get; private set; }
 
@@ -121,18 +129,23 @@ namespace LiteCore.Interop
         {
             _context = context;
             _callback = callback;
-            Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => Native.c4docobs_create(database, docID, DocObserverCallback, null));
+            _self = GCHandle.Alloc(this);
+            Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => Native.c4docobs_create(database, docID, DocObserverCallback, GCHandle.ToIntPtr(_self).ToPointer()));
         }
 
-        private void DocObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context)
+        [MonoPInvokeCallback(typeof(C4DocumentObserverCallback))]
+        private static void DocObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context)
         {
-            _callback?.Invoke(observer, docID.CreateString(), sequence, _context);
+            var self = GCHandle.FromIntPtr((IntPtr)context);
+            var obj = self.Target as DocumentObserver;
+            obj._callback?.Invoke(observer, docID.CreateString(), sequence, obj._context);
         }
 
         public void Dispose()
         {
             Native.c4docobs_free(Observer);
             Observer = null;
+            _self.Free();
         }
     }
 
