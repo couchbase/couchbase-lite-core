@@ -16,13 +16,22 @@ using namespace litecore;
 using namespace fleece;
 
 
+static const size_t kNumEchoers = 1;
 static const size_t kMessageSize = 300 * 1024;
 
 
-class BlipTest : public litecore::blip::ConnectionDelegate {
+class Echoer : public Actor {
 public:
-    virtual void onConnect() override {
-        std::cerr << "** BLIP Connected\n";
+    Echoer(blip::Connection *conn, int number)
+    :_connection(conn)
+    ,_number(number)
+    { }
+
+    void send(size_t messageSize)       {enqueue(&Echoer::_send, messageSize);}
+
+protected:
+
+    void _send(size_t messageSize) {
         blip::MessageBuilder msg({{"Profile"_sl, "echo"_sl}});
         msg.addProperty("Sender"_sl, "BlipTest"_sl);
         uint8_t buffer[256];
@@ -30,9 +39,9 @@ public:
             buffer[i] = (uint8_t)i;
         for (ssize_t remaining = kMessageSize; remaining > 0; remaining -= sizeof(buffer))
             msg << slice(buffer, std::min((ssize_t)sizeof(buffer), remaining));
-        auto r = connection()->sendRequest(msg);
-        std::cerr << "** Sent BLIP request #" /*<< r->number()*/ << "\n";
-        r->onReady([](blip::MessageIn *response) {
+        auto r = _connection->sendRequest(msg);
+        Log("** Echoer %d sent BLIP request", _number);
+        r->onReady( asynchronize<Retained<blip::MessageIn>>([this](blip::MessageIn *response) {
             std::cerr << "** BLIP response #" << response->number() << " onComplete callback\n";
             slice body = response->body();
             bool ok = true;
@@ -44,18 +53,34 @@ public:
                 }
             }
             if (ok)
-                std::cerr << "   Response OK!\n";
-        });
+                Log("** Echoer %d got response OK!", _number);
+        }));
+    }
+
+private:
+    Retained<blip::Connection> _connection;
+    const int _number;
+};
+
+
+class BlipTest : public litecore::blip::ConnectionDelegate {
+public:
+    virtual void onConnect() override {
+        std::cerr << "** BLIP Connected\n";
+        for (int i = 1; i <= kNumEchoers; ++i) {
+            Retained<Echoer> e = new Echoer(connection(), i);
+            e->send(kMessageSize * i);
+        }
     }
     virtual void onError(int errcode, fleece::slice reason) override {
-        std::cerr << "** BLIP error: " << reason.asString() << "(" << errcode << ")\n";
+        Log("** BLIP error: %s (%d)", reason.asString().c_str(), errcode);
     }
     virtual void onClose(int status, fleece::slice reason) override {
-        std::cerr << "** BLIP closed: " << reason.asString() << "(status " << status << ")\n";
+        Log("** BLIP closed: %s (status %d)", reason.asString().c_str(), status);
     }
 
     virtual void onRequestReceived(blip::MessageIn *msg) override {
-        std::cerr << "** BLIP request #" << msg->number() << " received: " << msg->body().size << " bytes\n";
+        Log("** BLIP request #%llu received: %zu bytes", msg->number(), msg->body().size);
         if (!msg->noReply()) {
             blip::MessageBuilder out(msg);
             out << msg->body();
@@ -64,7 +89,7 @@ public:
     }
 
     virtual void onResponseReceived(blip::MessageIn *msg) override {
-        std::cerr << "** BLIP response #" << msg->number() << " received\n";
+        Log("** BLIP response #%llu received", msg->number());
     }
 };
 
@@ -73,7 +98,7 @@ int main(int argc, const char * argv[]) {
     BlipTest test;
     LibWSProvider provider;
     Retained<blip::Connection> connection(new blip::Connection("localhost", 1234, provider, test));
-    std::cerr << "Starting event loop...\n";
+    Log("Starting event loop...");
     provider.runEventLoop();
     return 0;
 }

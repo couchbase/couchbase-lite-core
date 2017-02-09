@@ -109,9 +109,7 @@ namespace litecore {
         Scheduler* scheduler() const                        {return nullptr;}
         void setScheduler(Scheduler *s)                     { }
 
-        void enqueue(std::function<void()> f) {
-            dispatch_async(_queue, ^{ f(); });
-        }
+        void enqueue(std::function<void()> f);
 
         void enqueue(void (^block)()) {
             dispatch_async(_queue, block);
@@ -120,6 +118,7 @@ namespace litecore {
         static void startScheduler(Scheduler *)             { }
 
     private:
+        Actor *_actor;
         dispatch_queue_t _queue;
     };
 #endif
@@ -160,17 +159,30 @@ namespace litecore {
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
 #ifdef ACTORS_USE_GCD
             // not strictly necessary, but more efficient
-            _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); } );
+            retain(this);
+            _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
 #else
             _mailbox.enqueue(std::bind(fn, (Rcvr*)this, args...));
 #endif
         }
 
-        /** Converts a parameterless lambda into a form that runs asynchronously,
-            i.e. when called it schedules a call of the orignal lambda on the actor's thread. */
-        std::function<void()> asynchronize(std::function<void()> fn) {
-            return [=]() { _mailbox.enqueue(fn); };
+        /** Converts a lambda into a form that runs asynchronously,
+            i.e. when called it schedules a call of the orignal lambda on the actor's thread.
+            Use this when registering callbacks, e.g. with a Future.*/
+        template <class Arg>
+        std::function<void(Arg)> asynchronize(std::function<void(Arg)> fn) {
+            Retained<Actor> ret(this);
+            return [=](Arg arg) mutable {
+                ret->_mailbox.enqueue( std::bind(fn, arg) );
+                ret = nullptr;
+            };
         }
+
+//        std::function<void(void*)> asynchronize(std::function<void(void*)> fn) {
+//            return [=](void* args) {
+//                _mailbox.enqueue( std::bind(fn, args));
+//            };
+//        }
 
         template <class T>
         class PropertyImpl {

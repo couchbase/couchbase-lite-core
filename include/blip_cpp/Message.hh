@@ -11,6 +11,7 @@
 #include "RefCounted.hh"
 #include "Writer.hh"
 #include "Future.hh"
+#include "Logging.hh"
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -45,8 +46,8 @@ namespace litecore { namespace blip {
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
         const char* typeName() const        {return kMessageTypeNames[type()];}
 
-//        ~Message()    {Log("DELETE Message<%p, %s #%llu>; now %d objects left",
-//                           this, typeName(), _number, gObjectCount-1);}
+//        ~Message()    {Log("DELETE Message<%p, %s #%llu>",
+//                           this, typeName(), _number);}
 
         FrameFlags _flags;
         const MessageNo _number;

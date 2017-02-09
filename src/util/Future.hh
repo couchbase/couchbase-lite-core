@@ -38,7 +38,7 @@ namespace litecore {
             notify();
         }
 
-        typedef std::function<void(const T&)> Callback;
+        typedef std::function<void(T)> Callback;
 
         void onReady(Callback callback) {
             {

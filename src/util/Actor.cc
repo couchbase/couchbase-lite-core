@@ -69,12 +69,20 @@ namespace litecore {
 #ifdef ACTORS_USE_GCD
 
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, Scheduler *s)
-    :_queue(dispatch_queue_create((name.empty() ? nullptr : name.c_str()), DISPATCH_QUEUE_SERIAL))
+    :_actor(a),
+     _queue(dispatch_queue_create((name.empty() ? nullptr : name.c_str()), DISPATCH_QUEUE_SERIAL))
     { }
 
     GCDMailbox::~GCDMailbox() {
         dispatch_release(_queue);
     }
+
+
+    void GCDMailbox::enqueue(std::function<void()> f) {
+        retain(_actor);
+        dispatch_async(_queue, ^{ f(); release(_actor); });
+    }
+
 
 #endif // ACTORS_USE_GCD
 
