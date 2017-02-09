@@ -20,6 +20,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ObjCRuntime;
@@ -66,7 +67,8 @@ namespace LiteCore.Interop
         private readonly object _context;
         private readonly DatabaseObserverCallback _callback;
         private readonly C4DatabaseObserverCallback _nativeCallback;
-        private GCHandle _self;
+        private readonly GCHandle _id;
+        private static Dictionary<Guid, DatabaseObserver> _ObserverMap = new Dictionary<Guid, DatabaseObserver>();
 
         public C4DatabaseObserver* Observer
         {
@@ -81,8 +83,12 @@ namespace LiteCore.Interop
             _context = context;
             _callback = callback;
             _nativeCallback = new C4DatabaseObserverCallback(DBObserverCallback);
-            _self = GCHandle.Alloc(this, GCHandleType.Pinned);
-            _observer = (long)LiteCoreBridge.Check(err => Native.c4dbobs_create(database, _nativeCallback, GCHandle.ToIntPtr(_self).ToPointer()));
+            var id = Guid.NewGuid();
+            _id = GCHandle.Alloc(id);
+            _observer = (long)LiteCoreBridge.Check(err => {
+                _ObserverMap[id] = this;
+                return Native.c4dbobs_create(database, _nativeCallback, GCHandle.ToIntPtr(_id).ToPointer());
+            });
         }
 
         ~DatabaseObserver()
@@ -93,8 +99,9 @@ namespace LiteCore.Interop
         [MonoPInvokeCallback(typeof(C4DatabaseObserverCallback))]
         private static void DBObserverCallback(C4DatabaseObserver* observer, void* context)
         {
-            var self = GCHandle.FromIntPtr((IntPtr)context);
-            var obj = self.Target as DatabaseObserver;
+            var idHolder = GCHandle.FromIntPtr((IntPtr)context);
+            var id = (Guid)idHolder.Target;
+            var obj = _ObserverMap[id];
             obj._callback?.Invoke(observer, obj._context);
         }
 
@@ -102,7 +109,9 @@ namespace LiteCore.Interop
         {
             var old = (C4DatabaseObserver*)Interlocked.Exchange(ref _observer, 0);
             Native.c4dbobs_free(old);
-            _self.Free();
+            var id = (Guid)_id.Target;
+            _ObserverMap.Remove(id);
+            _id.Free();
         }
 
         public void Dispose()
@@ -121,7 +130,9 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly DocumentObserverCallback _callback;
-        private GCHandle _self;
+        private readonly C4DocumentObserverCallback _nativeCallback;
+        private readonly GCHandle _id;
+        private static Dictionary<Guid, DocumentObserver> _ObserverMap = new Dictionary<Guid, DocumentObserver>();
 
         public C4DocumentObserver* Observer { get; private set; }
 
@@ -129,15 +140,21 @@ namespace LiteCore.Interop
         {
             _context = context;
             _callback = callback;
-            _self = GCHandle.Alloc(this);
-            Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => Native.c4docobs_create(database, docID, DocObserverCallback, GCHandle.ToIntPtr(_self).ToPointer()));
+            _nativeCallback = new C4DocumentObserverCallback(DocObserverCallback);
+            var id = Guid.NewGuid();
+            _id = GCHandle.Alloc(id);
+            Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => {
+                _ObserverMap[id] = this;
+                return Native.c4docobs_create(database, docID, _nativeCallback, GCHandle.ToIntPtr(_id).ToPointer());
+            });
         }
 
         [MonoPInvokeCallback(typeof(C4DocumentObserverCallback))]
         private static void DocObserverCallback(C4DocumentObserver* observer, C4Slice docID, ulong sequence, void* context)
         {
-            var self = GCHandle.FromIntPtr((IntPtr)context);
-            var obj = self.Target as DocumentObserver;
+            var idHolder = GCHandle.FromIntPtr((IntPtr)context);
+            var id = (Guid)idHolder.Target;
+            var obj = _ObserverMap[id];
             obj._callback?.Invoke(observer, docID.CreateString(), sequence, obj._context);
         }
 
@@ -145,7 +162,9 @@ namespace LiteCore.Interop
         {
             Native.c4docobs_free(Observer);
             Observer = null;
-            _self.Free();
+            var id = (Guid)_id.Target;
+            _ObserverMap.Remove(id);
+            _id.Free();
         }
     }
 
