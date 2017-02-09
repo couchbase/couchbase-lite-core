@@ -7,7 +7,7 @@
 //
 
 #include "c4Internal.hh"
-#include "Catch.hpp"
+#include "catch.hpp"
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
