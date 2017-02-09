@@ -54,6 +54,7 @@ namespace litecore { namespace blip {
     };
 
 
+    /** A Future that will resolve to a MessageIn. */
     typedef Retained<Future<Retained<MessageIn>>> FutureResponse;
 
 

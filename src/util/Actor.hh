@@ -9,6 +9,7 @@
 #pragma once
 #include "Channel.hh"
 #include "RefCounted.hh"
+#include "Future.hh"
 #include <assert.h>
 #include <functional>
 #include <string>
@@ -178,11 +179,12 @@ namespace litecore {
             };
         }
 
-//        std::function<void(void*)> asynchronize(std::function<void(void*)> fn) {
-//            return [=](void* args) {
-//                _mailbox.enqueue( std::bind(fn, args));
-//            };
-//        }
+        /** Convenience function for creating a callback on a Future. */
+        template <class T, class LAMBDA>
+        void onReady(Retained<Future<T>> future, LAMBDA callback) {
+            std::function<void(T)> fn(callback);
+            future->onReady( asynchronize(fn) );
+        }
 
         template <class T>
         class PropertyImpl {

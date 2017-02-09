@@ -34,6 +34,7 @@ namespace litecore { namespace blip {
             Returns a Future that will asynchronously provide a MessageIn object with the reply. */
         FutureResponse sendRequest(MessageBuilder&);
 
+        /** Closes the connection. */
         void close();
 
     protected:

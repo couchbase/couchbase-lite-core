@@ -7,9 +7,10 @@
 //
 
 #pragma once
-#include "Actor.hh"
-#include <atomic>
+#include "RefCounted.hh"
+#include <assert.h>
 #include <functional>
+#include <thread>
 
 
 namespace litecore {

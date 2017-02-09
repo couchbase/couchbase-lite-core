@@ -8,6 +8,7 @@
 
 #include "LibWSProvider.hh"
 #include "BLIPConnection.hh"
+#include "Actor.hh"
 #include "Logging.hh"
 #include <algorithm>
 #include <atomic>
@@ -44,7 +45,7 @@ protected:
             msg << slice(buffer, std::min((ssize_t)sizeof(buffer), remaining));
         auto r = _connection->sendRequest(msg);
         Log("** Echoer %d sent BLIP request", _number);
-        r->onReady( asynchronize<Retained<blip::MessageIn>>([this](blip::MessageIn *response) {
+        onReady(r, [this](blip::MessageIn *response) {
             std::cerr << "** BLIP response #" << response->number() << " onComplete callback\n";
             slice body = response->body();
             bool ok = true;
@@ -61,7 +62,7 @@ protected:
                 if (sResponsesToSend == 0 && sResponsesToReceive == 0)
                     Log("******** DONE ********\n\n");
             }
-        }));
+        });
     }
 
 private:

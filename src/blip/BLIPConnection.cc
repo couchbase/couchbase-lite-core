@@ -131,7 +131,12 @@ namespace litecore { namespace blip {
 
     private:
 
-        // Adds a new message to the outgoing queue and wakes up the queue
+
+#pragma mark OUTGOING:
+
+
+        /** Implementation of public queueMessage() method.
+            Adds a new message to the outgoing queue and wakes up the queue. */
         void _queueMessage(Retained<MessageOut> msg) {
             if (msg->_number == 0)
                 msg->_number = ++_lastMessageNo;
@@ -142,7 +147,7 @@ namespace litecore { namespace blip {
         }
 
 
-        // Adds a message to the outgoing queue
+        /** Adds a message to the outgoing queue */
         void requeue(MessageOut *msg, bool andWrite =false) {
             assert(!_outbox.contains(msg));
             auto i = _outbox.end();
@@ -169,6 +174,7 @@ namespace litecore { namespace blip {
         }
         
 
+        /** Adds an outgoing message to the icebox (until an ACK arrives.) */
         void freezeMessage(MessageOut *msg) {
             LogVerbose(BLIPLog, "Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
             assert(!_outbox.contains(msg));
@@ -177,6 +183,7 @@ namespace litecore { namespace blip {
         }
 
 
+        /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
         void thawMessage(MessageOut *msg) {
             LogVerbose(BLIPLog, "Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
             bool removed = _icebox.remove(msg);
@@ -185,7 +192,7 @@ namespace litecore { namespace blip {
         }
 
 
-        // Sends the next frame:
+        /** WebSocketDelegate method -- socket has room to write data. */
         void _onWebSocketWriteable() {
             LogVerbose(BLIPLog, "WebSocket is hungry!");
             _hungry = true;
@@ -193,6 +200,7 @@ namespace litecore { namespace blip {
         }
 
 
+        /** Sends the next frame. */
         void writeToWebSocket() {
             if (!_hungry)
                 return;
@@ -257,7 +265,10 @@ namespace litecore { namespace blip {
         }
 
 
-        // Received a frame:
+#pragma mark INCOMING:
+
+        
+        /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessage(alloc_slice frame, bool binary) {
             if (!binary) {
                 LogTo(BLIPLog, "Ignoring non-binary message");
@@ -297,6 +308,7 @@ namespace litecore { namespace blip {
         }
 
 
+        /** Handle an incoming ACK message, by unfreezing the associated outgoing message. */
         void receivedAck(MessageNo msgNo, bool onResponse, slice body) {
             // Find the MessageOut in either _outbox or _icebox:
             bool frozen = false;
@@ -360,7 +372,7 @@ namespace litecore { namespace blip {
         }
 
 
-        // Closes the WebSocket.
+        /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
             connection()->close();
         }
@@ -371,6 +383,7 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
+    /** Makes up a name for a Connection, for its name() property. */
     static string makeName(const string &hostname, uint16_t port) {
         char portStr[10];
         sprintf(portStr, ":%u", port);
@@ -406,6 +419,7 @@ namespace litecore { namespace blip {
     }
 
 
+    /** Internal API to send an outgoing message (a request, response, or ACK.) */
     void Connection::send(MessageOut *msg) {
         _io->queueMessage(msg);
     }
