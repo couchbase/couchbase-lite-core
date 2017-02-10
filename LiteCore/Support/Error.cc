@@ -232,17 +232,21 @@ namespace litecore {
         }
     }
 
-    
-    void error::_throw(Domain domain, int code ) {
-        DebugAssert(code != 0);
-        error err{domain, code};
-        if (sWarnOnError && !err.isUnremarkable()) {
+
+    void error::_throw() {
+        if (sWarnOnError && !isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s",
-                      kDomainNames[domain], code, err.what());
+                      kDomainNames[domain], code, what());
             if (WillLog(LogLevel::Error))
                 logBacktrace(1);
         }
-        throw err;
+        throw *this;
+    }
+
+    
+    void error::_throw(Domain domain, int code ) {
+        DebugAssert(code != 0);
+        error{domain, code}._throw();
     }
 
     
@@ -254,6 +258,17 @@ namespace litecore {
         _throw(POSIX, errno);
     }
 
+
+    void error::_throw(error::LiteCoreError code, const char *fmt, ...) {
+        char *msg = nullptr;
+        va_list args;
+        va_start(args, fmt);
+        vasprintf(&msg, fmt, args);
+        va_end(args);
+        std::string message(msg);
+        free(msg);
+        error{LiteCore, code, message}._throw();
+    }
 
 
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,

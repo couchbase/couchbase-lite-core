@@ -110,8 +110,11 @@ namespace litecore {
 
 
     bool SQLiteDataFile::Factory::deleteFile(const FilePath &path, const Options*) {
-        if (openCount(path) > 0)
-            error::_throw(error::Busy);
+        auto count = (unsigned) openCount(path);
+        if (count > 0)
+            error::_throw(error::Busy, "Still %u open connection(s) to %s",
+                          count,
+path.path().c_str());
         return path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
     }

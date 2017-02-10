@@ -80,6 +80,8 @@ namespace litecore {
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
 
+        [[noreturn]] void _throw();
+
         /** Returns an equivalent error in the LiteCore or POSIX domain. */
         error standardized() const;
 
@@ -98,6 +100,7 @@ namespace litecore {
         [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(LiteCoreError);
         [[noreturn]] static void _throwErrno();
+        [[noreturn]] static void _throw(LiteCoreError, const char *msg, ...) __printflike(2,3);
 
         /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
