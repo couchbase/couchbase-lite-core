@@ -84,7 +84,7 @@ namespace LiteCore.Interop
             _callback = callback;
             _nativeCallback = new C4DatabaseObserverCallback(DBObserverCallback);
             var id = Guid.NewGuid();
-            _id = GCHandle.Alloc(id);
+            _id = GCHandle.Alloc(id, GCHandleType.Pinned);
             _observer = (long)LiteCoreBridge.Check(err => {
                 _ObserverMap[id] = this;
                 return Native.c4dbobs_create(database, _nativeCallback, GCHandle.ToIntPtr(_id).ToPointer());
@@ -142,7 +142,7 @@ namespace LiteCore.Interop
             _callback = callback;
             _nativeCallback = new C4DocumentObserverCallback(DocObserverCallback);
             var id = Guid.NewGuid();
-            _id = GCHandle.Alloc(id);
+            _id = GCHandle.Alloc(id, GCHandleType.Pinned);
             Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => {
                 _ObserverMap[id] = this;
                 return Native.c4docobs_create(database, docID, _nativeCallback, GCHandle.ToIntPtr(_id).ToPointer());

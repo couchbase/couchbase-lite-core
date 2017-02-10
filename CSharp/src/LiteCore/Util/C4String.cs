@@ -20,6 +20,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -36,9 +37,10 @@ namespace LiteCore.Util
 #else
     public
 #endif
-         struct C4String : IDisposable
+         unsafe struct C4String : IDisposable
     {
-        private GCHandle _handle; // Stores the UTF-8 bytes in a pinned location
+        private int _byteCount;
+        private byte* _bytes;
 
         /// <summary>
         /// Constructor
@@ -46,10 +48,14 @@ namespace LiteCore.Util
         /// <param name="s">The string to store in this instance</param>
         public C4String(string s)
         {
-            _handle = new GCHandle();
+            _byteCount = 0;
+            _bytes = null;
             if(s != null) {
-                var bytes = Encoding.UTF8.GetBytes(s);
-                _handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                _byteCount = Encoding.UTF8.GetByteCount(s);
+                _bytes = (byte *)Marshal.AllocHGlobal(_byteCount);
+                fixed(char *c = s) {
+                    Encoding.UTF8.GetBytes(c, s.Length, _bytes, _byteCount);
+                }
             }
         }
 
@@ -60,20 +66,14 @@ namespace LiteCore.Util
         /// <returns>Ths C4String instance as a C4Slice</returns>
         public unsafe C4Slice AsC4Slice()
         {
-            if(!_handle.IsAllocated || _handle.Target == null) {
-                return C4Slice.Null;
-            }
-
-            var bytes = _handle.Target as byte[];
-            return new C4Slice(_handle.AddrOfPinnedObject().ToPointer(), (uint)bytes.Length);
+            return new C4Slice(_bytes, (ulong)_byteCount);
         }
 
 #pragma warning disable 1591
         public void Dispose()
         {
-            if(_handle.IsAllocated) {
-                _handle.Free();
-            }
+            Marshal.FreeHGlobal((IntPtr)_bytes);
+            _bytes = null;
         }
 #pragma warning restore 1591
     }
