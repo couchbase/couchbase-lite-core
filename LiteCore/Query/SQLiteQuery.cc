@@ -277,7 +277,8 @@ namespace litecore {
             if (!root)
                 error::_throw(error::InvalidParameter);
             for (Dict::iterator it(root); it; ++it) {
-                string key = string("$_") + (string)it.key()->asString();
+                auto key = (string)it.key()->asString();
+                auto sqlKey = string("$_") + key;
                 const Value *val = it.value();
                 try {
                     switch (val->type()) {
@@ -286,16 +287,16 @@ namespace litecore {
                         case kBoolean:
                         case kNumber:
                             if (val->isInteger() && !val->isUnsigned())
-                                _statement->bind(key, (long long)val->asInt());
+                                _statement->bind(sqlKey, (long long)val->asInt());
                             else
-                                _statement->bind(key, val->asDouble());
+                                _statement->bind(sqlKey, val->asDouble());
                             break;
                         case kString:
-                            _statement->bind(key, (string)val->asString());
+                            _statement->bind(sqlKey, (string)val->asString());
                             break;
                         case kData: {
                             slice str = val->asString();
-                            _statement->bind(key, str.buf, (int)str.size);
+                            _statement->bind(sqlKey, str.buf, (int)str.size);
                             break;
                         }
                         default:
@@ -303,7 +304,10 @@ namespace litecore {
                     }
                 } catch (const SQLite::Exception &x) {
                     if (x.getErrorCode() == SQLITE_RANGE)
-                        error::_throw(error::InvalidQueryParam);
+                        error::_throw(error::InvalidQueryParam,
+                                      "Unknown query property '%s'", key.c_str());
+                    else
+                        throw;
                 }
             }
         }
