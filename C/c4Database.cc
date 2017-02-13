@@ -82,8 +82,9 @@ C4Database* c4db_open(C4Slice path,
 {
     if (!checkParam(configP != nullptr, outError))
         return nullptr;
-    return external( tryCatch<Database*>(outError,
-                                            bind(&Database::newDatabase, (string)path, *configP)) );
+    return tryCatch<C4Database*>(outError, [=] {
+        return retain(new C4Database((string)path, *configP));
+    });
 }
 
 
@@ -95,11 +96,9 @@ bool c4db_close(C4Database* database, C4Error *outError) noexcept {
 
 
 bool c4db_free(C4Database* database) noexcept {
-    if (database == nullptr)
-        return true;
-    if (!database->mustNotBeInTransaction(nullptr))
+    if (database && !database->mustNotBeInTransaction(nullptr))
         return false;
-    database->release();
+    release(database);
     return true;
 }
 

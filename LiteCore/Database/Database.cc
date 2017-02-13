@@ -39,17 +39,14 @@ namespace c4Internal {
 #pragma mark - LIFECYCLE:
 
 
-    Database* Database::newDatabase(const string &pathStr, C4DatabaseConfig config) {
-        FilePath path = (config.flags & kC4DB_Bundled)
-                            ? findOrCreateBundle(pathStr, config)
-                            : FilePath(pathStr);
-        return (new Database(path, config))->retain();
-    }
-
-
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
-    FilePath Database::findOrCreateBundle(const string &path, C4DatabaseConfig &config) {
-        FilePath bundle {path, ""};
+    /*static*/ FilePath Database::findOrCreateBundle(const string &path,
+                                                     C4DatabaseConfig &config)
+    {
+        if (!(config.flags & kC4DB_Bundled))
+            return path;
+
+        FilePath bundle(path, "");
         bool createdDir = ((config.flags & kC4DB_Create) && bundle.mkdir());
         if (!createdDir)
             bundle.mustExistAsDir();
@@ -60,11 +57,11 @@ namespace c4Internal {
 
         // Look for the file corresponding to the requested storage engine (defaulting to SQLite):
 
-        FilePath dbFile = bundle["db"].withExtension(factory->filenameExtension());
-        if (createdDir || factory->fileExists(dbFile)) {
+        FilePath dbPath = bundle["db"].withExtension(factory->filenameExtension());
+        if (createdDir || factory->fileExists(dbPath)) {
             if (config.storageEngine == nullptr)
                 config.storageEngine = factory->cname();
-            return dbFile;
+            return dbPath;
         }
 
         if (config.storageEngine != nullptr) {
@@ -75,10 +72,10 @@ namespace c4Internal {
         // Not found, but they didn't specify a format, so try the other formats:
         for (auto otherFactory : DataFile::factories()) {
             if (otherFactory != factory) {
-                dbFile = bundle["db"].withExtension(otherFactory->filenameExtension());
-                if (factory->fileExists(dbFile)) {
+                dbPath = bundle["db"].withExtension(otherFactory->filenameExtension());
+                if (factory->fileExists(dbPath)) {
                     config.storageEngine = factory->cname();
-                    return dbFile;
+                    return dbPath;
                 }
             }
         }
@@ -118,10 +115,10 @@ namespace c4Internal {
     }
 
 
-    Database::Database(const FilePath &path,
-                       const C4DatabaseConfig &inConfig)
-    :config(inConfig),
-     _db(newDataFile(path, config, true)),
+    Database::Database(const string &path,
+                       C4DatabaseConfig inConfig)
+    :_db(newDataFile(findOrCreateBundle(path, inConfig), inConfig, true)),
+     config(inConfig),
      _encoder(new fleece::Encoder()),
      _sequenceTracker(new SequenceTracker())
     {
