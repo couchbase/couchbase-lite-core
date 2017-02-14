@@ -27,7 +27,7 @@ namespace litecore {
 
         virtual void addProtocol(const std::string &protocol) override;
 
-        virtual WebSocketConnection* connect(const std::string &hostname, uint16_t port,
+        virtual WebSocketConnection* connect(const WebSocketAddress&&,
                                              WebSocketDelegate&) override;
 
         /** Asynchronously starts the event loop on a new background thread. */

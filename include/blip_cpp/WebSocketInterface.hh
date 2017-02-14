@@ -15,12 +15,28 @@ namespace litecore {
     class WebSocketDelegate;
 
 
+    struct WebSocketAddress {
+        const std::string hostname;
+        const uint16_t port;
+        const std::string path;
+
+        WebSocketAddress(const std::string &h, uint16_t po, const std::string &pa ="/")
+        :hostname(h) ,port(po) ,path(pa)
+        { }
+
+        operator std::string() const {
+            char portStr[10];
+            sprintf(portStr, ":%u", port);
+            return hostname + portStr + path;
+        }
+    };
+
+
     /** Abstract class that can open WebSocket client connections. */
     class WebSocketProvider {
     public:
         virtual ~WebSocketProvider() { }
-        virtual WebSocketConnection* connect(const std::string &hostname,
-                                             uint16_t port,
+        virtual WebSocketConnection* connect(const WebSocketAddress&&,
                                              WebSocketDelegate&) =0;
         virtual void addProtocol(const std::string &protocol) =0;
         virtual void close() { }

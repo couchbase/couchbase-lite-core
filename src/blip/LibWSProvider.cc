@@ -35,7 +35,7 @@ namespace litecore {
     public:
 
         LibWSConnection(LibWSProvider &provider, ws_t websocket,
-                        const std::string &hostname, uint16_t port,
+                        const WebSocketAddress &&address,
                         WebSocketDelegate &delegate)
         :WebSocketConnection(provider, delegate)
         ,_ws(websocket)
@@ -46,7 +46,7 @@ namespace litecore {
             ws_set_onclose_cb(_ws, onclose, &delegate);
             ws_set_no_copy_cb(_ws, oncleanup, nullptr);
 
-            if (ws_connect(_ws, hostname.c_str(), port, "")) {
+            if (ws_connect(_ws, address.hostname.c_str(), address.port, address.path.c_str())) {
                 ws_destroy(&_ws);
                 throw "connection failed";
             }
@@ -150,7 +150,7 @@ namespace litecore {
     }
 
 
-    WebSocketConnection* LibWSProvider::connect(const std::string &hostname, uint16_t port,
+    WebSocketConnection* LibWSProvider::connect(const WebSocketAddress &&address,
                                                 WebSocketDelegate &delegate)
     {
         ws_t ws;
@@ -158,7 +158,7 @@ namespace litecore {
             throw "Failed to init websocket state";
         for (auto &proto : _protocols)
             ws_add_subprotocol(ws, proto.c_str());
-        return new LibWSConnection(*this, ws, hostname, port, delegate);
+        return new LibWSConnection(*this, ws, std::move(address), delegate);
     }
 
     void LibWSProvider::runEventLoop() {

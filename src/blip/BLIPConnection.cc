@@ -383,25 +383,17 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
-    /** Makes up a name for a Connection, for its name() property. */
-    static string makeName(const string &hostname, uint16_t port) {
-        char portStr[10];
-        sprintf(portStr, ":%u", port);
-        return string("BLIP->") + hostname + portStr;
-    }
-
-
-    Connection::Connection(const std::string &hostname, uint16_t port,
+    Connection::Connection(const WebSocketAddress &&address,
                            WebSocketProvider &provider,
                            ConnectionDelegate &delegate)
-    :_name(makeName(hostname, port))
+    :_name(string("BLIP -> ") + (string)address)
     ,_delegate(delegate)
     ,_io(new BLIPIO(this, Scheduler::sharedScheduler()))
     {
         LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
         delegate._connection = this;
         provider.addProtocol("BLIP");
-        provider.connect(hostname, port, *_io);
+        provider.connect(std::move(address), *_io);
         Mailbox::startScheduler(_io->scheduler());
     }
 
