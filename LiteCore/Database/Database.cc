@@ -25,6 +25,7 @@
 #include "Fleece.hh"
 #include "BlobStore.hh"
 #include "forestdb_endian.h"
+#include "SecureRandomize.hh"
 
 
 namespace c4Internal {
@@ -34,6 +35,9 @@ namespace c4Internal {
 
     static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
     static uint32_t kDefaultMaxRevTreeDepth = 20;
+
+    const slice Database::kPublicUUIDKey = "publicUUID"_sl;
+    const slice Database::kPrivateUUIDKey = "privateUUID"_sl;
 
 
 #pragma mark - LIFECYCLE:
@@ -333,6 +337,33 @@ namespace c4Internal {
     }
 
 
+    Database::UUID Database::getUUID(slice key) {
+        auto &store = getKeyStore((string)kC4InfoStore);
+        Record r = store.get(key);
+        if (r.exists())
+            return *(UUID*)r.body().buf;
+
+        UUID uuid;
+        beginTransaction();
+        try {
+            Record r2 = store.get(key);
+            if (r2.exists()) {
+                uuid = *(UUID*)r2.body().buf;
+            } else {
+                // Create the UUIDs:
+                slice uuidSlice{&uuid, sizeof(uuid)};
+                GenerateUUID(uuidSlice);
+                store.set(key, nullslice, uuidSlice, transaction());
+            }
+        } catch (...) {
+            endTransaction(false);
+            throw;
+        }
+        endTransaction(true);
+        return uuid;
+    }
+    
+    
 #pragma mark - TRANSACTIONS:
 
 

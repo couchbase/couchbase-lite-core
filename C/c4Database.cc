@@ -167,41 +167,18 @@ void c4db_setMaxRevTreeDepth(C4Database *database, uint32_t depth) noexcept {
 }
 
 
-static void getUUID(Database *database, slice key, C4UUID *uuid) {
-    auto &store = database->getKeyStore((string)kC4InfoStore);
-    Record r = store.get(key);
-    if (r.exists()) {
-        *uuid = *(C4UUID*)r.body().buf;
-        return;
-    }
-    
-    database->beginTransaction();
-    try {
-        Record r2 = store.get(key);
-        if (r2.exists()) {
-            *uuid = *(C4UUID*)r2.body().buf;
-        } else {
-            // Create the UUIDs:
-            slice uuidSlice{uuid, sizeof(*uuid)};
-            GenerateUUID(uuidSlice);
-            store.set(key, nullslice, uuidSlice, database->transaction());
-        }
-    } catch (...) {
-        database->endTransaction(false);
-        throw;
-    }
-    database->endTransaction(true);
-}
-
-
 bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID,
                    C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
-        if (publicUUID)
-            getUUID(database, "publicUUID"_sl, publicUUID);
-        if (privateUUID)
-            getUUID(database, "privateUUID"_sl, privateUUID);
+        if (publicUUID) {
+            auto uuid = (Database::UUID*)publicUUID;
+            *uuid = database->getUUID(Database::kPublicUUIDKey);
+        }
+        if (privateUUID) {
+            auto uuid = (Database::UUID*)privateUUID;
+            *uuid = database->getUUID(Database::kPrivateUUIDKey);
+        }
     });
 }
 

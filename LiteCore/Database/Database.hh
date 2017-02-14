@@ -57,6 +57,14 @@ namespace c4Internal {
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);
 
+        struct UUID {
+            uint8_t bytes[32];
+        };
+        static const slice kPublicUUIDKey;
+        static const slice kPrivateUUIDKey;
+
+        UUID getUUID(slice key);
+
         void rekey(const C4EncryptionKey *newKey);
 
         void compact();
