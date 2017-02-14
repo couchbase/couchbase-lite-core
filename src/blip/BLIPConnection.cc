@@ -73,7 +73,7 @@ namespace litecore { namespace blip {
 
 
     /** The guts of a Connection. */
-    class BLIPIO : public Actor, public WebSocketDelegate {
+    class BLIPIO : public Actor, public websocket::Delegate {
     private:
         typedef unordered_map<MessageNo, Retained<MessageIn>> MessageMap;
 
@@ -107,7 +107,7 @@ namespace litecore { namespace blip {
 
     protected:
 
-        // WebSocketDelegate interface:
+        // websocket::Delegate interface:
         virtual void onWebSocketConnect() override {
             _connection->delegate().onConnect();
             onWebSocketWriteable();
@@ -383,8 +383,8 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
-    Connection::Connection(const WebSocketAddress &&address,
-                           WebSocketProvider &provider,
+    Connection::Connection(const websocket::Address &&address,
+                           websocket::Provider &provider,
                            ConnectionDelegate &delegate)
     :_name(string("BLIP -> ") + (string)address)
     ,_delegate(delegate)

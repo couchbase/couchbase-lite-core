@@ -24,20 +24,19 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore {
+namespace litecore { namespace websocket {
 
 
 #pragma mark - CONNECTION:
 
 
     /** libws-based WebSocket connection. */
-    class LibWSConnection : public WebSocketConnection {
+    class LibWSConnection : public Connection {
     public:
 
         LibWSConnection(LibWSProvider &provider, ws_t websocket,
-                        const WebSocketAddress &&address,
-                        WebSocketDelegate &delegate)
-        :WebSocketConnection(provider, delegate)
+                        const Address &&address, Delegate &delegate)
+        :Connection(provider, delegate)
         ,_ws(websocket)
         {
             ws_set_onwrite_cb(_ws, onwrite, &delegate);
@@ -76,7 +75,7 @@ namespace litecore {
 
         static void onconnect(ws_t ws, void *context) noexcept {
             try {
-                ((WebSocketDelegate*)context)->onWebSocketConnect();
+                ((Delegate*)context)->onWebSocketConnect();
             } catch (...) {
                 fprintf(stderr, "WARNING: WebSocketDelegate::onConnect threw an exception\n");
             }
@@ -84,7 +83,7 @@ namespace litecore {
 
         static void onwrite(ws_t ws, void *context) noexcept {
             try {
-                ((WebSocketDelegate*)context)->onWebSocketWriteable();
+                ((Delegate*)context)->onWebSocketWriteable();
             } catch (...) {
                 fprintf(stderr, "WARNING: WebSocketDelegate::onWriteable threw an exception\n");
             }
@@ -92,7 +91,7 @@ namespace litecore {
 
         static void onmsg(ws_t ws, char *msg, uint64_t len, int binary, void *context) noexcept {
             try {
-                ((WebSocketDelegate*)context)->onWebSocketMessage({msg, len}, binary);
+                ((Delegate*)context)->onWebSocketMessage({msg, len}, binary);
             } catch (...) {
                 fprintf(stderr, "WARNING: WebSocketDelegate::onMessage threw an exception\n");
             }
@@ -105,11 +104,11 @@ namespace litecore {
             // TODO: Use type, which is WS_ERRTYPE_LIB, WS_ERRTYPE_PROTOCOL, or WS_ERRTYPE_DNS
             try {
                 if (type == WS_ERRTYPE_PROTOCOL)
-                    ((WebSocketDelegate*)context)->onWebSocketClose(code, {reason, reason_len});
+                    ((Delegate*)context)->onWebSocketClose(code, {reason, reason_len});
                 else
-                    ((WebSocketDelegate*)context)->onWebSocketError(code, {reason, reason_len});
+                    ((Delegate*)context)->onWebSocketError(code, {reason, reason_len});
             } catch (...) {
-                fprintf(stderr, "WARNING: WebSocketDelegate::onClose threw an exception\n");
+                fprintf(stderr, "WARNING: websocket::Delegate::onClose threw an exception\n");
             }
         }
 
@@ -150,8 +149,7 @@ namespace litecore {
     }
 
 
-    WebSocketConnection* LibWSProvider::connect(const WebSocketAddress &&address,
-                                                WebSocketDelegate &delegate)
+    Connection* LibWSProvider::connect(const Address &&address, Delegate &delegate)
     {
         ws_t ws;
         if (ws_init(&ws, _base) != 0)
@@ -180,4 +178,4 @@ namespace litecore {
             _eventLoopThread->join();
     }
 
-}
+} }

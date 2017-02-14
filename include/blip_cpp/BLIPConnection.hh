@@ -21,8 +21,8 @@ namespace litecore { namespace blip {
         The connection notifies about events and messages by calling its delegate. */
     class Connection : public RefCounted {
     public:
-        Connection(const WebSocketAddress&&,
-                   WebSocketProvider &provider,
+        Connection(const websocket::Address&&,
+                   websocket::Provider &provider,
                    ConnectionDelegate&);
         virtual ~Connection();
 

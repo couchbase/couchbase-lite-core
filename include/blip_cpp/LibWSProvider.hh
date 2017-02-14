@@ -8,27 +8,24 @@
 
 #pragma once
 #include "WebSocketInterface.hh"
-#include "slice.hh"
 #include <memory>
 #include <string>
-#include <stdint.h>
 #include <thread>
 #include <vector>
 
 struct ws_base_s;
 
-namespace litecore {
+namespace litecore { namespace websocket {
 
     /** libws-based WebSocket provider. */
-    class LibWSProvider : public WebSocketProvider {
+    class LibWSProvider : public Provider {
     public:
         LibWSProvider();
         virtual ~LibWSProvider();
 
         virtual void addProtocol(const std::string &protocol) override;
 
-        virtual WebSocketConnection* connect(const WebSocketAddress&&,
-                                             WebSocketDelegate&) override;
+        virtual Connection* connect(const Address&&, Delegate&) override;
 
         /** Asynchronously starts the event loop on a new background thread. */
         void startEventLoop();
@@ -53,4 +50,4 @@ namespace litecore {
         std::unique_ptr<std::thread> _eventLoopThread;
     };
 
-}
+} }
