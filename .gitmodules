@@ -10,3 +10,6 @@
 [submodule "vendor/SQLiteCpp"]
 	path = vendor/SQLiteCpp
 	url = https://github.com/couchbasedeps/SQLiteCpp.git
+[submodule "vendor/BLIP-Cpp"]
+	path = vendor/BLIP-Cpp
+	url = git@github.com:couchbaselabs/BLIP-Cpp.git

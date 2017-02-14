@@ -112,3 +112,22 @@
 
 #endif
 
+
+#if SECURE_DIGEST_AVAILABLE
+namespace litecore {
+
+    struct SHA1 {
+        char bytes[20];
+
+        SHA1(slice s) {
+            sha1Context context;
+            sha1_begin(&context);
+            sha1_add(&context, s.buf, s.size);
+            sha1_end(&context, this);
+        }
+    };
+
+}
+#endif
+
+
