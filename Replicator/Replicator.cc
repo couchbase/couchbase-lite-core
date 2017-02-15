@@ -6,6 +6,8 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+//  https://github.com/couchbaselabs/couchbase-lite-api/wiki/New-Replication-Protocol
+
 #include "Replicator.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
@@ -15,6 +17,7 @@
 #include "c4.h"
 
 using namespace std;
+using namespace std::placeholders;
 using namespace fleece;
 
 
@@ -24,15 +27,26 @@ namespace litecore { namespace repl {
     LogDomain SyncLog("Sync");
 
 
+    const Replicator::HandlerEntry Replicator::kHandlers[] = {
+        {"getCheckpoint", &Replicator::handleGetCheckpoint},
+        { }
+    };
+
+
     Replicator::Replicator(C4Database *db,
-                           WebSocketProvider &provider,
-                           const WebSocketAddress &&address,
+                           websocket::Provider &provider,
+                           const websocket::Address &address,
                            Options options)
     :_db(db)
     ,_remoteAddress(address)
     ,_options(options)
     {
-        _connection = new Connection(WebSocketAddress("localhost", 1234), provider, *this);
+        _connection = new Connection(_remoteAddress, provider, *this);
+
+        for (auto h = kHandlers; h->profile; ++h) {
+            function<void(Retained<MessageIn>)> fn( bind(h->handler, this, _1) );
+            _connection->setRequestHandler(h->profile, asynchronize(fn));
+        }
     }
 
 
@@ -41,15 +55,15 @@ namespace litecore { namespace repl {
         getCheckpoint();
     }
 
-    void Replicator::_onError(int errcode, slice reason) {
+    void Replicator::_onError(int errcode, alloc_slice reason) {
         LogTo(SyncLog, "** BLIP error: %s (%d)", reason.asString().c_str(), errcode);
     }
 
-    void Replicator::_onClose(int status, slice reason) {
+    void Replicator::_onClose(int status, alloc_slice reason) {
         LogTo(SyncLog, "** BLIP closed: %s (status %d)", reason.asString().c_str(), status);
     }
 
-    void Replicator::_onRequestReceived(MessageIn *msg) {
+    void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         LogTo(SyncLog, "** BLIP request #%llu received: %zu bytes", msg->number(), msg->body().size);
     }
 
@@ -98,8 +112,8 @@ namespace litecore { namespace repl {
 
     void Replicator::getCheckpoint() {
         string checkpointID = effectiveRemoteCheckpointDocID();
-        MessageBuilder msg({ {"Profile"_sl, "getCheckpoint"_sl},
-                             {"client"_sl, slice(checkpointID)} });
+        MessageBuilder msg("getCheckpoint"_sl);
+        msg["client"_sl] = slice(checkpointID);
         onReady(sendRequest(msg), [&](MessageIn *response) {
             // Received response -- get checkpoint from it:
             Checkpoint checkpoint;
@@ -135,11 +149,31 @@ namespace litecore { namespace repl {
         // While waiting for the response, get the local checkpoint:
         C4Error err;
         slice s(checkpointID);
-        C4RawDocument *doc = c4raw_get(_db, C4STR("checkpoints"), {s.buf, s.size}, &err);
+        C4RawDocument *doc = c4raw_get(_db, C4STR("checkpoints"), asSlice(s), &err);
         if (doc)
-            _checkpoint = decodeCheckpoint(slice{doc->body.buf, doc->body.size});
+            _checkpoint = decodeCheckpoint(asSlice(doc->body));
         else if (err.code != 0)
             throw "fail"; //FIX
+    }
+
+
+    void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+        slice clientID = request->property("client"_sl);
+        if (!clientID)
+            return request->respondWithError("BLIP"_sl, 400);
+        C4Error err;
+        C4RawDocument *doc = c4raw_get(_db, C4STR("peerCheckpoints"), asSlice(clientID), &err);
+        if (!doc) {
+            if (err.code == 0)
+                return request->respondWithError("HTTP"_sl, 404);
+            else
+                return request->respondWithError("HTTP"_sl, 502);
+        }
+
+        MessageBuilder response(request);
+        response["rev"_sl] = asSlice(doc->meta);
+        response << asSlice(doc->body);
+        request->respond(response);
     }
 
 
@@ -152,6 +186,36 @@ namespace litecore { namespace repl {
             _puller = new Puller(this, _options.continuous, _checkpoint.remoteSeq);
             _puller->start();
         }
+    }
+
+
+#pragma mark - DATABASE:
+
+
+    Retained<Future<ChangeList>> Replicator::dbGetChanges(sequence_t since, unsigned limit) {
+        Retained<Future<ChangeList>> promise = new Future<ChangeList>;
+        enqueue(&Replicator::_dbGetChanges, since, limit, promise);
+        return promise;
+    }
+
+    void Replicator::_dbGetChanges(sequence_t since, unsigned limit,
+                                   Retained<Future<ChangeList>> promise)
+    {
+        ChangeList result;
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags &= ~kC4IncludeBodies;
+        options.flags |= kC4IncludeDeleted;
+        auto e = c4db_enumerateChanges(_db, since, &options, &result.error);
+        if (e) {
+            result.changes.reserve(limit);
+            while (c4enum_next(e, &result.error) && limit-- > 0) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                result.changes.emplace_back(info);
+            }
+            c4enum_free(e);
+        }
+        promise->fulfil(result);
     }
 
 

@@ -182,7 +182,7 @@
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		27CCC7CD1E525E6D00CE1989 /* Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7CB1E525E6D00CE1989 /* Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 		27CCC7D21E52602C00CE1989 /* libws.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BF1E525DD800CE1989 /* libws.a */; };
 		27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
@@ -826,7 +826,7 @@
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
 		27CCC7C91E525E6D00CE1989 /* Replicator.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = Replicator.framework; path = CouchbaseLiteReplicator.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		27CCC7CB1E525E6D00CE1989 /* Replicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Replicator.h; path = ../Xcode/Replicator/Replicator.h; sourceTree = "<group>"; };
+		27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CouchbaseLiteReplicator.h; path = ../Xcode/Replicator/CouchbaseLiteReplicator.h; sourceTree = "<group>"; };
 		27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Replicator-Info.plist"; path = "../Xcode/Replicator/Replicator-Info.plist"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
@@ -1563,7 +1563,7 @@
 				27CCC7DF1E526CCC00CE1989 /* Puller.hh */,
 				27CCC7E21E52965200CE1989 /* Pusher.cc */,
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
-				27CCC7CB1E525E6D00CE1989 /* Replicator.h */,
+				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 			);
 			name = Replicator;
@@ -1829,7 +1829,7 @@
 			files = (
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
-				27CCC7CD1E525E6D00CE1989 /* Replicator.h in Headers */,
+				27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */,
 				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -5,7 +5,6 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
-ALWAYS_SEARCH_USER_PATHS    = YES
 CLANG_WARN_UNREACHABLE_CODE = YES
 DYLIB_COMPATIBILITY_VERSION = 1
 DYLIB_CURRENT_VERSION       = 1
