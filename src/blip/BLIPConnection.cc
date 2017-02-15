@@ -36,6 +36,7 @@ namespace litecore { namespace blip {
     LogDomain BLIPLog("BLIP");
 
 
+    /** Queue of outgoing messages; each message gets to send one frame in turn. */
     class MessageQueue : public vector<Retained<MessageOut>> {
     public:
         MessageQueue()                          { }
@@ -85,6 +86,7 @@ namespace litecore { namespace blip {
         atomic<MessageNo>       _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
         unique_ptr<uint8_t[]>   _frameBuf;
+        std::unordered_map<string, Connection::RequestHandler> _requestHandlers;
 
     public:
 
@@ -99,6 +101,10 @@ namespace litecore { namespace blip {
 
         void queueMessage(MessageOut *msg) {
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
+        }
+
+        void setRequestHandler(std::string profile, Connection::RequestHandler handler) {
+            enqueue(&BLIPIO::_setRequestHandler, profile, handler);
         }
 
         void close() {
@@ -130,6 +136,12 @@ namespace litecore { namespace blip {
         }
 
     private:
+
+
+        /** Implementation of public close() method. Closes the WebSocket. */
+        void _close() {
+            connection()->close();
+        }
 
 
 #pragma mark OUTGOING:
@@ -303,8 +315,13 @@ namespace litecore { namespace blip {
                     break;
                 }
             }
-            if (msg)
-                msg->receivedFrame(frame, flags);
+            if (msg && msg->receivedFrame(frame, flags)) {
+                // Message complete!
+                if (type == kRequestType)
+                    handleRequest(msg);
+                else
+                    _connection->delegate().onResponseReceived(msg);
+            }
         }
 
 
@@ -372,9 +389,30 @@ namespace litecore { namespace blip {
         }
 
 
-        /** Implementation of public close() method. Closes the WebSocket. */
-        void _close() {
-            connection()->close();
+        void _setRequestHandler(std::string profile, Connection::RequestHandler handler) {
+            if (handler)
+                _requestHandlers.emplace(profile, handler);
+            else
+                _requestHandlers.erase(profile);
+        }
+
+
+        void handleRequest(MessageIn *request) {
+            try {
+                auto profile = request->property("Profile"_sl);
+                if (profile) {
+                    auto i = _requestHandlers.find(profile.asString());
+                    if (i != _requestHandlers.end()) {
+                        i->second(request);
+                        return;
+                    }
+                }
+                // No handler; just pass it to the delegate:
+                _connection->delegate().onRequestReceived(request);
+            } catch (...) {
+                WarnError("Caught exception thrown from BLIP request handler");
+                request->respondWithError("BLIP"_sl, 501);
+            }
         }
 
     };
@@ -383,7 +421,7 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
-    Connection::Connection(const websocket::Address &&address,
+    Connection::Connection(const websocket::Address &address,
                            websocket::Provider &provider,
                            ConnectionDelegate &delegate)
     :_name(string("BLIP -> ") + (string)address)
@@ -415,6 +453,12 @@ namespace litecore { namespace blip {
     void Connection::send(MessageOut *msg) {
         _io->queueMessage(msg);
     }
+
+
+    void Connection::setRequestHandler(string profile, RequestHandler handler) {
+        _io->setRequestHandler(profile, handler);
+    }
+
 
 
     void Connection::close() {

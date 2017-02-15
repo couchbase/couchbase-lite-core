@@ -16,6 +16,10 @@
 #include <memory>
 #include <unordered_map>
 
+namespace fleece {
+    class Value;
+}
+
 namespace litecore { namespace blip {
 
     using slice = fleece::slice;
@@ -64,6 +68,8 @@ namespace litecore { namespace blip {
         /** The body of the message. */
         alloc_slice body() const            {return _body;}
 
+        const fleece::Value* JSONBody();
+
         /** Gets a property value */
         slice property(slice property) const;
         long intProperty(slice property, long defaultValue =0) const;
@@ -78,7 +84,11 @@ namespace litecore { namespace blip {
         void respond(MessageBuilder&);
 
         /** Sends an error as a response. */
-        void respondWithError(slice domain, int code, slice message);
+        void respondWithError(slice domain, int code, slice message = fleece::nullslice);
+
+        /** Responds with an error saying that the message went unhandled.
+            Call this if you don't know what to do with a request. */
+        void notHandled();
 
     protected:
         friend class MessageOut;
@@ -86,7 +96,6 @@ namespace litecore { namespace blip {
 
         MessageIn(Connection*, FrameFlags, MessageNo);
         bool receivedFrame(slice, FrameFlags);
-        void messageComplete();
         FutureResponse createFutureResponse();
 
     private:
@@ -96,6 +105,7 @@ namespace litecore { namespace blip {
         uint32_t _unackedBytes {0};
         alloc_slice _properties;
         alloc_slice _body;
+        alloc_slice _bodyAsFleece;
         FutureResponse _future;
     };
 
@@ -106,8 +116,8 @@ namespace litecore { namespace blip {
     public:
         typedef std::pair<slice, slice> property;
 
-        /** Constructs a MessageBuilder for a request. */
-        MessageBuilder();
+        /** Constructs a MessageBuilder for a request, optionally setting its Profile property. */
+        MessageBuilder(slice profile = fleece::nullslice);
 
         /** Constructs a MessageBuilder for a request, with a list of properties. */
         MessageBuilder(std::initializer_list<property>);
@@ -123,6 +133,15 @@ namespace litecore { namespace blip {
 
         /** Adds multiple properties. */
         MessageBuilder& addProperties(std::initializer_list<property>);
+
+        struct propertySetter {
+            MessageBuilder &builder;
+            slice name;
+
+            MessageBuilder& operator= (slice value) {return builder.addProperty(name, value);}
+            MessageBuilder& operator= (int value)   {return builder.addProperty(name, value);}
+        };
+        propertySetter operator[] (slice name)      { return {*this, name}; }
 
         /** Makes a response an error. */
         void makeError(slice domain, int code, slice message);

@@ -35,7 +35,7 @@ namespace litecore { namespace websocket {
     public:
 
         LibWSConnection(LibWSProvider &provider, ws_t websocket,
-                        const Address &&address, Delegate &delegate)
+                        const Address &address, Delegate &delegate)
         :Connection(provider, delegate)
         ,_ws(websocket)
         {
@@ -149,7 +149,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    Connection* LibWSProvider::connect(const Address &&address, Delegate &delegate)
+    Connection* LibWSProvider::connect(const Address &address, Delegate &delegate)
     {
         ws_t ws;
         if (ws_init(&ws, _base) != 0)

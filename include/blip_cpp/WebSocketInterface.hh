@@ -36,7 +36,7 @@ namespace litecore { namespace websocket {
     class Provider {
     public:
         virtual ~Provider() { }
-        virtual Connection* connect(const Address&&, Delegate&) =0;
+        virtual Connection* connect(const Address&, Delegate&) =0;
         virtual void addProtocol(const std::string &protocol) =0;
         virtual void close() { }
     };

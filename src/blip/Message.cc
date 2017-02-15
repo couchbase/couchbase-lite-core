@@ -9,6 +9,7 @@
 #include "Message.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
+#include "Fleece.hh"
 #include "varint.hh"
 #include <algorithm>
 #include <assert.h>
@@ -54,9 +55,11 @@ namespace litecore { namespace blip {
 #pragma mark - MESSAGE BUILDER:
 
     
-    MessageBuilder::MessageBuilder()
+    MessageBuilder::MessageBuilder(slice profile)
     {
         _propertiesSizePos = _out.reserveSpace(kPropertiesSizeReserved);
+        if (profile)
+            addProperty("Profile"_sl, profile);
     }
 
 
@@ -70,14 +73,14 @@ namespace litecore { namespace blip {
     }
 
 
-    MessageBuilder::MessageBuilder(std::initializer_list<MessageBuilder::property> properties)
+    MessageBuilder::MessageBuilder(initializer_list<property> properties)
     :MessageBuilder()
     {
         addProperties(properties);
     }
 
 
-    MessageBuilder& MessageBuilder::addProperties(std::initializer_list<MessageBuilder::property> properties) {
+    MessageBuilder& MessageBuilder::addProperties(initializer_list<property> properties) {
         for (const property &p : properties)
             addProperty(p.first, p.second);
         return *this;
@@ -218,7 +221,7 @@ namespace litecore { namespace blip {
     Retained<MessageIn> MessageOut::detachResponse() {
         if (_pendingResponse)
             _pendingResponse->_number = _number;
-        return std::move(_pendingResponse);
+        return move(_pendingResponse);
     }
 
 
@@ -298,7 +301,12 @@ namespace litecore { namespace blip {
             _body = _in->extractOutput();
             _in.reset();
 
-            messageComplete();
+            LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
+                  kMessageTypeNames[type()], _number, flags());
+            if (_future) {
+                _future->fulfil(this);
+                _future = nullptr;
+            }
             return true;
         }
     }
@@ -318,22 +326,11 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::messageComplete() {
-        LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
-              kMessageTypeNames[type()], _number, flags());
-        if (_future) {
-            _future->fulfil(this);
-            _future = nullptr;
-        }
-        if (type() == kRequestType)
-            _connection->delegate().onRequestReceived(this);
-        else
-            _connection->delegate().onResponseReceived(this);
-    }
-
-
     void MessageIn::respond(MessageBuilder &mb) {
-        assert(!noReply());
+        if (noReply()) {
+            WarnError("Attempted to respond to noReply message");
+            return;
+        }
         if (mb.type == kRequestType)
             mb.type = kResponseType;
         Retained<MessageOut> message = new MessageOut(_connection, mb, _number);
@@ -342,9 +339,16 @@ namespace litecore { namespace blip {
 
 
     void MessageIn::respondWithError(slice domain, int code, slice message) {
-        MessageBuilder mb(this);
-        mb.makeError(domain, code, message);
-        respond(mb);
+        if (!noReply()) {
+            MessageBuilder mb(this);
+            mb.makeError(domain, code, message);
+            respond(mb);
+        }
+    }
+
+
+    void MessageIn::notHandled() {
+        respondWithError("BLIP"_sl, 404);
     }
 
 
@@ -380,6 +384,12 @@ namespace litecore { namespace blip {
         return result;
     }
 
+
+    const fleece::Value* MessageIn::JSONBody() {
+        if (!_bodyAsFleece)
+            _bodyAsFleece = JSONConverter::convertJSON(_body);
+        return Value::fromData(_bodyAsFleece);
+    }
 
 
 } }

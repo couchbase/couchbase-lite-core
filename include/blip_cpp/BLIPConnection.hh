@@ -18,10 +18,11 @@ namespace litecore { namespace blip {
 
 
     /** A BLIP connection. Use this object to open and close connections and send requests.
-        The connection notifies about events and messages by calling its delegate. */
+        The connection notifies about events and messages by calling its delegate.
+        The methods are thread-safe. */
     class Connection : public RefCounted {
     public:
-        Connection(const websocket::Address&&,
+        Connection(const websocket::Address&,
                    websocket::Provider &provider,
                    ConnectionDelegate&);
         virtual ~Connection();
@@ -33,6 +34,9 @@ namespace litecore { namespace blip {
         /** Sends a built message as a new request.
             Returns a Future that will asynchronously provide a MessageIn object with the reply. */
         FutureResponse sendRequest(MessageBuilder&);
+
+        typedef std::function<void(MessageIn*)> RequestHandler;
+        void setRequestHandler(std::string profile, RequestHandler);
 
         /** Closes the connection. */
         void close();
@@ -69,7 +73,7 @@ namespace litecore { namespace blip {
         virtual void onClose(int status, fleece::slice reason)  =0;
 
         /** Called when an incoming request is received. */
-        virtual void onRequestReceived(MessageIn*)              =0;
+        virtual void onRequestReceived(MessageIn* request)      {request->notHandled();}
 
         /** Called when a response to an outgoing request arrives. */
         virtual void onResponseReceived(MessageIn*)             {}
