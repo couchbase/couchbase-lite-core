@@ -23,8 +23,6 @@ using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using LiteCore.Util;
-
 namespace LiteCore.Interop
 {
 #if LITECORE_PACKAGED
@@ -42,16 +40,14 @@ namespace LiteCore.Interop
         public FLSlice(void* buf, ulong size)
         {
             this.buf = buf;
-            this._size = (UIntPtr)size;
+            _size = (UIntPtr)size;
         }
 
         public static FLSlice Constant(string input)
         {
             // Warning: This creates unmanaged memory that is intended never to be freed
             // You should only use it with constant strings
-            return _Constants.GetOrAdd(input, key => {
-                return Allocate(key);
-            });
+            return _Constants.GetOrAdd(input, Allocate);
         }
 
         public static FLSlice Allocate(string input)

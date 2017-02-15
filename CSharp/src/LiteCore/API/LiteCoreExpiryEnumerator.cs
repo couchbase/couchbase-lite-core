@@ -32,34 +32,34 @@ namespace LiteCore
 #endif
          unsafe sealed class LiteCoreExpiryEnumerable : InteropObject, IEnumerable<string>
     {
-        private long p_native;
-        private C4ExpiryEnumerator* _native
+        private long _native;
+        private C4ExpiryEnumerator* Native
         {
             get {
-                return (C4ExpiryEnumerator*)p_native;
+                return (C4ExpiryEnumerator*)_native;
             }
             set {
-                p_native = (long)value;
+                _native = (long)value;
             }
         }
 
         public LiteCoreExpiryEnumerable(C4Database* parent)
         {
-            _native = (C4ExpiryEnumerator*)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(parent, err));
+            Native = (C4ExpiryEnumerator*)LiteCoreBridge.Check(err => Interop.Native.c4db_enumerateExpired(parent, err));
         }
 
         protected override void Dispose(bool finalizing)
         {
-            var native = (C4ExpiryEnumerator*)Interlocked.Exchange(ref p_native, 0);
+            var native = (C4ExpiryEnumerator*)Interlocked.Exchange(ref _native, 0);
             if(native != null) {
-                Native.c4exp_close(native);
-                Native.c4exp_free(native);
+                Interop.Native.c4exp_close(native);
+                Interop.Native.c4exp_free(native);
             }
         }
 
         public IEnumerator<string> GetEnumerator()
         {
-            return new LiteCoreExpiryEnumerator(_native);
+            return new LiteCoreExpiryEnumerator(Native);
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -69,12 +69,18 @@ namespace LiteCore
 
         private sealed class LiteCoreExpiryEnumerator : IEnumerator<string>
         {
+            #region Variables
+
             private readonly C4ExpiryEnumerator* _native;
+
+            #endregion
+
+            #region Properties
 
             public string Current
             {
                 get {
-                    return Native.c4exp_getDocID(_native);
+                    return Interop.Native.c4exp_getDocID(_native);
                 }
             }
 
@@ -85,14 +91,28 @@ namespace LiteCore
                 }
             }
 
+            #endregion
+
+            #region Constructors
+
             public LiteCoreExpiryEnumerator(C4ExpiryEnumerator* native)
             {
                 _native = native;
             }
 
+            #endregion
+
+            #region IDisposable
+
+            public void Dispose() {}
+
+            #endregion
+
+            #region IEnumerator
+
             public bool MoveNext()
             {
-                return Native.c4exp_next(_native, null);
+                return Interop.Native.c4exp_next(_native, null);
             }
 
             public void Reset()
@@ -100,7 +120,7 @@ namespace LiteCore
                 throw new NotSupportedException();
             }
 
-            public void Dispose() {}
+            #endregion
         }
     }
 }

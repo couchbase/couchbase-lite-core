@@ -26,12 +26,18 @@ namespace LiteCore
 {
     public sealed class LiteCoreException : Exception
     {
+        #region Properties
+
 #if LITECORE_PACKAGED
         internal
 #else
     public
 #endif
          C4Error Error { get; }
+
+        #endregion
+
+        #region Constructors
 
 #if LITECORE_PACKAGED
         internal
@@ -42,5 +48,7 @@ namespace LiteCore
         {
             Error = err;
         }
+
+        #endregion
     }
 }

@@ -30,7 +30,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-         unsafe partial struct C4IndexOptions : IDisposable
+        partial struct C4IndexOptions : IDisposable
     {
         public void Dispose()
         {

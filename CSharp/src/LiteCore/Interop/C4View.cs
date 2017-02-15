@@ -19,6 +19,7 @@
 // limitations under the License.
 //
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using LiteCore.Util;
@@ -54,7 +55,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-         unsafe delegate string ManagedReduceDelegate(object context);
+         delegate string ManagedReduceDelegate(object context);
 
 #if LITECORE_PACKAGED
     internal
@@ -63,7 +64,7 @@ namespace LiteCore.Interop
 #endif
          sealed class C4ManagedReduceFunction : IDisposable
     {
-        private object _context;
+        private readonly object _context;
         private readonly ManagedAccumulateDelegate _accumulate;
 
         private readonly ManagedReduceDelegate _reduce;
@@ -81,8 +82,8 @@ namespace LiteCore.Interop
             _context = context;
             _unmanaged[0] = new AccumulateDelegate(Accumulate);
             _unmanaged[1] = new ReduceDelegate(Reduce);
-            Native = new C4ReduceFunction(_unmanaged[0] as AccumulateDelegate, 
-                _unmanaged[1] as ReduceDelegate, null);
+            Native = new C4ReduceFunction((AccumulateDelegate)_unmanaged[0], 
+                (ReduceDelegate)_unmanaged[1], null);
         }
 
         private unsafe void Accumulate(void* context, C4Key* key, C4Slice value)
@@ -112,7 +113,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    unsafe partial struct C4QueryOptions
+    partial struct C4QueryOptions
     {
         public static readonly C4QueryOptions Default = new C4QueryOptions {
             limit = UInt64.MaxValue,
@@ -142,6 +143,7 @@ namespace LiteCore.Interop
 #endif
      static unsafe partial class NativeRaw
     {
+        [SuppressMessage("ReSharper", "InconsistentNaming", Justification ="Shadowing an existing variable of the correct name")]
         public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, C4Key*[] emittedKeys, C4Slice[] emittedValues, C4Error* outError)
         {
             fixed(C4Key** emittedKeys_ = emittedKeys) {

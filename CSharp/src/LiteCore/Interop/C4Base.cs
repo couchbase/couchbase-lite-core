@@ -1,28 +1,28 @@
-﻿//
-// Base.cs
-//
-// Author:
-// 	Jim Borden  <jim.borden@couchbase.com>
-//
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+﻿// 
+//  C4Base.cs
+// 
+//  Author:
+//  Jim Borden  <jim.borden@couchbase.com>
+// 
+//  Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// 
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+// 
+//  http://www.apache.org/licenses/LICENSE-2.0
+// 
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//  
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -35,13 +35,13 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-        enum LiteCoreError {
+    enum LiteCoreError {
         AssertionFailed = 1,    // Internal assertion failure
         Unimplemented,          // Oops, an unimplemented API call
         NoSequences,            // This KeyStore does not support sequences
         UnsupportedEncryption,  // Unsupported encryption algorithm
         NoTransaction,          // Function must be called within a transaction
-        BadRevisionID,          // Invalid revision ID syntax
+        BadRevisionId,          // Invalid revision ID syntax
         BadVersionVector,       // Invalid version vector syntax
         CorruptRevisionData,    // Revision contains corrupted/unreadable data
         CorruptIndexData,       // Index contains corrupted/unreadable data
@@ -54,7 +54,7 @@ namespace LiteCore.Interop
         DatabaseError,          // Lower-level database error (ForestDB or SQLite)
         UnexpectedError,        // Internal unexpected C++ exception
         CantOpenFile,           // Database file can't be opened; may not exist
-        IOError,                // File I/O error
+        IoError,                // File I/O error
         CommitFailed, /*20*/    // Transaction commit failed
         MemoryError,            // Memory allocation failed (out of memory?)
         NotWriteable,           // File is not writeable
@@ -76,7 +76,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-        unsafe partial struct C4Error
+        partial struct C4Error
     {
         public C4Error(C4ErrorDomain domain, int code)
         {
@@ -111,7 +111,7 @@ namespace LiteCore.Interop
         public C4Slice(void* buf, ulong size)
         {
             this.buf = buf;
-            this._size = new UIntPtr(size);
+            _size = new UIntPtr(size);
         }
 
         public static C4Slice Constant(string input)
@@ -138,8 +138,8 @@ namespace LiteCore.Interop
 
         private bool Equals(string other)
         {
-            var c4str = new C4String(other);
-            return Equals(c4str.AsC4Slice());
+            var c4Str = new C4String(other);
+            return Equals(c4Str.AsC4Slice());
         }
 
         public string CreateString()
@@ -219,6 +219,7 @@ namespace LiteCore.Interop
     }
 
 #if LITECORE_PACKAGED
+    [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "These objects are meant to mimick their C counterparts exactly when possible")]
     internal
 #else
     public
@@ -254,11 +255,13 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    static unsafe partial class Native
+    static partial class Native
     {
         static Native()
         {
+#if !NET_46
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+#endif
                 var codeBase = AppContext.BaseDirectory;
                 if(!codeBase.EndsWith("\\"))
                 {
@@ -275,13 +278,13 @@ namespace LiteCore.Interop
 
                 var dllPath = Path.Combine(directory, architecture, "LiteCore.dll");
 #if LITECORE_PACKAGED
-                var dllPathUWP = Path.Combine(directory, "Couchbase.Lite", architecture, "LiteCore.dll");
+                var dllPathUwp = Path.Combine(directory, "Couchbase.Lite", architecture, "LiteCore.dll");
 #else
-                var dllPathUWP = Path.Combine(directory, "LiteCore-Interop", architecture, "LiteCore.dll");
+                var dllPathUwp = Path.Combine(directory, "LiteCore-Interop", architecture, "LiteCore.dll");
 #endif
-                var dllPathASP = Path.Combine(directory, "bin", architecture, "LiteCore.dll");
+                var dllPathAsp = Path.Combine(directory, "bin", architecture, "LiteCore.dll");
                 var foundPath = default(string);
-                foreach(var path in new[] {  dllPath, dllPathUWP, dllPathASP }) {
+                foreach(var path in new[] {  dllPath, dllPathUwp, dllPathAsp }) {
                     foundPath = File.Exists(path) ? path : null; 
                     if(foundPath != null) {
                         break;
@@ -293,13 +296,17 @@ namespace LiteCore.Interop
                     throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
                 }
 
-                const uint LOAD_WITH_ALTERED_SEARCH_PATH = 8;
-                var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
-                if(ptr == IntPtr.Zero) {
-                    Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
-                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
+                const uint loadWithAlteredSearchPath = 8;
+                var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
+                if (ptr != IntPtr.Zero) {
+                    return;
                 }
+
+                Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
+                throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
+#if !NET_46
             }
+#endif
         }
 
         [DllImport("kernel32")]
@@ -322,8 +329,13 @@ namespace ObjCRuntime
     [AttributeUsage(AttributeTargets.Method)]
     internal sealed class MonoPInvokeCallbackAttribute : Attribute
     {
+        #region Constructors
+
+        [SuppressMessage("ReSharper", "UnusedParameter.Local", Justification = "This attribute is only used by mtouch.exe")]
         public MonoPInvokeCallbackAttribute(Type t)
         {
         }
+
+        #endregion
     }
 }

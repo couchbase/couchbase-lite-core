@@ -35,6 +35,7 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention=CallingConvention.Cdecl)]
         public static extern void c4log_warnOnErrors(bool warn);
 
+        [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Shadowing an existing variable for using statement")]
         public static C4Document* c4doc_getForPut(C4Database* database, string docID, string parentRevID, bool deleting, bool allowConflict, C4Error* outError)
         {
             using(var docID_ = new C4String(docID))

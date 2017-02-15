@@ -92,7 +92,7 @@ namespace LiteCore.Interop
 
         private Action<LiteCoreException> _exceptionHandler;
         private uint _maxAttempts;
-        private List<C4Error> _allowedErrors = new List<C4Error>();
+        private readonly List<C4Error> _allowedErrors = new List<C4Error>();
 
         #endregion
 
@@ -116,11 +116,13 @@ namespace LiteCore.Interop
         public static RetryHandler RetryIfBusy(uint maxAttempts = RetryAttempts)
         {
             if(maxAttempts == 0) {
-                throw new ArgumentException("Surely you want to try more than zero times", "maxAttempts");
+                throw new ArgumentException("Surely you want to try more than zero times", nameof(maxAttempts));
             }
 
-            var retVal = new RetryHandler();
-            retVal._maxAttempts = maxAttempts;
+            var retVal = new RetryHandler {
+                _maxAttempts = maxAttempts
+            };
+
             return retVal;
         }
 
@@ -274,7 +276,7 @@ namespace LiteCore.Interop
             }
 
             ThrowOrHandle();
-            return retVal;
+            return null;
         }
 
         private unsafe int Execute(C4TryLogicDelegate3 block, int attemptCount)
@@ -326,18 +328,17 @@ namespace LiteCore.Interop
         private void ThrowOrHandle()
         {
             foreach(var error in _allowedErrors) {
-                if(error.Equals(Exception.Error) || (error.domain == (C4ErrorDomain)0 &&
+                if(error.Equals(Exception.Error) || (error.domain == 0 &&
                     error.code.Equals(Exception.Error.code))) {
                     return;
                 }
             }
 
-            if(_exceptionHandler != null) {
-                _exceptionHandler(Exception);
-                return;
+            if (_exceptionHandler == null) {
+                throw Exception;
             }
 
-            throw Exception;
+            _exceptionHandler(Exception);
         }
 
         #endregion

@@ -34,50 +34,50 @@ namespace LiteCore
 #endif
          unsafe sealed class LiteCoreDocEnumerator : InteropObject
     {
-        private long p_native;
-        private C4DocEnumerator* _native
+        private long _native;
+        private C4DocEnumerator* Native
         {
             get {
-                return (C4DocEnumerator*)p_native;
+                return (C4DocEnumerator*)_native;
             }
             set {
-                p_native = (long)value;
+                _native = (long)value;
             }
         }
 
-        internal LiteCoreDocEnumerator(C4Database* parent, string startDocID, string endDocID, C4EnumeratorOptions options)
+        internal LiteCoreDocEnumerator(C4Database* parent, string startDocId, string endDocId, C4EnumeratorOptions options)
         {
-            _native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
+            Native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
             {
                 var localOpts = options;
-                return Native.c4db_enumerateAllDocs(parent, startDocID, endDocID, &localOpts, err);
+                return Interop.Native.c4db_enumerateAllDocs(parent, startDocId, endDocId, &localOpts, err);
             });
         }
 
         internal LiteCoreDocEnumerator(C4Database* parent, IEnumerable<string> docIDs, C4EnumeratorOptions options)
         {
-            _native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
+            Native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
             {
                 var localOpts = options;
-                return Native.c4db_enumerateSomeDocs(parent, docIDs.ToArray(), &localOpts, err);
+                return Interop.Native.c4db_enumerateSomeDocs(parent, docIDs.ToArray(), &localOpts, err);
             });
         }
 
         internal LiteCoreDocEnumerator(C4Database* parent, C4SequenceNumber seq, C4EnumeratorOptions options)
         {
-            _native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
+            Native = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
             {
                 var localOpts = options;
-                return Native.c4db_enumerateChanges(parent, seq, &localOpts, err);
+                return Interop.Native.c4db_enumerateChanges(parent, seq, &localOpts, err);
             });
         }
 
         protected override void Dispose(bool finalizing)
         {
-            var native = (C4DocEnumerator *)Interlocked.Exchange(ref p_native, 0);
+            var native = (C4DocEnumerator *)Interlocked.Exchange(ref _native, 0);
             if(native != null) {
-                Native.c4enum_close(native);
-                Native.c4enum_free(native);
+                Interop.Native.c4enum_close(native);
+                Interop.Native.c4enum_free(native);
             }
         }
     }

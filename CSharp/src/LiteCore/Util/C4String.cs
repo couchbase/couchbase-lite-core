@@ -20,7 +20,7 @@
 //
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -33,6 +33,7 @@ namespace LiteCore.Util
     /// of the bytes.  Not for storage or long-term use
     /// </summary>
 #if LITECORE_PACKAGED
+    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local", Justification = "Marshaller will need to change these")]
     internal
 #else
     public
@@ -64,7 +65,7 @@ namespace LiteCore.Util
         /// while the original C4String object is valid.
         /// </summary>
         /// <returns>Ths C4String instance as a C4Slice</returns>
-        public unsafe C4Slice AsC4Slice()
+        public C4Slice AsC4Slice()
         {
             return new C4Slice(_bytes, (ulong)_byteCount);
         }

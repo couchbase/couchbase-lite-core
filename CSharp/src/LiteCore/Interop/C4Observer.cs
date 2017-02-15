@@ -21,6 +21,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ObjCRuntime;
@@ -66,9 +67,11 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly DatabaseObserverCallback _callback;
+        // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
         private readonly C4DatabaseObserverCallback _nativeCallback;
-        private readonly GCHandle _id;
-        private static Dictionary<Guid, DatabaseObserver> _ObserverMap = new Dictionary<Guid, DatabaseObserver>();
+        // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
+        private GCHandle _id;
+        private static readonly Dictionary<Guid, DatabaseObserver> _ObserverMap = new Dictionary<Guid, DatabaseObserver>();
 
         public C4DatabaseObserver* Observer
         {
@@ -82,7 +85,7 @@ namespace LiteCore.Interop
         {
             _context = context;
             _callback = callback;
-            _nativeCallback = new C4DatabaseObserverCallback(DBObserverCallback);
+            _nativeCallback = DbObserverCallback;
             var id = Guid.NewGuid();
             _id = GCHandle.Alloc(id, GCHandleType.Pinned);
             _observer = (long)LiteCoreBridge.Check(err => {
@@ -97,7 +100,7 @@ namespace LiteCore.Interop
         }
 
         [MonoPInvokeCallback(typeof(C4DatabaseObserverCallback))]
-        private static void DBObserverCallback(C4DatabaseObserver* observer, void* context)
+        private static void DbObserverCallback(C4DatabaseObserver* observer, void* context)
         {
             var idHolder = GCHandle.FromIntPtr((IntPtr)context);
             var id = (Guid)idHolder.Target;
@@ -105,6 +108,7 @@ namespace LiteCore.Interop
             obj._callback?.Invoke(observer, obj._context);
         }
 
+        [SuppressMessage("ReSharper", "UnusedParameter.Local", Justification = "Only types that need to be disposed unconditionally are dealt with")]
         private void Dispose(bool disposing)
         {
             var old = (C4DatabaseObserver*)Interlocked.Exchange(ref _observer, 0);
@@ -130,9 +134,11 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly DocumentObserverCallback _callback;
+        // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
         private readonly C4DocumentObserverCallback _nativeCallback;
-        private readonly GCHandle _id;
-        private static Dictionary<Guid, DocumentObserver> _ObserverMap = new Dictionary<Guid, DocumentObserver>();
+        // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
+        private GCHandle _id;
+        private static readonly Dictionary<Guid, DocumentObserver> _ObserverMap = new Dictionary<Guid, DocumentObserver>();
 
         public C4DocumentObserver* Observer { get; private set; }
 
@@ -140,7 +146,7 @@ namespace LiteCore.Interop
         {
             _context = context;
             _callback = callback;
-            _nativeCallback = new C4DocumentObserverCallback(DocObserverCallback);
+            _nativeCallback = DocObserverCallback;
             var id = Guid.NewGuid();
             _id = GCHandle.Alloc(id, GCHandleType.Pinned);
             Observer = (C4DocumentObserver *)LiteCoreBridge.Check(err => {
