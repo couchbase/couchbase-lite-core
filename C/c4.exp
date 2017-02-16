@@ -185,6 +185,7 @@ _c4_getObjectCount
 _c4_shutdown
 
 # Fleece:
+_FLSlice_Equal
 _FLSlice_Compare
 _FLSliceResult_Free
 _FLValue_FromData

@@ -46,9 +46,6 @@ void ps(fleece::slice s) {
 
 }
 
-bool operator== (C4Slice s1, C4Slice s2) {
-    return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
-}
 
 static string c4sliceToHex(C4Slice result) {
     string hex;

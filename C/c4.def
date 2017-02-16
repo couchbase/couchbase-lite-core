@@ -180,6 +180,7 @@ c4_getObjectCount
 c4_shutdown
 
 
+FLSlice_Equal
 FLSlice_Compare
 FLSliceResult_Free
 FLValue_FromData

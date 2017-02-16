@@ -28,7 +28,7 @@ extern "C" {
     C4StringResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) C4API;
 
     /** Creates a Fleece encoder for creating documents for a given database. */
-    struct _FLEncoder* c4db_createFleeceEncoder(C4Database*) C4API;
+    FLEncoder c4db_createFleeceEncoder(C4Database*) C4API;
 
     /** Encodes JSON data to Fleece, to store into a document. */
     C4SliceResult c4db_encodeJSON(C4Database*, C4String jsonData, C4Error *outError) C4API;

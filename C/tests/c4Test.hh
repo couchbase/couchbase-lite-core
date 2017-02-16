@@ -8,7 +8,9 @@
 
 #pragma once
 
-#include "Fleece.h"
+#include "FleeceCpp.hh"
+
+using namespace fleeceapi;
 
 #include "c4.h"
 
@@ -40,17 +42,6 @@
 
 std::string TempDir();
 
-
-// Some operators to make C4Slice work with Catch assertions:
-bool operator== (C4Slice s1, C4Slice s2);
-static bool operator!= (C4Slice s1, C4Slice s2) {return !(s1 == s2);}
-
-static inline bool operator== (C4SliceResult sr, C4Slice s) {
-    return C4Slice{sr.buf, sr.size} == s;
-}
-static inline bool operator!= (C4SliceResult sr, C4Slice s) {
-    return C4Slice{sr.buf, sr.size} != s;
-}
 
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 std::ostream& operator<< (std::ostream &out, C4Error error);
