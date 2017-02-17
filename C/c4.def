@@ -237,6 +237,7 @@ FLEncoder_WriteDouble
 FLEncoder_WriteString
 FLEncoder_WriteData
 FLEncoder_WriteValue
+FLEncoder_WriteRaw
 FLEncoder_BeginArray
 FLEncoder_EndArray
 FLEncoder_BeginDict

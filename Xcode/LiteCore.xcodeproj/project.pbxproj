@@ -192,7 +192,6 @@
 		27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
 		27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7E31E52965200CE1989 /* Pusher.hh */; };
 		27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
-		27CCC7E71E5297F600CE1989 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
@@ -1078,7 +1077,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27CCC7E71E5297F600CE1989 /* libFleece.a in Frameworks */,
 				27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */,
 				27CCC7D21E52602C00CE1989 /* libws.a in Frameworks */,
 				27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */,
