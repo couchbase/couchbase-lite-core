@@ -9,14 +9,16 @@
 #pragma once
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
-#include "Writer.hh"
 #include "Future.hh"
 #include "Logging.hh"
+#include "Fleece.h"
+#include "Writer.hh"    //FIX: Wean off of Fleece C++ classes
 #include <functional>
 #include <memory>
+#include <sstream>
 #include <unordered_map>
 
-namespace fleece {
+namespace fleeceapi {
     class Value;
 }
 
@@ -68,7 +70,7 @@ namespace litecore { namespace blip {
         /** The body of the message. */
         alloc_slice body() const            {return _body;}
 
-        const fleece::Value* JSONBody();
+        fleeceapi::Value JSONBody();
 
         /** Gets a property value */
         slice property(slice property) const;
@@ -99,14 +101,14 @@ namespace litecore { namespace blip {
         FutureResponse createFutureResponse();
 
     private:
-        Connection* const _connection;
-        std::unique_ptr<fleece::Writer> _in;
-        uint32_t _propertiesSize {0};
-        uint32_t _unackedBytes {0};
-        alloc_slice _properties;
-        alloc_slice _body;
-        alloc_slice _bodyAsFleece;
-        FutureResponse _future;
+        Connection* const _connection;          // The owning BLIP connection
+        std::unique_ptr<fleece::Writer> _in;    // Accumulates message data
+        uint32_t _propertiesSize {0};           // Length of properties in bytes
+        uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
+        alloc_slice _properties;                // Just the (still encoded) properties
+        alloc_slice _body;                      // Just the body
+        alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
+        FutureResponse _future;                 // Pending response
     };
 
 
@@ -129,7 +131,7 @@ namespace litecore { namespace blip {
         MessageBuilder& addProperty(slice name, slice value);
 
         /** Adds a property with an integer value. */
-        MessageBuilder& addProperty(slice name, int value);
+        MessageBuilder& addProperty(slice name, int64_t value);
 
         /** Adds multiple properties. */
         MessageBuilder& addProperties(std::initializer_list<property>);
@@ -137,18 +139,20 @@ namespace litecore { namespace blip {
         struct propertySetter {
             MessageBuilder &builder;
             slice name;
-
-            MessageBuilder& operator= (slice value) {return builder.addProperty(name, value);}
-            MessageBuilder& operator= (int value)   {return builder.addProperty(name, value);}
+            MessageBuilder& operator= (slice value)   {return builder.addProperty(name, value);}
+            MessageBuilder& operator= (int64_t value) {return builder.addProperty(name, value);}
         };
-        propertySetter operator[] (slice name)      { return {*this, name}; }
+        propertySetter operator[] (slice name)        { return {*this, name}; }
 
         /** Makes a response an error. */
         void makeError(slice domain, int code, slice message);
 
+        /** JSON encoder that can be used to write JSON to the body. */
+        fleeceapi::JSONEncoder& jsonBody()          {finishProperties(); return _out;}
+
         /** Adds data to the body of the message. No more properties can be added afterwards. */
-        MessageBuilder& write(slice);
-        MessageBuilder& operator<< (slice s)  {return write(s);}
+        MessageBuilder& write(slice s);
+        MessageBuilder& operator<< (slice s)        {return write(s);}
 
         /** Clears the MessageBuilder so it can be used to create another message. */
         void reset();
@@ -169,13 +173,14 @@ namespace litecore { namespace blip {
         FrameFlags flags() const;
         alloc_slice extractOutput();
 
-        MessageType type    {kRequestType};
+        MessageType type {kRequestType};
 
     private:
         void finishProperties();
 
-        fleece::Writer _out;
-        const void *_propertiesSizePos;
+        fleeceapi::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
+        std::stringstream _properties;  // Accumulates encoded properties
+        bool _wroteProperties {false};  // Have _properties been written to _out yet?
     };
 
 } }

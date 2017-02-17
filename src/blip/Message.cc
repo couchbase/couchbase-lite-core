@@ -9,7 +9,7 @@
 #include "Message.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
-#include "Fleece.hh"
+#include "FleeceCpp.hh"
 #include "varint.hh"
 #include <algorithm>
 #include <assert.h>
@@ -49,15 +49,12 @@ namespace litecore { namespace blip {
     // How many bytes to receive before sending an ACK
     static const size_t kIncomingAckThreshold = 50000;
 
-    static const size_t kPropertiesSizeReserved = 1;
-
 
 #pragma mark - MESSAGE BUILDER:
 
     
     MessageBuilder::MessageBuilder(slice profile)
     {
-        _propertiesSizePos = _out.reserveSpace(kPropertiesSizeReserved);
         if (profile)
             addProperty("Profile"_sl, profile);
     }
@@ -107,74 +104,67 @@ namespace litecore { namespace blip {
 
 
     // Abbreviates certain special strings as a single byte
-    static slice tokenize(slice str, uint8_t &tokenBuf) {
+    static void writeTokenizedString(ostream &out, slice str) {
+        assert(str.findByte('\0') == nullptr);
+        assert(str.size == 0  || str[0] >= 32);
         for (slice *special = &kSpecialProperties[0]; *special; ++special) {
             if (str == *special) {
-                tokenBuf = (uint8_t)(special - kSpecialProperties + 1);
-                return {&tokenBuf, 1};
+                uint8_t token[2] = {(uint8_t)(special - kSpecialProperties + 1), 0};
+                out.write((char*)&token, 2);
+                return;
             }
         }
-        return str;
+        out.write((char*)str.buf, str.size);
+        out << '\0';
     }
 
 
     MessageBuilder& MessageBuilder::addProperty(slice name, slice value) {
-        assert(_propertiesSizePos != nullptr);      // already finished properties
-
-        assert(name.findByte('\0') == nullptr);
-        assert(value.findByte('\0') == nullptr);
-        assert(name.size == 0  || name[0] >= 32);
-        assert(value.size == 0 || value[0] >= 32);
-
-        uint8_t nameToken, valueToken;
-        _out << tokenize(name, nameToken) << '\0' << tokenize(value, valueToken) << '\0';
+        assert(!_wroteProperties);
+        writeTokenizedString(_properties, name);
+        writeTokenizedString(_properties, value);
         return *this;
     }
 
 
-    MessageBuilder& MessageBuilder::addProperty(slice name, int value) {
-        char valueStr[20];
-        return addProperty(name, slice(valueStr, sprintf(valueStr, "%d", value)));
+    MessageBuilder& MessageBuilder::addProperty(slice name, int64_t value) {
+        char valueStr[30];
+        return addProperty(name, slice(valueStr, sprintf(valueStr, "%lld", value)));
     }
 
 
     void MessageBuilder::finishProperties() {
-        if (_propertiesSizePos) {
-            size_t propertiesSize = _out.length() - kPropertiesSizeReserved;
+        if (!_wroteProperties) {
+            string properties = _properties.str();
+            _properties.clear();
+            size_t propertiesSize = properties.size();
             char buf[kMaxVarintLen64];
             slice encodedSize(buf, PutUVarInt(buf, propertiesSize));
-            if (encodedSize.size == 1) {
-                // Overwrite the size placeholder with the real size byte:
-                _out.rewrite(_propertiesSizePos, encodedSize);
-            } else {
-                // Oh crap, the properties size field requires 2+ bytes. Gotta start over:
-                auto copiedProps = _out.extractOutput();
-                _out.reset();
-                _out.write(encodedSize);
-                _out.write(copiedProps);
-            }
-            _propertiesSizePos = nullptr;
+            _out.writeRaw(encodedSize);
+            _out.writeRaw(slice(properties));
+            _wroteProperties = true;
         }
     }
 
 
     MessageBuilder& MessageBuilder::write(slice data) {
-        if(_propertiesSizePos)
+        if(!_wroteProperties)
             finishProperties();
-        _out.write(data);
+        _out.writeRaw(data);
         return *this;
     }
 
 
     alloc_slice MessageBuilder::extractOutput() {
         finishProperties();
-        return _out.extractOutput();
+        return _out.finish();
     }
 
 
     void MessageBuilder::reset() {
         _out.reset();
-        _propertiesSizePos = _out.reserveSpace(sizeof(uint16_t));
+        _properties.clear();
+        _wroteProperties = false;
     }
 
 
@@ -385,10 +375,10 @@ namespace litecore { namespace blip {
     }
 
 
-    const fleece::Value* MessageIn::JSONBody() {
+    fleeceapi::Value MessageIn::JSONBody() {
         if (!_bodyAsFleece)
-            _bodyAsFleece = JSONConverter::convertJSON(_body);
-        return Value::fromData(_bodyAsFleece);
+            _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
+        return fleeceapi::Value::fromData(_bodyAsFleece);
     }
 
 
