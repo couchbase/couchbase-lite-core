@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0DF1E57A5650084E014 /* libFleece.a */; };
 		27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A51E524F0B00CE1989 /* Logging.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
 		27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */; };
@@ -103,6 +104,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		275CE0DE1E579F8D0084E014 /* MockWSProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MockWSProvider.hh; sourceTree = "<group>"; };
+		275CE0DF1E57A5650084E014 /* libFleece.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFleece.a; path = ../../../../build/CouchbaseLite/Build/Products/Debug/libFleece.a; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -191,6 +194,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */,
 				27CCC7B31E5251C900CE1989 /* libevent_core.a in Frameworks */,
 				27CCC7B51E5251CE00CE1989 /* libevent_extra.a in Frameworks */,
 				27CCC7B41E5251CC00CE1989 /* libevent_pthreads.a in Frameworks */,
@@ -238,6 +242,7 @@
 				27EF69E41E282662004748DF /* BLIPConnection.hh */,
 				27EF69E51E282662004748DF /* BLIPProtocol.hh */,
 				27EF69E61E282662004748DF /* LibWSProvider.hh */,
+				275CE0DE1E579F8D0084E014 /* MockWSProvider.hh */,
 				27EF69E71E282662004748DF /* Message.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
 			);
@@ -365,6 +370,7 @@
 		27EF6AAA1E2B0D62004748DF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				275CE0DF1E57A5650084E014 /* libFleece.a */,
 				27CCC7AD1E524F8000CE1989 /* libevent_core.a */,
 				27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */,
 				27CCC7AF1E524FA200CE1989 /* libevent_extra.a */,
@@ -731,6 +737,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = N2Q372V7W2;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/include/,
+					"$(SRCROOT)/../fleece/Fleece/",
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -740,6 +750,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = N2Q372V7W2;
+				HEADER_SEARCH_PATHS = (
+					/usr/local/include/,
+					"$(SRCROOT)/../fleece/Fleece/",
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

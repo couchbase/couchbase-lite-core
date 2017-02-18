@@ -140,7 +140,7 @@ namespace litecore { namespace blip {
 
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
-            connection()->close();
+            webSocketConnection()->close();
         }
 
 
@@ -257,7 +257,7 @@ namespace litecore { namespace blip {
                     memcpy(end, body.buf, body.size);
                     end += body.size;
                     slice frame {_frameBuf.get(), end};
-                    connection()->send(frame);
+                    webSocketConnection()->send(frame);
                     sentBytes += frame.size;
                 }
                 

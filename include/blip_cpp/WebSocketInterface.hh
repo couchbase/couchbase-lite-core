@@ -8,6 +8,7 @@
 
 #pragma once
 #include "slice.hh"
+#include <string>
 
 namespace litecore { namespace websocket {
 
@@ -70,7 +71,7 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Delegate() { }
 
-        Connection* connection() const              {return _connection;}
+        Connection* webSocketConnection() const     {return _connection;}
 
         virtual void onWebSocketStart() { }
         virtual void onWebSocketConnect() =0;

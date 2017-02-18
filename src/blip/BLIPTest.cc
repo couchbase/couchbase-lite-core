@@ -7,6 +7,7 @@
 //
 
 #include "LibWSProvider.hh"
+#include "MockWSProvider.hh"
 #include "BLIPConnection.hh"
 #include "Actor.hh"
 #include "Logging.hh"
@@ -14,12 +15,15 @@
 #include <atomic>
 #include <iostream>
 
+using namespace litecore::websocket;
 using namespace litecore;
 using namespace fleece;
 
 
-static const size_t kNumEchoers = 100;
-static const size_t kMessageSize = 300 * 1024;
+#define MOCK_WS 0
+
+static const size_t kNumEchoers = MOCK_WS ? 5 : 100;
+static const size_t kMessageSize = MOCK_WS ? 32 : 300 * 1024;
 
 static std::atomic<int> sResponsesToReceive(kNumEchoers);
 static std::atomic<int> sResponsesToSend(kNumEchoers);
@@ -107,9 +111,18 @@ public:
 
 int main(int argc, const char * argv[]) {
     BlipTest test;
+#if MOCK_WS
+    MockWSProvider provider;
+#else
     LibWSProvider provider;
-    Retained<blip::Connection> connection(new blip::Connection("localhost", 1234, provider, test));
+#endif
+    Retained<blip::Connection> connection(new blip::Connection(Address("localhost", 1234), provider, test));
     Log("Starting event loop...");
+
+#if MOCK_WS
+    Scheduler::sharedScheduler()->runSynchronous();
+#else
     provider.runEventLoop();
+#endif
     return 0;
 }

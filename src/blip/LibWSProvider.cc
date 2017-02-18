@@ -57,12 +57,12 @@ namespace litecore { namespace websocket {
         }
 
 
-        void close() {
+        virtual void close() override {
             ws_close_threadsafe(_ws);
         }
 
 
-        void send(slice msg, bool binary) {
+        virtual void send(slice msg, bool binary) override {
             slice copied = msg.copy();
             if (ws_threadsafe_send_msg_ex(_ws, (char*)copied.buf, copied.size, binary) != 0)
                 Warn("ws_threadsafe_send_msg_ex failed!");
