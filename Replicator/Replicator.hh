@@ -45,6 +45,10 @@ namespace litecore { namespace repl {
             bool push {false};
             bool pull {false};
             bool continuous {false};
+
+            Options(bool push_, bool pull_, bool continuous_)
+            :push(push_), pull(pull_), continuous(continuous_)
+            { }
         };
 
         Replicator(C4Database*, websocket::Provider&, const websocket::Address&, Options);

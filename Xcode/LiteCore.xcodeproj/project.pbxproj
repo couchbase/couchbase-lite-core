@@ -102,6 +102,11 @@
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		275CE0EB1E57BE430084E014 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0E81E57BE430084E014 /* libevent_core.a */; };
+		275CE0EC1E57BE430084E014 /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0E91E57BE430084E014 /* libevent_extra.a */; };
+		275CE0ED1E57BE430084E014 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0EA1E57BE430084E014 /* libevent_pthreads.a */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -744,6 +749,12 @@
 		2757DE591B9FC3F1002EE261 /* c4Base.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = c4Base.h; sourceTree = "<group>"; };
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
 		2759BD4C1DDFB15100C263B4 /* make_unique.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = make_unique.h; sourceTree = "<group>"; };
+		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
+		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
+		275CE0E81E57BE430084E014 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_core.a; sourceTree = "<group>"; };
+		275CE0E91E57BE430084E014 /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_extra.a; sourceTree = "<group>"; };
+		275CE0EA1E57BE430084E014 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_pthreads.a; sourceTree = "<group>"; };
+		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; name = Replicator.exp; path = ../Xcode/Replicator/Replicator.exp; sourceTree = "<group>"; };
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TreeDocument.cc; path = Database/TreeDocument.cc; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
@@ -824,7 +835,7 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
-		27CCC7C91E525E6D00CE1989 /* Replicator.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = Replicator.framework; path = CouchbaseLiteReplicator.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CouchbaseLiteReplicator.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CouchbaseLiteReplicator.h; path = ../Xcode/Replicator/CouchbaseLiteReplicator.h; sourceTree = "<group>"; };
 		27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Replicator-Info.plist"; path = "../Xcode/Replicator/Replicator-Info.plist"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
@@ -1078,8 +1089,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */,
-				27CCC7D21E52602C00CE1989 /* libws.a in Frameworks */,
 				27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */,
+				27CCC7D21E52602C00CE1989 /* libws.a in Frameworks */,
+				275CE0EB1E57BE430084E014 /* libevent_core.a in Frameworks */,
+				275CE0EC1E57BE430084E014 /* libevent_extra.a in Frameworks */,
+				275CE0ED1E57BE430084E014 /* libevent_pthreads.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1290,7 +1304,7 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
-				27CCC7C91E525E6D00CE1989 /* Replicator.framework */,
+				27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1298,6 +1312,9 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				275CE0E81E57BE430084E014 /* libevent_core.a */,
+				275CE0E91E57BE430084E014 /* libevent_extra.a */,
+				275CE0EA1E57BE430084E014 /* libevent_pthreads.a */,
 				7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */,
 				270515581D907F6200D62D05 /* CoreFoundation.framework */,
 				27E89BAB1D6A611D002C32B3 /* libsqlcipher.0.dylib */,
@@ -1562,7 +1579,10 @@
 				27CCC7E21E52965200CE1989 /* Pusher.cc */,
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
+				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
+				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
+				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
 			);
 			name = Replicator;
 			path = ../Replicator;
@@ -1828,6 +1848,7 @@
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
 				27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */,
+				275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */,
 				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2077,7 +2098,7 @@
 			);
 			name = Replicator;
 			productName = Replicator;
-			productReference = 27CCC7C91E525E6D00CE1989 /* Replicator.framework */;
+			productReference = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		27EF807319142C2500A327B9 /* Tokenizer */ = {
@@ -2473,6 +2494,7 @@
 				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
+				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3043,6 +3065,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27CCC7F01E52993400CE1989 /* Replicator.xcconfig */;
 			buildSettings = {
+				EXPORTED_SYMBOLS_FILE = Replicator/Replicator.exp;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/libevent/2.0.22/lib,
+				);
 			};
 			name = Debug;
 		};
@@ -3050,6 +3077,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27CCC7F01E52993400CE1989 /* Replicator.xcconfig */;
 			buildSettings = {
+				EXPORTED_SYMBOLS_FILE = Replicator/Replicator.exp;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/libevent/2.0.22/lib,
+				);
 			};
 			name = Release;
 		};
