@@ -42,16 +42,16 @@ namespace litecore { namespace repl {
     class Replicator : public Actor, ConnectionDelegate {
     public:
         struct Options {
-            bool push {false};
-            bool pull {false};
-            bool continuous {false};
-
-            Options(bool push_, bool pull_, bool continuous_)
-            :push(push_), pull(pull_), continuous(continuous_)
-            { }
+            bool push;
+            bool pull;
+            bool continuous;
         };
 
+        /** Constructor for a client connection; will open the Connection itself. */
         Replicator(C4Database*, websocket::Provider&, const websocket::Address&, Options);
+
+        /** Constructor for an incoming connection. */
+        Replicator(C4Database*, blip::Connection*, const websocket::Address&);
 
         FutureResponse sendRequest(MessageBuilder& builder) {
             return connection()->sendRequest(builder);
@@ -85,6 +85,7 @@ namespace litecore { namespace repl {
             std::string remoteSeq;
         };
 
+        void setConnection(Connection*);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
         void _onClose(int status, fleece::alloc_slice reason);

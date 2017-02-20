@@ -42,8 +42,25 @@ namespace litecore { namespace repl {
     ,_remoteAddress(address)
     ,_options(options)
     {
-        _connection = new Connection(_remoteAddress, provider, *this);
+        setConnection(new Connection(_remoteAddress, provider, *this));
+    }
 
+
+    Replicator::Replicator(C4Database* db,
+                           Connection *connection,
+                           const websocket::Address &address)
+    :_db(db)
+    ,_remoteAddress(address)
+    ,_options()
+    {
+        setConnection(connection);
+    }
+
+
+    void Replicator::setConnection(Connection *connection) {
+        assert(!_connection);
+        assert(connection);
+        _connection = connection;
         for (auto h = kHandlers; h->profile; ++h) {
             function<void(Retained<MessageIn>)> fn( bind(h->handler, this, _1) );
             _connection->setRequestHandler(h->profile, asynchronize(fn));
