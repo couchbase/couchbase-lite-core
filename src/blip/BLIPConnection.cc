@@ -140,7 +140,7 @@ namespace litecore { namespace blip {
 
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
-            webSocketConnection()->close();
+            webSocket()->close();
         }
 
 
@@ -253,7 +253,7 @@ namespace litecore { namespace blip {
                     memcpy(end, body.buf, body.size);
                     end += body.size;
                     slice frame {_frameBuf.get(), end};
-                    webSocketConnection()->send(frame);
+                    webSocket()->send(frame);
                     _sentBytes += frame.size;
                 }
                 
@@ -426,11 +426,11 @@ namespace litecore { namespace blip {
     {
         LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
         provider.addProtocol("BLIP");
-        start(provider.createConnection(address));
+        start(provider.createWebSocket(address));
     }
 
 
-    Connection::Connection(websocket::Connection *webSocket,
+    Connection::Connection(websocket::WebSocket *webSocket,
                            ConnectionDelegate &delegate)
     :_name(string("BLIP <- ") + (string)webSocket->address())
     ,_delegate(delegate)
@@ -444,7 +444,7 @@ namespace litecore { namespace blip {
     { }
 
 
-    void Connection::start(websocket::Connection *webSocket) {
+    void Connection::start(websocket::WebSocket *webSocket) {
         _delegate._connection = this;
         webSocket->name = _name;
         _io = new BLIPIO(this, Scheduler::sharedScheduler());

@@ -132,12 +132,12 @@ int main(int argc, const char * argv[]) {
     LibWSProvider provider;
 #endif
 
-    auto webSocket = provider.createConnection(Address("localhost", 1234));
+    auto webSocket = provider.createWebSocket(Address("localhost", 1234));
     Retained<blip::Connection> connection(new blip::Connection(webSocket, test));
 
 #if PROVIDER == LOOPBACK_PROVIDER
     BlipTest test2(0);
-    auto webSocket2 = provider.createConnection(Address("remote", 4321));
+    auto webSocket2 = provider.createWebSocket(Address("remote", 4321));
     Retained<blip::Connection> connection2(new blip::Connection(webSocket2, test2));
     provider.connect(webSocket, webSocket2);
 #endif

@@ -27,7 +27,7 @@ namespace litecore { namespace blip {
                    ConnectionDelegate&);
 
         /** Creates a BLIP connection on existing incoming WebSocket. */
-        Connection(websocket::Connection *webSocket,
+        Connection(websocket::WebSocket*,
                    ConnectionDelegate&);
 
         virtual ~Connection();
@@ -55,7 +55,7 @@ namespace litecore { namespace blip {
         void send(MessageOut*);
 
     private:
-        void start(websocket::Connection*);
+        void start(websocket::WebSocket*);
 
         std::string _name;
         ConnectionDelegate &_delegate;

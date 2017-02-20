@@ -20,42 +20,42 @@ namespace litecore { namespace websocket {
 
     /** A nonfunctional WebSocket connection for testing. It simply logs messages.
         The handler methods can be overridden to examine messages or do other things with them. */
-    class MockConnection : public Connection, public Actor {
+    class MockWebSocket : public WebSocket, public Actor {
     public:
 
-        ~MockConnection() {
+        ~MockWebSocket() {
             assert(!_isOpen);
         }
 
         virtual void connect() override {
-            enqueue(&MockConnection::_connect);
+            enqueue(&MockWebSocket::_connect);
         }
 
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override {
-            enqueue(&MockConnection::_close, status, fleece::alloc_slice(message));
+            enqueue(&MockWebSocket::_close, status, fleece::alloc_slice(message));
         }
 
         virtual void send(fleece::slice msg, bool binary) override {
             assert(_isOpen);
-            enqueue(&MockConnection::_send, fleece::alloc_slice(msg), binary);
+            enqueue(&MockWebSocket::_send, fleece::alloc_slice(msg), binary);
         }
 
         // Mock API -- call this to simulate incoming events:
 
         void simulateConnected(double latency =0.0) {
-            enqueueAfter(latency, &MockConnection::_simulateConnected);
+            enqueueAfter(latency, &MockWebSocket::_simulateConnected);
         }
 
         void simulateReceived(fleece::slice message, bool binary =true, double latency =0.0) {
-            enqueueAfter(latency, &MockConnection::_simulateReceived, fleece::alloc_slice(message), binary);
+            enqueueAfter(latency, &MockWebSocket::_simulateReceived, fleece::alloc_slice(message), binary);
         }
 
         void simulateClosed(int status =1000, const char *reason =nullptr, double latency =0.0) {
-            enqueueAfter(latency, &MockConnection::_simulateClosed, status, fleece::alloc_slice(reason));
+            enqueueAfter(latency, &MockWebSocket::_simulateClosed, status, fleece::alloc_slice(reason));
         }
 
         void simulateErrored(int code, const char *reason =nullptr, double latency =0.0) {
-            enqueueAfter(latency, &MockConnection::_simulateErrored, code, fleece::alloc_slice(reason));
+            enqueueAfter(latency, &MockWebSocket::_simulateErrored, code, fleece::alloc_slice(reason));
         }
 
     protected:
@@ -63,8 +63,8 @@ namespace litecore { namespace websocket {
 
         static LogDomain WSMock;
 
-        MockConnection(Provider &provider, const Address &address)
-        :Connection(provider, address)
+        MockWebSocket(Provider &provider, const Address &address)
+        :WebSocket(provider, address)
         {
             retain(this);   // balanced by release in _closed
         }
@@ -152,8 +152,8 @@ namespace litecore { namespace websocket {
             _protocols.insert(protocol);
         }
 
-        virtual Connection* createConnection(const Address &address) override {
-            return new MockConnection(*this, address);
+        virtual WebSocket* createWebSocket(const Address &address) override {
+            return new MockWebSocket(*this, address);
         }
 
     protected:
@@ -161,6 +161,6 @@ namespace litecore { namespace websocket {
     };
 
 
-    LogDomain MockConnection::WSMock("WSMock");
+    LogDomain MockWebSocket::WSMock("WSMock");
 
 } }

@@ -13,7 +13,7 @@
 
 namespace litecore { namespace websocket {
 
-    class Connection;
+    class WebSocket;
     class Delegate;
 
 
@@ -34,20 +34,20 @@ namespace litecore { namespace websocket {
     };
 
 
-    /** Abstract class that can open WebSocket client connections. */
+    /** Abstract class that can create WebSockets. */
     class Provider {
     public:
         virtual ~Provider() { }
         virtual void addProtocol(const std::string &protocol) =0;
-        virtual Connection* createConnection(const Address&) =0;
+        virtual WebSocket* createWebSocket(const Address&) =0;
         virtual void close() { }
     };
 
 
-    /** Abstract class representing a WebSocket client connection. */
-    class Connection {
+    /** Abstract class representing a WebSocket connection. */
+    class WebSocket {
     public:
-        virtual ~Connection();
+        virtual ~WebSocket();
 
         Provider& provider() const                  {return _provider;}
         const Address& address() const              {return _address;}
@@ -55,7 +55,7 @@ namespace litecore { namespace websocket {
 
         std::string name;
 
-        /** If the Connection was created with no Delegate, this assigns the Delegate and
+        /** If the WebSocket was created with no Delegate, this assigns the Delegate and
             opens the WebSocket. */
         inline void connect(Delegate *delegate);
 
@@ -68,7 +68,7 @@ namespace litecore { namespace websocket {
     protected:
         friend class Provider;
 
-        Connection(Provider&, const Address&);
+        WebSocket(Provider&, const Address&);
 
         virtual void connect() =0;
         
@@ -86,7 +86,7 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Delegate() { }
 
-        Connection* webSocketConnection() const     {return _connection;}
+        WebSocket* webSocket() const                {return _webSocket;}
 
         virtual void onWebSocketStart() { }
         virtual void onWebSocketConnect() =0;
@@ -100,27 +100,27 @@ namespace litecore { namespace websocket {
         virtual void onWebSocketWriteable() { }
 
     private:
-        Connection* _connection {nullptr};
-        friend class Connection;
+        WebSocket* _webSocket {nullptr};
+        friend class WebSocket;
     };
 
 
 
-    inline Connection::Connection(Provider &p, const Address &a)
+    inline WebSocket::WebSocket(Provider &p, const Address &a)
     :_address(a)
     ,_provider(p)
     { }
 
-    inline Connection::~Connection() {
+    inline WebSocket::~WebSocket() {
         if (_delegate)
-            _delegate->_connection = nullptr;
+            _delegate->_webSocket = nullptr;
     }
 
-    inline void Connection::connect(Delegate *delegate) {
+    inline void WebSocket::connect(Delegate *delegate) {
         assert(!_delegate);
         assert(delegate);
         _delegate = delegate;
-        delegate->_connection = this;
+        delegate->_webSocket = this;
         if (name.empty())
             name = (std::string)_address;
         connect();

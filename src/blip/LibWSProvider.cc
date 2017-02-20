@@ -31,16 +31,16 @@ namespace litecore { namespace websocket {
 
 
     /** libws-based WebSocket connection. */
-    class LibWSConnection : public Connection {
+    class LibWSWebSocket : public WebSocket {
     public:
 
-        LibWSConnection(LibWSProvider &provider, ws_t websocket, const Address &address)
-        :Connection(provider, address)
+        LibWSWebSocket(LibWSProvider &provider, ws_t websocket, const Address &address)
+        :WebSocket(provider, address)
         ,_ws(websocket)
         { }
 
 
-        ~LibWSConnection() {
+        ~LibWSWebSocket() {
             ws_destroy(&_ws);
         }
 
@@ -156,14 +156,14 @@ namespace litecore { namespace websocket {
     }
 
 
-    Connection* LibWSProvider::createConnection(const Address &address)
+    WebSocket* LibWSProvider::createWebSocket(const Address &address)
     {
         ws_t ws;
         if (ws_init(&ws, _base) != 0)
             throw "Failed to init websocket state";
         for (auto &proto : _protocols)
             ws_add_subprotocol(ws, proto.c_str());
-        return new LibWSConnection(*this, ws, address);
+        return new LibWSWebSocket(*this, ws, address);
     }
 
     void LibWSProvider::runEventLoop() {

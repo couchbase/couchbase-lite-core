@@ -25,7 +25,7 @@ namespace litecore { namespace websocket {
 
         virtual void addProtocol(const std::string &protocol) override;
 
-        virtual Connection* createConnection(const Address&) override;
+        virtual WebSocket* createWebSocket(const Address&) override;
 
         /** Asynchronously starts the event loop on a new background thread. */
         void startEventLoop();
@@ -40,7 +40,7 @@ namespace litecore { namespace websocket {
         void runEventLoop();
 
     protected:
-        friend class LibWSConnection;
+        friend class LibWSWebSocket;
 
         struct ::ws_base_s* base() {return _base;}
 

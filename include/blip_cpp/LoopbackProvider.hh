@@ -15,38 +15,38 @@ namespace litecore { namespace websocket {
     class LoopbackProvider;
 
 
-    /** A WebSocket connection that relays messages to another instance of LoopbackConnection. */
-    class LoopbackConnection : public MockConnection {
+    /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
+    class LoopbackWebSocket : public MockWebSocket {
     public:
 
-        void connectToPeer(LoopbackConnection *peer) {
+        void connectToPeer(LoopbackWebSocket *peer) {
             assert(peer);
-            enqueue(&LoopbackConnection::_connectToPeer, Retained<LoopbackConnection>(peer));
+            enqueue(&LoopbackWebSocket::_connectToPeer, Retained<LoopbackWebSocket>(peer));
         }
 
         virtual void send(fleece::slice msg, bool binary) override {
             _bufferedBytes += msg.size;
-            MockConnection::send(msg, binary);
+            MockWebSocket::send(msg, binary);
         }
 
         virtual void ack(size_t msgSize) {
-            enqueue(&LoopbackConnection::_ack, msgSize);
+            enqueue(&LoopbackWebSocket::_ack, msgSize);
         }
 
     protected:
         friend class LoopbackProvider;
 
-        LoopbackConnection(MockProvider &provider, const Address &address, double latency)
-        :MockConnection(provider, address)
+        LoopbackWebSocket(MockProvider &provider, const Address &address, double latency)
+        :MockWebSocket(provider, address)
         ,_latency(latency)
         { }
 
         virtual void _connect() override {
             if (_peer)
-                MockConnection::_connect();
+                MockWebSocket::_connect();
         }
 
-        virtual void _connectToPeer(Retained<LoopbackConnection> peer) {
+        virtual void _connectToPeer(Retained<LoopbackWebSocket> peer) {
             if (peer != _peer) {
                 assert(!_peer);
                 _peer = peer;
@@ -61,7 +61,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {
-            MockConnection::_simulateReceived(msg, binary);
+            MockWebSocket::_simulateReceived(msg, binary);
             _peer->ack(msg.size);
         }
 
@@ -78,22 +78,22 @@ namespace litecore { namespace websocket {
             LogTo(WSMock, "%s CLOSE; status=%d", name.c_str(), status);
             assert(_peer);
             _peer->simulateClosed(status, messageStr.c_str(), _latency);
-            MockConnection::_close(status, message);
+            MockWebSocket::_close(status, message);
         }
 
         virtual void _closed() override {
             _peer = nullptr;
-            MockConnection::_closed();
+            MockWebSocket::_closed();
         }
 
     private:
         double _latency {0.0};
-        Retained<LoopbackConnection> _peer;
+        Retained<LoopbackWebSocket> _peer;
         std::atomic<size_t> _bufferedBytes {0};
     };
 
 
-    /** A WebSocketProvider that creates pairs of Connection objects that talk to each other. */
+    /** A WebSocketProvider that creates pairs of WebSocket objects that talk to each other. */
     class LoopbackProvider : public MockProvider {
     public:
         /** Constructs a WebSocketProvider. A latency time can be provided, which is the delay
@@ -102,15 +102,15 @@ namespace litecore { namespace websocket {
         :_latency(latency)
         { }
 
-        LoopbackConnection* createConnection(const Address &address) override {
-            return new LoopbackConnection(*this, address, _latency);
+        LoopbackWebSocket* createWebSocket(const Address &address) override {
+            return new LoopbackWebSocket(*this, address, _latency);
         }
 
-        /** Connects two LoopbackConnection objects to each other, so each receives messages sent
+        /** Connects two LoopbackWebSocket objects to each other, so each receives messages sent
             by the other. When one closes, the other will receive a close event. */
-        void connect(Connection *c1, Connection *c2) {
-            auto lc1 = dynamic_cast<LoopbackConnection*>(c1);
-            auto lc2 = dynamic_cast<LoopbackConnection*>(c2);
+        void connect(WebSocket *c1, WebSocket *c2) {
+            auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
+            auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
             lc1->connectToPeer(lc2);
             lc2->connectToPeer(lc1);
         }
