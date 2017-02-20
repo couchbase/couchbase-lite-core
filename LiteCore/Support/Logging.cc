@@ -61,6 +61,8 @@ namespace litecore {
             char *val = getenv((string("LiteCoreLog") + _name).c_str());
             if (!val)
                 _level = LogLevel::Warning;
+            else if (0 == strcasecmp(val, "verbose"))
+                _level = LogLevel::Verbose;
             else if (0 == strcasecmp(val, "debug"))
                 _level = LogLevel::Debug;
             else
