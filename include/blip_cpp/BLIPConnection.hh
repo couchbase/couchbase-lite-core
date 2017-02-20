@@ -9,7 +9,6 @@
 #pragma once
 #include "WebSocketInterface.hh"
 #include "Message.hh"
-#include <memory>
 
 namespace litecore { namespace blip {
     class BLIPIO;
@@ -22,9 +21,15 @@ namespace litecore { namespace blip {
         The methods are thread-safe. */
     class Connection : public RefCounted {
     public:
+        /** Creates a BLIP connection to an address, opening a WebSocket. */
         Connection(const websocket::Address&,
                    websocket::Provider &provider,
                    ConnectionDelegate&);
+
+        /** Creates a BLIP connection on existing incoming WebSocket. */
+        Connection(websocket::Connection *webSocket,
+                   ConnectionDelegate&);
+
         virtual ~Connection();
 
         std::string name() const                                {return _name;}
@@ -36,6 +41,8 @@ namespace litecore { namespace blip {
         FutureResponse sendRequest(MessageBuilder&);
 
         typedef std::function<void(MessageIn*)> RequestHandler;
+
+        /** Registers a callback that will be called when a message with a given profile arrives. */
         void setRequestHandler(std::string profile, RequestHandler);
 
         /** Closes the connection. */
@@ -48,6 +55,8 @@ namespace litecore { namespace blip {
         void send(MessageOut*);
 
     private:
+        void start(websocket::Connection*);
+
         std::string _name;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;

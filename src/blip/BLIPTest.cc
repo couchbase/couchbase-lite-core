@@ -7,7 +7,8 @@
 //
 
 #include "LibWSProvider.hh"
-#include "MockWSProvider.hh"
+#include "MockProvider.hh"
+#include "LoopbackProvider.hh"
 #include "BLIPConnection.hh"
 #include "Actor.hh"
 #include "Logging.hh"
@@ -19,11 +20,17 @@ using namespace litecore::websocket;
 using namespace litecore;
 using namespace fleece;
 
+#define LIBWS_PROVIDER 0
+#define LOOPBACK_PROVIDER 1
+#define MOCK_PROVIDER 2
 
-#define MOCK_WS 0
+#define PROVIDER LOOPBACK_PROVIDER
 
-static const size_t kNumEchoers = MOCK_WS ? 5 : 100;
-static const size_t kMessageSize = MOCK_WS ? 32 : 300 * 1024;
+#define LATENCY 0.050     // simulated latency for loopback provider
+
+
+static const size_t kNumEchoers = (PROVIDER==LIBWS_PROVIDER)  ? 100 : 100;
+static const size_t kMessageSize = 300 * 1024;
 
 static std::atomic<int> sResponsesToReceive(kNumEchoers);
 static std::atomic<int> sResponsesToSend(kNumEchoers);
@@ -50,7 +57,7 @@ protected:
         auto r = _connection->sendRequest(msg);
         Log("** Echoer %d sent BLIP request", _number);
         onReady(r, [this](blip::MessageIn *response) {
-            std::cerr << "** BLIP response #" << response->number() << " onComplete callback\n";
+            Log("** BLIP response #%llu onComplete callback", response->number());
             slice body = response->body();
             bool ok = true;
             for (size_t i = 0; i < body.size; i++) {
@@ -77,9 +84,13 @@ private:
 
 class BlipTest : public litecore::blip::ConnectionDelegate {
 public:
+    BlipTest(size_t numEchoers)
+    :_numEchoers(numEchoers)
+    { }
+
     virtual void onConnect() override {
-        std::cerr << "** BLIP Connected\n";
-        for (int i = 1; i <= kNumEchoers; ++i) {
+        Log("** BLIP Connected");
+        for (int i = 1; i <= _numEchoers; ++i) {
             Retained<Echoer> e = new Echoer(connection(), i);
             e->send(kMessageSize * i);
         }
@@ -106,23 +117,36 @@ public:
     virtual void onResponseReceived(blip::MessageIn *msg) override {
         Log("** BLIP response #%llu received", msg->number());
     }
+
+    const size_t _numEchoers;
 };
 
 
 int main(int argc, const char * argv[]) {
-    BlipTest test;
-#if MOCK_WS
-    MockWSProvider provider;
+    BlipTest test(kNumEchoers);
+#if PROVIDER == LOOPBACK_PROVIDER
+    LoopbackProvider provider(LATENCY);
+#elif PROVIDER == MOCK_PROVIDER
+    MockProvider provider;
 #else
     LibWSProvider provider;
 #endif
-    Retained<blip::Connection> connection(new blip::Connection(Address("localhost", 1234), provider, test));
-    Log("Starting event loop...");
 
-#if MOCK_WS
-    Scheduler::sharedScheduler()->runSynchronous();
-#else
+    auto webSocket = provider.createConnection(Address("localhost", 1234));
+    Retained<blip::Connection> connection(new blip::Connection(webSocket, test));
+
+#if PROVIDER == LOOPBACK_PROVIDER
+    BlipTest test2(0);
+    auto webSocket2 = provider.createConnection(Address("remote", 4321));
+    Retained<blip::Connection> connection2(new blip::Connection(webSocket2, test2));
+    provider.connect(webSocket, webSocket2);
+#endif
+
+    Log("Starting event loop...");
+#if PROVIDER == LIBWS_PROVIDER
     provider.runEventLoop();
+#else
+    Scheduler::sharedScheduler()->runSynchronous();
 #endif
     return 0;
 }

@@ -116,6 +116,14 @@ namespace litecore {
             dispatch_async(_queue, block);
         }
 
+        void enqueueAfter(double delay, void (^block)()) {
+            if (delay > 0)
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
+                               _queue, block);
+            else
+                dispatch_async(_queue, block);
+        }
+
         static void startScheduler(Scheduler *)             { }
 
     private:
@@ -156,6 +164,7 @@ namespace litecore {
         :_mailbox(this, name, sched)
         { }
 
+        /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
 #ifdef ACTORS_USE_GCD
@@ -164,6 +173,19 @@ namespace litecore {
             _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
 #else
             _mailbox.enqueue(std::bind(fn, (Rcvr*)this, args...));
+#endif
+        }
+
+        /** Schedules a call to a method, after a delay.
+            Other calls scheduled after this one may end up running before it! */
+        template <class Rcvr, class... Args>
+        void enqueueAfter(double delaySecs, void (Rcvr::*fn)(Args...), Args... args) {
+#ifdef ACTORS_USE_GCD
+            // not strictly necessary, but more efficient
+            retain(this);
+            _mailbox.enqueueAfter(delaySecs,  ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
+#else
+            _mailbox.enqueueAfter(delaySecs, std::bind(fn, (Rcvr*)this, args...));
 #endif
         }
 

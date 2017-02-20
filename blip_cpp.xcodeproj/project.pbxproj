@@ -104,8 +104,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		275CE0DE1E579F8D0084E014 /* MockWSProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MockWSProvider.hh; sourceTree = "<group>"; };
+		275CE0DE1E579F8D0084E014 /* MockProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = MockProvider.hh; path = ../include/blip_cpp/MockProvider.hh; sourceTree = "<group>"; };
 		275CE0DF1E57A5650084E014 /* libFleece.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFleece.a; path = ../../../../build/CouchbaseLite/Build/Products/Debug/libFleece.a; sourceTree = "<group>"; };
+		275CE0EF1E590B190084E014 /* LoopbackProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = LoopbackProvider.hh; path = ../include/blip_cpp/LoopbackProvider.hh; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -242,7 +243,6 @@
 				27EF69E41E282662004748DF /* BLIPConnection.hh */,
 				27EF69E51E282662004748DF /* BLIPProtocol.hh */,
 				27EF69E61E282662004748DF /* LibWSProvider.hh */,
-				275CE0DE1E579F8D0084E014 /* MockWSProvider.hh */,
 				27EF69E71E282662004748DF /* Message.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
 			);
@@ -286,6 +286,8 @@
 			isa = PBXGroup;
 			children = (
 				27EF69D71E28260D004748DF /* BLIPTest.cc */,
+				275CE0DE1E579F8D0084E014 /* MockProvider.hh */,
+				275CE0EF1E590B190084E014 /* LoopbackProvider.hh */,
 				27EF69EF1E28268A004748DF /* WebSocketEcho.cc */,
 				27EF69F01E28268A004748DF /* WebSocketEcho.hh */,
 			);

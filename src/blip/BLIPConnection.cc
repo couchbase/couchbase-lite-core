@@ -81,7 +81,7 @@ namespace litecore { namespace blip {
         Retained<Connection>    _connection;
         MessageQueue            _outbox;
         MessageQueue            _icebox;
-        bool                    _hungry {false};
+        size_t                  _sentBytes {0};
         MessageMap              _pendingRequests, _pendingResponses;
         atomic<MessageNo>       _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
@@ -181,7 +181,7 @@ namespace litecore { namespace blip {
             }
             _outbox.emplace(i, msg);  // inserts _at_ position i
 
-            if (_hungry && andWrite)
+            if (andWrite)
                 writeToWebSocket();
         }
         
@@ -207,26 +207,22 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- socket has room to write data. */
         void _onWebSocketWriteable() {
             LogVerbose(BLIPLog, "WebSocket is hungry!");
-            _hungry = true;
+            _sentBytes = 0;
             writeToWebSocket();
         }
 
 
         /** Sends the next frame. */
         void writeToWebSocket() {
-            if (!_hungry)
+            if (_sentBytes >= kMaxSendSize)
                 return;
-            //LogVerbose(BLIPLog, "Writing to WebSocket...");
-            size_t sentBytes = 0;
-            while (sentBytes < kMaxSendSize) {
-                // Get the next message from the queue:
-                Retained<MessageOut> msg(_outbox.pop());
 
-                // If there's nothing to send, just remember that I'm ready:
-                _hungry = (msg == nullptr);
-                if (_hungry) {
+            //LogVerbose(BLIPLog, "Writing to WebSocket...");
+            while (_sentBytes < kMaxSendSize) {
+                // Get the next message, if any, from the queue:
+                Retained<MessageOut> msg(_outbox.pop());
+                if (!msg)
                     break;
-                }
 
                 FrameFlags frameFlags;
                 {
@@ -258,7 +254,7 @@ namespace litecore { namespace blip {
                     end += body.size;
                     slice frame {_frameBuf.get(), end};
                     webSocketConnection()->send(frame);
-                    sentBytes += frame.size;
+                    _sentBytes += frame.size;
                 }
                 
                 // Return message to the queue if it has more frames left to send:
@@ -273,7 +269,8 @@ namespace litecore { namespace blip {
                                 kMessageTypeNames[msg->type()], msg->_number, msg->flags());
                 }
             }
-            LogVerbose(BLIPLog, "...Wrote %zu bytes to WebSocket; _hungry=%d", sentBytes, _hungry);
+            LogVerbose(BLIPLog, "...Wrote %zu bytes to WebSocket (space left: %lld)",
+                       _sentBytes, max(0ll, (int64_t)kMaxSendSize - (int64_t)_sentBytes));
         }
 
 
@@ -333,8 +330,8 @@ namespace litecore { namespace blip {
             if (!msg) {
                 msg = _icebox.findMessage(msgNo, onResponse);
                 if (!msg) {
-                    LogVerbose(BLIPLog, "Received ACK of non-current message (%s #%llu)",
-                          (onResponse ? "RES" : "REQ"), msgNo);
+                    //LogVerbose(BLIPLog, "Received ACK of non-current message (%s #%llu)",
+                    //      (onResponse ? "RES" : "REQ"), msgNo);
                     return;
                 }
                 frozen = true;
@@ -426,18 +423,34 @@ namespace litecore { namespace blip {
                            ConnectionDelegate &delegate)
     :_name(string("BLIP -> ") + (string)address)
     ,_delegate(delegate)
-    ,_io(new BLIPIO(this, Scheduler::sharedScheduler()))
     {
         LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
-        delegate._connection = this;
         provider.addProtocol("BLIP");
-        provider.connect(std::move(address), *_io);
-        Mailbox::startScheduler(_io->scheduler());
+        start(provider.createConnection(address));
+    }
+
+
+    Connection::Connection(websocket::Connection *webSocket,
+                           ConnectionDelegate &delegate)
+    :_name(string("BLIP <- ") + (string)webSocket->address())
+    ,_delegate(delegate)
+    {
+        LogTo(BLIPLog, "Accepted connection from %s ...", _name.c_str());
+        start(webSocket);
     }
 
 
     Connection::~Connection()
     { }
+
+
+    void Connection::start(websocket::Connection *webSocket) {
+        _delegate._connection = this;
+        webSocket->name = _name;
+        _io = new BLIPIO(this, Scheduler::sharedScheduler());
+        webSocket->connect(_io);
+        Mailbox::startScheduler(_io->scheduler());
+    }
 
 
     /** Public API to send a new request. */

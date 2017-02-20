@@ -8,6 +8,7 @@
 
 #pragma once
 #include "slice.hh"
+#include <assert.h>
 #include <string>
 
 namespace litecore { namespace websocket {
@@ -37,8 +38,8 @@ namespace litecore { namespace websocket {
     class Provider {
     public:
         virtual ~Provider() { }
-        virtual Connection* connect(const Address&, Delegate&) =0;
         virtual void addProtocol(const std::string &protocol) =0;
+        virtual Connection* createConnection(const Address&) =0;
         virtual void close() { }
     };
 
@@ -46,25 +47,39 @@ namespace litecore { namespace websocket {
     /** Abstract class representing a WebSocket client connection. */
     class Connection {
     public:
-        Connection(Provider&, Delegate&);
         virtual ~Connection();
 
         Provider& provider() const                  {return _provider;}
-        Delegate& delegate() const                  {return _delegate;}
+        const Address& address() const              {return _address;}
+        Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
+
+        std::string name;
+
+        /** If the Connection was created with no Delegate, this assigns the Delegate and
+            opens the WebSocket. */
+        inline void connect(Delegate *delegate);
 
         /** Sends a message. Callable from any thread. */
         virtual void send(fleece::slice message, bool binary =true) =0;
 
         /** Closes the WebSocket. Callable from any thread. */
-        virtual void close() =0;
+        virtual void close(int status =1000, fleece::slice message =fleece::nullslice) =0;
 
+    protected:
+        friend class Provider;
+
+        Connection(Provider&, const Address&);
+
+        virtual void connect() =0;
+        
     private:
+        const Address _address;
         Provider &_provider;
-        Delegate &_delegate;
+        Delegate *_delegate {nullptr};
     };
 
 
-    /** Delegate interface for a WebSocket connection.
+    /** Mostly-abstract delegate interface for a WebSocket connection.
         Receives lifecycle events and incoming WebSocket messages.
         These callbacks are made on an undefined thread managed by the WebSocketProvider! */
     class Delegate {
@@ -91,15 +106,24 @@ namespace litecore { namespace websocket {
 
 
 
-    inline Connection::Connection(Provider &p, Delegate &d)
-    :_provider(p)
-    ,_delegate(d)
-    {
-        d._connection = this;
-    }
+    inline Connection::Connection(Provider &p, const Address &a)
+    :_address(a)
+    ,_provider(p)
+    { }
 
     inline Connection::~Connection() {
-        _delegate._connection = nullptr;
+        if (_delegate)
+            _delegate->_connection = nullptr;
+    }
+
+    inline void Connection::connect(Delegate *delegate) {
+        assert(!_delegate);
+        assert(delegate);
+        _delegate = delegate;
+        delegate->_connection = this;
+        if (name.empty())
+            name = (std::string)_address;
+        connect();
     }
 
 

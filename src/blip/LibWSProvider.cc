@@ -34,30 +34,37 @@ namespace litecore { namespace websocket {
     class LibWSConnection : public Connection {
     public:
 
-        LibWSConnection(LibWSProvider &provider, ws_t websocket,
-                        const Address &address, Delegate &delegate)
-        :Connection(provider, delegate)
+        LibWSConnection(LibWSProvider &provider, ws_t websocket, const Address &address)
+        :Connection(provider, address)
         ,_ws(websocket)
-        {
-            ws_set_onwrite_cb(_ws, onwrite, &delegate);
-            ws_set_onmsg_cb(_ws, onmsg, &delegate);
-            ws_set_onconnect_cb(_ws, onconnect, &delegate);
-            ws_set_onclose_cb(_ws, onclose, &delegate);
-            ws_set_no_copy_cb(_ws, oncleanup, nullptr);
+        { }
 
-            if (ws_connect(_ws, address.hostname.c_str(), address.port, address.path.c_str())) {
-                ws_destroy(&_ws);
-                throw "connection failed";
-            }
-            delegate.onWebSocketStart();
-        }
 
         ~LibWSConnection() {
             ws_destroy(&_ws);
         }
 
+        
+        virtual void connect() override {
+            auto del = &delegate();
+            ws_set_onwrite_cb(_ws, onwrite, del);
+            ws_set_onmsg_cb(_ws, onmsg, del);
+            ws_set_onconnect_cb(_ws, onconnect, del);
+            ws_set_onclose_cb(_ws, onclose, del);
+            ws_set_no_copy_cb(_ws, oncleanup, nullptr);
 
-        virtual void close() override {
+            auto &addr = address();
+            if (ws_connect(_ws, addr.hostname.c_str(), addr.port, addr.path.c_str())) {
+                ws_destroy(&_ws);
+                _ws = nullptr;
+                throw "connection failed";
+            }
+            delegate().onWebSocketStart();
+        }
+
+
+        virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override {
+            // TODO: improve ws_close_threadsafe to take status+message
             ws_close_threadsafe(_ws);
         }
 
@@ -149,14 +156,14 @@ namespace litecore { namespace websocket {
     }
 
 
-    Connection* LibWSProvider::connect(const Address &address, Delegate &delegate)
+    Connection* LibWSProvider::createConnection(const Address &address)
     {
         ws_t ws;
         if (ws_init(&ws, _base) != 0)
             throw "Failed to init websocket state";
         for (auto &proto : _protocols)
             ws_add_subprotocol(ws, proto.c_str());
-        return new LibWSConnection(*this, ws, std::move(address), delegate);
+        return new LibWSConnection(*this, ws, address);
     }
 
     void LibWSProvider::runEventLoop() {
