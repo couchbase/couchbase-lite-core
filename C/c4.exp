@@ -249,6 +249,7 @@ _FLEncoder_BeginDict
 _FLEncoder_WriteKey
 _FLEncoder_EndDict
 _FLEncoder_ConvertJSON
+_FLEncoder_BytesWritten
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage

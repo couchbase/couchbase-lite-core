@@ -244,6 +244,7 @@ FLEncoder_BeginDict
 FLEncoder_WriteKey
 FLEncoder_EndDict
 FLEncoder_ConvertJSON
+FLEncoder_BytesWritten
 FLEncoder_Finish
 FLEncoder_GetError
 FLEncoder_GetErrorMessage
