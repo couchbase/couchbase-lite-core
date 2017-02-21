@@ -26,7 +26,7 @@ using namespace fleece;
 
 #define PROVIDER LOOPBACK_PROVIDER
 
-#define LATENCY 0.050     // simulated latency for loopback provider
+#define LATENCY 0.010     // simulated latency for loopback provider
 
 
 static const size_t kNumEchoers = (PROVIDER==LIBWS_PROVIDER)  ? 100 : 100;

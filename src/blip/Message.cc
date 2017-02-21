@@ -240,7 +240,7 @@ namespace litecore { namespace blip {
     bool MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
         size_t bytesReceived = frame.size;
         if (_in) {
-            bytesReceived += _in->length();
+            bytesReceived += _in->bytesWritten();
         } else {
             // On first frame, update my flags and allocate the Writer:
             assert(_number > 0);
@@ -249,18 +249,18 @@ namespace litecore { namespace blip {
             _flags = frameFlags;
             if (_flags & kCompressed)
                 throw "compression isn't supported yet";  //TODO: Implement compression
-            _in.reset(new Writer);
+            _in.reset(new fleeceapi::JSONEncoder);
             // Get the length of the properties, and move `frame` past the length field:
             if (!ReadUVarInt32(&frame, &_propertiesSize))
                 throw "frame too small";
         }
 
-        if (!_properties && (_in->length() + frame.size) >= _propertiesSize) {
+        if (!_properties && (_in->bytesWritten() + frame.size) >= _propertiesSize) {
             // OK, we now have the complete properties:
-            size_t remaining = _propertiesSize - _in->length();
-            _in->write(frame.buf, remaining);
+            size_t remaining = _propertiesSize - _in->bytesWritten();
+            _in->writeRaw({frame.buf, remaining});
             frame.moveStart(remaining);
-            _properties = _in->extractOutput();
+            _properties = _in->finish();
             if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
                 throw "message properties not null-terminated";
             _in->reset();
@@ -280,7 +280,7 @@ namespace litecore { namespace blip {
             _unackedBytes = 0;
         }
 
-        _in->write(frame);
+        _in->writeRaw(frame);
 
         if (frameFlags & kMoreComing) {
             return false;
@@ -288,7 +288,7 @@ namespace litecore { namespace blip {
             // Completed!
             if (!_properties)
                 throw "message ends before end of properties";
-            _body = _in->extractOutput();
+            _body = _in->finish();
             _in.reset();
 
             LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
@@ -343,6 +343,15 @@ namespace litecore { namespace blip {
 
 
     slice MessageIn::property(slice property) const {
+        uint8_t specbuf[1];
+        for (uint8_t i = 0; kSpecialProperties[i]; ++i) {
+            if (property == kSpecialProperties[i]) {
+                specbuf[0] = i + 1;
+                property = slice(&specbuf, 1);
+                break;
+            }
+        }
+
         // Note: using strlen here is safe. It can't fall off the end of _properties, because the
         // receivedFrame() method has already verified that _properties ends with a zero byte.
         // OPT: This lookup isn't very efficient. If it turns out to be a hot-spot, we could cache

@@ -478,4 +478,9 @@ namespace litecore { namespace blip {
         _io->close();
     }
 
+
+#if DEBUG
+    websocket::WebSocket* Connection::webSocket() const {return _io->webSocket();}
+#endif
+
 } }

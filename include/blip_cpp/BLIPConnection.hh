@@ -48,6 +48,10 @@ namespace litecore { namespace blip {
         /** Closes the connection. */
         void close();
 
+#if DEBUG
+        websocket::WebSocket* webSocket() const;
+#endif
+
     protected:
         friend class MessageIn;
         friend class BLIPIO;

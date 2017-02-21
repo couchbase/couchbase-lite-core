@@ -197,7 +197,6 @@ namespace litecore {
             Retained<Actor> ret(this);
             return [=](Arg arg) mutable {
                 ret->_mailbox.enqueue( std::bind(fn, arg) );
-                ret = nullptr;
             };
         }
 
