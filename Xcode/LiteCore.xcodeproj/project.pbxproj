@@ -193,6 +193,8 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27B842611E5CC6500094903E /* DBActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBActor.cc */; };
+		27B842621E5CC6500094903E /* DBActor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B842601E5CC6500094903E /* DBActor.hh */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
@@ -869,6 +871,8 @@
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
+		27B8425F1E5CC6500094903E /* DBActor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DBActor.cc; sourceTree = "<group>"; };
+		27B842601E5CC6500094903E /* DBActor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DBActor.hh; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
@@ -1631,6 +1635,8 @@
 			children = (
 				275CE1131E5BAC180084E014 /* ReplActor.cc */,
 				275CE1141E5BAC180084E014 /* ReplActor.hh */,
+				27B8425F1E5CC6500094903E /* DBActor.cc */,
+				27B842601E5CC6500094903E /* DBActor.hh */,
 				27CCC7D61E52613C00CE1989 /* Replicator.cc */,
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				27CCC7DE1E526CCC00CE1989 /* Puller.cc */,
@@ -1908,6 +1914,7 @@
 			files = (
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
+				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
 				27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */,
 				275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */,
 				275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */,
@@ -2590,6 +2597,7 @@
 				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
+				27B842611E5CC6500094903E /* DBActor.cc in Sources */,
 				275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */,
 				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
 			);

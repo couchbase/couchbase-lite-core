@@ -7,6 +7,7 @@
 //
 
 #include "Pusher.hh"
+#include "DBActor.hh"
 #include <algorithm>
 
 #define SPLAT(S)    (int)(S).size, (S).buf      // Use with %.* formatter
@@ -17,8 +18,9 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator)
+    Pusher::Pusher(Replicator *replicator, DBActor *dbActor)
     :_replicator(replicator)
+    ,_dbActor(dbActor)
     {
         setConnection(replicator->connection());
     }
@@ -36,7 +38,7 @@ namespace litecore { namespace repl {
     void Pusher::getMoreChanges() {
         if (_changeListsInFlight < kMaxChangeListsInFlight) {
             ++_changeListsInFlight;
-            _replicator->dbGetChanges(_lastSequenceRequested, _changesBatchSize, _continuous);
+            _dbActor->getChanges(_lastSequenceRequested, _changesBatchSize, _continuous, this);
             // response will be to call _gotChanges
         }
     }
@@ -68,7 +70,7 @@ namespace litecore { namespace repl {
         enc.endArray();
 
         // Send, and asynchronously handle the response:
-        auto r = _replicator->sendRequest(req);
+        auto r = sendRequest(req);
         onReady(r, [this, changes](MessageIn* reply) {
             // Got response to the 'changes' message:
             --_changeListsInFlight;
@@ -94,7 +96,7 @@ namespace litecore { namespace repl {
                             if (revid)
                                 revIDs.push_back(revid.asString());
                         }
-                        _replicator->dbSendRevision(changes[index], revIDs, maxHistory);
+                        _dbActor->sendRevision(changes[index], revIDs, maxHistory);
                     }
                     ++index;
                 }

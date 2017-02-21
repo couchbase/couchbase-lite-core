@@ -9,6 +9,7 @@
 #pragma once
 #include "Actor.hh"
 #include "BLIPConnection.hh"
+#include "Message.hh"
 #include "c4.hh"
 #include <functional>
 
@@ -24,7 +25,7 @@ namespace litecore { namespace repl {
     protected:
 
         blip::Connection* connection() const                {return _connection;}
-        void setConnection(blip::Connection *connection);
+        virtual void setConnection(blip::Connection *connection);
 
         template <class ACTOR>
         void registerHandler(const char *profile,
@@ -32,6 +33,10 @@ namespace litecore { namespace repl {
             std::function<void(Retained<blip::MessageIn>)> fn(
                                         std::bind(method, (ACTOR*)this, std::placeholders::_1) );
             _connection->setRequestHandler(profile, asynchronize(fn));
+        }
+
+        blip::FutureResponse sendRequest(blip::MessageBuilder& builder) {
+            return connection()->sendRequest(builder);
         }
 
         void gotError(const blip::MessageIn*);

@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Replicator.hh"
+#include "DBActor.hh"
 #include "Actor.hh"
 
 namespace litecore { namespace repl {
@@ -15,7 +16,7 @@ namespace litecore { namespace repl {
 
     class Pusher : public ReplActor {
     public:
-        Pusher(Replicator *replicator);
+        Pusher(Replicator *replicator, DBActor *dbActor);
 
         void start(C4SequenceNumber sinceSequence, bool continuous);
 
@@ -40,6 +41,7 @@ namespace litecore { namespace repl {
         constexpr static const float kProgressUpdateInterval = 0.25;    // How often to update self.progress
 
         Replicator* const _replicator;
+        DBActor* const _dbActor;
         bool _continuous;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
 
