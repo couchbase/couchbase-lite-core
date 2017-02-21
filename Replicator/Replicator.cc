@@ -14,8 +14,6 @@
 #include "Logging.hh"
 #include "SecureDigest.hh"
 
-#define SPLAT(S)    (int)(S).size, (S).buf      // Use with %.* formatter
-
 using namespace std;
 using namespace std::placeholders;
 using namespace fleece;
@@ -23,15 +21,6 @@ using namespace fleeceapi;
 
 
 namespace litecore { namespace repl {
-
-
-    LogDomain SyncLog("Sync");
-
-
-    const Replicator::HandlerEntry Replicator::kHandlers[] = {
-        {"getCheckpoint", &Replicator::handleGetCheckpoint},
-        { }
-    };
 
 
     Replicator::Replicator(C4Database *db,
@@ -58,19 +47,18 @@ namespace litecore { namespace repl {
 
 
     void Replicator::setConnection(Connection *connection) {
-        assert(!_connection);
-        assert(connection);
-        _connection = connection;
-        for (auto h = kHandlers; h->profile; ++h) {
-            function<void(Retained<MessageIn>)> fn( bind(h->handler, this, _1) );
-            _connection->setRequestHandler(h->profile, asynchronize(fn));
-        }
+        ReplActor::setConnection(connection);
+        _pusher = new Pusher(this);
+        _puller = new Puller(this);
+        registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
+        registerHandler("changes",          &Replicator::handleChanges);
     }
 
 
     void Replicator::_onConnect() {
         LogTo(SyncLog, "** BLIP Connected");
-        getCheckpoint();
+        if (_options.push || _options.pull)
+            getCheckpoint();
     }
 
     void Replicator::_onError(int errcode, alloc_slice reason) {
@@ -82,22 +70,95 @@ namespace litecore { namespace repl {
     }
 
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        LogTo(SyncLog, "** BLIP request #%llu received: %zu bytes", msg->number(), msg->body().size);
+        LogToAt(SyncLog, Warning, "Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
+                msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
     }
 
-
-    void Replicator::gotError(const MessageIn* msg) {
-        // TODO
-        LogToAt(SyncLog, Error, "Got error response: %.*s %d",
-                SPLAT(msg->errorDomain()), msg->errorCode());
-    }
-
-    void Replicator::gotError(C4Error err) {
-        // TODO
-        LogToAt(SyncLog, Error, "Got error response: %d/%d", err.domain, err.code);
-    }
 
 #pragma mark - CHECKPOINT:
+
+
+    static bool isNotFoundError(C4Error err) {
+        return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
+    }
+
+
+    void Replicator::getCheckpoint() {
+        string checkpointID = effectiveRemoteCheckpointDocID();
+
+        // Get the local checkpoint:
+        C4Error err;
+        slice s(checkpointID);
+        C4RawDocument *doc = c4raw_get(_db, C4STR("checkpoints"), s, &err);
+        if (!doc) {
+            if (!isNotFoundError(err))
+                throw "fail"; //FIX
+            LogTo(SyncLog, "No local checkpoint '%s'", checkpointID.c_str());
+            startReplicating();
+            return;
+        }
+
+        _checkpoint = decodeCheckpoint(doc->body);
+        LogTo(SyncLog, "Local checkpoint '%s' is [%llu, '%s']; getting remote ...",
+              checkpointID.c_str(), _checkpoint.localSeq, _checkpoint.remoteSeq.c_str());
+
+        MessageBuilder msg("getCheckpoint"_sl);
+        msg["client"_sl] = slice(checkpointID);
+        onReady(sendRequest(msg), [&](MessageIn *response) {
+            // Received response -- get checkpoint from it:
+            Checkpoint checkpoint;
+            string checkpointRevID;
+
+            if (response->isError()) {
+                if (!(response->errorDomain() == "HTTP"_sl && response->errorCode() == 404))
+                    return gotError(response);
+                LogTo(SyncLog, "No remote checkpoint");
+            } else {
+                LogTo(SyncLog, "Received remote checkpoint: '%.*s'", SPLAT(response->body()));
+                checkpoint = decodeCheckpoint(response->body());
+                checkpointRevID = response->property("rev"_sl).asString();
+            }
+
+            LogTo(SyncLog, "...got remote checkpoint: [%llu, '%s']",
+                  checkpoint.localSeq, checkpoint.remoteSeq.c_str());
+
+            // Reset mismatched checkpoints:
+            if (_checkpoint.localSeq > 0 && _checkpoint.localSeq != checkpoint.localSeq) {
+                LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
+                      _checkpoint.localSeq, checkpoint.localSeq);
+                _checkpoint.localSeq = 0;
+            }
+            if (!_checkpoint.remoteSeq.empty() && _checkpoint.remoteSeq != checkpoint.remoteSeq) {
+                LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'",
+                      _checkpoint.remoteSeq.c_str(), checkpoint.remoteSeq.c_str());
+                _checkpoint.remoteSeq = "";
+            }
+
+            // Now we have the checkpoints! Time to start replicating:
+            startReplicating();
+        });
+    }
+
+
+    void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+        slice clientID = request->property("client"_sl);
+        if (!clientID)
+            return request->respondWithError("BLIP"_sl, 400);
+        LogTo(SyncLog, "Request for checkpoint '%.*s'", SPLAT(clientID));
+        C4Error err;
+        C4RawDocument *doc = c4raw_get(_db, C4STR("peerCheckpoints"), clientID, &err);
+        if (!doc) {
+            if (isNotFoundError(err))
+                return request->respondWithError("HTTP"_sl, 404);
+            else
+                return request->respondWithError("HTTP"_sl, 502);
+        }
+
+        MessageBuilder response(request);
+        response["rev"_sl] = doc->meta;
+        response << doc->body;
+        request->respond(response);
+    }
 
 
     string Replicator::effectiveRemoteCheckpointDocID() {
@@ -109,8 +170,10 @@ namespace litecore { namespace repl {
         if (!c4db_getUUIDs(_db, nullptr, &privateUUID, &err))
             throw "fail";//FIX
         Encoder enc;
+        enc.beginArray();
         enc.writeString({&privateUUID, sizeof(privateUUID)});
         enc.writeString(_remoteAddress);
+        enc.endArray();
         alloc_slice data = enc.finish();
         SHA1 digest(data);
         return string("cp-") + slice(&digest, sizeof(digest)).base64String();
@@ -129,81 +192,12 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::getCheckpoint() {
-        string checkpointID = effectiveRemoteCheckpointDocID();
-        MessageBuilder msg("getCheckpoint"_sl);
-        msg["client"_sl] = slice(checkpointID);
-        onReady(sendRequest(msg), [&](MessageIn *response) {
-            // Received response -- get checkpoint from it:
-            Checkpoint checkpoint;
-            string checkpointRevID;
-
-            if (response->isError()) {
-                if (!(response->errorDomain() == "HTTP"_sl && response->errorCode() == 404))
-                    return gotError(response);
-                LogTo(SyncLog, "No remote checkpoint");
-            } else {
-                LogTo(SyncLog, "Received remote checkpoint: %.*s", SPLAT(response->body()));
-                checkpoint = decodeCheckpoint(response->body());
-                checkpointRevID = response->property("rev"_sl).asString();
-            }
-
-            // Reset mismatched checkpoints:
-            if (_checkpoint.localSeq > 0 && _checkpoint.localSeq != checkpoint.localSeq) {
-                LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
-                      _checkpoint.localSeq, checkpoint.localSeq);
-                _checkpoint.localSeq = 0;
-            }
-            if (!_checkpoint.remoteSeq.empty() && _checkpoint.remoteSeq != checkpoint.remoteSeq) {
-                LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'",
-                      _checkpoint.remoteSeq.c_str(), checkpoint.remoteSeq.c_str());
-                _checkpoint.remoteSeq = "";
-            }
-
-            // Now we have the checkpoints! Time to start replicating:
-            startReplicating();
-        });
-
-        // While waiting for the response, get the local checkpoint:
-        C4Error err;
-        slice s(checkpointID);
-        C4RawDocument *doc = c4raw_get(_db, C4STR("checkpoints"), s, &err);
-        if (doc)
-            _checkpoint = decodeCheckpoint(doc->body);
-        else if (err.code != 0)
-            throw "fail"; //FIX
-    }
-
-
-    void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
-        slice clientID = request->property("client"_sl);
-        if (!clientID)
-            return request->respondWithError("BLIP"_sl, 400);
-        C4Error err;
-        C4RawDocument *doc = c4raw_get(_db, C4STR("peerCheckpoints"), clientID, &err);
-        if (!doc) {
-            if (err.code == 0)
-                return request->respondWithError("HTTP"_sl, 404);
-            else
-                return request->respondWithError("HTTP"_sl, 502);
-        }
-
-        MessageBuilder response(request);
-        response["rev"_sl] = doc->meta;
-        response << doc->body;
-        request->respond(response);
-    }
-
-
+    // Called after the checkpoint is established.
     void Replicator::startReplicating() {
-        if (_options.push) {
-            _pusher = new Pusher(this, _options.continuous, _checkpoint.localSeq);
-            _pusher->start();
-        }
-        if (_options.pull) {
-            _puller = new Puller(this, _options.continuous, _checkpoint.remoteSeq);
-            _puller->start();
-        }
+        if (_options.push)
+            _pusher->start(_checkpoint.localSeq, _options.continuous);
+        if (_options.pull)
+            _puller->start(_checkpoint.remoteSeq, _options.continuous);
     }
 
 
@@ -217,6 +211,7 @@ namespace litecore { namespace repl {
 
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
     void Replicator::_dbGetChanges(C4SequenceNumber since, unsigned limit, bool continuous) {
+        LogTo(SyncLog, "Reading %u local changes from %llu", limit, since);
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -284,6 +279,75 @@ namespace litecore { namespace repl {
             msg["history"_sl] = history;
         msg.write(body);
         sendRequest(msg);
+    }
+
+
+    void Replicator::handleChanges(Retained<MessageIn> req) {
+        LogTo(SyncLog, "Handling 'changes' message");
+        auto changes = req->JSONBody().asArray();
+        if (!changes) {
+            LogToAt(SyncLog, Warning, "Invalid body of 'changes' message");
+            req->respondWithError("BLIP"_sl, 400);
+            return;
+        }
+
+        if (req->noReply())
+            return;
+
+        LogTo(SyncLog, "Looking up %u revisions in the db ...", changes.count());
+        MessageBuilder response(req);
+        response["maxRevs"_sl] = c4db_getMaxRevTreeDepth(_db);
+        unsigned i = 0, itemsWritten = 0, requested = 0;
+        vector<alloc_slice> ancestors;
+        auto &encoder = response.jsonBody();
+        encoder.beginArray();
+        for (auto item : changes) {
+            auto change = item.asArray();
+            slice docID = change[0].asString();
+            slice revID = change[2].asString();
+            if (!docID || !revID) {
+                LogToAt(SyncLog, Warning, "Invalid entry in 'changes' message");
+                return;     // ???  Should this abort the replication?
+            }
+
+            if (!_dbFindAncestors(docID, revID, ancestors)) {
+                ++requested;
+                while (++itemsWritten < i)
+                    encoder.writeInt(0);
+                encoder.beginArray();
+                for (slice ancestor : ancestors)
+                    encoder.writeString(ancestor);
+                encoder.endArray();
+            }
+            ++i;
+        }
+        encoder.endArray();
+        LogTo(SyncLog, "Responding w/request for %u revs", requested);
+        req->respond(response);
+    }
+
+
+    // Returns true if revision exists; else returns false and sets ancestors to an array of
+    // ancestor revisions I do have (empty if doc doesn't exist at all)
+    bool Replicator::_dbFindAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+        C4Error err;
+        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
+        bool revExists = doc && c4doc_selectRevision(doc, revID, false, &err);
+        if (!revExists) {
+            ancestors.resize(0);
+            if (!isNotFoundError(err)) {
+                gotError(err);
+            } else if (doc) {
+                // Revision isn't found, but look for ancestors:
+                if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
+                    do {
+                        ancestors.emplace_back(doc->selectedRev.revID);
+                    } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
+                             && ancestors.size() < kMaxPossibleAncestors);
+                }
+            }
+        }
+        return revExists;
     }
 
 

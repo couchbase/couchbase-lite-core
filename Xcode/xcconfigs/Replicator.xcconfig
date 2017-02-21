@@ -17,6 +17,7 @@ HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/BLIP-Cpp/include
 INFOPLIST_FILE              = Replicator/Replicator-Info.plist
 INSTALL_PATH                = $(LOCAL_LIBRARY_DIR)/Frameworks
 LD_RUNPATH_SEARCH_PATHS     = $(inherited) @executable_path/../Frameworks @loader_path/Frameworks
+LIBRARY_SEARCH_PATHS        = $(inherited) /usr/local/lib
 PRODUCT_BUNDLE_IDENTIFIER   = com.couchbase.Replicator
 PRODUCT_NAME                = CouchbaseLiteReplicator
 VERSIONING_SYSTEM           = apple-generic

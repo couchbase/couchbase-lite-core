@@ -8,11 +8,22 @@
 
 #include "Puller.hh"
 
+using namespace fleeceapi;
+
 namespace litecore { namespace repl {
 
 
-    void Puller::start() {
+    Puller::Puller(Replicator *replicator)
+    :_replicator(replicator)
+    {
+        setConnection(replicator->connection());
+    }
 
+
+    void Puller::start(std::string sinceSequence, bool continuous) {
+        _lastSequence = _lastSequence;
+        _continuous = continuous;
+        LogTo(SyncLog, "Starting pull from remote seq %s", _lastSequence.c_str());
     }
 
 

@@ -16,6 +16,7 @@ extern "C" {
         @{ */
 
     typedef struct {
+        C4Slice scheme;
         C4Slice hostname;
         uint16_t port;
         C4Slice path;

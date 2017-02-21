@@ -13,11 +13,11 @@
 namespace litecore { namespace repl {
 
 
-    class Pusher : public Actor {
+    class Pusher : public ReplActor {
     public:
-        Pusher(Replicator *replicator, bool continuous, C4SequenceNumber sinceSequence);
+        Pusher(Replicator *replicator);
 
-        void start();
+        void start(C4SequenceNumber sinceSequence, bool continuous);
 
         // Sent by Replicator in response to dbGetChanges
         void gotChanges(RevList changes, C4Error err) {
@@ -26,10 +26,8 @@ namespace litecore { namespace repl {
 
     private:
         void _gotChanges(RevList changes, C4Error err);
-        void sendMoreChanges();
+        void getMoreChanges();
         void sendChangeList(RevList);
-        void gotError(const MessageIn*);
-        void gotError(C4Error);
         void sendRevision(const Rev&,
                           const std::vector<std::string> &ancestors,
                           unsigned maxHistory);
@@ -42,10 +40,13 @@ namespace litecore { namespace repl {
         constexpr static const float kProgressUpdateInterval = 0.25;    // How often to update self.progress
 
         Replicator* const _replicator;
-        bool const _continuous;
-        C4SequenceNumber _lastSequence, _lastSequenceSent, _lastSequenceRequested {0};
-        unsigned _changesBatchSize {kDefaultChangeBatchSize};
-        unsigned _changeListsInFlight {0};
+        bool _continuous;
+        unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
+
+        C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
+        C4SequenceNumber _lastSequenceSent {0};         // Last sequence sent in 'changes' msg
+        C4SequenceNumber _lastSequenceRequested {0};    // Last sequence requested from db
+        unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
     };
     
     

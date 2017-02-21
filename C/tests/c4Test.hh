@@ -93,7 +93,6 @@ public:
 
     C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
 
-protected:
     C4Database *db;
 
     const C4StorageEngine storageType() const   {return _storage;}

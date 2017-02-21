@@ -31,7 +31,10 @@ C4Replicator* c4repl_new(C4Database* db,
     if (!sWSProvider) {
         sWSProvider = new websocket::LibWSProvider();
     }
-    websocket::Address address(asstring(c4addr.hostname), c4addr.port, asstring(c4addr.path));
+    websocket::Address address(asstring(c4addr.scheme),
+                               asstring(c4addr.hostname),
+                               c4addr.port,
+                               asstring(c4addr.path));
     Replicator::Options options{ c4opts.push, c4opts.pull, c4opts.continuous };
     auto repl = new Replicator(db, *sWSProvider, address, options);
     return (C4Replicator*) retain(repl);

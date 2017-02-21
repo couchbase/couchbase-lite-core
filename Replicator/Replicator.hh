@@ -7,7 +7,7 @@
 //
 
 #pragma once
-#include "Actor.hh"
+#include "ReplActor.hh"
 #include "BLIPConnection.hh"
 #include "FleeceCpp.hh"
 #include "c4.h"
@@ -20,15 +20,14 @@ namespace litecore { namespace repl {
     class Puller;
 
 
-    extern LogDomain SyncLog;
-
-
     struct Rev {
         alloc_slice docID;
         alloc_slice revID;
-        C4SequenceNumber sequence;
-        C4DocumentFlags flags;
-        
+        C4SequenceNumber sequence {0};
+        C4DocumentFlags flags {0};
+
+        Rev();
+
         Rev(const C4DocumentInfo &info)
         :sequence(info.sequence), docID(info.docID), revID(info.revID),
          flags(info.flags) { }
@@ -39,7 +38,7 @@ namespace litecore { namespace repl {
     /** The top-level replicator object, which runs the BLIP connection.
         It also has direct access to the C4Database.
         Pull and push operations are run by subidiary Puller and Pusher objects. */
-    class Replicator : public Actor, ConnectionDelegate {
+    class Replicator : public ReplActor, ConnectionDelegate {
     public:
         struct Options {
             bool push;
@@ -67,6 +66,12 @@ namespace litecore { namespace repl {
             enqueue(&Replicator::_dbSendRevision, rev, ancestors, maxHistory);
         }
 
+        Connection* connection() const {return ConnectionDelegate::connection();} // disambiguation
+
+#if DEBUG
+        websocket::WebSocket* webSocket() const {return connection()->webSocket();}
+#endif
+
     protected:
         // BLIP ConnectionDelegate API:
         virtual void onConnect() override
@@ -80,6 +85,8 @@ namespace litecore { namespace repl {
                                              Retained<blip::MessageIn>(msg));}
 
     private:
+        static const size_t kMaxPossibleAncestors = 10;
+        
         struct Checkpoint {
             C4SequenceNumber localSeq {0};
             std::string remoteSeq;
@@ -91,10 +98,10 @@ namespace litecore { namespace repl {
         void _onClose(int status, fleece::alloc_slice reason);
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
-        void gotError(const MessageIn* msg);
-        void gotError(C4Error);
-        void getCheckpoint();
+        void handleChanges(Retained<MessageIn>);
         void handleGetCheckpoint(Retained<MessageIn>);
+
+        void getCheckpoint();
         std::string effectiveRemoteCheckpointDocID();
         Checkpoint decodeCheckpoint(slice json);
         void startReplicating();
@@ -104,19 +111,17 @@ namespace litecore { namespace repl {
         void dbChanged();
         static void changeCallback(C4DatabaseObserver* observer, void *context);
 
+        bool _dbFindAncestors(slice docID, slice revID,
+                              std::vector<fleece::alloc_slice> &ancestors);
+
         C4Database *_db;
         const websocket::Address _remoteAddress;
         const Options _options;
-        Retained<Connection> _connection;
         std::string _remoteCheckpointDocID;
         Checkpoint _checkpoint;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
         C4DatabaseObserver *_changeObserver {nullptr};
-
-        typedef void (Replicator::*Handler)(Retained<MessageIn>);
-        struct HandlerEntry {const char *profile; Replicator::Handler handler;};
-        static const HandlerEntry kHandlers[];
     };
 
 } }

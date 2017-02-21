@@ -13,18 +13,17 @@
 namespace litecore { namespace repl {
 
 
-    class Puller : public Actor {
+    class Puller : public ReplActor {
     public:
-        Puller(Replicator *replicator, bool continuous, std::string sinceSequence)
-        :_replicator(replicator)
-        ,_continuous(continuous)
-        { }
+        Puller(Replicator *replicator);
 
-        void start();
+        void start(std::string sinceSequence, bool continuous);
 
     private:
+
         Replicator* const _replicator;
-        bool const _continuous;
+        bool _continuous;
+        std::string _lastSequence;
     };
 
 
