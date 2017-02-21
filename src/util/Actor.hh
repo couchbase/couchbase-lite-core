@@ -29,6 +29,20 @@ namespace litecore {
     class ThreadedMailbox;
 
 
+    //// Some glue for asynchronize(), from http://stackoverflow.com/questions/42124866
+    template <class RetVal, class T, class... Args>
+    std::function<RetVal(Args...)> get_fun_type(RetVal (T::*)(Args...) const);
+
+    template <class RetVal, class T, class... Args>
+    std::function<RetVal(Args...)> get_fun_type(RetVal (T::*)(Args...));
+
+    template <class T>
+    auto passn(T t) -> decltype(get_fun_type(&T::operator())) {
+        return t;
+    }
+    ////
+
+
     /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.
         It managers a thread pool on which Mailboxes and Actors will run. */
     class Scheduler {
@@ -192,11 +206,11 @@ namespace litecore {
         /** Converts a lambda into a form that runs asynchronously,
             i.e. when called it schedules a call of the orignal lambda on the actor's thread.
             Use this when registering callbacks, e.g. with a Future.*/
-        template <class Arg>
-        std::function<void(Arg)> asynchronize(std::function<void(Arg)> fn) {
+        template <class... Args>
+        std::function<void(Args...)> asynchronize(std::function<void(Args...)> fn) {
             Retained<Actor> ret(this);
-            return [=](Arg arg) mutable {
-                ret->_mailbox.enqueue( std::bind(fn, arg) );
+            return [=](Args ...arg) mutable {
+                ret->_mailbox.enqueue( std::bind(fn, arg...) );
             };
         }
 
@@ -207,6 +221,7 @@ namespace litecore {
             future->onReady( asynchronize(fn) );
         }
 
+#if 0
         template <class T>
         class PropertyImpl {
         public:
@@ -243,6 +258,7 @@ namespace litecore {
             Retained<Actor> &_provider;
             T _value;
         };
+#endif
 
     private:
         friend class Scheduler;
