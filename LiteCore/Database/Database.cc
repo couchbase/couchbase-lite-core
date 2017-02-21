@@ -191,12 +191,18 @@ namespace c4Internal {
             // Find the db file in the bundle:
             FilePath bundle {dbPath, ""};
             if (bundle.exists()) {
-                auto tempConfig = *config;
-                tempConfig.flags &= ~kC4DB_Create;
-                auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
-                // Delete it:
-                tempConfig.flags &= ~kC4DB_Bundled;
-                deleteDatabaseAtPath(dbFilePath, &tempConfig);
+                try {
+                    auto tempConfig = *config;
+                    tempConfig.flags &= ~kC4DB_Create;
+                    tempConfig.storageEngine = nullptr;
+                    auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
+                    // Delete it:
+                    tempConfig.flags &= ~kC4DB_Bundled;
+                    deleteDatabaseAtPath(dbFilePath, &tempConfig);
+                } catch (const error &x) {
+                    if (x.code != error::WrongFormat)   // ignore exception if db file isn't found
+                        throw;
+                }
             }
             // Delete the rest of the bundle:
             return bundle.delRecursive();
