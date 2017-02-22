@@ -13,10 +13,6 @@
     <IsMac Condition=" '$(OS)' == 'Unix' AND Exists('/Library/Frameworks') ">true</IsMac>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)project.json" />
-    <!-- A reference to the entire .NET Framework is automatically included -->
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)API\InteropObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreDocEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreException.cs" />
@@ -58,7 +54,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\PosixStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\RetryHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\SQLiteStatus.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\C4String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\PerfTimer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\RecyclableMemoryStream.cs" />

@@ -188,9 +188,9 @@ namespace Microsoft.IO
             byte[] initialLargeBuffer)
             : base(emptyArray)
         {
-            memoryManager = memoryManager;
+            this.memoryManager = memoryManager;
             id = Guid.NewGuid();
-            tag = tag;
+            this.tag = tag;
 
             if (requestedSize < memoryManager.BlockSize)
             {
