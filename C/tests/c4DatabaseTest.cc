@@ -43,11 +43,7 @@ class C4DatabaseTest : public C4Test {
     }
 
     void setupAllDocs() {
-        char docID[20];
-        for (int i = 1; i < 100; i++) {
-            sprintf(docID, "doc-%03d", i);
-            createRev(c4str(docID), kRevID, kBody);
-        }
+        createNumberedDocs(99);
         // Add a deleted doc to make sure it's skipped by default:
         createRev(c4str("doc-005DEL"), kRevID, kC4SliceNull, kRevDeleted);
     }
@@ -299,11 +295,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") 
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
-    char docID[20];
-    for (int i = 1; i < 100; i++) {
-        sprintf(docID, "doc-%03d", i);
-        createRev(c4str(docID), kRevID, kBody);
-    }
+    createNumberedDocs(99);
 
     C4Error error;
     C4DocEnumerator* e;
@@ -317,6 +309,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     C4SequenceNumber seq = 1;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
+        char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_free(doc);
@@ -330,6 +323,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     seq = 7;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
+        char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_free(doc);

@@ -235,6 +235,15 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 }
 
 
+void C4Test::createNumberedDocs(unsigned numberOfDocs) {
+    char docID[20];
+    for (unsigned i = 1; i <= numberOfDocs; i++) {
+        sprintf(docID, "doc-%03u", i);
+        createRev(c4str(docID), kRevID, kBody);
+    }
+}
+
+
 // Reads a file into memory.
 FLSlice C4Test::readFile(std::string path) {
     INFO("Opening file " << path);

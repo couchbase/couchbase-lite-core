@@ -107,6 +107,8 @@ public:
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
 
+    void createNumberedDocs(unsigned numberOfDocs);
+
     FLSlice readFile(std::string path); // caller must free buf when done
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);

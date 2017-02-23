@@ -51,4 +51,36 @@ namespace c4 {
         T* _obj;
     };
 
+    
+    class Transaction {
+    public:
+        Transaction(C4Database *db)
+        :_db(db)
+        { }
+
+        ~Transaction() {
+            if (_active)
+                abort(nullptr);
+        }
+
+        bool begin(C4Error *error) {
+            if (!c4db_beginTransaction(_db, error))
+                return false;
+            _active = true;
+            return true;
+        }
+
+        bool end(bool commit, C4Error *error) {
+            assert(_active);
+            _active = false;
+            return c4db_endTransaction(_db, commit, error);
+        }
+
+        bool commit(C4Error *error)     {return end(true, error);}
+        bool abort(C4Error *error)      {return end(false, error);}
+
+    private:
+        C4Database *_db;
+        bool _active;
+    };
 }
