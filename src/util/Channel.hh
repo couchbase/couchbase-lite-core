@@ -44,6 +44,8 @@ namespace litecore {
         /** Returns true if the queue is currently empty. */
         bool empty() const;
 
+        size_t size() const;
+
         /** When the queue is closed, after it empties all pops will return immediately with a 
             default T value instead of blocking. */
         void close();

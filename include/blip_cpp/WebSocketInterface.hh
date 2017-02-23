@@ -111,8 +111,7 @@ namespace litecore { namespace websocket {
 
         virtual void onWebSocketStart() { }
         virtual void onWebSocketConnect() =0;
-        virtual void onWebSocketError(int status, fleece::slice reason) =0;
-        virtual void onWebSocketClose(int status, fleece::slice reason) =0;
+        virtual void onWebSocketClose(bool normalClose, int status, fleece::slice reason) =0;
 
         /** A message has arrived. */
         virtual void onWebSocketMessage(fleece::slice message, bool binary) =0;

@@ -50,12 +50,11 @@ namespace litecore { namespace websocket {
             enqueueAfter(latency, &MockWebSocket::_simulateReceived, fleece::alloc_slice(message), binary);
         }
 
-        void simulateClosed(int status =1000, const char *reason =nullptr, double latency =0.0) {
-            enqueueAfter(latency, &MockWebSocket::_simulateClosed, status, fleece::alloc_slice(reason));
-        }
-
-        void simulateErrored(int code, const char *reason =nullptr, double latency =0.0) {
-            enqueueAfter(latency, &MockWebSocket::_simulateErrored, code, fleece::alloc_slice(reason));
+        void simulateClosed(bool normalClose = true, int status =1000, const char *reason =nullptr,
+                            double latency =0.0) {
+            enqueueAfter(latency,
+                         &MockWebSocket::_simulateClosed,
+                         normalClose, status, fleece::alloc_slice(reason));
         }
 
     protected:
@@ -76,7 +75,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _close(int status, fleece::alloc_slice message) {
-            _simulateClosed(status, message);
+            _simulateClosed(true, status, message);
         }
 
         virtual void _send(fleece::alloc_slice msg, bool binary) {
@@ -101,20 +100,13 @@ namespace litecore { namespace websocket {
             delegate().onWebSocketMessage(msg, binary);
         }
 
-        virtual void _simulateClosed(int status, fleece::alloc_slice reason) {
-            LogTo(WSMock, "%s CLOSED; status=%d", name.c_str(), status);
+        virtual void _simulateClosed(bool normalClose, int status, fleece::alloc_slice reason) {
+            LogTo(WSMock, "%s %s; status=%d",
+                  name.c_str(), (normalClose ? "CLOSED" : "DISCONNECTED"), status);
             _isOpen = false;
-            delegate().onWebSocketClose(status, reason);
+            delegate().onWebSocketClose(normalClose, status, reason);
             _closed();
         }
-
-        virtual void _simulateErrored(int code, fleece::alloc_slice reason) {
-            LogTo(WSMock, "%s CLOSED WITH ERROR; code=%d", name.c_str(), code);
-            _isOpen = false;
-            delegate().onWebSocketError(code, reason);
-            _closed();
-        }
-
 
         std::string formatMsg(fleece::slice msg, bool binary, size_t maxBytes = 64) {
             std::stringstream desc;

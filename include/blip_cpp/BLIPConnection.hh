@@ -32,7 +32,7 @@ namespace litecore { namespace blip {
 
         virtual ~Connection();
 
-        std::string name() const                                {return _name;}
+        const std::string& name() const                         {return _name;}
 
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
@@ -48,6 +48,8 @@ namespace litecore { namespace blip {
         /** Closes the connection. */
         void close();
 
+        bool isClosed()                                         {return _closed;}
+
 #if DEBUG
         websocket::WebSocket* webSocket() const;
 #endif
@@ -57,6 +59,7 @@ namespace litecore { namespace blip {
         friend class BLIPIO;
 
         void send(MessageOut*);
+        void closed(bool normalClose, int code, fleece::slice reason);
 
     private:
         void start(websocket::WebSocket*);
@@ -64,6 +67,7 @@ namespace litecore { namespace blip {
         std::string _name;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
+        std::atomic<bool> _closed {false};
     };
 
 
@@ -72,29 +76,22 @@ namespace litecore { namespace blip {
         The delegate methods are called on undefined threads, and should not block. */
     class ConnectionDelegate {
     public:
-        virtual ~ConnectionDelegate()  { }
-
-        Connection* connection() const  {return _connection;}
+        virtual ~ConnectionDelegate()                           { }
 
         /** Called when the connection opens. */
-        virtual void onConnect()                                {}
+        virtual void onConnect()                                { }
 
-        /** Called if a fatal error occurs, closing the connection, or if it failed to open. */
-        virtual void onError(int errcode, fleece::slice reason) =0;
-
-        /** Called when the connection closes. The WebSocket status/reason are given. */
-        virtual void onClose(int status, fleece::slice reason)  =0;
+        /** Called when the connection closes, or fails to open.
+            @param normalClose  True if the WebSocket closed cleanly; false on an error.
+            @param status  A WebSocket status (on normal close) or POSIX errno (on error).
+            @param reason  A message, if any, describing the status. */
+        virtual void onClose(bool normalClose, int status, fleece::slice reason)  =0;
 
         /** Called when an incoming request is received. */
         virtual void onRequestReceived(MessageIn* request)      {request->notHandled();}
 
         /** Called when a response to an outgoing request arrives. */
-        virtual void onResponseReceived(MessageIn*)             {}
-
-    private:
-        friend class Connection;
-        
-        Connection* _connection;
+        virtual void onResponseReceived(MessageIn*)             { }
     };
 
 } }

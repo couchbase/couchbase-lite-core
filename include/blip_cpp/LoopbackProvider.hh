@@ -77,7 +77,7 @@ namespace litecore { namespace websocket {
             std::string messageStr(message);
             LogTo(WSMock, "%s CLOSE; status=%d", name.c_str(), status);
             assert(_peer);
-            _peer->simulateClosed(status, messageStr.c_str(), _latency);
+            _peer->simulateClosed(true, status, messageStr.c_str(), _latency);
             MockWebSocket::_close(status, message);
         }
 

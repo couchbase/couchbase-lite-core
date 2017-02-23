@@ -79,10 +79,30 @@ namespace litecore {
 
 
     void GCDMailbox::enqueue(std::function<void()> f) {
+        ++_eventCount;
         retain(_actor);
-        dispatch_async(_queue, ^{ f(); release(_actor); });
+        dispatch_async(_queue, ^{ f();_actor->afterEvent();  release(_actor); --_eventCount; });
     }
 
+
+    void GCDMailbox::enqueue(void (^block)()) {
+        ++_eventCount;
+        retain(_actor);
+        auto wrappedBlock = ^{ block();_actor->afterEvent();  --_eventCount; release(_actor); };
+        dispatch_async(_queue, wrappedBlock);
+    }
+
+
+    void GCDMailbox::enqueueAfter(double delay, void (^block)()) {
+        ++_eventCount;
+        retain(_actor);
+        auto wrappedBlock = ^{ block(); _actor->afterEvent(); --_eventCount; release(_actor); };
+        if (delay > 0)
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
+                           _queue, wrappedBlock);
+        else
+            dispatch_async(_queue, wrappedBlock);
+    }
 
 #endif // ACTORS_USE_GCD
 
@@ -114,6 +134,8 @@ namespace litecore {
         } catch (...) {
             Warn("EXCEPTION thrown from actor method");
         }
+        _actor->afterEvent();
+        
 #if DEBUG
         assert(--_active == 0);
 #endif

@@ -110,10 +110,8 @@ namespace litecore { namespace websocket {
         {
             // TODO: Use type, which is WS_ERRTYPE_LIB, WS_ERRTYPE_PROTOCOL, or WS_ERRTYPE_DNS
             try {
-                if (type == WS_ERRTYPE_PROTOCOL)
-                    ((Delegate*)context)->onWebSocketClose(code, {reason, reason_len});
-                else
-                    ((Delegate*)context)->onWebSocketError(code, {reason, reason_len});
+                ((Delegate*)context)->onWebSocketClose((type == WS_ERRTYPE_PROTOCOL),
+                                                       code, {reason, reason_len});
             } catch (...) {
                 fprintf(stderr, "WARNING: websocket::Delegate::onClose threw an exception\n");
             }

@@ -74,7 +74,14 @@ namespace litecore {
         return _queue.empty();
     }
 
-    
+
+    template <class T>
+    size_t Channel<T>::size() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
+        return _queue.empty();
+    }
+
+
     template <class T>
     void Channel<T>::close() {
         std::unique_lock<std::mutex> lock(_mutex);

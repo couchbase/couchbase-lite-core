@@ -119,28 +119,37 @@ namespace litecore { namespace blip {
             onWebSocketWriteable();
         }
 
-        virtual void onWebSocketError(int errcode, fleece::slice reason) override {
-            _connection->delegate().onError(errcode, reason);
-        }
-
-        virtual void onWebSocketClose(int status, fleece::slice reason) override {
-            _connection->delegate().onClose(status, reason);
+        virtual void onWebSocketClose(bool normalClose, int status, slice reason) override {
+            enqueue(&BLIPIO::_closed, normalClose, status, reason);
         }
 
         virtual void onWebSocketWriteable() override {
             enqueue(&BLIPIO::_onWebSocketWriteable);
         }
 
-        virtual void onWebSocketMessage(fleece::slice message, bool binary) override {
+        virtual void onWebSocketMessage(slice message, bool binary) override {
             enqueue(&BLIPIO::_onWebSocketMessage, alloc_slice(message), binary);
         }
 
     private:
 
-
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
             webSocket()->close();
+        }
+
+        void _closed(bool normalClose, int code, fleece::slice reason) {
+            if (_connection) {
+                Retained<BLIPIO> holdOn (this);
+                _connection->closed(normalClose, code, reason);
+                _connection = nullptr;
+                // TODO: Call error handlers for any unfinished outgoing messages
+                _outbox.clear();
+                _icebox.clear();
+                _pendingRequests.clear();
+                _pendingResponses.clear();
+                _requestHandlers.clear();
+            }
         }
 
 
@@ -421,7 +430,7 @@ namespace litecore { namespace blip {
     Connection::Connection(const websocket::Address &address,
                            websocket::Provider &provider,
                            ConnectionDelegate &delegate)
-    :_name(string("BLIP -> ") + (string)address)
+    :_name(string("->") + (string)address)
     ,_delegate(delegate)
     {
         LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
@@ -432,7 +441,7 @@ namespace litecore { namespace blip {
 
     Connection::Connection(websocket::WebSocket *webSocket,
                            ConnectionDelegate &delegate)
-    :_name(string("BLIP <- ") + (string)webSocket->address())
+    :_name(string("<-") + (string)webSocket->address())
     ,_delegate(delegate)
     {
         LogTo(BLIPLog, "Accepted connection from %s ...", _name.c_str());
@@ -445,7 +454,6 @@ namespace litecore { namespace blip {
 
 
     void Connection::start(websocket::WebSocket *webSocket) {
-        _delegate._connection = this;
         webSocket->name = _name;
         _io = new BLIPIO(this, Scheduler::sharedScheduler());
         webSocket->connect(_io);
@@ -457,8 +465,9 @@ namespace litecore { namespace blip {
     FutureResponse Connection::sendRequest(MessageBuilder &mb) {
         Retained<MessageOut> message = new MessageOut(this, mb, 0);
         assert(message->type() == kRequestType);
+        auto r = message->futureResponse();
         send(message);
-        return message->futureResponse();
+        return r;
     }
 
 
@@ -476,6 +485,12 @@ namespace litecore { namespace blip {
 
     void Connection::close() {
         _io->close();
+    }
+
+
+    void Connection::closed(bool normalClose, int code, slice reason) {
+        delegate().onClose(normalClose, code, reason);
+        _closed = true;
     }
 
 

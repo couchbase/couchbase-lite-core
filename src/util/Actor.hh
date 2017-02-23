@@ -29,17 +29,15 @@ namespace litecore {
     class ThreadedMailbox;
 
 
-    //// Some glue for asynchronize(), from http://stackoverflow.com/questions/42124866
+    //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
     template <class RetVal, class T, class... Args>
     std::function<RetVal(Args...)> get_fun_type(RetVal (T::*)(Args...) const);
 
     template <class RetVal, class T, class... Args>
     std::function<RetVal(Args...)> get_fun_type(RetVal (T::*)(Args...));
 
-    template <class T>
-    auto passn(T t) -> decltype(get_fun_type(&T::operator())) {
-        return t;
-    }
+    template <class RetVal, class... Args>
+    std::function<RetVal(Args...)> get_fun_type(RetVal (*)(Args...));
     ////
 
 
@@ -94,6 +92,8 @@ namespace litecore {
         Scheduler* scheduler() const                        {return _scheduler;}
         void setScheduler(Scheduler *s);
 
+        unsigned eventCount() const                         {return (unsigned)size();}
+
         void enqueue(std::function<void()> f);
 
         static void startScheduler(Scheduler *s)            {s->start();}
@@ -124,25 +124,18 @@ namespace litecore {
         Scheduler* scheduler() const                        {return nullptr;}
         void setScheduler(Scheduler *s)                     { }
 
+        unsigned eventCount() const                         {return _eventCount;}
+
         void enqueue(std::function<void()> f);
-
-        void enqueue(void (^block)()) {
-            dispatch_async(_queue, block);
-        }
-
-        void enqueueAfter(double delay, void (^block)()) {
-            if (delay > 0)
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
-                               _queue, block);
-            else
-                dispatch_async(_queue, block);
-        }
+        void enqueue(void (^block)());
+        void enqueueAfter(double delay, void (^block)());
 
         static void startScheduler(Scheduler *)             { }
 
     private:
         Actor *_actor;
         dispatch_queue_t _queue;
+        std::atomic<int32_t> _eventCount {0};
     };
 #endif
 
@@ -172,6 +165,8 @@ namespace litecore {
 
         Scheduler* scheduler() const                        {return _mailbox.scheduler();}
         void setScheduler(Scheduler *s)                     {_mailbox.setScheduler(s);}
+
+        unsigned eventCount() const                         {return _mailbox.eventCount();}
 
     protected:
         Actor(const std::string &name ="", Scheduler *sched =nullptr)
@@ -207,11 +202,17 @@ namespace litecore {
             i.e. when called it schedules a call of the orignal lambda on the actor's thread.
             Use this when registering callbacks, e.g. with a Future.*/
         template <class... Args>
-        std::function<void(Args...)> asynchronize(std::function<void(Args...)> fn) {
+        std::function<void(Args...)> _asynchronize(std::function<void(Args...)> fn) {
             Retained<Actor> ret(this);
             return [=](Args ...arg) mutable {
                 ret->_mailbox.enqueue( std::bind(fn, arg...) );
             };
+        }
+
+        template <class T>
+        auto asynchronize(T t) -> decltype(get_fun_type(&T::operator())) {
+            decltype(get_fun_type(&T::operator())) fn = t;
+            return _asynchronize(fn);
         }
 
         /** Convenience function for creating a callback on a Future. */
@@ -220,6 +221,8 @@ namespace litecore {
             std::function<void(T)> fn(callback);
             future->onReady( asynchronize(fn) );
         }
+
+        virtual void afterEvent()                    { }
 
 #if 0
         template <class T>
@@ -262,6 +265,10 @@ namespace litecore {
 
     private:
         friend class Scheduler;
+        friend class ThreadedMailbox;
+#ifdef ACTORS_USE_GCD
+        friend class GCDMailbox;
+#endif
 
         Mailbox _mailbox;
     };
