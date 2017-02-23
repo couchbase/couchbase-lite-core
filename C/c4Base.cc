@@ -97,7 +97,7 @@ namespace c4Internal {
 C4SliceResult c4error_getMessage(C4Error err) noexcept {
     if (err.code == 0) {
         return sliceResult(nullptr);
-    } else if (err.domain < 1 || err.domain > SQLiteDomain) {
+    } else if (err.domain < 1 || err.domain > FleeceDomain) {
         return sliceResult("unknown error domain");
     } else {
         // Custom message referenced in info field?
@@ -106,7 +106,8 @@ C4SliceResult c4error_getMessage(C4Error err) noexcept {
             return sliceResult(message);
         // No; get the regular error message for this domain/code:
         static constexpr error::Domain kDomains[] = {error::LiteCore, error::POSIX,
-                                                     error::ForestDB, error::SQLite};
+                                                     error::ForestDB, error::SQLite,
+                                                     error::Fleece};
         error e(kDomains[err.domain - 1], err.code);
         return sliceResult(e.what());
     }

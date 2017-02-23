@@ -135,6 +135,28 @@ namespace litecore {
         return str;
     }
 
+    static const char* fleece_errstr(fleece::ErrorCode code) {
+        static const char* kFleeceMessages[] = {
+            // These must match up with the codes in the declaration of FLError
+            "no error", // 0
+            "memory error",
+            "out of range",
+            "invalid data",
+            "Fleece encode/decode error",
+            "JSON encode/decode error",
+            "unparseable Fleece value",
+            "path syntax error",
+            "internal error",
+            "item not found",
+        };
+        const char *str = nullptr;
+        if (code < sizeof(kFleeceMessages)/sizeof(char*))
+            str = kFleeceMessages[code];
+        if (!str)
+            str = "(unknown Fleece error)";
+        return str;
+    }
+
     string error::_what(error::Domain domain, int code) noexcept {
         switch (domain) {
             case LiteCore:
@@ -143,6 +165,8 @@ namespace litecore {
                 return strerror(code);
             case SQLite:
                 return sqlite3_errstr(code);
+            case Fleece:
+                return fleece_errstr((fleece::ErrorCode)code);
             default:
                 return "unknown error domain";
         }
