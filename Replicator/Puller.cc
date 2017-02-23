@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
     void Puller::start(std::string sinceSequence, const Replicator::Options &options) {
         _lastSequence = _lastSequence;
         _options = options;
-        LogTo(SyncLog, "Starting pull from remote seq %s", _lastSequence.c_str());
+        log("Starting pull from remote seq %s", _lastSequence.c_str());
     }
 
 
@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
         rev.deleted = !!msg->property("del"_sl);
         slice history = msg->property("history"_sl);
 
-        LogTo(SyncLog, "Pull: Received revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
+        log("Received revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
         if (rev.docID.size == 0 || rev.revID.size == 0) {
             Warn("Puller got invalid revision");
             msg->respondWithError("BLIP"_sl, 400);

@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
         auto checkpointID = request->property("client"_sl);
         if (!checkpointID)
             return request->respondWithError("BLIP"_sl, 400);
-        LogTo(SyncLog, "DB: Request for checkpoint '%.*s'", SPLAT(checkpointID));
+        log("Request for checkpoint '%.*s'", SPLAT(checkpointID));
 
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(_db, C4STR("peerCheckpoints"), checkpointID, &err) );
@@ -110,7 +110,7 @@ namespace litecore { namespace repl {
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
     void DBActor::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                               Retained<Pusher> pusher) {
-        LogTo(SyncLog, "DB: Reading %u local changes from %llu", limit, since);
+        log("Reading %u local changes from %llu", limit, since);
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -147,10 +147,10 @@ namespace litecore { namespace repl {
 
 
     void DBActor::handleChanges(Retained<MessageIn> req) {
-        LogTo(SyncLog, "DB: Handling 'changes' message");
+        log("Handling 'changes' message");
         auto changes = req->JSONBody().asArray();
         if (!changes) {
-            LogToAt(SyncLog, Warning, "Invalid body of 'changes' message");
+            warn("Invalid body of 'changes' message");
             req->respondWithError("BLIP"_sl, 400);
             return;
         }
@@ -158,7 +158,7 @@ namespace litecore { namespace repl {
         if (req->noReply())
             return;
 
-        LogTo(SyncLog, "DB: Looking up %u revisions in the db ...", changes.count());
+        log("Looking up %u revisions in the db ...", changes.count());
         MessageBuilder response(req);
         response["maxRevs"_sl] = c4db_getMaxRevTreeDepth(_db);
         unsigned i = 0, itemsWritten = 0, requested = 0;
@@ -170,7 +170,7 @@ namespace litecore { namespace repl {
             slice docID = change[1].asString();
             slice revID = change[2].asString();
             if (!docID || !revID) {
-                LogToAt(SyncLog, Warning, "Invalid entry in 'changes' message");
+                warn("Invalid entry in 'changes' message");
                 return;     // ???  Should this abort the replication?
             }
 
@@ -186,7 +186,7 @@ namespace litecore { namespace repl {
             ++i;
         }
         encoder.endArray();
-        LogTo(SyncLog, "DB: Responding w/request for %u revs", requested);
+        log("Responding w/request for %u revs", requested);
         req->respond(response);
     }
 
@@ -249,7 +249,7 @@ namespace litecore { namespace repl {
     void DBActor::_insertRevision(Rev rev, alloc_slice historyBuf, alloc_slice body,
                                   std::function<void(C4Error)> callback)
     {
-        LogTo(SyncLog, "DB: Inserting rev {'%.*s' #%.*s}", SPLAT(rev.docID), SPLAT(rev.revID));
+        log("Inserting rev {'%.*s' #%.*s}", SPLAT(rev.docID), SPLAT(rev.revID));
         vector<C4String> history;
         history.reserve(10);
         history.push_back(rev.revID);

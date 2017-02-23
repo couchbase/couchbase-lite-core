@@ -29,7 +29,7 @@ namespace litecore { namespace repl {
     void Pusher::start(C4SequenceNumber sinceSequence, const Replicator::Options &options) {
         _options = options;
         _lastSequenceRead = _lastSequenceSent = _lastSequence = sinceSequence;
-        LogTo(SyncLog, "Push: Starting push from local seq %llu", _lastSequence+1);
+        log("Starting push from local seq %llu", _lastSequence+1);
         maybeGetMoreChanges();
     }
 
@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
                 && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
             ++_changeListsInFlight;
             _curSequenceRequested = _lastSequenceRead + 1;
-            LogTo(SyncLog, "Push: Reading %u changes since sequence %llu ...",
+            log("Reading %u changes since sequence %llu ...",
                   _changesBatchSize, _lastSequenceRead);
             _dbActor->getChanges(_lastSequenceRead, _changesBatchSize, _options.continuous, this);
             // response will be to call _gotChanges
@@ -55,7 +55,7 @@ namespace litecore { namespace repl {
         _curSequenceRequested = 0;
         if (!changes.empty()) {
             _lastSequenceRead = changes.back().sequence;
-            LogTo(SyncLog, "Push: Read %zu changes: Pusher sending 'changes' with sequences %llu - %llu",
+            log("Read %zu changes: Pusher sending 'changes' with sequences %llu - %llu",
                   changes.size(), changes[0].sequence, _lastSequenceRead);
         }
 
@@ -107,7 +107,7 @@ namespace litecore { namespace repl {
         });
 
         if (changes.size() < _changesBatchSize) {
-            LogTo(SyncLog, "Push: Caught up, at lastSequence %llu", _lastSequenceRead);
+            log("Caught up, at lastSequence %llu", _lastSequenceRead);
             _caughtUp = true;
             if (_options.push && !_options.continuous) {
                 // done
@@ -130,7 +130,7 @@ namespace litecore { namespace repl {
                 if (reply->isError())
                     gotError(reply);
                 else {
-                    LogTo(SyncLog, "Push: Completed rev %.*s #%.*s (seq %llu)",
+                    log("Completed rev %.*s #%.*s (seq %llu)",
                           SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                     markComplete(rev.sequence);
                 }
@@ -143,7 +143,7 @@ namespace litecore { namespace repl {
     void Pusher::markComplete(C4SequenceNumber sequence) {
         if (sequence > _lastSequence) {
             _lastSequence = sequence;
-            LogToAt(SyncLog, Verbose, "Push: Checkpoint now at %llu", _lastSequence);
+            logVerbose("Checkpoint now at %llu", _lastSequence);
         }
     }
 

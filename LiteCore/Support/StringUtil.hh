@@ -1,0 +1,22 @@
+//
+//  StringUtil.hh
+//  LiteCore
+//
+//  Created by Jens Alfke on 2/23/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#pragma once
+#include "PlatformCompat.hh"
+#include <stdarg.h>
+#include <string>
+
+namespace litecore {
+
+    /** Like sprintf(), but returns a std::string */
+    std::string format(const char *fmt, ...) __printflike(1, 2);
+
+    /** Like vsprintf(), but returns a std::string */
+    std::string vformat(const char *fmt, va_list);
+
+}

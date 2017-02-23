@@ -20,7 +20,7 @@ namespace litecore { namespace repl {
 
 
     /** Abstract base class of Actors used by the replicator */
-    class ReplActor : public Actor, InstanceCounted {
+    class ReplActor : public Actor, InstanceCounted, protected Logging {
     public:
         struct Options {
             bool push;
@@ -41,7 +41,8 @@ namespace litecore { namespace repl {
 
     protected:
         ReplActor(blip::Connection *connection, Options options, const std::string &name)
-        :_connection(connection)
+        :Logging(SyncLog)
+        ,_connection(connection)
         ,_options(options)
         ,_name(name)
         { }
@@ -67,6 +68,8 @@ namespace litecore { namespace repl {
 
         virtual void afterEvent() override                  {setBusy(eventCount() > 1);}
         void setBusy(bool busy);
+
+        virtual std::string loggingIdentifier() const override;
 
         const Options _options;
 

@@ -38,10 +38,9 @@ public:
         c4db_free(db2);
     }
 
-    void runReplicators() {
-        Address addr1("ws", "one"), addr2("ws", "two");
-        repl1 = new Replicator(db , provider, addr2, {true, false, false});
-        repl2 = new Replicator(db2, provider, addr1, {false, false, false});
+    void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
+        repl1 = new Replicator(db , provider, {"ws", "one"}, opts1);
+        repl2 = new Replicator(db2, provider, {"ws", "two"}, opts2);
 
         provider.connect(repl1->webSocket(), repl2->webSocket());
 
@@ -61,12 +60,21 @@ private:
 
 
 TEST_CASE_METHOD(ReplicatorTest, "Push Empty DB") {
-    runReplicators();
+    runReplicators({true,  false, false},
+                   {false, false, false});
 }
-
 
 
 TEST_CASE_METHOD(ReplicatorTest, "Push Small Non-Empty DB") {
     importJSONLines(sFixturesDir + "names_100.json");
-    runReplicators();
+    runReplicators({true,  false, false},
+                   {false, false, false});
 }
+
+#if 0
+TEST_CASE_METHOD(ReplicatorTest, "Pull Small Non-Empty DB") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    runReplicators({false, false, false},
+                   {false, true, false});
+}
+#endif

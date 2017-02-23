@@ -59,7 +59,7 @@ namespace litecore { namespace repl {
         else
             _pulling = false;
         if (!_pushing && !_pulling && !_options.continuous && connection()) {
-            LogTo(SyncLog, "Replication complete!");
+            log("Replication complete!");
             connection()->close();
         }
     }
@@ -77,25 +77,21 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onConnect() {
-        LogTo(SyncLog, "** BLIP Connected");
+        log("BLIP Connected");
         if (_options.push || _options.pull)
             getCheckpoints();
     }
 
-    void Replicator::_onError(int errcode, alloc_slice reason) {
-        LogTo(SyncLog, "** BLIP error: %s (%d)", reason.asString().c_str(), errcode);
-        connectionClosed();
-    }
-
     void Replicator::_onClose(bool normalClose, int status, alloc_slice reason) {
-        LogTo(SyncLog, "** BLIP %s: %s (status %d)",
-              (normalClose ? "closed" : "disconnected"),
-              reason.asString().c_str(), status);
+        if (normalClose)
+            log("Connection closed: %.*s (status %d)", SPLAT(reason), status);
+        else
+            log<LogLevel::Error>("Disconnected: %.*s (error %d)", SPLAT(reason), status);
         connectionClosed();
     }
 
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        LogToAt(SyncLog, Warning, "Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
+        warn("Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
     }
 
@@ -114,14 +110,14 @@ namespace litecore { namespace repl {
                     gotError(err);
                 } else {
                     // Skip getting remote checkpoint since there's no local one.
-                    LogTo(SyncLog, "No local checkpoint '%.*s'", SPLAT(checkpointID));
+                    log("No local checkpoint '%.*s'", SPLAT(checkpointID));
                     startReplicating();
                 }
                 return;
             }
 
             _checkpoint = decodeCheckpoint(data);
-            LogTo(SyncLog, "Local checkpoint '%.*s' is [%llu, '%s']; getting remote ...",
+            log("Local checkpoint '%.*s' is [%llu, '%s']; getting remote ...",
                   SPLAT(checkpointID), _checkpoint.localSeq, _checkpoint.remoteSeq.c_str());
 
             MessageBuilder msg("getCheckpoint"_sl);
@@ -134,24 +130,24 @@ namespace litecore { namespace repl {
                 if (response->isError()) {
                     if (!(response->errorDomain() == "HTTP"_sl && response->errorCode() == 404))
                         return gotError(response);
-                    LogTo(SyncLog, "No remote checkpoint");
+                    log("No remote checkpoint");
                 } else {
-                    LogTo(SyncLog, "Received remote checkpoint: '%.*s'", SPLAT(response->body()));
+                    log("Received remote checkpoint: '%.*s'", SPLAT(response->body()));
                     checkpoint = decodeCheckpoint(response->body());
                     checkpointRevID = response->property("rev"_sl).asString();
                 }
 
-                LogTo(SyncLog, "...got remote checkpoint: [%llu, '%s']",
+                log("...got remote checkpoint: [%llu, '%s']",
                       checkpoint.localSeq, checkpoint.remoteSeq.c_str());
 
                 // Reset mismatched checkpoints:
                 if (_checkpoint.localSeq > 0 && _checkpoint.localSeq != checkpoint.localSeq) {
-                    LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
+                    log("Local sequence mismatch: I had %llu, remote had %llu",
                           _checkpoint.localSeq, checkpoint.localSeq);
                     _checkpoint.localSeq = 0;
                 }
                 if (!_checkpoint.remoteSeq.empty() && _checkpoint.remoteSeq != checkpoint.remoteSeq) {
-                    LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'",
+                    log("Remote sequence mismatch: I had '%s', remote had '%s'",
                           _checkpoint.remoteSeq.c_str(), checkpoint.remoteSeq.c_str());
                     _checkpoint.remoteSeq = "";
                 }

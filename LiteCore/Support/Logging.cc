@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -29,6 +30,10 @@
 #endif
 #ifdef _MSC_VER
 #include "asprintf.h"
+#endif
+
+#if defined(__clang__) && !defined(__ANDROID__)
+#include <cxxabi.h>
 #endif
 
 using namespace std;
@@ -153,6 +158,42 @@ namespace litecore {
             if (strcmp(d->name(), name) == 0)
                 return d;
         return nullptr;
+    }
+
+
+    std::string Logging::loggingIdentifier() const {
+#if defined(__clang__) && !defined(__ANDROID__)
+        // Get the name of my class, unmangle it, and remove namespaces:
+        const char *name = typeid(*this).name();
+        size_t unmangledLen;
+        int status;
+        char *unmangled = abi::__cxa_demangle(name, nullptr, &unmangledLen, &status);
+        if (unmangled) {
+            auto colon = strrchr(unmangled, ':');
+            name = colon ? colon + 1 : unmangled;
+        }
+
+        auto result = format("%s %p", name, this);
+        free(unmangled);
+        return result;
+#else
+        return format("%p", name, this);
+#endif
+    }
+
+
+    void Logging::_log(LogLevel level, const char *format, ...) const {
+        va_list args;
+        va_start(args, format);
+        _logv(level, format, args);
+        va_end(args);
+    }
+    
+    void Logging::_logv(LogLevel level, const char *format, va_list args) const {
+        char *message;
+        vasprintf(&message, format, args);
+        _domain.log(level, "(%s) %s", loggingIdentifier().c_str(), message);
+        free(message);
     }
 
 

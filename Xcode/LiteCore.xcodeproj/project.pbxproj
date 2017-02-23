@@ -102,6 +102,10 @@
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		2754B0C21E5F49AA00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */; };
+		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
 		275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		275CE0EB1E57BE430084E014 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0E81E57BE430084E014 /* libevent_core.a */; };
@@ -775,6 +779,8 @@
 		275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore Tests-Prefix.pch"; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
+		2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil.cc; sourceTree = "<group>"; };
+		2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StringUtil.hh; sourceTree = "<group>"; };
 		275607781BA21DAB00F58218 /* c4View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4View.h; sourceTree = "<group>"; };
 		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
 		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
@@ -1411,6 +1417,8 @@
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
+				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
+				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
 			);
@@ -1912,6 +1920,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */,
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
 				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
@@ -2594,6 +2603,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2754B0C21E5F49AA00A05FD0 /* StringUtil.cc in Sources */,
 				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
@@ -2652,6 +2662,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
+				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
@@ -2713,6 +2724,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				720EA4101BA8D834002B8416 /* Record.cc in Sources */,
+				2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD381DB450B300F2872D /* Logging.cc in Sources */,
 				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
