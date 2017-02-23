@@ -15,14 +15,17 @@ namespace litecore { namespace repl {
 
     class Puller : public ReplActor {
     public:
-        Puller(Replicator *replicator);
+        Puller(blip::Connection*, Replicator*, DBActor*, Options options);
 
-        void start(std::string sinceSequence, bool continuous);
+        void start(std::string sinceSequence, const Replicator::Options&);
 
     private:
 
+        void handleRev(Retained<MessageIn>);
+
         Replicator* const _replicator;
-        bool _continuous;
+        DBActor* const _dbActor;
+        Replicator::Options _options {};
         std::string _lastSequence;
     };
 

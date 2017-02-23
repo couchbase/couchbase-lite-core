@@ -13,6 +13,7 @@
 #include "Message.hh"
 #include "SecureDigest.hh"
 #include "c4.hh"
+#include "c4Document+Fleece.h"
 
 using namespace std;
 using namespace fleece;
@@ -25,11 +26,20 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::setConnection(blip::Connection *connection) {
-        ReplActor::setConnection(connection);
+    DBActor::DBActor(Connection *connection,
+                     C4Database *db,
+                     const websocket::Address &remoteAddress,
+                     Options options)
+    :ReplActor(connection, options, string("DB:") + connection->name())
+    ,_db(db)
+    ,_remoteAddress(remoteAddress)
+    {
         registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
         registerHandler("changes",          &DBActor::handleChanges);
     }
+
+
+#pragma mark - CHECKPOINTS:
 
 
     void DBActor::_getCheckpoint(CheckpointCallback callback) {
@@ -73,7 +83,7 @@ namespace litecore { namespace repl {
         auto checkpointID = request->property("client"_sl);
         if (!checkpointID)
             return request->respondWithError("BLIP"_sl, 400);
-        LogTo(SyncLog, "Request for checkpoint '%.*s'", SPLAT(checkpointID));
+        LogTo(SyncLog, "DB: Request for checkpoint '%.*s'", SPLAT(checkpointID));
 
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(_db, C4STR("peerCheckpoints"), checkpointID, &err) );
@@ -88,17 +98,25 @@ namespace litecore { namespace repl {
         }
     }
 
+
+#pragma mark - CHANGES:
+
+
+    void DBActor::getChanges(C4SequenceNumber since, unsigned limit, bool cont, Pusher *pusher) {
+        enqueue(&DBActor::_getChanges, since, limit, cont, Retained<Pusher>(pusher));
+    }
+
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
     void DBActor::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                               Retained<Pusher> pusher) {
-        LogTo(SyncLog, "Reading %u local changes from %llu", limit, since);
+        LogTo(SyncLog, "DB: Reading %u local changes from %llu", limit, since);
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeBodies;
         options.flags |= kC4IncludeDeleted;
-        auto e = c4db_enumerateChanges(_db, since, &options, &error);
+        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
         if (e) {
             changes.reserve(limit);
             while (c4enum_next(e, &error) && limit-- > 0) {
@@ -106,7 +124,6 @@ namespace litecore { namespace repl {
                 c4enum_getDocumentInfo(e, &info);
                 changes.emplace_back(info);
             }
-            c4enum_free(e);
         }
 
         if (continuous && changes.empty() && !_changeObserver) {
@@ -129,47 +146,8 @@ namespace litecore { namespace repl {
     }
 
 
-    // Sends a document revision in a "rev" request.
-    void DBActor::_sendRevision(Rev rev, vector<string> ancestors, int maxHistory) {
-        LogVerbose(SyncLog, "Sending revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
-        C4Error c4err;
-        auto doc = c4doc_get(_db, rev.docID, true, &c4err);
-        if (!doc)
-            return gotError(c4err);
-        if (!c4doc_selectRevision(doc, rev.revID, true, &c4err))
-            return gotError(c4err);
-
-        alloc_slice body = doc->selectedRev.body;
-
-        // Generate the revision history string:
-        stringstream historyStream;
-        for (int n = 0; n < maxHistory; ++n) {
-            if (!c4doc_selectParentRevision(doc))
-                break;
-            string revID = slice(doc->selectedRev.revID).asString();
-            if (n > 0)
-                historyStream << ',';
-            historyStream << revID;
-            if (find(ancestors.begin(), ancestors.end(), revID) != ancestors.end())
-                break;
-        }
-        string history = historyStream.str();
-
-        // Now send the BLIP message:
-        MessageBuilder msg("rev"_sl);
-        msg.noreply = true;                 //FIX: Sometimes need a reply
-        msg["id"_sl] = rev.docID;
-        msg["rev"_sl] = rev.revID;
-        msg["sequence"_sl] = rev.sequence;
-        if (!history.empty())
-            msg["history"_sl] = history;
-        msg.write(body);
-        sendRequest(msg);
-    }
-
-
     void DBActor::handleChanges(Retained<MessageIn> req) {
-        LogTo(SyncLog, "Handling 'changes' message");
+        LogTo(SyncLog, "DB: Handling 'changes' message");
         auto changes = req->JSONBody().asArray();
         if (!changes) {
             LogToAt(SyncLog, Warning, "Invalid body of 'changes' message");
@@ -180,7 +158,7 @@ namespace litecore { namespace repl {
         if (req->noReply())
             return;
 
-        LogTo(SyncLog, "Looking up %u revisions in the db ...", changes.count());
+        LogTo(SyncLog, "DB: Looking up %u revisions in the db ...", changes.count());
         MessageBuilder response(req);
         response["maxRevs"_sl] = c4db_getMaxRevTreeDepth(_db);
         unsigned i = 0, itemsWritten = 0, requested = 0;
@@ -189,7 +167,7 @@ namespace litecore { namespace repl {
         encoder.beginArray();
         for (auto item : changes) {
             auto change = item.asArray();
-            slice docID = change[0].asString();
+            slice docID = change[1].asString();
             slice revID = change[2].asString();
             if (!docID || !revID) {
                 LogToAt(SyncLog, Warning, "Invalid entry in 'changes' message");
@@ -208,8 +186,97 @@ namespace litecore { namespace repl {
             ++i;
         }
         encoder.endArray();
-        LogTo(SyncLog, "Responding w/request for %u revs", requested);
+        LogTo(SyncLog, "DB: Responding w/request for %u revs", requested);
         req->respond(response);
+    }
+
+
+#pragma mark - REVISIONS:
+
+
+    // Sends a document revision in a "rev" request.
+    void DBActor::_sendRevision(Rev rev,
+                                vector<string> ancestors,
+                                int maxHistory,
+                                function<void(Retained<blip::MessageIn>)> onReply)
+    {
+        LogVerbose(SyncLog, "Sending revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
+        C4Error c4err;
+        c4::ref<C4Document> doc = c4doc_get(_db, rev.docID, true, &c4err);
+        if (!doc)
+            return gotError(c4err);
+        if (!c4doc_selectRevision(doc, rev.revID, true, &c4err))
+            return gotError(c4err);
+
+        // Generate the revision history string:
+        stringstream historyStream;
+        for (int n = 0; n < maxHistory; ++n) {
+            if (!c4doc_selectParentRevision(doc))
+                break;
+            string revID = slice(doc->selectedRev.revID).asString();
+            if (n > 0)
+                historyStream << ',';
+            historyStream << revID;
+            if (find(ancestors.begin(), ancestors.end(), revID) != ancestors.end())
+                break;
+        }
+        string history = historyStream.str();
+
+        // Now send the BLIP message:
+        MessageBuilder msg("rev"_sl);
+        msg.noreply = !onReply;
+        msg["id"_sl] = rev.docID;
+        msg["rev"_sl] = rev.revID;
+        msg["sequence"_sl] = rev.sequence;
+        if (doc->selectedRev.flags & kRevDeleted)
+            msg["del"_sl] = "1"_sl;
+        if (!history.empty())
+            msg["history"_sl] = history;
+
+        auto root = fleeceapi::Value::fromTrustedData(doc->selectedRev.body);
+        assert(root);
+        msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
+        msg.jsonBody().writeValue(root);
+
+        auto r = sendRequest(msg);
+        if (onReply) {
+            assert(r);
+            onReady(r, onReply);
+        }
+    }
+
+
+    void DBActor::_insertRevision(Rev rev, alloc_slice historyBuf, alloc_slice body,
+                                  std::function<void(C4Error)> callback)
+    {
+        LogTo(SyncLog, "DB: Inserting rev {'%.*s' #%.*s}", SPLAT(rev.docID), SPLAT(rev.revID));
+        vector<C4String> history;
+        history.reserve(10);
+        history.push_back(rev.revID);
+        for (const void *pos=historyBuf.buf, *end = historyBuf.end(); pos < end;) {
+            auto comma = slice(pos, end).findByteOrEnd(',');
+            history.push_back(slice(pos, comma));
+            pos = comma + 1;
+        }
+        C4DocPutRequest put = {};
+        put.body = body;
+        put.docID = rev.docID;
+        put.revFlags = rev.deleted ? kRevDeleted : 0;
+        put.existingRevision = true;
+        put.allowConflict = true;
+        put.history = history.data();
+        put.historyCount = history.size();
+        put.save = true;
+
+        C4Error err;
+        c4::Transaction transaction(_db);
+        if (transaction.begin(&err)) {
+            c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &err);
+            if (doc && transaction.commit(&err)) {
+                err = {}; // success
+            }
+        }
+        callback(err);
     }
 
 

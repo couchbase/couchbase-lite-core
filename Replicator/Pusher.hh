@@ -16,9 +16,9 @@ namespace litecore { namespace repl {
 
     class Pusher : public ReplActor {
     public:
-        Pusher(Replicator *replicator, DBActor *dbActor);
+        Pusher(blip::Connection *connection, Replicator *replicator, DBActor *dbActor, Options options);
 
-        void start(C4SequenceNumber sinceSequence, bool continuous);
+        void start(C4SequenceNumber sinceSequence, const Replicator::Options&);
 
         // Sent by Replicator in response to dbGetChanges
         void gotChanges(RevList changes, C4Error err) {
@@ -26,12 +26,14 @@ namespace litecore { namespace repl {
         }
 
     private:
+        virtual void afterEvent() override;
         void _gotChanges(RevList changes, C4Error err);
-        void getMoreChanges();
+        void maybeGetMoreChanges();
         void sendChangeList(RevList);
         void sendRevision(const Rev&,
                           const std::vector<std::string> &ancestors,
                           unsigned maxHistory);
+        void markComplete(C4SequenceNumber sequence);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;
         static const unsigned kMinLengthToCompress = 100;     // Min length body worth compressing
@@ -42,13 +44,16 @@ namespace litecore { namespace repl {
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
-        bool _continuous;
+        Replicator::Options _options {};
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
         C4SequenceNumber _lastSequenceSent {0};         // Last sequence sent in 'changes' msg
-        C4SequenceNumber _lastSequenceRequested {0};    // Last sequence requested from db
+        C4SequenceNumber _curSequenceRequested {0};     // Sequence being requested from db
+        C4SequenceNumber _lastSequenceRead {0};         // Last sequence read from db
+        bool _caughtUp {false};
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
+        unsigned _revisionsInFlight {0};                // # 'rev' msgs pending replies
     };
     
     

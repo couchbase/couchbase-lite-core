@@ -28,11 +28,15 @@ namespace litecore { namespace repl {
                            const websocket::Address &address,
                            Options options,
                            Connection *connection)
-    :_remoteAddress(address)
-    ,_options(options)
-    ,_dbActor(new DBActor(db, address))
+    :ReplActor(connection, options, connection->name())
+    ,_remoteAddress(address)
+    ,_pushing(options.push)
+    ,_pulling(options.pull)
+    ,_dbActor(new DBActor(connection, db, address, options))
+    ,_pusher(new Pusher(connection, this, _dbActor, _options))
+    ,_puller(new Puller(connection, this, _dbActor, _options))
     {
-        setConnection(connection);
+        // Next is _onConnect...
     }
 
     Replicator::Replicator(C4Database *db,
@@ -49,13 +53,27 @@ namespace litecore { namespace repl {
     { }
 
 
-
-    void Replicator::setConnection(Connection *connection) {
-        ReplActor::setConnection(connection);
-        _dbActor->setConnection(connection);
-        _pusher = new Pusher(this, _dbActor);
-        _puller = new Puller(this);
+    void Replicator::_taskComplete(bool isPush) {
+        if (isPush)
+            _pushing = false;
+        else
+            _pulling = false;
+        if (!_pushing && !_pulling && !_options.continuous && connection()) {
+            LogTo(SyncLog, "Replication complete!");
+            connection()->close();
+        }
     }
+
+
+    void Replicator::_connectionClosed() {
+        ReplActor::_connectionClosed();
+        _dbActor->connectionClosed();
+        _pusher->connectionClosed();
+        _puller->connectionClosed();
+    }
+
+
+#pragma mark - BLIP DELEGATE:
 
 
     void Replicator::_onConnect() {
@@ -66,10 +84,14 @@ namespace litecore { namespace repl {
 
     void Replicator::_onError(int errcode, alloc_slice reason) {
         LogTo(SyncLog, "** BLIP error: %s (%d)", reason.asString().c_str(), errcode);
+        connectionClosed();
     }
 
-    void Replicator::_onClose(int status, alloc_slice reason) {
-        LogTo(SyncLog, "** BLIP closed: %s (status %d)", reason.asString().c_str(), status);
+    void Replicator::_onClose(bool normalClose, int status, alloc_slice reason) {
+        LogTo(SyncLog, "** BLIP %s: %s (status %d)",
+              (normalClose ? "closed" : "disconnected"),
+              reason.asString().c_str(), status);
+        connectionClosed();
     }
 
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
@@ -83,14 +105,15 @@ namespace litecore { namespace repl {
 
     void Replicator::getCheckpoints() {
         // Get the local checkpoint:
-        _dbActor->getCheckpoint(asynchronize(passn([=](alloc_slice checkpointID,
-                                                       alloc_slice data,
-                                                       alloc_slice rev,
-                                                       C4Error err) {
+        _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
+                                                    alloc_slice data,
+                                                    alloc_slice rev,
+                                                    C4Error err) {
             if (!data) {
                 if (err.code) {
                     gotError(err);
                 } else {
+                    // Skip getting remote checkpoint since there's no local one.
                     LogTo(SyncLog, "No local checkpoint '%.*s'", SPLAT(checkpointID));
                     startReplicating();
                 }
@@ -103,7 +126,7 @@ namespace litecore { namespace repl {
 
             MessageBuilder msg("getCheckpoint"_sl);
             msg["client"_sl] = slice(checkpointID);
-            onReady(sendRequest(msg), [&](MessageIn *response) {
+            onReady(sendRequest(msg), [this](MessageIn *response) {
                 // Received response -- get checkpoint from it:
                 Checkpoint checkpoint;
                 string checkpointRevID;
@@ -136,14 +159,14 @@ namespace litecore { namespace repl {
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating();
             });
-        })));
+        }));
     }
 
 
     Replicator::Checkpoint Replicator::decodeCheckpoint(slice json) {
         Checkpoint c;
         if (json) {
-            alloc_slice f = Encoder::convertJSON(json);
+            alloc_slice f = Encoder::convertJSON(json, nullptr);
             Dict root = Value::fromData(f).asDict();
             c.localSeq = (C4SequenceNumber) root["local"_sl].asInt();
             c.remoteSeq = asstring(root["remote"_sl].toString());
@@ -155,9 +178,9 @@ namespace litecore { namespace repl {
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
         if (_options.push)
-            _pusher->start(_checkpoint.localSeq, _options.continuous);
+            _pusher->start(_checkpoint.localSeq, _options);
         if (_options.pull)
-            _puller->start(_checkpoint.remoteSeq, _options.continuous);
+            _puller->start(_checkpoint.remoteSeq, _options);
     }
 
 } }

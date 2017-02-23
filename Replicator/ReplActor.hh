@@ -20,12 +20,31 @@ namespace litecore { namespace repl {
 
 
     /** Abstract base class of Actors used by the replicator */
-    class ReplActor : public Actor {
+    class ReplActor : public Actor, InstanceCounted {
+    public:
+        struct Options {
+            bool push;
+            bool pull;
+            bool continuous;
+        };
+
+        void connectionClosed() {
+            enqueue(&ReplActor::_connectionClosed);
+        }
+
+        const std::string& name() const                     {return _name;}
+
+#if !DEBUG
+    protected:
+#endif
+        blip::Connection* connection() const                {return _connection;}
 
     protected:
-
-        blip::Connection* connection() const                {return _connection;}
-        virtual void setConnection(blip::Connection *connection);
+        ReplActor(blip::Connection *connection, Options options, const std::string &name)
+        :_connection(connection)
+        ,_options(options)
+        ,_name(name)
+        { }
 
         template <class ACTOR>
         void registerHandler(const char *profile,
@@ -35,6 +54,10 @@ namespace litecore { namespace repl {
             _connection->setRequestHandler(profile, asynchronize(fn));
         }
 
+        virtual void _connectionClosed() {
+            _connection = nullptr;
+        }
+
         blip::FutureResponse sendRequest(blip::MessageBuilder& builder) {
             return connection()->sendRequest(builder);
         }
@@ -42,8 +65,15 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
+        virtual void afterEvent() override                  {setBusy(eventCount() > 1);}
+        void setBusy(bool busy);
+
+        const Options _options;
+
     private:
-        blip::Connection* _connection {nullptr};
+        Retained<blip::Connection> _connection;
+        std::string _name;
+        bool _busy {false};
     };
 
 } }

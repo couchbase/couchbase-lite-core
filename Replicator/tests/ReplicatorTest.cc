@@ -38,21 +38,35 @@ public:
         c4db_free(db2);
     }
 
+    void runReplicators() {
+        Address addr1("ws", "one"), addr2("ws", "two");
+        repl1 = new Replicator(db , provider, addr2, {true, false, false});
+        repl2 = new Replicator(db2, provider, addr1, {false, false, false});
+
+        provider.connect(repl1->webSocket(), repl2->webSocket());
+
+        Log("Waiting for replication to complete...");
+        while (repl1->connection() || repl2->connection())
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Log(">>> Replication complete <<<");
+    }
+
+    LoopbackProvider provider;
     C4Database* db2;
+    Retained<Replicator> repl1, repl2;
 
 private:
 };
 
 
 
-TEST_CASE_METHOD(ReplicatorTest, "Replicate") {
-    LoopbackProvider provider;
-    Address addr1("ws", "one"), addr2("ws", "two");
-    Retained<Replicator> repl1 = new Replicator(db , provider, addr2, {true, false, false});
-    Retained<Replicator> repl2 = new Replicator(db2, provider, addr1, {false, false, false});
+TEST_CASE_METHOD(ReplicatorTest, "Push Empty DB") {
+    runReplicators();
+}
 
-    provider.connect(repl1->webSocket(), repl2->webSocket());
 
-    Log("Waiting for replication to complete...");
-    std::this_thread::sleep_for(std::chrono::seconds(1000));
+
+TEST_CASE_METHOD(ReplicatorTest, "Push Small Non-Empty DB") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    runReplicators();
 }
