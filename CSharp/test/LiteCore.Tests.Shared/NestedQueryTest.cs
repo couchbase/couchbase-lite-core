@@ -8,7 +8,7 @@ namespace LiteCore.Tests
         protected override string JsonPath 
         {
             get {
-                return "../../../C/tests/data/nested.json";
+                return "C/tests/data/nested.json";
             }
         }
 

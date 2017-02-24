@@ -13,4 +13,6 @@
     <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
   </ItemGroup>
 
+  <Import Project="../LiteCore.Shared/LiteCore.Shared.projitems" Label="Shared" />
+
 </Project>

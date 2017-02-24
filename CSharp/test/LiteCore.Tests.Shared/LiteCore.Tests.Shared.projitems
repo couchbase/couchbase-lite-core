@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>6ec40f09-4c86-4f51-9f0e-c4397601a567</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>LiteCore.Tests.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AllDocsPerformanceTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BlobStoreTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DatabaseTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DocumentTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NestedQueryTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ObserverTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PerfTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)QueryTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)QueryTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StopwatchExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Test.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThreadingTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\C\tests\data\iTunesMusicLibrary.json">
+      <Link>C\tests\data\iTunesMusicLibrary.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\C\tests\data\names_100.json">
+      <Link>C\tests\data\names_100.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\C\tests\data\nested.json">
+      <Link>C\tests\data\nested.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

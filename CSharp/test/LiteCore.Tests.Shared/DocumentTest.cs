@@ -10,7 +10,7 @@ namespace LiteCore.Tests
         public void TestFleeceDocs()
         {
             RunTestVariants(() => {
-                ImportJSONLines("../../../C/tests/data/names_100.json");
+                ImportJSONLines("C/tests/data/names_100.json");
             });
         }
 
