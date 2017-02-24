@@ -18,7 +18,7 @@ namespace litecore { namespace repl {
     public:
         Pusher(blip::Connection *connection, Replicator *replicator, DBActor *dbActor, Options options);
 
-        void start(C4SequenceNumber sinceSequence, const Replicator::Options&);
+        void start(C4SequenceNumber sinceSequence);
 
         // Sent by Replicator in response to dbGetChanges
         void gotChanges(RevList changes, C4Error err) {
@@ -27,7 +27,10 @@ namespace litecore { namespace repl {
 
     private:
         virtual void afterEvent() override;
+        void startSending(C4SequenceNumber sinceSequence);
+        void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(RevList changes, C4Error err);
+        blip::FutureResponse sendChanges(const RevList&);
         void maybeGetMoreChanges();
         void sendChangeList(RevList);
         void sendRevision(const Rev&,
@@ -44,7 +47,6 @@ namespace litecore { namespace repl {
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
-        Replicator::Options _options {};
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence

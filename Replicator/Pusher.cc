@@ -22,14 +22,38 @@ namespace litecore { namespace repl {
     :ReplActor(connection, options, string("Push:") + connection->name())
     ,_replicator(replicator)
     ,_dbActor(dbActor)
-    { }
+    {
+        registerHandler("subChanges",       &Pusher::handleSubChanges);
+    }
 
 
-    // Begin active push, starting from the next sequence after sinceSequence
-    void Pusher::start(C4SequenceNumber sinceSequence, const Replicator::Options &options) {
-        _options = options;
+    // Begins active push, starting from the next sequence after sinceSequence
+    void Pusher::start(C4SequenceNumber sinceSequence) {
+        log("Starting %spush from local seq %llu",
+            (_options.continuous ? "continuous " : ""), _lastSequence+1);
+        startSending(sinceSequence);
+    }
+
+
+    // Handles an incoming "subChanges" message: starts passive push (i.e. the peer is pulling).
+    void Pusher::handleSubChanges(Retained<MessageIn> req) {
+        if (_options.push) {
+            warn("Ignoring 'subChanges' request from peer; I'm already pushing");
+            req->respondWithError("LiteCore"_sl, kC4ErrorConflict,
+                                  "I'm already pushing"_sl);     //TODO: Proper error code
+            return;
+        }
+        auto since = max(req->intProperty("since"_sl), 0l);
+        _options.continuous = req->boolProperty("continuous"_sl);
+        log("Peer is pulling %schanges from seq %llu",
+            (_options.continuous ? "continuous " : ""), _lastSequence);
+        startSending(since);
+    }
+
+
+    // Starts active or passive push from the given sequence number.
+    void Pusher::startSending(C4SequenceNumber sinceSequence) {
         _lastSequenceRead = _lastSequenceSent = _lastSequence = sinceSequence;
-        log("Starting push from local seq %llu", _lastSequence+1);
         maybeGetMoreChanges();
     }
 
@@ -59,22 +83,8 @@ namespace litecore { namespace repl {
                   changes.size(), changes[0].sequence, _lastSequenceRead);
         }
 
-        // Construct the 'changes' message:
-        MessageBuilder req("changes"_sl);
-        req.urgent = kChangeMessagesAreUrgent;
-        auto &enc = req.jsonBody();
-        enc.beginArray();
-        for (auto &change : changes) {
-            enc.beginArray();
-            enc << change.sequence << change.docID << change.revID;
-            if (change.deleted)
-                enc << true;
-            enc.endArray();
-        }
-        enc.endArray();
-
-        // Send, and asynchronously handle the response:
-        auto r = sendRequest(req);
+        // Send the "changes" request, and asynchronously handle the response:
+        auto r = sendChanges(changes);
         onReady(r, [this, changes](MessageIn* reply) {
             // Got response to the 'changes' message:
             --_changeListsInFlight;
@@ -107,10 +117,13 @@ namespace litecore { namespace repl {
         });
 
         if (changes.size() < _changesBatchSize) {
-            log("Caught up, at lastSequence %llu", _lastSequenceRead);
-            _caughtUp = true;
-            if (_options.push && !_options.continuous) {
-                // done
+            if (!_caughtUp) {
+                log("Caught up, at lastSequence %llu", _lastSequenceRead);
+                _caughtUp = true;
+                if (changes.size() > 0 && !_options.push) {
+                    // The protocol says catching up is signaled by an empty changes list:
+                    sendChanges(RevList());
+                }
             }
         } else {
             maybeGetMoreChanges();
@@ -118,12 +131,32 @@ namespace litecore { namespace repl {
     }
 
 
+    // Subroutine of _gotChanges that actually sends a "changes" message:
+    blip::FutureResponse Pusher::sendChanges(const RevList &changes) {
+        MessageBuilder req("changes"_sl);
+        req.urgent = kChangeMessagesAreUrgent;
+        auto &enc = req.jsonBody();
+        enc.beginArray();
+        for (auto &change : changes) {
+            enc.beginArray();
+            enc << change.sequence << change.docID << change.revID;
+            if (change.deleted)
+                enc << true;
+            enc.endArray();
+        }
+        enc.endArray();
+        return sendRequest(req);
+    }
+
+    
+    // Subroutine of _gotChanges that sends a "rev" message containing a revision body.
     void Pusher::sendRevision(const Rev &rev,
                               const vector<string> &ancestorRevIDs,
                               unsigned maxHistory)
     {
         function<void(MessageIn*)> onReply;
         if (_options.push) {
+            // Callback for after the peer receives the "rev" message:
             ++_revisionsInFlight;
             onReply = asynchronize([=](Retained<MessageIn> reply) {
                 --_revisionsInFlight;
@@ -136,10 +169,12 @@ namespace litecore { namespace repl {
                 }
             });
         }
+        // Tell the DBAgent to actually read from the DB and send the message:
         _dbActor->sendRevision(rev, ancestorRevIDs, maxHistory, onReply);
     }
 
 
+    // Records that a sequence has been successfully pushed.
     void Pusher::markComplete(C4SequenceNumber sequence) {
         if (sequence > _lastSequence) {
             _lastSequence = sequence;
@@ -148,14 +183,13 @@ namespace litecore { namespace repl {
     }
 
 
+    // Called after every event; updates busy status & detects when I'm done
     void Pusher::afterEvent() {
-        bool busy = (_changeListsInFlight > 0  || _revisionsInFlight > 0
-                     || !_caughtUp || eventCount() > 1);
+        bool busy = _changeListsInFlight > 0  || _revisionsInFlight > 0 || eventCount() > 1;
         setBusy(busy);
 
-        if (!busy && _caughtUp)
+        if (!busy && _caughtUp && !(_options.push && _options.continuous))
             _replicator->taskComplete(true);
     }
-
 
 } }

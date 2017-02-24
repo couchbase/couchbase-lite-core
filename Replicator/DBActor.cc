@@ -35,13 +35,13 @@ namespace litecore { namespace repl {
     ,_remoteAddress(remoteAddress)
     {
         registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
-        registerHandler("changes",          &DBActor::handleChanges);
     }
 
 
 #pragma mark - CHECKPOINTS:
 
 
+    // Implementation of public getCheckpoint(): Reads the local checkpoint & calls the callback
     void DBActor::_getCheckpoint(CheckpointCallback callback) {
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
@@ -59,6 +59,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Computes the ID of the checkpoint document.
     slice DBActor::effectiveRemoteCheckpointDocID() {
         if (_remoteCheckpointDocID.empty()) {
             // Simplistic default value derived from db UUID and remote URL:
@@ -79,6 +80,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void DBActor::handleGetCheckpoint(Retained<MessageIn> request) {
         auto checkpointID = request->property("client"_sl);
         if (!checkpointID)
@@ -128,7 +130,11 @@ namespace litecore { namespace repl {
 
         if (continuous && changes.empty() && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
-            _changeObserver = c4dbobs_create(_db, &changeCallback, this);
+            _changeObserver = c4dbobs_create(_db,
+                                             [](C4DatabaseObserver* observer, void *context) {
+                                                 ((DBActor*)context)->dbChanged();
+                                             },
+                                             this);
         }
 
         pusher->gotChanges(changes, error);
@@ -136,31 +142,21 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::changeCallback(C4DatabaseObserver* observer, void *context) {
-        ((DBActor*)context)->dbChanged();
-    }
-
-    
+    // Callback from the C4DatabaseObserver when the database has changed
     void DBActor::dbChanged() {
-
+        // TODO: Send new changes
     }
 
 
-    void DBActor::handleChanges(Retained<MessageIn> req) {
-        log("Handling 'changes' message");
+    // Called by the Pusher; it passes on the "changes" message
+    void DBActor::_findOrRequestRevs(Retained<MessageIn> req,
+                                     function<void(vector<alloc_slice>)> callback) {
+        // Iterate over the array in the message, seeing whether I have each revision:
         auto changes = req->JSONBody().asArray();
-        if (!changes) {
-            warn("Invalid body of 'changes' message");
-            req->respondWithError("BLIP"_sl, 400);
-            return;
-        }
-
-        if (req->noReply())
-            return;
-
         log("Looking up %u revisions in the db ...", changes.count());
         MessageBuilder response(req);
         response["maxRevs"_sl] = c4db_getMaxRevTreeDepth(_db);
+        vector<alloc_slice> requestedSequences;
         unsigned i = 0, itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
         auto &encoder = response.jsonBody();
@@ -175,6 +171,7 @@ namespace litecore { namespace repl {
             }
 
             if (!findAncestors(docID, revID, ancestors)) {
+                // I don't have this revision, so request it:
                 ++requested;
                 while (++itemsWritten < i)
                     encoder.writeInt(0);
@@ -182,10 +179,22 @@ namespace litecore { namespace repl {
                 for (slice ancestor : ancestors)
                     encoder.writeString(ancestor);
                 encoder.endArray();
+
+                if (callback) {
+                    alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
+                    if (sequence)
+                        requestedSequences.push_back(sequence);
+                    else
+                        warn("Empty/invalid sequence in 'changes' message");
+                }
             }
             ++i;
         }
         encoder.endArray();
+
+        if (callback)
+            callback(requestedSequences);
+
         log("Responding w/request for %u revs", requested);
         req->respond(response);
     }
@@ -200,6 +209,8 @@ namespace litecore { namespace repl {
                                 int maxHistory,
                                 function<void(Retained<blip::MessageIn>)> onReply)
     {
+        if (!connection())
+            return;
         LogVerbose(SyncLog, "Sending revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
         C4Error c4err;
         c4::ref<C4Document> doc = c4doc_get(_db, rev.docID, true, &c4err);
@@ -246,6 +257,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Implementation of insertRevision(). Adds a rev to the database and calls the callback.
     void DBActor::_insertRevision(Rev rev, alloc_slice historyBuf, alloc_slice body,
                                   std::function<void(C4Error)> callback)
     {
@@ -276,7 +288,8 @@ namespace litecore { namespace repl {
                 err = {}; // success
             }
         }
-        callback(err);
+        if (callback)
+            callback(err);
     }
 
 

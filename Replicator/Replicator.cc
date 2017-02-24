@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
     ,_pusher(new Pusher(connection, this, _dbActor, _options))
     ,_puller(new Puller(connection, this, _dbActor, _options))
     {
-        // Next is _onConnect...
+        // Now wait for _onConnect or _onClose...
     }
 
     Replicator::Replicator(C4Database *db,
@@ -47,29 +47,23 @@ namespace litecore { namespace repl {
     { }
 
     Replicator::Replicator(C4Database *db,
-                           blip::Connection *connection,
+                           websocket::WebSocket *webSocket,
                            const websocket::Address& address)
-    :Replicator(db, address, Options{}, connection)
+    :Replicator(db, address, Options{}, new Connection(webSocket, *this))
     { }
 
 
+    // The Pusher or Puller has finished.
     void Replicator::_taskComplete(bool isPush) {
         if (isPush)
             _pushing = false;
         else
             _pulling = false;
-        if (!_pushing && !_pulling && !_options.continuous && connection()) {
-            log("Replication complete!");
+        if (!_pushing && !_pulling && !_options.continuous
+                    && connection() && !connection()->isServer()) {
+            log("Replication complete! Closing connection");
             connection()->close();
         }
-    }
-
-
-    void Replicator::_connectionClosed() {
-        ReplActor::_connectionClosed();
-        _dbActor->connectionClosed();
-        _pusher->connectionClosed();
-        _puller->connectionClosed();
     }
 
 
@@ -82,14 +76,22 @@ namespace litecore { namespace repl {
             getCheckpoints();
     }
 
+
     void Replicator::_onClose(bool normalClose, int status, alloc_slice reason) {
         if (normalClose)
             log("Connection closed: %.*s (status %d)", SPLAT(reason), status);
         else
-            log<LogLevel::Error>("Disconnected: %.*s (error %d)", SPLAT(reason), status);
-        connectionClosed();
+            logError("Disconnected: %.*s (error %d)", SPLAT(reason), status);
+
+        // Clear connection() and notify the other agents to do the same:
+        ReplActor::_connectionClosed();
+        _dbActor->connectionClosed();
+        _pusher->connectionClosed();
+        _puller->connectionClosed();
     }
 
+
+    // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         warn("Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
@@ -99,6 +101,7 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINT:
 
 
+    // Start off by getting the local & remote checkpoints, if this is an active replicator:
     void Replicator::getCheckpoints() {
         // Get the local checkpoint:
         _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
@@ -159,6 +162,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Decodes the body of a checkpoint doc into a Checkpoint struct
     Replicator::Checkpoint Replicator::decodeCheckpoint(slice json) {
         Checkpoint c;
         if (json) {
@@ -174,9 +178,9 @@ namespace litecore { namespace repl {
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
         if (_options.push)
-            _pusher->start(_checkpoint.localSeq, _options);
+            _pusher->start(_checkpoint.localSeq);
         if (_options.pull)
-            _puller->start(_checkpoint.remoteSeq, _options);
+            _puller->start(_checkpoint.remoteSeq);
     }
 
 } }

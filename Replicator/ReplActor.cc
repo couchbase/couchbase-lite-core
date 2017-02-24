@@ -19,25 +19,19 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    LogDomain SyncLog("Sync");
-
-
-    std::string ReplActor::loggingIdentifier() const {
-        return Logging::loggingIdentifier();// name();
-    }
-
+    LogDomain ReplActor::SyncLog("Sync");
 
 
     void ReplActor::gotError(const MessageIn* msg) {
         // TODO
-        log<LogLevel::Error>("Got error response: %.*s %d",
+        logError("Got error response: %.*s %d",
                              SPLAT(msg->errorDomain()), msg->errorCode());
     }
 
     void ReplActor::gotError(C4Error err) {
         // TODO
         alloc_slice message = c4error_getMessage(err);
-        log<LogLevel::Error>("Got error response: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
+        logError("Got error response: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
     }
 
 

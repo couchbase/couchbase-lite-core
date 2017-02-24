@@ -30,9 +30,17 @@ namespace litecore { namespace repl {
 
         Rev(const C4DocumentInfo &info)
         :sequence(info.sequence), docID(info.docID), revID(info.revID)
-        ,deleted((info.flags &kDeleted) != 0) { }
+        ,deleted((info.flags &kDeleted) != 0)
+        { }
     };
     typedef std::vector<Rev> RevList;
+
+
+    struct RequestedRev : public Rev {
+        alloc_slice remoteSequence;
+
+        RequestedRev() { }
+    };
     
     
     /** Actor that manages database access for the replicator. */
@@ -54,6 +62,11 @@ namespace litecore { namespace repl {
 
         void getChanges(C4SequenceNumber since, unsigned limit, bool continuous, Pusher*);
 
+        void findOrRequestRevs(Retained<blip::MessageIn> req,
+                               std::function<void(std::vector<alloc_slice>)> callback) {
+            enqueue(&DBActor::_findOrRequestRevs, req, callback);
+        }
+
         void sendRevision(Rev rev, std::vector<std::string> ancestors, int maxHistory,
                           std::function<void(Retained<blip::MessageIn>)> onReply) {
             enqueue(&DBActor::_sendRevision, rev, ancestors, maxHistory, onReply);
@@ -65,20 +78,20 @@ namespace litecore { namespace repl {
         }
         
     private:
-        void handleChanges(Retained<blip::MessageIn> req);
         void handleGetCheckpoint(Retained<blip::MessageIn>);
 
         slice effectiveRemoteCheckpointDocID();
         void _getCheckpoint(CheckpointCallback);
         void _getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                          Retained<Pusher>);
+        void _findOrRequestRevs(Retained<blip::MessageIn> req,
+                                std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(Rev rev, std::vector<std::string> ancestors, int maxHistory,
                            std::function<void(Retained<blip::MessageIn>)> onReply);
         void _insertRevision(Rev, alloc_slice history, alloc_slice body,
                              std::function<void(C4Error)> callback);
 
             void dbChanged();
-        static void changeCallback(C4DatabaseObserver* observer, void *context);
 
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);

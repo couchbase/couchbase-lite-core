@@ -9,6 +9,7 @@
 #pragma once
 #include "Replicator.hh"
 #include "Actor.hh"
+#include <unordered_set>
 
 namespace litecore { namespace repl {
 
@@ -17,16 +18,21 @@ namespace litecore { namespace repl {
     public:
         Puller(blip::Connection*, Replicator*, DBActor*, Options options);
 
-        void start(std::string sinceSequence, const Replicator::Options&);
+        void start(std::string sinceSequence);
+
+    protected:
+        void afterEvent() override;
 
     private:
-
+        void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
-        Replicator::Options _options {};
         std::string _lastSequence;
+        bool _caughtUp {false};
+        std::unordered_set<fleece::alloc_slice, fleece::sliceHash> _requestedSequences;
+        unsigned _pendingCallbacks {0};
     };
 
 

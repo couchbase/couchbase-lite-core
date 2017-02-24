@@ -21,20 +21,21 @@ namespace litecore { namespace repl {
 
 
     /** The top-level replicator object, which runs the BLIP connection.
-        It also has direct access to the C4Database.
-        Pull and push operations are run by subidiary Puller and Pusher objects. */
+        Pull and push operations are run by subidiary Puller and Pusher objects.
+        The database will only be accessed by the DBAgent object. */
     class Replicator : public ReplActor, ConnectionDelegate {
     public:
         /** Constructor for a client connection; will open the Connection itself. */
         Replicator(C4Database*, websocket::Provider&, const websocket::Address&, Options);
 
-        /** Constructor for an incoming connection. */
-        Replicator(C4Database*, blip::Connection*, const websocket::Address&);
+        /** Constructor for an incoming (server) connection. */
+        Replicator(C4Database*, websocket::WebSocket*, const websocket::Address&);
 
 #if DEBUG
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
 #endif
 
+        /** Called by the Pusher and Puller when they finish their duties. */
         void taskComplete(bool isPush) {
             enqueue(&Replicator::_taskComplete, isPush);
         }

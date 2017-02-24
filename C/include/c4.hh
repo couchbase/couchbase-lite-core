@@ -39,8 +39,8 @@ namespace c4 {
         ref(ref &&r)                :_obj(r._obj) {r._obj = nullptr;}
         ~ref()                      {if (_obj) freeRef(_obj);}
 
-        operator T* ()              {return _obj;}
-        T* operator -> ()           {return _obj;}
+        operator T* () const        {return _obj;}
+        T* operator -> () const     {return _obj;}
 
         ref& operator=(T *t)        {if (_obj) freeRef(_obj); _obj = t; return *this;}
 
