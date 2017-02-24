@@ -14,6 +14,7 @@
 #include <cmath>
 #include <errno.h>
 #include <iostream>
+#include <vector>
 
 #include "sqlite3.h"
 
@@ -49,8 +50,22 @@ public:
         REQUIRE(cmsg == &buf[0]);
     }
     
-    C4Document* putDoc(C4Slice docID, C4Slice revID, C4Slice body,
-                       C4RevisionFlags flags = 0) {
+    C4Document* getDoc(C4String docID){
+        return getDoc(db, docID);
+    }
+    
+    C4Document* getDoc(C4Database* db, C4String docID){
+        C4Error error = {};
+        C4Document* doc = c4doc_get(db, docID, true, &error);
+        REQUIRE(doc);
+        REQUIRE(doc->docID == docID);
+        REQUIRE(error.domain == 0);
+        REQUIRE(error.code == 0);
+        return doc;
+    }
+    
+    C4Document* putDoc(C4Slice docID, C4Slice revID,
+                       C4Slice body, C4RevisionFlags flags = 0) {
         return putDoc(db, docID, revID, body, flags);
     }
     
@@ -62,20 +77,58 @@ public:
         REQUIRE(error.domain == 0);
         REQUIRE(error.code == 0);
         return doc;
-    };
+    }
     
     C4Document* putDoc(C4Database *db, C4Slice docID, C4Slice revID,
                        C4Slice body, C4RevisionFlags flags, C4Error* error) {
         TransactionHelper t(db);
         C4Slice history[1] = {revID};
         C4DocPutRequest rq = {};
+        rq.allowConflict = false,
         rq.docID = docID;
-        rq.history = revID == kC4SliceNull?NULL:history;
-        rq.historyCount = revID == kC4SliceNull?0:1,
+        rq.history = revID == kC4SliceNull? NULL : history;
+        rq.historyCount = revID == kC4SliceNull? 0 : 1,
         rq.body = body;
         rq.revFlags = flags;
         rq.save = true;
         return c4doc_put(db, &rq, nullptr, error);
+    }
+    
+    void forceInsert(C4Slice docID, const C4Slice* history, size_t historyCount,
+                            C4Slice body, C4RevisionFlags flags = 0) {
+        C4Document* doc = forceInsert(db, docID, history, historyCount, body, flags);
+        c4doc_free(doc);
+    }
+    
+    C4Document* forceInsert(C4Database *db, C4Slice docID,
+                            const C4Slice* history, size_t historyCount,
+                            C4Slice body, C4RevisionFlags flags) {
+        C4Error error = {};
+        C4Document* doc = forceInsert(db, docID, history, historyCount,
+                                      body, flags, &error);
+        REQUIRE(doc);
+        REQUIRE(error.domain == 0);
+        REQUIRE(error.code == 0);
+        return doc;
+    }
+    
+    C4Document* forceInsert(C4Database *db, C4Slice docID,
+                            const C4Slice* history, size_t historyCount,
+                            C4Slice body, C4RevisionFlags flags,
+                            C4Error* error) {
+        TransactionHelper t(db);
+        C4DocPutRequest rq = {
+            .docID = docID,
+            .existingRevision = true,
+            .allowConflict = true,
+            .history = history,
+            .historyCount = historyCount,
+            .body = body,
+            .revFlags = flags,
+            .save = true,
+        };
+        size_t commonAncestorIndex;
+        return c4doc_put(db, &rq, &commonAncestorIndex, error);
     }
     
     // create, update, delete doc must fail
@@ -104,6 +157,58 @@ public:
     void free(C4String str){
         if(str.buf)
             ::free((void*)str.buf);
+    }
+    
+    std::vector<C4String> getAllParentRevisions(C4Document* doc){
+        std::vector<C4String> history;
+        do{
+            history.push_back(copy(doc->selectedRev.revID));
+        }while(c4doc_selectParentRevision(doc));
+        return history;
+    }
+    
+    std::vector<C4String> getRevisionHistory(C4Document* doc, bool onlyCurrent, bool includeDeleted){
+        std::vector<C4String> history;
+        do{
+            if(onlyCurrent && !(doc->selectedRev.flags & kRevLeaf))
+                continue;
+            if(!includeDeleted && (doc->selectedRev.flags & kRevDeleted))
+                continue;
+            history.push_back(copy(doc->selectedRev.revID));
+        }while(c4doc_selectNextRevision(doc));
+        return history;
+    }
+    
+//    std::vector<C4String> changesSince() {
+//        std::vector<C4String> changes;
+//        C4Document* doc;
+//        C4Error error = {};
+//        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+//        C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, &error);
+//        REQUIRE(e);
+//        while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
+//            changes.push_back(copy(doc->selectedRev.revID));
+//            c4doc_free(doc);
+//        }
+//        c4enum_free(e);
+//        return changes;
+//    }
+    
+    void free(std::vector<C4String> revs){
+        for(int i = 0; i < revs.size(); i++)
+            free(revs.at(i));
+    }
+    
+    void verifyRev(C4Document* doc, const C4String* history, int historyCount, C4String body){
+        REQUIRE(doc->revID == history[0]);
+        REQUIRE(doc->selectedRev.revID == history[0]);
+        REQUIRE(doc->selectedRev.body == body);
+        
+        std::vector<C4String> revs = getAllParentRevisions(doc);
+        REQUIRE(revs.size() == historyCount);
+        for(int i = 0; i < historyCount; i++)
+            REQUIRE(history[i] == revs[i]);
+        free(revs);
     }
 };
 
@@ -467,7 +572,150 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
 }
 
 // test05_Validation
+// NOTE: Validation should be done outside of LiteCore.
+
 // test06_RevTree
+N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
+    if(isVersionVectors()) return;
+    
+    C4String docID = C4STR("MyDocID");
+    C4String body = C4STR("{\"message\":\"hi\"}");
+    const size_t historyCount = 4;
+    const C4String history[historyCount] =
+        {C4STR("4-4444"), C4STR("3-3333"), C4STR("2-2222"), C4STR("1-1111")};
+    forceInsert(docID, history, historyCount, body);
+
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+    
+    C4Document* doc = getDoc(docID);
+    verifyRev(doc, history, historyCount, body);
+    c4doc_free(doc);
+
+    // No-op forceInsert: of already-existing revision:
+    C4SequenceNumber lastSeq = c4db_getLastSequence(db);
+    forceInsert(docID, history, historyCount, body);
+    REQUIRE(c4db_getLastSequence(db) == lastSeq);
+    
+    const size_t conflictHistoryCount = 5;
+    const C4String conflictHistory[conflictHistoryCount] =
+    {C4STR("5-5555"), C4STR("4-4545"), C4STR("3-3030"),
+        C4STR("2-2222"), C4STR("1-1111")};
+    C4String conflictBody = C4STR("{\"message\":\"yo\"}");
+    forceInsert(docID, conflictHistory, conflictHistoryCount, conflictBody);
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+    doc = getDoc(docID);
+    verifyRev(doc, conflictHistory, conflictHistoryCount, conflictBody);
+    c4doc_free(doc);
+    //TODO - conflict check
+    
+    // Add an unrelated document:
+    C4String otherDocID = C4STR("AnotherDocID");
+    C4String otherBody = C4STR("{\"language\":\"jp\"}");
+    const size_t otherHistoryCount = 1;
+    const C4String otherHistory[otherHistoryCount] = {C4STR("1-1010")};
+    forceInsert(otherDocID, otherHistory, otherHistoryCount, otherBody);
+
+    // Fetch one of those phantom revisions with no body:
+    doc = getDoc(docID);
+    C4Error error = {};
+    REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
+    REQUIRE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)) == false);
+    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    c4doc_free(doc);
+
+    doc = getDoc(otherDocID);
+    REQUIRE(c4doc_selectRevision(doc, C4STR("666-6666"), false, &error) == false);
+    REQUIRE(error.domain == LiteCoreDomain);
+    REQUIRE(error.code == kC4ErrorNotFound);
+    c4doc_free(doc);
+    
+    // Make sure no duplicate rows were inserted for the common revisions:
+    // LiteCore does note assigns sequence to inserted ancestor revs
+    REQUIRE(c4db_getLastSequence(db) == 3);
+    
+    // Make sure the revision with the higher revID wins the conflict:
+    doc = getDoc(docID);
+    REQUIRE(doc->revID == conflictHistory[0]);
+    REQUIRE(doc->selectedRev.revID == conflictHistory[0]);
+    c4doc_free(doc);
+    
+    // Check that the list of conflicts is accurate:
+    doc = getDoc(docID);
+    std::vector<C4String> conflictingRevs = getRevisionHistory(doc, true, true);
+    REQUIRE(conflictingRevs.size() == 2);
+    REQUIRE(conflictingRevs[0] == conflictHistory[0]);
+    REQUIRE(conflictingRevs[1] == history[0]);
+    c4doc_free(doc);
+    
+    // Get the _changes feed and verify only the winner is in it:
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, &error);
+    REQUIRE(e);
+    int counter = 0;
+    while(c4enum_next(e, &error)){
+        C4DocumentInfo docInfo;
+        c4enum_getDocumentInfo(e, &docInfo);
+        if(counter == 0){
+            REQUIRE(docInfo.docID == docID);
+            REQUIRE(docInfo.revID == conflictHistory[0]);
+        }else if(counter == 1){
+            REQUIRE(docInfo.docID == otherDocID);
+            REQUIRE(docInfo.revID == otherHistory[0]);
+        }
+        counter++;
+    }
+    c4enum_free(e);
+    REQUIRE(counter == 2);
+    
+    options = kC4DefaultEnumeratorOptions;
+    options.flags |= kC4IncludeDeleted;
+    e = c4db_enumerateChanges(db, 0, &options, &error);
+    REQUIRE(e);
+    counter = 0;
+    while (c4enum_next(e, &error)) {
+        doc = c4enum_getDocument(e, &error);
+        if (!doc)
+            break;
+        do{
+            // NOTE: @[conflict, rev, other]
+            if(counter == 0){
+                REQUIRE(doc->docID == docID);
+                REQUIRE(doc->selectedRev.revID == conflictHistory[0]);
+            }else if(counter == 1){
+                REQUIRE(doc->docID == docID);
+                REQUIRE(doc->selectedRev.revID == history[0]);
+            }else if(counter == 2){
+                REQUIRE(doc->docID == otherDocID);
+                REQUIRE(doc->selectedRev.revID == otherHistory[0]);
+            }
+            counter++;
+        }while(c4doc_selectNextLeafRevision(doc, true, false, &error));
+        c4doc_free(doc);
+    }
+    c4enum_free(e);
+    REQUIRE(counter == 3);
+    
+
+    // Verify that compaction leaves the document history:
+    // TODO: compact() is not fully implemented
+    error = {};
+    REQUIRE(c4db_compact(db, &error));
+    
+    // Delete the current winning rev, leaving the other one:
+    doc = putDoc(docID, conflictHistory[0], kC4SliceNull, kRevDeleted);
+    c4doc_free(doc);
+    doc = getDoc(docID);
+    REQUIRE(doc->revID == history[0]); // 4-4444 should be current??
+    REQUIRE(doc->selectedRev.revID == history[0]);
+    verifyRev(doc, history, historyCount, body);
+    c4doc_free(doc);
+    
+    // Delete the remaining rev:
+    doc = putDoc(docID, history[0], kC4SliceNull, kRevDeleted);
+    c4doc_free(doc);
+    // TODO: Need to implement following tests
+}
+
 // test07_RevTreeConflict
 // test08_DeterministicRevIDs
 // test09_DuplicateRev
