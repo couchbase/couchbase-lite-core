@@ -34,6 +34,8 @@ namespace litecore { namespace blip {
 
         const std::string& name() const                         {return _name;}
 
+        bool isServer() const                                   {return _isServer;}
+
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
         /** Sends a built message as a new request.
@@ -65,6 +67,7 @@ namespace litecore { namespace blip {
         void start(websocket::WebSocket*);
 
         std::string _name;
+        bool const _isServer;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
         std::atomic<bool> _closed {false};

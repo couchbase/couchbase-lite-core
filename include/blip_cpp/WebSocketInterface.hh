@@ -68,7 +68,7 @@ namespace litecore { namespace websocket {
     /** Abstract class representing a WebSocket connection. */
     class WebSocket {
     public:
-        virtual ~WebSocket();
+        virtual ~WebSocket() { }
 
         Provider& provider() const                  {return _provider;}
         const Address& address() const              {return _address;}
@@ -107,8 +107,6 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Delegate() { }
 
-        WebSocket* webSocket() const                {return _webSocket;}
-
         virtual void onWebSocketStart() { }
         virtual void onWebSocketConnect() =0;
         virtual void onWebSocketClose(bool normalClose, int status, fleece::slice reason) =0;
@@ -118,10 +116,6 @@ namespace litecore { namespace websocket {
 
         /** The socket has room to send more messages. */
         virtual void onWebSocketWriteable() { }
-
-    private:
-        WebSocket* _webSocket {nullptr};
-        friend class WebSocket;
     };
 
 
@@ -131,16 +125,10 @@ namespace litecore { namespace websocket {
     ,_provider(p)
     { }
 
-    inline WebSocket::~WebSocket() {
-        if (_delegate)
-            _delegate->_webSocket = nullptr;
-    }
-
     inline void WebSocket::connect(Delegate *delegate) {
         assert(!_delegate);
         assert(delegate);
         _delegate = delegate;
-        delegate->_webSocket = this;
         if (name.empty())
             name = (std::string)_address;
         connect();

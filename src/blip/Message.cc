@@ -64,7 +64,6 @@ namespace litecore { namespace blip {
     :MessageBuilder()
     {
         assert(!inReplyTo->isResponse());
-        assert(!inReplyTo->noReply());
         type = kResponseType;
         urgent = inReplyTo->urgent();
     }
@@ -318,7 +317,7 @@ namespace litecore { namespace blip {
 
     void MessageIn::respond(MessageBuilder &mb) {
         if (noReply()) {
-            WarnError("Attempted to respond to noReply message");
+            LogTo(BLIPLog, "Ignoring attempt to respond to a noReply message");
             return;
         }
         if (mb.type == kRequestType)
@@ -381,6 +380,17 @@ namespace litecore { namespace blip {
         if (*end != '\0')
             return defaultValue;
         return result;
+    }
+
+
+    bool MessageIn::boolProperty(slice name, bool defaultValue) const {
+        slice value = property(name);
+        if (value.caseEquivalent("true"_sl) || value.caseEquivalent("YES"_sl))
+            return true;
+        else if (value.caseEquivalent("false"_sl) || value.caseEquivalent("NO"_sl))
+            return false;
+        else
+            return intProperty(name, defaultValue) != 0;
     }
 
 

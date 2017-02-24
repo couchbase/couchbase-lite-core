@@ -74,6 +74,7 @@ namespace litecore { namespace blip {
         /** Gets a property value */
         slice property(slice property) const;
         long intProperty(slice property, long defaultValue =0) const;
+        bool boolProperty(slice property, bool defaultValue =false) const;
 
         /** The error domain (if this message is an error.) */
         slice errorDomain() const;

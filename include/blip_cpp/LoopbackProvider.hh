@@ -55,9 +55,12 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _send(fleece::alloc_slice msg, bool binary) override {
-            LogTo(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
-            assert(_peer);
-            _peer->simulateReceived(msg, binary, _latency);
+            if (_peer) {
+                LogTo(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
+                _peer->simulateReceived(msg, binary, _latency);
+            } else {
+                LogTo(WSMock, "%s SEND: Failed, socket is closed", name.c_str());
+            }
         }
 
         virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {

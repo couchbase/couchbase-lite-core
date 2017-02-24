@@ -79,6 +79,7 @@ namespace litecore { namespace blip {
         typedef unordered_map<MessageNo, Retained<MessageIn>> MessageMap;
 
         Retained<Connection>    _connection;
+        websocket::WebSocket*   _webSocket {nullptr};
         MessageQueue            _outbox;
         MessageQueue            _icebox;
         size_t                  _sentBytes {0};
@@ -90,9 +91,10 @@ namespace litecore { namespace blip {
 
     public:
 
-        BLIPIO(Connection *connection, Scheduler *scheduler)
+        BLIPIO(Connection *connection, websocket::WebSocket *webSocket, Scheduler *scheduler)
         :Actor(connection->name(), scheduler)
         ,_connection(connection)
+        ,_webSocket(webSocket)
         ,_outbox(10)
         {
             _pendingRequests.reserve(10);
@@ -110,6 +112,13 @@ namespace litecore { namespace blip {
         void close() {
             enqueue(&BLIPIO::_close);
         }
+
+#if DEBUG
+        websocket::WebSocket* webSocket() const {
+            return _webSocket;
+        }
+#endif
+
 
     protected:
 
@@ -135,10 +144,12 @@ namespace litecore { namespace blip {
 
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
-            webSocket()->close();
+            if (_webSocket)
+                _webSocket->close();
         }
 
         void _closed(bool normalClose, int code, fleece::slice reason) {
+            _webSocket = nullptr;
             if (_connection) {
                 Retained<BLIPIO> holdOn (this);
                 _connection->closed(normalClose, code, reason);
@@ -159,6 +170,10 @@ namespace litecore { namespace blip {
         /** Implementation of public queueMessage() method.
             Adds a new message to the outgoing queue and wakes up the queue. */
         void _queueMessage(Retained<MessageOut> msg) {
+            if (!_webSocket) {
+                LogTo(BLIPLog, "Can't send request; socket is closed");
+                return;
+            }
             if (msg->_number == 0)
                 msg->_number = ++_lastMessageNo;
             BLIPLog.log((msg->isAck() ? LogLevel::Verbose : LogLevel::Info),
@@ -262,7 +277,7 @@ namespace litecore { namespace blip {
                     memcpy(end, body.buf, body.size);
                     end += body.size;
                     slice frame {_frameBuf.get(), end};
-                    webSocket()->send(frame);
+                    _webSocket->send(frame);
                     _sentBytes += frame.size;
                 }
                 
@@ -421,7 +436,7 @@ namespace litecore { namespace blip {
             }
         }
 
-    };
+    }; // end of class BLIPIO
 
 
 #pragma mark - CONNECTION:
@@ -431,6 +446,7 @@ namespace litecore { namespace blip {
                            websocket::Provider &provider,
                            ConnectionDelegate &delegate)
     :_name(string("->") + (string)address)
+    ,_isServer(false)
     ,_delegate(delegate)
     {
         LogTo(BLIPLog, "Opening connection to %s ...", _name.c_str());
@@ -442,6 +458,7 @@ namespace litecore { namespace blip {
     Connection::Connection(websocket::WebSocket *webSocket,
                            ConnectionDelegate &delegate)
     :_name(string("<-") + (string)webSocket->address())
+    ,_isServer(true)
     ,_delegate(delegate)
     {
         LogTo(BLIPLog, "Accepted connection from %s ...", _name.c_str());
@@ -455,7 +472,7 @@ namespace litecore { namespace blip {
 
     void Connection::start(websocket::WebSocket *webSocket) {
         webSocket->name = _name;
-        _io = new BLIPIO(this, Scheduler::sharedScheduler());
+        _io = new BLIPIO(this, webSocket, Scheduler::sharedScheduler());
         webSocket->connect(_io);
         Mailbox::startScheduler(_io->scheduler());
     }
