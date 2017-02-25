@@ -250,11 +250,8 @@ _versioning(kC4RevisionTrees),
     REQUIRE(db != nullptr);
 }
 
-
 C4Test::~C4Test() {
-    C4Error error;
-    c4db_delete(db, &error);
-    c4db_free(db);
+    deleteDatabase();
 
 #if ATOMIC_INT_LOCK_FREE > 1
     if (!current_exception()) {
@@ -536,6 +533,13 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     return numDocs;
+}
+
+void C4Test::deleteDatabase(){
+    // delete database
+    C4Error error = {};
+    c4db_delete(db, &error);
+    c4db_free(db);
 }
 
 
