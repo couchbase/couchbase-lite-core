@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -13,6 +14,11 @@ namespace LiteCore.Tests
         private const bool SharedHandle = false; // Use same C4Database on all threads_
 
         private C4View* _view;
+
+        public ThreadingTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
 
         [Fact]
         public void TestCreateVsEnumerate()
@@ -30,19 +36,20 @@ namespace LiteCore.Tests
         {
             // This implicitly uses the 'db' connection created (but not used) by the main thread
             if(Log) {
-                Console.WriteLine("Adding documents...");
+                WriteLine("Adding documents...");
             }
 
             for(int i = 1; i <= NumDocs; i++) {
                 if(Log) {
-                    Console.Write($"({i}) ");
+                    Write($"({i}) ");
                 } else if(i%10 == 0) {
-                    Console.Write(":");
+                    Write(":");
                 }
 
                 var docID = $"doc-{i:D5}";
                 CreateRev(docID, RevID, Body);
             }
+            WriteLine();
         }
 
         private void UpdateIndexTask()
@@ -53,8 +60,7 @@ namespace LiteCore.Tests
             int i = 0;
             do {
                 if(Log) {
-                    Console.WriteLine();
-                    Console.Write($"Index update #{++i:D3}");
+                    WriteLine($"Index update #{++i:D3}");
                 }
 
                 UpdateIndex(database, view);
@@ -76,8 +82,7 @@ namespace LiteCore.Tests
             do {
                 Task.Delay(1).Wait();
                 if(Log) {
-                    Console.WriteLine();
-                    Console.Write($"Index query #{++i:D3}");
+                    WriteLine($"Index query #{++i:D3}");
                 }
             } while(QueryIndex(view));
 
@@ -91,7 +96,7 @@ namespace LiteCore.Tests
         {
             var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_query(view, null, err));
             if(Log) {
-                Console.Write("{ ");
+                Write("{ ");
             }
 
             ulong i = 0;
@@ -102,8 +107,8 @@ namespace LiteCore.Tests
                 if(e->docSequence != i) {
                     if(Log) {
                         var gotID = e->docID.CreateString();
-                        Console.WriteLine();
-                        Console.WriteLine($"*** Expected {buf}, got {gotID} ***");
+                        WriteLine();
+                        WriteLine($"*** Expected {buf}, got {gotID} ***");
                     }
 
                     i = e->docSequence;
@@ -115,7 +120,7 @@ namespace LiteCore.Tests
             }
 
             if(Log) {
-                Console.Write($"}}queried_to:{i}");
+                Write($"}}queried_to:{i}");
             }
 
             Native.c4queryenum_free(e);
@@ -136,7 +141,7 @@ namespace LiteCore.Tests
             }
 
             if(Log) {
-                Console.Write("<< ");
+                Write("<< ");
             }
 
             C4Document* doc;
@@ -144,7 +149,7 @@ namespace LiteCore.Tests
             while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
                 // Index 'doc':
                 if(Log) {
-                    Console.Write($"(#{doc->sequence}) ");
+                    Write($"(#{doc->sequence}) ");
                 }
 
                 if(lastSeq > 0) {
@@ -165,7 +170,7 @@ namespace LiteCore.Tests
             error.code.Should().Be(0, "because otherwise an error occurred somewhere");
             Native.c4enum_free(e);
             if(Log) {
-                Console.Write($">>indexed_to:{lastSeq} ");
+                Write($">>indexed_to:{lastSeq} ");
             }
 
             LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
@@ -174,8 +179,12 @@ namespace LiteCore.Tests
             var newLastSeqIndexed = Native.c4view_getLastSequenceIndexed(view);
             if(newLastSeqIndexed != lastSeq) {
                 if(Log) {
-                    Console.Write($"BUT view.lastSequenceIndexed={newLastSeqIndexed}! (Started at {oldLastSeqIndexed})");
+                    Write($"BUT view.lastSequenceIndexed={newLastSeqIndexed}! (Started at {oldLastSeqIndexed})");
                 }
+            }
+
+            if(Log) {
+                WriteLine();
             }
 
             newLastSeqIndexed.Should().Be(lastSeq, "because the last sequence in the loop should be current");

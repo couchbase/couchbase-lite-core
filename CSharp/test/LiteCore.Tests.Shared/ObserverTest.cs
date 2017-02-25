@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -19,6 +20,11 @@ namespace LiteCore.Tests
             get {
                 return 1;
             }
+        }
+
+        public ObserverTest(ITestOutputHelper output) : base(output)
+        {
+
         }
 
         [Fact]

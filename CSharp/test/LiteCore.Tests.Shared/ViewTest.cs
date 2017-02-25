@@ -2,6 +2,7 @@ using System;
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -13,6 +14,11 @@ namespace LiteCore.Tests
         }
 
         private C4View* _view;
+
+        public ViewTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
 
         [Fact]
         public void TestEmptyState()
@@ -116,7 +122,7 @@ namespace LiteCore.Tests
                 C4Error error;
                 Native.c4queryenum_next(e, &error).Should().BeTrue("because otherwise the query failed");
                 var valueStr = e->value.CreateString();
-                Console.WriteLine($"Key: {Native.c4key_toJSON(&e->key)} Value: {valueStr}");
+                WriteLine($"Key: {Native.c4key_toJSON(&e->key)} Value: {valueStr}");
                 Native.c4key_toJSON(&e->key).Should().BeNull("because the reduce has no key");
                 valueStr.Should().Be("200", "because the reduce function should return the proper value");
 

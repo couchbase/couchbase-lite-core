@@ -1,12 +1,18 @@
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
     public unsafe class KeyTest : TestBase
     {
         private C4Key* _key;
+
+        public KeyTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
 
         protected override int NumberOfOptions
         {

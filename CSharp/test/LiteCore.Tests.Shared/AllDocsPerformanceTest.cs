@@ -7,6 +7,7 @@ using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Util;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -14,6 +15,11 @@ namespace LiteCore.Tests
     {
         private const int SizeOfDocument = 1000;
         private const int NumDocuments = 100000;
+
+        public AllDocsPerformanceTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
 
         [Fact]
         [Trait("Slow", "true")]

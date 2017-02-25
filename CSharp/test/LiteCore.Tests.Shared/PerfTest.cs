@@ -8,6 +8,7 @@ using LiteCore.Interop;
 using LiteCore.Tests.Util;
 using LiteCore.Util;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -30,6 +31,11 @@ namespace LiteCore.Tests
         private C4View *_likesView;
         private C4View *_statesView;
 
+        public PerfTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
+
         [Fact]
         [Trait("Slow", "true")]
         public void TestPerformance()
@@ -48,17 +54,17 @@ namespace LiteCore.Tests
                     var st = Stopwatch.StartNew();
                     numDocs = InsertDocs(root);
                     numDocs.Should().Be(12188, "because otherwise an incorrect number of documents was inserted");
-                    st.PrintReport("Writing docs", numDocs, "doc");
+                    st.PrintReport("Writing docs", numDocs, "doc", _output);
                 }
                 {
                     var st = Stopwatch.StartNew();
                     IndexViews();
-                    st.PrintReport("Indexing Albums/Artists views", numDocs, "doc");
+                    st.PrintReport("Indexing Albums/Artists views", numDocs, "doc", _output);
                 }
                 {
                     var st = Stopwatch.StartNew();
                     IndexTracksView();
-                    st.PrintReport("Indexing Tracks view", numDocs, "doc");
+                    st.PrintReport("Indexing Tracks view", numDocs, "doc", _output);
                 }
                 {
                     var st = Stopwatch.StartNew();
@@ -68,7 +74,7 @@ namespace LiteCore.Tests
                     var numArtists = QueryGrouped(_artistsView, reduce.Native);
                     reduce.Dispose();
                     numArtists.Should().Be(1141, "because otherwise the query returned incorrect information");
-                    st.PrintReport("Grouped query of Artist view", numDocs, "doc");
+                    st.PrintReport("Grouped query of Artist view", numDocs, "doc", _output);
                 }
             });
 
@@ -94,7 +100,7 @@ namespace LiteCore.Tests
                     Native.c4doc_free(doc);
                 }
 
-                st.PrintReport("Reading random docs", (uint)readNo, "doc");
+                st.PrintReport("Reading random docs", (uint)readNo, "doc", _output);
             });
         }
 
@@ -115,10 +121,10 @@ namespace LiteCore.Tests
                 {
                     var st = Stopwatch.StartNew();
                     var totalLikes = IndexLikesView();
-                    Console.WriteLine($"Total of {totalLikes} likes");
-                    st.PrintReport("Indexing Likes view", numDocs, "doc");
+                    WriteLine($"Total of {totalLikes} likes");
+                    st.PrintReport("Indexing Likes view", numDocs, "doc", _output);
                     if(complete) {
-                        totalLikes.Should().Be(345986, "because otherwise the index missed data set objects");
+                        totalLikes.Should().Be(345986, "because otherwise the index missed data set objects", _output);
                     }
                 }
                 {
@@ -126,7 +132,7 @@ namespace LiteCore.Tests
                     var context = new CountContext();
                     using(var reduce = new C4ManagedReduceFunction(CountAccumulate, CountReduce, context)) {
                         var numLikes = QueryGrouped(_likesView, reduce.Native, true);
-                        st.PrintReport("Querying all likes", numLikes, "like");
+                        st.PrintReport("Querying all likes", numLikes, "like", _output);
                         if(complete) {
                             numLikes.Should().Be(15, "because that is the number of likes in the data set");
                         }
@@ -135,7 +141,7 @@ namespace LiteCore.Tests
                 {
                     var st = Stopwatch.StartNew();
                     var total = IndexStatesView();
-                    st.PrintReport("Indexing States view", numDocs, "doc");
+                    st.PrintReport("Indexing States view", numDocs, "doc", _output);
                     if(complete) {
                         total.Should().Be(300000, "because otherwise the index missed some dataset objects");
                     }
@@ -148,7 +154,7 @@ namespace LiteCore.Tests
                     var st = Stopwatch.StartNew();
                     var total = RunQuery(_statesView, options);
                     Native.c4key_free(key);
-                    st.PrintReport("Querying States view", total, "row");
+                    st.PrintReport("Querying States view", total, "row", _output);
                     if(complete) {
                         total.Should().Be(5053, "because that is the number of states in the data set");
                     }
@@ -158,14 +164,14 @@ namespace LiteCore.Tests
                         for(int pass = 0; pass < 2; ++pass) {
                             var st = Stopwatch.StartNew();
                             var n = QueryWhere("{\"contact.address.state\": \"WA\"}");
-                            st.PrintReport("SQL query of state", n, "doc");
+                            st.PrintReport("SQL query of state", n, "doc", _output);
                             if(complete) {
                                 n.Should().Be(5053, "because that is the number of states in the data set"); 
                             }
                             if(pass == 0) {
                                 var st2 = Stopwatch.StartNew();
                                 LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", C4IndexType.ValueIndex, null, err));
-                                st2.PrintReport("Creating SQL index of state", 1, "index");
+                                st2.PrintReport("Creating SQL index of state", 1, "index", _output);
                             }
                         }
                     }
@@ -193,7 +199,7 @@ namespace LiteCore.Tests
             Native.c4queryenum_free(e);
             Native.c4query_free(query);
             if(verbose) {
-                Console.WriteLine();
+                WriteLine();
             }
 
             return (uint)docIDs.Count;
@@ -240,7 +246,7 @@ namespace LiteCore.Tests
 
             Native.c4queryenum_free(query);
             if(verbose) {
-                Console.WriteLine();
+                WriteLine();
             }
 
             return (uint)allKeys.Count;

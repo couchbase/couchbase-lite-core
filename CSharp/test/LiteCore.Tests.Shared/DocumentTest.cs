@@ -1,11 +1,17 @@
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
     public unsafe class DocumentTest : Test
     {
+        public DocumentTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
+
         [Fact]
         public void TestFleeceDocs()
         {

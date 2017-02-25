@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -10,6 +11,11 @@ namespace LiteCore.Tests
             get {
                 return "C/tests/data/nested.json";
             }
+        }
+
+        public NestedQueryTest(ITestOutputHelper output) : base(output)
+        {
+
         }
 
         [Fact]

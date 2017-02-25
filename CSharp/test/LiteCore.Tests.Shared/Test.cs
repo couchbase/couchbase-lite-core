@@ -7,6 +7,7 @@ using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Tests.Util;
 using LiteCore.Util;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -63,6 +64,11 @@ namespace LiteCore.Tests
             }
         }
 
+        public Test(ITestOutputHelper output) : base(output)
+        {
+
+        }
+
         protected bool IsRevTrees()
         {
             return Versioning == C4DocumentVersioning.RevisionTrees;
@@ -82,7 +88,7 @@ namespace LiteCore.Tests
                 config.flags |= C4DatabaseFlags.Bundled;
             }
 
-            Console.WriteLine($"Opening SQLite database using {Versioning}");
+            WriteLine($"Opening SQLite database using {Versioning}");
 
             C4Error err;
             config.storageEngine = C4StorageEngine.SQLite;
@@ -151,7 +157,7 @@ namespace LiteCore.Tests
 
         private void Log(C4LogLevel level, C4Slice s)
         {
-            Console.WriteLine($"[{level}] {s.CreateString()}");
+            WriteLine($"[{level}] {s.CreateString()}");
         }
 
         protected bool ReadFileByLines(string path, Func<FLSlice, bool> callback)
@@ -179,7 +185,7 @@ namespace LiteCore.Tests
         protected uint ImportJSONLines(string path, TimeSpan timeout, bool verbose)
         {
             if(verbose) {
-                Console.WriteLine($"Reading {path}...");
+                WriteLine($"Reading {path}...");
             }
 
             var st = Stopwatch.StartNew();
@@ -225,14 +231,14 @@ namespace LiteCore.Tests
                 });
 
                 if(verbose) {
-                    Console.WriteLine("Committing...");
+                    WriteLine("Committing...");
                 }
             } finally {
                 LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
 
             if(verbose) {
-                st.PrintReport("Importing", numDocs, "doc");
+                st.PrintReport("Importing", numDocs, "doc", _output);
             }
 
             return numDocs;

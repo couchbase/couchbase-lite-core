@@ -4,11 +4,17 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
     public unsafe class DatabaseTest : Test
     {
+        public DatabaseTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
+
         [Fact]
         public void TestErrorMessages()
         {

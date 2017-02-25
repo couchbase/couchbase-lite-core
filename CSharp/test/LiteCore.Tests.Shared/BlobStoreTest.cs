@@ -7,6 +7,7 @@ using System.Text;
 using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -22,6 +23,11 @@ namespace LiteCore.Tests
         private bool _encrypted;
         private C4BlobStore* _store;
         private C4BlobKey _bogusKey = new C4BlobKey();
+
+        public BlobStoreTest(ITestOutputHelper output) : base(output)
+        {
+
+        }
 
         [Fact]
         public void TestParseBlobKeys()
@@ -193,7 +199,7 @@ namespace LiteCore.Tests
                 int line = increment;
                 for(ulong i = 0; i < 1000; i++) {
                     line = (line + increment) % 1000;
-                    Console.WriteLine($"Reading line {line} at offset {18*line}");
+                    WriteLine($"Reading line {line} at offset {18*line}");
                     var buf = Encoding.UTF8.GetBytes($"This is line {line:D3}.\n");
                     var readBuf = new byte[18];
                     LiteCoreBridge.Check(err => Native.c4stream_seek(reader, (ulong)(18*line), err));
@@ -216,7 +222,7 @@ namespace LiteCore.Tests
             // and the cipher block size (16).
             RunTestVariants(() => {
                 foreach(var size in sizes) {
-                    Console.WriteLine($"Testing {size}-byte blob");
+                    WriteLine($"Testing {size}-byte blob");
                     // Write the blob:
                     var stream = (C4WriteStream *)LiteCoreBridge.Check(err => Native.c4blob_openWriteStream(_store, err));
                     for(int i = 0; i < size; i++) {
@@ -259,7 +265,7 @@ namespace LiteCore.Tests
             C4EncryptionKey crypto = new C4EncryptionKey();
             C4EncryptionKey *encryption = null;
             if(_encrypted) {
-                Console.WriteLine("        ...encrypted");
+                WriteLine("        ...encrypted");
                 crypto.algorithm = C4EncryptionAlgorithm.AES256;
                 for(int i = 0; i < 32; i++) {
                     crypto.bytes[i] = 0xcc;

@@ -4,6 +4,7 @@ using FluentAssertions;
 using System.Collections.Generic;
 using System;
 using System.Runtime.CompilerServices;
+using Xunit.Abstractions;
 
 namespace LiteCore.Tests
 {
@@ -14,6 +15,11 @@ namespace LiteCore.Tests
         protected abstract string JsonPath
         {
             get;
+        }
+
+        protected QueryTestBase(ITestOutputHelper output) : base(output)
+        {
+
         }
 
         protected IList<string> Run(ulong skip = 0, ulong limit = ulong.MaxValue, string bindings = null)
