@@ -22,18 +22,18 @@ function build_litecore {
 
 	echo "Building litecore for $ARCH_ABI"
 	mkdir build_$ARCH_ABI
-	cp strip_android.sh build_$ARCH_ABI/strip.sh
+	cp strip.sh build_$ARCH_ABI/strip.sh
 	pushd build_$ARCH_ABI
 
 	cmake -DCMAKE_SYSTEM_NAME=Android \
 	-DCMAKE_ANDROID_NDK=$ANDROID_NDK \
-	-DCMAKE_ANDROID_STL_TYPE=gnustl_static \
+	-DCMAKE_ANDROID_STL_TYPE=c++_static \
 	-DCMAKE_ANDROID_ARCH_ABI="$ARCH_ABI" \
 	-DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
 	-DCMAKE_SYSTEM_VERSION="$API_VERSION" \
 	-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 	- G "Unix Makefiles" \
-	../..
+	../../..
 	
 	make -j4
 	
