@@ -82,6 +82,7 @@ namespace LiteCore.Interop
         {
             this.code = code;
             this.domain = domain;
+            this.internal_info = 0;
         }
 
         public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLiteDomain, (int)code)
