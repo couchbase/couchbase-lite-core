@@ -65,6 +65,7 @@ namespace LiteCore.Interop
     {
         public C4ErrorDomain domain;
         public int code;
+        public int internal_info;
     }
 
 #if LITECORE_PACKAGED
