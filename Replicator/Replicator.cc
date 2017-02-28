@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
             logError("Disconnected: %.*s (error %d)", SPLAT(reason), status);
 
         // Clear connection() and notify the other agents to do the same:
-        ReplActor::_connectionClosed();
+        _connectionClosed();
         _dbActor->connectionClosed();
         _pusher->connectionClosed();
         _puller->connectionClosed();

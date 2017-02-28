@@ -68,7 +68,6 @@ namespace litecore { namespace repl {
         void startReplicating();
 
         void _taskComplete(bool isPush);
-        void _connectionClosed() override;
 
         const websocket::Address _remoteAddress;
         Retained<DBActor> _dbActor;
