@@ -49,6 +49,16 @@ namespace LiteCore
             Error = err;
         }
 
+#if LITECORE_PACKAGED
+        internal
+#else
+        public
+#endif
+         LiteCoreException(Exception innerException) : base($"LiteCoreException (17): Unexpected error", innerException)
+        {
+            Error = new C4Error(C4ErrorDomain.LiteCoreDomain, 17);
+        }
+
         #endregion
     }
 }
