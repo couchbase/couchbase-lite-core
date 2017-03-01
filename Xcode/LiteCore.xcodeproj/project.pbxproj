@@ -124,6 +124,9 @@
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
+		2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */; };
+		2766F9ED1E651011008FC9E5 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2766F9EB1E651011008FC9E5 /* Timer.cc */; };
+		2766F9EE1E651011008FC9E5 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2766F9EC1E651011008FC9E5 /* Timer.hh */; };
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
@@ -804,6 +807,9 @@
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequenceTracker.cc; path = Database/SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SequenceTracker.hh; path = Database/SequenceTracker.hh; sourceTree = "<group>"; };
+		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
+		2766F9EB1E651011008FC9E5 /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
+		2766F9EC1E651011008FC9E5 /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
 		276943881DCD4AAD00DB2555 /* c4Observer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Observer.h; sourceTree = "<group>"; };
 		2769438B1DCD502A00DB2555 /* c4Observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Observer.cc; sourceTree = "<group>"; };
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
@@ -1417,8 +1423,11 @@
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
+				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
+				2766F9EB1E651011008FC9E5 /* Timer.cc */,
+				2766F9EC1E651011008FC9E5 /* Timer.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
 			);
@@ -1923,7 +1932,9 @@
 				2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */,
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
+				2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */,
 				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
+				2766F9EE1E651011008FC9E5 /* Timer.hh in Headers */,
 				27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */,
 				275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */,
 				275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */,
@@ -2608,6 +2619,7 @@
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
 				27B842611E5CC6500094903E /* DBActor.cc in Sources */,
+				2766F9ED1E651011008FC9E5 /* Timer.cc in Sources */,
 				275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */,
 				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
 			);

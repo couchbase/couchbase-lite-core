@@ -21,7 +21,8 @@ namespace litecore { namespace repl {
         void start(std::string sinceSequence);
 
     protected:
-        void afterEvent() override;
+        virtual bool isBusy() const override;
+        virtual void afterEvent() override;
 
     private:
         void handleChanges(Retained<MessageIn>);

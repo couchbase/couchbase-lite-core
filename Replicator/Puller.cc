@@ -129,14 +129,20 @@ namespace litecore { namespace repl {
     }
 
 
+    bool Puller::isBusy() const {
+        return ReplActor::isBusy()
+            || !_caughtUp
+            || !_requestedSequences.empty()
+            || _pendingCallbacks > 0;
+    }
+
+
     // Called after every event; updates busy status & detects when I'm done
     void Puller::afterEvent() {
-        bool busy = !_caughtUp || !_requestedSequences.empty() || _pendingCallbacks > 0
-                        || eventCount() > 1;
-        setBusy(busy);
-
-        if (!busy && !(_options.pull && _options.continuous))
+        if (!isBusy() && !(_options.pull && _options.continuous)) {
+            log("Finished!");
             _replicator->taskComplete(false);
+        }
     }
 
 

@@ -61,6 +61,7 @@ public:
         while (replA->connection() || replB->connection())
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
+        checkpointID = replA->checkpointID();
     }
 
     void compareDatabases() {
@@ -85,11 +86,28 @@ public:
         REQUIRE(error.code == 0);
     }
 
+    void validateCheckpoint(C4Database *database, bool local, const char *body) {
+        C4Error err;
+        c4::ref<C4RawDocument> doc( c4raw_get(database,
+                                              (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                                              alloc_slice(checkpointID),
+                                              &err) );
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << asstring(checkpointID) << "'; err = " << err.domain << "," << err.code);
+        REQUIRE(doc);
+        CHECK(doc->body == c4str(body));
+        if (!local)
+            CHECK(doc->meta == "1-"_sl);
+    }
+
+    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB, const char *body) {
+        validateCheckpoint(localDB,  true,  body);
+        validateCheckpoint(remoteDB, false, body);
+    }
+
     LoopbackProvider provider;
     C4Database* db2;
     Retained<Replicator> replA, replB;
-
-private:
+    alloc_slice checkpointID;
 };
 
 
@@ -106,6 +124,7 @@ TEST_CASE_METHOD(ReplicatorTest, "Push Small Non-Empty DB", "[Push]") {
     runReplicators({true,  false, false},
                    {false, false, false});
     compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
 TEST_CASE_METHOD(ReplicatorTest, "Pull Empty DB", "[Pull]") {

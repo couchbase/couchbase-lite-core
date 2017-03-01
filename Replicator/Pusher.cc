@@ -31,6 +31,7 @@ namespace litecore { namespace repl {
     void Pusher::start(C4SequenceNumber sinceSequence) {
         log("Starting %spush from local seq %llu",
             (_options.continuous ? "continuous " : ""), _lastSequence+1);
+        _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
     }
 
@@ -60,12 +61,10 @@ namespace litecore { namespace repl {
 
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
-        if (_curSequenceRequested == 0
-                && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
+        if (!_gettingChanges && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
+            _gettingChanges = true;
             ++_changeListsInFlight;
-            _curSequenceRequested = _lastSequenceRead + 1;
-            log("Reading %u changes since sequence %llu ...",
-                  _changesBatchSize, _lastSequenceRead);
+            log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
             _dbActor->getChanges(_lastSequenceRead, _changesBatchSize, _options.continuous, this);
             // response will be to call _gotChanges
         }
@@ -74,9 +73,9 @@ namespace litecore { namespace repl {
 
     // Received a list of changes from the database [initiated in getMoreChanges]
     void Pusher::_gotChanges(RevList changes, C4Error err) {
+        _gettingChanges = false;
         if (err.code)
             return gotError(err);
-        _curSequenceRequested = 0;
         if (!changes.empty()) {
             _lastSequenceRead = changes.back().sequence;
             log("Read %zu changes: Pusher sending 'changes' with sequences %llu - %llu",
@@ -111,6 +110,8 @@ namespace litecore { namespace repl {
                             ancestorRevIDs.push_back(revid.asString());
                     }
                     sendRevision(change, ancestorRevIDs, maxHistory);
+                } else {
+                    markComplete(change.sequence);  // unwanted, so we're done with it
                 }
                 ++index;
             }
@@ -138,6 +139,8 @@ namespace litecore { namespace repl {
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
+            if (_options.push)
+                _pendingSequences.add(change.sequence);
             enc.beginArray();
             enc << change.sequence << change.docID << change.revID;
             if (change.deleted)
@@ -176,20 +179,34 @@ namespace litecore { namespace repl {
 
     // Records that a sequence has been successfully pushed.
     void Pusher::markComplete(C4SequenceNumber sequence) {
-        if (sequence > _lastSequence) {
-            _lastSequence = sequence;
-            logVerbose("Checkpoint now at %llu", _lastSequence);
+        if (_options.push) {
+            _pendingSequences.remove(sequence);
+            auto firstPending = _pendingSequences.first();
+            auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
+            if (lastSeq > _lastSequence) {
+                _lastSequence = lastSeq;
+                //_replicator->setPushSequence(_lastSequence);
+                logVerbose("Checkpoint now at %llu", _lastSequence);
+                _replicator->updatePushCheckpoint(_lastSequence);
+            }
         }
+    }
+
+
+    bool Pusher::isBusy() const {
+        return ReplActor::isBusy()
+            || _changeListsInFlight > 0
+            || _revisionsInFlight > 0
+            || !_pendingSequences.empty();
     }
 
 
     // Called after every event; updates busy status & detects when I'm done
     void Pusher::afterEvent() {
-        bool busy = _changeListsInFlight > 0  || _revisionsInFlight > 0 || eventCount() > 1;
-        setBusy(busy);
-
-        if (!busy && _caughtUp && !(_options.push && _options.continuous))
+        if (!isBusy() && _caughtUp && !(_options.push && _options.continuous)) {
+            log("Finished!");
             _replicator->taskComplete(true);
+        }
     }
 
 } }

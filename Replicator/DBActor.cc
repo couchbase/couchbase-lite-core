@@ -21,6 +21,9 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
+    static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
+    static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
+
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
@@ -35,6 +38,7 @@ namespace litecore { namespace repl {
     ,_remoteAddress(remoteAddress)
     {
         registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
+        registerHandler("setCheckpoint",    &DBActor::handleSetCheckpoint);
     }
 
 
@@ -46,7 +50,7 @@ namespace litecore { namespace repl {
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(_db,
-                                              C4STR("checkpoints"),
+                                              kLocalCheckpointStore,
                                               checkpointID,
                                               &err) );
         if (doc) {
@@ -56,6 +60,15 @@ namespace litecore { namespace repl {
                 err = {};
             callback(checkpointID, alloc_slice(), alloc_slice(), err);
         }
+    }
+
+
+    void DBActor::_setCheckpoint(alloc_slice data) {
+        alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
+        C4Error err;
+        log("Saving local checkpoint %.*s to db", SPLAT(checkpointID));
+        if (!c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
+            gotError(err);
     }
 
 
@@ -80,24 +93,81 @@ namespace litecore { namespace repl {
     }
 
 
-    // Handles a "getCheckpoint" request by looking up a peer checkpoint.
-    void DBActor::handleGetCheckpoint(Retained<MessageIn> request) {
-        auto checkpointID = request->property("client"_sl);
-        if (!checkpointID)
-            return request->respondWithError("BLIP"_sl, 400);
-        log("Request for checkpoint '%.*s'", SPLAT(checkpointID));
+    bool DBActor::getPeerCheckpointDoc(MessageIn* request, bool getting,
+                                       slice &checkpointID, c4::ref<C4RawDocument> &doc) {
+        checkpointID = request->property("client"_sl);
+        if (!checkpointID) {
+            request->respondWithError("BLIP"_sl, 400);
+            return false;
+        }
+        log("Request to %s checkpoint '%.*s'",
+            (getting ? "get" : "set"), SPLAT(checkpointID));
 
         C4Error err;
-        c4::ref<C4RawDocument> doc( c4raw_get(_db, C4STR("peerCheckpoints"), checkpointID, &err) );
-        if (doc) {
-            MessageBuilder response(request);
-            response["rev"_sl] = doc->meta;
-            response << doc->body;
-            request->respond(response);
-        } else if (isNotFoundError(err)) {
-            return request->respondWithError("HTTP"_sl,
-                                             isNotFoundError(err) ? 404 : 502);
+        doc = c4raw_get(_db, kPeerCheckpointStore, checkpointID, &err);
+        if (!doc) {
+            int status = isNotFoundError(err) ? 404 : 502;
+            if (getting || (status != 404)) {
+                request->respondWithError("HTTP"_sl, status);
+                return false;
+            }
         }
+        return true;
+    }
+
+
+    // Handles a "getCheckpoint" request by looking up a peer checkpoint.
+    void DBActor::handleGetCheckpoint(Retained<MessageIn> request) {
+        c4::ref<C4RawDocument> doc;
+        slice checkpointID;
+        if (!getPeerCheckpointDoc(request, true, checkpointID, doc))
+            return;
+        MessageBuilder response(request);
+        response["rev"_sl] = doc->meta;
+        response << doc->body;
+        request->respond(response);
+    }
+
+
+    // Handles a "setCheckpoint" request by storing a peer checkpoint.
+    void DBActor::handleSetCheckpoint(Retained<MessageIn> request) {
+        C4Error err;
+        c4::Transaction t(_db);
+        if (!t.begin(&err))
+            request->respondWithError("HTTP"_sl, 502);
+
+        // Get the existing raw doc so we can check its revID:
+        slice checkpointID;
+        c4::ref<C4RawDocument> doc;
+        if (!getPeerCheckpointDoc(request, false, checkpointID, doc))
+            return;
+
+        slice actualRev;
+        unsigned long generation = 0;
+        if (doc) {
+            actualRev = (slice)doc->meta;
+            char *end;
+            generation = strtol((const char*)actualRev.buf, &end, 10);  //FIX: can fall off end
+        }
+
+        // Check for conflict:
+        if (request->property("rev"_sl) != actualRev)
+            return request->respondWithError("HTTP"_sl, 409);
+
+        // Generate new revID:
+        char newRevBuf[30];
+        slice rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-", ++generation));
+
+        // Save:
+        if (!c4raw_put(_db, kPeerCheckpointStore, checkpointID, rev, request->body(), &err)
+                || !t.commit(&err)) {
+            return request->respondWithError("HTTP"_sl, 502);
+        }
+
+        // Success!
+        MessageBuilder response(request);
+        response["rev"_sl] = rev;
+        request->respond(response);
     }
 
 
@@ -249,11 +319,7 @@ namespace litecore { namespace repl {
         msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
         msg.jsonBody().writeValue(root);
 
-        auto r = sendRequest(msg);
-        if (onReply) {
-            assert(r);
-            onReady(r, onReply);
-        }
+        sendRequest(msg, onReply);
     }
 
 

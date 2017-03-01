@@ -33,8 +33,12 @@ namespace litecore { namespace repl {
 
 #if DEBUG
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
+        alloc_slice checkpointID() const        {return _checkpointID;}
 #endif
 
+        void updatePushCheckpoint(C4SequenceNumber);
+        void updatePullCheckpoint(std::string);
+        
         /** Called by the Pusher and Puller when they finish their duties. */
         void taskComplete(bool isPush) {
             enqueue(&Replicator::_taskComplete, isPush);
@@ -51,6 +55,8 @@ namespace litecore { namespace repl {
                                     {enqueue(&Replicator::_onRequestReceived,
                                              Retained<blip::MessageIn>(msg));}
 
+        virtual void _updateCheckpoint() override;
+        virtual void afterEvent() override;
     private:
         struct Checkpoint {
             C4SequenceNumber localSeq {0};
@@ -64,7 +70,8 @@ namespace litecore { namespace repl {
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
         void getCheckpoints();
-        Checkpoint decodeCheckpoint(slice json);
+        static Checkpoint decodeCheckpoint(slice json);
+        static fleece::alloc_slice encodeCheckpoint(const Checkpoint&);
         void startReplicating();
 
         void _taskComplete(bool isPush);
@@ -73,7 +80,9 @@ namespace litecore { namespace repl {
         Retained<DBActor> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
+        alloc_slice _checkpointID;
         Checkpoint _checkpoint;
+        bool _checkpointChanged {false};
         bool _pushing, _pulling;
     };
 

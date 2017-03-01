@@ -21,6 +21,24 @@ namespace litecore { namespace repl {
 
     LogDomain ReplActor::SyncLog("Sync");
 
+    constexpr std::chrono::seconds ReplActor::kCheckpointUpdateDelay;
+
+
+    void ReplActor::sendRequest(blip::MessageBuilder& builder,
+                                std::function<void(MessageIn*)> callback) {
+        auto r = _connection->sendRequest(builder);
+        if (callback) {
+            ++_pendingResponseCount;
+            onReady(r, [this, callback](Retained<MessageIn> response) {
+                --_pendingResponseCount;
+                callback(response);
+            });
+        } else {
+            if (!builder.noreply)
+                warn("Ignoring the response to a BLIP message!");
+        }
+    }
+
 
     void ReplActor::gotError(const MessageIn* msg) {
         // TODO
@@ -31,15 +49,22 @@ namespace litecore { namespace repl {
     void ReplActor::gotError(C4Error err) {
         // TODO
         alloc_slice message = c4error_getMessage(err);
-        logError("Got error response: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
+        logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
     }
 
 
-    void ReplActor::setBusy(bool busy) {
-        if (busy != _busy) {
-            _busy = busy;
-            logDebug("Now %s", (busy ? "busy" : "idle"));
-        }
+    void ReplActor::updateCheckpoint() {
+        if (!_checkpointTimer)
+            _checkpointTimer.reset(new Timer([this]{
+                enqueue(&ReplActor::_updateCheckpoint);
+            }));
+        if (!_checkpointTimer->scheduled())
+            _checkpointTimer->fireAfter(kCheckpointUpdateDelay);
+    }
+
+
+    bool ReplActor::isBusy() const {
+        return eventCount() > 1 || _pendingResponseCount > 0;
     }
 
 

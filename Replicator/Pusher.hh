@@ -10,6 +10,7 @@
 #include "Replicator.hh"
 #include "DBActor.hh"
 #include "Actor.hh"
+#include "SequenceSet.hh"
 
 namespace litecore { namespace repl {
 
@@ -26,6 +27,7 @@ namespace litecore { namespace repl {
         }
 
     private:
+        virtual bool isBusy() const override;
         virtual void afterEvent() override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
@@ -51,7 +53,8 @@ namespace litecore { namespace repl {
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
         C4SequenceNumber _lastSequenceSent {0};         // Last sequence sent in 'changes' msg
-        C4SequenceNumber _curSequenceRequested {0};     // Sequence being requested from db
+        bool _gettingChanges {false};                   // Waiting for _gotChanges() call?
+        SequenceSet _pendingSequences;
         C4SequenceNumber _lastSequenceRead {0};         // Last sequence read from db
         bool _caughtUp {false};
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies

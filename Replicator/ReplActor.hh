@@ -10,7 +10,9 @@
 #include "Actor.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "Timer.hh"
 #include "c4.hh"
+#include <chrono>
 #include <functional>
 
 
@@ -38,6 +40,8 @@ namespace litecore { namespace repl {
     protected:
         static LogDomain SyncLog;
 
+        static constexpr std::chrono::seconds kCheckpointUpdateDelay {5};
+
         ReplActor(blip::Connection *connection, Options options, const std::string &loggingID)
         :Logging(SyncLog)
         ,_connection(connection)
@@ -57,6 +61,7 @@ namespace litecore { namespace repl {
         /** Implementation of connectionClosed(). Maybe overridden, but call super. */
         virtual void _connectionClosed() {
             _connection = nullptr;
+            _checkpointTimer.reset();
         }
 
         /** Convenience to send a BLIP request. */
@@ -64,11 +69,16 @@ namespace litecore { namespace repl {
             return _connection->sendRequest(builder);
         }
 
+        void sendRequest(blip::MessageBuilder& builder,
+                         std::function<void(blip::MessageIn*)> callback);
+
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
-        virtual void afterEvent() override                  {setBusy(eventCount() > 1);}
-        void setBusy(bool busy);
+        void updateCheckpoint();
+        virtual void _updateCheckpoint()                    { }
+
+        virtual bool isBusy() const;
 
         virtual std::string loggingIdentifier() const override {
             return _loggingIdentifier;
@@ -79,10 +89,12 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         std::string _loggingIdentifier;
-        bool _busy {false};
+        std::unique_ptr<Timer> _checkpointTimer;
+        int _pendingResponseCount {0};
     };
 
 } }
+
 
 
 #define SPLAT(S)    (int)(S).size, (S).buf      // Use with %.* formatter
