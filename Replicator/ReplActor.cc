@@ -53,16 +53,6 @@ namespace litecore { namespace repl {
     }
 
 
-    void ReplActor::updateCheckpoint() {
-        if (!_checkpointTimer)
-            _checkpointTimer.reset(new Timer([this]{
-                enqueue(&ReplActor::_updateCheckpoint);
-            }));
-        if (!_checkpointTimer->scheduled())
-            _checkpointTimer->fireAfter(kCheckpointUpdateDelay);
-    }
-
-
     bool ReplActor::isBusy() const {
         return eventCount() > 1 || _pendingResponseCount > 0;
     }

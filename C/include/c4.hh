@@ -13,6 +13,7 @@
 #endif
 
 #include "c4.h"
+#include <assert.h>
 
 
 namespace c4 {

@@ -53,13 +53,12 @@ namespace litecore { namespace repl {
                                               kLocalCheckpointStore,
                                               checkpointID,
                                               &err) );
-        if (doc) {
-            callback(checkpointID, doc->body, doc->meta, {});
-        } else {
-            if (isNotFoundError(err))
-                err = {};
-            callback(checkpointID, alloc_slice(), alloc_slice(), err);
-        }
+        alloc_slice body;
+        if (doc)
+            body = alloc_slice(doc->body);
+        else if (isNotFoundError(err))
+            err = {};
+        callback(checkpointID, body, err);
     }
 
 

@@ -8,6 +8,7 @@
 
 #pragma once
 #include "ReplActor.hh"
+#include "Checkpoint.hh"
 #include "BLIPConnection.hh"
 #include "FleeceCpp.hh"
 
@@ -33,11 +34,11 @@ namespace litecore { namespace repl {
 
 #if DEBUG
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
-        alloc_slice checkpointID() const        {return _checkpointID;}
+        alloc_slice checkpointID() const        {return _checkpointDocID;}
 #endif
 
-        void updatePushCheckpoint(C4SequenceNumber);
-        void updatePullCheckpoint(std::string);
+        void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
+        void updatePullCheckpoint(const std::string &s) {_checkpoint.setRemoteSeq(s);}
         
         /** Called by the Pusher and Puller when they finish their duties. */
         void taskComplete(bool isPush) {
@@ -55,14 +56,8 @@ namespace litecore { namespace repl {
                                     {enqueue(&Replicator::_onRequestReceived,
                                              Retained<blip::MessageIn>(msg));}
 
-        virtual void _updateCheckpoint() override;
         virtual void afterEvent() override;
     private:
-        struct Checkpoint {
-            C4SequenceNumber localSeq {0};
-            std::string remoteSeq;
-        };
-
         Replicator(C4Database*, const websocket::Address&, Options, Connection*);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
@@ -70,20 +65,21 @@ namespace litecore { namespace repl {
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
         void getCheckpoints();
-        static Checkpoint decodeCheckpoint(slice json);
-        static fleece::alloc_slice encodeCheckpoint(const Checkpoint&);
         void startReplicating();
-
         void _taskComplete(bool isPush);
 
+        void updateCheckpoint();
+        void saveCheckpoint(alloc_slice json);
+
         const websocket::Address _remoteAddress;
+        bool _pushing, _pulling;
         Retained<DBActor> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
-        alloc_slice _checkpointID;
+
         Checkpoint _checkpoint;
-        bool _checkpointChanged {false};
-        bool _pushing, _pulling;
+        alloc_slice _checkpointDocID;
+        alloc_slice _checkpointRevID;
     };
 
 } }

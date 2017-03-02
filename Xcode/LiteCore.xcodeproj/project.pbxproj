@@ -142,6 +142,8 @@
 		276D15421DFF54B800543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
 		276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		277015261D55112E008BADD7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
+		2773FCF61E6783A000108780 /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
+		2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FCF51E6783A000108780 /* Checkpoint.hh */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
@@ -823,6 +825,8 @@
 		277015131D5272D1008BADD7 /* IndexTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexTest.cc; sourceTree = "<group>"; };
 		277015151D528438008BADD7 /* MapReduceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceTest.cc; sourceTree = "<group>"; };
 		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
+		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
+		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
@@ -1660,6 +1664,8 @@
 				27CCC7DF1E526CCC00CE1989 /* Puller.hh */,
 				27CCC7E21E52965200CE1989 /* Pusher.cc */,
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
+				2773FCF41E6783A000108780 /* Checkpoint.cc */,
+				2773FCF51E6783A000108780 /* Checkpoint.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
@@ -1931,6 +1937,7 @@
 			files = (
 				2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */,
 				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
+				2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
 				2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */,
 				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
@@ -2622,6 +2629,7 @@
 				2766F9ED1E651011008FC9E5 /* Timer.cc in Sources */,
 				275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */,
 				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
+				2773FCF61E6783A000108780 /* Checkpoint.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

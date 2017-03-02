@@ -61,7 +61,6 @@ namespace litecore { namespace repl {
         /** Implementation of connectionClosed(). Maybe overridden, but call super. */
         virtual void _connectionClosed() {
             _connection = nullptr;
-            _checkpointTimer.reset();
         }
 
         /** Convenience to send a BLIP request. */
@@ -75,9 +74,6 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
-        void updateCheckpoint();
-        virtual void _updateCheckpoint()                    { }
-
         virtual bool isBusy() const;
 
         virtual std::string loggingIdentifier() const override {
@@ -89,7 +85,6 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         std::string _loggingIdentifier;
-        std::unique_ptr<Timer> _checkpointTimer;
         int _pendingResponseCount {0};
     };
 

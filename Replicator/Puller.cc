@@ -27,13 +27,13 @@ namespace litecore { namespace repl {
 
 
     // Starting an active pull.
-    void Puller::start(std::string sinceSequence) {
+    void Puller::start(alloc_slice sinceSequence) {
         _lastSequence = sinceSequence;
-        log("Starting pull from remote seq %s", _lastSequence.c_str());
+        log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
         MessageBuilder msg("subChanges"_sl);
         msg.noreply = true;
-        if (!_lastSequence.empty())
+        if (_lastSequence)
             msg["since"_sl] = _lastSequence;
         if (_options.continuous)
             msg["continuous"_sl] = "true"_sl;

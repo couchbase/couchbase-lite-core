@@ -18,7 +18,7 @@ namespace litecore { namespace repl {
     public:
         Puller(blip::Connection*, Replicator*, DBActor*, Options options);
 
-        void start(std::string sinceSequence);
+        void start(alloc_slice sinceSequence);
 
     protected:
         virtual bool isBusy() const override;
@@ -30,7 +30,7 @@ namespace litecore { namespace repl {
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
-        std::string _lastSequence;
+        alloc_slice _lastSequence;
         bool _caughtUp {false};
         std::unordered_set<fleece::alloc_slice, fleece::sliceHash> _requestedSequences;
         unsigned _pendingCallbacks {0};

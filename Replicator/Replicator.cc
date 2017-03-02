@@ -36,6 +36,8 @@ namespace litecore { namespace repl {
     ,_pusher(new Pusher(connection, this, _dbActor, _options))
     ,_puller(new Puller(connection, this, _dbActor, _options))
     {
+        _checkpoint.autosave(chrono::seconds(5),
+                             asynchronize([this](alloc_slice json){ saveCheckpoint(json); }));
         // Now wait for _onConnect or _onClose...
     }
 
@@ -56,9 +58,9 @@ namespace litecore { namespace repl {
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
         if (_options.push)
-            _pusher->start(_checkpoint.localSeq);
+            _pusher->start(_checkpoint.localSeq());
         if (_options.pull)
-            _puller->start(_checkpoint.remoteSeq);
+            _puller->start(_checkpoint.remoteSeq());
     }
 
 
@@ -68,8 +70,17 @@ namespace litecore { namespace repl {
             _pushing = false;
         else
             _pulling = false;
-        if (_checkpointChanged)
-            _updateCheckpoint();
+        _checkpoint.save();
+    }
+
+
+    void Replicator::afterEvent() {
+        // Decide whether a non-continuous active push or pull replication is done:
+        if (!isBusy() && !_pushing && !_pulling && !_options.continuous
+                    && connection() && !connection()->isServer()) {
+            log("Replication complete! Closing connection");
+            connection()->close();
+        }
     }
 
 
@@ -88,6 +99,8 @@ namespace litecore { namespace repl {
             log("Connection closed: %.*s (status %d)", SPLAT(reason), status);
         else
             logError("Disconnected: %.*s (error %d)", SPLAT(reason), status);
+
+        _checkpoint.stopAutosave();
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
@@ -113,9 +126,8 @@ namespace litecore { namespace repl {
         // Get the local checkpoint:
         _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
                                                     alloc_slice data,
-                                                    alloc_slice rev,
                                                     C4Error err) {
-            _checkpointID = checkpointID;
+            _checkpointDocID = checkpointID;
 
             if (!data) {
                 if (err.code) {
@@ -128,41 +140,33 @@ namespace litecore { namespace repl {
                 return;
             }
 
-            _checkpoint = decodeCheckpoint(data);
-            log("Local checkpoint '%.*s' is [%llu, '%s']; getting remote ...",
-                  SPLAT(checkpointID), _checkpoint.localSeq, _checkpoint.remoteSeq.c_str());
+            _checkpoint.decodeFrom(data);
+            log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
+                  SPLAT(checkpointID), _checkpoint.localSeq(), SPLAT(_checkpoint.remoteSeq()));
 
+            // Get the remote checkpoint, using the same checkpointID:
             MessageBuilder msg("getCheckpoint"_sl);
             msg["client"_sl] = checkpointID;
             sendRequest(msg, [this](MessageIn *response) {
-                // Received response -- get checkpoint from it:
-                Checkpoint checkpoint;
-                string checkpointRevID;
+                Checkpoint remoteCheckpoint;
 
                 if (response->isError()) {
                     if (!(response->errorDomain() == "HTTP"_sl && response->errorCode() == 404))
                         return gotError(response);
                     log("No remote checkpoint");
+                    _checkpointRevID.reset();
                 } else {
                     log("Received remote checkpoint: '%.*s'", SPLAT(response->body()));
-                    checkpoint = decodeCheckpoint(response->body());
-                    checkpointRevID = response->property("rev"_sl).asString();
+                    remoteCheckpoint.decodeFrom(response->body());
+                    _checkpointRevID = response->property("rev"_sl);
                 }
 
-                log("...got remote checkpoint: [%llu, '%s']",
-                      checkpoint.localSeq, checkpoint.remoteSeq.c_str());
+                log("...got remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
+                    remoteCheckpoint.localSeq(), SPLAT(remoteCheckpoint.remoteSeq()),
+                    SPLAT(_checkpointRevID));
 
                 // Reset mismatched checkpoints:
-                if (_checkpoint.localSeq > 0 && _checkpoint.localSeq != checkpoint.localSeq) {
-                    log("Local sequence mismatch: I had %llu, remote had %llu",
-                          _checkpoint.localSeq, checkpoint.localSeq);
-                    _checkpoint.localSeq = 0;
-                }
-                if (!_checkpoint.remoteSeq.empty() && _checkpoint.remoteSeq != checkpoint.remoteSeq) {
-                    log("Remote sequence mismatch: I had '%s', remote had '%s'",
-                          _checkpoint.remoteSeq.c_str(), checkpoint.remoteSeq.c_str());
-                    _checkpoint.remoteSeq = "";
-                }
+                _checkpoint.validateWith(remoteCheckpoint);
 
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating();
@@ -171,75 +175,25 @@ namespace litecore { namespace repl {
     }
 
 
-    // Decodes the body of a checkpoint doc into a Checkpoint struct
-    Replicator::Checkpoint Replicator::decodeCheckpoint(slice json) {
-        Checkpoint c;
-        if (json) {
-            alloc_slice f = Encoder::convertJSON(json, nullptr);
-            Dict root = Value::fromData(f).asDict();
-            c.localSeq = (C4SequenceNumber) root["local"_sl].asInt();
-            c.remoteSeq = asstring(root["remote"_sl].toString());
-        }
-        return c;
-    }
-
-    alloc_slice Replicator::encodeCheckpoint(const Checkpoint &checkpoint) {
-        JSONEncoder enc;
-        enc.beginDict();
-        if (checkpoint.localSeq) {
-            enc.writeKey("local"_sl);
-            enc.writeUInt(checkpoint.localSeq);
-        }
-        if (!checkpoint.remoteSeq.empty()) {
-            enc.writeKey("remote"_sl);
-            enc.writeString(checkpoint.remoteSeq);
-        }
-        enc.endDict();
-        return enc.finish();
-    }
-
-
-
-    void Replicator::updatePushCheckpoint(C4SequenceNumber seq) {
-        _checkpoint.localSeq = seq;     //TODO: Thread-safety
-        _checkpointChanged = true;
-        updateCheckpoint();
-    }
-
-    void Replicator::updatePullCheckpoint(std::string seq) {
-        _checkpoint.remoteSeq = seq;    // TODO: Thread-safety
-        _checkpointChanged = true;
-        updateCheckpoint();
-    }
-
-    void Replicator::_updateCheckpoint() {
-        if (!_checkpointChanged)
-            return;
-        _checkpointChanged = false;
-        log("Saving remote checkpoint %.*s ...", SPLAT(_checkpointID));
-        auto json = encodeCheckpoint(_checkpoint);
+    void Replicator::saveCheckpoint(alloc_slice json) {
+        log("Saving remote checkpoint %.*s with rev='%.*s' ...",
+            SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
         MessageBuilder msg("setCheckpoint"_sl);
-        msg["client"_sl] = _checkpointID;
+        msg["client"_sl] = _checkpointDocID;
+        msg["rev"_sl] = _checkpointRevID;
         msg << json;
         sendRequest(msg, [=](MessageIn *response) {
             if (response->isError()) {
                 gotError(response);
+                // TODO: On 409 error, reload remote checkpoint
             } else {
                 // Remote checkpoint saved, so update local one:
-                log("Successfully saved remote checkpoint %.*s", SPLAT(_checkpointID));
+                _checkpointRevID = response->property("rev"_sl);
+                log("Successfully saved remote checkpoint %.*s as rev='%.*s'",
+                    SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
                 _dbActor->setCheckpoint(json);
             }
         });
-    }
-
-
-    void Replicator::afterEvent() {
-        // Decide whether a non-continuous active push or pull replication is done:
-        if (!isBusy() && !_pushing && !_pulling && !_options.continuous
-                      && connection() && !connection()->isServer()) {
-            log("Replication complete! Closing connection");
-            connection()->close();
-        }
     }
 
 } }
