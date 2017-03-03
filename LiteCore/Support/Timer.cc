@@ -24,42 +24,34 @@ namespace litecore {
     { }
 
 
+    // Body of the manager's background thread. Waits for timers and calls their callbacks.
     void Timer::Manager::run() {
-        vector<Timer*> firingSquad;
+        unique_lock<mutex> lock(_mutex);
         while(true) {
-            {
-                unique_lock<mutex> lock(_mutex);
-                // Wait for the first timer's fireTime, or until the _schedule is updated:
-                if (_schedule.empty()) {
-                    _condition.wait(lock);
-                } else {
-                    time nextTime = _schedule.begin()->first;
-                    _condition.wait_until(lock, nextTime);
-                }
+            auto earliest = _schedule.begin();
+            if (earliest == _schedule.end()) {
+                // Schedule is empty; just wait for a change
+                _condition.wait(lock);
 
-                // Find & unschedule timers whose fireTimes have passed:
-                time now = clock::now();
-                while (!_schedule.empty()) {
-                    auto entry = _schedule.begin();
-                    if (entry->first > now)
-                        break;
-                    auto timer = entry->second;
-                    _schedule.erase(entry);
-                    timer->_triggered = true;
-                    timer->_state = kUnscheduled;
-                    firingSquad.push_back(timer);
-                }
-                // ... exiting this block, the mutex is released ...
-            }
+            } else if (earliest->first <= clock::now()) {
+                // A Timer is ready to fire, so remove it and call the callback:
+                auto timer = earliest->second;
+                _unschedule(timer);
 
-            // Fire the triggered timers:
-            for (auto timer : firingSquad) {
+                // Fire the timer, while not holding the mutex (to avoid deadlocks if the
+                // timer callback calls the Timer API.)
+                lock.unlock();
                 try {
                     timer->_callback();
-                    timer->_triggered = false;                   // note: not holding any lock
                 } catch (...) { }
+                timer->_triggered = false;                   // note: not holding any lock
+                lock.lock();
+
+            } else {
+                // Wait for the first timer's fireTime, or until the _schedule is updated:
+                auto nextFireTime = earliest->first;
+                _condition.wait_until(lock, nextFireTime);
             }
-            firingSquad.clear();
         }
     }
 
@@ -75,19 +67,13 @@ namespace litecore {
     // Precondition: _mutex must be locked.
     // Postconditions: timer is not in _scheduled. timer->_state != kScheduled.
     bool Timer::Manager::_unschedule(Timer *timer) {
-        while (true) {
-            switch ((state)timer->_state) {
-                case kUnscheduled:
-                    return false;
-                case kScheduled: {
-                    bool affectsTiming = (timer->_entry == _schedule.begin());
-                    _schedule.erase(timer->_entry);
-                    timer->_entry = _schedule.end();
-                    timer->_state = kUnscheduled;
-                    return affectsTiming;
-                }
-            }
-        }
+        if (timer->_state != kScheduled)
+            return false;
+        bool affectsTiming = (timer->_entry == _schedule.begin());
+        _schedule.erase(timer->_entry);
+        timer->_entry = _schedule.end();
+        timer->_state = kUnscheduled;
+        return affectsTiming && !_schedule.empty();
     }
 
 

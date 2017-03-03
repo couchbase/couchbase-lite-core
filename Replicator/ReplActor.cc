@@ -20,7 +20,15 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    LogDomain ReplActor::SyncLog("Sync");
+    static LogDomain SyncLog("Sync");
+
+
+    ReplActor::ReplActor(blip::Connection *connection, Options options, const std::string &loggingID)
+    :Logging(SyncLog)
+    ,_connection(connection)
+    ,_options(options)
+    ,_loggingIdentifier(loggingID)
+    { }
 
 
     void ReplActor::sendRequest(blip::MessageBuilder& builder,

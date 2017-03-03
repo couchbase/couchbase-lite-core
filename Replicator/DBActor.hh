@@ -36,6 +36,17 @@ namespace litecore { namespace repl {
     typedef std::vector<Rev> RevList;
 
 
+    struct RevRequest : public Rev {
+        std::vector<alloc_slice> ancestorRevIDs;
+        unsigned maxHistory;
+
+        RevRequest(const Rev &rev, unsigned maxHistory_)
+        :Rev(rev)
+        ,maxHistory(maxHistory_)
+        { }
+    };
+
+
     struct RequestedRev : public Rev {
         alloc_slice remoteSequence;
 
@@ -70,9 +81,9 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_findOrRequestRevs, req, callback);
         }
 
-        void sendRevision(Rev rev, std::vector<std::string> ancestors, int maxHistory,
+        void sendRevision(const RevRequest &request,
                           std::function<void(Retained<blip::MessageIn>)> onReply) {
-            enqueue(&DBActor::_sendRevision, rev, ancestors, maxHistory, onReply);
+            enqueue(&DBActor::_sendRevision, request, onReply);
         }
 
         void insertRevision(Rev rev, slice history, alloc_slice body,
@@ -93,7 +104,7 @@ namespace litecore { namespace repl {
                          Retained<Pusher>);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<alloc_slice>)> callback);
-        void _sendRevision(Rev rev, std::vector<std::string> ancestors, int maxHistory,
+        void _sendRevision(RevRequest request,
                            std::function<void(Retained<blip::MessageIn>)> onReply);
         void _insertRevision(Rev, alloc_slice history, alloc_slice body,
                              std::function<void(C4Error)> callback);

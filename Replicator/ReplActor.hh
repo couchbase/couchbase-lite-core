@@ -51,14 +51,7 @@ namespace litecore { namespace repl {
         blip::Connection* connection() const                {return _connection;}
 
     protected:
-        static LogDomain SyncLog;
-
-        ReplActor(blip::Connection *connection, Options options, const std::string &loggingID)
-        :Logging(SyncLog)
-        ,_connection(connection)
-        ,_options(options)
-        ,_loggingIdentifier(loggingID)
-        { }
+        ReplActor(blip::Connection *connection, Options options, const std::string &loggingID);
 
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>

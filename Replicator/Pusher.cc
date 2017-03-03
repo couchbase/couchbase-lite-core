@@ -8,15 +8,15 @@
 
 #include "Pusher.hh"
 #include "DBActor.hh"
+#include "StringUtil.hh"
 #include <algorithm>
-
-#define SPLAT(S)    (int)(S).size, (S).buf      // Use with %.* formatter
 
 using namespace std;
 using namespace fleece;
 using namespace fleeceapi;
 
 namespace litecore { namespace repl {
+
 
     Pusher::Pusher(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
     :ReplActor(connection, options, string("Push:") + connection->name())
@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
 
     // Starts active or passive push from the given sequence number.
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
-        _lastSequenceRead = _lastSequenceSent = _lastSequence = sinceSequence;
+        _lastSequenceRead = _lastSequence = sinceSequence;
         maybeGetMoreChanges();
     }
 
@@ -95,26 +95,27 @@ namespace litecore { namespace repl {
             // The response contains an array that, for each change in the outgoing message,
             // contains either a list of known ancestors, or null/false/0 if not interested.
             int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
-            vector<string> ancestorRevIDs;
             auto requests = reply->JSONBody().asArray();
 
             unsigned index = 0;
             for (auto &change : changes) {
                 Array ancestorArray = requests[index].asArray();
                 if (ancestorArray) {
-                    ancestorRevIDs.clear();
-                    ancestorRevIDs.reserve(ancestorArray.count());
+                    auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
+                    request->ancestorRevIDs.reserve(ancestorArray.count());
                     for (Value a : ancestorArray) {
-                        slice revid = a.asstring();
+                        slice revid = a.asString();
                         if (revid)
-                            ancestorRevIDs.push_back(revid.asString());
+                            request->ancestorRevIDs.emplace_back(revid);
                     }
-                    sendRevision(change, ancestorRevIDs, maxHistory);
+                    logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
+                               SPLAT(request->docID), SPLAT(request->revID), request->sequence);
                 } else {
                     markComplete(change.sequence);  // unwanted, so we're done with it
                 }
                 ++index;
             }
+            sendMoreRevs();
         });
 
         if (changes.size() < _changesBatchSize) {
@@ -151,11 +152,20 @@ namespace litecore { namespace repl {
         return sendRequest(req);
     }
 
+
+#pragma mark - SENDING REVISIONS:
+
+
+    void Pusher::sendMoreRevs() {
+        while (_revisionsInFlight < kMaxRevsInFlight && !_revsToSend.empty()) {
+            sendRevision(_revsToSend.front());
+            _revsToSend.pop_front();
+        }
+    }
+
     
     // Subroutine of _gotChanges that sends a "rev" message containing a revision body.
-    void Pusher::sendRevision(const Rev &rev,
-                              const vector<string> &ancestorRevIDs,
-                              unsigned maxHistory)
+    void Pusher::sendRevision(const RevRequest &rev)
     {
         function<void(MessageIn*)> onReply;
         if (_options.push) {
@@ -170,11 +180,15 @@ namespace litecore { namespace repl {
                           SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                     markComplete(rev.sequence);
                 }
+                sendMoreRevs();
             });
         }
         // Tell the DBAgent to actually read from the DB and send the message:
-        _dbActor->sendRevision(rev, ancestorRevIDs, maxHistory, onReply);
+        _dbActor->sendRevision(rev, onReply);
     }
+
+
+#pragma mark - PROGRESS:
 
 
     // Records that a sequence has been successfully pushed.
@@ -185,7 +199,6 @@ namespace litecore { namespace repl {
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
             if (lastSeq > _lastSequence) {
                 _lastSequence = lastSeq;
-                //_replicator->setPushSequence(_lastSequence);
                 logVerbose("Checkpoint now at %llu", _lastSequence);
                 _replicator->updatePushCheckpoint(_lastSequence);
             }
@@ -197,6 +210,7 @@ namespace litecore { namespace repl {
         return ReplActor::isBusy()
             || _changeListsInFlight > 0
             || _revisionsInFlight > 0
+            || !_revsToSend.empty()
             || !_pendingSequences.empty();
     }
 

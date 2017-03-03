@@ -274,31 +274,31 @@ namespace litecore { namespace repl {
 
 
     // Sends a document revision in a "rev" request.
-    void DBActor::_sendRevision(Rev rev,
-                                vector<string> ancestors,
-                                int maxHistory,
+    void DBActor::_sendRevision(RevRequest request,
                                 function<void(Retained<blip::MessageIn>)> onReply)
     {
         if (!connection())
             return;
-        LogVerbose(SyncLog, "Sending revision '%.*s' #%.*s", SPLAT(rev.docID), SPLAT(rev.revID));
+        logVerbose("Sending revision '%.*s' #%.*s",
+                   SPLAT(request.docID), SPLAT(request.revID));
         C4Error c4err;
-        c4::ref<C4Document> doc = c4doc_get(_db, rev.docID, true, &c4err);
+        c4::ref<C4Document> doc = c4doc_get(_db, request.docID, true, &c4err);
         if (!doc)
             return gotError(c4err);
-        if (!c4doc_selectRevision(doc, rev.revID, true, &c4err))
+        if (!c4doc_selectRevision(doc, request.revID, true, &c4err))
             return gotError(c4err);
 
         // Generate the revision history string:
+        set<slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
         stringstream historyStream;
-        for (int n = 0; n < maxHistory; ++n) {
+        for (int n = 0; n < request.maxHistory; ++n) {
             if (!c4doc_selectParentRevision(doc))
                 break;
-            string revID = slice(doc->selectedRev.revID).asString();
+            slice revID = doc->selectedRev.revID;
             if (n > 0)
                 historyStream << ',';
-            historyStream << revID;
-            if (find(ancestors.begin(), ancestors.end(), revID) != ancestors.end())
+            historyStream << fleeceapi::asstring(revID);
+            if (ancestors.find(revID) != ancestors.end())
                 break;
         }
         string history = historyStream.str();
@@ -306,9 +306,9 @@ namespace litecore { namespace repl {
         // Now send the BLIP message:
         MessageBuilder msg("rev"_sl);
         msg.noreply = !onReply;
-        msg["id"_sl] = rev.docID;
-        msg["rev"_sl] = rev.revID;
-        msg["sequence"_sl] = rev.sequence;
+        msg["id"_sl] = request.docID;
+        msg["rev"_sl] = request.revID;
+        msg["sequence"_sl] = request.sequence;
         if (doc->selectedRev.flags & kRevDeleted)
             msg["del"_sl] = "1"_sl;
         if (!history.empty())
