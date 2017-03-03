@@ -71,7 +71,8 @@ namespace litecore {
                 entry = nextEntry;
                 nextEntry = next(entry);
                 if (!entry->isPlaceholder()) {
-                    _documentChanged(entry->docID, entry->committedSequence);   // moves entry!
+                    // moves entry!
+                    _documentChanged(entry->docID, entry->revID, entry->committedSequence);
                 }
             } while (entry != lastEntry);
         }
@@ -81,15 +82,20 @@ namespace litecore {
     }
 
 
-    void SequenceTracker::documentChanged(const alloc_slice &docID, sequence_t sequence) {
+    void SequenceTracker::documentChanged(const alloc_slice &docID,
+                                          const alloc_slice &revID,
+                                          sequence_t sequence) {
         Assert(inTransaction());
         Assert(sequence > _lastSequence);
         _lastSequence = sequence;
-        _documentChanged(docID, sequence);
+        _documentChanged(docID, revID, sequence);
     }
 
 
-    void SequenceTracker::_documentChanged(const alloc_slice &docID, sequence_t sequence) {
+    void SequenceTracker::_documentChanged(const alloc_slice &docID,
+                                           const alloc_slice &revID,
+                                           sequence_t sequence)
+    {
         bool listChanged = true;
         Entry *entry;
         auto i = _byDocID.find(docID);
@@ -106,11 +112,12 @@ namespace litecore {
                 else
                     listChanged = false;
             }
-            // Update its sequence:
+            // Update its revID & sequence:
+            entry->revID = revID;
             entry->sequence = sequence;
         } else {
             // or create a new entry at the end:
-            _changes.emplace_back(docID, sequence);
+            _changes.emplace_back(docID, revID, sequence);
             iterator change = prev(_changes.end());
             _byDocID[change->docID] = change;
             entry = &*change;
@@ -146,7 +153,7 @@ namespace litecore {
 
     void SequenceTracker::documentsChanged(const vector<const Entry*>& entries) {
         for (auto change : entries)
-            documentChanged(change->docID, change->committedSequence);
+            documentChanged(change->docID, change->revID, change->committedSequence);
     }
 
 
@@ -155,7 +162,7 @@ namespace litecore {
         Assert(other.inTransaction());
         for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
             _lastSequence = e->sequence;
-            _documentChanged(e->docID, e->sequence);
+            _documentChanged(e->docID, e->revID, e->sequence);
         }
     }
 
@@ -209,19 +216,19 @@ namespace litecore {
 
 
     size_t SequenceTracker::readChanges(const_iterator placeholder,
-                                        slice docIDs[], size_t numIDs,
+                                        Change changes[], size_t maxChanges,
                                         bool &external)
     {
         external = false;
         size_t n = 0;
         auto i = next(placeholder);
-        while (i != _changes.end() && n < numIDs) {
+        while (i != _changes.end() && n < maxChanges) {
             if (!i->isPlaceholder()) {
                 if (n == 0)
                     external = i->external;
                 else if (i->external != external)
                     break;
-                    docIDs[n++] = i->docID;
+                changes[n++] = {i->docID, i->revID, i->sequence};
             }
             ++i;
         }
@@ -262,7 +269,7 @@ namespace litecore {
             entry = i->second;
         } else {
             // Document isn't known yet; create an entry and put it in the _idle list
-            entry = _idle.emplace(_idle.end(), alloc_slice(docID), 0);
+            entry = _idle.emplace(_idle.end(), alloc_slice(docID), alloc_slice(), 0);
             entry->idle = true;
             _byDocID[entry->docID] = entry;
         }

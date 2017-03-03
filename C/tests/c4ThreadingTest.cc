@@ -257,7 +257,7 @@ public:
     void observerTask() {
         C4Database* database = openDB();
         auto observer = c4dbobs_create(database, obsCallback, this);
-        C4SequenceNumber lastSequence;
+        C4SequenceNumber lastSequence = 0;
         do {
             {
                 unique_lock<mutex> lock(_observerMutex);
@@ -266,15 +266,16 @@ public:
                 _changesToObserve = false;
             }
 
-            C4Slice docIDs[10];
+            C4DatabaseChange changes[10];
             uint32_t nDocs;
             bool external;
-            while (0 < (nDocs = c4dbobs_getChanges(observer, docIDs, 10, &lastSequence, &external))) {
+            while (0 < (nDocs = c4dbobs_getChanges(observer, changes, 10, &external))) {
                 REQUIRE(external);
-                for (auto i = 0; i < nDocs; ++i)
-                    REQUIRE(memcmp(docIDs[i].buf, "doc-", 4) == 0);
+                for (auto i = 0; i < nDocs; ++i) {
+                    REQUIRE(memcmp(changes[i].docID.buf, "doc-", 4) == 0);
+                    lastSequence = changes[i].sequence;
+                }
             }
-            REQUIRE(lastSequence > 0);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } while (lastSequence < kNumDocs);

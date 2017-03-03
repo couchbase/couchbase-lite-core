@@ -53,16 +53,17 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
 
 
 uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
-                            C4Slice outDocIDs[],
+                            C4DatabaseChange outChanges[],
                             uint32_t maxChanges,
-                            C4SequenceNumber* outLastSequence,
                             bool *outExternal) noexcept
 {
+    static_assert(sizeof(C4DatabaseChange) == sizeof(SequenceTracker::Change),
+                  "C4DatabaseChange doesn't match SequenceTracker::Change");
     return tryCatch<uint32_t>(nullptr, [&]{
         lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
-        if (outLastSequence)
-            *outLastSequence = obs->_notifier.tracker.lastSequence();
-        return (uint32_t) obs->_notifier.readChanges((slice*)outDocIDs, maxChanges, *outExternal);
+        return (uint32_t) obs->_notifier.readChanges((SequenceTracker::Change*)outChanges,
+                                                     maxChanges,
+                                                     *outExternal);
     });
 }
 

@@ -18,6 +18,12 @@ extern "C" {
     /** \defgroup Observer  Database and Document Observers
         @{ */
 
+    typedef struct {
+        C4String docID;
+        C4String revID;
+        C4SequenceNumber sequence;
+    } C4DatabaseChange;
+
     /** A database-observer reference. */
     typedef struct c4DatabaseObserver C4DatabaseObserver;
 
@@ -43,18 +49,16 @@ extern "C" {
         in whatever quantity the caller desires. Once all of the changes have been read, the
         observer is reset and ready to notify again.
         @param observer  The observer.
-        @param outDocIDs  A caller-provided buffer of slices into which document IDs will be
+        @param outChanges  A caller-provided buffer of structs into which changes will be
                             written.
         @param maxChanges  The maximum number of changes to return, i.e. the size of the caller's
-                            outDocIDs buffer.
-        @param outLastSequence  The sequence number of the latest change will be written here.
+                            outChanges buffer.
         @param outExternal  Will be set to true if the changes were made by a different C4Database.
         @return  The number of changes written to `outDocIDs`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
     uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer,
-                                C4String outDocIDs[],
+                                C4DatabaseChange outChanges[],
                                 uint32_t maxChanges,
-                                C4SequenceNumber* outLastSequence,
                                 bool *outExternal) C4API;
 
     /** Stops an observer and frees the resources it's using.

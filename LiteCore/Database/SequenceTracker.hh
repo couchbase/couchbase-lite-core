@@ -45,7 +45,9 @@ namespace litecore {
         void endTransaction(bool commit);
 
         /** Document implementation calls this to register the change with the Notifier. */
-        void documentChanged(const alloc_slice &docID, sequence_t);
+        void documentChanged(const alloc_slice &docID,
+                             const alloc_slice &revID,
+                             sequence_t sequence);
 
         void documentsChanged(const std::vector<const Entry*>&);
 
@@ -61,6 +63,7 @@ namespace litecore {
             // Document entry (when sequence != 0):
             sequence_t                      committedSequence {0};
             alloc_slice const               docID;
+            alloc_slice                     revID;
             std::vector<DocChangeNotifier*> documentObservers;
             bool                            idle     :1;
             bool                            external :1;
@@ -68,13 +71,19 @@ namespace litecore {
             // Placeholder entry (when sequence == 0):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
-            Entry(const alloc_slice &d, sequence_t s)
-            :docID(d), sequence(s), idle(false), external(false) { }
+            Entry(const alloc_slice &d, alloc_slice r, sequence_t s)
+            :docID(d), revID(r), sequence(s), idle(false), external(false) { }
             Entry(DatabaseChangeNotifier *o)
             :databaseObserver(o) { }    // placeholder
 
             bool isPlaceholder() const          {return docID.buf == nullptr;}
             bool isIdle() const                 {return idle && !isPlaceholder();}
+        };
+
+        struct Change {
+            slice docID;
+            slice revID;
+            sequence_t sequence;
         };
 
 #if DEBUG
@@ -104,7 +113,7 @@ namespace litecore {
         void removePlaceholder(const_iterator);
         bool hasChangesAfterPlaceholder(const_iterator) const;
         size_t readChanges(const_iterator placeholder,
-                           slice docIDs[], size_t numIDs,
+                           Change changes[], size_t maxChanges,
                            bool &external);
         std::vector<const Entry*> changesSincePlaceholder(const_iterator);
         void catchUpPlaceholder(const_iterator);
@@ -117,7 +126,9 @@ namespace litecore {
         friend class DocChangeNotifier;
         friend class SequenceTrackerTest;
 
-        void _documentChanged(const alloc_slice &docID, sequence_t);
+        void _documentChanged(const alloc_slice &docID,
+                              const alloc_slice &revID,
+                              sequence_t sequence);
         const_iterator _since(sequence_t s) const;
 
         typedef std::list<Entry>::iterator iterator;
@@ -188,8 +199,8 @@ namespace litecore {
 
         /** Returns changes that have occurred since the last call to `changes` (or since
             construction.) Resets the callback state so it can be called again. */
-        size_t readChanges(slice docIDs[], size_t maxDocIDs, bool &external) {
-            return tracker.readChanges(_placeholder, docIDs, maxDocIDs, external);
+        size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool &external) {
+            return tracker.readChanges(_placeholder, changes, maxChanges, external);
         }
 
     protected:
