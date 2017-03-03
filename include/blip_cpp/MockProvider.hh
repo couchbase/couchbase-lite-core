@@ -42,16 +42,19 @@ namespace litecore { namespace websocket {
 
         // Mock API -- call this to simulate incoming events:
 
-        void simulateConnected(double latency =0.0) {
+        void simulateConnected(delay_t latency = delay_t::zero()) {
             enqueueAfter(latency, &MockWebSocket::_simulateConnected);
         }
 
-        void simulateReceived(fleece::slice message, bool binary =true, double latency =0.0) {
+        void simulateReceived(fleece::slice message,
+                              bool binary =true,
+                              delay_t latency = delay_t::zero())
+        {
             enqueueAfter(latency, &MockWebSocket::_simulateReceived, fleece::alloc_slice(message), binary);
         }
 
         void simulateClosed(bool normalClose = true, int status =1000, const char *reason =nullptr,
-                            double latency =0.0) {
+                            delay_t latency = delay_t::zero()) {
             enqueueAfter(latency,
                          &MockWebSocket::_simulateClosed,
                          normalClose, status, fleece::alloc_slice(reason));
@@ -74,6 +77,10 @@ namespace litecore { namespace websocket {
             _simulateConnected();
         }
 
+        bool connected() const {
+            return _isOpen;
+        }
+
         virtual void _close(int status, fleece::alloc_slice message) {
             _simulateClosed(true, status, message);
         }
@@ -84,6 +91,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _closed() {
+            clearDelegate();
             release(this);
         }
 

@@ -9,6 +9,7 @@
 #pragma once
 #include "MockProvider.hh"
 #include <atomic>
+#include <chrono>
 
 
 namespace litecore { namespace websocket {
@@ -18,7 +19,6 @@ namespace litecore { namespace websocket {
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
     class LoopbackWebSocket : public MockWebSocket {
     public:
-
         void connectToPeer(LoopbackWebSocket *peer) {
             assert(peer);
             enqueue(&LoopbackWebSocket::_connectToPeer, Retained<LoopbackWebSocket>(peer));
@@ -36,7 +36,7 @@ namespace litecore { namespace websocket {
     protected:
         friend class LoopbackProvider;
 
-        LoopbackWebSocket(MockProvider &provider, const Address &address, double latency)
+        LoopbackWebSocket(MockProvider &provider, const Address &address, delay_t latency)
         :MockWebSocket(provider, address)
         ,_latency(latency)
         { }
@@ -69,6 +69,8 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _ack(size_t msgSize) {
+            if (!connected())
+                return;
             auto bufSize = (_bufferedBytes -= msgSize);
             if (bufSize == 0) {
                 LogTo(WSMock, "%s WRITEABLE", name.c_str());
@@ -90,7 +92,7 @@ namespace litecore { namespace websocket {
         }
 
     private:
-        double _latency {0.0};
+        delay_t _latency {0.0};
         Retained<LoopbackWebSocket> _peer;
         std::atomic<size_t> _bufferedBytes {0};
     };
@@ -99,9 +101,10 @@ namespace litecore { namespace websocket {
     /** A WebSocketProvider that creates pairs of WebSocket objects that talk to each other. */
     class LoopbackProvider : public MockProvider {
     public:
+
         /** Constructs a WebSocketProvider. A latency time can be provided, which is the delay
             before a message sent by one connection is received by its peer. */
-        LoopbackProvider(double latency = 0.0)
+        LoopbackProvider(LoopbackWebSocket::delay_t latency = LoopbackWebSocket::delay_t::zero())
         :_latency(latency)
         { }
 
@@ -119,7 +122,7 @@ namespace litecore { namespace websocket {
         }
 
     private:
-        double _latency {0.0};
+        LoopbackWebSocket::delay_t _latency {0.0};
     };
 
 

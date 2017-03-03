@@ -11,6 +11,7 @@
 #include "RefCounted.hh"
 #include "Future.hh"
 #include <assert.h>
+#include <chrono>
 #include <functional>
 #include <string>
 #include <thread>
@@ -45,6 +46,7 @@ namespace litecore {
         It managers a thread pool on which Mailboxes and Actors will run. */
     class Scheduler {
     public:
+        using duration = std::chrono::duration<double>; // time duration in floating-point seconds
 
         Scheduler(unsigned numThreads =0)
         :_numThreads(numThreads)
@@ -128,7 +130,7 @@ namespace litecore {
 
         void enqueue(std::function<void()> f);
         void enqueue(void (^block)());
-        void enqueueAfter(double delay, void (^block)());
+        void enqueueAfter(Scheduler::duration delay, void (^block)());
 
         static void startScheduler(Scheduler *)             { }
 
@@ -185,16 +187,18 @@ namespace litecore {
 #endif
         }
 
+        using delay_t = Scheduler::duration;
+
         /** Schedules a call to a method, after a delay.
             Other calls scheduled after this one may end up running before it! */
         template <class Rcvr, class... Args>
-        void enqueueAfter(double delaySecs, void (Rcvr::*fn)(Args...), Args... args) {
+        void enqueueAfter(delay_t delay, void (Rcvr::*fn)(Args...), Args... args) {
 #ifdef ACTORS_USE_GCD
             // not strictly necessary, but more efficient
             retain(this);
-            _mailbox.enqueueAfter(delaySecs,  ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
+            _mailbox.enqueueAfter(delay, ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
 #else
-            _mailbox.enqueueAfter(delaySecs, std::bind(fn, (Rcvr*)this, args...));
+            _mailbox.enqueueAfter(delay, std::bind(fn, (Rcvr*)this, args...));
 #endif
         }
 

@@ -93,13 +93,13 @@ namespace litecore {
     }
 
 
-    void GCDMailbox::enqueueAfter(double delay, void (^block)()) {
+    void GCDMailbox::enqueueAfter(Scheduler::duration delay, void (^block)()) {
         ++_eventCount;
         retain(_actor);
         auto wrappedBlock = ^{ block(); _actor->afterEvent(); --_eventCount; release(_actor); };
-        if (delay > 0)
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
-                           _queue, wrappedBlock);
+        int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
+        if (ns > 0)
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
         else
             dispatch_async(_queue, wrappedBlock);
     }

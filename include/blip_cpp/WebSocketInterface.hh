@@ -76,8 +76,7 @@ namespace litecore { namespace websocket {
 
         std::string name;
 
-        /** If the WebSocket was created with no Delegate, this assigns the Delegate and
-            opens the WebSocket. */
+        /** Assigns the Delegate and opens the WebSocket. */
         inline void connect(Delegate *delegate);
 
         /** Sends a message. Callable from any thread. */
@@ -91,7 +90,11 @@ namespace litecore { namespace websocket {
 
         WebSocket(Provider&, const Address&);
 
+        /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
         virtual void connect() =0;
+
+        /** Clears the delegate; any future calls to delegate() will fail. Call after closing. */
+        void clearDelegate()                        {_delegate = nullptr;}
         
     private:
         const Address _address;
