@@ -63,7 +63,12 @@ namespace LiteCore.Interop
         NotFound
     }
 
-		public unsafe struct FLDictIterator
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLDictIterator
     {
         #pragma warning disable CS0169
 
@@ -88,7 +93,12 @@ namespace LiteCore.Interop
     {
     }
 
-    public unsafe struct FLDictKey
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLDictKey
     {
         #pragma warning disable CS0169
 
@@ -111,7 +121,12 @@ namespace LiteCore.Interop
     {
     }
 
-    public unsafe struct FLArrayIterator
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct FLArrayIterator
     {
         #pragma warning disable CS0169
 

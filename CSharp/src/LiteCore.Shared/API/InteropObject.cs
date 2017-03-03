@@ -21,7 +21,7 @@
 using System;
 namespace LiteCore
 {
-    public abstract class InteropObject : IDisposable
+    internal abstract class InteropObject : IDisposable
     {
         #region Constructors
 

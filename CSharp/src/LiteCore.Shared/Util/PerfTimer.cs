@@ -26,6 +26,9 @@ using System.Linq;
 
 namespace LiteCore.Util
 {
+    /// <summary>
+    /// Simple utility for timing arbitrary logic and listing hotspots
+    /// </summary>
     public static class PerfTimer
     {
         #region Constants
@@ -37,6 +40,10 @@ namespace LiteCore.Util
 
         #region Public Methods
 
+        /// <summary>
+        /// Starts a new performance event
+        /// </summary>
+        /// <param name="name">The name for the event</param>
         [Conditional("PERF_TESTING")]
         public static void StartEvent(string name)
         {
@@ -46,6 +53,10 @@ namespace LiteCore.Util
             evt.StartTiming();
         }
 
+        /// <summary>
+        /// Stops the performance event with the given name and records its time
+        /// </summary>
+        /// <param name="name">The name of the event to stop</param>
         [Conditional("PERF_TESTING")]
         public static void StopEvent(string name)
         {
@@ -54,6 +65,11 @@ namespace LiteCore.Util
             evt.StopTiming();
         }
 
+        /// <summary>
+        /// Writes the statistics about all of the recorded performance events
+        /// using the given handler
+        /// </summary>
+        /// <param name="handler">The handler used to write the performance events</param>
         [Conditional("PERF_TESTING")]
         public static void WriteStats(Action<string> handler)
         {
@@ -81,6 +97,7 @@ namespace LiteCore.Util
 
         #endregion
     }
+
     internal sealed class PerfEvent
     {
         #region Variables

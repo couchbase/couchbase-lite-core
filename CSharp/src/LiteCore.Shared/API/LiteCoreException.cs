@@ -24,6 +24,9 @@ using LiteCore.Interop;
 
 namespace LiteCore
 {
+    /// <summary>
+    /// An exception representing an error coming from the native LiteCore library
+    /// </summary>
     public sealed class LiteCoreException : Exception
     {
         #region Properties
