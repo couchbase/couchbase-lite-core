@@ -18,13 +18,26 @@
 
 namespace litecore { namespace repl {
 
+    /** Time duration unit: seconds, stored as 64-bit floating point. */
+    using duration = std::chrono::nanoseconds;
+
+
     /** Abstract base class of Actors used by the replicator */
     class ReplActor : public Actor, InstanceCounted, protected Logging {
     public:
         struct Options {
-            bool push;
-            bool pull;
-            bool continuous;
+            bool push {false};
+            bool pull {false};
+            bool continuous {false};
+
+            duration checkpointSaveDelay {std::chrono::seconds(5)};
+
+            Options()
+            { }
+            
+            Options(bool push_, bool pull_, bool continuous_)
+            :push(push_), pull(pull_), continuous(continuous_)
+            { }
         };
 
         /** Called by the Replicator when the BLIP connection closes. */
@@ -39,8 +52,6 @@ namespace litecore { namespace repl {
 
     protected:
         static LogDomain SyncLog;
-
-        static constexpr std::chrono::seconds kCheckpointUpdateDelay {5};
 
         ReplActor(blip::Connection *connection, Options options, const std::string &loggingID)
         :Logging(SyncLog)
@@ -89,7 +100,3 @@ namespace litecore { namespace repl {
     };
 
 } }
-
-
-
-#define SPLAT(S)    (int)(S).size, (S).buf      // Use with %.* formatter

@@ -8,6 +8,7 @@
 
 #include "ReplActor.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include "PlatformCompat.hh"
 
 #if defined(__clang__) && !defined(__ANDROID__)
@@ -20,8 +21,6 @@ namespace litecore { namespace repl {
 
 
     LogDomain ReplActor::SyncLog("Sync");
-
-    constexpr std::chrono::seconds ReplActor::kCheckpointUpdateDelay;
 
 
     void ReplActor::sendRequest(blip::MessageBuilder& builder,

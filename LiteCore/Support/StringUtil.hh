@@ -20,3 +20,8 @@ namespace litecore {
     std::string vformat(const char *fmt, va_list);
 
 }
+
+
+// Utility for using slice with printf-style formatting.
+// Use "%.*" in the format string; then for the corresponding argument put SPLAT(theslice).
+#define SPLAT(S)    (int)(S).size, (S).buf

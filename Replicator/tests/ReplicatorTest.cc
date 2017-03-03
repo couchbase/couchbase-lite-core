@@ -6,10 +6,13 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+#include "slice.hh"
+#include "FleeceCpp.hh"
+#include "c4.hh"
+#include <iostream>
 #include "c4Test.hh"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
-#include "c4.hh"
 #include <algorithm>
 #include <chrono>
 
@@ -19,10 +22,22 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
+static const duration kLatency              = std::chrono::milliseconds(100);
+static const duration kCheckpointSaveDelay  = std::chrono::milliseconds(500);
+
+
+std::ostream& operator<< (std::ostream& o, fleece::slice s);
+
+std::ostream& operator<< (std::ostream& o, fleece::slice s) {
+    return o << (C4Slice)s;
+}
+
+
 class ReplicatorTest : public C4Test {
 public:
     ReplicatorTest()
     :C4Test(0)
+    ,provider(kLatency)
     {
         auto db2Path = TempDir() + "cbl_core_test2";
         auto db2PathSlice = c4str(db2Path.c_str());
@@ -42,6 +57,7 @@ public:
     }
 
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
+        opts1.checkpointSaveDelay = opts2.checkpointSaveDelay = kCheckpointSaveDelay;
         C4Database *dbA = db, *dbB = db2;
         if (opts2.push || opts2.pull) {         // always make A the active (client) side
             std::swap(dbA, dbB);
@@ -86,7 +102,8 @@ public:
         REQUIRE(error.code == 0);
     }
 
-    void validateCheckpoint(C4Database *database, bool local, const char *body) {
+    void validateCheckpoint(C4Database *database, bool local,
+                            const char *body, const char *meta = "1-") {
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
@@ -96,12 +113,13 @@ public:
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)
-            CHECK(doc->meta == "1-"_sl);
+            CHECK(doc->meta == c4str(meta));
     }
 
-    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB, const char *body) {
-        validateCheckpoint(localDB,  true,  body);
-        validateCheckpoint(remoteDB, false, body);
+    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
+                             const char *body, const char *meta = "1-") {
+        validateCheckpoint(localDB,  true,  body, meta);
+        validateCheckpoint(remoteDB, false, body, meta);
     }
 
     LoopbackProvider provider;
@@ -110,6 +128,8 @@ public:
     alloc_slice checkpointID;
 };
 
+
+#pragma mark - THE TESTS:
 
 
 TEST_CASE_METHOD(ReplicatorTest, "Push Empty DB", "[Push]") {
@@ -127,6 +147,24 @@ TEST_CASE_METHOD(ReplicatorTest, "Push Small Non-Empty DB", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
+TEST_CASE_METHOD(ReplicatorTest, "Incremental Push", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    runReplicators({true,  false, false},
+                   {false, false, false});
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    Log("-------- Second Replication --------");
+    createRev("new1"_sl, kRev2ID, kFleeceBody);
+    createRev("new2"_sl, kRev3ID, kFleeceBody);
+
+    runReplicators({true,  false, false},
+                   {false, false, false});
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":102}", "2-");
+
+}
+
 TEST_CASE_METHOD(ReplicatorTest, "Pull Empty DB", "[Pull]") {
     runReplicators({false, true,  false},
                    {false, false, false});
@@ -138,4 +176,22 @@ TEST_CASE_METHOD(ReplicatorTest, "Pull Small Non-Empty DB", "[Pull]") {
     runReplicators({false, false,  false},
                    {false, true, false});
     compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":100}");
+}
+
+TEST_CASE_METHOD(ReplicatorTest, "Incremental Pull", "[Pull]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    runReplicators({false, false,  false},
+                   {false, true, false});
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":100}");
+
+    Log("-------- Second Replication --------");
+    createRev("new1"_sl, kRev2ID, kFleeceBody);
+    createRev("new2"_sl, kRev3ID, kFleeceBody);
+
+    runReplicators({false, false,  false},
+                   {false, true, false});
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":102}", "2-");
 }

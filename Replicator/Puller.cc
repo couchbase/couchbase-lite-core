@@ -8,6 +8,7 @@
 
 #include "Puller.hh"
 #include "DBActor.hh"
+#include "StringUtil.hh"
 
 using namespace std;
 using namespace fleece;
@@ -29,6 +30,7 @@ namespace litecore { namespace repl {
     // Starting an active pull.
     void Puller::start(alloc_slice sinceSequence) {
         _lastSequence = sinceSequence;
+        _requestedSequences.clear(sinceSequence);
         log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
         MessageBuilder msg("subChanges"_sl);
@@ -39,8 +41,6 @@ namespace litecore { namespace repl {
             msg["continuous"_sl] = "true"_sl;
         sendRequest(msg);
     }
-
-
 
 
     // Handles an incoming "changes" message
@@ -66,7 +66,8 @@ namespace litecore { namespace repl {
             // Pass the buck to the DBAgent so it can find the missing revs & request them:
             ++_pendingCallbacks;
             _dbActor->findOrRequestRevs(req, asynchronize([this](vector<alloc_slice> requests) {
-                _requestedSequences.insert(requests.begin(), requests.end());
+                for (auto &r : requests)
+                    _requestedSequences.add(r);
                 log("Now waiting on %zu revisions", _requestedSequences.size());
                 --_pendingCallbacks;
             }));
@@ -112,10 +113,7 @@ namespace litecore { namespace repl {
                         msg->respondWithError("LiteCore"_sl, err.code);      //TODO: Proper error domain
                 } else {
                     // Finally, the revision has been added! Check it off:
-                    if (_options.pull) {
-                        _requestedSequences.erase(sequence);
-                        log("Inserted rev; waiting on %zu more", _requestedSequences.size());
-                    }
+                    markComplete(sequence);
                     if (!msg->noReply()) {
                         MessageBuilder response(msg);
                         msg->respond(response);
@@ -129,6 +127,18 @@ namespace litecore { namespace repl {
     }
 
 
+    // Records that a sequence has been successfully pushed.
+    void Puller::markComplete(const alloc_slice &sequence) {
+        if (_options.pull) {
+            if (_requestedSequences.remove(sequence)) {
+                _lastSequence = _requestedSequences.since();
+                logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
+                _replicator->updatePullCheckpoint(_lastSequence);
+            }
+        }
+    }
+
+    
     bool Puller::isBusy() const {
         return ReplActor::isBusy()
             || !_caughtUp

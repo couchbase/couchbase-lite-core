@@ -11,6 +11,7 @@
 #include "FleeceCpp.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"

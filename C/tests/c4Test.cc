@@ -152,6 +152,17 @@ C4Test::C4Test(int testOption)
         kRev2ID = C4STR("2@*");
         kRev3ID = C4STR("3@*");
     }
+
+    if (!kFleeceBody.buf) {
+        auto enc = FLEncoder_New();
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("answer"));
+        FLEncoder_WriteInt(enc, 42);
+        FLEncoder_EndDict(enc);
+        auto result = FLEncoder_Finish(enc, nullptr);
+        kFleeceBody = {result.buf, result.size};
+    }
+
 #if 0
     if (testOption & 4) {
         config.encryptionKey.algorithm = kC4EncryptionAES256;
@@ -325,3 +336,4 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
+C4Slice C4Test::kFleeceBody;

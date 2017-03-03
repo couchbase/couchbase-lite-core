@@ -12,6 +12,7 @@
 #include "DBActor.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "StringUtil.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
 
@@ -36,7 +37,7 @@ namespace litecore { namespace repl {
     ,_pusher(new Pusher(connection, this, _dbActor, _options))
     ,_puller(new Puller(connection, this, _dbActor, _options))
     {
-        _checkpoint.autosave(chrono::seconds(5),
+        _checkpoint.autosave(options.checkpointSaveDelay,
                              asynchronize([this](alloc_slice json){ saveCheckpoint(json); }));
         // Now wait for _onConnect or _onClose...
     }

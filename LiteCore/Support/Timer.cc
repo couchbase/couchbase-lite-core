@@ -45,7 +45,8 @@ namespace litecore {
                         break;
                     auto timer = entry->second;
                     _schedule.erase(entry);
-                    timer->_state = kTriggered;
+                    timer->_triggered = true;
+                    timer->_state = kUnscheduled;
                     firingSquad.push_back(timer);
                 }
                 // ... exiting this block, the mutex is released ...
@@ -55,7 +56,7 @@ namespace litecore {
             for (auto timer : firingSquad) {
                 try {
                     timer->_callback();
-                    timer->_state = kUnscheduled;                   // note: not holding any lock
+                    timer->_triggered = false;                   // note: not holding any lock
                 } catch (...) { }
             }
             firingSquad.clear();
@@ -63,9 +64,16 @@ namespace litecore {
     }
 
 
+    // Waits for a Timer to exit the triggered state (i.e. waits for its callback to complete.)
+    void Timer::waitForFire() {
+        while (_triggered)
+            this_thread::sleep_for(chrono::microseconds(100));
+    }
+
+
     // Removes a Timer from _scheduled. Returns true if the next fire time is affected.
     // Precondition: _mutex must be locked.
-    // Postcondition: timer is not in _scheduled. timer->_state == kUnscheduled.
+    // Postconditions: timer is not in _scheduled. timer->_state != kScheduled.
     bool Timer::Manager::_unschedule(Timer *timer) {
         while (true) {
             switch ((state)timer->_state) {
@@ -78,19 +86,15 @@ namespace litecore {
                     timer->_state = kUnscheduled;
                     return affectsTiming;
                 }
-                case kTriggered:
-                    // The run() method must be in the middle of firing triggered timers.
-                    // All we can do is spin-wait until this one fires and returns to unscheduled.
-                    this_thread::sleep_for(chrono::microseconds(100));
-                    break; // go 'round the while loop again...
             }
         }
     }
 
 
-    // Unschedules a timer, preventing it from firing. (Called by Timer::stop())
+    // Unschedules a timer, preventing it from firing if it hasn't been triggered yet.
+    // (Called by Timer::stop())
     // Precondition: _mutex must NOT be locked.
-    // Postcondition: timer is not in _scheduled. timer->_state == kUnscheduled.
+    // Postcondition: timer is not in _scheduled. timer->_state != kScheduled.
     void Timer::Manager::unschedule(Timer *timer) {
         unique_lock<mutex> lock(_mutex);
         if (_unschedule(timer))
@@ -103,12 +107,13 @@ namespace litecore {
     // Postcondition: timer is in _scheduled. timer->_state == kScheduled.
     void Timer::Manager::setFireTime(Timer *timer, clock::time_point when) {
         unique_lock<mutex> lock(_mutex);
-        _unschedule(timer);
+        bool notify = _unschedule(timer);
         auto result = _schedule.insert({when, timer});
         timer->_entry = result.first;
         timer->_state = kScheduled;
-        if (timer->_entry == _schedule.begin())
+        if (timer->_entry == _schedule.begin() || notify)
             _condition.notify_one();        // wakes up run() so it can recalculate its wait time
     }
+
 
 }

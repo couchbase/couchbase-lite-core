@@ -9,7 +9,7 @@
 #pragma once
 #include "Replicator.hh"
 #include "Actor.hh"
-#include <unordered_set>
+#include "RemoteSequenceSet.hh"
 
 namespace litecore { namespace repl {
 
@@ -27,12 +27,13 @@ namespace litecore { namespace repl {
     private:
         void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);
+        void markComplete(const alloc_slice &sequence);
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
         alloc_slice _lastSequence;
         bool _caughtUp {false};
-        std::unordered_set<fleece::alloc_slice, fleece::sliceHash> _requestedSequences;
+        RemoteSequenceSet _requestedSequences;
         unsigned _pendingCallbacks {0};
     };
 

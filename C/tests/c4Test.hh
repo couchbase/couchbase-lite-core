@@ -119,6 +119,7 @@ public:
     C4Slice kRev2ID;   // "2-d00d3333"
     C4Slice kRev3ID;
     static const C4Slice kBody;     // "{\"name\":007}"
+    static C4Slice kFleeceBody;
 
 private:
     const C4StorageEngine _storage;

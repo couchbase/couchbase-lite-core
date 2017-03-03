@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
 #endif
 
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
-        void updatePullCheckpoint(const std::string &s) {_checkpoint.setRemoteSeq(s);}
+        void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
         
         /** Called by the Pusher and Puller when they finish their duties. */
         void taskComplete(bool isPush) {

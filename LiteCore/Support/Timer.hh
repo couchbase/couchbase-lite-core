@@ -35,10 +35,13 @@ namespace litecore {
             it fires, it is possible for the callback to be running (on another thread) while this
             thread is in the destructor; but in that case the destructor will not return until 
             after the callback completes. */
-        ~Timer()                        {stop();}
+        ~Timer() {
+            stop();
+            waitForFire();
+        }
 
         /** Is the timer active: waiting to fire or in the act of firing? */
-        bool scheduled() const          {return _state != kUnscheduled;}
+        bool scheduled() const          {return _state != kUnscheduled || _triggered;}
 
         /** Schedules the timer to fire at the given time (or slightly later.)
             If it was already scheduled, its fire time will be changed.
@@ -51,8 +54,7 @@ namespace litecore {
         void fireAfter(duration d)      {manager().setFireTime(this, clock::now() + d);}
 
         /** Unschedules the timer. After this call returns the callback will NOT be invoked
-            unless fireAt() or fireAfter() are called. If the callback was already running, this
-            method will not return until it's completed. */
+            unless fireAt() or fireAfter() are called. */
         void stop()                     {if (scheduled()) manager().unschedule(this);}
 
     private:
@@ -60,7 +62,6 @@ namespace litecore {
         enum state : uint8_t {
             kUnscheduled,               // Idle
             kScheduled,                 // In _scheduled queue, waiting to fire
-            kTriggered                  // Removed from _scheduled, waiting for _callback to run
         };
 
         /** Internal singleton that tracks all scheduled Timers and runs a background thread. */
@@ -85,9 +86,12 @@ namespace litecore {
         friend class Manager;
         static Manager& manager();
 
+        void waitForFire();
+
         callback _callback;                     // The function to call when I fire
         time _fireTime;                         // Absolute time that I fire
         std::atomic<state> _state {kUnscheduled};   // Current state
+        std::atomic<bool> _triggered {false};
         Manager::map::iterator _entry;          // My map entry in Manager::_schedule
     };
 

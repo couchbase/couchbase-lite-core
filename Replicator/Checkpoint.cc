@@ -7,9 +7,10 @@
 //
 
 #include "Checkpoint.hh"
-#include "ReplActor.hh"
+#include "StringUtil.hh"
 #include "Logging.hh"
 #include "FleeceCpp.hh"
+#include <assert.h>
 
 using namespace fleece;
 using namespace fleeceapi;
@@ -55,14 +56,13 @@ namespace litecore { namespace repl {
 
     // Decodes the JSON body of a checkpoint doc into a Checkpoint struct
     void Checkpoint::decodeFrom(slice json) {
+        _localSeq = 0;
+        _remoteSeq = nullslice;
         if (json) {
             alloc_slice f = Encoder::convertJSON(json, nullptr);
             Dict root = Value::fromData(f).asDict();
             _localSeq = (C4SequenceNumber) root["local"_sl].asInt();
-            _remoteSeq = root["remote"_sl].toString();
-        } else {
-            _localSeq = 0;
-            _remoteSeq = nullslice;
+            _remoteSeq = root["remote"_sl].toJSON();
         }
     }
 
@@ -77,14 +77,15 @@ namespace litecore { namespace repl {
         }
         if (_remoteSeq) {
             enc.writeKey("remote"_sl);
-            enc.writeString(_remoteSeq);
+            enc.writeRaw(_remoteSeq);   // _remoteSeq is already JSON
         }
         enc.endDict();
         return enc.finish();
     }
 
 
-    void Checkpoint::autosave(std::chrono::milliseconds saveTime, SaveCallback cb) {
+    void Checkpoint::autosave(duration saveTime, SaveCallback cb) {
+        assert(saveTime > duration(0));
         lock_guard<mutex> lock(_mutex);
         _saveCallback = cb;
         _saveTime = saveTime;

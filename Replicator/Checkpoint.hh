@@ -17,6 +17,8 @@ namespace litecore { namespace repl {
 
     class Checkpoint {
     public:
+        using duration = std::chrono::nanoseconds;
+
         Checkpoint()                                { }
         
         // localSeq property is thread-safe
@@ -34,7 +36,7 @@ namespace litecore { namespace repl {
 
         using SaveCallback = std::function<void(fleece::alloc_slice jsonToSave)>;
 
-        void autosave(std::chrono::milliseconds saveTime, SaveCallback cb);
+        void autosave(duration saveTime, SaveCallback cb);
         void stopAutosave();
         void save();
 
@@ -48,7 +50,7 @@ namespace litecore { namespace repl {
         std::unique_ptr<Timer> _timer;
         bool _changed  {false};
         SaveCallback _saveCallback;
-        std::chrono::milliseconds _saveTime;
+        duration _saveTime;
     };
 
 } }
