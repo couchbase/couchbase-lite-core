@@ -38,6 +38,10 @@ namespace LiteCore.Interop
         public static extern void FLSliceResult_Free(FLSliceResult slice);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool FLSlice_Equal(FLSlice a, FLSlice b);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int FLSlice_Compare(FLSlice left, FLSlice right);
 
         public static FLValue* FLValue_FromData(byte[] data)
@@ -256,9 +260,9 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLEncoder* FLEncoder_New();
 
-        public static FLEncoder* FLEncoder_NewWithOptions(ulong reserveSize, bool uniqueStrings, bool sortKeys)
+        public static FLEncoder* FLEncoder_NewWithOptions(FLEncoderFormat format, ulong reserveSize, bool uniqueStrings, bool sortKeys)
         {
-            return NativeRaw.FLEncoder_NewWithOptions((UIntPtr)reserveSize, uniqueStrings, sortKeys);
+            return NativeRaw.FLEncoder_NewWithOptions(format, (UIntPtr)reserveSize, uniqueStrings, sortKeys);
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -308,6 +312,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static bool FLEncoder_WriteRaw(FLEncoder* encoder, byte[] slice)
+        {
+            fixed(byte *slice_ = slice) {
+                return NativeRaw.FLEncoder_WriteRaw(encoder, new FLSlice(slice_, (ulong)slice.Length));
+            }
+        }
+
         public static bool FLEncoder_BeginArray(FLEncoder* encoder, ulong reserveCount)
         {
             return NativeRaw.FLEncoder_BeginArray(encoder, (UIntPtr)reserveCount);
@@ -343,6 +354,9 @@ namespace LiteCore.Interop
                 return NativeRaw.FLEncoder_ConvertJSON(e, new FLSlice(json_, (ulong)json.Length));
             }
         }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern UIntPtr FLEncoder_BytesWritten(FLEncoder* e);
 
         public static byte[] FLEncoder_Finish(FLEncoder* encoder, FLError* outError)
         {
@@ -429,7 +443,7 @@ namespace LiteCore.Interop
         public static extern FLValue* FLKeyPath_EvalOnce(FLSlice specifier, FLSharedKeys* shared, FLValue* root, FLError* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern FLEncoder* FLEncoder_NewWithOptions(UIntPtr reserveSize, [MarshalAs(UnmanagedType.U1)]bool uniqueStrings, [MarshalAs(UnmanagedType.U1)]bool sortKeys);
+        public static extern FLEncoder* FLEncoder_NewWithOptions(FLEncoderFormat format, UIntPtr reserveSize, [MarshalAs(UnmanagedType.U1)]bool uniqueStrings, [MarshalAs(UnmanagedType.U1)]bool sortKeys);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -438,6 +452,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLEncoder_WriteData(FLEncoder* encoder, FLSlice slice);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool FLEncoder_WriteRaw(FLEncoder* encoder, FLSlice slice);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

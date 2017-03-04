@@ -33,6 +33,18 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+    enum FLEncoderFormat
+    {
+        EncodeFleece,
+        EncodeJSON,
+        EncodeJSON5
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
     enum FLValueType
     {
         Undefined = -1,
@@ -67,7 +79,7 @@ namespace LiteCore.Interop
     internal
 #else
     public
-#endif
+#endif 
     unsafe struct FLDictIterator
     {
         #pragma warning disable CS0169
@@ -97,7 +109,7 @@ namespace LiteCore.Interop
     internal
 #else
     public
-#endif
+#endif 
     unsafe struct FLDictKey
     {
         #pragma warning disable CS0169
@@ -125,7 +137,7 @@ namespace LiteCore.Interop
     internal
 #else
     public
-#endif
+#endif 
     unsafe struct FLArrayIterator
     {
         #pragma warning disable CS0169

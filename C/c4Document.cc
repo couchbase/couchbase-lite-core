@@ -317,9 +317,9 @@ int32_t c4doc_purgeRevision(C4Document *doc,
 using namespace fleece;
 
 
-struct _FLEncoder* c4db_createFleeceEncoder(C4Database* db) noexcept {
+FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
     FLEncoder enc = FLEncoder_New();
-    ((Encoder*)enc)->setSharedKeys(db->documentKeys());
+    FLEncoder_SetSharedKeys(enc, (FLSharedKeys)db->documentKeys());
     return enc;
 }
 
