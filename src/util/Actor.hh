@@ -91,6 +91,8 @@ namespace litecore {
         ,_scheduler(s)
         { }
 
+        const std::string& name() const                     {return _name;}
+
         Scheduler* scheduler() const                        {return _scheduler;}
         void setScheduler(Scheduler *s);
 
@@ -122,6 +124,8 @@ namespace litecore {
     public:
         GCDMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr);
         ~GCDMailbox();
+
+        std::string name() const;
 
         Scheduler* scheduler() const                        {return nullptr;}
         void setScheduler(Scheduler *s)                     { }
@@ -169,6 +173,8 @@ namespace litecore {
         void setScheduler(Scheduler *s)                     {_mailbox.setScheduler(s);}
 
         unsigned eventCount() const                         {return _mailbox.eventCount();}
+
+        std::string actorName() const                       {return _mailbox.name();}
 
     protected:
         Actor(const std::string &name ="", Scheduler *sched =nullptr)
@@ -227,45 +233,6 @@ namespace litecore {
         }
 
         virtual void afterEvent()                    { }
-
-#if 0
-        template <class T>
-        class PropertyImpl {
-        public:
-            PropertyImpl(Actor *owner)              :_owner(*owner) { }
-            PropertyImpl(Actor *owner, T t)         :_owner(*owner), _value(t) { }
-
-            T get() const                           {return _value;}
-            operator T() const                      {return _value;}
-            PropertyImpl& operator= (const T &t)    {_value = t; return *this;}
-        private:
-            Actor &_owner;
-            T _value {};
-        };
-
-
-        template <class T>
-        class Property {
-        public:
-            Property(PropertyImpl<T> &prop)     :_impl(prop) { }
-
-//            void addObserver(Actor &a, ObservedProperty<T> &observer);
-            void removeObserver(Actor &a);
-        private:
-            PropertyImpl<T> &_impl;
-            std::vector<Retained<Actor>> _observers;
-        };
-
-        template <class T>
-        class ObservedProperty {
-        public:
-            T get() const                           {return _value;}
-            operator T() const                      {return _value;}
-        private:
-            Retained<Actor> &_provider;
-            T _value;
-        };
-#endif
 
     private:
         friend class Scheduler;

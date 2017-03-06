@@ -10,6 +10,8 @@
 		275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0DF1E57A5650084E014 /* libFleece.a */; };
 		2773FD011E69FD9100108780 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
 		2773FD021E69FD9100108780 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
+		2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FD031E69FE2000108780 /* ActorProperty.cc */; };
+		2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD041E69FE2000108780 /* ActorProperty.hh */; };
 		27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A51E524F0B00CE1989 /* Logging.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
 		27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */; };
@@ -111,6 +113,8 @@
 		275CE0EF1E590B190084E014 /* LoopbackProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = LoopbackProvider.hh; path = ../include/blip_cpp/LoopbackProvider.hh; sourceTree = "<group>"; };
 		2773FCFF1E69FD9100108780 /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
 		2773FD001E69FD9100108780 /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
+		2773FD031E69FE2000108780 /* ActorProperty.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorProperty.cc; sourceTree = "<group>"; };
+		2773FD041E69FE2000108780 /* ActorProperty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ActorProperty.hh; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -278,6 +282,8 @@
 			children = (
 				27EF6A641E2858E7004748DF /* Actor.cc */,
 				27EF6A651E2858E7004748DF /* Actor.hh */,
+				2773FD031E69FE2000108780 /* ActorProperty.cc */,
+				2773FD041E69FE2000108780 /* ActorProperty.hh */,
 				27EF6ABA1E2E97B5004748DF /* Future.cc */,
 				27EF6ABB1E2E97B5004748DF /* Future.hh */,
 				27EF6A661E2858E7004748DF /* Channel.cc */,
@@ -406,6 +412,7 @@
 				27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */,
 				27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */,
 				27EF6A441E28558E004748DF /* RefCounted.hh in Headers */,
+				2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */,
 				2773FD021E69FD9100108780 /* Timer.hh in Headers */,
 				27EF6A531E2857F7004748DF /* slice.hh in Headers */,
 				27EF6A691E2858E7004748DF /* Actor.hh in Headers */,
@@ -552,6 +559,7 @@
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A681E2858E7004748DF /* Actor.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
+				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
 				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,

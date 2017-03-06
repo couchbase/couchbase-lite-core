@@ -23,6 +23,9 @@ namespace litecore {
     template class Channel<std::function<void()>>;
 
 
+#pragma mark - SCHEDULER:
+
+
     Scheduler* Scheduler::sharedScheduler() {
         static Scheduler *sSched = new Scheduler;
         return sSched;
@@ -56,6 +59,13 @@ namespace litecore {
 
     void Scheduler::task(unsigned taskID) {
         LogTo(ActorLog, "   task %d starting", taskID);
+#ifndef MSC_VER
+        {
+            char name[100];
+            sprintf(name, "LiteCore Scheduler #%u", taskID);
+            pthread_setname_np(name);
+        }
+#endif
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {
             LogTo(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
@@ -64,6 +74,9 @@ namespace litecore {
         }
         LogTo(ActorLog, "   task %d finished", taskID);
     }
+
+
+#pragma mark - MAILBOX:
 
 
 #ifdef ACTORS_USE_GCD
@@ -75,6 +88,11 @@ namespace litecore {
 
     GCDMailbox::~GCDMailbox() {
         dispatch_release(_queue);
+    }
+
+
+    std::string GCDMailbox::name() const {
+        return dispatch_queue_get_label(_queue);
     }
 
 

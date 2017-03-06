@@ -26,6 +26,9 @@ namespace litecore {
 
     // Body of the manager's background thread. Waits for timers and calls their callbacks.
     void Timer::Manager::run() {
+#ifndef MSC_VER
+        pthread_setname_np("LiteCore Timer");
+#endif
         unique_lock<mutex> lock(_mutex);
         while(true) {
             auto earliest = _schedule.begin();
