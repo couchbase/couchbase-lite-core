@@ -24,21 +24,25 @@ namespace litecore { namespace repl {
         alloc_slice docID;
         alloc_slice revID;
         C4SequenceNumber sequence {0};
-        bool deleted {false};
 
         Rev() { }
 
+        Rev(slice d, slice r, C4SequenceNumber s)
+        :docID(d), revID(r), sequence(s)
+        { }
+
         Rev(const C4DocumentInfo &info)
-        :sequence(info.sequence), docID(info.docID), revID(info.revID)
-        ,deleted((info.flags &kDeleted) != 0)
+        :Rev(info.docID, info.revID, info.sequence)
         { }
     };
+
     typedef std::vector<Rev> RevList;
 
 
+    /** A request by the peer to send a revision. */
     struct RevRequest : public Rev {
-        std::vector<alloc_slice> ancestorRevIDs;
-        unsigned maxHistory;
+        std::vector<alloc_slice> ancestorRevIDs;    // Known ancestor revIDs the peer already has
+        unsigned maxHistory;                        // Max depth of rev history to send
 
         RevRequest(const Rev &rev, unsigned maxHistory_)
         :Rev(rev)
@@ -47,6 +51,7 @@ namespace litecore { namespace repl {
     };
 
 
+    /** A revision I want from the peer; includes the opaque remote revision ID. */
     struct RequestedRev : public Rev {
         alloc_slice remoteSequence;
 
@@ -86,9 +91,9 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_sendRevision, request, onReply);
         }
 
-        void insertRevision(Rev rev, slice history, alloc_slice body,
+        void insertRevision(Rev rev, bool deleted, slice history, alloc_slice body,
                             std::function<void(C4Error)> callback) {
-            enqueue(&DBActor::_insertRevision, rev, alloc_slice(history), body, callback);
+            enqueue(&DBActor::_insertRevision, rev, deleted, alloc_slice(history), body, callback);
         }
         
     private:
@@ -106,7 +111,7 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(RevRequest request,
                            std::function<void(Retained<blip::MessageIn>)> onReply);
-        void _insertRevision(Rev, alloc_slice history, alloc_slice body,
+        void _insertRevision(Rev, bool deleted, alloc_slice history, alloc_slice body,
                              std::function<void(C4Error)> callback);
 
             void dbChanged();
@@ -120,6 +125,7 @@ namespace litecore { namespace repl {
         const websocket::Address _remoteAddress;
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;
+        Retained<Pusher> _pusher;
     };
 
 } }

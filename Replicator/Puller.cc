@@ -18,7 +18,7 @@ namespace litecore { namespace repl {
 
 
     Puller::Puller(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, options, string("Pull:") + connection->name())
+    :ReplActor(connection, options, "Pull")
     ,_replicator(replicator)
     ,_dbActor(dbActor)
     {
@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
         msg.noreply = true;
         if (_lastSequence)
             msg["since"_sl] = _lastSequence;
-        if (_options.continuous)
+        if (_options.pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         sendRequest(msg);
     }
@@ -63,12 +63,14 @@ namespace litecore { namespace repl {
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
         } else {
-            // Pass the buck to the DBAgent so it can find the missing revs & request them:
+            // Pass the buck to the DBActor so it can find the missing revs & request them:
             ++_pendingCallbacks;
             _dbActor->findOrRequestRevs(req, asynchronize([this](vector<alloc_slice> requests) {
-                for (auto &r : requests)
-                    _requestedSequences.add(r);
-                log("Now waiting on %zu revisions", _requestedSequences.size());
+                if (active()) {
+                    for (auto &r : requests)
+                        _requestedSequences.add(r);
+                    log("Now waiting on %zu revisions", _requestedSequences.size());
+                }
                 --_pendingCallbacks;
             }));
         }
@@ -80,7 +82,7 @@ namespace litecore { namespace repl {
         Rev rev;
         rev.docID = msg->property("id"_sl);
         rev.revID = msg->property("rev"_sl);
-        rev.deleted = !!msg->property("del"_sl);
+        bool deleted = !!msg->property("del"_sl);
         slice history = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
 
@@ -91,7 +93,7 @@ namespace litecore { namespace repl {
             msg->respondWithError("BLIP"_sl, 400);
             return;
         }
-        if (_options.pull && !sequence) {
+        if (active() && !sequence) {
             warn("Missing sequence in 'rev' message for active puller");
             msg->respondWithError("BLIP"_sl, 400);
             return;
@@ -105,7 +107,7 @@ namespace litecore { namespace repl {
         }
 
         function<void(C4Error)> onInserted;
-        if (!msg->noReply() || _options.pull) {
+        if (!msg->noReply() || active()) {
             ++_pendingCallbacks;
             onInserted = asynchronize([=](C4Error err) {
                 if (err.code) {
@@ -123,13 +125,13 @@ namespace litecore { namespace repl {
             });
         }
 
-        _dbActor->insertRevision(rev, history, fleeceBody, onInserted);
+        _dbActor->insertRevision(rev, deleted, history, fleeceBody, onInserted);
     }
 
 
     // Records that a sequence has been successfully pushed.
     void Puller::markComplete(const alloc_slice &sequence) {
-        if (_options.pull) {
+        if (active()) {
             if (_requestedSequences.remove(sequence)) {
                 _lastSequence = _requestedSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
@@ -141,7 +143,7 @@ namespace litecore { namespace repl {
     
     bool Puller::isBusy() const {
         return ReplActor::isBusy()
-            || !_caughtUp
+            || (!_caughtUp && active())
             || !_requestedSequences.empty()
             || _pendingCallbacks > 0;
     }
@@ -149,7 +151,7 @@ namespace litecore { namespace repl {
 
     // Called after every event; updates busy status & detects when I'm done
     void Puller::afterEvent() {
-        if (!isBusy() && !(_options.pull && _options.continuous)) {
+        if (!isBusy() && !(active() && _options.pull == kC4Continuous) && isOpenClient()) {
             log("Finished!");
             _replicator->taskComplete(false);
         }

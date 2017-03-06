@@ -19,9 +19,10 @@ namespace litecore { namespace repl {
 
 
     Pusher::Pusher(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, options, string("Push:") + connection->name())
+    :ReplActor(connection, options, "Push")
     ,_replicator(replicator)
     ,_dbActor(dbActor)
+    ,_continuous(options.push == kC4Continuous)
     {
         registerHandler("subChanges",       &Pusher::handleSubChanges);
     }
@@ -30,7 +31,7 @@ namespace litecore { namespace repl {
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::start(C4SequenceNumber sinceSequence) {
         log("Starting %spush from local seq %llu",
-            (_options.continuous ? "continuous " : ""), _lastSequence+1);
+            (_continuous ? "continuous " : ""), _lastSequence+1);
         _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
     }
@@ -38,16 +39,16 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "subChanges" message: starts passive push (i.e. the peer is pulling).
     void Pusher::handleSubChanges(Retained<MessageIn> req) {
-        if (_options.push) {
+        if (active()) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
             req->respondWithError("LiteCore"_sl, kC4ErrorConflict,
                                   "I'm already pushing"_sl);     //TODO: Proper error code
             return;
         }
         auto since = max(req->intProperty("since"_sl), 0l);
-        _options.continuous = req->boolProperty("continuous"_sl);
+        _continuous = req->boolProperty("continuous"_sl);
         log("Peer is pulling %schanges from seq %llu",
-            (_options.continuous ? "continuous " : ""), _lastSequence);
+            (_continuous ? "continuous " : ""), _lastSequence);
         startSending(since);
     }
 
@@ -65,7 +66,7 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             ++_changeListsInFlight;
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbActor->getChanges(_lastSequenceRead, _changesBatchSize, _options.continuous, this);
+            _dbActor->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, this);
             // response will be to call _gotChanges
         }
     }
@@ -122,7 +123,7 @@ namespace litecore { namespace repl {
             if (!_caughtUp) {
                 log("Caught up, at lastSequence %llu", _lastSequenceRead);
                 _caughtUp = true;
-                if (changes.size() > 0 && !_options.push) {
+                if (changes.size() > 0 && !active()) {
                     // The protocol says catching up is signaled by an empty changes list:
                     sendChanges(RevList());
                 }
@@ -140,12 +141,10 @@ namespace litecore { namespace repl {
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
-            if (_options.push)
+            if (active())
                 _pendingSequences.add(change.sequence);
             enc.beginArray();
             enc << change.sequence << change.docID << change.revID;
-            if (change.deleted)
-                enc << true;
             enc.endArray();
         }
         enc.endArray();
@@ -168,7 +167,7 @@ namespace litecore { namespace repl {
     void Pusher::sendRevision(const RevRequest &rev)
     {
         function<void(MessageIn*)> onReply;
-        if (_options.push) {
+        if (active()) {
             // Callback for after the peer receives the "rev" message:
             ++_revisionsInFlight;
             onReply = asynchronize([=](Retained<MessageIn> reply) {
@@ -193,7 +192,7 @@ namespace litecore { namespace repl {
 
     // Records that a sequence has been successfully pushed.
     void Pusher::markComplete(C4SequenceNumber sequence) {
-        if (_options.push) {
+        if (active()) {
             _pendingSequences.remove(sequence);
             auto firstPending = _pendingSequences.first();
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
@@ -208,6 +207,7 @@ namespace litecore { namespace repl {
 
     bool Pusher::isBusy() const {
         return ReplActor::isBusy()
+            || !_caughtUp
             || _changeListsInFlight > 0
             || _revisionsInFlight > 0
             || !_revsToSend.empty()
@@ -217,7 +217,7 @@ namespace litecore { namespace repl {
 
     // Called after every event; updates busy status & detects when I'm done
     void Pusher::afterEvent() {
-        if (!isBusy() && _caughtUp && !(_options.push && _options.continuous)) {
+        if (!isBusy() && !(active() && _continuous) && isOpenClient()) {
             log("Finished!");
             _replicator->taskComplete(true);
         }

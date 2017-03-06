@@ -28,6 +28,7 @@ namespace litecore { namespace repl {
         }
 
     private:
+        bool active() const                         {return _options.push > kC4Passive;}
         virtual bool isBusy() const override;
         virtual void afterEvent() override;
         void startSending(C4SequenceNumber sinceSequence);
@@ -50,6 +51,7 @@ namespace litecore { namespace repl {
         Replicator* const _replicator;
         DBActor* const _dbActor;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
+        bool _continuous;
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
         bool _gettingChanges {false};                   // Waiting for _gotChanges() call?

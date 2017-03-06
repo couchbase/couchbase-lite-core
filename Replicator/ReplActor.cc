@@ -15,6 +15,7 @@
 #include <cxxabi.h>
 #endif
 
+using namespace std;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
@@ -23,11 +24,13 @@ namespace litecore { namespace repl {
     static LogDomain SyncLog("Sync");
 
 
-    ReplActor::ReplActor(blip::Connection *connection, Options options, const std::string &loggingID)
-    :Logging(SyncLog)
+    ReplActor::ReplActor(blip::Connection *connection,
+                         Options options,
+                         const char *namePrefix)
+    :Actor( string(namePrefix) + connection->name() )
+    ,Logging(SyncLog)
     ,_connection(connection)
     ,_options(options)
-    ,_loggingIdentifier(loggingID)
     { }
 
 

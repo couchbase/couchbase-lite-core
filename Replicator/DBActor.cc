@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
                      C4Database *db,
                      const websocket::Address &remoteAddress,
                      Options options)
-    :ReplActor(connection, options, string("DB:") + connection->name())
+    :ReplActor(connection, options, "DB")
     ,_db(db)
     ,_remoteAddress(remoteAddress)
     {
@@ -156,7 +156,7 @@ namespace litecore { namespace repl {
 
         // Generate new revID:
         char newRevBuf[30];
-        slice rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-", ++generation));
+        slice rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
 
         // Save:
         if (!c4raw_put(_db, kPeerCheckpointStore, checkpointID, rev, request->body(), &err)
@@ -181,7 +181,8 @@ namespace litecore { namespace repl {
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
     void DBActor::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
-                              Retained<Pusher> pusher) {
+                              Retained<Pusher> pusher)
+    {
         log("Reading %u local changes from %llu", limit, since);
         vector<Rev> changes;
         C4Error error = {};
@@ -191,18 +192,21 @@ namespace litecore { namespace repl {
         c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
         if (e) {
             changes.reserve(limit);
-            while (c4enum_next(e, &error) && limit-- > 0) {
+            while (c4enum_next(e, &error) && limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
                 changes.emplace_back(info);
+                --limit;
             }
         }
 
-        if (continuous && changes.empty() && !_changeObserver) {
+        if (continuous && limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
+            _pusher = pusher;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
-                                                 ((DBActor*)context)->dbChanged();
+                                                 auto self = (DBActor*)context;
+                                                 self->enqueue(&DBActor::dbChanged);
                                              },
                                              this);
         }
@@ -214,7 +218,24 @@ namespace litecore { namespace repl {
 
     // Callback from the C4DatabaseObserver when the database has changed
     void DBActor::dbChanged() {
-        // TODO: Send new changes
+        static const uint32_t kMaxChanges = 100;
+        C4DatabaseChange c4changes[kMaxChanges];
+        bool external;
+        uint32_t nChanges;
+        vector<Rev> changes;
+        while (true) {
+            nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
+            if (nChanges == 0)
+                break;
+            log("Notified of %u db changes %llu ... %llu",
+                nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+            C4DatabaseChange *c4change = c4changes;
+            for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                changes.emplace_back(c4change->docID, c4change->revID, c4change->sequence);
+            }
+            C4Error error = {};
+            _pusher->gotChanges(changes, error);
+        }
     }
 
 
@@ -324,7 +345,10 @@ namespace litecore { namespace repl {
 
 
     // Implementation of insertRevision(). Adds a rev to the database and calls the callback.
-    void DBActor::_insertRevision(Rev rev, alloc_slice historyBuf, alloc_slice body,
+    void DBActor::_insertRevision(Rev rev,
+                                  bool deleted,
+                                  alloc_slice historyBuf,
+                                  alloc_slice body,
                                   std::function<void(C4Error)> callback)
     {
         log("Inserting rev {'%.*s' #%.*s}", SPLAT(rev.docID), SPLAT(rev.revID));
@@ -339,7 +363,7 @@ namespace litecore { namespace repl {
         C4DocPutRequest put = {};
         put.body = body;
         put.docID = rev.docID;
-        put.revFlags = rev.deleted ? kRevDeleted : 0;
+        put.revFlags = deleted ? kRevDeleted : 0;
         put.existingRevision = true;
         put.allowConflict = true;
         put.history = history.data();

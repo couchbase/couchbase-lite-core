@@ -12,6 +12,7 @@
 #include "Message.hh"
 #include "Timer.hh"
 #include "c4.hh"
+#include "c4Replicator.h"
 #include <chrono>
 #include <functional>
 
@@ -26,18 +27,23 @@ namespace litecore { namespace repl {
     class ReplActor : public Actor, InstanceCounted, protected Logging {
     public:
         struct Options {
-            bool push {false};
-            bool pull {false};
-            bool continuous {false};
+            using Mode = C4ReplicationMode;
 
-            duration checkpointSaveDelay {std::chrono::seconds(5)};
+            Mode push {kC4Disabled};
+            Mode pull {kC4Disabled};
+
+            duration checkpointSaveDelay        {std::chrono::seconds(5)};
 
             Options()
             { }
             
-            Options(bool push_, bool pull_, bool continuous_)
-            :push(push_), pull(pull_), continuous(continuous_)
+            Options(Mode push_, Mode pull_)
+            :push(push_), pull(pull_)
             { }
+
+            static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
+            static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
+            static Options passive()                       {return Options(kC4Passive, kC4Passive);}
         };
 
         /** Called by the Replicator when the BLIP connection closes. */
@@ -51,7 +57,9 @@ namespace litecore { namespace repl {
         blip::Connection* connection() const                {return _connection;}
 
     protected:
-        ReplActor(blip::Connection *connection, Options options, const std::string &loggingID);
+        ReplActor(blip::Connection *connection,
+                  Options options,
+                  const char *namePrefix);
 
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>
@@ -78,17 +86,18 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
+        bool isOpenClient() const           {return _connection && !_connection->isServer();}
+
         virtual bool isBusy() const;
 
         virtual std::string loggingIdentifier() const override {
-            return _loggingIdentifier;
+            return actorName();
         }
 
         Options _options;
 
     private:
         Retained<blip::Connection> _connection;
-        std::string _loggingIdentifier;
         int _pendingResponseCount {0};
     };
 

@@ -21,6 +21,7 @@ namespace litecore { namespace repl {
         void start(alloc_slice sinceSequence);
 
     protected:
+        bool active() const                     {return _options.pull > kC4Passive;}
         virtual bool isBusy() const override;
         virtual void afterEvent() override;
 

@@ -17,38 +17,64 @@ namespace litecore { namespace repl {
 
     class Checkpoint {
     public:
-        using duration = std::chrono::nanoseconds;
+        struct Sequences {
+            C4SequenceNumber local;
+            fleece::alloc_slice remote;
+        };
 
-        Checkpoint()                                { }
-        
-        // localSeq property is thread-safe
-        C4SequenceNumber localSeq() const           {return _localSeq;}
+        /** Returns my local and remote sequences. */
+        Sequences sequences() const;
+
+        /** Sets my local sequence without affecting the remote one. */
         void setLocalSeq(C4SequenceNumber s)        {set(&s, nullptr);}
 
-        // remoteSeq property is thread-safe
-        fleece::alloc_slice remoteSeq() const;
+        /** Sets my remote sequence without affecting the local one. */
         void setRemoteSeq(fleece::slice s)          {set(nullptr, &s);}
 
+        /** Sets my state from an encoded JSON representation. */
         void decodeFrom(fleece::slice json);
+
+        /** Returns a JSON representation of my current state. */
         fleece::alloc_slice encode() const;
 
+        /** Compares my state with another Checkpoint. If the local sequences differ, mine
+            will be reset to 0; if the remote sequences differ, mine will be reset to empty. */
         bool validateWith(const Checkpoint&);
 
+        // Autosave:
+
+        using duration = std::chrono::nanoseconds;
         using SaveCallback = std::function<void(fleece::alloc_slice jsonToSave)>;
 
-        void autosave(duration saveTime, SaveCallback cb);
+        /** Enables autosave: at about the given duration after the first change is made,
+            the callback will be invoked, and passed a JSON representation of my state. */
+        void enableAutosave(duration saveTime, SaveCallback cb);
+
+        /** Disables autosave. Returns true if no more calls to save() will be made. The only
+            case where another call to save() might be made is if a save is currently in
+            progress, and the checkpoint has been changed since the save began. In that case,
+            another save will have to be triggered immediately when the current one finishes. */
         void stopAutosave();
-        void save();
+
+        /** Triggers an immediate save, if the checkpoint has changed. */
+        bool save();
+
+        /** The client should call this as soon as its save completes, which can be after the
+            SaveCallback returns. */
+        void saved();
 
     private:
+        fleece::alloc_slice _encode() const;
         void set(const C4SequenceNumber *local, const fleece::slice *remote);
 
-        C4SequenceNumber _localSeq {0};
-        fleece::alloc_slice _remoteSeq;
         std::mutex _mutex;
 
-        std::unique_ptr<Timer> _timer;
+        Sequences _seq {};
+
         bool _changed  {false};
+        bool _saving {false};
+        bool _overdueForSave {false};
+        std::unique_ptr<Timer> _timer;
         SaveCallback _saveCallback;
         duration _saveTime;
     };

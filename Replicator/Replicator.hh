@@ -27,10 +27,16 @@ namespace litecore { namespace repl {
     class Replicator : public ReplActor, ConnectionDelegate {
     public:
         /** Constructor for a client connection; will open the Connection itself. */
-        Replicator(C4Database*, websocket::Provider&, const websocket::Address&, Options);
+        Replicator(C4Database*,
+                   websocket::Provider&,
+                   const websocket::Address&,
+                   Options);
 
         /** Constructor for an incoming (server) connection. */
-        Replicator(C4Database*, websocket::WebSocket*, const websocket::Address&);
+        Replicator(C4Database*,
+                   websocket::WebSocket*,
+                   const websocket::Address&,
+                   Options = Options::passive());
 
 #if DEBUG
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}

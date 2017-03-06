@@ -15,20 +15,23 @@
 #include "LoopbackProvider.hh"
 #include <algorithm>
 #include <chrono>
+#include <future>
+#include <thread>
 
+using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
-static const duration kLatency              = std::chrono::milliseconds(100);
-static const duration kCheckpointSaveDelay  = std::chrono::milliseconds(500);
+static const duration kLatency              = chrono::milliseconds(100);
+static const duration kCheckpointSaveDelay  = chrono::milliseconds(500);
 
 
-std::ostream& operator<< (std::ostream& o, fleece::slice s);
+ostream& operator<< (ostream& o, fleece::slice s);
 
-std::ostream& operator<< (std::ostream& o, fleece::slice s) {
+ostream& operator<< (ostream& o, fleece::slice s) {
     return o << (C4Slice)s;
 }
 
@@ -51,6 +54,8 @@ public:
     }
 
     ~ReplicatorTest() {
+        if (parallelThread)
+            parallelThread->join();
         C4Error error;
         c4db_delete(db2, &error);
         c4db_free(db2);
@@ -59,9 +64,10 @@ public:
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
         opts1.checkpointSaveDelay = opts2.checkpointSaveDelay = kCheckpointSaveDelay;
         C4Database *dbA = db, *dbB = db2;
-        if (opts2.push || opts2.pull) {         // always make A the active (client) side
-            std::swap(dbA, dbB);
-            std::swap(opts1, opts2);
+        if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
+            // always make A the active (client) side
+            swap(dbA, dbB);
+            swap(opts1, opts2);
         }
 
         // Client replicator:
@@ -69,15 +75,47 @@ public:
 
         // Server (passive) replicator:
         Address addrB{"ws", "cli"};
-        replB = new Replicator(dbB, provider.createWebSocket(addrB), addrB);
+        replB = new Replicator(dbB, provider.createWebSocket(addrB), addrB, opts2);
 
         provider.connect(replA->webSocket(), replB->webSocket());
 
         Log("Waiting for replication to complete...");
         while (replA->connection() || replB->connection())
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
         checkpointID = replA->checkpointID();
+    }
+
+    void runInParallel(duration delay, function<void(C4Database*)> callback) {
+        C4Error error;
+        alloc_slice path = c4db_getPath(db);
+        C4Database *parallelDB = c4db_open(path, c4db_getConfig(db), &error);
+        REQUIRE(parallelDB != nullptr);
+
+        parallelThread.reset(new thread([=]() mutable {
+            this_thread::sleep_for(delay);
+            callback(parallelDB);
+            c4db_free(parallelDB);
+        }));
+    }
+
+    void addDocsInParallel(duration interval) {
+        runInParallel(interval, [=](C4Database *bgdb) {
+            int docNo = 1;
+            for (int i = 1; i <= 3; i++) {
+                if (i > 1)
+                    this_thread::sleep_for(interval);
+                Log("-------- Creating %d docs --------", 2*i);
+                c4::Transaction t(bgdb);
+                t.begin(nullptr);
+                for (int j = 0; j < 2*i; j++) {
+                    char docID[10];
+                    sprintf(docID, "newdoc%d", docNo++);
+                    createRev(bgdb, c4str(docID), "1-11"_sl, kFleeceBody);
+                }
+                t.commit(nullptr);
+            }
+        });
     }
 
     void compareDatabases() {
@@ -113,11 +151,11 @@ public:
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)
-            CHECK(doc->meta == c4str(meta));
+            CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
 
     void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
-                             const char *body, const char *meta = "1-") {
+                             const char *body, const char *meta = "1-cc") {
         validateCheckpoint(localDB,  true,  body, meta);
         validateCheckpoint(remoteDB, false, body, meta);
     }
@@ -126,6 +164,8 @@ public:
     C4Database* db2;
     Retained<Replicator> replA, replB;
     alloc_slice checkpointID;
+    unique_ptr<thread> parallelThread;
+    future<void> parallelThreadDone;
 };
 
 
@@ -133,24 +173,24 @@ public:
 
 
 TEST_CASE_METHOD(ReplicatorTest, "Push Empty DB", "[Push]") {
-    runReplicators({true,  false, false},
-                   {false, false, false});
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
     compareDatabases();
 }
 
 
 TEST_CASE_METHOD(ReplicatorTest, "Push Small Non-Empty DB", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
-    runReplicators({true,  false, false},
-                   {false, false, false});
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
 TEST_CASE_METHOD(ReplicatorTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
-    runReplicators({true,  false, false},
-                   {false, false, false});
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -158,31 +198,31 @@ TEST_CASE_METHOD(ReplicatorTest, "Incremental Push", "[Push]") {
     createRev("new1"_sl, kRev2ID, kFleeceBody);
     createRev("new2"_sl, kRev3ID, kFleeceBody);
 
-    runReplicators({true,  false, false},
-                   {false, false, false});
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
     compareDatabases();
-    validateCheckpoints(db, db2, "{\"local\":102}", "2-");
+    validateCheckpoints(db, db2, "{\"local\":102}", "2-cc");
 
 }
 
 TEST_CASE_METHOD(ReplicatorTest, "Pull Empty DB", "[Pull]") {
-    runReplicators({false, true,  false},
-                   {false, false, false});
+    runReplicators(Replicator::Options::pulling(),
+                   Replicator::Options::passive());
     compareDatabases();
 }
 
 TEST_CASE_METHOD(ReplicatorTest, "Pull Small Non-Empty DB", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
-    runReplicators({false, false,  false},
-                   {false, true, false});
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
 }
 
 TEST_CASE_METHOD(ReplicatorTest, "Incremental Pull", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
-    runReplicators({false, false,  false},
-                   {false, true, false});
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
@@ -190,8 +230,22 @@ TEST_CASE_METHOD(ReplicatorTest, "Incremental Pull", "[Pull]") {
     createRev("new1"_sl, kRev2ID, kFleeceBody);
     createRev("new2"_sl, kRev3ID, kFleeceBody);
 
-    runReplicators({false, false,  false},
-                   {false, true, false});
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
     compareDatabases();
-    validateCheckpoints(db2, db, "{\"remote\":102}", "2-");
+    validateCheckpoints(db2, db, "{\"remote\":102}", "2-cc");
+}
+
+TEST_CASE_METHOD(ReplicatorTest, "Continuous Push Starting Empty", "[Push]") {
+    addDocsInParallel(chrono::seconds(1));
+    runReplicators(Replicator::Options::pushing(kC4Continuous),
+                   Replicator::Options::passive());
+    //FIX: Stop this when bg thread stops adding docs
+}
+
+TEST_CASE_METHOD(ReplicatorTest, "Continuous Pull Starting Empty", "[Pull]") {
+    addDocsInParallel(chrono::seconds(1));
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling(kC4Continuous));
+    //FIX: Stop this when bg thread stops adding docs
 }

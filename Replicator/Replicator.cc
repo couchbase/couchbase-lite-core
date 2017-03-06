@@ -29,16 +29,18 @@ namespace litecore { namespace repl {
                            const websocket::Address &address,
                            Options options,
                            Connection *connection)
-    :ReplActor(connection, options, connection->name())
+    :ReplActor(connection, options, "Repl")
     ,_remoteAddress(address)
-    ,_pushing(options.push)
-    ,_pulling(options.pull)
+    ,_pushing(options.push > kC4Passive)
+    ,_pulling(options.pull > kC4Passive)
     ,_dbActor(new DBActor(connection, db, address, options))
-    ,_pusher(new Pusher(connection, this, _dbActor, _options))
-    ,_puller(new Puller(connection, this, _dbActor, _options))
     {
-        _checkpoint.autosave(options.checkpointSaveDelay,
-                             asynchronize([this](alloc_slice json){ saveCheckpoint(json); }));
+        if (options.push != kC4Disabled)
+            _pusher = new Pusher(connection, this, _dbActor, _options);
+        if (options.pull != kC4Disabled)
+            _puller = new Puller(connection, this, _dbActor, _options);
+        _checkpoint.enableAutosave(options.checkpointSaveDelay,
+                                  asynchronize([this](alloc_slice json){ saveCheckpoint(json); }));
         // Now wait for _onConnect or _onClose...
     }
 
@@ -51,17 +53,19 @@ namespace litecore { namespace repl {
 
     Replicator::Replicator(C4Database *db,
                            websocket::WebSocket *webSocket,
-                           const websocket::Address& address)
-    :Replicator(db, address, Options{}, new Connection(webSocket, *this))
+                           const websocket::Address& address,
+                           Options options)
+    :Replicator(db, address, options, new Connection(webSocket, *this))
     { }
 
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
-        if (_options.push)
-            _pusher->start(_checkpoint.localSeq());
-        if (_options.pull)
-            _puller->start(_checkpoint.remoteSeq());
+        auto cp = _checkpoint.sequences();
+        if (_options.push > kC4Passive)
+            _pusher->start(cp.local);
+        if (_options.pull > kC4Passive)
+            _puller->start(cp.remote);
     }
 
 
@@ -77,8 +81,7 @@ namespace litecore { namespace repl {
 
     void Replicator::afterEvent() {
         // Decide whether a non-continuous active push or pull replication is done:
-        if (!isBusy() && !_pushing && !_pulling && !_options.continuous
-                    && connection() && !connection()->isServer()) {
+        if (!_pushing && !_pulling && !isBusy() && isOpenClient()) {
             log("Replication complete! Closing connection");
             connection()->close();
         }
@@ -90,7 +93,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         log("BLIP Connected");
-        if (_options.push || _options.pull)
+        if (_options.push > kC4Passive || _options.pull > kC4Passive)
             getCheckpoints();
     }
 
@@ -106,8 +109,10 @@ namespace litecore { namespace repl {
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
         _dbActor->connectionClosed();
-        _pusher->connectionClosed();
-        _puller->connectionClosed();
+        if (_pusher)
+            _pusher->connectionClosed();
+        if (_puller)
+            _puller->connectionClosed();
     }
 
 
@@ -142,8 +147,9 @@ namespace litecore { namespace repl {
             }
 
             _checkpoint.decodeFrom(data);
+            auto cp = _checkpoint.sequences();
             log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
-                  SPLAT(checkpointID), _checkpoint.localSeq(), SPLAT(_checkpoint.remoteSeq()));
+                  SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
 
             // Get the remote checkpoint, using the same checkpointID:
             MessageBuilder msg("getCheckpoint"_sl);
@@ -162,9 +168,9 @@ namespace litecore { namespace repl {
                     _checkpointRevID = response->property("rev"_sl);
                 }
 
+                auto gotcp = remoteCheckpoint.sequences();
                 log("...got remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
-                    remoteCheckpoint.localSeq(), SPLAT(remoteCheckpoint.remoteSeq()),
-                    SPLAT(_checkpointRevID));
+                    gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
 
                 // Reset mismatched checkpoints:
                 _checkpoint.validateWith(remoteCheckpoint);
@@ -194,6 +200,8 @@ namespace litecore { namespace repl {
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
                 _dbActor->setCheckpoint(json);
             }
+            // Tell the checkpoint the save is finished, so it will call me again
+            _checkpoint.saved();
         });
     }
 

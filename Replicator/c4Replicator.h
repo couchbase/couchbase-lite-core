@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "c4Database.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,10 +23,16 @@ extern "C" {
         C4Slice path;
     } C4Address;
 
+    typedef enum {
+        kC4Disabled,
+        kC4Passive,
+        kC4OneShot,
+        kC4Continuous
+    } C4ReplicationMode;
+
     typedef struct {
-        bool push;
-        bool pull;
-        bool continuous;
+        C4ReplicationMode push;
+        C4ReplicationMode pull;
     } C4ReplicateOptions;
 
     typedef struct _c4Replicator C4Replicator;
