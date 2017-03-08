@@ -20,6 +20,7 @@
 #include <SQLiteCpp/Exception.h>
 #include <errno.h>
 #include <string>
+#include <netdb.h>
 
 #if __ANDROID__
 #include <android/log.h>
@@ -157,6 +158,33 @@ namespace litecore {
         return str;
     }
 
+    static const char* websocket_errstr(int code) {
+        static const char* kWebSocketMessages[] = {
+            "normal close",                     // 1000
+            "peer going away",
+            "protocol error",
+            "unsupported data",
+            "reserved",
+            "no status code received",          // 1005
+            "connection closed abnormally",
+            "inconsistent data",
+            "policy violation",
+            "message too big",
+            "extension not negotiated",         // 1010
+            "unexpected condition",
+            nullptr,
+            nullptr,
+            nullptr,
+            "TLS handshake failed",
+        };
+        const char *str = nullptr;
+        if (code >= 1000 && code < 1000 + sizeof(kWebSocketMessages)/sizeof(char*))
+            str = kWebSocketMessages[code - 1000];
+        if (!str)
+            str = "(unknown WebSocket status)";
+        return str;
+    }
+
     string error::_what(error::Domain domain, int code) noexcept {
         switch (domain) {
             case LiteCore:
@@ -167,6 +195,10 @@ namespace litecore {
                 return sqlite3_errstr(code);
             case Fleece:
                 return fleece_errstr((fleece::ErrorCode)code);
+            case DNS:
+                return gai_strerror(code);
+            case WebSocket:
+                return websocket_errstr(code);
             default:
                 return "unknown error domain";
         }

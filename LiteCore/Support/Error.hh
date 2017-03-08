@@ -31,6 +31,8 @@ namespace litecore {
             ForestDB,
             SQLite,
             Fleece,
+            DNS,
+            WebSocket,
         };
 
         // Error codes in LiteCore domain:

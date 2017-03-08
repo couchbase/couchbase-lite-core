@@ -90,6 +90,8 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     ForestDBDomain,     // code is a fdb_status
     SQLiteDomain,       // code is a SQLite error
     FleeceDomain,       // code is a Fleece error
+    DNSDomain,          // code is a DNS resolution error from <netdb.h> (EAI_*)
+    WebSocketDomain,    // code is a WebSocket close code (typically 1000...1015)
 };
 
 
