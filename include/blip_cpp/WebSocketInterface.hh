@@ -55,6 +55,20 @@ namespace litecore { namespace websocket {
     };
 
 
+    /** Reasons for a WebSocket closing. */
+    enum CloseReason {
+        kWebSocketClose,        // Closed by WebSocket protocol
+        kPOSIXError,            // Closed due to network error (see <errno.h>)
+        kDNSError               // Closed due to DNS error (see <netdb.h>)
+    };
+
+    struct CloseStatus {
+        CloseReason reason;
+        int code;
+        fleece::alloc_slice message;
+    };
+
+
     /** Abstract class that can create WebSockets. */
     class Provider {
     public:
@@ -112,7 +126,7 @@ namespace litecore { namespace websocket {
 
         virtual void onWebSocketStart() { }
         virtual void onWebSocketConnect() =0;
-        virtual void onWebSocketClose(bool normalClose, int status, fleece::slice reason) =0;
+        virtual void onWebSocketClose(CloseStatus) =0;
 
         /** A message has arrived. */
         virtual void onWebSocketMessage(fleece::slice message, bool binary) =0;
@@ -136,6 +150,22 @@ namespace litecore { namespace websocket {
             name = (std::string)_address;
         connect();
     }
+
+
+    enum CloseCode {
+        kCodeNormal = 1000,
+        kCodeGoingAway,
+        kCodeProtocolError,
+        kCodeUnsupportedData,
+        kCodeStatusCodeExpected = 1005,
+        kCodeAbnormal,
+        kCodeInconsistentData,
+        kCodePolicyViolation,
+        kCodeMessageTooBig,
+        kCodeExtensionNotNegotiated,
+        kCodeUnexpectedCondition,
+        kCodeFailedTLSHandshake = 1015,
+    };
 
 
 } }

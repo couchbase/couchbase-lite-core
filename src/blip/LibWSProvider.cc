@@ -110,11 +110,11 @@ namespace litecore { namespace websocket {
                             const char *reason, size_t reason_len,
                             void *context) noexcept
         {
-            // TODO: Use type, which is WS_ERRTYPE_LIB, WS_ERRTYPE_PROTOCOL, or WS_ERRTYPE_DNS
             try {
                 auto socket = (LibWSWebSocket*)context;
-                socket->delegate().onWebSocketClose((type == WS_ERRTYPE_PROTOCOL),
-                                                    code, {reason, reason_len});
+                socket->delegate().onWebSocketClose({(CloseReason)type,
+                                                     code,
+                                                     alloc_slice(reason, reason_len)});
                 socket->clearDelegate();
             } catch (...) {
                 fprintf(stderr, "WARNING: websocket::Delegate::onClose threw an exception\n");
@@ -147,6 +147,8 @@ namespace litecore { namespace websocket {
 
 
     LibWSProvider::~LibWSProvider() {
+        if (_eventLoopThread)
+            close();
         if (_base)
             ws_global_destroy(&_base);
     }
@@ -183,8 +185,10 @@ namespace litecore { namespace websocket {
 
     void LibWSProvider::close() {
         stopEventLoop();
-        if (_eventLoopThread)
+        if (_eventLoopThread) {
             _eventLoopThread->join();
+            _eventLoopThread = nullptr;
+        }
     }
 
 } }

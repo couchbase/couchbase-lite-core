@@ -53,11 +53,14 @@ namespace litecore { namespace websocket {
             enqueueAfter(latency, &MockWebSocket::_simulateReceived, fleece::alloc_slice(message), binary);
         }
 
-        void simulateClosed(bool normalClose = true, int status =1000, const char *reason =nullptr,
-                            delay_t latency = delay_t::zero()) {
+        void simulateClosed(CloseReason reason =kWebSocketClose,
+                            int status =1000,
+                            const char *message =nullptr,
+                            delay_t latency = delay_t::zero())
+        {
             enqueueAfter(latency,
                          &MockWebSocket::_simulateClosed,
-                         normalClose, status, fleece::alloc_slice(reason));
+                         {reason, status, fleece::alloc_slice(message)});
         }
 
     protected:
@@ -82,7 +85,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _close(int status, fleece::alloc_slice message) {
-            _simulateClosed(true, status, message);
+            _simulateClosed({kWebSocketClose, status, message});
         }
 
         virtual void _send(fleece::alloc_slice msg, bool binary) {
@@ -108,11 +111,13 @@ namespace litecore { namespace websocket {
             delegate().onWebSocketMessage(msg, binary);
         }
 
-        virtual void _simulateClosed(bool normalClose, int status, fleece::alloc_slice reason) {
-            LogTo(WSMock, "%s %s; status=%d",
-                  name.c_str(), (normalClose ? "CLOSED" : "DISCONNECTED"), status);
+        virtual void _simulateClosed(CloseStatus status) {
+            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
+            LogTo(WSMock, "%s Closing with %s %d: %.*s",
+                  name.c_str(), kReasonNames[status.reason], status.code,
+                  (int)status.message.size, status.message.buf);
             _isOpen = false;
-            delegate().onWebSocketClose(normalClose, status, reason);
+            delegate().onWebSocketClose(status);
             _closed();
         }
 

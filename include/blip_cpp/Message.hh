@@ -20,6 +20,9 @@
 namespace fleeceapi {
     class Value;
 }
+namespace zlibcomplete {
+    class GZipDecompressor;
+}
 
 namespace litecore { namespace blip {
 
@@ -103,6 +106,7 @@ namespace litecore { namespace blip {
     private:
         Connection* const _connection;          // The owning BLIP connection
         std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates message data (not just JSON)
+        std::unique_ptr<zlibcomplete::GZipDecompressor> _decompressor;
         uint32_t _propertiesSize {0};           // Length of properties in bytes
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties

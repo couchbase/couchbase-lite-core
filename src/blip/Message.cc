@@ -11,6 +11,7 @@
 #include "BLIPInternal.hh"
 #include "FleeceCpp.hh"
 #include "varint.hh"
+#include <zlc/zlibcomplete.hpp>
 #include <algorithm>
 #include <assert.h>
 
@@ -243,11 +244,9 @@ namespace litecore { namespace blip {
         } else {
             // On first frame, update my flags and allocate the Writer:
             assert(_number > 0);
-            LogTo(BLIPLog, "Receiving %s #%llu, flags=%02x",
-                  kMessageTypeNames[type()], _number, flags());
-            _flags = frameFlags;
-            if (_flags & kCompressed)
-                throw "compression isn't supported yet";  //TODO: Implement compression
+            _flags = (FrameFlags)(frameFlags & ~kMoreComing);
+            _connection->log("Receiving %s #%llu, flags=%02x",
+                             kMessageTypeNames[type()], _number, flags());
             _in.reset(new fleeceapi::JSONEncoder);
             // Get the length of the properties, and move `frame` past the length field:
             if (!ReadUVarInt32(&frame, &_propertiesSize))
@@ -279,7 +278,14 @@ namespace litecore { namespace blip {
             _unackedBytes = 0;
         }
 
-        _in->writeRaw(frame);
+        if (_flags & kCompressed) {
+            if (!_decompressor)
+                _decompressor.reset( new zlibcomplete::GZipDecompressor );
+            string output = _decompressor->decompress(frame.asString());
+            _in->writeRaw(slice(output));
+        } else {
+            _in->writeRaw(frame);
+        }
 
         if (frameFlags & kMoreComing) {
             return false;
@@ -289,9 +295,10 @@ namespace litecore { namespace blip {
                 throw "message ends before end of properties";
             _body = _in->finish();
             _in.reset();
+            _decompressor.reset();
 
-            LogTo(BLIPLog, "Finished receiving %s #%llu, flags=%02x",
-                  kMessageTypeNames[type()], _number, flags());
+            _connection->log("Finished receiving %s #%llu, flags=%02x",
+                             kMessageTypeNames[type()], _number, flags());
             if (_future) {
                 _future->fulfil(this);
                 _future = nullptr;
@@ -317,7 +324,7 @@ namespace litecore { namespace blip {
 
     void MessageIn::respond(MessageBuilder &mb) {
         if (noReply()) {
-            LogTo(BLIPLog, "Ignoring attempt to respond to a noReply message");
+            _connection->log("Ignoring attempt to respond to a noReply message");
             return;
         }
         if (mb.type == kRequestType)

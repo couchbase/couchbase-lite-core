@@ -9,6 +9,7 @@
 #pragma once
 #include "WebSocketInterface.hh"
 #include "Message.hh"
+#include <atomic>
 
 namespace litecore { namespace blip {
     class BLIPIO;
@@ -19,8 +20,19 @@ namespace litecore { namespace blip {
     /** A BLIP connection. Use this object to open and close connections and send requests.
         The connection notifies about events and messages by calling its delegate.
         The methods are thread-safe. */
-    class Connection : public RefCounted {
+    class Connection : public RefCounted, Logging {
     public:
+
+        enum State {
+            kDisconnected = -1,
+            kClosed = 0,
+            kConnecting,
+            kConnected,
+            kClosing,
+        };
+
+        using CloseStatus = websocket::CloseStatus;
+
         /** Creates a BLIP connection to an address, opening a WebSocket. */
         Connection(const websocket::Address&,
                    websocket::Provider &provider,
@@ -50,8 +62,9 @@ namespace litecore { namespace blip {
         /** Closes the connection. */
         void close();
 
-        bool isClosed()                                         {return _closed;}
+        State state()                                           {return _state;}
 
+        virtual std::string loggingIdentifier() const override {return _name;}
 #if DEBUG
         websocket::WebSocket* webSocket() const;
 #endif
@@ -61,7 +74,8 @@ namespace litecore { namespace blip {
         friend class BLIPIO;
 
         void send(MessageOut*);
-        void closed(bool normalClose, int code, fleece::slice reason);
+        void connected();
+        void closed(CloseStatus);
 
     private:
         void start(websocket::WebSocket*);
@@ -70,7 +84,8 @@ namespace litecore { namespace blip {
         bool const _isServer;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
-        std::atomic<bool> _closed {false};
+        std::atomic<State> _state {kClosed};
+        CloseStatus _closeStatus;
     };
 
 
@@ -85,10 +100,8 @@ namespace litecore { namespace blip {
         virtual void onConnect()                                { }
 
         /** Called when the connection closes, or fails to open.
-            @param normalClose  True if the WebSocket closed cleanly; false on an error.
-            @param status  A WebSocket status (on normal close) or POSIX errno (on error).
-            @param reason  A message, if any, describing the status. */
-        virtual void onClose(bool normalClose, int status, fleece::slice reason)  =0;
+            @param status  The reason for the close, a status code, and a message. */
+        virtual void onClose(Connection::CloseStatus status)  =0;
 
         /** Called when an incoming request is received. */
         virtual void onRequestReceived(MessageIn* request)      {request->notHandled();}

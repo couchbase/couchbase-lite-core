@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2759DC1C1E7088F900F3C4B2 /* gzipcomplete.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 2759DC171E7088F900F3C4B2 /* gzipcomplete.hpp */; };
+		2759DC1D1E7088F900F3C4B2 /* zlibbase.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 2759DC181E7088F900F3C4B2 /* zlibbase.hpp */; };
+		2759DC1E1E7088F900F3C4B2 /* zlibcomplete.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 2759DC191E7088F900F3C4B2 /* zlibcomplete.hpp */; };
+		2759DC1F1E7088F900F3C4B2 /* zlibmisc.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 2759DC1A1E7088F900F3C4B2 /* zlibmisc.hpp */; };
+		2759DC201E7088F900F3C4B2 /* zlibraw.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 2759DC1B1E7088F900F3C4B2 /* zlibraw.hpp */; };
+		2759DC211E70890300F3C4B2 /* gzipcomplete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC0D1E6FA7D300F3C4B2 /* gzipcomplete.cpp */; };
+		2759DC221E70890300F3C4B2 /* mainpage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC0E1E6FA7D300F3C4B2 /* mainpage.cpp */; };
+		2759DC231E70890300F3C4B2 /* zlibmisc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC101E6FA7D300F3C4B2 /* zlibmisc.cpp */; };
+		2759DC241E70890300F3C4B2 /* zlibtop.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC111E6FA7D300F3C4B2 /* zlibtop.cpp */; settings = {COMPILER_FLAGS = "-Wno-shorten-64-to-32"; }; };
 		275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0DF1E57A5650084E014 /* libFleece.a */; };
 		2773FD011E69FD9100108780 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
 		2773FD021E69FD9100108780 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
@@ -108,6 +117,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2759DC0D1E6FA7D300F3C4B2 /* gzipcomplete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gzipcomplete.cpp; path = lib/gzipcomplete.cpp; sourceTree = "<group>"; };
+		2759DC0E1E6FA7D300F3C4B2 /* mainpage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mainpage.cpp; path = lib/mainpage.cpp; sourceTree = "<group>"; };
+		2759DC101E6FA7D300F3C4B2 /* zlibmisc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zlibmisc.cpp; path = lib/zlibmisc.cpp; sourceTree = "<group>"; };
+		2759DC111E6FA7D300F3C4B2 /* zlibtop.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zlibtop.cpp; path = lib/zlibtop.cpp; sourceTree = "<group>"; };
+		2759DC171E7088F900F3C4B2 /* gzipcomplete.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = gzipcomplete.hpp; sourceTree = "<group>"; };
+		2759DC181E7088F900F3C4B2 /* zlibbase.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = zlibbase.hpp; sourceTree = "<group>"; };
+		2759DC191E7088F900F3C4B2 /* zlibcomplete.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = zlibcomplete.hpp; sourceTree = "<group>"; };
+		2759DC1A1E7088F900F3C4B2 /* zlibmisc.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = zlibmisc.hpp; sourceTree = "<group>"; };
+		2759DC1B1E7088F900F3C4B2 /* zlibraw.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = zlibraw.hpp; sourceTree = "<group>"; };
 		275CE0DE1E579F8D0084E014 /* MockProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = MockProvider.hh; path = ../include/blip_cpp/MockProvider.hh; sourceTree = "<group>"; };
 		275CE0DF1E57A5650084E014 /* libFleece.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFleece.a; path = ../../../../build/CouchbaseLite/Build/Products/Debug/libFleece.a; sourceTree = "<group>"; };
 		275CE0EF1E590B190084E014 /* LoopbackProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = LoopbackProvider.hh; path = ../include/blip_cpp/LoopbackProvider.hh; sourceTree = "<group>"; };
@@ -215,6 +233,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2759DC0C1E6FA7A700F3C4B2 /* zlibcomplete */ = {
+			isa = PBXGroup;
+			children = (
+				2759DC161E7088F900F3C4B2 /* zlc */,
+				2759DC0D1E6FA7D300F3C4B2 /* gzipcomplete.cpp */,
+				2759DC0E1E6FA7D300F3C4B2 /* mainpage.cpp */,
+				2759DC101E6FA7D300F3C4B2 /* zlibmisc.cpp */,
+				2759DC111E6FA7D300F3C4B2 /* zlibtop.cpp */,
+			);
+			path = zlibcomplete;
+			sourceTree = "<group>";
+		};
+		2759DC161E7088F900F3C4B2 /* zlc */ = {
+			isa = PBXGroup;
+			children = (
+				2759DC171E7088F900F3C4B2 /* gzipcomplete.hpp */,
+				2759DC181E7088F900F3C4B2 /* zlibbase.hpp */,
+				2759DC191E7088F900F3C4B2 /* zlibcomplete.hpp */,
+				2759DC1A1E7088F900F3C4B2 /* zlibmisc.hpp */,
+				2759DC1B1E7088F900F3C4B2 /* zlibraw.hpp */,
+			);
+			name = zlc;
+			path = lib/zlc;
+			sourceTree = "<group>";
+		};
 		27EF69AE1E282549004748DF = {
 			isa = PBXGroup;
 			children = (
@@ -309,6 +352,7 @@
 		27EF69F11E2829E0004748DF /* vendor */ = {
 			isa = PBXGroup;
 			children = (
+				2759DC0C1E6FA7A700F3C4B2 /* zlibcomplete */,
 				27EF6A4B1E28577F004748DF /* fleece */,
 				27EF69F21E2829EC004748DF /* libws */,
 				27EF6A3E1E2854E1004748DF /* Support */,
@@ -411,12 +455,17 @@
 				27EF6A551E2857F7004748DF /* varint.hh in Headers */,
 				27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */,
 				27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */,
+				2759DC201E7088F900F3C4B2 /* zlibraw.hpp in Headers */,
 				27EF6A441E28558E004748DF /* RefCounted.hh in Headers */,
 				2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */,
 				2773FD021E69FD9100108780 /* Timer.hh in Headers */,
 				27EF6A531E2857F7004748DF /* slice.hh in Headers */,
 				27EF6A691E2858E7004748DF /* Actor.hh in Headers */,
+				2759DC1C1E7088F900F3C4B2 /* gzipcomplete.hpp in Headers */,
+				2759DC1E1E7088F900F3C4B2 /* zlibcomplete.hpp in Headers */,
 				27EF6A571E2857F7004748DF /* Writer.hh in Headers */,
+				2759DC1D1E7088F900F3C4B2 /* zlibbase.hpp in Headers */,
+				2759DC1F1E7088F900F3C4B2 /* zlibmisc.hpp in Headers */,
 				27EF6A751E28594F004748DF /* PlatformCompat.hh in Headers */,
 				27EF69E91E282662004748DF /* BLIPConnection.hh in Headers */,
 				27EF6A621E28587A004748DF /* decode.h in Headers */,
@@ -551,23 +600,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27EF6A5E1E28587A004748DF /* cdecode.c in Sources */,
-				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
-				27EF6A601E28587A004748DF /* cencode.c in Sources */,
-				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
+				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
 				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
-				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A681E2858E7004748DF /* Actor.cc in Sources */,
-				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
-				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
 				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
+				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
+				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
-				27EF69D91E28260D004748DF /* LibWSProvider.cc in Sources */,
-				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
-				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
 				27EF6A541E2857F7004748DF /* varint.cc in Sources */,
+				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
+				27EF69D91E28260D004748DF /* LibWSProvider.cc in Sources */,
+				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
+				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
+				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
 				27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */,
+				27EF6A601E28587A004748DF /* cencode.c in Sources */,
+				27EF6A5E1E28587A004748DF /* cdecode.c in Sources */,
+				2759DC241E70890300F3C4B2 /* zlibtop.cpp in Sources */,
+				2759DC221E70890300F3C4B2 /* mainpage.cpp in Sources */,
+				2759DC231E70890300F3C4B2 /* zlibmisc.cpp in Sources */,
+				2759DC211E70890300F3C4B2 /* gzipcomplete.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -714,6 +767,7 @@
 					"$(SRCROOT)/../fleece/Fleece/",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/zlibcomplete/lib/";
 			};
 			name = Debug;
 		};
@@ -730,6 +784,7 @@
 					"$(SRCROOT)/../fleece/Fleece/",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/zlibcomplete/lib/";
 			};
 			name = Release;
 		};
