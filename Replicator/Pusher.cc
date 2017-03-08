@@ -32,6 +32,7 @@ namespace litecore { namespace repl {
     void Pusher::start(C4SequenceNumber sinceSequence) {
         log("Starting %spush from local seq %llu",
             (_continuous ? "continuous " : ""), _lastSequence+1);
+        _started = true;
         _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
     }
@@ -39,7 +40,7 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "subChanges" message: starts passive push (i.e. the peer is pulling).
     void Pusher::handleSubChanges(Retained<MessageIn> req) {
-        if (active()) {
+        if (nonPassive()) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
             req->respondWithError("LiteCore"_sl, kC4ErrorConflict,
                                   "I'm already pushing"_sl);     //TODO: Proper error code
@@ -84,46 +85,55 @@ namespace litecore { namespace repl {
         }
 
         // Send the "changes" request, and asynchronously handle the response:
+        bool caughtUpWhenSent = _caughtUp;
         auto r = sendChanges(changes);
-        onReady(r, [this, changes](MessageIn* reply) {
-            // Got response to the 'changes' message:
-            --_changeListsInFlight;
-            maybeGetMoreChanges();
 
-            if (reply->isError())
-                return gotError(reply);
-
-            // The response contains an array that, for each change in the outgoing message,
-            // contains either a list of known ancestors, or null/false/0 if not interested.
-            int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
-            auto requests = reply->JSONBody().asArray();
-
-            unsigned index = 0;
-            for (auto &change : changes) {
-                Array ancestorArray = requests[index].asArray();
-                if (ancestorArray) {
-                    auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
-                    request->ancestorRevIDs.reserve(ancestorArray.count());
-                    for (Value a : ancestorArray) {
-                        slice revid = a.asString();
-                        if (revid)
-                            request->ancestorRevIDs.emplace_back(revid);
-                    }
-                    logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
-                               SPLAT(request->docID), SPLAT(request->revID), request->sequence);
-                } else {
-                    markComplete(change.sequence);  // unwanted, so we're done with it
+        if (r) {
+            onReady(r, [this, changes, caughtUpWhenSent](MessageIn* reply) {
+                // Got response to the 'changes' message:
+                if (!caughtUpWhenSent) {
+                    assert(_changeListsInFlight >= 0);
+                    --_changeListsInFlight;
+                    maybeGetMoreChanges();
                 }
-                ++index;
-            }
-            sendMoreRevs();
-        });
+
+                if (reply->isError())
+                    return gotError(reply);
+
+                // The response contains an array that, for each change in the outgoing message,
+                // contains either a list of known ancestors, or null/false/0 if not interested.
+                int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
+                auto requests = reply->JSONBody().asArray();
+
+                unsigned index = 0;
+                for (auto &change : changes) {
+                    Array ancestorArray = requests[index].asArray();
+                    if (ancestorArray) {
+                        auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
+                        request->ancestorRevIDs.reserve(ancestorArray.count());
+                        for (Value a : ancestorArray) {
+                            slice revid = a.asString();
+                            if (revid)
+                                request->ancestorRevIDs.emplace_back(revid);
+                        }
+                        logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
+                                   SPLAT(request->docID), SPLAT(request->revID), request->sequence);
+                    } else {
+                        markComplete(change.sequence);  // unwanted, so we're done with it
+                    }
+                    ++index;
+                }
+                sendMoreRevs();
+            });
+        } else {
+            --_changeListsInFlight;
+        }
 
         if (changes.size() < _changesBatchSize) {
             if (!_caughtUp) {
                 log("Caught up, at lastSequence %llu", _lastSequenceRead);
                 _caughtUp = true;
-                if (changes.size() > 0 && !active()) {
+                if (changes.size() > 0 && !nonPassive()) {
                     // The protocol says catching up is signaled by an empty changes list:
                     sendChanges(RevList());
                 }
@@ -138,10 +148,11 @@ namespace litecore { namespace repl {
     blip::FutureResponse Pusher::sendChanges(const RevList &changes) {
         MessageBuilder req("changes"_sl);
         req.urgent = kChangeMessagesAreUrgent;
+        req.noreply = (changes.empty());
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
-            if (active())
+            if (nonPassive())
                 _pendingSequences.add(change.sequence);
             enc.beginArray();
             enc << change.sequence << change.docID << change.revID;
@@ -167,7 +178,7 @@ namespace litecore { namespace repl {
     void Pusher::sendRevision(const RevRequest &rev)
     {
         function<void(MessageIn*)> onReply;
-        if (active()) {
+        if (nonPassive()) {
             // Callback for after the peer receives the "rev" message:
             ++_revisionsInFlight;
             onReply = asynchronize([=](Retained<MessageIn> reply) {
@@ -192,7 +203,7 @@ namespace litecore { namespace repl {
 
     // Records that a sequence has been successfully pushed.
     void Pusher::markComplete(C4SequenceNumber sequence) {
-        if (active()) {
+        if (nonPassive()) {
             _pendingSequences.remove(sequence);
             auto firstPending = _pendingSequences.first();
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
@@ -205,22 +216,24 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Pusher::isBusy() const {
-        return ReplActor::isBusy()
-            || !_caughtUp
-            || _changeListsInFlight > 0
-            || _revisionsInFlight > 0
-            || !_revsToSend.empty()
-            || !_pendingSequences.empty();
+    ReplActor::ActivityLevel Pusher::computeActivityLevel() const {
+//        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revsToSend.size(), _pendingSequences.size());
+        if (ReplActor::computeActivityLevel() == kBusy
+                || (_started && !_caughtUp)
+                || _changeListsInFlight > 0
+                || _revisionsInFlight > 0
+                || !_revsToSend.empty()
+                || !_pendingSequences.empty()) {
+            return kBusy;
+        } else if (_options.push == kC4Continuous || isOpenServer()) {
+            return kIdle;
+        } else {
+            return kStopped;
+        }
     }
 
-
-    // Called after every event; updates busy status & detects when I'm done
-    void Pusher::afterEvent() {
-        if (!isBusy() && !(active() && _continuous) && isOpenClient()) {
-            log("Finished!");
-            _replicator->taskComplete(true);
-        }
+    void Pusher::activityLevelChanged(ActivityLevel level) {
+        _replicator->taskChangedActivityLevel(this, level);
     }
 
 } }

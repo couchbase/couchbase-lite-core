@@ -63,8 +63,23 @@ namespace litecore { namespace repl {
     }
 
 
-    bool ReplActor::isBusy() const {
-        return eventCount() > 1 || _pendingResponseCount > 0;
+    ReplActor::ActivityLevel ReplActor::computeActivityLevel() const {
+        if (eventCount() > 1 || _pendingResponseCount > 0)
+            return kBusy;
+        else
+            return kIdle;
+    }
+
+
+    // Called after every event; updates busy status & detects when I'm done
+    void ReplActor::afterEvent() {
+        auto newLevel = computeActivityLevel();
+        if (newLevel != _activityLevel) {
+            _activityLevel = newLevel;
+            const char *kLevelNames[] = {"stopped!", "connecting", "idle", "busy"};
+            log("now %s", kLevelNames[newLevel]);
+            activityLevelChanged(newLevel);
+        }
     }
 
 

@@ -16,6 +16,7 @@ extern "C" {
     /** \defgroup Replicator Replicator
         @{ */
 
+    /** A simple parsed-URL type */
     typedef struct {
         C4Slice scheme;
         C4Slice hostname;
@@ -23,24 +24,43 @@ extern "C" {
         C4Slice path;
     } C4Address;
 
+    /** How to replicate, in either direction */
     typedef enum {
-        kC4Disabled,
-        kC4Passive,
-        kC4OneShot,
-        kC4Continuous
+        kC4Disabled,        // Do not allow this direction
+        kC4Passive,         // Allow peer to initiate this direction
+        kC4OneShot,         // Replicate, then stop
+        kC4Continuous       // Keep replication active until stopped by application
     } C4ReplicationMode;
+
+    typedef enum {
+        kStopped,
+        kConnecting,
+        kIdle,
+        kBusy
+    } C4ReplicationState;
+
+    typedef struct C4Replicator C4Replicator;
+
+    typedef void (*C4ReplicatorStateChangedCallback)(C4Replicator*,
+                                                     C4ReplicationState,
+                                                     C4Error);
 
     typedef struct {
         C4ReplicationMode push;
         C4ReplicationMode pull;
-    } C4ReplicateOptions;
+        C4ReplicatorStateChangedCallback onStateChanged;
+    } C4ReplicationOptions;
 
-    typedef struct _c4Replicator C4Replicator;
 
     C4Replicator* c4repl_new(C4Database* db,
                              C4Address address,
-                             C4ReplicateOptions options,
+                             C4ReplicationOptions options,
                              C4Error *err) C4API;
+
+    void c4repl_free(C4Replicator* repl) C4API;
+
+    C4ReplicationState c4repl_getState(C4Replicator *repl) C4API;
+
 
     /** @} */
 

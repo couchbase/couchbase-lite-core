@@ -28,9 +28,9 @@ namespace litecore { namespace repl {
         }
 
     private:
-        bool active() const                         {return _options.push > kC4Passive;}
-        virtual bool isBusy() const override;
-        virtual void afterEvent() override;
+        bool nonPassive() const                         {return _options.push > kC4Passive;}
+        virtual ActivityLevel computeActivityLevel() const override;
+        virtual void activityLevelChanged(ActivityLevel level) override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(RevList changes, C4Error err);
@@ -57,6 +57,7 @@ namespace litecore { namespace repl {
         bool _gettingChanges {false};                   // Waiting for _gotChanges() call?
         SequenceSet _pendingSequences;                  // Sequences rcvd from db but not pushed yet
         C4SequenceNumber _lastSequenceRead {0};         // Last sequence read from db
+        bool _started {false};
         bool _caughtUp {false};                         // Received backlog of existing changes?
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
         unsigned _revisionsInFlight {0};                // # 'rev' messages being sent

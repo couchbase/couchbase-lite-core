@@ -18,6 +18,7 @@
 
 
 namespace litecore { namespace repl {
+    class Replicator;
 
     /** Time duration unit: seconds, stored as 64-bit floating point. */
     using duration = std::chrono::nanoseconds;
@@ -45,6 +46,8 @@ namespace litecore { namespace repl {
             static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
             static Options passive()                       {return Options(kC4Passive, kC4Passive);}
         };
+
+        using ActivityLevel = C4ReplicationState;
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
@@ -86,19 +89,25 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
-        bool isOpenClient() const           {return _connection && !_connection->isServer();}
+        bool isOpenClient() const               {return _connection && !_connection->isServer();}
+        bool isOpenServer() const               {return _connection &&  _connection->isServer();}
 
-        virtual bool isBusy() const;
+        virtual ActivityLevel computeActivityLevel() const;
+        virtual void activityLevelChanged(ActivityLevel level)    { }
+        ActivityLevel activityLevel() const     {return _activityLevel;}
 
+        virtual void afterEvent() override;
         virtual std::string loggingIdentifier() const override {
             return actorName();
         }
 
         Options _options;
+        Replicator* _replicator {nullptr};
 
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
+        ActivityLevel _activityLevel {kIdle};
     };
 
 } }

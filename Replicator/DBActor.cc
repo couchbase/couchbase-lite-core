@@ -63,12 +63,14 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::_setCheckpoint(alloc_slice data) {
+    void DBActor::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
-        log("Saving local checkpoint %.*s to db", SPLAT(checkpointID));
-        if (!c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
+        if (c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
+            log("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
+        else
             gotError(err);
+        onComplete();
     }
 
 
@@ -246,7 +248,7 @@ namespace litecore { namespace repl {
         auto changes = req->JSONBody().asArray();
         log("Looking up %u revisions in the db ...", changes.count());
         MessageBuilder response(req);
-        response["maxRevs"_sl] = c4db_getMaxRevTreeDepth(_db);
+        response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         vector<alloc_slice> requestedSequences;
         unsigned i = 0, itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
@@ -308,6 +310,7 @@ namespace litecore { namespace repl {
             return gotError(c4err);
         if (!c4doc_selectRevision(doc, request.revID, true, &c4err))
             return gotError(c4err);
+        slice revisionBody = doc->selectedRev.body;
 
         // Generate the revision history string:
         set<slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
@@ -331,11 +334,11 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
         if (doc->selectedRev.flags & kRevDeleted)
-            msg["del"_sl] = "1"_sl;
+            msg["deleted"_sl] = "1"_sl;
         if (!history.empty())
             msg["history"_sl] = history;
 
-        auto root = fleeceapi::Value::fromTrustedData(doc->selectedRev.body);
+        auto root = fleeceapi::Value::fromTrustedData(revisionBody);
         assert(root);
         msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
         msg.jsonBody().writeValue(root);

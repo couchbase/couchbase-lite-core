@@ -75,8 +75,8 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_getCheckpoint, cb);
         }
 
-        void setCheckpoint(const alloc_slice &data) {
-            enqueue(&DBActor::_setCheckpoint, data);
+        void setCheckpoint(const alloc_slice &data, std::function<void()> onComplete) {
+            enqueue(&DBActor::_setCheckpoint, data, onComplete);
         }
 
         void getChanges(C4SequenceNumber since, unsigned limit, bool continuous, Pusher*);
@@ -104,7 +104,7 @@ namespace litecore { namespace repl {
 
         slice effectiveRemoteCheckpointDocID();
         void _getCheckpoint(CheckpointCallback);
-        void _setCheckpoint(alloc_slice data);
+        void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                          Retained<Pusher>);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,

@@ -63,6 +63,9 @@ namespace litecore { namespace repl {
             SaveCallback returns. */
         void saved();
 
+        /** Returns true if the checkpoint has changes that haven't been saved yet. */
+        bool isUnsaved() const;
+
     private:
         fleece::alloc_slice _encode() const;
         void set(const C4SequenceNumber *local, const fleece::slice *remote);

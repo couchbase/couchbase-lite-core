@@ -26,6 +26,7 @@ namespace litecore {
         void clear(sequence max =0)             {_sequences.clear(); _max = max;}
 
         bool empty() const                      {return _sequences.empty();}
+        size_t size() const                     {return _sequences.size();}
 
         /** Returns the lowest sequence in the set. If the set is empty, returns 0. */
         sequence first() const                  {return empty() ? 0 : *_sequences.begin();}

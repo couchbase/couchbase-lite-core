@@ -66,7 +66,7 @@ namespace litecore { namespace repl {
             // Pass the buck to the DBActor so it can find the missing revs & request them:
             ++_pendingCallbacks;
             _dbActor->findOrRequestRevs(req, asynchronize([this](vector<alloc_slice> requests) {
-                if (active()) {
+                if (nonPassive()) {
                     for (auto &r : requests)
                         _requestedSequences.add(r);
                     log("Now waiting on %zu revisions", _requestedSequences.size());
@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
         Rev rev;
         rev.docID = msg->property("id"_sl);
         rev.revID = msg->property("rev"_sl);
-        bool deleted = !!msg->property("del"_sl);
+        bool deleted = !!msg->property("deleted"_sl);
         slice history = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
 
@@ -93,7 +93,7 @@ namespace litecore { namespace repl {
             msg->respondWithError("BLIP"_sl, 400);
             return;
         }
-        if (active() && !sequence) {
+        if (nonPassive() && !sequence) {
             warn("Missing sequence in 'rev' message for active puller");
             msg->respondWithError("BLIP"_sl, 400);
             return;
@@ -107,7 +107,7 @@ namespace litecore { namespace repl {
         }
 
         function<void(C4Error)> onInserted;
-        if (!msg->noReply() || active()) {
+        if (!msg->noReply() || nonPassive()) {
             ++_pendingCallbacks;
             onInserted = asynchronize([=](C4Error err) {
                 if (err.code) {
@@ -131,7 +131,7 @@ namespace litecore { namespace repl {
 
     // Records that a sequence has been successfully pushed.
     void Puller::markComplete(const alloc_slice &sequence) {
-        if (active()) {
+        if (nonPassive()) {
             if (_requestedSequences.remove(sequence)) {
                 _lastSequence = _requestedSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
@@ -141,20 +141,21 @@ namespace litecore { namespace repl {
     }
 
     
-    bool Puller::isBusy() const {
-        return ReplActor::isBusy()
-            || (!_caughtUp && active())
-            || !_requestedSequences.empty()
-            || _pendingCallbacks > 0;
+    ReplActor::ActivityLevel Puller::computeActivityLevel() const {
+        if (ReplActor::computeActivityLevel() == kBusy
+                || (!_caughtUp && nonPassive())
+                || !_requestedSequences.empty()
+                || _pendingCallbacks > 0) {
+            return kBusy;
+        } else if (_options.pull == kC4Continuous || isOpenServer()) {
+            return kIdle;
+        } else {
+            return kStopped;
+        }
     }
 
-
-    // Called after every event; updates busy status & detects when I'm done
-    void Puller::afterEvent() {
-        if (!isBusy() && !(active() && _options.pull == kC4Continuous) && isOpenClient()) {
-            log("Finished!");
-            _replicator->taskComplete(false);
-        }
+    void Puller::activityLevelChanged(ActivityLevel level) {
+        _replicator->taskChangedActivityLevel(this, level);
     }
 
 

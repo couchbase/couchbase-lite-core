@@ -27,12 +27,14 @@ namespace litecore { namespace repl {
 
     Replicator::Replicator(C4Database* db,
                            const websocket::Address &address,
+                           Delegate &delegate,
                            Options options,
                            Connection *connection)
     :ReplActor(connection, options, "Repl")
     ,_remoteAddress(address)
-    ,_pushing(options.push > kC4Passive)
-    ,_pulling(options.pull > kC4Passive)
+    ,_delegate(delegate)
+    ,_pushActivity(options.push == kC4Disabled ? kStopped : kIdle)
+    ,_pullActivity(options.pull == kC4Disabled ? kStopped : kIdle)
     ,_dbActor(new DBActor(connection, db, address, options))
     {
         if (options.push != kC4Disabled)
@@ -47,16 +49,24 @@ namespace litecore { namespace repl {
     Replicator::Replicator(C4Database *db,
                            websocket::Provider &provider,
                            const websocket::Address &address,
+                           Delegate &delegate,
                            Options options)
-    :Replicator(db, address, options, new Connection(address, provider, *this))
+    :Replicator(db, address, delegate, options, new Connection(address, provider, *this))
     { }
 
     Replicator::Replicator(C4Database *db,
                            websocket::WebSocket *webSocket,
                            const websocket::Address& address,
+                           Delegate &delegate,
                            Options options)
-    :Replicator(db, address, options, new Connection(webSocket, *this))
+    :Replicator(db, address, delegate, options, new Connection(webSocket, *this))
     { }
+
+
+    void Replicator::_stop() {
+        if (connection())
+            connection()->close();
+    }
 
 
     // Called after the checkpoint is established.
@@ -70,21 +80,49 @@ namespace litecore { namespace repl {
 
 
     // The Pusher or Puller has finished.
-    void Replicator::_taskComplete(bool isPush) {
-        if (isPush)
-            _pushing = false;
-        else
-            _pulling = false;
-        _checkpoint.save();
+    void Replicator::_taskChangedActivityLevel(ReplActor *task, ActivityLevel level) {
+        if (task == _pusher)
+            _pushActivity = level;
+        else if (task == _puller)
+            _pullActivity = level;
+
+        logDebug("pushActivity=%d, pullActivity=%d", _pushActivity, _pullActivity);
+        if (level == kStopped)
+            _checkpoint.save();
     }
 
 
-    void Replicator::afterEvent() {
+    ReplActor::ActivityLevel Replicator::computeActivityLevel() const {
+        if (!connection())
+            return kStopped;
+        switch (connection()->state()) {
+            case Connection::kDisconnected:
+            case Connection::kClosed:
+            case Connection::kClosing:
+                return kStopped;
+            case Connection::kConnecting:
+                return kConnecting;
+            case Connection::kConnected: {
+                ActivityLevel level;
+                if (_checkpoint.isUnsaved())
+                    level = kBusy;
+                else
+                    level = ReplActor::computeActivityLevel();
+                if (level == kIdle && !isOpenServer())
+                    level = kStopped;
+                return max(level, max(_pushActivity, _pullActivity));
+            }
+        }
+    }
+
+
+    void Replicator::activityLevelChanged(ActivityLevel level) {
         // Decide whether a non-continuous active push or pull replication is done:
-        if (!_pushing && !_pulling && !isBusy() && isOpenClient()) {
+        if (level == kStopped && connection()) {
             log("Replication complete! Closing connection");
             connection()->close();
         }
+        _delegate.replicatorActivityChanged(this, level);
     }
 
 
@@ -98,14 +136,14 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::_onClose(bool normalClose, int status, alloc_slice reason) {
-        if (normalClose)
-            log("Connection closed: %.*s (status %d)", SPLAT(reason), status);
-        else
-            logError("Disconnected: %.*s (error %d)", SPLAT(reason), status);
+    void Replicator::_onClose(Connection::CloseStatus status) {
+        static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
+        log("Connection closed with %s %d: %.*s",
+            kReasonNames[status.reason], status.code, SPLAT(status.message));
 
         _checkpoint.stopAutosave();
 
+        //TODO: Save the error info
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
         _dbActor->connectionClosed();
@@ -113,6 +151,9 @@ namespace litecore { namespace repl {
             _pusher->connectionClosed();
         if (_puller)
             _puller->connectionClosed();
+
+        _closeStatus = status;
+        _delegate.replicatorCloseStatusChanged(this, status);
     }
 
 
@@ -198,10 +239,11 @@ namespace litecore { namespace repl {
                 _checkpointRevID = response->property("rev"_sl);
                 log("Successfully saved remote checkpoint %.*s as rev='%.*s'",
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
-                _dbActor->setCheckpoint(json);
+                _dbActor->setCheckpoint(json, asynchronize([this]{
+                    _checkpoint.saved();
+                }));
             }
             // Tell the checkpoint the save is finished, so it will call me again
-            _checkpoint.saved();
         });
     }
 

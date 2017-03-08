@@ -148,4 +148,7 @@ namespace litecore { namespace repl {
             save();
     }
 
+    bool Checkpoint::isUnsaved() const        {LOCK(); return _changed  || _saving;}
+
+
 } }

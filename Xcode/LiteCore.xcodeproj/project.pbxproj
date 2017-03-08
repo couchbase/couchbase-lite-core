@@ -106,6 +106,8 @@
 		2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		2759DC081E6F682200F3C4B2 /* ReplicatorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC071E6F682200F3C4B2 /* ReplicatorTest.cc */; };
+		2759DC261E70908900F3C4B2 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
 		275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		275CE0EB1E57BE430084E014 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0E81E57BE430084E014 /* libevent_core.a */; };
@@ -115,7 +117,7 @@
 		275CE0FE1E5B78F70084E014 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		275CE0FF1E5B79150084E014 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
 		275CE1001E5B79220084E014 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
-		275CE1061E5B79A80084E014 /* ReplicatorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorTest.cc */; };
+		275CE1061E5B79A80084E014 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
 		275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* ReplActor.cc */; };
 		275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275CE1141E5BAC180084E014 /* ReplActor.hh */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
@@ -791,6 +793,8 @@
 		2757DE591B9FC3F1002EE261 /* c4Base.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = c4Base.h; sourceTree = "<group>"; };
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
 		2759BD4C1DDFB15100C263B4 /* make_unique.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = make_unique.h; sourceTree = "<group>"; };
+		2759DC071E6F682200F3C4B2 /* ReplicatorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTest.cc; sourceTree = "<group>"; };
+		2759DC251E70908900F3C4B2 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
 		275CE0E81E57BE430084E014 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_core.a; sourceTree = "<group>"; };
@@ -799,7 +803,7 @@
 		275CE0EE1E57BE7E0084E014 /* CouchbaseLiteReplicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; name = CouchbaseLiteReplicator.exp; path = ../Xcode/Replicator/CouchbaseLiteReplicator.exp; sourceTree = "<group>"; };
 		275CE0F41E5B769C0084E014 /* ReplicatorTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ReplicatorTests; sourceTree = BUILT_PRODUCTS_DIR; };
 		275CE0FB1E5B772D0084E014 /* ReplicatorTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ReplicatorTests.xcconfig; sourceTree = "<group>"; };
-		275CE1051E5B79A80084E014 /* ReplicatorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTest.cc; sourceTree = "<group>"; };
+		275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorLoopbackTest.cc; sourceTree = "<group>"; };
 		275CE10F1E5B93060084E014 /* Replicator_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Replicator_Release.xcconfig; sourceTree = "<group>"; };
 		275CE1131E5BAC180084E014 /* ReplActor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplActor.cc; sourceTree = "<group>"; };
 		275CE1141E5BAC180084E014 /* ReplActor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplActor.hh; sourceTree = "<group>"; };
@@ -1152,6 +1156,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2759DC261E70908900F3C4B2 /* libz.tbd in Frameworks */,
 				27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */,
 				27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */,
 				27CCC7D21E52602C00CE1989 /* libws.a in Frameworks */,
@@ -1379,6 +1384,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				2759DC251E70908900F3C4B2 /* libz.tbd */,
 				275CE0E81E57BE430084E014 /* libevent_core.a */,
 				275CE0E91E57BE430084E014 /* libevent_extra.a */,
 				275CE0EA1E57BE430084E014 /* libevent_pthreads.a */,
@@ -1506,7 +1512,8 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
-				275CE1051E5B79A80084E014 /* ReplicatorTest.cc */,
+				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
+				2759DC071E6F682200F3C4B2 /* ReplicatorTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -1663,9 +1670,9 @@
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 				2773FCF41E6783A000108780 /* Checkpoint.cc */,
 				2773FCF51E6783A000108780 /* Checkpoint.hh */,
-				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
+				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* CouchbaseLiteReplicator.exp */,
 				275CE0FC1E5B78570084E014 /* tests */,
@@ -2553,7 +2560,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				275CE0FD1E5B78770084E014 /* main.cpp in Sources */,
-				275CE1061E5B79A80084E014 /* ReplicatorTest.cc in Sources */,
+				275CE1061E5B79A80084E014 /* ReplicatorLoopbackTest.cc in Sources */,
+				2759DC081E6F682200F3C4B2 /* ReplicatorTest.cc in Sources */,
 				275CE0FE1E5B78F70084E014 /* c4Test.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
