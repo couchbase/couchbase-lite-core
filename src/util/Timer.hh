@@ -78,9 +78,9 @@ namespace litecore {
             void run();
 
             map _schedule;                      // A priority queue of Timers ordered by time
-            std::thread _thread;                // Bg thread that waits & fires Timers
             std::mutex _mutex;                  // Thread-safety for _schedule
             std::condition_variable _condition; // Used to signal that _schedule has changed
+            std::thread _thread;                // Bg thread that waits & fires Timers
         };
 
         friend class Manager;
