@@ -8,7 +8,9 @@
 
 #pragma once
 
-#include "Fleece.h"
+#include "FleeceCpp.hh"
+
+using namespace fleeceapi;
 
 #include "c4.h"
 
@@ -40,17 +42,6 @@
 
 std::string TempDir();
 
-
-// Some operators to make C4Slice work with Catch assertions:
-bool operator== (C4Slice s1, C4Slice s2);
-static bool operator!= (C4Slice s1, C4Slice s2) {return !(s1 == s2);}
-
-static inline bool operator== (C4SliceResult sr, C4Slice s) {
-    return C4Slice{sr.buf, sr.size} == s;
-}
-static inline bool operator!= (C4SliceResult sr, C4Slice s) {
-    return C4Slice{sr.buf, sr.size} != s;
-}
 
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 std::ostream& operator<< (std::ostream &out, C4Error error);
@@ -102,7 +93,6 @@ public:
 
     C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
 
-protected:
     C4Database *db;
 
     const C4StorageEngine storageType() const   {return _storage;}
@@ -117,6 +107,8 @@ protected:
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
 
+    void createNumberedDocs(unsigned numberOfDocs);
+
     FLSlice readFile(std::string path); // caller must free buf when done
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
@@ -127,6 +119,7 @@ protected:
     C4Slice kRev2ID;   // "2-d00d3333"
     C4Slice kRev3ID;
     static const C4Slice kBody;     // "{\"name\":007}"
+    static C4Slice kFleeceBody;
 
 private:
     const C4StorageEngine _storage;

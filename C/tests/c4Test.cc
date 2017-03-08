@@ -46,9 +46,6 @@ void ps(fleece::slice s) {
 
 }
 
-bool operator== (C4Slice s1, C4Slice s2) {
-    return s1.size == s2.size && memcmp(s1.buf, s2.buf, s1.size) == 0;
-}
 
 static string c4sliceToHex(C4Slice result) {
     string hex;
@@ -155,6 +152,17 @@ C4Test::C4Test(int testOption)
         kRev2ID = C4STR("2@*");
         kRev3ID = C4STR("3@*");
     }
+
+    if (!kFleeceBody.buf) {
+        auto enc = FLEncoder_New();
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("answer"));
+        FLEncoder_WriteInt(enc, 42);
+        FLEncoder_EndDict(enc);
+        auto result = FLEncoder_Finish(enc, nullptr);
+        kFleeceBody = {result.buf, result.size};
+    }
+
 #if 0
     if (testOption & 4) {
         config.encryptionKey.algorithm = kC4EncryptionAES256;
@@ -235,6 +243,15 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     REQUIRE(doc != nullptr);
     c4doc_free(doc);
     c4doc_free(curDoc);
+}
+
+
+void C4Test::createNumberedDocs(unsigned numberOfDocs) {
+    char docID[20];
+    for (unsigned i = 1; i <= numberOfDocs; i++) {
+        sprintf(docID, "doc-%03u", i);
+        createRev(c4str(docID), kRevID, kBody);
+    }
 }
 
 
@@ -319,3 +336,4 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
+C4Slice C4Test::kFleeceBody;

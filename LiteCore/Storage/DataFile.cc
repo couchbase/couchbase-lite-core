@@ -101,7 +101,7 @@ namespace litecore {
 
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once. */
-    class DataFile::Shared : public RefCounted<DataFile::Shared> {
+    class DataFile::Shared : public RefCounted, InstanceCounted {
     public:
 
         static Shared* forPath(const FilePath &path, DataFile *dataFile) {

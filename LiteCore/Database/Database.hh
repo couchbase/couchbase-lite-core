@@ -40,11 +40,9 @@ namespace c4Internal {
 
 
     /** A top-level LiteCore database. */
-    class Database : public RefCounted<Database> {
+    class Database : public RefCounted, InstanceCounted {
     public:
-        /** Factory method. */
-        static Database* newDatabase(const string &pathStr,
-                                     C4DatabaseConfig config);
+        Database(const string &path, C4DatabaseConfig config);
 
         void close();
         void deleteDatabase();
@@ -58,6 +56,14 @@ namespace c4Internal {
 
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);
+
+        struct UUID {
+            uint8_t bytes[32];
+        };
+        static const slice kPublicUUIDKey;
+        static const slice kPrivateUUIDKey;
+
+        UUID getUUID(slice key);
 
         void rekey(const C4EncryptionKey *newKey);
 
@@ -116,8 +122,6 @@ namespace c4Internal {
         void externalTransactionCommitted(const SequenceTracker&);
 
     private:
-        Database(const FilePath &path,
-                 const C4DatabaseConfig &config);
         static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
 
         unique_ptr<DataFile>        _db;                    // Underlying DataFile
@@ -186,6 +190,9 @@ namespace c4Internal {
 
 // This is the struct that's forward-declared in the public c4Database.h
 struct c4Database : public c4Internal::Database {
+    c4Database(const FilePath &path, C4DatabaseConfig config)
+    :Database(path, config) { }
+    
     bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
     bool mustBeInTransaction(C4Error *outError) noexcept;
     bool mustNotBeInTransaction(C4Error *outError) noexcept;

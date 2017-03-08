@@ -1,0 +1,11 @@
+//
+//  Replicator_Release.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 2/20/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "Replicator.xcconfig"
+
+EXPORTED_SYMBOLS_FILE       = Replicator/CouchbaseLiteReplicator.exp

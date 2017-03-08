@@ -34,15 +34,18 @@ class C4ObserverTest : public C4Test {
         ++docCallbackCalls;
     }
 
-    void checkChanges(std::vector<const char*> expectedDocIDs, bool expectedExternal =false) {
-        C4Slice docIDs[100];
+    void checkChanges(std::vector<const char*> expectedDocIDs,
+                      std::vector<const char*> expectedRevIDs,
+                      bool expectedExternal =false) {
+        C4DatabaseChange changes[100];
         C4SequenceNumber lastSeq;
         bool external;
-        auto changeCount = c4dbobs_getChanges(dbObserver, docIDs, 100, &lastSeq, &external);
+        auto changeCount = c4dbobs_getChanges(dbObserver, changes, 100, &external);
         REQUIRE(changeCount == expectedDocIDs.size());
-        unsigned i = 0;
-        for (auto docID : expectedDocIDs) {
-            CHECK(docIDs[i++] == c4str(docID));
+        for (unsigned i = 0; i < changeCount; ++i) {
+            CHECK(changes[i].docID == c4str(expectedDocIDs[i]));
+            CHECK(changes[i].revID == c4str(expectedRevIDs[i]));
+            i++;
         }
         CHECK(external == expectedExternal);
     }
@@ -77,14 +80,14 @@ TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     createRev(C4STR("B"), C4STR("1-bb"), kBody);
     CHECK(dbCallbackCalls == 1);
 
-    checkChanges({"A", "B"});
+    checkChanges({"A", "B"}, {"1-aa", "1-bb"});
 
     createRev(C4STR("B"), C4STR("2-bbbb"), kBody);
     CHECK(dbCallbackCalls == 2);
     createRev(C4STR("C"), C4STR("1-cc"), kBody);
     CHECK(dbCallbackCalls == 2);
 
-    checkChanges({"B", "C"});
+    checkChanges({"B", "C"}, {"2-bbbb", "1-cc"});
 
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;
@@ -114,7 +117,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     CHECK(dbCallbackCalls == 1);
     createRev(C4STR("B"), C4STR("1-bb"), kBody);
     CHECK(dbCallbackCalls == 1);
-    checkChanges({"A", "B"});
+    checkChanges({"A", "B"}, {"1-aa", "1-bb"});
 
     // Open another database on the same file:
     C4Database* otherdb = c4db_open(databasePath(), c4db_getConfig(db), nullptr);
@@ -128,7 +131,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
 
     CHECK(dbCallbackCalls == 2);
 
-    checkChanges({"c", "d", "e"}, true);
+    checkChanges({"c", "d", "e"}, {"1-cc", "1-dd", "1-ee"}, true);
 
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;

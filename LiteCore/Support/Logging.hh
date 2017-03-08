@@ -140,4 +140,63 @@ static inline bool WillLog(LogLevel lv)     {return DefaultLog.willLog(lv);}
     #endif
 #endif
 
+
+    /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
+        with a description of the object; by default this is just the class and address, but
+        you can customize it by overriding loggingIdentifier(). */
+    class Logging {
+    protected:
+        Logging(LogDomain &domain)
+        :_domain(domain)
+        { }
+
+        virtual ~Logging() { }
+
+        /** Override this to return a string identifying this object. */
+        virtual std::string loggingIdentifier() const;
+
+#if DEBUG
+        // In debug mode, use code that's inefficient but allows use of __printflike, so the
+        // compiler can catch invalid format parameters.
+        #define LOGBODY(LEVEL)  va_list args; \
+                                va_start(args, format); \
+                                _logv(LogLevel::LEVEL, format, args); \
+                                va_end(args);
+        inline void log(const char *format, ...) const __printflike(2, 3)        {LOGBODY(Info)}
+        inline void warn(const char *format, ...) const __printflike(2, 3)       {LOGBODY(Warning)}
+        inline void logError(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Error)}
+        inline void logVerbose(const char *format, ...) const __printflike(2, 3) {LOGBODY(Verbose)}
+        inline void logDebug(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Debug)}
+
+#else
+        // In release mode, generate efficient code (but it can't be type-checked.)
+        template <LogLevel LEVEL =LogLevel::Info, class... ARGS>
+        inline void log(const char *format, ARGS... args) const {
+            if (_usuallyFalse(_domain.willLog(LEVEL)))
+                _log(LEVEL, format, args...);
+        }
+
+        template <class... ARGS>
+        inline void warn(const char *format, ARGS... args) const {
+            log<LogLevel::Warning>(format, args...);
+        }
+        template <class... ARGS>
+        inline void logError(const char *format, ARGS... args) const {
+            log<LogLevel::Error>(format, args...);
+        }
+        template <class... ARGS>
+        inline void logVerbose(const char *format, ARGS... args) const {
+            log<LogLevel::Verbose>(format, args...);
+        }
+
+        inline void logDebug(const char *format, ...) const {
+            // does nothing in a release build
+        }
+#endif
+
+        void _log(LogLevel level, const char *format, ...) const;// __printflike(3, 4);
+        void _logv(LogLevel level, const char *format, va_list) const;
+        LogDomain &_domain;
+    };
+
 }

@@ -14,9 +14,20 @@
 //  and limitations under the License.
 
 #include "RefCounted.hh"
+#include "Logging.hh"
+#include <stdlib.h>
 
 namespace litecore {
 
     std::atomic_int InstanceCounted::gObjectCount;
+
+
+    RefCounted::~RefCounted() {
+        if (_refCount != 0) {
+            Warn("FATAL: RefCounted object at %p destructed while it has a refCount of %d",
+                 this, (int)_refCount);
+            abort();
+        }
+    }
 
 }

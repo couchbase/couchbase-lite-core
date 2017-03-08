@@ -192,12 +192,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
 
 static string getColumn(C4SliceResult customColumns, unsigned i) {
     REQUIRE(customColumns.buf);
-    FLValue cols = FLValue_FromData({customColumns.buf, customColumns.size});
-    FLArray colsArray = FLValue_AsArray(cols);
-    REQUIRE(FLArray_Count(colsArray) >= i+1);
-    auto s = FLValue_AsString(FLArray_Get(colsArray, i));
+    Array colsArray = Value::fromData((FLSlice)customColumns).asArray();
+    REQUIRE(colsArray.count() >= i+1);
+    auto s = colsArray[i].asString();
     REQUIRE(s.buf);
-    return string((char*)s.buf, s.size);
+    return asstring(s);
 }
 
 

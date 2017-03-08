@@ -57,7 +57,7 @@ C4View* c4view_open(C4Database* db,
     return tryCatch<C4View*>(outError, [&]{
         FilePath path = (pathSlice.buf) ? FilePath((string)pathSlice)
                                         : pathForViewNamed(db, viewName);
-        return (new c4View(db, path, viewName, version, *config))->retain();
+        return retain(new c4View(db, path, viewName, version, *config));
     });
 }
 
@@ -78,7 +78,7 @@ void c4view_free(C4View* view) noexcept {
     if (view) {
         c4view_close(view, nullptr);
         tryCatch(nullptr, [&]{
-            view->release();
+            release(view);
         });
     }
 }

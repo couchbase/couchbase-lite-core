@@ -180,6 +180,7 @@ c4_getObjectCount
 c4_shutdown
 
 
+FLSlice_Equal
 FLSlice_Compare
 FLSliceResult_Free
 FLValue_FromData
@@ -236,12 +237,14 @@ FLEncoder_WriteDouble
 FLEncoder_WriteString
 FLEncoder_WriteData
 FLEncoder_WriteValue
+FLEncoder_WriteRaw
 FLEncoder_BeginArray
 FLEncoder_EndArray
 FLEncoder_BeginDict
 FLEncoder_WriteKey
 FLEncoder_EndDict
 FLEncoder_ConvertJSON
+FLEncoder_BytesWritten
 FLEncoder_Finish
 FLEncoder_GetError
 FLEncoder_GetErrorMessage

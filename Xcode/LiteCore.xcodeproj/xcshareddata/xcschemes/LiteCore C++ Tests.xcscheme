@@ -68,6 +68,10 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "[notification]"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "-r list"
             isEnabled = "YES">
          </CommandLineArgument>

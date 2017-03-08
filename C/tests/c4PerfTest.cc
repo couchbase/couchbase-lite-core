@@ -52,9 +52,9 @@ struct totalContext {
 // accumulate function that simply totals numeric values. `context` must point to a totalContext.
 static void total_accumulate(void *context, C4Key *key, C4Slice value) {
     auto ctx = (totalContext*)context;
-    FLValue v = FLValue_FromTrustedData(value);
-    REQUIRE(FLValue_GetType(v) == kFLNumber);
-    ctx->total += FLValue_AsDouble(v);
+    Value v = Value::fromTrustedData(value);
+    REQUIRE(v.type() == kFLNumber);
+    ctx->total += v.asDouble();
 }
 
 // reduce function that returns the row total. `context` must point to a totalContext.
@@ -79,61 +79,58 @@ public:
     }
 
     // Copies a Fleece dictionary key/value to an encoder
-    static bool copyValue(FLDict srcDict, FLDictKey *key, FLEncoder enc) {
-        FLValue value = FLDict_GetWithKey(srcDict, key);
+    static bool copyValue(Dict srcDict, Dict::Key &key, Encoder &enc) {
+        Value value = srcDict[key];
         if (!value)
             return false;
-        FLEncoder_WriteKey(enc, FLDictKey_GetString(key));
-        FLEncoder_WriteValue(enc, value);
+        enc.writeKey(key);
+        enc.writeValue(value);
         return true;
     }
 
 
-    unsigned insertDocs(FLArray docs) {
-        FLDictKey typeKey   = FLDictKey_Init(FLSTR("Track Type"), true);
-        FLDictKey idKey     = FLDictKey_Init(FLSTR("Persistent ID"), true);
-        FLDictKey nameKey   = FLDictKey_Init(FLSTR("Name"), true);
-        FLDictKey albumKey  = FLDictKey_Init(FLSTR("Album"), true);
-        FLDictKey artistKey = FLDictKey_Init(FLSTR("Artist"), true);
-        FLDictKey timeKey   = FLDictKey_Init(FLSTR("Total Time"), true);
-        FLDictKey genreKey  = FLDictKey_Init(FLSTR("Genre"), true);
-        FLDictKey yearKey   = FLDictKey_Init(FLSTR("Year"), true);
-        FLDictKey trackNoKey= FLDictKey_Init(FLSTR("Track Number"), true);
-        FLDictKey compKey   = FLDictKey_Init(FLSTR("Compilation"), true);
+    unsigned insertDocs(Array docs) {
+        Dict::Key typeKey   (FLSTR("Track Type"), true);
+        Dict::Key idKey     (FLSTR("Persistent ID"), true);
+        Dict::Key nameKey   (FLSTR("Name"), true);
+        Dict::Key albumKey  (FLSTR("Album"), true);
+        Dict::Key artistKey (FLSTR("Artist"), true);
+        Dict::Key timeKey   (FLSTR("Total Time"), true);
+        Dict::Key genreKey  (FLSTR("Genre"), true);
+        Dict::Key yearKey   (FLSTR("Year"), true);
+        Dict::Key trackNoKey(FLSTR("Track Number"), true);
+        Dict::Key compKey   (FLSTR("Compilation"), true);
 
         TransactionHelper t(db);
 
-        FLEncoder enc = FLEncoder_New();
-        FLArrayIterator iter;
-        FLArrayIterator_Begin(docs, &iter);
+        Encoder enc;
         unsigned numDocs = 0;
-        while (FLArrayIterator_Next(&iter)) {
+        for (Value item : docs) {
             // Check that track is correct type:
-            FLDict track = FLValue_AsDict( FLArrayIterator_GetValue(&iter) );
+            Dict track = item.asDict();
 
-            FLSlice trackType = FLValue_AsString( FLDict_GetWithKey(track, &typeKey) );
-            if (0 != FLSlice_Compare(trackType, FLSTR("File")) &&
-                0 != FLSlice_Compare(trackType, FLSTR("Remote")))
+            FLSlice trackType = track.get(typeKey).asString();
+            if (trackType != FLSTR("File") && trackType != FLSTR("Remote"))
                 continue;
 
-            FLSlice trackID = FLValue_AsString( FLDict_GetWithKey(track, &idKey) );
+            FLSlice trackID = track.get(idKey).asString();
             REQUIRE(trackID.buf);
 
             // Encode doc body:
-            FLEncoder_BeginDict(enc, 0);
-            REQUIRE(copyValue(track, &nameKey, enc));
-            copyValue(track, &albumKey, enc);
-            copyValue(track, &artistKey, enc);
-            copyValue(track, &timeKey, enc);
-            copyValue(track, &genreKey, enc);
-            copyValue(track, &yearKey, enc);
-            copyValue(track, &trackNoKey, enc);
-            copyValue(track, &compKey, enc);
-            FLEncoder_EndDict(enc);
+            enc.beginDict();
+            REQUIRE(copyValue(track, nameKey, enc));
+            copyValue(track, albumKey, enc);
+            copyValue(track, artistKey, enc);
+            copyValue(track, timeKey, enc);
+            copyValue(track, genreKey, enc);
+            copyValue(track, yearKey, enc);
+            copyValue(track, trackNoKey, enc);
+            copyValue(track, compKey, enc);
+            enc.endDict();
             FLError error;
-            FLSliceResult body = FLEncoder_Finish(enc, &error);
+            FLSliceResult body = enc.finish(&error);
             REQUIRE(body.buf);
-            FLEncoder_Reset(enc);
+            enc.reset();
 
             // Save document:
             C4Error c4err;
@@ -148,20 +145,19 @@ public:
             ++numDocs;
         }
         
-        FLEncoder_Free(enc);
         return numDocs;
     }
 
 
     void indexViews() {
-        FLDictKey nameKey   = FLDictKey_Init(FLSTR("Name"), true);
-        FLDictKey albumKey  = FLDictKey_Init(FLSTR("Album"), true);
-        FLDictKey artistKey = FLDictKey_Init(FLSTR("Artist"), true);
-        FLDictKey timeKey   = FLDictKey_Init(FLSTR("Total Time"), true);
-        FLDictKey trackNoKey= FLDictKey_Init(FLSTR("Track Number"), true);
-        FLDictKey compKey   = FLDictKey_Init(FLSTR("Compilation"), true);
+        Dict::Key nameKey   (FLSTR("Name"), true);
+        Dict::Key albumKey  (FLSTR("Album"), true);
+        Dict::Key artistKey (FLSTR("Artist"), true);
+        Dict::Key timeKey   (FLSTR("Total Time"), true);
+        Dict::Key trackNoKey(FLSTR("Track Number"), true);
+        Dict::Key compKey   (FLSTR("Compilation"), true);
 
-        auto enc = FLEncoder_New();
+        Encoder enc;
         auto key = c4key_new();
 
         C4Error error;
@@ -183,25 +179,25 @@ public:
         REQUIRE(e);
         while (c4enum_next(e, &error)) {
             auto doc = c4enum_getDocument(e, &error);
-            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            Dict body = Value::fromTrustedData(doc->selectedRev.body).asDict();
             REQUIRE(body);
 
 
             FLSlice artist;
-            if (FLValue_AsBool(FLDict_GetWithKey(body, &compKey)))
+            if (body[compKey].asBool())
                 artist = FLSTR("-Compilations-");
             else
-                artist   = FLValue_AsString( FLDict_GetWithKey(body, &artistKey) );
-            auto name    = FLValue_AsString( FLDict_GetWithKey(body, &nameKey) );
-            auto album   = FLValue_AsString( FLDict_GetWithKey(body, &albumKey) );
-            auto trackNo = FLValue_AsInt( FLDict_GetWithKey(body, &trackNoKey) );
-            auto time    = FLDict_GetWithKey(body, &timeKey);
+                artist   = body[artistKey].asString();
+            auto name    = body[nameKey].asString();
+            auto album   = body[albumKey].asString();
+            auto trackNo = body[trackNoKey].asInt();
+            auto time    = body[timeKey];
 
             // Generate value:
-            FLEncoder_WriteValue(enc, time);
+            enc.writeValue(time);
             FLError flError;
-            FLSliceResult fval = FLEncoder_Finish(enc, &flError);
-            FLEncoder_Reset(enc);
+            FLSliceResult fval = enc.finish(&flError);
+            enc.reset();
             REQUIRE(fval.buf);
             auto value = (C4Slice)fval;
 
@@ -252,13 +248,12 @@ public:
         REQUIRE(error.code == 0);
 
         REQUIRE(c4indexer_end(indexer, true, &error));
-        FLEncoder_Free(enc);
         c4key_free(key);
     }
 
 
     void indexTracksView() {
-        FLDictKey nameKey   = FLDictKey_Init(FLSTR("Name"), true);
+        Dict::Key nameKey(FLSTR("Name"), true);
         auto key = c4key_new();
 
         C4Error error;
@@ -274,9 +269,9 @@ public:
         REQUIRE(e);
         while (c4enum_next(e, &error)) {
             auto doc = c4enum_getDocument(e, &error);
-            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            Dict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
             REQUIRE(body);
-            auto name    = FLValue_AsString( FLDict_GetWithKey(body, &nameKey) );
+            auto name    = body[nameKey].asString();
 
             c4key_reset(key);
             c4key_addString(key, name);
@@ -296,7 +291,7 @@ public:
 
 
     unsigned indexLikesView() {
-        FLDictKey likesKey   = FLDictKey_InitWithSharedKeys(FLSTR("likes"),
+        Dict::Key likesKey(FLSTR("likes"),
                                                             c4db_getFLSharedKeys(db));
         C4Key *keys[3] = {c4key_new(), c4key_new(), c4key_new()};
         C4Slice values[3] = {};
@@ -315,20 +310,19 @@ public:
         REQUIRE(e);
         while (c4enum_next(e, &error)) {
             auto doc = c4enum_getDocument(e, &error);
-            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            Dict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
             REQUIRE(body);
-            auto likes = FLValue_AsArray( FLDict_GetWithKey(body, &likesKey) );
+            auto likes = body[likesKey].asArray();
 
-            FLArrayIterator iter;
-            FLArrayIterator_Begin(likes, &iter);
+            Array::iterator iter(likes);
             unsigned nLikes;
             for (nLikes = 0; nLikes < 3; ++nLikes) {
-                FLSlice like = FLValue_AsString(FLArrayIterator_GetValue(&iter));
+                FLSlice like = iter->asString();
                 if (!like.buf)
                     break;
                 c4key_reset(keys[nLikes]);
                 c4key_addString(keys[nLikes], like);
-                FLArrayIterator_Next(&iter);
+                ++iter;
             }
             totalLikes += nLikes;
 
@@ -349,9 +343,9 @@ public:
 
     unsigned indexStatesView() {
         auto sk = c4db_getFLSharedKeys(db);
-        FLDictKey contactKey = FLDictKey_InitWithSharedKeys(FLSTR("contact"), sk);
-        FLDictKey addressKey = FLDictKey_InitWithSharedKeys(FLSTR("address"), sk);
-        FLDictKey stateKey   = FLDictKey_InitWithSharedKeys(FLSTR("state"), sk);
+        Dict::Key contactKey(FLSTR("contact"), sk);
+        Dict::Key addressKey(FLSTR("address"), sk);
+        Dict::Key stateKey  (FLSTR("state"), sk);
         C4Key *key = c4key_new();
         C4Slice values[3] = {};
         unsigned totalStates = 0;
@@ -369,11 +363,11 @@ public:
         REQUIRE(e);
         while (c4enum_next(e, &error)) {
             auto doc = c4enum_getDocument(e, &error);
-            FLDict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
+            Dict body = FLValue_AsDict( FLValue_FromTrustedData(doc->selectedRev.body) );
             REQUIRE(body);
-            auto contact = FLValue_AsDict( FLDict_GetWithKey(body, &contactKey) );
-            auto address = FLValue_AsDict( FLDict_GetWithKey(contact, &addressKey) );
-            auto state = FLValue_AsString( FLDict_GetWithKey(address, &stateKey) );
+            auto contact = body[contactKey].asDict();
+            auto address = contact[addressKey].asDict();
+            auto state = address[stateKey].asString();
 
             unsigned nStates = 0;
             if (state.buf) {
@@ -466,13 +460,13 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
     free((void*)jsonData.buf);
-    FLArray root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
+    Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     unsigned numDocs;
 
     {
         Stopwatch st;
         numDocs = insertDocs(root);
-        CHECK(numDocs == 12188);
+        CHECK(numDocs == 12189);
         st.printReport("Writing docs", numDocs, "doc");
     }
     FLSliceResult_Free(fleeceData);

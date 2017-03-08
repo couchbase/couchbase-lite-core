@@ -12,7 +12,7 @@
 #include "MapReduceIndex.hh"
 
 
-struct c4View : public RefCounted<c4View> {
+struct c4View : public RefCounted, InstanceCounted {
     c4View(Database *sourceDB,
            const FilePath &path,
            C4Slice viewName,

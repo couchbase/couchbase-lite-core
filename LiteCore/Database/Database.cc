@@ -25,6 +25,7 @@
 #include "Fleece.hh"
 #include "BlobStore.hh"
 #include "forestdb_endian.h"
+#include "SecureRandomize.hh"
 
 
 namespace c4Internal {
@@ -35,21 +36,21 @@ namespace c4Internal {
     static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
     static uint32_t kDefaultMaxRevTreeDepth = 20;
 
+    const slice Database::kPublicUUIDKey = "publicUUID"_sl;
+    const slice Database::kPrivateUUIDKey = "privateUUID"_sl;
+
 
 #pragma mark - LIFECYCLE:
 
 
-    Database* Database::newDatabase(const string &pathStr, C4DatabaseConfig config) {
-        FilePath path = (config.flags & kC4DB_Bundled)
-                            ? findOrCreateBundle(pathStr, config)
-                            : FilePath(pathStr);
-        return (new Database(path, config))->retain();
-    }
-
-
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
-    FilePath Database::findOrCreateBundle(const string &path, C4DatabaseConfig &config) {
-        FilePath bundle {path, ""};
+    /*static*/ FilePath Database::findOrCreateBundle(const string &path,
+                                                     C4DatabaseConfig &config)
+    {
+        if (!(config.flags & kC4DB_Bundled))
+            return path;
+
+        FilePath bundle(path, "");
         bool createdDir = ((config.flags & kC4DB_Create) && bundle.mkdir());
         if (!createdDir)
             bundle.mustExistAsDir();
@@ -60,11 +61,11 @@ namespace c4Internal {
 
         // Look for the file corresponding to the requested storage engine (defaulting to SQLite):
 
-        FilePath dbFile = bundle["db"].withExtension(factory->filenameExtension());
-        if (createdDir || factory->fileExists(dbFile)) {
+        FilePath dbPath = bundle["db"].withExtension(factory->filenameExtension());
+        if (createdDir || factory->fileExists(dbPath)) {
             if (config.storageEngine == nullptr)
                 config.storageEngine = factory->cname();
-            return dbFile;
+            return dbPath;
         }
 
         if (config.storageEngine != nullptr) {
@@ -75,10 +76,10 @@ namespace c4Internal {
         // Not found, but they didn't specify a format, so try the other formats:
         for (auto otherFactory : DataFile::factories()) {
             if (otherFactory != factory) {
-                dbFile = bundle["db"].withExtension(otherFactory->filenameExtension());
-                if (factory->fileExists(dbFile)) {
+                dbPath = bundle["db"].withExtension(otherFactory->filenameExtension());
+                if (factory->fileExists(dbPath)) {
                     config.storageEngine = factory->cname();
-                    return dbFile;
+                    return dbPath;
                 }
             }
         }
@@ -118,10 +119,10 @@ namespace c4Internal {
     }
 
 
-    Database::Database(const FilePath &path,
-                       const C4DatabaseConfig &inConfig)
-    :config(inConfig),
-     _db(newDataFile(path, config, true)),
+    Database::Database(const string &path,
+                       C4DatabaseConfig inConfig)
+    :_db(newDataFile(findOrCreateBundle(path, inConfig), inConfig, true)),
+     config(inConfig),
      _encoder(new fleece::Encoder()),
      _sequenceTracker(new SequenceTracker())
     {
@@ -190,12 +191,18 @@ namespace c4Internal {
             // Find the db file in the bundle:
             FilePath bundle {dbPath, ""};
             if (bundle.exists()) {
-                auto tempConfig = *config;
-                tempConfig.flags &= ~kC4DB_Create;
-                auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
-                // Delete it:
-                tempConfig.flags &= ~kC4DB_Bundled;
-                deleteDatabaseAtPath(dbFilePath, &tempConfig);
+                try {
+                    auto tempConfig = *config;
+                    tempConfig.flags &= ~kC4DB_Create;
+                    tempConfig.storageEngine = nullptr;
+                    auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
+                    // Delete it:
+                    tempConfig.flags &= ~kC4DB_Bundled;
+                    deleteDatabaseAtPath(dbFilePath, &tempConfig);
+                } catch (const error &x) {
+                    if (x.code != error::WrongFormat)   // ignore exception if db file isn't found
+                        throw;
+                }
             }
             // Delete the rest of the bundle:
             return bundle.delRecursive();
@@ -336,6 +343,33 @@ namespace c4Internal {
     }
 
 
+    Database::UUID Database::getUUID(slice key) {
+        auto &store = getKeyStore((string)kC4InfoStore);
+        Record r = store.get(key);
+        if (r.exists())
+            return *(UUID*)r.body().buf;
+
+        UUID uuid;
+        beginTransaction();
+        try {
+            Record r2 = store.get(key);
+            if (r2.exists()) {
+                uuid = *(UUID*)r2.body().buf;
+            } else {
+                // Create the UUIDs:
+                slice uuidSlice{&uuid, sizeof(uuid)};
+                GenerateUUID(uuidSlice);
+                store.set(key, nullslice, uuidSlice, transaction());
+            }
+        } catch (...) {
+            endTransaction(false);
+            throw;
+        }
+        endTransaction(true);
+        return uuid;
+    }
+    
+    
 #pragma mark - TRANSACTIONS:
 
 
@@ -468,7 +502,8 @@ namespace c4Internal {
     void Database::saved(Document* doc) {
         WITH_LOCK(this);
         lock_guard<mutex> lock(_sequenceTracker->mutex());
-        _sequenceTracker->documentChanged(doc->_docIDBuf, doc->sequence);
+        _sequenceTracker->documentChanged(doc->_docIDBuf, doc->_revIDBuf, doc->sequence);
+        //NOTE: This assumes the doc's current revID is the new revision's
     }
 
 }

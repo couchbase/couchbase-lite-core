@@ -185,6 +185,7 @@ _c4_getObjectCount
 _c4_shutdown
 
 # Fleece:
+_FLSlice_Equal
 _FLSlice_Compare
 _FLSliceResult_Free
 _FLValue_FromData
@@ -241,12 +242,14 @@ _FLEncoder_WriteDouble
 _FLEncoder_WriteString
 _FLEncoder_WriteData
 _FLEncoder_WriteValue
+_FLEncoder_WriteRaw
 _FLEncoder_BeginArray
 _FLEncoder_EndArray
 _FLEncoder_BeginDict
 _FLEncoder_WriteKey
 _FLEncoder_EndDict
 _FLEncoder_ConvertJSON
+_FLEncoder_BytesWritten
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage
