@@ -71,12 +71,12 @@ public:
 };
 
 
-TEST_CASE_METHOD(ReplicatorTest, "Real Push Empty DB", "[Push]") {
+TEST_CASE_METHOD(ReplicatorTest, "Real Push Empty DB", "[Push][.special]") {
     runReplicator(Replicator::Options::pushing());
 }
 
 
-TEST_CASE_METHOD(ReplicatorTest, "Real Push Non-Empty DB", "[Push]") {
+TEST_CASE_METHOD(ReplicatorTest, "Real Push Non-Empty DB", "[Push][.special]") {
     importJSONLines(sFixturesDir + "names_100.json");
     runReplicator(Replicator::Options::pushing());
 }

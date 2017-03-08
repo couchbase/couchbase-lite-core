@@ -244,14 +244,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":102}", "2-cc");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][.neverending]") {
     addDocsInParallel(chrono::milliseconds(1500));
     runReplicators(Replicator::Options::pushing(kC4Continuous),
                    Replicator::Options::passive());
     //FIX: Stop this when bg thread stops adding docs
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][.neverending]") {
     addDocsInParallel(chrono::milliseconds(1500));
     runReplicators(Replicator::Options::passive(),
                    Replicator::Options::pulling(kC4Continuous));
