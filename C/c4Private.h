@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
+
 void c4log_warnOnErrors(bool) C4API;
 
 C4Document* c4doc_getForPut(C4Database *database,

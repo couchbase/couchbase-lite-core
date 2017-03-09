@@ -130,6 +130,7 @@ c4docobs_create
 c4docobs_free
 
 
+c4error_make
 c4doc_getForPut
 c4_getObjectCount
 c4_shutdown

@@ -78,7 +78,7 @@ namespace c4Internal {
 
     const size_t kMaxErrorMessagesToSave = 10;
 
-    void recordError(C4ErrorDomain, int code, const char *message, C4Error* outError) noexcept;
+    void recordError(C4ErrorDomain, int code, std::string message, C4Error* outError) noexcept;
     void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
     void recordException(const exception &e, C4Error* outError) noexcept;
     static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}

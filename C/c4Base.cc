@@ -42,12 +42,12 @@ namespace c4Internal {
     static deque<string> sErrorMessages;                    // last 10 error message strings
 
 
-    void recordError(C4ErrorDomain domain, int code, const char *message, C4Error* outError) noexcept {
+    void recordError(C4ErrorDomain domain, int code, string message, C4Error* outError) noexcept {
         if (outError) {
             outError->domain = domain;
             outError->code = code;
             outError->internal_info = 0;
-            if (message) {
+            if (!message.empty()) {
                 try {
                     sErrorMessages.emplace_back(message);
                     if (sErrorMessages.size() > kMaxErrorMessagesToSave) {
@@ -62,7 +62,7 @@ namespace c4Internal {
     }
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
-        recordError(domain, code, nullptr, outError);
+        recordError(domain, code, string(), outError);
     }
 
     static string lookupErrorMessage(C4Error &error) {
@@ -91,6 +91,13 @@ namespace c4Internal {
         return false;
     }
 
+}
+
+
+C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API {
+    C4Error error;
+    recordError(domain, code, (string)message, &error);
+    return error;
 }
 
 
