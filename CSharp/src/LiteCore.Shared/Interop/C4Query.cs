@@ -1,10 +1,10 @@
-//
-// C4Key_defs.cs
+﻿//
+// C4DBQuery.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,8 @@
 //
 
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-
-using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
@@ -33,36 +30,13 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    enum C4KeyToken : byte
+        partial struct C4IndexOptions : IDisposable
     {
-        Null,
-        Bool,
-        Number,
-        String,
-        Array,
-        Map,
-        EndSequence,
-        Special,
-        Error = 255
-    }
-
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
-    unsafe struct C4KeyReader
-    {
-        public void* bytes;
-        private UIntPtr _length;
-
-        public ulong length
+        public void Dispose()
         {
-            get {
-                return _length.ToUInt64();
-            }
-            set {
-                _length = (UIntPtr)value;
+            var old = Interlocked.Exchange(ref _language, IntPtr.Zero);
+            if(old != IntPtr.Zero) {
+                Marshal.FreeHGlobal(old);
             }
         }
     }
@@ -72,16 +46,10 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    unsafe struct C4KeyValueList
+        partial struct C4QueryOptions
     {
-    }
-
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
-    unsafe struct C4Key
-    {
+        public static readonly C4QueryOptions Default = new C4QueryOptions {
+            limit = UInt32.MaxValue
+        };
     }
 }

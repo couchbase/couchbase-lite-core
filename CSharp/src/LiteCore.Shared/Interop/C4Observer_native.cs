@@ -37,18 +37,8 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4DatabaseObserver* c4dbobs_create(C4Database* database, C4DatabaseObserverCallback callback, void* context);
 
-        public static uint c4dbobs_getChanges(C4DatabaseObserver* observer, string[] outDocIDs, ulong* outLastSequence, bool* outExternal)
-        {
-            var c4Slices = new C4Slice[outDocIDs.Length];
-            var retVal =  NativeRaw.c4dbobs_getChanges(observer, c4Slices, (uint)c4Slices.Length, outLastSequence, outExternal);
-
-            var i = 0;
-            foreach(var slice in c4Slices.Take((int)retVal)) {
-                outDocIDs[i++] = slice.CreateString();
-            }
-
-            return retVal;
-        }
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4DatabaseChange[] outChanges, uint maxChanges, [MarshalAs(UnmanagedType.U1)]bool* outExternal);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4dbobs_free(C4DatabaseObserver* observer);
@@ -73,9 +63,6 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4Slice[] outDocIDs, uint maxChanges, ulong* outLastSequence, bool* outExternal);
-
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4DocumentObserver* c4docobs_create(C4Database* database, C4Slice docID, C4DocumentObserverCallback callback, void* context);
 

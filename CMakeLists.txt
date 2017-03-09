@@ -104,17 +104,7 @@ aux_source_directory(LiteCore/Query           QUERY_SRC)
 aux_source_directory(LiteCore/RevTrees        REVTREES_SRC)
 aux_source_directory(LiteCore/Storage         STORAGE_SRC)
 aux_source_directory(LiteCore/VersionVectors  VERSIONVECTORS_SRC)
-
-set(SUPPORT_SRC "LiteCore/Support/Collatable.cc"
-		"LiteCore/Support/EncryptedStream.cc"
-		"LiteCore/Support/Error.cc"
-    "LiteCore/Support/Error_android.cc"
-		"LiteCore/Support/FilePath.cc"
-		"LiteCore/Support/Logging.cc"
-		"LiteCore/Support/RefCounted.cc"
-    "LiteCore/Support/PlatformIO.cc"
-    "LiteCore/Support/SecureRandomize.cc")
-
+aux_source_directory(LiteCore/Support         SUPPORT_SRC)
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 
 if(!MSVC)

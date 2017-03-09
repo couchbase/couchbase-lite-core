@@ -1,5 +1,5 @@
 //
-// DBQuery_native.cs
+// Query_native.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -44,10 +44,31 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4query_free(C4Query* x);
 
+        public static string c4query_explain(C4Query* query)
+        {
+            using(var retVal = NativeRaw.c4query_explain(query)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
         public static C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, string encodedParameters, C4Error* outError)
         {
             using(var encodedParameters_ = new C4String(encodedParameters)) {
                 return NativeRaw.c4query_run(query, options, encodedParameters_.AsC4Slice(), outError);
+            }
+        }
+
+        public static byte[] c4queryenum_customColumns(C4QueryEnumerator* e)
+        {
+            using(var retVal = NativeRaw.c4queryenum_customColumns(e)) {
+                return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
+        public static string c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError)
+        {
+            using(var retVal = NativeRaw.c4queryenum_fullTextMatched(e, outError)) {
+                return ((C4Slice)retVal).CreateString();
             }
         }
 
@@ -60,12 +81,15 @@ namespace LiteCore.Interop
             }
         }
 
-        public static string c4query_explain(C4Query* query)
-        {
-            using(var retVal = NativeRaw.c4query_explain(query)) {
-                return ((C4Slice)retVal).CreateString();
-            }
-        }
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4queryenum_next(C4QueryEnumerator* e, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4queryenum_close(C4QueryEnumerator* e);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4queryenum_free(C4QueryEnumerator* e);
 
         public static bool c4db_createIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
         {
@@ -95,13 +119,19 @@ namespace LiteCore.Interop
         public static extern C4Query* c4query_new(C4Database* database, C4Slice expression, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4query_explain(C4Query* query);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, C4Slice encodedParameters, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4query_fullTextMatched(C4Query* query, C4Slice docID, ulong seq, C4Error* outError);
+        public static extern C4SliceResult c4queryenum_customColumns(C4QueryEnumerator* e);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4query_explain(C4Query* query);
+        public static extern C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4query_fullTextMatched(C4Query* query, C4Slice docID, ulong seq, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

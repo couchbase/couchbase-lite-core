@@ -20,12 +20,19 @@
 #include <SQLiteCpp/Exception.h>
 #include <errno.h>
 #include <string>
-#include <netdb.h>
 
 #if __ANDROID__
 #include <android/log.h>
 #elif defined(_MSC_VER)
 #include "asprintf.h"
+#endif
+
+#ifdef _MSC_VER
+#include <WS2tcpip.h>
+#define dns_error   gai_strerrorA
+#else
+#include <netdb.h>
+#define dns_error   gai_strerror
 #endif
 
 #if defined(__clang__) && !defined(__ANDROID__) // For logBacktrace:
@@ -196,7 +203,7 @@ namespace litecore {
             case Fleece:
                 return fleece_errstr((fleece::ErrorCode)code);
             case DNS:
-                return gai_strerror(code);
+                return dns_error(code);
             case WebSocket:
                 return websocket_errstr(code);
             default:

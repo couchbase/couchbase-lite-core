@@ -162,9 +162,9 @@ namespace litecore {
 
 
     std::string Logging::loggingIdentifier() const {
+		// Get the name of my class, unmangle it, and remove namespaces:
+		const char *name = typeid(*this).name();
 #if defined(__clang__) && !defined(__ANDROID__)
-        // Get the name of my class, unmangle it, and remove namespaces:
-        const char *name = typeid(*this).name();
         size_t unmangledLen;
         int status;
         char *unmangled = abi::__cxa_demangle(name, nullptr, &unmangledLen, &status);

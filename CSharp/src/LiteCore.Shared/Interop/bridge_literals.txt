@@ -64,33 +64,6 @@ c4dbobs_getChanges
             return retVal;
         }
 
-c4indexer_begin
-        public static C4Indexer* c4indexer_begin(C4Database* db, C4View*[] views, C4Error* outError)
-        {
-            fixed(C4View** views_ = views) {
-                return NativeRaw.c4indexer_begin(db, views_, (UIntPtr)views.Length, outError);
-            }
-        }
-
-c4indexer_emit
-        public static bool c4indexer_emit(C4Indexer* indexer, C4Document* document, uint viewNumber, uint emitCount, C4Key*[] emittedKeys, string[] emittedValues, C4Error* outError)
-        {
-            var c4Strings = new C4String[emittedValues.Length];
-            for(int i = 0; i < emittedValues.Length; i++) {
-                c4Strings[i] = new C4String(emittedValues[i]);
-            }
-            
-            try {
-                var c4Slices = c4Strings.Select(x => x.AsC4Slice()).ToArray();
-                fixed(C4Key** emittedKeys_ = emittedKeys) {
-                    return NativeRaw.c4indexer_emit(indexer, document, viewNumber, emitCount, emittedKeys_, c4Slices, outError);
-                }
-            } finally {
-                foreach(var s in c4Strings) {
-                    s.Dispose();
-                }
-            }
-        }
 
 FLData_Dump
 				public static string FLData_Dump(FLSlice data)

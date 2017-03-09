@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)BlobStoreTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DatabaseTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DocumentTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)KeyTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NestedQueryTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ObserverTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PerfTest.cs" />
@@ -23,7 +22,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Test.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThreadingTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ViewTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)..\..\..\C\tests\data\iTunesMusicLibrary.json">

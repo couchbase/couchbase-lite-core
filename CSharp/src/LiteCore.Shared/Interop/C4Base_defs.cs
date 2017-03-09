@@ -40,6 +40,8 @@ namespace LiteCore.Interop
         ForestDBDomain,
         SQLiteDomain,
         FleeceDomain,
+        DNSDomain,
+        WebSocketDomain,
     }
 
 #if LITECORE_PACKAGED

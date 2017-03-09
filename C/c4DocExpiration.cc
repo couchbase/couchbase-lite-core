@@ -109,7 +109,7 @@ uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
 uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
 {
     return tryCatch<uint64_t>(nullptr, [database]{
-        WITH_LOCK(this);
+        WITH_LOCK(database);
         KeyStore& expiryKvs = database->getKeyStore("expiry");
         RecordEnumerator e(expiryKvs);
         if(e.next() && e.record().body() == nullslice) {

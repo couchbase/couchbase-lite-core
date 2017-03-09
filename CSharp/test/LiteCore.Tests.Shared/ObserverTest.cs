@@ -37,14 +37,14 @@ namespace LiteCore.Tests
                 CreateRev("B", C4Slice.Constant("1-bb"), Body);
                 _dbCallbackCalls.Should().Be(1, "because we should have received a callback");
 
-                CheckChanges(new[] { "A", "B" });
+                CheckChanges(new[] { "A", "B" }, new[] { "1-aa", "1-bb" });
 
                 CreateRev("B", C4Slice.Constant("2-bbbb"), Body);
                 _dbCallbackCalls.Should().Be(2, "because we should have received a callback");
                 CreateRev("C", C4Slice.Constant("1-cc"), Body);
                 _dbCallbackCalls.Should().Be(2, "because we should have received a callback");
 
-                 CheckChanges(new[] { "B", "C" });
+                 CheckChanges(new[] { "B", "C" }, new[] { "2-bbbb", "1-cc" });
                  _dbObserver.Dispose();
                  _dbObserver = null;
 
@@ -76,7 +76,7 @@ namespace LiteCore.Tests
                 CreateRev("B", C4Slice.Constant("1-bb"), Body);
                 _dbCallbackCalls.Should().Be(1, "because we should have received a callback");
 
-                CheckChanges(new[] { "A", "B" });
+                CheckChanges(new[] { "A", "B" }, new[] { "1-aa", "1-bb" });
 
                 // Open another database on the same file
                 var otherdb = (C4Database *)LiteCoreBridge.Check(err => Native.c4db_open(DatabasePath(), Native.c4db_getConfig(Db), err));
@@ -91,7 +91,7 @@ namespace LiteCore.Tests
 
                 _dbCallbackCalls.Should().Be(2, "because the observer should cover all connections");
 
-                CheckChanges(new[] { "C", "D", "E" }, true);
+                CheckChanges(new[] { "C", "D", "E" }, new[] { "1-cc", "1-dd", "1-ee" }, true);
                 _dbObserver.Dispose();
                 _dbObserver = null;
 
@@ -103,16 +103,15 @@ namespace LiteCore.Tests
             });
         }
 
-        private void CheckChanges(IList<string> expectedDocIDs, bool expectedExternal = false)
+        private void CheckChanges(IList<string> expectedDocIDs, IList<string> expectedRevIDs, bool expectedExternal = false)
         {
-            var docIDs = new string[100];
-            ulong lastSeq;
+            var changes = new C4DatabaseChange[100];
             bool external;
-            var changeCount = Native.c4dbobs_getChanges(_dbObserver.Observer, docIDs, &lastSeq, &external);
+            var changeCount = Native.c4dbobs_getChanges(_dbObserver.Observer, changes, 100, &external);
             changeCount.Should().Be((uint)expectedDocIDs.Count, "because otherwise we didn't get the correct number of changes");
-            int i = 0;
-            foreach(var docID in expectedDocIDs) {
-                docIDs[i++].Should().Be(docID, "because otherwise we have an invalid document");
+            for(int i = 0; i < changeCount; i++) {
+                changes[i].docID.CreateString().Should().Be(expectedDocIDs[i], "because otherwise we have an invalid document ID");
+                changes[i].revID.CreateString().Should().Be(expectedRevIDs[i], "because otherwise we have an invalid document revision ID");
             }
 
             external.Should().Be(expectedExternal, "because otherwise the external parameter was wrong");

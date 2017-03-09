@@ -4,6 +4,7 @@ using FluentAssertions;
 using LiteCore.Interop;
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading;
 
 namespace LiteCore.Tests
 {
@@ -12,8 +13,9 @@ namespace LiteCore.Tests
         private bool Log = false;
         private const int NumDocs = 10000;
         private const bool SharedHandle = false; // Use same C4Database on all threads_
-
-        private C4View* _view;
+        private object _observerMutex = new object();
+        private AutoResetEvent _observerCond = new AutoResetEvent(false);
+        private bool _changesToObserve;
 
         public ThreadingTest(ITestOutputHelper output) : base(output)
         {
@@ -25,10 +27,9 @@ namespace LiteCore.Tests
         {
             RunTestVariants(() => {
                 var task1 = Task.Factory.StartNew(AddDocsTask);
-                var task2 = Task.Factory.StartNew(UpdateIndexTask);
-                var task3 = Task.Factory.StartNew(QueryIndexTask);
+                var task2 = Task.Factory.StartNew(ObserverTask);
 
-                Task.WaitAll(task1, task2, task3);
+                Task.WaitAll(task1, task2);
             });
         }
 
@@ -52,143 +53,52 @@ namespace LiteCore.Tests
             WriteLine();
         }
 
-        private void UpdateIndexTask()
+        private void ObserverTask()
         {
-            var database = SharedHandle ? Db : OpenDB();
-            var view = SharedHandle ? _view : OpenView(database);
-
-            int i = 0;
+            var database = OpenDB();
+            var observer = Native.c4dbobs_create(database, ObsCallback, this);
+            var lastSequence = 0UL;
             do {
-                if(Log) {
-                    WriteLine($"Index update #{++i:D3}");
-                }
-
-                UpdateIndex(database, view);
-                Task.Delay(TimeSpan.FromTicks(700 * (TimeSpan.TicksPerMillisecond / 1000))).Wait();
-            } while(Native.c4view_getLastSequenceIndexed(view) < NumDocs);
-
-            if(!SharedHandle) {
-                CloseView(view);
-                CloseDB(database);
-            }
-        }
-
-        private void QueryIndexTask()
-        {
-            var database = SharedHandle ? Db : OpenDB();
-            var view = SharedHandle ? _view : OpenView(database);
-
-            int i = 0;
-            do {
-                Task.Delay(1).Wait();
-                if(Log) {
-                    WriteLine($"Index query #{++i:D3}");
-                }
-            } while(QueryIndex(view));
-
-            if(!SharedHandle) {
-                CloseView(view);
-                CloseDB(database);
-            }
-        }
-
-        private bool QueryIndex(C4View* view)
-        {
-            var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => Native.c4view_query(view, null, err));
-            if(Log) {
-                Write("{ ");
-            }
-
-            ulong i = 0;
-            C4Error error;
-            while(Native.c4queryenum_next(e, &error)) {
-                ++i;
-                var buf = $"\"doc-{i:D5}\"";
-                if(e->docSequence != i) {
-                    if(Log) {
-                        var gotID = e->docID.CreateString();
-                        WriteLine();
-                        WriteLine($"*** Expected {buf}, got {gotID} ***");
+                lock (_observerMutex) {
+                    while (!_changesToObserve) {
+                        _observerCond.WaitOne();
                     }
 
-                    i = e->docSequence;
-                    continue;
+                    Write("8");
+                    _changesToObserve = false;
                 }
 
-                Native.c4key_toJSON(&e->key).Should().Be(buf, "because the docID should be correct");
-                e->value.Equals(C4Slice.Constant("1234")).Should().BeTrue("because the value should be accurate");
-            }
+                var changes = new C4DatabaseChange[10];
+                uint nDocs;
+                bool external;
+                while (0 < (nDocs = Native.c4dbobs_getChanges(observer.Observer, changes, 10U, &external))) {
+                    external.Should().BeTrue("because all changes will be external in this test");
+                    for (int i = 0; i < nDocs; ++i) {
+                        changes[i].docID.CreateString().Should().StartWith("doc-", "because otherwise the document ID is not what we created");
+                        lastSequence = changes[i].sequence;
+                    }
+                }
 
-            if(Log) {
-                Write($"}}queried_to:{i}");
-            }
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
+            } while (lastSequence < NumDocs);
 
-            Native.c4queryenum_free(e);
-            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
-            return i < NumDocs;
+            observer.Dispose();
+            CloseDB(database);
         }
 
-        private void UpdateIndex(C4Database* updateDB, C4View* view)
+        private static void ObsCallback(C4DatabaseObserver* observer, object context)
         {
-            var oldLastSeqIndexed = Native.c4view_getLastSequenceIndexed(view);
-            var lastSeq = oldLastSeqIndexed;
-            var ind = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(updateDB, 
-            new C4View*[] { view }, err));
-            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(ind, err));
-            if(e == null) {
-                LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
-                return;
+            ((ThreadingTest)context).Observe(observer);
+        }
+
+        private void Observe(C4DatabaseObserver* observer)
+        {
+            Write("!");
+            lock(_observerMutex) {
+                _changesToObserve = true;
             }
 
-            if(Log) {
-                Write("<< ");
-            }
-
-            C4Document* doc;
-            C4Error error;
-            while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
-                // Index 'doc':
-                if(Log) {
-                    Write($"(#{doc->sequence}) ");
-                }
-
-                if(lastSeq > 0) {
-                    doc->sequence.Should().Be(lastSeq+1, "because the sequences should be ordered");
-                }
-
-                lastSeq = doc->sequence;
-                var keys = new C4Key*[1];
-                var values = new C4Slice[1];
-                keys[0] = Native.c4key_new();
-                NativeRaw.c4key_addString(keys[0], doc->docID);
-                values[0] = C4Slice.Constant("1234");
-                LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(ind, doc, 0, keys, values, err));
-                Native.c4key_free(keys[0]);
-                Native.c4doc_free(doc);
-            }
-
-            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
-            Native.c4enum_free(e);
-            if(Log) {
-                Write($">>indexed_to:{lastSeq} ");
-            }
-
-            LiteCoreBridge.Check(err => Native.c4indexer_end(ind, true, err));
-
-            
-            var newLastSeqIndexed = Native.c4view_getLastSequenceIndexed(view);
-            if(newLastSeqIndexed != lastSeq) {
-                if(Log) {
-                    Write($"BUT view.lastSequenceIndexed={newLastSeqIndexed}! (Started at {oldLastSeqIndexed})");
-                }
-            }
-
-            if(Log) {
-                WriteLine();
-            }
-
-            newLastSeqIndexed.Should().Be(lastSeq, "because the last sequence in the loop should be current");
-            Native.c4view_getLastSequenceChangedAt(view).Should().Be(lastSeq);
+            _observerCond.Set();
         }
 
         private C4Database* OpenDB()
@@ -202,33 +112,6 @@ namespace LiteCore.Tests
         {
             Native.c4db_close(db, null);
             Native.c4db_free(db);
-        }
-
-        private C4View* OpenView(C4Database* onDB)
-        {
-            var view = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(onDB, null, "myview", "1",
-                Native.c4db_getConfig(Db), err));
-            return view;
-        }
-
-        private void CloseView(C4View* view)
-        {
-            Native.c4view_close(view, null);
-            Native.c4view_free(view);
-        }
-
-        protected override void SetupVariant(int option)
-        {
-            base.SetupVariant(option);
-
-            _view = OpenView(Db);
-        }
-
-        protected override void TeardownVariant(int option)
-        {
-            CloseView(_view);
-
-            base.TeardownVariant(option);
         }
     }
 }

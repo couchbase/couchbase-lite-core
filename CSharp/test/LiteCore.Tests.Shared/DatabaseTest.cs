@@ -314,10 +314,7 @@ namespace LiteCore.Tests
         public void TestChanges()
         {
             RunTestVariants(() => {
-                for(int i = 1; i < 100; i++) {
-                    var docID = $"doc-{i:D3}";
-                    CreateRev(docID, RevID, Body);
-                }
+                CreateNumberedDocs(99);
 
                 // Since start:
                 var options = C4EnumeratorOptions.Default;
@@ -454,10 +451,7 @@ namespace LiteCore.Tests
 
         private void SetupAllDocs()
         {
-            for(int i = 1; i < 100; i++) {
-                var docID = $"doc-{i:D3}";
-                CreateRev(docID, RevID, Body);
-            }
+            CreateNumberedDocs(99);
 
             // Add a deleted doc to make sure it's skipped by default:
             CreateRev("doc-005DEL", RevID, C4Slice.Null, C4RevisionFlags.Deleted);

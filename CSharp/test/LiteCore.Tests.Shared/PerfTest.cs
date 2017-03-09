@@ -14,71 +14,11 @@ namespace LiteCore.Tests
 {
     public unsafe class PerfTest : Test
     {
-        private class TotalContext
-        {
-            public double total;
-        }
-
-        private class CountContext
-        {
-            public ulong count;
-        }
-
         private const string JsonFilePath = "../../../C/tests/data/iTunesMusicLibrary.json";
-        private C4View *_artistsView;
-        private C4View *_albumsView;
-        private C4View *_tracksView;
-        private C4View *_likesView;
-        private C4View *_statesView;
 
         public PerfTest(ITestOutputHelper output) : base(output)
         {
 
-        }
-
-        [Fact]
-        [Trait("Slow", "true")]
-        public void TestPerformance()
-        {
-            var jsonData = File.ReadAllBytes(JsonFilePath);
-            FLError error;
-            var unmanagedData = Marshal.AllocHGlobal(jsonData.Length);
-            Marshal.Copy(jsonData, 0, unmanagedData, jsonData.Length);
-            var slice = new FLSlice(unmanagedData.ToPointer(), (ulong)jsonData.Length);
-            var fleeceData = NativeRaw.FLData_ConvertJSON(slice, &error);
-            var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromData(fleeceData));
-
-            RunTestVariants(() => {
-                uint numDocs;
-                {
-                    var st = Stopwatch.StartNew();
-                    numDocs = InsertDocs(root);
-                    numDocs.Should().Be(12188, "because otherwise an incorrect number of documents was inserted");
-                    st.PrintReport("Writing docs", numDocs, "doc", _output);
-                }
-                {
-                    var st = Stopwatch.StartNew();
-                    IndexViews();
-                    st.PrintReport("Indexing Albums/Artists views", numDocs, "doc", _output);
-                }
-                {
-                    var st = Stopwatch.StartNew();
-                    IndexTracksView();
-                    st.PrintReport("Indexing Tracks view", numDocs, "doc", _output);
-                }
-                {
-                    var st = Stopwatch.StartNew();
-                    var context = new TotalContext();
-                    var reduce = new C4ManagedReduceFunction(TotalAccumulate, TotalReduce, context);
-                    
-                    var numArtists = QueryGrouped(_artistsView, reduce.Native);
-                    reduce.Dispose();
-                    numArtists.Should().Be(1141, "because otherwise the query returned incorrect information");
-                    st.PrintReport("Grouped query of Artist view", numDocs, "doc", _output);
-                }
-            });
-
-            Marshal.FreeHGlobal(unmanagedData);
         }
 
         [Fact]
@@ -115,65 +55,23 @@ namespace LiteCore.Tests
                 var numDocs = ImportJSONLines("../../../C/tests/data/names_300000.json",
                     TimeSpan.FromSeconds(15), true);
                 var complete = numDocs == 300000;
-                #if !DEBUG
+#if !DEBUG
                 numDocs.Should().Be(300000, "because otherwise the operation was too slow");
-                #endif
-                {
+#endif
+
+                for (int pass = 0; pass < 2; ++pass) {
                     var st = Stopwatch.StartNew();
-                    var totalLikes = IndexLikesView();
-                    WriteLine($"Total of {totalLikes} likes");
-                    st.PrintReport("Indexing Likes view", numDocs, "doc", _output);
+                    var n = QueryWhere("{\"contact.address.state\": \"WA\"}", true);
+                    st.PrintReport("SQL query of state", n, "doc", _output);
                     if(complete) {
-                        totalLikes.Should().Be(345986, "because otherwise the index missed data set objects", _output);
+                        n.Should().Be(5053, "because that is the number of WA state contact addresses in the document");
                     }
-                }
-                {
-                    var st = Stopwatch.StartNew();
-                    var context = new CountContext();
-                    using(var reduce = new C4ManagedReduceFunction(CountAccumulate, CountReduce, context)) {
-                        var numLikes = QueryGrouped(_likesView, reduce.Native, true);
-                        st.PrintReport("Querying all likes", numLikes, "like", _output);
-                        if(complete) {
-                            numLikes.Should().Be(15, "because that is the number of likes in the data set");
-                        }
-                    }
-                }
-                {
-                    var st = Stopwatch.StartNew();
-                    var total = IndexStatesView();
-                    st.PrintReport("Indexing States view", numDocs, "doc", _output);
-                    if(complete) {
-                        total.Should().Be(300000, "because otherwise the index missed some dataset objects");
-                    }
-                }
-                {
-                    var options = C4QueryOptions.Default;
-                    var key = Native.c4key_new();
-                    NativeRaw.c4key_addString(key, C4Slice.Constant("WA"));
-                    options.startKey = options.endKey = key;
-                    var st = Stopwatch.StartNew();
-                    var total = RunQuery(_statesView, options);
-                    Native.c4key_free(key);
-                    st.PrintReport("Querying States view", total, "row", _output);
-                    if(complete) {
-                        total.Should().Be(5053, "because that is the number of states in the data set");
-                    }
-                }
-                {
-                    if(Storage == C4StorageEngine.SQLite && !IsRevTrees()) {
-                        for(int pass = 0; pass < 2; ++pass) {
-                            var st = Stopwatch.StartNew();
-                            var n = QueryWhere("{\"contact.address.state\": \"WA\"}");
-                            st.PrintReport("SQL query of state", n, "doc", _output);
-                            if(complete) {
-                                n.Should().Be(5053, "because that is the number of states in the data set"); 
-                            }
-                            if(pass == 0) {
-                                var st2 = Stopwatch.StartNew();
-                                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "contact.address.state", C4IndexType.ValueIndex, null, err));
-                                st2.PrintReport("Creating SQL index of state", 1, "index", _output);
-                            }
-                        }
+
+                    if(pass == 0) {
+                        var st2 = Stopwatch.StartNew();
+                        LiteCoreBridge.Check(err => NativeRaw.c4db_createIndex(Db, C4Slice.Constant("contact.address.state"), C4IndexType.ValueIndex,
+                            null, err));
+                        st2.PrintReport("Creating SQL index of state", 1, "index", _output);
                     }
                 }
             });
@@ -190,7 +88,7 @@ namespace LiteCore.Tests
             while(Native.c4queryenum_next(e, &error)) {
                 artist = e->docID.CreateString();
                 if(verbose) {
-                    Console.Write($"{artist}  ");
+                    Write($"{artist}  ");
                 }
 
                 docIDs.Add(artist);
@@ -203,53 +101,6 @@ namespace LiteCore.Tests
             }
 
             return (uint)docIDs.Count;
-        }
-
-        private uint QueryGrouped(C4View* view, C4ReduceFunction reduce, bool verbose = false)
-        {
-            var options = C4QueryOptions.Default;
-            options.reduce = &reduce;
-            options.groupLevel = 1;
-            return RunQuery(view, options, verbose);
-        }
-
-        private uint RunQuery(C4View* view, C4QueryOptions options, bool verbose = false)
-        {
-            var allKeys = new List<string>(1200);
-            C4Error error;
-            var query = (C4QueryEnumerator *)LiteCoreBridge.Check(err => {
-                var localOpts = options;
-                return Native.c4view_query(view, &localOpts, err);
-            });
-
-            C4SliceResult keySlice;
-            while(Native.c4queryenum_next(query, &error)) {
-                var key = query->key;
-                if(Native.c4key_peek(&key) == C4KeyToken.Array) {
-                    Native.c4key_skipToken(&key);
-                    keySlice = NativeRaw.c4key_readString(&key);
-                } else {
-                    Native.c4key_peek(&key).Should().Be(C4KeyToken.String, "because otherwise an invalid entry is present");
-                    keySlice = NativeRaw.c4key_readString(&key);
-                }
-
-                ((long)keySlice.buf).Should().NotBe(0, "because the entry should not be null");
-                var keyStr = ((C4Slice)keySlice).CreateString();
-                if(verbose) {
-                    var valStr = query->value.CreateString();
-                    Console.Write($"{keyStr} ({valStr}) ");
-                }
-
-                allKeys.Add(keyStr);
-                Native.c4slice_free(keySlice);
-            }
-
-            Native.c4queryenum_free(query);
-            if(verbose) {
-                WriteLine();
-            }
-
-            return (uint)allKeys.Count;
         }
 
         private uint InsertDocs(FLArray* docs)
@@ -319,288 +170,6 @@ namespace LiteCore.Tests
             }
         }
 
-        private void IndexViews()
-        {
-            var nameKey   = Native.FLDictKey_Init("Name", true);
-            var albumKey  = Native.FLDictKey_Init("Album", true);
-            var artistKey = Native.FLDictKey_Init("Artist", true);
-            var timeKey   = Native.FLDictKey_Init("Total Time", true);
-            var trackNoKey= Native.FLDictKey_Init("Track Number", true);
-            var compKey   = Native.FLDictKey_Init("Compilation", true);
-
-            var enc = Native.FLEncoder_New();
-            var key = Native.c4key_new();
-
-            C4Error error;
-            if(_artistsView == null) {
-                var config = Native.c4db_getConfig(Db);
-                _artistsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Artists", "1", 
-                    Native.c4db_getConfig(Db), err));
-            }
-
-            if(_albumsView == null) {
-                _albumsView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Albums", "1", 
-                    Native.c4db_getConfig(Db), err));
-            }
-
-            var views = new C4View*[] { _artistsView, _albumsView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
-            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
-            while(Native.c4enum_next(e, &error)) {
-                var doc = Native.c4enum_getDocument(e, &error);
-                var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
-                ((long)body).Should().NotBe(0, "because otherwise the data got corrupted somehow");
-                
-                FLSlice artist;
-                if(Native.FLValue_AsBool(Native.FLDict_GetWithKey(body, &compKey))) {
-                    artist = FLSlice.Constant("-Compilations-");
-                } else {
-                    artist = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(body, &artistKey));
-                }
-
-                var name = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(body, &nameKey));
-                var album = Native.FLValue_AsString(Native.FLDict_GetWithKey(body, &albumKey));
-                var trackNo = Native.FLValue_AsInt(Native.FLDict_GetWithKey(body, &trackNoKey));
-                var time = Native.FLDict_GetWithKey(body, &timeKey);
-
-                // Generate Value:
-                Native.FLEncoder_WriteValue(enc, time);
-                FLError flError;
-                var fval = NativeRaw.FLEncoder_Finish(enc, &flError);
-                Native.FLEncoder_Reset(enc);
-                ((long)fval.buf).Should().NotBe(0, "because otherwise the encoding failed");
-                var value = (C4Slice)fval;
-
-                // Emit to artists view:
-                uint nKeys = 0;
-                if(!artist.Equals(FLSlice.Null) && !name.Equals(FLSlice.Null)) {
-                    nKeys = 1;
-                    // Generate key:
-                    Native.c4key_beginArray(key);
-                    NativeRaw.c4key_addString(key, (C4Slice)artist);
-                    if(album != null) {
-                        Native.c4key_addString(key, album);
-                    } else {
-                        Native.c4key_addNull(key);
-                    }
-
-                    Native.c4key_addNumber(key, trackNo);
-                    NativeRaw.c4key_addString(key, (C4Slice)name);
-                    Native.c4key_addNumber(key, 1.0);
-                    Native.c4key_endArray(key);
-                }
-
-                NativeRaw.c4indexer_emit(indexer, doc, 0, nKeys, &key, new[] { value }, &error).Should()
-                    .BeTrue("because otherwise the emit to the artists view failed");
-                Native.c4key_reset(key);
-
-                // Emit to albums view:
-                nKeys = 0;
-                if(album != null) {
-                    nKeys = 1;
-                    Native.c4key_beginArray(key);
-                    Native.c4key_addString(key, album);
-                    if(!artist.Equals(FLSlice.Null)) {
-                        NativeRaw.c4key_addString(key, (C4Slice)artist);
-                    } else {
-                        Native.c4key_addNull(key);
-                    }
-
-                    Native.c4key_addNumber(key, trackNo);
-                    if(name.buf == null) {
-                        name = FLSlice.Constant("");
-                    }
-
-                    NativeRaw.c4key_addString(key, (C4Slice)name);
-                    Native.c4key_addNumber(key, 1.0);
-                    Native.c4key_endArray(key);
-                }
-
-                NativeRaw.c4indexer_emit(indexer, doc, 1, nKeys, &key, new[] { value }, &error).Should()
-                    .BeTrue("because otherwise the emit to the artists view failed");
-                Native.c4key_reset(key);
-
-                Native.FLSliceResult_Free(fval);
-                Native.c4doc_free(doc);
-            }
-
-            Native.c4enum_free(e);
-            error.code.Should().Be(0, "because otherwise an error occurred");
-            Native.c4indexer_end(indexer, true, &error).Should().BeTrue("because otherwise the indexer failed to end");
-            Native.FLEncoder_Free(enc);
-            Native.c4key_free(key);
-        }
-
-        private void IndexTracksView()
-        {
-            var nameKey = NativeRaw.FLDictKey_Init(FLSlice.Constant("Name"), true);
-            var key = Native.c4key_new();
-
-            C4Error error;
-            if(_tracksView == null) {
-                _tracksView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "Tracks", "1",
-                    Native.c4db_getConfig(Db), err));
-            }
-
-            var views = new C4View*[] { _tracksView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
-            try {
-                var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
-                while(Native.c4enum_next(e, &error)) {
-                    var doc = Native.c4enum_getDocument(e, &error);
-                    var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
-                    ((long)body).Should().NotBe(0, "because otherwise the data got corrupted somehow");
-                    var name = Native.FLValue_AsString(Native.FLDict_GetWithKey(body, &nameKey));
-
-                    Native.c4key_reset(key);
-                    Native.c4key_addString(key, name);
-
-                    var value = C4Slice.Null;
-                    LiteCoreBridge.Check(err => NativeRaw.c4indexer_emit(indexer, doc, 0, new C4Key*[] { key }, new C4Slice[] { value }, err));
-                    Native.c4key_reset(key);
-                    Native.c4doc_free(doc);
-                }
-
-                Native.c4enum_free(e);
-                error.code.Should().Be(0, "because otherwise an error occurred somewhere");
-            } finally {
-                LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
-                Native.c4key_free(key);
-            }
-        }
-
-        private uint IndexLikesView()
-        {
-            var likesKey = Native.FLDictKey_Init("likes", true);
-            var keys = new C4Key*[] { Native.c4key_new(), Native.c4key_new(), Native.c4key_new() };
-            var values = new C4Slice[3];
-            uint totalLikes = 0;
-
-            if(_likesView == null) {
-                _likesView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "likes",
-                    "1", Native.c4db_getConfig(Db), err));
-            }
-
-            var views = new C4View*[] { _likesView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
-            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
-            C4Error error;
-            while(Native.c4enum_next(e, &error)) {
-                var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
-                var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
-                var likes = Native.FLValue_AsArray(Native.FLDict_GetWithKey(body, &likesKey));
-
-                FLArrayIterator iter;
-                Native.FLArrayIterator_Begin(likes, &iter);
-                uint nLikes;
-                for(nLikes = 0; nLikes < 3; ++nLikes) {
-                    var like = NativeRaw.FLValue_AsString(Native.FLArrayIterator_GetValue(&iter));
-                    if(like.buf == null) {
-                        break;
-                    }
-
-                    Native.c4key_reset(keys[nLikes]);
-                    NativeRaw.c4key_addString(keys[nLikes], (C4Slice)like);
-                    Native.FLArrayIterator_Next(&iter);
-                }
-
-                totalLikes += nLikes;
-                LiteCoreBridge.Check(err => {
-                    var localKeys = keys;
-                    fixed(C4Key** keys_ = localKeys) {
-                        return NativeRaw.c4indexer_emit(indexer, doc, 0, nLikes, keys_, values, err);
-                    }
-                });
-        
-                Native.c4doc_free(doc);
-            }
-
-            Native.c4enum_free(e);
-            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
-            LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
-            for(uint i = 0; i < 3; i++) {
-                Native.c4key_free(keys[i]);
-            }
-
-            return totalLikes;
-        }
-
-        private uint IndexStatesView()
-        {
-            var contactKey = Native.FLDictKey_Init("contact", true);
-            var addressKey = Native.FLDictKey_Init("address", true);
-            var stateKey = Native.FLDictKey_Init("state", true);
-            var key = Native.c4key_new();
-            uint totalStates = 0;
-
-            if(_statesView == null) {
-                _statesView = (C4View *)LiteCoreBridge.Check(err => Native.c4view_open(Db, null, "states",
-                    "1", Native.c4db_getConfig(Db), err));
-            }
-
-            var views = new C4View*[] { _statesView };
-            var indexer = (C4Indexer *)LiteCoreBridge.Check(err => Native.c4indexer_begin(Db, views, err));
-            var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4indexer_enumerateDocuments(indexer, err));
-            C4Error error;
-            while(Native.c4enum_next(e, &error)) {
-                var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
-                var body = Native.FLValue_AsDict(NativeRaw.FLValue_FromTrustedData((FLSlice)doc->selectedRev.body));
-                var contact = Native.FLValue_AsDict(Native.FLDict_GetWithKey(body, &contactKey));
-                var address = Native.FLValue_AsDict(Native.FLDict_GetWithKey(contact, &addressKey));
-                var state = NativeRaw.FLValue_AsString(Native.FLDict_GetWithKey(address, &stateKey));
-
-                uint nStates = 0;
-                if(state.buf != null) {
-                    Native.c4key_reset(key);
-                    NativeRaw.c4key_addString(key, (C4Slice)state);
-                    nStates = 1;
-                    totalStates++;
-                }
-
-                var value = C4Slice.Null;
-                LiteCoreBridge.Check(err => {
-                    var localKey = key;
-                    return NativeRaw.c4indexer_emit(indexer, doc, 0, nStates, &localKey, 
-                        new[] { value }, err);
-                });
-                Native.c4doc_free(doc);
-            }
-
-            Native.c4enum_free(e);
-            error.code.Should().Be(0, "because otherwise an error occurred somewhere");
-            LiteCoreBridge.Check(err => Native.c4indexer_end(indexer, true, err));
-            Native.c4key_free(key);
-            return totalStates;
-        }
-
-        private static void TotalAccumulate(object context, C4Key* key, C4Slice value)
-        {
-            var ctx = context as TotalContext;
-            var v = NativeRaw.FLValue_FromTrustedData((FLSlice)value);
-            ctx.total += Native.FLValue_AsDouble(v);
-        }
-
-        private static string TotalReduce(object context)
-        {
-            var ctx = context as TotalContext;
-            var retVal = ctx.total.ToString("G6");
-            ctx.total = 0.0;
-            return retVal;
-        }
-
-        private static void CountAccumulate(object context, C4Key* key, C4Slice value)
-        {
-            (context as CountContext).count++;
-        }
-
-        private static string CountReduce(object context)
-        {
-            var ctx = context as CountContext;
-            var retVal = ctx.ToString();
-            ctx.count = 0;
-            return retVal;
-        }
-
         private static bool CopyValue(FLDict* source, FLDictKey* key, FLEncoder* enc)
         {
             var value = Native.FLDict_GetWithKey(source, key);
@@ -611,22 +180,6 @@ namespace LiteCore.Tests
             Native.FLEncoder_WriteKey(enc, Native.FLDictKey_GetString(key));
             Native.FLEncoder_WriteValue(enc, value);
             return true;
-        }
-
-        protected override void TeardownVariant(int option)
-        {
-            Native.c4view_free(_artistsView);
-            _artistsView = null;
-            Native.c4view_free(_albumsView);
-            _albumsView = null;
-            Native.c4view_free(_tracksView);
-            _tracksView = null;
-            Native.c4view_free(_likesView);
-            _likesView = null;
-            Native.c4view_free(_statesView);
-            _statesView = null;
-
-            base.TeardownVariant(option);
         }
     }
 }

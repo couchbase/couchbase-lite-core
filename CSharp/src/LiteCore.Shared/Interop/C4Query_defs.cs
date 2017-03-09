@@ -1,5 +1,5 @@
 //
-// C4DBQuery_defs.cs
+// C4Query_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -54,6 +54,28 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+    unsafe partial struct C4QueryOptions
+    {
+        public ulong skip;
+        public ulong limit;
+        private byte _rankFullText;
+
+        public bool rankFullText
+        {
+            get {
+                return Convert.ToBoolean(_rankFullText);
+            }
+            set {
+                _rankFullText = Convert.ToByte(value);
+            }
+        }
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
     unsafe partial struct C4IndexOptions
     {
         private IntPtr _language;
@@ -79,5 +101,31 @@ namespace LiteCore.Interop
                 _ignoreDiacritics = Convert.ToByte(value);
             }
         }
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4QueryEnumerator
+    {
+        public C4Slice docID;
+        public ulong docSequence;
+        public C4Slice revID;
+        public C4DocumentFlags docFlags;
+        public uint fullTextTermCount;
+        public C4FullTextTerm* fullTextTerms;
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif 
+    struct C4FullTextTerm
+    {
+        public uint termIndex;
+        public uint start, length;
     }
 }

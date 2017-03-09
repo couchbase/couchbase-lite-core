@@ -44,20 +44,6 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Document* c4doc_getBySequence(C4Database* database, ulong sequence, C4Error* outError);
 
-        public static string c4doc_getType(C4Document* doc)
-        {
-            using(var retVal = NativeRaw.c4doc_getType(doc)) {
-                return ((C4Slice)retVal).CreateString();
-            }
-        }
-
-        public static void c4doc_setType(C4Document* doc, string docType)
-        {
-            using(var docType_ = new C4String(docType)) {
-                NativeRaw.c4doc_setType(doc, docType_.AsC4Slice());
-            }
-        }
-
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_save(C4Document* doc, uint maxRevTreeDepth, C4Error* outError);
@@ -196,12 +182,6 @@ namespace LiteCore.Interop
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Document* c4doc_get(C4Database* database, C4Slice docID, [MarshalAs(UnmanagedType.U1)]bool mustExist, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4doc_getType(C4Document* doc);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4doc_setType(C4Document* doc, C4Slice docType);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

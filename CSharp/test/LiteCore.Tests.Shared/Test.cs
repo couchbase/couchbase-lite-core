@@ -21,6 +21,8 @@ namespace LiteCore.Tests
 #endif
 
         protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
+
+        protected static readonly C4Slice FleeceBody;
         
         protected override int NumberOfOptions
         {
@@ -62,6 +64,17 @@ namespace LiteCore.Tests
             get {
                 return IsRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
             }
+        }
+
+        static Test()
+        {
+            var enc = Native.FLEncoder_New();
+            Native.FLEncoder_BeginDict(enc, 1);
+            Native.FLEncoder_WriteKey(enc, "answer");
+            Native.FLEncoder_WriteInt(enc, 42);
+            Native.FLEncoder_EndDict(enc);
+            var result = NativeRaw.FLEncoder_Finish(enc, null);
+            FleeceBody = result;
         }
 
         public Test(ITestOutputHelper output) : base(output)
@@ -142,6 +155,14 @@ namespace LiteCore.Tests
         protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
         {
             CreateRev(Db, docID, revID, body, flags);
+        }
+
+        protected void CreateNumberedDocs(int numberOfDocs)
+        {
+            for (int i = 1; i < 100; i++) {
+                var docID = $"doc-{i:D3}";
+                CreateRev(docID, RevID, Body);
+            }
         }
 
         protected string DatabasePath()

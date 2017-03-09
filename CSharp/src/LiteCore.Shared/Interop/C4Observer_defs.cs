@@ -35,6 +35,18 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+    unsafe struct C4DatabaseChange
+    {
+        public C4Slice docID;
+        public C4Slice revID;
+        public ulong sequence;
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
     unsafe struct C4DocumentObserver
     {
     }
