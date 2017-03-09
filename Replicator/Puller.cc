@@ -79,10 +79,26 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
+        FLError err;
+        alloc_slice fleeceBody = Encoder::convertJSON(msg->body(), &err);
+        if (!fleeceBody) {
+            gotError(C4Error{FleeceDomain, err});
+            return;
+        }
+
         Rev rev;
+        bool deleted;
         rev.docID = msg->property("id"_sl);
-        rev.revID = msg->property("rev"_sl);
-        bool deleted = !!msg->property("deleted"_sl);
+        if (rev.docID) {
+            rev.revID = msg->property("rev"_sl);
+            deleted = !!msg->property("deleted"_sl);
+        } else {
+            // No metadata properties; look inside the JSON:
+            Dict root = Value::fromTrustedData(fleeceBody).asDict();
+            rev.docID = (slice)root["_id"_sl].asString();
+            rev.revID = (slice)root["_rev"_sl].asString();
+            deleted = root["_deleted"].asBool();
+        }
         slice history = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
 
@@ -96,13 +112,6 @@ namespace litecore { namespace repl {
         if (nonPassive() && !sequence) {
             warn("Missing sequence in 'rev' message for active puller");
             msg->respondWithError("BLIP"_sl, 400);
-            return;
-        }
-
-        FLError err;
-        alloc_slice fleeceBody = Encoder::convertJSON(msg->body(), &err);
-        if (!fleeceBody) {
-            gotError(C4Error{FleeceDomain, err});
             return;
         }
 

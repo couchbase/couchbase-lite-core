@@ -6,10 +6,10 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "Fleece.h"
-#include "c4Internal.hh"
-#include "c4Replicator.h"
+#include "FleeceCpp.hh"
 #include "c4.hh"
+#include "c4Private.h"
+#include "c4Replicator.h"
 #include "LibWSProvider.hh"
 #include "Replicator.hh"
 #include <atomic>
@@ -20,13 +20,6 @@ using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;
-
-
-namespace litecore {
-    static inline std::string asstring(C4String s) {
-        return std::string((char*)s.buf, s.size);
-    }
-}
 
 
 struct C4Replicator : public RefCounted, Replicator::Delegate {
@@ -59,7 +52,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                                                  || status.code == kCodeGoingAway)) {
             _error = {};
         } else {
-            _error = {kDomainForReason[status.reason], status.code};
+            _error = c4error_make(kDomainForReason[status.reason], status.code, status.message);
         }
         notify();
     }
@@ -88,6 +81,9 @@ C4Replicator* c4repl_new(C4Database* db,
         return retain(new C4Replicator(db, c4addr, c4opts));
     } catch (const std::exception &x) {
         WarnError("Exception caught in c4repl_new");    //FIX: Set *err
+        if (err)
+            *err = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
+        // TODO: Return a better error
         return nullptr;
     }
 }

@@ -59,6 +59,8 @@ public:
     virtual void replicatorCloseStatusChanged(Replicator* repl, const CloseStatus &status) override {
         Log(">> Replicator closed with code=%d/%d, message=%.*s",
             status.reason, status.code, SPLAT(status.message));
+        REQUIRE(status.reason == kWebSocketClose);
+        REQUIRE(status.code == 1000);
     }
 
 
@@ -66,8 +68,6 @@ public:
     Address address;
     Retained<Replicator> replicator;
     alloc_slice checkpointID;
-//    unique_ptr<thread> parallelThread;
-//    future<void> parallelThreadDone;
 };
 
 
@@ -79,4 +79,9 @@ TEST_CASE_METHOD(ReplicatorTest, "Real Push Empty DB", "[Push][.special]") {
 TEST_CASE_METHOD(ReplicatorTest, "Real Push Non-Empty DB", "[Push][.special]") {
     importJSONLines(sFixturesDir + "names_100.json");
     runReplicator(Replicator::Options::pushing());
+}
+
+
+TEST_CASE_METHOD(ReplicatorTest, "Real Pull DB", "[Pull][.special]") {
+    runReplicator(Replicator::Options::pulling());
 }
