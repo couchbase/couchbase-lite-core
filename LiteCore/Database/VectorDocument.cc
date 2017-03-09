@@ -76,9 +76,9 @@ namespace c4Internal {
         }
 
 
-        virtual bool exists() override              {return _current->exists();}
-        virtual slice type() noexcept override      {return _current->docType();}
-        virtual void setType(slice type) noexcept override   {/* Not applicable */}
+        virtual bool exists() override {
+            return _current->exists();
+        }
 
 
         virtual void loadRevisions() override {

@@ -122,12 +122,6 @@ namespace c4Internal {
 
     void setEnumFilter(C4DocEnumerator*, EnumFilter);
 
-
-    // Internal C4EnumeratorFlags value. Includes purged docs (what ForestDB calls 'deleted'),
-    // so this is equivalent to litecore::RecordEnumerator::includeDeleted.
-    // Should only need to be used internally, for the view indexer's enumerator.
-    static const uint16_t kC4IncludePurged = 0x8000;
-
 }
 
 using namespace c4Internal;

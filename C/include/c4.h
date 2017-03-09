@@ -13,7 +13,5 @@
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4ExpiryEnumerator.h"
-#include "c4Key.h"
-#include "c4View.h"
-#include "c4DBQuery.h"
+#include "c4Query.h"
 #include "c4Observer.h"

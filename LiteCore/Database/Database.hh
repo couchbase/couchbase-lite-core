@@ -52,7 +52,6 @@ namespace c4Internal {
         FilePath path() const;
         uint64_t countDocuments();
         sequence_t lastSequence()       {WITH_LOCK(this); return defaultKeyStore().lastSequence();}
-        time_t nextDocumentExpirationTime();
 
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);

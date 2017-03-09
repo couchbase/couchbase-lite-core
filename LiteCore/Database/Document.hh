@@ -56,9 +56,6 @@ namespace c4Internal {
 
         virtual const Record& record() =0;
 
-        virtual slice type() noexcept =0;
-        virtual void setType(slice) noexcept =0;
-
         virtual bool exists() =0;
         virtual void loadRevisions() =0;
         virtual bool revisionsLoaded() const noexcept =0;

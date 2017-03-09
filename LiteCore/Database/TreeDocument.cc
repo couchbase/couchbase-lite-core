@@ -73,14 +73,6 @@ namespace c4Internal {
             sequence = _versionedDoc.sequence();
         }
 
-        slice type() noexcept override {
-            return _versionedDoc.docType();
-        }
-
-        void setType(slice docType) noexcept override {
-            _versionedDoc.setDocType(docType);
-        }
-
         const Record& record() override {
             return _versionedDoc.record();
         }

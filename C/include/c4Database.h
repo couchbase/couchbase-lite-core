@@ -31,7 +31,7 @@ extern "C" {
         kC4DB_Create        = 1,    ///< Create the file if it doesn't exist
         kC4DB_ReadOnly      = 2,    ///< Open file read-only
         kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
-        kC4DB_Bundled       = 8,    ///< Store db (and views) inside a directory
+        kC4DB_Bundled       = 8,    ///< Store db & attachments inside a directory
         kC4DB_SharedKeys    = 0x10, ///< Enable shared-keys optimization at creation time
     };
 
@@ -57,7 +57,7 @@ extern "C" {
     typedef const char* C4StorageEngine;
     CBL_CORE_API extern C4StorageEngine const kC4SQLiteStorageEngine;
 
-    /** Main database/view configuration struct. */
+    /** Main database configuration struct. */
     typedef struct C4DatabaseConfig {
         C4DatabaseFlags flags;          ///< Create, ReadOnly, AutoCompact, Bundled...
         C4StorageEngine storageEngine;  ///< Which storage to use, or NULL for no preference

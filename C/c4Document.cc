@@ -68,15 +68,6 @@ C4Document* c4doc_getBySequence(C4Database *database,
 }
 
 
-C4SliceResult c4doc_getType(C4Document *doc) noexcept {
-    return sliceResult(internal(doc)->type());
-}
-
-void c4doc_setType(C4Document *doc, C4Slice docType) noexcept {
-    return internal(doc)->setType(docType);
-}
-
-
 #pragma mark - REVISIONS:
 
 

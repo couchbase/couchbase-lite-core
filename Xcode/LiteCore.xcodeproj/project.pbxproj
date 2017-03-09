@@ -26,8 +26,8 @@
 
 /* Begin PBXBuildFile section */
 		2701C22C1C4DA4D2006D7A99 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
-		2705154D1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */; };
-		2705154E1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */; };
+		2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
+		2705154E1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
 		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
@@ -62,15 +62,10 @@
 		273E9F721C51612E003115A6 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		273E9F731C51612E003115A6 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
-		273E9F751C51612E003115A6 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
-		273E9F761C51612E003115A6 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
-		274A69911BED3E0500D16D37 /* c4Key.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A698E1BED3E0500D16D37 /* c4Key.cc */; };
-		274A69931BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
-		274A69941BED3E0500D16D37 /* c4Key.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A698F1BED3E0500D16D37 /* c4Key.h */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
 		274D03E51BA7332000FF7C35 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -88,7 +83,6 @@
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
-		274D04251BA8A58200FF7C35 /* c4View.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04241BA8A58200FF7C35 /* c4View.cc */; };
 		274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
@@ -191,9 +185,7 @@
 		27A924BD1D9B358300086206 /* libLiteCore.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		27A924BE1D9B371700086206 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
-		27A924C01D9B371700086206 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
 		27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
-		27A924C21D9B371700086206 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27A924C41D9B371700086206 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		27A924C51D9B371700086206 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
 		27A924C61D9B371700086206 /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
@@ -257,9 +249,6 @@
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
-		27E4872F1924178B007D8940 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
-		27E487331924242C007D8940 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
-		27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
 		27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* RecordEnumerator.cc */; };
 		27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6DFEE1DA5AFF3008EB681 /* Query.cc */; };
 		27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6DFEE1DA5AFF3008EB681 /* Query.cc */; };
@@ -335,8 +324,6 @@
 		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
-		27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
-		27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27F7A0C41D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
@@ -344,17 +331,9 @@
 		27F7A1431D61F8B700447BC6 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F7A1441D61F8B700447BC6 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		27F7A1451D61F8B700447BC6 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
-		27F7A1461D61F8B700447BC6 /* c4KeyTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */; };
-		27F7A1471D61F8B700447BC6 /* c4ViewTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F5201BAA1740003FD798 /* c4ViewTest.cc */; };
 		27F7A1491D61F8B700447BC6 /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
-		27FA099E1D6F811D005888AA /* CollatableTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277014FF1D516CE2008BADD7 /* CollatableTest.cc */; };
-		27FA099F1D6F811E005888AA /* CollatableTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277014FF1D516CE2008BADD7 /* CollatableTest.cc */; };
 		27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		27FA09A11D6FA381005888AA /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
-		27FA09A21D6FACC2005888AA /* IndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015131D5272D1008BADD7 /* IndexTest.cc */; };
-		27FA09A31D6FACC3005888AA /* IndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015131D5272D1008BADD7 /* IndexTest.cc */; };
-		27FA09A41D6FADAD005888AA /* MapReduceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015151D528438008BADD7 /* MapReduceTest.cc */; };
-		27FA09A51D6FADAE005888AA /* MapReduceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015151D528438008BADD7 /* MapReduceTest.cc */; };
 		27FA09A61D6FAE4E005888AA /* VersionedDocumentTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */; };
 		27FA09A71D6FAE4F005888AA /* VersionedDocumentTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */; };
 		27FA09AE1D6FB615005888AA /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */; };
@@ -389,9 +368,6 @@
 		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		720EA4131BA8D834002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		720EA4141BA8D834002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
-		720EA4151BA8D834002B8416 /* Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487311924242C007D8940 /* Index.cc */; };
-		720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4873819255EA8007D8940 /* MapReduceIndex.cc */; };
-		720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E4872D1924178B007D8940 /* Collatable.cc */; };
 		7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
@@ -679,8 +655,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewQuery.cc; sourceTree = "<group>"; };
-		270515511D8CBEBD00D62D05 /* c4ViewInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ViewInternal.hh; sourceTree = "<group>"; };
+		2705154C1D8CBE6C00D62D05 /* c4Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Query.cc; sourceTree = "<group>"; };
 		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		2705155F1D90A29F00D62D05 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
@@ -745,8 +720,6 @@
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
-		274A698E1BED3E0500D16D37 /* c4Key.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Key.cc; sourceTree = "<group>"; };
-		274A698F1BED3E0500D16D37 /* c4Key.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Key.h; sourceTree = "<group>"; };
 		274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D03E31BA7330A00FF7C35 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
@@ -766,7 +739,6 @@
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04101BA75E9C00FF7C35 /* libcppunit-1.13.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libcppunit-1.13.0.dylib"; path = "../../../../usr/local/Cellar/cppunit/1.13.2/lib/libcppunit-1.13.0.dylib"; sourceTree = "<group>"; };
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
-		274D04241BA8A58200FF7C35 /* c4View.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4View.cc; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentMeta.cc; sourceTree = "<group>"; };
@@ -787,7 +759,6 @@
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil.cc; sourceTree = "<group>"; };
 		2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StringUtil.hh; sourceTree = "<group>"; };
-		275607781BA21DAB00F58218 /* c4View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4View.h; sourceTree = "<group>"; };
 		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
 		2757DE571B9FC3C9002EE261 /* c4Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Database.h; sourceTree = "<group>"; };
 		2757DE591B9FC3F1002EE261 /* c4Base.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; path = c4Base.h; sourceTree = "<group>"; };
@@ -821,10 +792,7 @@
 		276D15321DFCE21500543B1B /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
-		277014FF1D516CE2008BADD7 /* CollatableTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CollatableTest.cc; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
-		277015131D5272D1008BADD7 /* IndexTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IndexTest.cc; sourceTree = "<group>"; };
-		277015151D528438008BADD7 /* MapReduceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceTest.cc; sourceTree = "<group>"; };
 		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
 		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
@@ -941,15 +909,9 @@
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* VersionedDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocument.cc; sourceTree = "<group>"; };
 		27E4872A1923F24D007D8940 /* VersionedDocument.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionedDocument.hh; sourceTree = "<group>"; };
-		27E4872D1924178B007D8940 /* Collatable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Collatable.cc; sourceTree = "<group>"; };
-		27E4872E1924178B007D8940 /* Collatable.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Collatable.hh; sourceTree = "<group>"; };
-		27E487311924242C007D8940 /* Index.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Index.cc; sourceTree = "<group>"; };
-		27E487321924242C007D8940 /* Index.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Index.hh; sourceTree = "<group>"; };
-		27E4873819255EA8007D8940 /* MapReduceIndex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapReduceIndex.cc; sourceTree = "<group>"; };
-		27E4873919255EA8007D8940 /* MapReduceIndex.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MapReduceIndex.hh; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* RecordEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecordEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* RecordEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RecordEnumerator.hh; sourceTree = "<group>"; };
-		27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DBQuery.h; sourceTree = "<group>"; };
+		27E6DFE81DA5A6C8008EB681 /* c4Query.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Query.h; sourceTree = "<group>"; };
 		27E6DFEE1DA5AFF3008EB681 /* Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Query.cc; sourceTree = "<group>"; };
 		27E6DFEF1DA5AFF3008EB681 /* Query.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Query.hh; sourceTree = "<group>"; };
 		27E89BA41D679542002C32B3 /* FilePath.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FilePath.cc; sourceTree = "<group>"; };
@@ -1040,10 +1002,7 @@
 		27F370821DC02C3D0096F717 /* c4Document+Fleece.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "c4Document+Fleece.h"; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
-		27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4KeyTest.cc; sourceTree = "<group>"; };
-		27F6F5201BAA1740003FD798 /* c4ViewTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ViewTest.cc; sourceTree = "<group>"; };
 		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Database.hh; path = Database/Database.hh; sourceTree = "<group>"; };
-		27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4KeyInternal.hh; sourceTree = "<group>"; };
 		27F7A0C21D5E646000447BC6 /* RefCounted.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
 		27F7A0C31D5E657C00447BC6 /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
 		27FA09D31D70EDBF005888AA /* Catch_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Catch_Tests.mm; sourceTree = "<group>"; };
@@ -1201,10 +1160,7 @@
 			isa = PBXGroup;
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
-				277014FF1D516CE2008BADD7 /* CollatableTest.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
-				277015131D5272D1008BADD7 /* IndexTest.cc */,
-				277015151D528438008BADD7 /* MapReduceTest.cc */,
 				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
@@ -1248,18 +1204,6 @@
 				273AD3DB18F5E8D8007D8C23 /* snappy.h */,
 			);
 			path = snappy;
-			sourceTree = "<group>";
-		};
-		273E9F7B1C518613003115A6 /* View Indexes */ = {
-			isa = PBXGroup;
-			children = (
-				27E487311924242C007D8940 /* Index.cc */,
-				27E487321924242C007D8940 /* Index.hh */,
-				27E4873819255EA8007D8940 /* MapReduceIndex.cc */,
-				27E4873919255EA8007D8940 /* MapReduceIndex.hh */,
-			);
-			name = "View Indexes";
-			path = Indexes;
 			sourceTree = "<group>";
 		};
 		273E9F7C1C518678003115A6 /* Rev-Trees */ = {
@@ -1331,9 +1275,7 @@
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
 				27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */,
 				2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */,
-				27F6F51E1BAA0952003FD798 /* c4KeyTest.cc */,
 				272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */,
-				27F6F5201BAA1740003FD798 /* c4ViewTest.cc */,
 				27416E291E0494DF00F10F65 /* c4QueryTest.cc */,
 				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
@@ -1414,8 +1356,6 @@
 		2750724318E3E52800A80C5A /* Support */ = {
 			isa = PBXGroup;
 			children = (
-				27E4872D1924178B007D8940 /* Collatable.cc */,
-				27E4872E1924178B007D8940 /* Collatable.hh */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
@@ -1495,11 +1435,7 @@
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
-				274A698E1BED3E0500D16D37 /* c4Key.cc */,
-				27F7A0C01D5E550B00447BC6 /* c4KeyInternal.hh */,
-				274D04241BA8A58200FF7C35 /* c4View.cc */,
-				2705154C1D8CBE6C00D62D05 /* c4ViewQuery.cc */,
-				270515511D8CBEBD00D62D05 /* c4ViewInternal.hh */,
+				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
 				273E9EC61C506C70003115A6 /* c4.def */,
@@ -1749,7 +1685,6 @@
 				279794A91D3187E8001D0F3A /* VersionVectors */,
 				273E9F7C1C518678003115A6 /* Rev-Trees */,
 				276D153D1DFF528B00543B1B /* Query */,
-				273E9F7B1C518613003115A6 /* View Indexes */,
 				276CD4251D77E8F7001346A3 /* Blobs */,
 				2750724318E3E52800A80C5A /* Support */,
 				271057C21D3997230018247B /* C++ Tests */,
@@ -1898,9 +1833,7 @@
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
-				274A698F1BED3E0500D16D37 /* c4Key.h */,
-				275607781BA21DAB00F58218 /* c4View.h */,
-				27E6DFE81DA5A6C8008EB681 /* c4DBQuery.h */,
+				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -1924,7 +1857,6 @@
 			files = (
 				274D03F21BA734A300FF7C35 /* native_glue.hh in Headers */,
 				273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */,
-				274A69931BED3E0500D16D37 /* c4Key.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2023,7 +1955,6 @@
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
 				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				27D74A941D4D3F3400D806E0 /* SQLiteCpp.h in Headers */,
-				274A69941BED3E0500D16D37 /* c4Key.h in Headers */,
 				279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */,
 				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
@@ -2468,15 +2399,12 @@
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
-				27FA099F1D6F811E005888AA /* CollatableTest.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27FA09A71D6FAE4F005888AA /* VersionedDocumentTests.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
-				27FA09A21D6FACC2005888AA /* IndexTest.cc in Sources */,
-				27FA09A51D6FADAE005888AA /* MapReduceTest.cc in Sources */,
 				27FA09AF1D6FB616005888AA /* VersionVectorTest.cc in Sources */,
 				27FA09B11D6FB7AE005888AA /* RevisionTest.cc in Sources */,
 				27FA09B31D6FB939005888AA /* RevisionStoreTest.cc in Sources */,
@@ -2491,11 +2419,8 @@
 			files = (
 				27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */,
 				27FA09D41D70EDBF005888AA /* Catch_Tests.mm in Sources */,
-				27FA099E1D6F811D005888AA /* CollatableTest.cc in Sources */,
 				27FA09A11D6FA381005888AA /* DataFileTest.cc in Sources */,
 				27FA09A61D6FAE4E005888AA /* VersionedDocumentTests.cc in Sources */,
-				27FA09A31D6FACC3005888AA /* IndexTest.cc in Sources */,
-				27FA09A41D6FADAD005888AA /* MapReduceTest.cc in Sources */,
 				27FA09AE1D6FB615005888AA /* VersionVectorTest.cc in Sources */,
 				27FA09B01D6FB7AD005888AA /* RevisionTest.cc in Sources */,
 				27A924C81D9B372F00086206 /* c4PerfTest.cc in Sources */,
@@ -2505,8 +2430,6 @@
 				27A924C71D9B372500086206 /* c4BlobStoreTest.cc in Sources */,
 				27F7A1441D61F8B700447BC6 /* c4DatabaseTest.cc in Sources */,
 				27F7A1451D61F8B700447BC6 /* c4AllDocsPerformanceTest.cc in Sources */,
-				27F7A1461D61F8B700447BC6 /* c4KeyTest.cc in Sources */,
-				27F7A1471D61F8B700447BC6 /* c4ViewTest.cc in Sources */,
 				27F7A1491D61F8B700447BC6 /* c4ThreadingTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2544,8 +2467,6 @@
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
-				27F6F51F1BAA0952003FD798 /* c4KeyTest.cc in Sources */,
-				27F6F5211BAA1740003FD798 /* c4ViewTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
@@ -2612,9 +2533,7 @@
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
-				27A924C21D9B371700086206 /* c4ViewTest.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
-				27A924C01D9B371700086206 /* c4KeyTest.cc in Sources */,
 				27A924C51D9B371700086206 /* c4PerfTest.cc in Sources */,
 				27A924C41D9B371700086206 /* c4AllDocsPerformanceTest.cc in Sources */,
 				27A924C61D9B371700086206 /* c4ThreadingTest.cc in Sources */,
@@ -2691,7 +2610,7 @@
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
-				2705154D1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */,
+				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
@@ -2706,13 +2625,11 @@
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
-				27E4873A19255EA8007D8940 /* MapReduceIndex.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
-				27E4872F1924178B007D8940 /* Collatable.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
@@ -2729,16 +2646,13 @@
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
-				273E9F761C51612E003115A6 /* c4Key.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				279794A61D307626001D0F3A /* RevisionStore.cc in Sources */,
 				274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
-				27E487331924242C007D8940 /* Index.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
-				273E9F751C51612E003115A6 /* c4View.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2751,7 +2665,6 @@
 				2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD381DB450B300F2872D /* Logging.cc in Sources */,
 				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
-				720EA41A1BA8D834002B8416 /* Collatable.cc in Sources */,
 				278963681D7B7E7D00493096 /* Stream.cc in Sources */,
 				27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */,
@@ -2766,19 +2679,16 @@
 				720EA4111BA8D834002B8416 /* RecordEnumerator.cc in Sources */,
 				72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */,
 				27D74A831D4D3F2300D806E0 /* Statement.cpp in Sources */,
-				720EA4161BA8D834002B8416 /* MapReduceIndex.cc in Sources */,
 				27D74A7B1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				27D74A811D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				278963631D7A376900493096 /* EncryptedStream.cc in Sources */,
-				2705154E1D8CBE6C00D62D05 /* c4ViewQuery.cc in Sources */,
+				2705154E1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				27D74A7F1D4D3F2300D806E0 /* Database.cpp in Sources */,
-				720EA4151BA8D834002B8416 /* Index.cc in Sources */,
 				27D74A7D1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
-				274A69911BED3E0500D16D37 /* c4Key.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
@@ -2786,7 +2696,6 @@
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
-				274D04251BA8A58200FF7C35 /* c4View.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,

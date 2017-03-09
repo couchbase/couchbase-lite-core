@@ -18,7 +18,6 @@
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "DataFile.hh"
-#include "Collatable.hh"
 #include "CASRevisionStore.hh"
 #include "DocumentMeta.hh"
 #include "SequenceTracker.hh"
@@ -279,20 +278,6 @@ namespace c4Internal {
                 ++count;
         }
         return count;
-    }
-
-
-    time_t Database::nextDocumentExpirationTime() {
-        WITH_LOCK(this);
-        KeyStore& expiryKvs = getKeyStore("expiry");
-        RecordEnumerator e(expiryKvs);
-        if(e.next() && e.record().body() == nullslice) {
-            // Look for an entry with a null body (otherwise, its key is simply a doc ID)
-            CollatableReader r(e.record().key());
-            r.beginArray();
-            return (time_t)r.readInt();
-        }
-        return 0;
     }
 
 

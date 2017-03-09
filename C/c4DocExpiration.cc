@@ -17,14 +17,16 @@
 #include "c4ExpiryEnumerator.h"
 #include "Database.hh"
 
-#include "Collatable.hh"
 #include "RecordEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"
+#include "slice.hh"
+#include "FleeceCpp.hh"
 #include <stdint.h>
 #include <ctime>
 
 using namespace fleece;
+using namespace fleeceapi;
 
 
 // This helper function is meant to be wrapped in a transaction
@@ -36,12 +38,12 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
             return false;
         }
 
-        CollatableBuilder tsKeyBuilder;
-        tsKeyBuilder.beginArray();
-        tsKeyBuilder << (double)timestamp;
-        tsKeyBuilder << docId;
-        tsKeyBuilder.endArray();
-        slice tsKey = tsKeyBuilder.data();
+        fleeceapi::Encoder enc;
+        enc.beginArray();
+        enc << (double)timestamp;
+        enc << (slice)docId;
+        enc.endArray();
+        alloc_slice tsKey = enc.finish();
 
         alloc_slice tsValue(SizeOfVarInt(timestamp));
         PutUVarInt((void *)tsValue.buf, timestamp);
@@ -58,13 +60,14 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 
             // Remove old entry
             uint64_t oldTimestamp;
-            CollatableBuilder oldTsKey;
+            fleeceapi::Encoder oldKeyEnc;
             GetUVarInt(existingDoc.body(), &oldTimestamp);
-            oldTsKey.beginArray();
-            oldTsKey << (double)oldTimestamp;
-            oldTsKey << docId;
-            oldTsKey.endArray();
-            expiry.del(oldTsKey, t);
+            oldKeyEnc.beginArray();
+            oldKeyEnc << (double)oldTimestamp;
+            oldKeyEnc << (slice)docId;
+            oldKeyEnc.endArray();
+            alloc_slice oldKey(oldKeyEnc.finish());
+            expiry.del(oldKey, t);
         }
 
         if (timestamp == 0) {
@@ -103,6 +106,22 @@ uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
 }
 
 
+uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
+{
+    return tryCatch<uint64_t>(nullptr, [database]{
+        WITH_LOCK(this);
+        KeyStore& expiryKvs = database->getKeyStore("expiry");
+        RecordEnumerator e(expiryKvs);
+        if(e.next() && e.record().body() == nullslice) {
+            // Look for an entry with a null body (otherwise, its key is simply a doc ID)
+            Array info = Value::fromData(e.record().key()).asArray();
+            return info[0].asUnsigned();
+        }
+        return (uint64_t)0;
+    });
+}
+
+
 #pragma mark - ENUMERATOR:
 
 
@@ -111,8 +130,8 @@ struct C4ExpiryEnumerator
 public:
     C4ExpiryEnumerator(C4Database *database) :
     _db(database),
-    _e(_db->getKeyStore("expiry"), nullslice, nullslice),
-    _reader(nullslice)
+    _e(_db->getKeyStore("expiry"), nullslice, nullslice)
+    
     {
         _endTimestamp = time(nullptr);
         reset();
@@ -122,11 +141,9 @@ public:
         if(!_e.next()) {
             return false;
         }
-        
-        _reader = CollatableReader(_e.record().key());
-        _reader.skipTag();
-        _reader.readInt();
-        _current = _reader.readString();
+
+        auto info = Value::fromData(_e.record().key()).asArray();
+        _current = alloc_slice(info[1].asString());
         
         return true;
     }
@@ -143,14 +160,14 @@ public:
     
     void reset()
     {
-        CollatableBuilder c;
-        c.beginArray();
-        c << (double)_endTimestamp;
-        c.beginMap();
-        c.endMap();
-        c.endArray();
-        _e = RecordEnumerator(_db->getKeyStore("expiry"), nullslice, c.data());
-        _reader = CollatableReader(nullslice);
+        fleeceapi::Encoder e;
+        e.beginArray();
+        e << (double)_endTimestamp;
+        e.beginDict();
+        e.endDict();
+        e.endArray();
+        alloc_slice endKey(e.finish());
+        _e = RecordEnumerator(_db->getKeyStore("expiry"), nullslice, endKey);
     }
 
     void close()
@@ -167,7 +184,6 @@ private:
     Retained<Database> _db;
     RecordEnumerator _e;
     alloc_slice _current;
-    CollatableReader _reader;
     uint64_t _endTimestamp;
 };
 

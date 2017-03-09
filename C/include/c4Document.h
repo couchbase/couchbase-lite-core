@@ -77,16 +77,6 @@ extern "C" {
                                     C4SequenceNumber,
                                     C4Error *outError) C4API;
 
-    /** Returns the document type (as set by setDocType.) This value is ignored by LiteCore itself;
-        by convention Couchbase Lite sets it to the value of the current revision's "type" property,
-        and uses it as an optimization when indexing a view. */
-    C4StringResult c4doc_getType(C4Document *doc) C4API;
-
-    /** Sets a document's docType. (By convention this is the value of the "type" property of the
-        current revision's JSON; this value can be used as optimization when indexing a view.)
-        The change will not be persisted until the document is saved. */
-    void c4doc_setType(C4Document *doc, C4String docType) C4API;
-
     /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given. */

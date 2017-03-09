@@ -71,8 +71,6 @@ struct C4DocEnumerator: InstanceCounted {
         options.descending = (c4options.flags & kC4Descending) != 0;
         options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
         options.inclusiveEnd = (c4options.flags & kC4InclusiveEnd) != 0;
-        options.includeDeleted = (c4options.flags & kC4IncludePurged) != 0;
-        // (Remember, ForestDB's 'deleted' is what CBL calls 'purged')
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOptions = kMetaOnly;
         return options;

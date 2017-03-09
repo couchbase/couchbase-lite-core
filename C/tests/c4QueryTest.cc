@@ -7,7 +7,7 @@
 //
 
 #include "c4Test.hh"
-#include "c4DBQuery.h"
+#include "c4Query.h"
 #include <iostream>
 
 using namespace std;

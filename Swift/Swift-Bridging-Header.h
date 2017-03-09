@@ -13,4 +13,4 @@ FOUNDATION_EXPORT const unsigned char LiteCoreSwiftVersionString[];
 #include "c4.h"
 #include "c4Database.h"
 #include "c4Document.h"
-#include "c4View.h"
+#include "c4Query.h"

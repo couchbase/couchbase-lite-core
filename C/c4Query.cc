@@ -1,5 +1,5 @@
 //
-//  c4ViewQuery.cc
+//  c4Query.cc
 //  LiteCore
 //
 //  Created by Jens Alfke on 9/16/16.
@@ -14,16 +14,11 @@
 //  and limitations under the License.
 
 #include "c4Internal.hh"
-#include "c4View.h"
-#include "c4DBQuery.h"
+#include "c4Query.h"
 
-#include "c4ViewInternal.hh"
 #include "Database.hh"
-#include "c4KeyInternal.hh"
-
 #include "DataFile.hh"
 #include "Query.hh"
-#include "Collatable.hh"
 #include "DocumentMeta.hh"
 #include <math.h>
 #include <limits.h>
@@ -34,57 +29,11 @@ using namespace litecore;
 #pragma mark COMMON CODE:
 
 
-// C4KeyReader is really identical to CollatableReader, which itself consists of nothing but
-// a slice.
-static inline C4KeyReader asKeyReader(const CollatableReader &r) {
-    return *(C4KeyReader*)&r;
-}
-
-
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     0,
     UINT_MAX,
-    false,
-    true,
-    true,
     true
 };
-
-
-class C4ReduceAdapter : public ReduceFunction {
-public:
-    C4ReduceAdapter(const C4ReduceFunction *callback)
-    :_callback(*callback)
-    { }
-
-    void operator() (CollatableReader key, slice value) override {
-        c4Key k(toc4slice(key.data()));
-        _callback.accumulate(_callback.context, &k, toc4slice(value));
-    }
-
-    slice reducedValue() override {
-        return _callback.reduce(_callback.context);
-    }
-
-private:
-    C4ReduceFunction _callback;
-};
-
-
-static IndexEnumerator::Options convertOptions(const C4QueryOptions *c4options) {
-    if (!c4options)
-        c4options = &kC4DefaultQueryOptions;
-    IndexEnumerator::Options options;
-    options.skip = (unsigned)c4options->skip;
-    options.limit = (unsigned)c4options->limit;
-    options.descending = c4options->descending;
-    options.inclusiveStart = c4options->inclusiveStart;
-    options.inclusiveEnd = c4options->inclusiveEnd;
-    if (c4options->reduce)
-        options.reduce = new C4ReduceAdapter(c4options->reduce);    // must be freed afterwards
-    options.groupLevel = c4options->groupLevel;
-    return options;
-}
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
@@ -139,102 +88,6 @@ void c4queryenum_free(C4QueryEnumerator *e) noexcept {
     c4queryenum_close(e);
     delete asInternal(e);
 }
-
-
-struct C4ViewQueryEnumInternal : public C4QueryEnumInternal {
-    C4ViewQueryEnumInternal(C4View *view)
-    :C4QueryEnumInternal(
-#if C4DB_THREADSAFE
-        view->_mutex
-#endif
-    ),
-     _view(view)
-    { }
-
-    Retained<C4View> _view;
-};
-
-
-
-#pragma mark MAP/REDUCE QUERIES:
-
-
-struct C4MapReduceEnumerator : public C4ViewQueryEnumInternal {
-    C4MapReduceEnumerator(C4View *view,
-                        Collatable startKey, slice startKeyDocID,
-                        Collatable endKey, slice endKeyDocID,
-                        const IndexEnumerator::Options &options)
-    :C4ViewQueryEnumInternal(view),
-     _reduce(options.reduce),
-     _enum(view->_index, startKey, startKeyDocID, endKey, endKeyDocID, options)
-    { }
-
-    C4MapReduceEnumerator(C4View *view,
-                        vector<KeyRange> keyRanges,
-                        const IndexEnumerator::Options &options)
-    :C4ViewQueryEnumInternal(view),
-     _reduce(options.reduce),
-     _enum(view->_index, keyRanges, options)
-    { }
-
-    virtual ~C4MapReduceEnumerator() {
-        delete _reduce;
-    }
-
-    virtual bool next() override {
-        if (!_enum.next())
-            return C4ViewQueryEnumInternal::next();
-        key = asKeyReader(_enum.key());
-        value = _enum.value();
-        docID = _enum.recordID();
-        docSequence = _enum.sequence();
-        return true;
-    }
-
-    virtual void close() noexcept override {
-        _enum.close();
-    }
-
-private:
-    ReduceFunction *_reduce {nullptr};
-    IndexEnumerator _enum;
-};
-
-
-C4QueryEnumerator* c4view_query(C4View *view,
-                                const C4QueryOptions *c4options,
-                                C4Error *outError) noexcept
-{
-    return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        WITH_LOCK(view);
-        if (!c4options)
-            c4options = &kC4DefaultQueryOptions;
-        IndexEnumerator::Options options = convertOptions(c4options);
-
-        if (c4options->keysCount == 0 && c4options->keys == nullptr) {
-            Collatable noKey;
-            return new C4MapReduceEnumerator(view,
-                                           (c4options->startKey ? (Collatable)*c4options->startKey
-                                                                : noKey),
-                                           c4options->startKeyDocID,
-                                           (c4options->endKey ? (Collatable)*c4options->endKey
-                                                              : noKey),
-                                           c4options->endKeyDocID,
-                                           options);
-        } else {
-            vector<KeyRange> keyRanges;
-            for (size_t i = 0; i < c4options->keysCount; i++) {
-                const C4Key* key = c4options->keys[i];
-                if (key)
-                    keyRanges.emplace_back(*key);
-            }
-            return new C4MapReduceEnumerator(view, keyRanges, options);
-        }
-    });
-}
-
-
-#pragma mark EXPRESSION-BASED QUERIES:
 
 
 // This is the same as C4Query

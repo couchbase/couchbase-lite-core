@@ -81,15 +81,6 @@ ostream& operator<< (ostream &out, C4Error error) {
 }
 
 
-// Dumps a C4Key to a C++ string
-string toJSON(C4KeyReader r) {
-    C4SliceResult dump = c4key_toJSON(&r);
-    string result((char*)dump.buf, dump.size);
-    c4slice_free(dump);
-    return result;
-}
-
-
 std::string json5(std::string str) {
     FLError err;
     FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);

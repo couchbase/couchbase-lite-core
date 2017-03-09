@@ -25,7 +25,6 @@
 #include "Logging.hh"
 
 #include "SecureRandomize.hh"
-#include "Collatable.hh"
 #include "FilePath.hh"
 
 using namespace fleece;
@@ -210,11 +209,6 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexc
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
     } catchError(outError)
     return false;
-}
-
-uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
-{
-    return tryCatch<uint64_t>(nullptr, bind(&Database::nextDocumentExpirationTime, database));
 }
 
 bool c4_shutdown(C4Error *outError) noexcept {

@@ -25,9 +25,6 @@ namespace c4 {
     static inline void freeRef(C4ExpiryEnumerator* c)  {c4exp_free(c);}
     static inline void freeRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
     static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
-    static inline void freeRef(C4Key* c)               {c4key_free(c);}
-    static inline void freeRef(C4KeyValueList* c)      {c4kv_free(c);}
-    static inline void freeRef(C4View* c)              {c4view_free(c);}
     static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
     static inline void freeRef(C4Query* c)             {c4query_free(c);}
 

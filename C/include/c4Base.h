@@ -124,7 +124,7 @@ enum {
     kC4ErrorBusy,                   // Database is busy/locked
     kC4ErrorNotInTransaction,       // Function cannot be called while in a transaction
     kC4ErrorTransactionNotClosed,   // Database can't be closed while a transaction is open
-    kC4ErrorIndexBusy,              // View can't be closed while index is enumerating
+    kC4ErrorIndexBusy,              // (unused)
     kC4ErrorUnsupported,            // Operation not supported in this database
     kC4ErrorNotADatabaseFile,       // File is not a database, or encryption key is wrong
     kC4ErrorWrongFormat, /*30*/     // Database exists but not in the format/storage requested

@@ -7,7 +7,8 @@
 //
 
 #pragma once
-#include "c4View.h"
+#include "c4Database.h"
+#include "c4Document.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,7 +24,7 @@ extern "C" {
     /** Opaque handle to a compiled query. */
     typedef struct c4Query C4Query;
 
-
+    
     /** Compiles a query from an expression given as JSON. (The current syntax is based
         on Cloudant's, but this is a placeholder and will be changing.)
         The expression is a predicate that describes which documents should be returned.
@@ -42,6 +43,54 @@ extern "C" {
     /** Frees a query.  It is legal to pass NULL. */
     void c4query_free(C4Query*) C4API;
 
+    /** Returns a string describing the implementation of the compiled query.
+        This is intended to be read by a developer for purposes of optimizing the query, especially
+        to add database indexes. */
+    C4StringResult c4query_explain(C4Query *query) C4API;
+
+
+    //////// RUNNING QUERIES:
+
+
+    /** Options for running queries. */
+    typedef struct {
+        uint64_t skip;          ///< Number of initial rows to skip
+        uint64_t limit;         ///< Max number of rows to return (set to UINT_MAX for unlimited)
+        bool rankFullText;      ///< Should full-text results be ranked by relevance?
+    } C4QueryOptions;
+
+
+    /** Default query options. Has skip=0, limit=UINT_MAX, rankFullText=true. */
+	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
+
+
+    /** Info about a match of a full-text query term. */
+    typedef struct {
+        uint32_t termIndex;                 ///< Index of the search term in the tokenized query
+        uint32_t start, length;             ///< *Byte* range of word in query string
+    } C4FullTextTerm;
+
+
+    /** A query result enumerator.
+        Created by c4db_query. Must be freed with c4queryenum_free.
+        The fields of this struct represent the current matched index row, and are replaced by the
+        next call to c4queryenum_next or c4queryenum_free.
+        The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
+    typedef struct {
+        // All query types:
+        C4String docID;                       ///< ID of doc that emitted this row
+        C4SequenceNumber docSequence;        ///< Sequence number of doc that emitted row
+
+        // Expression-based only:
+        C4String revID;
+        C4DocumentFlags docFlags;
+
+        // Full-text only:
+        uint32_t fullTextTermCount;          ///< The number of terms that were matched
+        const C4FullTextTerm *fullTextTerms; ///< Array of terms that were matched
+    } C4QueryEnumerator;
+
+
     /** Runs a compiled query.
         NOTE: Queries will run much faster if the appropriate properties are indexed.
         Indexes must be created explicitly by calling `c4db_createIndex`.
@@ -57,6 +106,15 @@ extern "C" {
                                    C4String encodedParameters,
                                    C4Error *outError) C4API;
 
+    /** In an expression-based query enumerator, returns the values of the custom columns of the
+        query (the "WHAT" expressions), as a Fleece-encoded array. */
+    C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) C4API;
+
+    /** In a full-text query enumerator, returns the string that was emitted during indexing that
+        contained the search term(s). */
+    C4StringResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
+                                              C4Error *outError) C4API;
+
     /** Given a docID and sequence number from the enumerator, returns the text that was emitted
         during indexing. */
     C4StringResult c4query_fullTextMatched(C4Query *query,
@@ -64,10 +122,17 @@ extern "C" {
                                           C4SequenceNumber seq,
                                           C4Error *outError) C4API;
 
-    /** Returns a string describing the implementation of the compiled query.
-        This is intended to be read by a developer for purposes of optimizing the query, especially
-        to add database indexes. */
-    C4StringResult c4query_explain(C4Query *query) C4API;
+    /** Advances a query enumerator to the next row, populating its fields.
+        Returns true on success, false at the end of enumeration or on error. */
+    bool c4queryenum_next(C4QueryEnumerator *e,
+                          C4Error *outError) C4API;
+
+    /** Closes an enumerator without freeing it. This is optional, but can be used to free up
+        resources if the enumeration has not reached its end, but will not be freed for a while. */
+    void c4queryenum_close(C4QueryEnumerator *e) C4API;
+
+    /** Frees a query enumerator. */
+    void c4queryenum_free(C4QueryEnumerator *e) C4API;
 
     /** @} */
 
