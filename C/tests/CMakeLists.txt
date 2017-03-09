@@ -12,7 +12,10 @@ include_directories(${TOP}C/include/
                 )
                     
 aux_source_directory(.  TEST_SRC)
-set(TEST_SRC ${TEST_SRC} ${TOP}/LiteCore/tests/main.cpp ${TOP}/LiteCore/Support/Logging.cc)
+set(TEST_SRC ${TEST_SRC} 
+             ${TOP}/LiteCore/tests/main.cpp
+             ${TOP}/LiteCore/Support/Logging.cc
+             ${TOP}/LiteCore/Support/StringUtil.cc)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c)
 endif()
