@@ -60,7 +60,9 @@ public:
             Dict track = item.asDict();
 
             FLSlice trackType = track.get(typeKey).asString();
-            if (trackType != FLSTR("File") && trackType != FLSTR("Remote"))
+			FLSlice file = FLSTR("File");
+			FLSlice remote = FLSTR("Remote");
+            if (trackType != file && trackType != remote)
                 continue;
 
             FLSlice trackID = track.get(idKey).asString();
@@ -186,7 +188,8 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
         if (pass == 0) {
             Stopwatch st2;
             C4Error error;
-            REQUIRE(c4db_createIndex(db, C4STR("contact.address.state"), kC4ValueIndex, nullptr, &error));
+			C4Slice property = C4STR("contact.address.state");
+            REQUIRE(c4db_createIndex(db, property, kC4ValueIndex, nullptr, &error));
             st2.printReport("Creating SQL index of state", 1, "index");
         }
     }
