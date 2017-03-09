@@ -14,7 +14,6 @@ namespace LiteCore.Tests
         private const int NumDocs = 10000;
         private const bool SharedHandle = false; // Use same C4Database on all threads_
         private object _observerMutex = new object();
-        private AutoResetEvent _observerCond = new AutoResetEvent(false);
         private bool _changesToObserve;
 
         public ThreadingTest(ITestOutputHelper output) : base(output)
@@ -60,8 +59,8 @@ namespace LiteCore.Tests
             var lastSequence = 0UL;
             do {
                 lock (_observerMutex) {
-                    while (!_changesToObserve) {
-                        _observerCond.WaitOne();
+                    if (!_changesToObserve) {
+                        continue;
                     }
 
                     Write("8");
@@ -97,8 +96,6 @@ namespace LiteCore.Tests
             lock(_observerMutex) {
                 _changesToObserve = true;
             }
-
-            _observerCond.Set();
         }
 
         private C4Database* OpenDB()
