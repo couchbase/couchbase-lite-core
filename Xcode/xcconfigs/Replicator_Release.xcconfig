@@ -8,4 +8,4 @@
 
 #include "Replicator.xcconfig"
 
-EXPORTED_SYMBOLS_FILE       = Replicator/CouchbaseLiteReplicator.exp
+EXPORTED_SYMBOLS_FILE       = $(SRCROOT)/../Replicator/Replicator.exp

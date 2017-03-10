@@ -161,6 +161,12 @@ else()
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} Ws2_32)
 endif()
 
+### REPLICATOR:
+
+add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
+
+add_subdirectory(Replicator)
+
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)

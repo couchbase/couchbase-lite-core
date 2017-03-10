@@ -5,3 +5,5 @@
 #  Copyright © 2017 Couchbase. All rights reserved.
 
 _c4repl_new
+_c4repl_free
+_c4repl_getState
