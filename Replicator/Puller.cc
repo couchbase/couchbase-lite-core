@@ -16,6 +16,9 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
+    static bool hasUnderscoredProperties(Dict);
+    alloc_slice stripUnderscoredProperties(Dict);
+
 
     Puller::Puller(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
     :ReplActor(connection, options, "Pull")
@@ -85,19 +88,22 @@ namespace litecore { namespace repl {
             gotError(C4Error{FleeceDomain, err});
             return;
         }
+        Dict root = Value::fromTrustedData(fleeceBody).asDict();
 
         Rev rev;
         bool deleted;
+        bool strip;
         rev.docID = msg->property("id"_sl);
         if (rev.docID) {
             rev.revID = msg->property("rev"_sl);
             deleted = !!msg->property("deleted"_sl);
+            strip = hasUnderscoredProperties(root);
         } else {
             // No metadata properties; look inside the JSON:
-            Dict root = Value::fromTrustedData(fleeceBody).asDict();
             rev.docID = (slice)root["_id"_sl].asString();
             rev.revID = (slice)root["_rev"_sl].asString();
             deleted = root["_deleted"].asBool();
+            strip = true;
         }
         slice history = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
@@ -114,6 +120,9 @@ namespace litecore { namespace repl {
             msg->respondWithError("BLIP"_sl, 400);
             return;
         }
+
+        if (strip)
+            fleeceBody = stripUnderscoredProperties(root);
 
         function<void(C4Error)> onInserted;
         if (!msg->noReply() || nonPassive()) {
@@ -165,6 +174,33 @@ namespace litecore { namespace repl {
 
     void Puller::activityLevelChanged(ActivityLevel level) {
         _replicator->taskChangedActivityLevel(this, level);
+    }
+
+
+    // Returns true if a Fleece Dict contains any keys that begin with an underscore.
+    static bool hasUnderscoredProperties(Dict root) {
+        for (Dict::iterator i(root); i; ++i) {
+            auto key = slice(i.key().asString());
+            if (key.size > 0 && key[0] == '_')
+                return true;
+        }
+        return false;
+    }
+
+
+    // Encodes a Dict, skipping top-level properties whose names begin with an underscore.
+    alloc_slice stripUnderscoredProperties(Dict root) {
+        Encoder e;
+        e.beginDict(root.count());
+        for (Dict::iterator i(root); i; ++i) {
+            auto key = slice(i.key().asString());
+            if (key.size > 0 && key[0] == '_')
+                continue;
+            e.writeKey(key);
+            e.writeValue(i.value());
+        }
+        e.endDict();
+        return e.finish();
     }
 
 

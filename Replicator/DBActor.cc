@@ -214,7 +214,6 @@ namespace litecore { namespace repl {
         }
 
         pusher->gotChanges(changes, error);
-        //TODO: Handle continuous mode (start observer)
     }
 
 
