@@ -2887,7 +2887,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore Tests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = "LiteCore Tests";
 			};
 			name = Debug;
 		};
@@ -2895,7 +2894,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore Tests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = "LiteCore Tests";
 			};
 			name = Release;
 		};
@@ -2903,7 +2901,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreJNI;
 			};
 			name = Debug;
 		};
@@ -2911,7 +2908,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreJNI;
 			};
 			name = Release;
 		};
@@ -3181,7 +3177,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 			};
 			name = Debug;
 		};
@@ -3189,7 +3184,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 			};
 			name = Release;
 		};

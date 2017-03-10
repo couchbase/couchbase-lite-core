@@ -16,3 +16,5 @@ HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece
 
 EXECUTABLE_PREFIX           = lib
 EXPORTED_SYMBOLS_FILE       = $(SRCROOT)/../java/LiteCoreJNI.exp
+
+PRODUCT_NAME                = LiteCoreJNI
