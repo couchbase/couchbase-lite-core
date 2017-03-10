@@ -51,6 +51,12 @@ namespace litecore { namespace blip {
     static const size_t kIncomingAckThreshold = 50000;
 
 
+    void Message::sendProgress(MessageProgress::State state, uint64_t bytes, MessageIn *reply) {
+        if (_onProgress)
+            _onProgress({state, bytes, reply});
+    }
+
+
 #pragma mark - MESSAGE BUILDER:
 
     
@@ -162,6 +168,8 @@ namespace litecore { namespace blip {
 
 
     void MessageBuilder::reset() {
+        onProgress = nullptr;
+        urgent = compressed = noreply = false;
         _out.reset();
         _properties.clear();
         _wroteProperties = false;
@@ -181,12 +189,6 @@ namespace litecore { namespace blip {
     {
         assert(payload.size < 1ull<<32);
         assert(!(_flags & kCompressed));    //TODO: Implement compression
-
-        if (type() == kRequestType && !noReply()) {
-            // The MessageIn's flags will be updated when the 1st frame of the response arrives;
-            // the type might become kErrorType, and kUrgent or kCompressed might be set.
-            _pendingResponse = new MessageIn(_connection, (FrameFlags)kResponseType, _number);
-        }
     }
 
 
@@ -196,8 +198,16 @@ namespace litecore { namespace blip {
         _bytesSent += size;
         _unackedBytes += size;
         outFlags = flags();
-        if (_bytesSent < _payload.size)
+        MessageProgress::State state;
+        if (_bytesSent < _payload.size) {
             outFlags = (FrameFlags)(outFlags | kMoreComing);
+            state = MessageProgress::kSending;
+        } else if (noReply()) {
+            state = MessageProgress::kComplete;
+        } else {
+            state = MessageProgress::kAwaitingReply;
+        }
+        sendProgress(state, _bytesSent, nullptr);
         return frame;
     }
 
@@ -208,32 +218,24 @@ namespace litecore { namespace blip {
     }
 
 
-    Retained<MessageIn> MessageOut::detachResponse() {
-        if (_pendingResponse)
-            _pendingResponse->_number = _number;
-        return move(_pendingResponse);
-    }
-
-
-    FutureResponse MessageOut::futureResponse() {
-        auto response = _pendingResponse;
-        return response ? response->createFutureResponse() : FutureResponse{};
+    MessageIn* MessageOut::createResponse() {
+        if (type() != kRequestType || noReply())
+            return nullptr;
+        // Note: The MessageIn's flags will be updated when the 1st frame of the response arrives;
+        // the type might become kErrorType, and kUrgent or kCompressed might be set.
+        return new MessageIn(_connection, (FrameFlags)kResponseType, _number, _onProgress);
     }
 
 
 #pragma mark - MESSAGE IN:
 
 
-    MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n)
+    MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n,
+                         MessageProgressCallback onProgress)
     :Message(flags, n)
     ,_connection(connection)
-    { }
-
-
-    FutureResponse MessageIn::createFutureResponse() {
-        assert(!_future);
-        _future = new Future<Retained<MessageIn>>;
-        return _future;
+    {
+        _onProgress = onProgress;
     }
 
 
@@ -288,6 +290,7 @@ namespace litecore { namespace blip {
         }
 
         if (frameFlags & kMoreComing) {
+            sendProgress(MessageProgress::kReceivingReply, bytesReceived, nullptr);
             return false;
         } else {
             // Completed!
@@ -299,10 +302,7 @@ namespace litecore { namespace blip {
 
             _connection->log("Finished receiving %s #%llu, flags=%02x",
                              kMessageTypeNames[type()], _number, flags());
-            if (_future) {
-                _future->fulfil(this);
-                _future = nullptr;
-            }
+            sendProgress(MessageProgress::kComplete, bytesReceived, this);
             return true;
         }
     }

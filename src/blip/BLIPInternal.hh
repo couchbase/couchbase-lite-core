@@ -24,15 +24,18 @@ namespace litecore { namespace blip {
                    alloc_slice payload,
                    MessageNo number);
 
-        MessageOut(Connection *connection, MessageBuilder &builder, MessageNo number)
+        MessageOut(Connection *connection,
+                   MessageBuilder &builder,
+                   MessageNo number)
         :MessageOut(connection, builder.flags(), builder.extractOutput(), number)
-        { }
+        {
+            _onProgress = std::move(builder.onProgress);
+        }
 
         fleece::slice nextFrameToSend(size_t maxSize, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
-        Retained<MessageIn> detachResponse();
-        FutureResponse futureResponse();
+        MessageIn* createResponse();
 
     private:
         static const uint32_t kMaxUnackedBytes = 128000;
@@ -41,7 +44,6 @@ namespace litecore { namespace blip {
         fleece::alloc_slice _payload;
         uint32_t _bytesSent {0};
         uint32_t _unackedBytes {0};
-        Retained<MessageIn> _pendingResponse;
     };
 
     extern LogDomain BLIPLog;

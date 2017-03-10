@@ -257,11 +257,6 @@ namespace litecore { namespace blip {
 
                 FrameFlags frameFlags;
                 {
-                    // On first frame of a request, add its response message to _pendingResponses:
-                    Retained<MessageIn> response = msg->detachResponse();
-                    if (response)
-                        _pendingResponses.emplace(msg->number(), response);
-
                     // Read a frame from it:
                     size_t maxSize = kDefaultFrameSize;
                     if (msg->urgent() || _outbox.empty() || !_outbox.front()->urgent())
@@ -298,6 +293,11 @@ namespace litecore { namespace blip {
                     if (!msg->isAck() || BLIPLog.level() <= LogLevel::Verbose) {
                         log("Finished sending %s #%llu, flags=%02x",
                             kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+                        // Add its response message to _pendingResponses:
+                        MessageIn* response = msg->createResponse();
+                        if (response)
+                            _pendingResponses.emplace(response->number(), response);
+                        
                     }
                 }
             }
@@ -492,12 +492,10 @@ namespace litecore { namespace blip {
 
 
     /** Public API to send a new request. */
-    FutureResponse Connection::sendRequest(MessageBuilder &mb) {
+    void Connection::sendRequest(MessageBuilder &mb) {
         Retained<MessageOut> message = new MessageOut(this, mb, 0);
         assert(message->type() == kRequestType);
-        auto r = message->futureResponse();
         send(message);
-        return r;
     }
 
 

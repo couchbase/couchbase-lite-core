@@ -9,7 +9,6 @@
 #pragma once
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
-#include "Future.hh"
 #include "Logging.hh"
 #include "Fleece.h"
 #include <functional>
@@ -34,6 +33,22 @@ namespace litecore { namespace blip {
     class MessageIn;
 
 
+    /** Progress notification for an outgoing request. */
+    struct MessageProgress {
+        enum State {
+            kQueued,
+            kSending,
+            kAwaitingReply,
+            kReceivingReply,
+            kComplete
+        } state;
+        uint64_t bytesTransferred;
+        Retained<MessageIn> reply;
+    };
+
+    using MessageProgressCallback = std::function<void(const MessageProgress&)>;
+
+
     /** Abstract base class of messages */
     class Message : public RefCounted {
     public:
@@ -45,8 +60,10 @@ namespace litecore { namespace blip {
         MessageNo number() const            {return _number;}
 
     protected:
-        Message(FrameFlags f, MessageNo n)  :_flags(f), _number(n)
-                            {/*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/}
+        Message(FrameFlags f, MessageNo n)
+        :_flags(f), _number(n)
+        {/*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/}
+
         FrameFlags flags() const            {return _flags;}
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
         bool isAck() const                  {return type() == kAckRequestType ||
@@ -54,16 +71,15 @@ namespace litecore { namespace blip {
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
         const char* typeName() const        {return kMessageTypeNames[type()];}
 
+        void sendProgress(MessageProgress::State state, uint64_t bytes, MessageIn *reply);
+
 //        ~Message()    {Log("DELETE Message<%p, %s #%llu>",
 //                           this, typeName(), _number);}
 
         FrameFlags _flags;
         MessageNo _number;
+        MessageProgressCallback _onProgress;
     };
-
-
-    /** A Future that will resolve to a MessageIn. */
-    typedef Retained<Future<Retained<MessageIn>>> FutureResponse;
 
 
     /** An incoming message. */
@@ -99,9 +115,8 @@ namespace litecore { namespace blip {
         friend class MessageOut;
         friend class BLIPIO;
 
-        MessageIn(Connection*, FrameFlags, MessageNo);
+        MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr);
         bool receivedFrame(slice, FrameFlags);
-        FutureResponse createFutureResponse();
 
     private:
         Connection* const _connection;          // The owning BLIP connection
@@ -112,7 +127,6 @@ namespace litecore { namespace blip {
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body
         alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
-        FutureResponse _future;                 // Pending response
     };
 
 
@@ -160,6 +174,9 @@ namespace litecore { namespace blip {
 
         /** Clears the MessageBuilder so it can be used to create another message. */
         void reset();
+
+        /** Callback to be invoked as the message is delivered (and replied to, if appropriate) */
+        MessageProgressCallback onProgress;
 
         /** Is the message urgent (will be sent more quickly)? */
         bool urgent         {false};
