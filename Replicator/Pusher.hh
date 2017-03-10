@@ -20,14 +20,15 @@ namespace litecore { namespace repl {
     public:
         Pusher(blip::Connection *connection, Replicator *replicator, DBActor *dbActor, Options options);
 
-        void start(C4SequenceNumber sinceSequence);
+        // Starts an active push
+        void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
 
         // Sent by Replicator in response to dbGetChanges
-        void gotChanges(RevList changes, C4Error err) {
-            enqueue(&Pusher::_gotChanges, changes, err);
+        void gotChanges(RevList chgs, C4Error err)  {enqueue(&Pusher::_gotChanges, chgs, err);
         }
 
     private:
+        void _start(C4SequenceNumber sinceSequence);
         bool nonPassive() const                         {return _options.push > kC4Passive;}
         virtual ActivityLevel computeActivityLevel() const override;
         virtual void activityLevelChanged(ActivityLevel level) override;

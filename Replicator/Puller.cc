@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
 
 
     // Starting an active pull.
-    void Puller::start(alloc_slice sinceSequence) {
+    void Puller::_start(alloc_slice sinceSequence) {
         _lastSequence = sinceSequence;
         _requestedSequences.clear(sinceSequence);
         log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
@@ -160,15 +160,15 @@ namespace litecore { namespace repl {
 
     
     ReplActor::ActivityLevel Puller::computeActivityLevel() const {
-        if (ReplActor::computeActivityLevel() == kBusy
+        if (ReplActor::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || !_requestedSequences.empty()
                 || _pendingCallbacks > 0) {
-            return kBusy;
+            return kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
-            return kIdle;
+            return kC4Idle;
         } else {
-            return kStopped;
+            return kC4Stopped;
         }
     }
 

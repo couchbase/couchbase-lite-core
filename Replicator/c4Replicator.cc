@@ -26,59 +26,89 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     C4Replicator(C4Database* db,
                  C4Address c4addr,
-                 C4ReplicationOptions c4opts)
+                 C4ReplicatorMode push,
+                 C4ReplicatorMode pull,
+                 C4ReplicatorStateChangedCallback onStateChanged,
+                 void *callbackContext)
     {
-        static websocket::Provider *sWSProvider = new websocket::LibWSProvider();
+        static websocket::LibWSProvider sWSProvider;
+
         websocket::Address address(asstring(c4addr.scheme),
                                    asstring(c4addr.hostname),
                                    c4addr.port,
                                    asstring(c4addr.path));
-        Replicator::Options options{ c4opts.push, c4opts.pull };
-        _onStateChanged = c4opts.onStateChanged;
-        _replicator = new Replicator(db, *sWSProvider, address, *this, options);
+        _onStateChanged = onStateChanged;
+        _callbackContext = callbackContext;
+        _replicator = new Replicator(db, sWSProvider, address, *this, { push, pull });
+        _state = {_replicator->activityLevel(), {}};
+        sWSProvider.startEventLoop();
+        retain(this); // keep myself alive till replicator closes
     }
 
-    
+    C4ReplicatorState state() const     {return _state;}
+
+    void stop()                         {_replicator->stop();}
+
+    void detach()                       {_onStateChanged = nullptr;}
+
+private:
+
     virtual void replicatorActivityChanged(Replicator*, Replicator::ActivityLevel level) override {
-        _state = level;
-        notify();
+        if (setActivityLevel(level))
+            notify();
     }
 
-    virtual void replicatorCloseStatusChanged(Replicator*,
+    virtual void replicatorConnectionClosed(Replicator*,
                                               const Replicator::CloseStatus &status) override
     {
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, DNSDomain};
+
+        C4ReplicatorState state = _state;
         if (status.reason == kWebSocketClose && (status.code == kCodeNormal
                                                  || status.code == kCodeGoingAway)) {
-            _error = {};
+            state.error = {};
         } else {
-            _error = c4error_make(kDomainForReason[status.reason], status.code, status.message);
+            state.error = c4error_make(kDomainForReason[status.reason], status.code, status.message);
         }
+        state.level = kC4Stopped;
+        _state = state;
         notify();
+        release(this); // balances retain in constructor
     }
 
+    bool setActivityLevel(C4ReplicatorActivityLevel level) {
+        C4ReplicatorState state = _state;
+        if (state.level == level)
+            return false;
+        state.level = level;
+        _state = state;
+        return true;
+    }
+
+    
     void notify() {
-        if (_onStateChanged)
-            _onStateChanged(this, _state, _error);
+        C4ReplicatorStateChangedCallback on = _onStateChanged;
+        if (on)
+            on(this, _state, _callbackContext);
     }
 
-    C4ReplicationState state() const  {return _state;}
-
-private:
     Retained<Replicator> _replicator;
-    atomic<C4ReplicationState> _state {kConnecting};
-    C4Error _error;
-    C4ReplicatorStateChangedCallback _onStateChanged;
+    atomic<C4ReplicatorState> _state;
+    atomic<C4ReplicatorStateChangedCallback> _onStateChanged;
+    void *_callbackContext;
 };
 
 
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address c4addr,
-                         C4ReplicationOptions c4opts,
+                         C4ReplicatorMode push,
+                         C4ReplicatorMode pull,
+                         C4ReplicatorStateChangedCallback onStateChanged,
+                         void *callbackContext,
                          C4Error *err) C4API
 {
     try {
-        return retain(new C4Replicator(db, c4addr, c4opts));
+        return retain(new C4Replicator(db, c4addr, push, pull, onStateChanged, callbackContext));
     } catch (const std::exception &x) {
         WarnError("Exception caught in c4repl_new");    //FIX: Set *err
         if (err)
@@ -89,11 +119,20 @@ C4Replicator* c4repl_new(C4Database* db,
 }
 
 
+void c4repl_stop(C4Replicator* repl) C4API {
+    repl->stop();
+}
+
+
 void c4repl_free(C4Replicator* repl) C4API {
+    if (!repl)
+        return;
+    repl->stop();
+    repl->detach();
     release(repl);
 }
 
 
-C4ReplicationState c4repl_getState(C4Replicator *repl) C4API {
+C4ReplicatorState c4repl_getState(C4Replicator *repl) C4API {
     return repl->state();
 }

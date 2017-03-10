@@ -33,8 +33,8 @@ namespace litecore { namespace repl {
     :ReplActor(connection, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(delegate)
-    ,_pushActivity(options.push == kC4Disabled ? kStopped : kIdle)
-    ,_pullActivity(options.pull == kC4Disabled ? kStopped : kIdle)
+    ,_pushActivity(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
+    ,_pullActivity(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_dbActor(new DBActor(connection, db, address, options))
     {
         if (options.push != kC4Disabled)
@@ -87,29 +87,29 @@ namespace litecore { namespace repl {
             _pullActivity = level;
 
         logDebug("pushActivity=%d, pullActivity=%d", _pushActivity, _pullActivity);
-        if (level == kStopped)
+        if (level == kC4Stopped)
             _checkpoint.save();
     }
 
 
     ReplActor::ActivityLevel Replicator::computeActivityLevel() const {
         if (!connection())
-            return kStopped;
+            return kC4Stopped;
         switch (connection()->state()) {
             case Connection::kDisconnected:
             case Connection::kClosed:
             case Connection::kClosing:
-                return kStopped;
+                return kC4Stopped;
             case Connection::kConnecting:
-                return kConnecting;
+                return kC4Connecting;
             case Connection::kConnected: {
                 ActivityLevel level;
                 if (_checkpoint.isUnsaved())
-                    level = kBusy;
+                    level = kC4Busy;
                 else
                     level = ReplActor::computeActivityLevel();
-                if (level == kIdle && !isOpenServer())
-                    level = kStopped;
+                if (level == kC4Idle && !isOpenServer())
+                    level = kC4Stopped;
                 return max(level, max(_pushActivity, _pullActivity));
             }
         }
@@ -118,7 +118,7 @@ namespace litecore { namespace repl {
 
     void Replicator::activityLevelChanged(ActivityLevel level) {
         // Decide whether a non-continuous active push or pull replication is done:
-        if (level == kStopped && connection()) {
+        if (level == kC4Stopped && connection()) {
             log("Replication complete! Closing connection");
             connection()->close();
         }
@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
             _puller->connectionClosed();
 
         _closeStatus = status;
-        _delegate.replicatorCloseStatusChanged(this, status);
+        _delegate.replicatorConnectionClosed(this, status);
     }
 
 

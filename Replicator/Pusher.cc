@@ -29,7 +29,7 @@ namespace litecore { namespace repl {
 
 
     // Begins active push, starting from the next sequence after sinceSequence
-    void Pusher::start(C4SequenceNumber sinceSequence) {
+    void Pusher::_start(C4SequenceNumber sinceSequence) {
         log("Starting %spush from local seq %llu",
             (_continuous ? "continuous " : ""), _lastSequence+1);
         _started = true;
@@ -236,17 +236,17 @@ namespace litecore { namespace repl {
 
     ReplActor::ActivityLevel Pusher::computeActivityLevel() const {
         logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionsAwaitingReply, _revsToSend.size(), _pendingSequences.size());
-        if (ReplActor::computeActivityLevel() == kBusy
+        if (ReplActor::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
                 || _revisionsInFlight > 0
                 || !_revsToSend.empty()
                 || !_pendingSequences.empty()) {
-            return kBusy;
+            return kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
-            return kIdle;
+            return kC4Idle;
         } else {
-            return kStopped;
+            return kC4Stopped;
         }
     }
 

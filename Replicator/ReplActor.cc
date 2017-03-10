@@ -31,6 +31,7 @@ namespace litecore { namespace repl {
     ,Logging(SyncLog)
     ,_connection(connection)
     ,_options(options)
+    ,_activityLevel(connection->state() >= Connection::kConnected ? kC4Idle : kC4Connecting)
     { }
 
 
@@ -65,9 +66,9 @@ namespace litecore { namespace repl {
 
     ReplActor::ActivityLevel ReplActor::computeActivityLevel() const {
         if (eventCount() > 1 || _pendingResponseCount > 0)
-            return kBusy;
+            return kC4Busy;
         else
-            return kIdle;
+            return kC4Idle;
     }
 
 

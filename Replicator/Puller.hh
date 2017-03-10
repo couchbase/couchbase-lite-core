@@ -18,7 +18,8 @@ namespace litecore { namespace repl {
     public:
         Puller(blip::Connection*, Replicator*, DBActor*, Options options);
 
-        void start(alloc_slice sinceSequence);
+        // Starts an active pull
+        void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
 
     protected:
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
@@ -26,6 +27,7 @@ namespace litecore { namespace repl {
         void activityLevelChanged(ActivityLevel level);
 
     private:
+        void _start(alloc_slice sinceSequence);
         void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);
         void markComplete(const alloc_slice &sequence);

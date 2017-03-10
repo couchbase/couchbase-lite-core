@@ -50,7 +50,7 @@ namespace litecore { namespace repl {
             virtual ~Delegate() =default;
 
             virtual void replicatorActivityChanged(Replicator*, ActivityLevel) =0;
-            virtual void replicatorCloseStatusChanged(Replicator*, const CloseStatus&) =0;
+            virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&) =0;
         };
 
         void stop()                             {enqueue(&Replicator::_stop);}

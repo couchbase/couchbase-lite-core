@@ -88,7 +88,7 @@ public:
         }
     }
 
-    virtual void replicatorCloseStatusChanged(Replicator* repl, const CloseStatus &status) override {
+    virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         if (repl == replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
                 status.reason, status.code, SPLAT(status.message));

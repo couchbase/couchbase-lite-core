@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
     class ReplActor : public Actor, InstanceCounted, protected Logging {
     public:
         struct Options {
-            using Mode = C4ReplicationMode;
+            using Mode = C4ReplicatorMode;
 
             Mode push {kC4Disabled};
             Mode pull {kC4Disabled};
@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
             static Options passive()                       {return Options(kC4Passive, kC4Passive);}
         };
 
-        using ActivityLevel = C4ReplicationState;
+        using ActivityLevel = C4ReplicatorActivityLevel;
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
@@ -103,7 +103,7 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
-        ActivityLevel _activityLevel {kIdle};
+        ActivityLevel _activityLevel {kC4Idle};
     };
 
 } }

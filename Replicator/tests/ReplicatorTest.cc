@@ -56,7 +56,7 @@ public:
         Log(">> Replicator is %s", kLevelNames[level]);
     }
 
-    virtual void replicatorCloseStatusChanged(Replicator* repl, const CloseStatus &status) override {
+    virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         Log(">> Replicator closed with code=%d/%d, message=%.*s",
             status.reason, status.code, SPLAT(status.message));
         REQUIRE(status.reason == kWebSocketClose);
