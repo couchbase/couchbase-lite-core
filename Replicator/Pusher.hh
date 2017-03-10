@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(RevList changes, C4Error err);
-        blip::FutureResponse sendChanges(const RevList&);
+        void sendChanges(const RevList&, MessageProgressCallback);
         void maybeGetMoreChanges();
         void sendChangeList(RevList);
         void sendMoreRevs();
@@ -46,7 +46,8 @@ namespace litecore { namespace repl {
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kMaxChangeListsInFlight = 4;    // How many changes messages can be active at once
         static const bool kChangeMessagesAreUrgent = true;    // Are change msgs high priority?
-        static const unsigned kMaxRevsInFlight = 5;           // # revs to be sending at once
+        static const unsigned kMaxRevsInFlight = 5;           // max # revs to be sending at once
+        static const unsigned kMaxRevsAwaitingReply = 20;     // max # revs sent but not replied
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
@@ -61,6 +62,7 @@ namespace litecore { namespace repl {
         bool _caughtUp {false};                         // Received backlog of existing changes?
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
         unsigned _revisionsInFlight {0};                // # 'rev' messages being sent
+        unsigned _revisionsAwaitingReply {0};           // # 'rev' messages sent but not replied
         std::deque<RevRequest> _revsToSend;             // Revs to send to peer but not sent yet
     };
     

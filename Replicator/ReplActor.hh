@@ -79,12 +79,8 @@ namespace litecore { namespace repl {
         }
 
         /** Convenience to send a BLIP request. */
-        blip::FutureResponse sendRequest(blip::MessageBuilder& builder) {
-            return _connection->sendRequest(builder);
-        }
-
         void sendRequest(blip::MessageBuilder& builder,
-                         std::function<void(blip::MessageIn*)> callback);
+                         blip::MessageProgressCallback onProgress = nullptr);
 
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);

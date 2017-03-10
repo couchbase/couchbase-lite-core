@@ -34,19 +34,19 @@ namespace litecore { namespace repl {
     { }
 
 
-    void ReplActor::sendRequest(blip::MessageBuilder& builder,
-                                std::function<void(MessageIn*)> callback) {
-        auto r = _connection->sendRequest(builder);
+    void ReplActor::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
         if (callback) {
             ++_pendingResponseCount;
-            onReady(r, [this, callback](Retained<MessageIn> response) {
-                --_pendingResponseCount;
-                callback(response);
+            builder.onProgress = asynchronize([=](MessageProgress progress) {
+                if (progress.state == MessageProgress::kComplete)
+                    --_pendingResponseCount;
+                callback(progress);
             });
         } else {
             if (!builder.noreply)
                 warn("Ignoring the response to a BLIP message!");
         }
+        _connection->sendRequest(builder);
     }
 
 

@@ -298,7 +298,7 @@ namespace litecore { namespace repl {
 
     // Sends a document revision in a "rev" request.
     void DBActor::_sendRevision(RevRequest request,
-                                function<void(Retained<blip::MessageIn>)> onReply)
+                                MessageProgressCallback onProgress)
     {
         if (!connection())
             return;
@@ -329,7 +329,7 @@ namespace litecore { namespace repl {
 
         // Now send the BLIP message:
         MessageBuilder msg("rev"_sl);
-        msg.noreply = !onReply;
+        msg.noreply = !onProgress;
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
@@ -343,7 +343,7 @@ namespace litecore { namespace repl {
         msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
         msg.jsonBody().writeValue(root);
 
-        sendRequest(msg, onReply);
+        sendRequest(msg, onProgress);
     }
 
 

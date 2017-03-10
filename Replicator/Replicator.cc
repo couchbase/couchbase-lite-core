@@ -195,7 +195,10 @@ namespace litecore { namespace repl {
             // Get the remote checkpoint, using the same checkpointID:
             MessageBuilder msg("getCheckpoint"_sl);
             msg["client"_sl] = checkpointID;
-            sendRequest(msg, [this](MessageIn *response) {
+            sendRequest(msg, [this](MessageProgress progress) {
+                MessageIn *response = progress.reply;
+                if (!response)
+                    return;
                 Checkpoint remoteCheckpoint;
 
                 if (response->isError()) {
@@ -230,7 +233,10 @@ namespace litecore { namespace repl {
         msg["client"_sl] = _checkpointDocID;
         msg["rev"_sl] = _checkpointRevID;
         msg << json;
-        sendRequest(msg, [=](MessageIn *response) {
+        sendRequest(msg, [=](MessageProgress progress) {
+            MessageIn *response = progress.reply;
+            if (!response)
+                return;
             if (response->isError()) {
                 gotError(response);
                 // TODO: On 409 error, reload remote checkpoint

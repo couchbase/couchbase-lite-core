@@ -26,7 +26,7 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
-static const duration kLatency              = chrono::milliseconds(100);
+static const duration kLatency              = chrono::milliseconds(50);
 static const duration kCheckpointSaveDelay  = chrono::milliseconds(500);
 
 

@@ -86,10 +86,16 @@ namespace litecore { namespace repl {
 
         // Send the "changes" request, and asynchronously handle the response:
         bool caughtUpWhenSent = _caughtUp;
-        auto r = sendChanges(changes);
 
-        if (r) {
-            onReady(r, [this, changes, caughtUpWhenSent](MessageIn* reply) {
+        if (changes.empty()) {
+            sendChanges(changes, nullptr);
+            --_changeListsInFlight;
+        } else {
+            sendChanges(changes, [=](MessageProgress progress) {
+                MessageIn *reply = progress.reply;
+                if (!reply)
+                    return;
+
                 // Got response to the 'changes' message:
                 if (!caughtUpWhenSent) {
                     assert(_changeListsInFlight >= 0);
@@ -97,7 +103,7 @@ namespace litecore { namespace repl {
                     maybeGetMoreChanges();
                 }
 
-                if (reply->isError())
+                if (progress.reply->isError())
                     return gotError(reply);
 
                 // The response contains an array that, for each change in the outgoing message,
@@ -125,8 +131,6 @@ namespace litecore { namespace repl {
                 }
                 sendMoreRevs();
             });
-        } else {
-            --_changeListsInFlight;
         }
 
         if (changes.size() < _changesBatchSize) {
@@ -135,7 +139,7 @@ namespace litecore { namespace repl {
                 _caughtUp = true;
                 if (changes.size() > 0 && !nonPassive()) {
                     // The protocol says catching up is signaled by an empty changes list:
-                    sendChanges(RevList());
+                    sendChanges(RevList(), nullptr);
                 }
             }
         } else {
@@ -145,10 +149,10 @@ namespace litecore { namespace repl {
 
 
     // Subroutine of _gotChanges that actually sends a "changes" message:
-    blip::FutureResponse Pusher::sendChanges(const RevList &changes) {
+    void Pusher::sendChanges(const RevList &changes, MessageProgressCallback onProgress) {
         MessageBuilder req("changes"_sl);
         req.urgent = kChangeMessagesAreUrgent;
-        req.noreply = (changes.empty());
+        req.noreply = !onProgress;
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
@@ -159,7 +163,7 @@ namespace litecore { namespace repl {
             enc.endArray();
         }
         enc.endArray();
-        return sendRequest(req);
+        sendRequest(req, onProgress);
     }
 
 
@@ -167,7 +171,9 @@ namespace litecore { namespace repl {
 
 
     void Pusher::sendMoreRevs() {
-        while (_revisionsInFlight < kMaxRevsInFlight && !_revsToSend.empty()) {
+        while (_revisionsInFlight < kMaxRevsInFlight
+                   && _revisionsAwaitingReply <= kMaxRevsAwaitingReply
+                   && !_revsToSend.empty()) {
             sendRevision(_revsToSend.front());
             _revsToSend.pop_front();
         }
@@ -177,24 +183,36 @@ namespace litecore { namespace repl {
     // Subroutine of _gotChanges that sends a "rev" message containing a revision body.
     void Pusher::sendRevision(const RevRequest &rev)
     {
-        function<void(MessageIn*)> onReply;
+        MessageProgressCallback onProgress;
         if (nonPassive()) {
             // Callback for after the peer receives the "rev" message:
             ++_revisionsInFlight;
-            onReply = asynchronize([=](Retained<MessageIn> reply) {
-                --_revisionsInFlight;
-                if (reply->isError())
-                    gotError(reply);
-                else {
-                    log("Completed rev %.*s #%.*s (seq %llu)",
-                          SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
-                    markComplete(rev.sequence);
+            logDebug("Uploading rev %.*s #%.*s (seq %llu)",
+                SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+            onProgress = asynchronize([=](MessageProgress progress) {
+                if (progress.state == MessageProgress::kAwaitingReply) {
+                    logDebug("Uploaded rev %.*s #%.*s (seq %llu)",
+                             SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                    assert(_revisionsInFlight > 0);//TEMP
+                    --_revisionsInFlight;
+                    ++_revisionsAwaitingReply;
+                    sendMoreRevs();
                 }
-                sendMoreRevs();
+                if (progress.reply) {
+                    --_revisionsAwaitingReply;
+                    if (progress.reply->isError())
+                        gotError(progress.reply);
+                    else {
+                        log("Completed rev %.*s #%.*s (seq %llu)",
+                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                        markComplete(rev.sequence);
+                    }
+                    sendMoreRevs();
+                }
             });
         }
         // Tell the DBAgent to actually read from the DB and send the message:
-        _dbActor->sendRevision(rev, onReply);
+        _dbActor->sendRevision(rev, onProgress);
     }
 
 
@@ -217,7 +235,7 @@ namespace litecore { namespace repl {
 
 
     ReplActor::ActivityLevel Pusher::computeActivityLevel() const {
-//        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revsToSend.size(), _pendingSequences.size());
+        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionsAwaitingReply, _revsToSend.size(), _pendingSequences.size());
         if (ReplActor::computeActivityLevel() == kBusy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0

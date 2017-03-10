@@ -87,8 +87,8 @@ namespace litecore { namespace repl {
         }
 
         void sendRevision(const RevRequest &request,
-                          std::function<void(Retained<blip::MessageIn>)> onReply) {
-            enqueue(&DBActor::_sendRevision, request, onReply);
+                          blip::MessageProgressCallback onProgress) {
+            enqueue(&DBActor::_sendRevision, request, onProgress);
         }
 
         void insertRevision(Rev rev, bool deleted, slice history, alloc_slice body,
@@ -110,7 +110,7 @@ namespace litecore { namespace repl {
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(RevRequest request,
-                           std::function<void(Retained<blip::MessageIn>)> onReply);
+                           blip::MessageProgressCallback onProgress);
         void _insertRevision(Rev, bool deleted, alloc_slice history, alloc_slice body,
                              std::function<void(C4Error)> callback);
 
