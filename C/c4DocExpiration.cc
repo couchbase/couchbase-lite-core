@@ -115,7 +115,7 @@ uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
         if(e.next() && e.record().body() == nullslice) {
             // Look for an entry with a null body (otherwise, its key is simply a doc ID)
             Array info = Value::fromData(e.record().key()).asArray();
-            return info[0].asUnsigned();
+            return info[0U].asUnsigned();
         }
         return (uint64_t)0;
     });
@@ -143,7 +143,7 @@ public:
         }
 
         auto info = Value::fromData(_e.record().key()).asArray();
-        _current = alloc_slice(info[1].asString());
+        _current = alloc_slice(info[1U].asString());
         
         return true;
     }
