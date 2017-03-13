@@ -115,11 +115,9 @@ namespace litecore { namespace blip {
             enqueue(&BLIPIO::_close);
         }
 
-#if DEBUG
         WebSocket* webSocket() const {
             return _webSocket;
         }
-#endif
 
         virtual std::string loggingIdentifier() const override {
             return _connection ? _connection->name() : Logging::loggingIdentifier();
@@ -538,8 +536,8 @@ namespace litecore { namespace blip {
     }
 
 
-#if DEBUG
-    websocket::WebSocket* Connection::webSocket() const {return _io->webSocket();}
-#endif
+    websocket::WebSocket* Connection::webSocket() const {
+        return _io->webSocket();
+    }
 
 } }

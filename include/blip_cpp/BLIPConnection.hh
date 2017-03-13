@@ -64,9 +64,9 @@ namespace litecore { namespace blip {
         State state()                                           {return _state;}
 
         virtual std::string loggingIdentifier() const override {return _name;}
-#if DEBUG
+
+        /** Exposed only for testing. */
         websocket::WebSocket* webSocket() const;
-#endif
 
     protected:
         friend class MessageIn;
