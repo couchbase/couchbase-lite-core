@@ -57,8 +57,16 @@ namespace litecore { namespace repl {
 
         RequestedRev() { }
     };
-    
-    
+
+
+    struct RevToInsert : public Rev {
+        bool deleted {false};
+        alloc_slice historyBuf;
+        alloc_slice body;
+        std::function<void(C4Error)> onInserted;
+    };
+
+
     /** Actor that manages database access for the replicator. */
     class DBActor : public ReplActor {
     public:
@@ -91,9 +99,8 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_sendRevision, request, onProgress);
         }
 
-        void insertRevision(Rev rev, bool deleted, slice history, alloc_slice body,
-                            std::function<void(C4Error)> callback) {
-            enqueue(&DBActor::_insertRevision, rev, deleted, alloc_slice(history), body, callback);
+        void insertRevision(std::shared_ptr<RevToInsert> rev) {
+            enqueue(&DBActor::_insertRevision, rev);
         }
         
     private:
@@ -111,8 +118,11 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
-        void _insertRevision(Rev, bool deleted, alloc_slice history, alloc_slice body,
-                             std::function<void(C4Error)> callback);
+        void _insertRevision(std::shared_ptr<RevToInsert> rev);
+
+
+        void insertRevisionsNow()   {enqueue(&DBActor::_insertRevisionsNow);}
+        void _insertRevisionsNow();
 
             void dbChanged();
 
@@ -126,6 +136,8 @@ namespace litecore { namespace repl {
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;
         Retained<Pusher> _pusher;
+        std::vector<std::shared_ptr<RevToInsert>> _revsToInsert;
+        Timer _insertTimer;
     };
 
 } }

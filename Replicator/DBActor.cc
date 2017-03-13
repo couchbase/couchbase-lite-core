@@ -13,8 +13,10 @@
 #include "Message.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
+#include "Benchmark.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
+#include <chrono>
 
 using namespace std;
 using namespace fleece;
@@ -24,6 +26,9 @@ namespace litecore { namespace repl {
 
     static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
     static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
+
+    static constexpr auto kInsertionDelay = chrono::milliseconds(20);
+    static constexpr size_t kMaxRevsToInsert = 100;
 
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
@@ -37,6 +42,7 @@ namespace litecore { namespace repl {
     :ReplActor(connection, options, "DB")
     ,_db(db)
     ,_remoteAddress(remoteAddress)
+    ,_insertTimer(bind(&DBActor::insertRevisionsNow, this))
     {
         registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBActor::handleSetCheckpoint);
@@ -347,41 +353,55 @@ namespace litecore { namespace repl {
 
 
     // Implementation of insertRevision(). Adds a rev to the database and calls the callback.
-    void DBActor::_insertRevision(Rev rev,
-                                  bool deleted,
-                                  alloc_slice historyBuf,
-                                  alloc_slice body,
-                                  std::function<void(C4Error)> callback)
+    void DBActor::_insertRevision(std::shared_ptr<RevToInsert> rev)
     {
-        log("Inserting rev {'%.*s' #%.*s}", SPLAT(rev.docID), SPLAT(rev.revID));
-        vector<C4String> history;
-        history.reserve(10);
-        history.push_back(rev.revID);
-        for (const void *pos=historyBuf.buf, *end = historyBuf.end(); pos < end;) {
-            auto comma = slice(pos, end).findByteOrEnd(',');
-            history.push_back(slice(pos, comma));
-            pos = comma + 1;
-        }
-        C4DocPutRequest put = {};
-        put.body = body;
-        put.docID = rev.docID;
-        put.revFlags = deleted ? kRevDeleted : 0;
-        put.existingRevision = true;
-        put.allowConflict = true;
-        put.history = history.data();
-        put.historyCount = history.size();
-        put.save = true;
+        auto n = _revsToInsert.size();
+        _revsToInsert.push_back(rev);
+        if (n == 0)
+            enqueueAfter(kInsertionDelay, &DBActor::_insertRevisionsNow);
+        else if (n >= kMaxRevsToInsert)
+            _insertRevisionsNow();
+    }
 
-        C4Error err;
-        c4::Transaction transaction(_db);
-        if (transaction.begin(&err)) {
-            c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &err);
-            if (doc && transaction.commit(&err)) {
-                err = {}; // success
+
+    void DBActor::_insertRevisionsNow() {
+        if (_revsToInsert.empty())
+            return;
+        log("Inserting %zu revs:", _revsToInsert.size());
+        Stopwatch st;
+        for (auto rev : _revsToInsert) {
+            log("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
+            vector<C4String> history;
+            history.reserve(10);
+            history.push_back(rev->revID);
+            for (const void *pos=rev->historyBuf.buf, *end = rev->historyBuf.end(); pos < end;) {
+                auto comma = slice(pos, end).findByteOrEnd(',');
+                history.push_back(slice(pos, comma));
+                pos = comma + 1;
             }
+            C4DocPutRequest put = {};
+            put.body = rev->body;
+            put.docID = rev->docID;
+            put.revFlags = rev->deleted ? kRevDeleted : 0;
+            put.existingRevision = true;
+            put.allowConflict = true;
+            put.history = history.data();
+            put.historyCount = history.size();
+            put.save = true;
+
+            C4Error err;
+            c4::Transaction transaction(_db);
+            if (transaction.begin(&err)) {
+                c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &err);
+                if (doc && transaction.commit(&err)) {
+                    err = {}; // success
+                }
+            }
+            if (rev->onInserted)
+                rev->onInserted(err);
         }
-        if (callback)
-            callback(err);
+        log("Inserted %zu revs in %.2gms", _revsToInsert.size(), st.elapsedMS());
+        _revsToInsert.clear();
     }
 
 

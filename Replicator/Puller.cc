@@ -90,27 +90,26 @@ namespace litecore { namespace repl {
         }
         Dict root = Value::fromTrustedData(fleeceBody).asDict();
 
-        Rev rev;
-        bool deleted;
-        bool strip;
-        rev.docID = msg->property("id"_sl);
-        if (rev.docID) {
-            rev.revID = msg->property("rev"_sl);
-            deleted = !!msg->property("deleted"_sl);
-            strip = hasUnderscoredProperties(root);
+        auto rev = make_shared<RevToInsert>();
+        bool stripUnderscores;
+        rev->docID = msg->property("id"_sl);
+        if (rev->docID) {
+            rev->revID = msg->property("rev"_sl);
+            rev->deleted = !!msg->property("deleted"_sl);
+            stripUnderscores = hasUnderscoredProperties(root);
         } else {
             // No metadata properties; look inside the JSON:
-            rev.docID = (slice)root["_id"_sl].asString();
-            rev.revID = (slice)root["_rev"_sl].asString();
-            deleted = root["_deleted"].asBool();
-            strip = true;
+            rev->docID = (slice)root["_id"_sl].asString();
+            rev->revID = (slice)root["_rev"_sl].asString();
+            rev->deleted = root["_deleted"].asBool();
+            stripUnderscores = true;
         }
-        slice history = msg->property("history"_sl);
+        rev->historyBuf = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
 
         log("Received revision '%.*s' #%.*s (seq '%.*s')",
-            SPLAT(rev.docID), SPLAT(rev.revID), SPLAT(sequence));
-        if (rev.docID.size == 0 || rev.revID.size == 0) {
+            SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(sequence));
+        if (rev->docID.size == 0 || rev->revID.size == 0) {
             warn("Got invalid revision");
             msg->respondWithError("BLIP"_sl, 400);
             return;
@@ -121,13 +120,14 @@ namespace litecore { namespace repl {
             return;
         }
 
-        if (strip)
+        if (stripUnderscores)
             fleeceBody = stripUnderscoredProperties(root);
+        rev->body = fleeceBody;
 
         function<void(C4Error)> onInserted;
         if (!msg->noReply() || nonPassive()) {
             ++_pendingCallbacks;
-            onInserted = asynchronize([=](C4Error err) {
+            rev->onInserted = asynchronize([this,msg,sequence](C4Error err) {
                 if (err.code) {
                     if (!msg->noReply())
                         msg->respondWithError("LiteCore"_sl, err.code);      //TODO: Proper error domain
@@ -143,7 +143,7 @@ namespace litecore { namespace repl {
             });
         }
 
-        _dbActor->insertRevision(rev, deleted, history, fleeceBody, onInserted);
+        _dbActor->insertRevision(rev);
     }
 
 
