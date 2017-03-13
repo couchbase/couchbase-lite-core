@@ -57,7 +57,6 @@
 		27EF6A351E282A92004748DF /* libws.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A051E282A17004748DF /* libws.c */; };
 		27EF6A361E282A92004748DF /* libws.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A061E282A17004748DF /* libws.h */; };
 		27EF6A391E282C45004748DF /* libws_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A371E282C45004748DF /* libws_config.h */; };
-		27EF6A3A1E282C45004748DF /* libws_private_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A381E282C45004748DF /* libws_private_config.h */; };
 		27EF6A431E28558E004748DF /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A3F1E28558E004748DF /* RefCounted.cc */; };
 		27EF6A441E28558E004748DF /* RefCounted.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A401E28558E004748DF /* RefCounted.hh */; };
 		27EF6A4A1E2855DD004748DF /* libws.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF6A1F1E282A88004748DF /* libws.a */; };
@@ -117,6 +116,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		275229C11E77546300E630FA /* libws_private_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = libws_private_config.h; path = ../../Xcode/libws_private_config.h; sourceTree = "<group>"; };
 		2759DC0D1E6FA7D300F3C4B2 /* gzipcomplete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gzipcomplete.cpp; path = lib/gzipcomplete.cpp; sourceTree = "<group>"; };
 		2759DC0E1E6FA7D300F3C4B2 /* mainpage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mainpage.cpp; path = lib/mainpage.cpp; sourceTree = "<group>"; };
 		2759DC101E6FA7D300F3C4B2 /* zlibmisc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zlibmisc.cpp; path = lib/zlibmisc.cpp; sourceTree = "<group>"; };
@@ -173,8 +173,7 @@
 		27EF6A051E282A17004748DF /* libws.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libws.c; path = src/libws.c; sourceTree = "<group>"; };
 		27EF6A061E282A17004748DF /* libws.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libws.h; path = src/libws.h; sourceTree = "<group>"; };
 		27EF6A1F1E282A88004748DF /* libws.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libws.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		27EF6A371E282C45004748DF /* libws_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libws_config.h; path = build/libws_config.h; sourceTree = "<group>"; };
-		27EF6A381E282C45004748DF /* libws_private_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libws_private_config.h; path = build/libws_private_config.h; sourceTree = "<group>"; };
+		27EF6A371E282C45004748DF /* libws_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libws_config.h; path = ../../Xcode/libws_config.h; sourceTree = "<group>"; };
 		27EF6A3F1E28558E004748DF /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
 		27EF6A401E28558E004748DF /* RefCounted.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
 		27EF6A4C1E2857F7004748DF /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slice.cc; path = Fleece/slice.cc; sourceTree = "<group>"; };
@@ -382,8 +381,8 @@
 				27EF6A041E282A17004748DF /* libws_utf8.h */,
 				27EF6A051E282A17004748DF /* libws.c */,
 				27EF6A061E282A17004748DF /* libws.h */,
+				275229C11E77546300E630FA /* libws_private_config.h */,
 				27EF6A371E282C45004748DF /* libws_config.h */,
-				27EF6A381E282C45004748DF /* libws_private_config.h */,
 			);
 			path = libws;
 			sourceTree = "<group>";
@@ -480,7 +479,6 @@
 			files = (
 				27EF6A251E282A92004748DF /* libws_compat.h in Headers */,
 				27EF6A361E282A92004748DF /* libws.h in Headers */,
-				27EF6A3A1E282C45004748DF /* libws_private_config.h in Headers */,
 				27EF6A391E282C45004748DF /* libws_config.h in Headers */,
 				27EF6A341E282A92004748DF /* libws_utf8.h in Headers */,
 				27EF6A2B1E282A92004748DF /* libws_log.h in Headers */,
