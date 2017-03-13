@@ -76,7 +76,7 @@ public:
     }
     
 
-    C4Address address {C4STR("ws"), C4STR("localhost"), 1235, C4STR("scratch/_blipsync")};
+    C4Address address {kC4Replicator2Scheme, C4STR("localhost"), 1235, C4STR("scratch")};
     C4Replicator *repl {nullptr};
     C4ReplicatorState callbackState {};
     int numCallbacks {0};

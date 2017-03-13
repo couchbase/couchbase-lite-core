@@ -16,12 +16,15 @@ extern "C" {
     /** \defgroup Replicator Replicator
         @{ */
 
+#define kC4Replicator2Scheme    C4STR("ws")
+#define kC4Replicator2TLSScheme C4STR("wss")
+
     /** A simple parsed-URL type */
     typedef struct {
         C4String scheme;
         C4String hostname;
         uint16_t port;
-        C4String path;
+        C4String databaseName;
     } C4Address;
 
     /** How to replicate, in either direction */
@@ -49,7 +52,8 @@ extern "C" {
     /** Opaque reference to a replicator. */
     typedef struct C4Replicator C4Replicator;
 
-    /** Callback a client can register, to get progress information. */
+    /** Callback a client can register, to get progress information.
+        This will be called on arbitrary background threads, and should not block. */
     typedef void (*C4ReplicatorStateChangedCallback)(C4Replicator*,
                                                      C4ReplicatorState,
                                                      void *context);

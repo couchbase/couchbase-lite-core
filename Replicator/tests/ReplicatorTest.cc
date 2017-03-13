@@ -45,10 +45,9 @@ public:
         replicator = new Replicator(db, provider, address, *this, opts);
 
         Log("Waiting for replication to complete...");
-        while (replicator->connection())
+        while (replicator->activityLevel() > kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
-        checkpointID = replicator->checkpointID();
     }
 
     virtual void replicatorActivityChanged(Replicator* repl, Replicator::ActivityLevel level) override {
@@ -67,7 +66,6 @@ public:
     LibWSProvider provider;
     Address address;
     Retained<Replicator> replicator;
-    alloc_slice checkpointID;
 };
 
 

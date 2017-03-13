@@ -12,6 +12,7 @@
 #include "c4Replicator.h"
 #include "LibWSProvider.hh"
 #include "Replicator.hh"
+#include "StringUtil.hh"
 #include <atomic>
 
 using namespace std;
@@ -36,7 +37,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         websocket::Address address(asstring(c4addr.scheme),
                                    asstring(c4addr.hostname),
                                    c4addr.port,
-                                   asstring(c4addr.path));
+                                   format("/%.*s/_blipsync", SPLAT(c4addr.databaseName)));
         _onStateChanged = onStateChanged;
         _callbackContext = callbackContext;
         _replicator = new Replicator(db, sWSProvider, address, *this, { push, pull });

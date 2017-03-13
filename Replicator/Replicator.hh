@@ -58,13 +58,11 @@ namespace litecore { namespace repl {
         void stop()                             {enqueue(&Replicator::_stop);}
 
 
-#if DEBUG // exposed for unit tests
+        // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
         alloc_slice checkpointID() const        {return _checkpointDocID;}
-#endif
 
         // internal API for Pusher/Puller:
-
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
         
