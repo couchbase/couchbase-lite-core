@@ -377,7 +377,7 @@ namespace litecore {
             enc.endArray();
             alloc_slice recording = enc.extractOutput();
             LogTo(SQL, "Created prerecorded query enum with %llu rows (%zu bytes) in %.3fms",
-                  rowCount, recording.size, st.elapsed()*1000);
+                  (unsigned long long)rowCount, recording.size, st.elapsed()*1000);
             return new SQLitePrerecordedQueryEnumImpl(_query, recording);
         }
 
