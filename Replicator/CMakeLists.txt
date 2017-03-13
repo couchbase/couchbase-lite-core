@@ -21,7 +21,7 @@ set(SRC ${REPLICATOR_SRC}
     )
 
 add_library(Replicator SHARED ${SRC})
-target_link_libraries(Replicator PRIVATE LiteCore FleeceStatic BLIPStatic ws)
+target_link_libraries(Replicator PRIVATE LiteCore FleeceStatic BLIPStatic ws event)
 target_link_libraries(Replicator PUBLIC z)
 
 if (APPLE)
