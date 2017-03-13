@@ -92,8 +92,8 @@ namespace litecore { namespace blip {
 
     public:
 
-        BLIPIO(Connection *connection, WebSocket *webSocket, Scheduler *scheduler)
-        :Actor(connection->name(), scheduler)
+        BLIPIO(Connection *connection, WebSocket *webSocket)
+        :Actor(string("BLIP[") + connection->name() + "]")
         ,Logging(BLIPLog)
         ,_connection(connection)
         ,_webSocket(webSocket)
@@ -485,9 +485,8 @@ namespace litecore { namespace blip {
     void Connection::start(WebSocket *webSocket) {
         _state = kConnecting;
         webSocket->name = _name;
-        _io = new BLIPIO(this, webSocket, Scheduler::sharedScheduler());
+        _io = new BLIPIO(this, webSocket);
         webSocket->connect(_io);
-        Mailbox::startScheduler(_io->scheduler());
     }
 
 

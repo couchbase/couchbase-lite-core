@@ -8,6 +8,7 @@
 
 #include "Actor.hh"
 #include "Channel.cc"       // Brings in the definitions of the template methods
+#include "Timer.hh"
 #include "Logging.hh"
 
 using namespace std;
@@ -26,9 +27,15 @@ namespace litecore {
 #pragma mark - SCHEDULER:
 
 
+    static Scheduler* sScheduler;
+
+
     Scheduler* Scheduler::sharedScheduler() {
-        static Scheduler *sSched = new Scheduler;
-        return sSched;
+        if (!sScheduler) {
+            sScheduler = new Scheduler;
+            sScheduler->start();
+        }
+        return sScheduler;
     }
 
 
@@ -58,7 +65,7 @@ namespace litecore {
 
 
     void Scheduler::task(unsigned taskID) {
-        LogTo(ActorLog, "   task %d starting", taskID);
+        LogToAt(ActorLog, Verbose, "   task %d starting", taskID);
 #ifndef MSC_VER
         {
             char name[100];
@@ -68,7 +75,7 @@ namespace litecore {
 #endif
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {
-            LogTo(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
+            LogToAt(ActorLog, Verbose, "   task %d calling Actor<%p>", taskID, mailbox);
             mailbox->performNextMessage();
             mailbox = nullptr;
         }
@@ -99,14 +106,24 @@ namespace litecore {
     void GCDMailbox::enqueue(std::function<void()> f) {
         ++_eventCount;
         retain(_actor);
-        dispatch_async(_queue, ^{ f();_actor->afterEvent();  release(_actor); --_eventCount; });
+        dispatch_async(_queue, ^{
+            f();
+            _actor->afterEvent();
+            release(_actor);
+            --_eventCount;
+        });
     }
 
 
     void GCDMailbox::enqueue(void (^block)()) {
         ++_eventCount;
         retain(_actor);
-        auto wrappedBlock = ^{ block();_actor->afterEvent();  --_eventCount; release(_actor); };
+        auto wrappedBlock = ^{
+            block();
+            _actor->afterEvent();
+            --_eventCount;
+            release(_actor);
+        };
         dispatch_async(_queue, wrappedBlock);
     }
 
@@ -114,7 +131,12 @@ namespace litecore {
     void GCDMailbox::enqueueAfter(Scheduler::duration delay, void (^block)()) {
         ++_eventCount;
         retain(_actor);
-        auto wrappedBlock = ^{ block(); _actor->afterEvent(); --_eventCount; release(_actor); };
+        auto wrappedBlock = ^{
+            block();
+            _actor->afterEvent();
+            --_eventCount;
+            release(_actor);
+        };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
@@ -122,33 +144,71 @@ namespace litecore {
             dispatch_async(_queue, wrappedBlock);
     }
 
+
+    void GCDMailbox::enqueueAfter(Scheduler::duration delay, std::function<void()> f) {
+        ++_eventCount;
+        retain(_actor);
+        auto wrappedBlock = ^{
+            f();
+            _actor->afterEvent();
+            --_eventCount;
+            release(_actor);
+        };
+        int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
+        if (ns > 0)
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
+        else
+            dispatch_async(_queue, wrappedBlock);
+    }
+
+
 #endif // ACTORS_USE_GCD
 
 
-    void ThreadedMailbox::setScheduler(Scheduler *s) {
-        assert(s);
-        assert(!_scheduler);
-        _scheduler = s;
-        if (!empty())
-            reschedule();
+    ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name)
+    :_actor(a)
+    ,_name(name)
+    {
+        Scheduler::sharedScheduler()->start();
     }
+
+
+    void ThreadedMailbox::reschedule() {
+        sScheduler->schedule(this);
+    }
+
 
 
     void ThreadedMailbox::enqueue(std::function<void()> f) {
         retain(_actor);
         if (push(f))
-            if (_scheduler)
-                reschedule();
+            reschedule();
+    }
+
+
+    void ThreadedMailbox::enqueueAfter(Scheduler::duration delay, std::function<void()> f) {
+#if 1
+        enqueue(f);
+#else
+        if (delay == Scheduler::duration::zero())
+            return enqueue(f);
+        Timer *timer = new Timer([=]{
+            enqueue(f);
+        });
+        timer->autoDelete();
+        timer->fireAfter(chrono::duration_cast<Timer::duration>(delay));
+#endif
     }
 
 
     void ThreadedMailbox::performNextMessage() {
-        LogTo(ActorLog, "Mailbox<%p> performNextMessage", this);
+        LogTo(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
 #if DEBUG
         assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
 #endif
         try {
-            front()();
+            auto &fn = front();
+            fn();
         } catch (...) {
             Warn("EXCEPTION thrown from actor method");
         }

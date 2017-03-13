@@ -48,6 +48,8 @@ namespace litecore {
                     timer->_callback();
                 } catch (...) { }
                 timer->_triggered = false;                   // note: not holding any lock
+                if (timer->_autoDelete)
+                    delete timer;
                 lock.lock();
 
             } else {

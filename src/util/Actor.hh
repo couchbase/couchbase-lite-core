@@ -85,32 +85,23 @@ namespace litecore {
     /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
     class ThreadedMailbox : Channel<std::function<void()>> {
     public:
-        ThreadedMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr)
-        :_actor(a)
-        ,_name(name)
-        ,_scheduler(s)
-        { }
+        ThreadedMailbox(Actor*, const std::string &name ="");
 
         const std::string& name() const                     {return _name;}
 
-        Scheduler* scheduler() const                        {return _scheduler;}
-        void setScheduler(Scheduler *s);
-
         unsigned eventCount() const                         {return (unsigned)size();}
 
-        void enqueue(std::function<void()> f);
-
-        static void startScheduler(Scheduler *s)            {s->start();}
+        void enqueue(std::function<void()>);
+        void enqueueAfter(Scheduler::duration delay, std::function<void()>);
 
     private:
         friend class Scheduler;
         
-        void reschedule()                                   {_scheduler->schedule(this);}
+        void reschedule();
         void performNextMessage();
 
         Actor* const _actor;
         std::string const _name;
-        Scheduler *_scheduler {nullptr};
 #if DEBUG
         std::atomic_int _active {0};
 #endif
@@ -134,6 +125,7 @@ namespace litecore {
 
         void enqueue(std::function<void()> f);
         void enqueue(void (^block)());
+        void enqueueAfter(Scheduler::duration delay, std::function<void()>);
         void enqueueAfter(Scheduler::duration delay, void (^block)());
 
         static void startScheduler(Scheduler *)             { }
@@ -169,22 +161,19 @@ namespace litecore {
     class Actor : public RefCounted {
     public:
 
-        Scheduler* scheduler() const                        {return _mailbox.scheduler();}
-        void setScheduler(Scheduler *s)                     {_mailbox.setScheduler(s);}
-
         unsigned eventCount() const                         {return _mailbox.eventCount();}
 
         std::string actorName() const                       {return _mailbox.name();}
 
     protected:
-        Actor(const std::string &name ="", Scheduler *sched =nullptr)
-        :_mailbox(this, name, sched)
+        Actor(const std::string &name ="")
+        :_mailbox(this, name)
         { }
 
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef ACTORS_USE_GCD
+#ifdef xACTORS_USE_GCD
             // not strictly necessary, but more efficient
             retain(this);
             _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
@@ -199,7 +188,7 @@ namespace litecore {
             Other calls scheduled after this one may end up running before it! */
         template <class Rcvr, class... Args>
         void enqueueAfter(delay_t delay, void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef ACTORS_USE_GCD
+#ifdef xACTORS_USE_GCD
             // not strictly necessary, but more efficient
             retain(this);
             _mailbox.enqueueAfter(delay, ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
@@ -235,7 +224,6 @@ namespace litecore {
         virtual void afterEvent()                    { }
 
     private:
-        friend class Scheduler;
         friend class ThreadedMailbox;
 #ifdef ACTORS_USE_GCD
         friend class GCDMailbox;

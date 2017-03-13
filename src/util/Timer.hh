@@ -40,8 +40,7 @@ namespace litecore {
             waitForFire();
         }
 
-        /** Is the timer active: waiting to fire or in the act of firing? */
-        bool scheduled() const          {return _state != kUnscheduled || _triggered;}
+        void autoDelete()               {_autoDelete = true;}
 
         /** Schedules the timer to fire at the given time (or slightly later.)
             If it was already scheduled, its fire time will be changed.
@@ -56,6 +55,9 @@ namespace litecore {
         /** Unschedules the timer. After this call returns the callback will NOT be invoked
             unless fireAt() or fireAfter() are called. */
         void stop()                     {if (scheduled()) manager().unschedule(this);}
+
+        /** Is the timer active: waiting to fire or in the act of firing? */
+        bool scheduled() const          {return _state != kUnscheduled || _triggered;}
 
     private:
 
@@ -92,6 +94,7 @@ namespace litecore {
         time _fireTime;                         // Absolute time that I fire
         std::atomic<state> _state {kUnscheduled};   // Current state
         std::atomic<bool> _triggered {false};
+        bool _autoDelete {false};
         Manager::map::iterator _entry;          // My map entry in Manager::_schedule
     };
 
