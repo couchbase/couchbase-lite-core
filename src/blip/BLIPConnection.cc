@@ -300,7 +300,7 @@ namespace litecore { namespace blip {
                 }
             }
             logVerbose("...Wrote %zu bytes to WebSocket (space left: %lld)",
-                       _sentBytes, max(0ll, (int64_t)kMaxSendSize - (int64_t)_sentBytes));
+                       _sentBytes, max((int64_t)0ll, (int64_t)kMaxSendSize - (int64_t)_sentBytes));
         }
 
 

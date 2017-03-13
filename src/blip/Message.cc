@@ -135,7 +135,7 @@ namespace litecore { namespace blip {
 
     MessageBuilder& MessageBuilder::addProperty(slice name, int64_t value) {
         char valueStr[30];
-        return addProperty(name, slice(valueStr, sprintf(valueStr, "%lld", value)));
+        return addProperty(name, slice(valueStr, sprintf(valueStr, "%lld", (long long)value)));
     }
 
 

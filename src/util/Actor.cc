@@ -70,7 +70,11 @@ namespace litecore {
         {
             char name[100];
             sprintf(name, "LiteCore Scheduler #%u", taskID);
+#ifdef __APPLE__
             pthread_setname_np(name);
+#else
+            pthread_setname_np(pthread_self(), name);
+#endif
         }
 #endif
         ThreadedMailbox *mailbox;
