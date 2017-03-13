@@ -36,7 +36,7 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
 };
 
 
-struct C4QueryEnumInternal : public C4QueryEnumerator, InstanceCounted {
+struct C4QueryEnumInternal : public C4QueryEnumerator, C4InstanceCounted {
 #if C4DB_THREADSAFE
     C4QueryEnumInternal(mutex &m)
     :_mutex(m)
@@ -91,7 +91,7 @@ void c4queryenum_free(C4QueryEnumerator *e) noexcept {
 
 
 // This is the same as C4Query
-struct c4Query : InstanceCounted {
+struct c4Query : C4InstanceCounted {
     c4Query(Database *db, C4Slice queryExpression)
     :_database(db),
      _query(db->defaultKeyStore().compileQuery(queryExpression))

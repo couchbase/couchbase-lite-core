@@ -13,6 +13,7 @@
 #include "Timer.hh"
 #include "c4.hh"
 #include "c4Replicator.h"
+#include "c4Private.h"
 #include <chrono>
 #include <functional>
 
@@ -25,7 +26,7 @@ namespace litecore { namespace repl {
 
 
     /** Abstract base class of Actors used by the replicator */
-    class ReplActor : public Actor, InstanceCounted, protected Logging {
+    class ReplActor : public Actor, C4InstanceCounted, protected Logging {
     public:
         struct Options {
             using Mode = C4ReplicatorMode;

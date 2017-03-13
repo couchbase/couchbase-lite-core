@@ -139,6 +139,7 @@ _c4error_make
 _c4doc_getForPut
 _c4_getObjectCount
 _c4_shutdown
+_gC4InstanceCount
 
 # Fleece:
 _FLSlice_Equal

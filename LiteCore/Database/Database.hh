@@ -13,6 +13,7 @@
 #include "c4Document.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
+#include "c4Private.h"
 
 
 #if C4DB_THREADSAFE
@@ -40,7 +41,7 @@ namespace c4Internal {
 
 
     /** A top-level LiteCore database. */
-    class Database : public RefCounted, InstanceCounted {
+    class Database : public RefCounted, C4InstanceCounted {
     public:
         Database(const string &path, C4DatabaseConfig config);
 

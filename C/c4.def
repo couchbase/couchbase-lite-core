@@ -134,7 +134,7 @@ c4error_make
 c4doc_getForPut
 c4_getObjectCount
 c4_shutdown
-
+gC4InstanceCount
 
 FLSlice_Equal
 FLSlice_Compare

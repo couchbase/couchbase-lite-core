@@ -98,7 +98,8 @@ namespace litecore { namespace repl {
         virtual void activityLevelChanged(ActivityLevel) override;
 
         void updateCheckpoint();
-        void saveCheckpoint(alloc_slice json);
+        void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
+        void _saveCheckpoint(alloc_slice json);
 
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;

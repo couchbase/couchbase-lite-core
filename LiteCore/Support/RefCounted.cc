@@ -19,9 +19,6 @@
 
 namespace litecore {
 
-    std::atomic_int InstanceCounted::gObjectCount;
-
-
     RefCounted::~RefCounted() {
         if (_refCount != 0) {
             Warn("FATAL: RefCounted object at %p destructed while it has a refCount of %d",

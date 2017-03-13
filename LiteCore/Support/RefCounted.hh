@@ -86,14 +86,4 @@ namespace litecore {
     };
 
 
-    /** Base class that keeps track of the total instance count of all subclasses.
-        This is useful for leak detection. */
-    class InstanceCounted {
-    public:
-        static std::atomic_int gObjectCount;
-        InstanceCounted()   {++gObjectCount;}
-        ~InstanceCounted()  {--gObjectCount;}
-    };
-
-
 }

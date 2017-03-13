@@ -14,7 +14,7 @@
 using namespace std::placeholders;
 
 
-struct c4DatabaseObserver : public InstanceCounted {
+struct c4DatabaseObserver : public C4InstanceCounted {
     c4DatabaseObserver(C4Database *db, C4SequenceNumber since,
                        C4DatabaseObserverCallback callback, void *context)
     :_db(db),
@@ -81,7 +81,7 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 #pragma mark - DOCUMENT OBSERVER:
 
 
-struct c4DocumentObserver : public InstanceCounted {
+struct c4DocumentObserver : public C4InstanceCounted {
     c4DocumentObserver(C4Database *db, C4Slice docID,
                        C4DocumentObserverCallback callback, void *context)
     :_db(db),

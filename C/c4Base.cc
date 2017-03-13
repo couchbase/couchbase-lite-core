@@ -28,6 +28,10 @@
 
 using namespace litecore;
 
+extern "C" {
+std::atomic_int gC4InstanceCount;
+}
+
 
 #pragma mark - ERRORS:
 
@@ -133,7 +137,7 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) noexc
 
 
 int c4_getObjectCount() noexcept {
-    return InstanceCounted::gObjectCount;
+    return gC4InstanceCount;
 }
 
 

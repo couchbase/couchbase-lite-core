@@ -50,6 +50,7 @@ public:
     ~ReplicatorLoopbackTest() {
         if (parallelThread)
             parallelThread->join();
+        replClient = replServer = nullptr;
         C4Error error;
         c4db_delete(db2, &error);
         c4db_free(db2);
@@ -74,7 +75,7 @@ public:
         provider.connect(replClient->webSocket(), replServer->webSocket());
 
         Log("Waiting for replication to complete...");
-        while (replClient->connection() || replServer->connection())
+        while (replClient->activityLevel() > kC4Stopped || replServer->activityLevel() > kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
         checkpointID = replClient->checkpointID();

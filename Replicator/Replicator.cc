@@ -42,7 +42,7 @@ namespace litecore { namespace repl {
         if (options.pull != kC4Disabled)
             _puller = new Puller(connection, this, _dbActor, _options);
         _checkpoint.enableAutosave(options.checkpointSaveDelay,
-                                  asynchronize([this](alloc_slice json){ saveCheckpoint(json); }));
+                                   bind(&Replicator::saveCheckpoint, this, _1));
         // Now wait for _onConnect or _onClose...
     }
 
@@ -226,7 +226,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::saveCheckpoint(alloc_slice json) {
+    void Replicator::_saveCheckpoint(alloc_slice json) {
         log("Saving remote checkpoint %.*s with rev='%.*s' ...",
             SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
         MessageBuilder msg("setCheckpoint"_sl);
