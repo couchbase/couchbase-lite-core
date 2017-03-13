@@ -773,7 +773,7 @@
 		275CE0E81E57BE430084E014 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_core.a; sourceTree = "<group>"; };
 		275CE0E91E57BE430084E014 /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_extra.a; sourceTree = "<group>"; };
 		275CE0EA1E57BE430084E014 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_pthreads.a; sourceTree = "<group>"; };
-		275CE0EE1E57BE7E0084E014 /* CouchbaseLiteReplicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; name = CouchbaseLiteReplicator.exp; path = ../Xcode/Replicator/CouchbaseLiteReplicator.exp; sourceTree = "<group>"; };
+		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = Replicator.exp; sourceTree = "<group>"; };
 		275CE0F41E5B769C0084E014 /* ReplicatorTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ReplicatorTests; sourceTree = BUILT_PRODUCTS_DIR; };
 		275CE0FB1E5B772D0084E014 /* ReplicatorTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ReplicatorTests.xcconfig; sourceTree = "<group>"; };
 		275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorLoopbackTest.cc; sourceTree = "<group>"; };
@@ -1613,7 +1613,7 @@
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
-				275CE0EE1E57BE7E0084E014 /* CouchbaseLiteReplicator.exp */,
+				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
 				275CE0FC1E5B78570084E014 /* tests */,
 			);
 			name = Replicator;

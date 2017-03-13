@@ -53,16 +53,17 @@ namespace litecore { namespace repl {
             virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&) =0;
         };
 
+        ActivityLevel activityLevel() const     {return ReplActor::activityLevel();}
+
         void stop()                             {enqueue(&Replicator::_stop);}
 
-
-        // internal API for Pusher/Puller:
 
 #if DEBUG // exposed for unit tests
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
         alloc_slice checkpointID() const        {return _checkpointDocID;}
-        ActivityLevel activityLevel() const     {return ReplActor::activityLevel();}
 #endif
+
+        // internal API for Pusher/Puller:
 
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
