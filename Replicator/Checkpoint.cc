@@ -45,7 +45,8 @@ namespace litecore { namespace repl {
         bool match = true;
         auto itsState = checkpoint.sequences();
         if (_seq.local > 0 && _seq.local != itsState.local) {
-            Log("Local sequence mismatch: I had %llu, remote had %llu", _seq.local, itsState.local);
+            Log("Local sequence mismatch: I had %llu, remote had %llu", (unsigned long long)_seq.local,
+                (unsigned long long)itsState.local);
             _seq.local = 0;
             match = false;
         }
