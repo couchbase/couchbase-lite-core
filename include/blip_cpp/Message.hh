@@ -116,6 +116,7 @@ namespace litecore { namespace blip {
         friend class BLIPIO;
 
         MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr);
+        virtual ~MessageIn();
         bool receivedFrame(slice, FrameFlags);
 
     private:

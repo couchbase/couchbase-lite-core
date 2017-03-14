@@ -229,6 +229,10 @@ namespace litecore { namespace blip {
 
 #pragma mark - MESSAGE IN:
 
+    MessageIn::~MessageIn()
+    {
+        
+    }
 
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n,
                          MessageProgressCallback onProgress)
