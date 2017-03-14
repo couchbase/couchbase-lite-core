@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
+OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
 
 add_definitions(-DCMAKE)
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -48,7 +49,7 @@ endif()
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
-if(WIN32 OR ANDROID)
+if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
     set(SQLITECPP_INTERNAL_SQLITE OFF)
     add_library(sqlite3 SHARED
      vendor/SQLiteCpp/sqlite3/sqlite3.c
