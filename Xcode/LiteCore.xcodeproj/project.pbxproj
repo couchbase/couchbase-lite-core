@@ -1610,7 +1610,6 @@
 				2773FCF41E6783A000108780 /* Checkpoint.cc */,
 				2773FCF51E6783A000108780 /* Checkpoint.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
-				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
@@ -1837,6 +1836,7 @@
 				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
+				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 			);
 			path = include;
 			sourceTree = "<group>";

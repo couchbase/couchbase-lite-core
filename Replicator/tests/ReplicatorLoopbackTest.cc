@@ -83,9 +83,8 @@ public:
 
     virtual void replicatorActivityChanged(Replicator* repl, Replicator::ActivityLevel level) override {
         if (repl == replClient) {
-            const char *kLevelNames[] = {"finished!", "connecting", "idle", "busy"};
             if (repl == replClient)
-                Log(">> Replicator is %s", kLevelNames[level]);
+                Log(">> Replicator is %s", ReplActor::kActivityLevelName[level]);
         }
     }
 

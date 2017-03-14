@@ -50,6 +50,8 @@ namespace litecore { namespace repl {
 
         using ActivityLevel = C4ReplicatorActivityLevel;
 
+        static const char* const kActivityLevelName[];
+
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
             enqueue(&ReplActor::_connectionClosed);

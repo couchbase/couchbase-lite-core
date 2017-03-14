@@ -16,8 +16,8 @@ extern "C" {
     /** \defgroup Replicator Replicator
         @{ */
 
-#define kC4Replicator2Scheme    C4STR("ws")
-#define kC4Replicator2TLSScheme C4STR("wss")
+#define kC4Replicator2Scheme    C4STR("blip")
+#define kC4Replicator2TLSScheme C4STR("blips")
 
     /** A simple parsed-URL type */
     typedef struct {
@@ -37,6 +37,7 @@ extern "C" {
 
     typedef enum {
         kC4Stopped,
+        kC4Offline,
         kC4Connecting,
         kC4Idle,
         kC4Busy

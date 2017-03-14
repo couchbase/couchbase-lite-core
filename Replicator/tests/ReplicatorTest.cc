@@ -51,8 +51,7 @@ public:
     }
 
     virtual void replicatorActivityChanged(Replicator* repl, Replicator::ActivityLevel level) override {
-        const char *kLevelNames[] = {"finished!", "connecting", "idle", "busy"};
-        Log(">> Replicator is %s", kLevelNames[level]);
+        Log(">> Replicator is %s", ReplActor::kActivityLevelName[level]);
     }
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {

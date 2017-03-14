@@ -23,6 +23,9 @@ namespace litecore { namespace repl {
 
     static LogDomain SyncLog("Sync");
 
+    const char* const ReplActor::kActivityLevelName[] = {
+        "stopped", "offline", "connecting", "idle", "busy"};
+
 
     ReplActor::ReplActor(blip::Connection *connection,
                          Options options,
@@ -77,8 +80,7 @@ namespace litecore { namespace repl {
         auto newLevel = computeActivityLevel();
         if (newLevel != _activityLevel) {
             _activityLevel = newLevel;
-            const char *kLevelNames[] = {"stopped!", "connecting", "idle", "busy"};
-            log("now %s", kLevelNames[newLevel]);
+            log("now %s", kActivityLevelName[newLevel]);
             activityLevelChanged(newLevel);
         }
     }

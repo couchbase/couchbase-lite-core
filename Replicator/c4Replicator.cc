@@ -109,9 +109,14 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4Error *err) C4API
 {
     try {
+        if (push == kC4Disabled && pull == kC4Disabled) {
+            if (err)
+                *err = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                    C4STR("Either push or pull must be enabled"));
+            return nullptr;
+        }
         return retain(new C4Replicator(db, c4addr, push, pull, onStateChanged, callbackContext));
     } catch (const std::exception &x) {
-        WarnError("Exception caught in c4repl_new");    //FIX: Set *err
         if (err)
             *err = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
         // TODO: Return a better error
