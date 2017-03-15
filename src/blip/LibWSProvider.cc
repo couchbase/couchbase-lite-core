@@ -100,7 +100,7 @@ namespace litecore { namespace websocket {
         static void onmsg(ws_t ws, char *msg, uint64_t len, int binary, void *context) noexcept {
             try {
                 auto socket = (LibWSWebSocket*)context;
-                socket->delegate().onWebSocketMessage({msg, len}, binary);
+                socket->delegate().onWebSocketMessage({msg, (size_t)len}, binary);
             } catch (...) {
                 fprintf(stderr, "WARNING: WebSocketDelegate::onMessage threw an exception\n");
             }
