@@ -20,9 +20,9 @@ namespace LiteCore.Tests
             "C:\\tmp\\" : "/tmp/";
 #endif
 
-        protected static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
+        internal static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
 
-        protected static readonly C4Slice FleeceBody;
+        internal static readonly C4Slice FleeceBody;
         
         protected override int NumberOfOptions
         {
@@ -34,32 +34,32 @@ namespace LiteCore.Tests
         private bool _bundled = true;
         private int _objectCount = 0;
 
-        protected C4Database* Db { get; private set; }
-        protected C4DocumentVersioning Versioning { get; private set; }
+        internal C4Database* Db { get; private set; }
+        internal C4DocumentVersioning Versioning { get; private set; }
         protected string Storage { get; private set; }
 
-        protected C4Slice DocID
+        internal C4Slice DocID
         {
             get {
                 return C4Slice.Constant("mydoc");
             }
         }
 
-        protected C4Slice RevID
+        internal C4Slice RevID
         {
             get {
                 return IsRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
             }
         }
 
-        protected C4Slice Rev2ID
+        internal C4Slice Rev2ID
         {
             get {
                 return IsRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
             }
         }
 
-        protected C4Slice Rev3ID
+        internal C4Slice Rev3ID
         {
             get {
                 return IsRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
@@ -122,7 +122,7 @@ namespace LiteCore.Tests
             }
         }
 
-        protected void CreateRev(C4Database *db, string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
+        internal void CreateRev(C4Database *db, string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
         {
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(db, err));
             try {
@@ -152,7 +152,7 @@ namespace LiteCore.Tests
             }
         }
 
-        protected void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
+        internal void CreateRev(string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
         {
             CreateRev(Db, docID, revID, body, flags);
         }
@@ -181,7 +181,7 @@ namespace LiteCore.Tests
             WriteLine($"[{level}] {s.CreateString()}");
         }
 
-        protected bool ReadFileByLines(string path, Func<FLSlice, bool> callback)
+        internal bool ReadFileByLines(string path, Func<FLSlice, bool> callback)
         {
             using(var tr = new StreamReader(File.Open(path, FileMode.Open))) {
                 string line;

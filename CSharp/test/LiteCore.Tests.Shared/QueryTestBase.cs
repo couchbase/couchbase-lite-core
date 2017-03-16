@@ -10,7 +10,7 @@ namespace LiteCore.Tests
 {
     public unsafe abstract class QueryTestBase : Test
     {
-        protected C4Query *_query;
+        internal C4Query *_query;
 
         protected abstract string JsonPath
         {
@@ -52,7 +52,7 @@ namespace LiteCore.Tests
             return json;
         }
 
-        protected C4Query* Compile(string whereExpr, string sortExpr = null)
+        internal C4Query* Compile(string whereExpr, string sortExpr = null)
         {
             string queryString = whereExpr;
             if(sortExpr != null) {

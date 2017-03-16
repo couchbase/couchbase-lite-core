@@ -7,7 +7,9 @@ using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
+#if !LITECORE_PACKAGED
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
+#endif
 
 namespace LiteCore.Tests
 {
