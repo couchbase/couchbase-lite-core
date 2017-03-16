@@ -15,6 +15,8 @@ namespace LiteCore.Tests
     {
 #if __ANDROID__
         public static readonly string TestDir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+#elif WINDOWS_UWP
+        public static readonly string TestDir = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
 #else
         public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
             "C:\\tmp\\" : "/tmp/";
@@ -183,16 +185,30 @@ namespace LiteCore.Tests
 
         internal bool ReadFileByLines(string path, Func<FLSlice, bool> callback)
         {
+#if WINDOWS_UWP
+            var url = $"ms-appx:///Assets/{path}";
+            var file = Windows.Storage.StorageFile.GetFileFromApplicationUriAsync(new Uri(url))
+                .AsTask()
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            var lines = Windows.Storage.FileIO.ReadLinesAsync(file).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+            foreach(var line in lines) {
+#else
             using(var tr = new StreamReader(File.Open(path, FileMode.Open))) {
                 string line;
                 while((line = tr.ReadLine()) != null) {
+#endif
                     using(var c4 = new C4String(line)) {
                         if(!callback((FLSlice)c4.AsC4Slice())) {
                             return false;
                         }
                     }
                 }
-            }
+#if !WINDOWS_UWP
+        }
+#endif
 
             return true;
         } 

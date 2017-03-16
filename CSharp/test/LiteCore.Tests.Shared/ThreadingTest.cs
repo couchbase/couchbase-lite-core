@@ -78,7 +78,7 @@ namespace LiteCore.Tests
                     }
                 }
 
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
             } while (lastSequence < NumDocs);
 
             observer.Dispose();
