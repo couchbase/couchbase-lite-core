@@ -75,7 +75,7 @@ namespace litecore { namespace websocket {
         }
 
         static void oncleanup(ws_t ws, const void *data, uint64_t datalen, void *extra) {
-            slice(data, datalen).free();
+            slice(data, (size_t)datalen).free();
         }
 
 

@@ -187,7 +187,7 @@ namespace litecore { namespace blip {
     ,_connection(connection)
     ,_payload(payload)
     {
-        assert(payload.size < 1ull<<32);
+        assert(payload.size <= UINT32_MAX);
         assert(!(_flags & kCompressed));    //TODO: Implement compression
     }
 
