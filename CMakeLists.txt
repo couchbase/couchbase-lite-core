@@ -164,7 +164,7 @@ endif()
 
 ### REPLICATOR:
 
-#add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
 
 #add_subdirectory(Replicator)
 

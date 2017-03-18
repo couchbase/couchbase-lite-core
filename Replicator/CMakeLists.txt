@@ -20,11 +20,23 @@ set(SRC ${REPLICATOR_SRC}
     ${TOP}LiteCore/Support/StringUtil.cc
     )
 
+if (APPLE)
+    include_directories("Obj-C")
+    set(SRC ${SRC}
+        "Obj-C/CBLWebSocket.mm"
+        "Obj-C/CBLHTTPLogic.m"
+    )
+endif()
+
 add_library(Replicator SHARED ${SRC})
-target_link_libraries(Replicator PRIVATE LiteCore FleeceStatic BLIPStatic ws event)
+target_link_libraries(Replicator PRIVATE LiteCore FleeceStatic BLIPStatic)
 target_link_libraries(Replicator PUBLIC z)
 
 if (APPLE)
+    target_link_libraries(Replicator PUBLIC "-framework CoreFoundation"
+                                            "-framework CFNetwork"
+                                            "-framework Foundation"
+                                            "-framework Security")
     set_target_properties(Replicator PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/Replicator.exp")
 endif()
