@@ -9,10 +9,10 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "c4Socket+Internal.hh"
 #include <iostream>
 #include "c4Test.hh"
 #include "Replicator.hh"
-#include "LibWSProvider.hh"
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
@@ -26,6 +26,9 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
+extern void RegisterC4SocketFactory();
+
+
 static const duration kLatency              = chrono::milliseconds(100);
 static const duration kCheckpointSaveDelay  = chrono::milliseconds(500);
 
@@ -34,15 +37,14 @@ class ReplicatorTest : public C4Test, Replicator::Delegate {
 public:
     ReplicatorTest()
     :C4Test(0)
-    ,provider()
-    ,address("ws", "localhost", 1235, "scratch/_blipsync")
+    ,address("ws", "localhost", 1235, "/scratch/_blipsync")
     {
-        provider.startEventLoop();
+        RegisterC4SocketFactory();
     }
 
     void runReplicator(Replicator::Options opts) {
         opts.checkpointSaveDelay = kCheckpointSaveDelay;
-        replicator = new Replicator(db, provider, address, *this, opts);
+        replicator = new Replicator(db, DefaultProvider(), address, *this, opts);
 
         Log("Waiting for replication to complete...");
         while (replicator->activityLevel() > kC4Stopped)
@@ -61,8 +63,6 @@ public:
         REQUIRE(status.code == 1000);
     }
 
-
-    LibWSProvider provider;
     Address address;
     Retained<Replicator> replicator;
 };

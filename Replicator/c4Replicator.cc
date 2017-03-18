@@ -10,7 +10,7 @@
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Replicator.h"
-#include "LibWSProvider.hh"
+#include "c4Socket+Internal.hh"
 #include "Replicator.hh"
 #include "StringUtil.hh"
 #include <atomic>
@@ -26,23 +26,21 @@ using namespace litecore::websocket;
 struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     C4Replicator(C4Database* db,
-                 C4Address c4addr,
+                 C4Address remoteAddress,
+                 C4String remoteDatabaseName,
                  C4ReplicatorMode push,
                  C4ReplicatorMode pull,
                  C4ReplicatorStateChangedCallback onStateChanged,
                  void *callbackContext)
     {
-        static websocket::LibWSProvider sWSProvider;
-
-        websocket::Address address(asstring(c4addr.scheme),
-                                   asstring(c4addr.hostname),
-                                   c4addr.port,
-                                   format("/%.*s/_blipsync", SPLAT(c4addr.databaseName)));
+        websocket::Address address(asstring(remoteAddress.scheme),
+                                   asstring(remoteAddress.hostname),
+                                   remoteAddress.port,
+                                   format("/%.*s/_blipsync", SPLAT(remoteDatabaseName)));
         _onStateChanged = onStateChanged;
         _callbackContext = callbackContext;
-        _replicator = new Replicator(db, sWSProvider, address, *this, { push, pull });
+        _replicator = new Replicator(db, DefaultProvider(), address, *this, { push, pull });
         _state = {_replicator->activityLevel(), {}};
-        sWSProvider.startEventLoop();
         retain(this); // keep myself alive till replicator closes
     }
 
@@ -102,6 +100,7 @@ private:
 
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address c4addr,
+                         C4String remoteDatabaseName,
                          C4ReplicatorMode push,
                          C4ReplicatorMode pull,
                          C4ReplicatorStateChangedCallback onStateChanged,
@@ -115,7 +114,8 @@ C4Replicator* c4repl_new(C4Database* db,
                                     C4STR("Either push or pull must be enabled"));
             return nullptr;
         }
-        return retain(new C4Replicator(db, c4addr, push, pull, onStateChanged, callbackContext));
+        return retain(new C4Replicator(db, c4addr, remoteDatabaseName,
+                                       push, pull, onStateChanged, callbackContext));
     } catch (const std::exception &x) {
         if (err)
             *err = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));

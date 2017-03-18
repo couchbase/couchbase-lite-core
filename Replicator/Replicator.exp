@@ -6,4 +6,14 @@
 
 _c4repl_new
 _c4repl_free
+_c4repl_stop
 _c4repl_getState
+
+_c4socket_registerFactory
+_c4socket_opened
+_c4socket_closed
+_c4socket_completedWrite
+_c4socket_received
+
+.objc_class_name_CBLWebSocket
+.objc_class_name_CBLHTTPLogic

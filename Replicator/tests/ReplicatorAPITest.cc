@@ -56,7 +56,7 @@ public:
     
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull) {
         C4Error err;
-        repl = c4repl_new(db, address, push, pull, onStateChanged, this, &err);
+        repl = c4repl_new(db, address, C4STR("scratch"), push, pull, onStateChanged, this, &err);
         REQUIRE(repl);
         C4ReplicatorState state = c4repl_getState(repl);
         logState(state);
@@ -76,7 +76,7 @@ public:
     }
     
 
-    C4Address address {kC4Replicator2Scheme, C4STR("localhost"), 1235, C4STR("scratch")};
+    C4Address address {kC4Replicator2Scheme, C4STR("localhost"), 1235};
     C4Replicator *repl {nullptr};
     C4ReplicatorState callbackState {};
     int numCallbacks {0};

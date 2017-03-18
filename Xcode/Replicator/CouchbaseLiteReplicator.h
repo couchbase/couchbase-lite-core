@@ -6,14 +6,14 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
-//! Project version number for Replicator.
+#import <CouchbaseLiteReplicator/c4Replicator.h>
+#import <CouchbaseLiteReplicator/c4Socket.h>
+
+#ifdef __OBJC__
+#import <CouchbaseLiteReplicator/CBLWebSocket.h>
+#endif
+
 FOUNDATION_EXPORT double CouchbaseLiteReplicatorVersionNumber;
-
-//! Project version string for Replicator.
 FOUNDATION_EXPORT const unsigned char CouchbaseLiteReplicatorVersionString[];
-
-// In this header, you should import all the public headers of your framework using statements like #import <CouchbaseLiteReplicator/PublicHeader.h>
-
-

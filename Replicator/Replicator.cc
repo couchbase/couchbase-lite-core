@@ -98,7 +98,6 @@ namespace litecore { namespace repl {
         switch (connection()->state()) {
             case Connection::kDisconnected:
             case Connection::kClosed:
-            case Connection::kClosing:
                 return kC4Stopped;
             case Connection::kConnecting:
                 return kC4Connecting;
@@ -108,20 +107,22 @@ namespace litecore { namespace repl {
                     level = kC4Busy;
                 else
                     level = ReplActor::computeActivityLevel();
-                if (level == kC4Idle && !isOpenServer())
-                    level = kC4Stopped;
-                return max(level, max(_pushActivity, _pullActivity));
+                level = max(level, max(_pushActivity, _pullActivity));
+                if (level == kC4Idle && !isOpenServer()) {
+                    // Detect that a non-continuous active push or pull replication is done:
+                    log("Replication complete! Closing connection");
+                    connection()->close();
+                    level = kC4Busy;
+                }
+                return level;
             }
+            case Connection::kClosing:
+                return kC4Busy; // wait for connection to close
         }
     }
 
 
     void Replicator::activityLevelChanged(ActivityLevel level) {
-        // Decide whether a non-continuous active push or pull replication is done:
-        if (level == kC4Stopped && connection()) {
-            log("Replication complete! Closing connection");
-            connection()->close();
-        }
         _delegate.replicatorActivityChanged(this, level);
     }
 
@@ -137,7 +138,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onClose(Connection::CloseStatus status) {
-        static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
+        static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error",
+                                             "Unknown error"};
         log("Connection closed with %s %d: %.*s",
             kReasonNames[status.reason], status.code, SPLAT(status.message));
 

@@ -1,0 +1,98 @@
+//
+//  c4Socket.h
+//  LiteCore
+//
+//  Created by Jens Alfke on 3/16/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#pragma once
+#include "c4Base.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    /** \defgroup Socket  TCP Socket Provider API
+        @{ */
+    
+    /** Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.
+        These are defined at <http://tools.ietf.org/html/rfc6455#section-7.4.1> */
+    typedef C4_ENUM(int32_t, C4WebSocketCloseCode) {
+        kWebSocketCloseNormal           = 1000,
+        kWebSocketCloseGoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
+        kWebSocketCloseProtocolError    = 1002, // Protocol violation: invalid framing data
+        kWebSocketCloseDataError        = 1003, // Message payload cannot be handled
+        kWebSocketCloseNoCode           = 1005, // Never sent, only received
+        kWebSocketCloseAbnormal         = 1006, // Never sent, only received
+        kWebSocketCloseBadMessageFormat = 1007, // Unparseable message
+        kWebSocketClosePolicyError      = 1008,
+        kWebSocketCloseMessageTooBig    = 1009,
+        kWebSocketCloseMissingExtension = 1010, // Peer doesn't provide a necessary extension
+        kWebSocketCloseCantFulfill      = 1011, // Can't fulfill request due to "unexpected condition"
+        kWebSocketCloseTLSFailure       = 1015, // Never sent, only received
+
+        kWebSocketCloseFirstAvailable   = 4000, // First unregistered code for freeform use
+    };
+    
+    
+    /** A simple parsed-URL type */
+    typedef struct {
+        C4String scheme;
+        C4String hostname;
+        uint16_t port;
+        C4String path;
+    } C4Address;
+
+
+    /** Represents an open bidirectional byte stream (typically a TCP socket.)
+        C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
+        stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
+        `nativeHandle` field. */
+    typedef struct C4Socket {
+        void* nativeHandle;     ///< for client's use
+    } C4Socket;
+
+
+    /** A group of callbacks that define the implementation of sockets; the client must fill this
+        out and pass it to c4socket_registerFactory() before using any socket-based API.
+        These callbacks will be invoked on arbitrary background threads owned by LiteCore.
+        They should return quickly, and perform the operation asynchronously without blocking. */
+    typedef struct {
+        void (*open)(C4Socket*, const C4Address*);              ///< open the socket
+        void (*close)(C4Socket*);                               ///< close the socket
+        void (*write)(C4Socket*, C4SliceResult allocatedData);  ///< Write bytes; free when done
+        void (*completedReceive)(C4Socket*, size_t byteCount);  ///< Completion of c4socket_received
+    } C4SocketFactory;
+
+
+    /** One-time registration of socket callbacks. Must be called before using any socket-based
+        API including the replicator. Do not call multiple times. */
+    void c4socket_registerFactory(C4SocketFactory factory) C4API;
+
+    /** Notification that a socket has opened, i.e. a C4SocketFactory.open request has completed
+        successfully. */
+    void c4socket_opened(C4Socket *socket) C4API;
+
+    /** Notification that a socket has finished closing, or that it disconnected, or failed to open.
+        If this is a normal close in response to a C4SocketFactory.close request, the error
+        parameter should have a code of 0. Otherwise the error should be filled in with an
+        appropriate error domain and code. */
+    void c4socket_closed(C4Socket *socket, C4Error errorIfAny) C4API;
+
+    /** Notification that bytes have been written to the socket, in response to a
+        C4SocketFactory.write request. */
+    void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API;
+
+    /** Notification that bytes have been read from the socket. LiteCore will acknowledge receiving
+        and processing the data by calling C4SocketFactory.completedReceive.
+        For flow-control purposes, the client should keep track of the number of unacknowledged 
+        bytes, and stop reading from the underlying stream if it grows too large. */
+    void c4socket_received(C4Socket *socket, C4Slice data) C4API;
+
+    /** @} */
+
+#ifdef __cplusplus
+}
+#endif

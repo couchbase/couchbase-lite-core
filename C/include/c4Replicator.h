@@ -1,5 +1,5 @@
 //
-//  c4Replicator.hh
+//  c4Replicator.h
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/17/17.
@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "c4Socket.h"
 #include "c4Database.h"
 
 #ifdef __cplusplus
@@ -18,14 +19,6 @@ extern "C" {
 
 #define kC4Replicator2Scheme    C4STR("blip")
 #define kC4Replicator2TLSScheme C4STR("blips")
-
-    /** A simple parsed-URL type */
-    typedef struct {
-        C4String scheme;
-        C4String hostname;
-        uint16_t port;
-        C4String databaseName;
-    } C4Address;
 
     /** How to replicate, in either direction */
     typedef enum {
@@ -61,7 +54,8 @@ extern "C" {
 
     /** Creates a new replicator. */
     C4Replicator* c4repl_new(C4Database* db,
-                             C4Address address,
+                             C4Address remoteAddress,
+                             C4String remoteDatabaseName,
                              C4ReplicatorMode push,
                              C4ReplicatorMode pull,
                              C4ReplicatorStateChangedCallback onStateChanged,

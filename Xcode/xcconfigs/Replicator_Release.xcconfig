@@ -9,3 +9,5 @@
 #include "Replicator.xcconfig"
 
 EXPORTED_SYMBOLS_FILE       = $(SRCROOT)/../Replicator/Replicator.exp
+DEPLOYMENT_POSTPROCESSING   = YES
+STRIP_STYLE                 = non-global
