@@ -195,12 +195,17 @@ namespace LiteCore.Tests
 
             var lines = Windows.Storage.FileIO.ReadLinesAsync(file).AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
             foreach(var line in lines) {
+#elif __ANDROID__
+            var ctx = global::Couchbase.Lite.Tests.Android.MainActivity.ActivityContext;
+            using (var tr = new StreamReader(ctx.Assets.Open(path))) {
+                string line;
+                while((line = tr.ReadLine()) != null) { 
 #else
             using(var tr = new StreamReader(File.Open(path, FileMode.Open))) {
                 string line;
                 while((line = tr.ReadLine()) != null) {
 #endif
-                    using(var c4 = new C4String(line)) {
+            using(var c4 = new C4String(line)) {
                         if(!callback((FLSlice)c4.AsC4Slice())) {
                             return false;
                         }

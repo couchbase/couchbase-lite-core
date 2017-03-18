@@ -21,6 +21,8 @@ namespace LiteCore.Tests
 
         }
 
+#if PERFORMANCE
+
         [Fact]
         [Trait("Slow", "true")]
         public void TestAllDocsPerformance() 
@@ -46,6 +48,8 @@ namespace LiteCore.Tests
                 Console.WriteLine($"Enumerating {i} docs took {elapsed:F3} ms ({elapsed/i:F3} ms/doc)");
             });
         }
+
+#endif
 
         protected override void SetupVariant(int option)
         {

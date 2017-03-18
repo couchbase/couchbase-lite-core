@@ -21,6 +21,8 @@ namespace LiteCore.Tests
 
         }
 
+#if PERFORMANCE
+
         [Fact]
         [Trait("Slow", "true")]
         public void TestImportGeoBlocks()
@@ -76,6 +78,8 @@ namespace LiteCore.Tests
                 }
             });
         }
+
+#endif
 
         private uint QueryWhere(string whereStr, bool verbose = false)
         {

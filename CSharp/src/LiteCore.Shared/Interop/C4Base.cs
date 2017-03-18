@@ -260,13 +260,6 @@ namespace LiteCore.Interop
     {
         static Native()
         {
-            unsafe {
-                try {
-                    c4db_free(null);
-                    return; // DLL already loaded
-                } catch(Exception) { }
-            }
-
 #if !NET_46
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 #endif
