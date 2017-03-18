@@ -11,32 +11,22 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-### SUBMODULES:
-
-set(LIBWS_WITH_OPENSSL false)
-set(LIBWS_EXTERNAL_LOOP false)
-add_subdirectory(vendor/libws EXCLUDE_FROM_ALL)
-
-include_directories("vendor/libws/src"
-                    "vendor/libws/build"
-                    "vendor/zlibcomplete/lib"
-                    "../fleece/Fleece"
-                    "../../LiteCore/Support"
-                    ${LIBEVENT_INCLUDE_DIRS})
-
 ### SOURCES:
 
 include_directories("include/blip_cpp"
                     "src/blip"
-                    "src/util")
+                    "src/util"
+                    "src/websocket"
+                    "vendor/zlibcomplete/lib"
+                    "../fleece/Fleece"
+                    "../../LiteCore/Support")
 
+aux_source_directory("src/blip"                 BLIP_SRC)
 aux_source_directory("src/util"                 UTIL_SRC)
+aux_source_directory("src/websocket"            WEBSOCKET_SRC)
 aux_source_directory("vendor/zlibcomplete/lib"  ZLIBCOMPLETE_SRC)
 
-set(ALL_SRC_FILES "src/blip/BLIPConnection.cc"
-                  "src/blip/Message.cc"
-                  "src/blip/LibWSProvider.cc"
-                  ${UTIL_SRC} ${ZLIBCOMPLETE_SRC})
+set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC})
 
 ### LIBRARY:
 
