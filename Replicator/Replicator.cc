@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
     void Replicator::_onClose(Connection::CloseStatus status) {
         static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error",
                                              "Unknown error"};
-        log("Connection closed with %s %d: %.*s",
+        log("Connection closed with %s %d: \"%.*s\"",
             kReasonNames[status.reason], status.code, SPLAT(status.message));
 
         _checkpoint.stopAutosave();

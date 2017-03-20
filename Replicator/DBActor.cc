@@ -30,6 +30,9 @@ namespace litecore { namespace repl {
     static constexpr auto kInsertionDelay = chrono::milliseconds(20);
     static constexpr size_t kMaxRevsToInsert = 100;
 
+    static constexpr size_t kMinBodySizeToCompress = 500;
+    
+
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
@@ -335,6 +338,7 @@ namespace litecore { namespace repl {
         // Now send the BLIP message:
         MessageBuilder msg("rev"_sl);
         msg.noreply = !onProgress;
+        msg.compressed = (revisionBody.size >= kMinBodySizeToCompress);
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
@@ -346,7 +350,7 @@ namespace litecore { namespace repl {
         auto root = fleeceapi::Value::fromTrustedData(revisionBody);
         assert(root);
         msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
-        msg.jsonBody().writeValue(root);
+        msg.jsonBody().writeValue(root);        // encode as JSON
 
         sendRequest(msg, onProgress);
     }

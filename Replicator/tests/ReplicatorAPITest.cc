@@ -12,12 +12,13 @@
 #include <iostream>
 #include "c4Test.hh"
 #include "c4Replicator.h"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
 #include <future>
 #include <thread>
+
+extern "C" void C4RegisterSocketFactory();
 
 using namespace std;
 using namespace fleece;
@@ -29,12 +30,13 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
+        C4RegisterSocketFactory();
     }
 
     void logState(C4ReplicatorState state) {
         char message[200];
         c4error_getMessageC(state.error, message, sizeof(message));
-        Log(">>> C4Replicator state: level=%d, error=%d/%d: %s",
+        C4Log(">>> C4Replicator state: level=%d, error=%d/%d: %s",
             state.level, state.error.domain, state.error.code, message);
     }
 
@@ -80,7 +82,7 @@ public:
     C4Replicator *repl {nullptr};
     C4ReplicatorState callbackState {};
     int numCallbacks {0};
-    int numCallbacksWithLevel[4] = {0};
+    int numCallbacksWithLevel[5] = {0};
 };
 
 
@@ -92,6 +94,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[Push][.special]") {
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.special]") {
     importJSONLines(sFixturesDir + "names_100.json");
+    replicate(kC4OneShot, kC4Disabled);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.special]") {
+    importJSONFile(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 

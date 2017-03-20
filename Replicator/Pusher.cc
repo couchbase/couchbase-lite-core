@@ -129,7 +129,7 @@ namespace litecore { namespace repl {
                     }
                     ++index;
                 }
-                sendMoreRevs();
+                maybeSendMoreRevs();
             });
         }
 
@@ -153,6 +153,7 @@ namespace litecore { namespace repl {
         MessageBuilder req("changes"_sl);
         req.urgent = kChangeMessagesAreUrgent;
         req.noreply = !onProgress;
+        req.compressed = !changes.empty();
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
@@ -170,13 +171,16 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING REVISIONS:
 
 
-    void Pusher::sendMoreRevs() {
+    void Pusher::maybeSendMoreRevs() {
         while (_revisionsInFlight < kMaxRevsInFlight
-                   && _revisionsAwaitingReply <= kMaxRevsAwaitingReply
+                   && _revisionBytesAwaitingReply <= kMaxRevBytesAwaitingReply
                    && !_revsToSend.empty()) {
             sendRevision(_revsToSend.front());
             _revsToSend.pop_front();
         }
+//        if (!_revsToSend.empty())
+//            log("Throttling sending revs; _revisionsInFlight=%u, _revisionBytesAwaitingReply=%u",
+//                _revisionsInFlight, _revisionBytesAwaitingReply);//TEMP
     }
 
     
@@ -195,19 +199,19 @@ namespace litecore { namespace repl {
                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                     assert(_revisionsInFlight > 0);//TEMP
                     --_revisionsInFlight;
-                    ++_revisionsAwaitingReply;
-                    sendMoreRevs();
+                    _revisionBytesAwaitingReply += progress.bytesSent;
+                    maybeSendMoreRevs();
                 }
                 if (progress.reply) {
-                    --_revisionsAwaitingReply;
+                    _revisionBytesAwaitingReply -= progress.bytesSent;
                     if (progress.reply->isError())
                         gotError(progress.reply);
                     else {
-                        log("Completed rev %.*s #%.*s (seq %llu)",
-                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                        logVerbose("Completed rev %.*s #%.*s (seq %llu)",
+                                   SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                         markComplete(rev.sequence);
                     }
-                    sendMoreRevs();
+                    maybeSendMoreRevs();
                 }
             });
         }
@@ -226,8 +230,11 @@ namespace litecore { namespace repl {
             auto firstPending = _pendingSequences.first();
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
             if (lastSeq > _lastSequence) {
+                if (lastSeq / 100 > _lastSequence / 100)
+                    log("Checkpoint now at %llu", lastSeq);
+                else
+                    logVerbose("Checkpoint now at %llu", lastSeq);
                 _lastSequence = lastSeq;
-                logVerbose("Checkpoint now at %llu", _lastSequence);
                 _replicator->updatePushCheckpoint(_lastSequence);
             }
         }
@@ -235,7 +242,7 @@ namespace litecore { namespace repl {
 
 
     ReplActor::ActivityLevel Pusher::computeActivityLevel() const {
-        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionsAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
         if (ReplActor::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0

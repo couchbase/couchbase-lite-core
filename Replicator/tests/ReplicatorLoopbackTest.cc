@@ -6,6 +6,8 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+#if DEBUG // This uses internal APIs that aren't exported in release builds of the replicator
+
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
@@ -257,3 +259,5 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pul
                    Replicator::Options::pulling(kC4Continuous));
     //FIX: Stop this when bg thread stops adding docs
 }
+
+#endif // DEBUG

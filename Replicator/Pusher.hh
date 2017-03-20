@@ -38,17 +38,16 @@ namespace litecore { namespace repl {
         void sendChanges(const RevList&, MessageProgressCallback);
         void maybeGetMoreChanges();
         void sendChangeList(RevList);
-        void sendMoreRevs();
+        void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
         void markComplete(C4SequenceNumber sequence);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;
-        static const unsigned kMinLengthToCompress = 100;     // Min length body worth compressing
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kMaxChangeListsInFlight = 4;    // How many changes messages can be active at once
         static const bool kChangeMessagesAreUrgent = true;    // Are change msgs high priority?
-        static const unsigned kMaxRevsInFlight = 5;           // max # revs to be sending at once
-        static const unsigned kMaxRevsAwaitingReply = 20;     // max # revs sent but not replied
+        static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
+        static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
 
         Replicator* const _replicator;
         DBActor* const _dbActor;
@@ -63,7 +62,7 @@ namespace litecore { namespace repl {
         bool _caughtUp {false};                         // Received backlog of existing changes?
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
         unsigned _revisionsInFlight {0};                // # 'rev' messages being sent
-        unsigned _revisionsAwaitingReply {0};           // # 'rev' messages sent but not replied
+        unsigned _revisionBytesAwaitingReply {0};       // # 'rev' message bytes sent but not replied
         std::deque<RevRequest> _revsToSend;             // Revs to send to peer but not sent yet
     };
     

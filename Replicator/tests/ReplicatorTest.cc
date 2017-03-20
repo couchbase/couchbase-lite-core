@@ -6,6 +6,8 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+#if DEBUG // This uses internal APIs that aren't exported in release builds of the replicator
+
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
@@ -26,11 +28,10 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
-extern void RegisterC4SocketFactory();
+extern "C" void C4RegisterSocketFactory();
 
 
-static const duration kLatency              = chrono::milliseconds(100);
-static const duration kCheckpointSaveDelay  = chrono::milliseconds(500);
+static const duration kCheckpointSaveDelay  = chrono::seconds(5);
 
 
 class ReplicatorTest : public C4Test, Replicator::Delegate {
@@ -39,7 +40,7 @@ public:
     :C4Test(0)
     ,address("ws", "localhost", 1235, "/scratch/_blipsync")
     {
-        RegisterC4SocketFactory();
+        C4RegisterSocketFactory();
     }
 
     void runReplicator(Replicator::Options opts) {
@@ -79,6 +80,14 @@ TEST_CASE_METHOD(ReplicatorTest, "Real Push Non-Empty DB", "[Push][.special]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorTest, "Real Push Big DB", "[Push][.special]") {
+    importJSONFile(sFixturesDir + "iTunesMusicLibrary.json");
+    runReplicator(Replicator::Options::pushing());
+}
+
+
 TEST_CASE_METHOD(ReplicatorTest, "Real Pull DB", "[Pull][.special]") {
     runReplicator(Replicator::Options::pulling());
 }
+
+#endif

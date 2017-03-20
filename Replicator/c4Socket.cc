@@ -116,7 +116,10 @@ void c4socket_closed(C4Socket *socket, C4Error error) C4API {
         kPOSIXError, kUnknownError, kUnknownError, kUnknownError,
         kDNSError, kWebSocketClose,
     };
-    internal(socket)->onClose({kDomainToReason[error.domain], error.code});
+    alloc_slice message;
+    if (error.internal_info)
+        message = c4error_getMessage(error);
+    internal(socket)->onClose({kDomainToReason[error.domain], error.code, message});
 }
 
 void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {

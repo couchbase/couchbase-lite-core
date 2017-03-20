@@ -283,6 +283,55 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
 }
 
 
+unsigned C4Test::importJSONFile(string path, double timeout, bool verbose) {
+    C4Log("Reading %s ...  ", path.c_str());
+    Stopwatch st;
+    auto jsonData = readFile(path);
+    FLError error;
+    FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
+    free((void*)jsonData.buf);
+    Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
+    REQUIRE(root);
+
+    TransactionHelper t(db);
+
+    FLArrayIterator iter;
+    FLValue item;
+    unsigned numDocs = 0;
+    for(FLArrayIterator_Begin(root, &iter);
+            nullptr != (item = FLArrayIterator_GetValue(&iter));
+            FLArrayIterator_Next(&iter))
+    {
+        char docID[20];
+        sprintf(docID, "%07u", numDocs+1);
+
+        FLEncoder enc = c4db_createFleeceEncoder(db);
+        FLEncoder_WriteValue(enc, item);
+        FLSliceResult body = FLEncoder_Finish(enc, nullptr);
+
+        // Save document:
+        C4Error c4err;
+        C4DocPutRequest rq = {};
+        rq.docID = c4str(docID);
+        rq.body = (C4Slice)body;
+        rq.save = true;
+        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+        REQUIRE(doc != nullptr);
+        c4doc_free(doc);
+        FLSliceResult_Free(body);
+        ++numDocs;
+        if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
+            C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
+            return false;
+        }
+        if (verbose && numDocs % 100000 == 0)
+            C4Log("%u  ", numDocs);
+    }
+    if (verbose) st.printReport("Importing", numDocs, "doc");
+    return numDocs;
+}
+
+
 // Read a file that contains a JSON document per line. Every line becomes a document.
 unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
     C4Log("Reading %s ...  ", path.c_str());

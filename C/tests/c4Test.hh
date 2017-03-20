@@ -108,6 +108,7 @@ public:
     void createNumberedDocs(unsigned numberOfDocs);
 
     FLSlice readFile(std::string path); // caller must free buf when done
+    unsigned importJSONFile(std::string path, double timeout =15.0, bool verbose =false);
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
     
