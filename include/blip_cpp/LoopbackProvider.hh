@@ -15,6 +15,8 @@
 namespace litecore { namespace websocket {
     class LoopbackProvider;
 
+    static constexpr size_t kSendBufferSize = 32 * 1024;
+
 
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
     class LoopbackWebSocket : public MockWebSocket {
@@ -24,9 +26,10 @@ namespace litecore { namespace websocket {
             enqueue(&LoopbackWebSocket::_connectToPeer, Retained<LoopbackWebSocket>(peer));
         }
 
-        virtual void send(fleece::slice msg, bool binary) override {
-            _bufferedBytes += msg.size;
+        virtual bool send(fleece::slice msg, bool binary) override {
+            auto newValue = (_bufferedBytes += msg.size);
             MockWebSocket::send(msg, binary);
+            return newValue <= kSendBufferSize;
         }
 
         virtual void ack(size_t msgSize) {
@@ -71,8 +74,8 @@ namespace litecore { namespace websocket {
         virtual void _ack(size_t msgSize) {
             if (!connected())
                 return;
-            auto bufSize = (_bufferedBytes -= msgSize);
-            if (bufSize == 0) {
+            auto newValue = (_bufferedBytes -= msgSize);
+            if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
                 LogTo(WSMock, "%s WRITEABLE", name.c_str());
                 delegate().onWebSocketWriteable();
             }

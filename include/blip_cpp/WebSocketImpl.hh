@@ -31,14 +31,14 @@ namespace litecore { namespace websocket {
         WebSocketImpl(ProviderImpl&, const Address&);
         virtual ~WebSocketImpl();
 
-        virtual void send(fleece::slice message, bool binary =true) override;
+        virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
         void onConnect()                            {delegate().onWebSocketConnect();}
         void onClose(CloseStatus s)                 {delegate().onWebSocketClose(s);}
         void onReceive(fleece::slice s);
-        virtual void onWriteComplete(size_t)       { }
+        void onWriteComplete(size_t);
         
     protected:
         ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
@@ -51,7 +51,7 @@ namespace litecore { namespace websocket {
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
 
-        void sendOp(fleece::slice, int opcode);
+        bool sendOp(fleece::slice, int opcode);
         void _onReceive(fleece::alloc_slice);
         bool handleFragment(char *data,
                             size_t length,
@@ -65,6 +65,7 @@ namespace litecore { namespace websocket {
         int _curOpCode;
         fleece::alloc_slice _curMessage;
         size_t _curMessageCapacity;
+        std::atomic<size_t> _bufferedBytes {0};
     };
 
 

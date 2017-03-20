@@ -17,6 +17,8 @@ namespace uWS {
 
     static constexpr size_t kMaxMessageLength = 1<<20;
 
+    static constexpr size_t kSendBufferSize = 64 * 1024;
+
 
     // The `user` parameter points to the owning WebSocketImpl object.
     #define _sock ((litecore::websocket::WebSocketImpl*)user)
@@ -94,16 +96,25 @@ namespace litecore { namespace websocket {
         sendOp(slice(buf, size), uWS::CLOSE);
     }
 
-    void WebSocketImpl::send(fleece::slice message, bool binary) {
-        sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
+    bool WebSocketImpl::send(fleece::slice message, bool binary) {
+        return sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
     }
 
-    void WebSocketImpl::sendOp(fleece::slice message, int opcode) {
+    bool WebSocketImpl::sendOp(fleece::slice message, int opcode) {
         alloc_slice frame(message.size + 10);
         frame.size = ClientProtocol::formatMessage((char*)frame.buf,
                                                    (const char*)message.buf, message.size,
                                                    (uWS::OpCode)opcode, message.size, false);
+        auto newValue = (_bufferedBytes += frame.size);
         provider().sendBytes(this, frame);
+        return newValue <= kSendBufferSize;
+    }
+
+
+    void WebSocketImpl::onWriteComplete(size_t size) {
+        auto newValue = (_bufferedBytes -= size);
+        if (newValue <= kSendBufferSize && newValue + size > kSendBufferSize)
+            delegate().onWebSocketWriteable();
     }
 
 

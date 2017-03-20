@@ -35,9 +35,10 @@ namespace litecore { namespace websocket {
             enqueue(&MockWebSocket::_close, status, fleece::alloc_slice(message));
         }
 
-        virtual void send(fleece::slice msg, bool binary) override {
+        virtual bool send(fleece::slice msg, bool binary) override {
             assert(_isOpen);
             enqueue(&MockWebSocket::_send, fleece::alloc_slice(msg), binary);
+            return true; //FIX: Keep track of buffer size
         }
 
         // Mock API -- call this to simulate incoming events:

@@ -36,5 +36,6 @@ namespace litecore { namespace blip {
 
 
     typedef uint64_t MessageNo;
+    typedef uint64_t MessageSize;
 
 } }

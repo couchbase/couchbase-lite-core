@@ -27,8 +27,9 @@ namespace litecore { namespace blip {
         MessageOut(Connection *connection,
                    MessageBuilder &builder,
                    MessageNo number)
-        :MessageOut(connection, builder.flags(), builder.extractOutput(), number)
+        :MessageOut(connection, (FrameFlags)0, builder.extractOutput(), number)
         {
+            _flags = builder.flags();   // extractOutput() may update the flags, so set them after
             _onProgress = std::move(builder.onProgress);
         }
 

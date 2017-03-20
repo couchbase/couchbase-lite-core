@@ -21,6 +21,7 @@ namespace fleeceapi {
 }
 namespace zlibcomplete {
     class GZipDecompressor;
+    class GZipCompressor;
 }
 
 namespace litecore { namespace blip {
@@ -42,7 +43,8 @@ namespace litecore { namespace blip {
             kReceivingReply,
             kComplete
         } state;
-        uint64_t bytesTransferred;
+        MessageSize bytesSent;
+        MessageSize bytesReceived;
         Retained<MessageIn> reply;
     };
 
@@ -71,7 +73,9 @@ namespace litecore { namespace blip {
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
         const char* typeName() const        {return kMessageTypeNames[type()];}
 
-        void sendProgress(MessageProgress::State state, uint64_t bytes, MessageIn *reply);
+        void sendProgress(MessageProgress::State state,
+                          MessageSize bytesSent, MessageSize bytesReceived,
+                          MessageIn *reply);
 
 //        ~Message()    {Log("DELETE Message<%p, %s #%llu>",
 //                           this, typeName(), _number);}
@@ -115,7 +119,7 @@ namespace litecore { namespace blip {
         friend class MessageOut;
         friend class BLIPIO;
 
-        MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr);
+        MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr, MessageSize outgoingSize =0);
         virtual ~MessageIn();
         bool receivedFrame(slice, FrameFlags);
 
@@ -128,6 +132,7 @@ namespace litecore { namespace blip {
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body
         alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
+        const MessageSize _outgoingSize;
     };
 
 
@@ -203,6 +208,7 @@ namespace litecore { namespace blip {
         fleeceapi::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
         std::stringstream _properties;  // Accumulates encoded properties
         bool _wroteProperties {false};  // Have _properties been written to _out yet?
+        uint32_t _propertiesLength {0};
     };
 
 } }

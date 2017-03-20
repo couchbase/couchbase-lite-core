@@ -29,8 +29,6 @@ namespace litecore { namespace blip {
     static const size_t kDefaultFrameSize = 4096;       // Default size of frame
     static const size_t kBigFrameSize = 16384;          // Max size of frame
 
-    static const size_t kMaxSendSize = 50*1024;         // How much to send at once
-
     const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?",
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
@@ -83,7 +81,7 @@ namespace litecore { namespace blip {
         WebSocket*              _webSocket {nullptr};
         MessageQueue            _outbox;
         MessageQueue            _icebox;
-        size_t                  _sentBytes {0};
+        bool                    _writeable {true};
         MessageMap              _pendingRequests, _pendingResponses;
         atomic<MessageNo>       _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
@@ -101,6 +99,12 @@ namespace litecore { namespace blip {
         {
             _pendingRequests.reserve(10);
             _pendingResponses.reserve(10);
+            retain(this); // keep myself from being freed while I'm the webSocket's delegate
+            webSocket->connect(this);
+        }
+
+        ~BLIPIO() {
+            logDebug("~BLIPIO");
         }
 
         void queueMessage(MessageOut *msg) {
@@ -164,6 +168,7 @@ namespace litecore { namespace blip {
                 _pendingRequests.clear();
                 _pendingResponses.clear();
                 _requestHandlers.clear();
+                release(this); // webSocket is done calling delegate now (balances retain in ctor)
             }
         }
 
@@ -192,23 +197,33 @@ namespace litecore { namespace blip {
         void requeue(MessageOut *msg, bool andWrite =false) {
             assert(!_outbox.contains(msg));
             auto i = _outbox.end();
-            if (msg->urgent() && !_outbox.empty()) {
+            if (msg->urgent() && _outbox.size() > 1) {
                 // High-priority gets queued after the last existing high-priority message,
                 // leaving one regular-priority message in between if possible:
+                const bool isNew = (msg->_bytesSent == 0);
                 do {
                     --i;
                     if ((*i)->urgent()) {
                         if ((i+1) != _outbox.end())
                             ++i;
                         break;
-                    } else if (msg->_bytesSent == 0 && (*i)->_bytesSent == 0) {
-                        // But make sure to keep the 1st frames of messages in chronological order:
+                    } else if (isNew && (*i)->_bytesSent == 0) {
                         break;
                     }
                 } while (i != _outbox.begin());
                 ++i;
             }
-            _outbox.emplace(i, msg);  // inserts _at_ position i
+            _outbox.emplace(i, msg);  // inserts _at_ position i, before message *i
+
+#if DEBUG
+            MessageNo lastNo = 0;
+            for (auto &msg : _outbox) {
+                if (msg->_bytesSent == 0) {
+                    assert(msg->number() > lastNo);
+                    lastNo = msg->number();
+                }
+            }
+#endif
 
             if (andWrite)
                 writeToWebSocket();
@@ -236,18 +251,19 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- socket has room to write data. */
         void _onWebSocketWriteable() {
             logVerbose("WebSocket is hungry!");
-            _sentBytes = 0;
+            _writeable = true;
             writeToWebSocket();
         }
 
 
         /** Sends the next frame. */
         void writeToWebSocket() {
-            if (_sentBytes >= kMaxSendSize)
+            if (!_writeable)
                 return;
 
             //logVerbose("Writing to WebSocket...");
-            while (_sentBytes < kMaxSendSize) {
+            size_t bytesWritten = 0;
+            while (_writeable) {
                 // Get the next message, if any, from the queue:
                 Retained<MessageOut> msg(_outbox.pop());
                 if (!msg)
@@ -277,8 +293,8 @@ namespace litecore { namespace blip {
                     memcpy(end, body.buf, body.size);
                     end += body.size;
                     slice frame {_frameBuf.get(), end};
-                    _webSocket->send(frame);
-                    _sentBytes += frame.size;
+                    bytesWritten += frame.size;
+                    _writeable = _webSocket->send(frame);
                 }
                 
                 // Return message to the queue if it has more frames left to send:
@@ -299,8 +315,8 @@ namespace litecore { namespace blip {
                     }
                 }
             }
-            logVerbose("...Wrote %zu bytes to WebSocket (space left: %lld)",
-                       _sentBytes, max((int64_t)0ll, (int64_t)kMaxSendSize - (int64_t)_sentBytes));
+            logVerbose("...Wrote %zu bytes to WebSocket (writeable=%d)",
+                       bytesWritten, _writeable);
         }
 
 
@@ -483,8 +499,7 @@ namespace litecore { namespace blip {
     void Connection::start(WebSocket *webSocket) {
         _state = kConnecting;
         webSocket->name = _name;
-        _io = new BLIPIO(this, webSocket);
-        webSocket->connect(_io);
+        _io = new BLIPIO(this, webSocket);  // will connect the websocket
     }
 
 

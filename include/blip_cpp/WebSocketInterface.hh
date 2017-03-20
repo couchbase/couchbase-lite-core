@@ -94,8 +94,10 @@ namespace litecore { namespace websocket {
         /** Assigns the Delegate and opens the WebSocket. */
         inline void connect(Delegate *delegate);
 
-        /** Sends a message. Callable from any thread. */
-        virtual void send(fleece::slice message, bool binary =true) =0;
+        /** Sends a message. Callable from any thread.
+            Returns false if the amount of buffered data is growing too large; the caller should
+            then stop sending until it gets an onWebSocketWriteable delegate call. */
+        virtual bool send(fleece::slice message, bool binary =true) =0;
 
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) =0;

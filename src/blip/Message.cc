@@ -51,9 +51,11 @@ namespace litecore { namespace blip {
     static const size_t kIncomingAckThreshold = 50000;
 
 
-    void Message::sendProgress(MessageProgress::State state, uint64_t bytes, MessageIn *reply) {
+    void Message::sendProgress(MessageProgress::State state,
+                               MessageSize bytesSent, MessageSize bytesReceived,
+                               MessageIn *reply) {
         if (_onProgress)
-            _onProgress({state, bytes, reply});
+            _onProgress({state, bytesSent, bytesReceived, reply});
     }
 
 
@@ -149,6 +151,7 @@ namespace litecore { namespace blip {
             _out.writeRaw(encodedSize);
             _out.writeRaw(slice(properties));
             _wroteProperties = true;
+            _propertiesLength = (uint32_t)_out.bytesWritten();
         }
     }
 
@@ -163,7 +166,29 @@ namespace litecore { namespace blip {
 
     alloc_slice MessageBuilder::extractOutput() {
         finishProperties();
-        return _out.finish();
+        alloc_slice output = _out.finish();
+
+        if (compressed) {
+            compressed = false;
+            if (output.size > _propertiesLength) {
+                // Compress the body (but not the properties):      //OPT: Could be optimized
+                slice body = output;
+                body.moveStart(_propertiesLength);
+                zlibcomplete::GZipCompressor compressor;
+                string zip1 = compressor.compress(body.asString());
+                string zip2 = compressor.finish();
+                size_t len1 = zip1.size(), len2 = zip2.size();
+                if (len1 + len2 < (output.size - _propertiesLength)) {
+                    LogToAt(BLIPLog, Debug, "Message compressed from %zu to %zu bytes",
+                            output.size, _propertiesLength + len1 + len2);
+                    memcpy((void*)&output[_propertiesLength],        zip1.data(), len1);
+                    memcpy((void*)&output[_propertiesLength + len1], zip2.data(), len2);
+                    output.size = _propertiesLength + len1 + len2;
+                    compressed = true;
+                }
+            }
+        }
+        return output;
     }
 
 
@@ -173,6 +198,7 @@ namespace litecore { namespace blip {
         _out.reset();
         _properties.clear();
         _wroteProperties = false;
+        _propertiesLength = 0;
     }
 
 
@@ -188,7 +214,6 @@ namespace litecore { namespace blip {
     ,_payload(payload)
     {
         assert(payload.size <= UINT32_MAX);
-        assert(!(_flags & kCompressed));    //TODO: Implement compression
     }
 
 
@@ -207,7 +232,7 @@ namespace litecore { namespace blip {
         } else {
             state = MessageProgress::kAwaitingReply;
         }
-        sendProgress(state, _bytesSent, nullptr);
+        sendProgress(state, _bytesSent, 0, nullptr);
         return frame;
     }
 
@@ -223,11 +248,13 @@ namespace litecore { namespace blip {
             return nullptr;
         // Note: The MessageIn's flags will be updated when the 1st frame of the response arrives;
         // the type might become kErrorType, and kUrgent or kCompressed might be set.
-        return new MessageIn(_connection, (FrameFlags)kResponseType, _number, _onProgress);
+        return new MessageIn(_connection, (FrameFlags)kResponseType, _number,
+                             _onProgress, _payload.size);
     }
 
 
 #pragma mark - MESSAGE IN:
+
 
     MessageIn::~MessageIn()
     {
@@ -235,16 +262,17 @@ namespace litecore { namespace blip {
     }
 
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n,
-                         MessageProgressCallback onProgress)
+                         MessageProgressCallback onProgress, MessageSize outgoingSize)
     :Message(flags, n)
     ,_connection(connection)
+    ,_outgoingSize(outgoingSize)
     {
         _onProgress = onProgress;
     }
 
 
     bool MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
-        size_t bytesReceived = frame.size;
+        MessageSize bytesReceived = frame.size;
         if (_in) {
             bytesReceived += _in->bytesWritten();
         } else {
@@ -284,17 +312,19 @@ namespace litecore { namespace blip {
             _unackedBytes = 0;
         }
 
-        if (_flags & kCompressed) {
+        if (_properties && (_flags & kCompressed)) {
             if (!_decompressor)
                 _decompressor.reset( new zlibcomplete::GZipDecompressor );
             string output = _decompressor->decompress(frame.asString());
+            if (output.empty())
+                throw "invalid gzipped data";
             _in->writeRaw(slice(output));
         } else {
             _in->writeRaw(frame);
         }
 
         if (frameFlags & kMoreComing) {
-            sendProgress(MessageProgress::kReceivingReply, bytesReceived, nullptr);
+            sendProgress(MessageProgress::kReceivingReply, _outgoingSize, bytesReceived, nullptr);
             return false;
         } else {
             // Completed!
@@ -306,7 +336,7 @@ namespace litecore { namespace blip {
 
             _connection->log("Finished receiving %s #%llu, flags=%02x",
                              kMessageTypeNames[type()], _number, flags());
-            sendProgress(MessageProgress::kComplete, bytesReceived, this);
+            sendProgress(MessageProgress::kComplete, _outgoingSize, bytesReceived, this);
             return true;
         }
     }
