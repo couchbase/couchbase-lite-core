@@ -90,6 +90,19 @@ namespace litecore {
 #pragma mark - MAILBOX:
 
 
+#if DEBUG
+#define beginLatency()  Stopwatch st
+#define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
+#define beginBusy()     _busy.start()
+#define endBusy()       _busy.stop()
+#else
+#define beginLatency()  ({})
+#define endLatency()    ({})
+#define beginBusy()     ({})
+#define endBusy()       ({})
+#endif
+
+
 #ifdef ACTORS_USE_GCD
 
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, Scheduler *s)
@@ -98,6 +111,14 @@ namespace litecore {
     { }
 
     GCDMailbox::~GCDMailbox() {
+#if DEBUG
+        auto lifetime = _createdAt.age();
+        LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
+              _actor->actorName().c_str(), _maxEventCount,
+              Benchmark::formatTime(_maxLatency).c_str(),
+              Benchmark::formatTime(_busy.elapsed()).c_str(),
+              (_busy.elapsed() / lifetime)*100.0);
+#endif
         dispatch_release(_queue);
     }
 
@@ -108,38 +129,44 @@ namespace litecore {
 
 
     void GCDMailbox::enqueue(std::function<void()> f) {
+        beginLatency();
         ++_eventCount;
         retain(_actor);
         dispatch_async(_queue, ^{
+            endLatency();
+            beginBusy();
             f();
-            _actor->afterEvent();
-            release(_actor);
-            --_eventCount;
+            afterEvent();
+            endBusy();
         });
     }
 
 
     void GCDMailbox::enqueue(void (^block)()) {
+        beginLatency();
         ++_eventCount;
         retain(_actor);
         auto wrappedBlock = ^{
+            endLatency();
+            beginBusy();
             block();
-            _actor->afterEvent();
-            --_eventCount;
-            release(_actor);
+            afterEvent();
+            endBusy();
         };
         dispatch_async(_queue, wrappedBlock);
     }
 
 
     void GCDMailbox::enqueueAfter(Scheduler::duration delay, void (^block)()) {
+        beginLatency();
         ++_eventCount;
         retain(_actor);
         auto wrappedBlock = ^{
+            endLatency();
+            beginBusy();
             block();
-            _actor->afterEvent();
-            --_eventCount;
-            release(_actor);
+            afterEvent();
+            endBusy();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)
@@ -150,19 +177,33 @@ namespace litecore {
 
 
     void GCDMailbox::enqueueAfter(Scheduler::duration delay, std::function<void()> f) {
+        beginLatency();
         ++_eventCount;
         retain(_actor);
         auto wrappedBlock = ^{
+            endLatency();
+            beginBusy();
             f();
-            _actor->afterEvent();
-            --_eventCount;
-            release(_actor);
+            afterEvent();
+            endBusy();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
         else
             dispatch_async(_queue, wrappedBlock);
+    }
+
+
+    void GCDMailbox::afterEvent() {
+        _actor->afterEvent();
+        release(_actor);
+#if DEBUG
+        if (_eventCount > _maxEventCount) {
+            _maxEventCount = _eventCount;
+        }
+#endif
+        --_eventCount;
     }
 
 

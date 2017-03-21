@@ -16,6 +16,10 @@
 #include <string>
 #include <thread>
 
+#if DEBUG
+#include "Benchmark.hh"
+#endif
+
 #if __APPLE__
 #define ACTORS_USE_GCD
 #endif
@@ -131,9 +135,17 @@ namespace litecore {
         static void startScheduler(Scheduler *)             { }
 
     private:
+        void afterEvent();
+        
         Actor *_actor;
         dispatch_queue_t _queue;
         std::atomic<int32_t> _eventCount {0};
+#if DEBUG
+        int32_t _maxEventCount {0};
+        double _maxLatency {0};
+        Timespec _createdAt {Timespec::now()};
+        Stopwatch _busy {false};
+#endif
     };
 #endif
 

@@ -8,6 +8,8 @@
 
 #pragma once
 #include "WebSocketInterface.hh"
+#include "Logging.hh"
+#include "Benchmark.hh"
 #include <cstdlib>
 #include <memory>
 #include <mutex>
@@ -25,7 +27,7 @@ namespace litecore { namespace websocket {
     /** Transport-agnostic implementation of WebSocket protocol.
         It doesn't transfer data or run the handshake; it just knows how to encode and decode
         messages. */
-    class WebSocketImpl : public WebSocket {
+    class WebSocketImpl : public WebSocket, Logging {
     public:
 
         WebSocketImpl(ProviderImpl&, const Address&);
@@ -35,12 +37,13 @@ namespace litecore { namespace websocket {
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
-        void onConnect()                            {delegate().onWebSocketConnect();}
-        void onClose(CloseStatus s)                 {delegate().onWebSocketClose(s);}
-        void onReceive(fleece::slice s);
+        void onConnect();
+        void onClose(int err_no);
+        void onReceive(fleece::slice);
         void onWriteComplete(size_t);
         
     protected:
+        virtual std::string loggingIdentifier() const override;
         ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
         virtual void connect() override;
         void disconnect();
@@ -59,13 +62,18 @@ namespace litecore { namespace websocket {
                             int opCode,
                             bool fin);
         bool receivedMessage(int opCode, fleece::alloc_slice message);
+        bool receivedClose(fleece::slice);
 
         std::unique_ptr<ClientProtocol> _protocol;
         std::mutex _mutex;
         int _curOpCode;
         fleece::alloc_slice _curMessage;
         size_t _curMessageCapacity;
-        std::atomic<size_t> _bufferedBytes {0};
+        size_t _bufferedBytes {0};
+        Stopwatch _timeConnected {false};
+        uint64_t _bytesSent {0}, _bytesReceived {0};
+        bool _closeSent {false}, _closeReceived {false};
+        fleece::alloc_slice _closeMessage;
     };
 
 
