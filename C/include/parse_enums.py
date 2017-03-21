@@ -18,7 +18,7 @@ def parse_enum(filename):
         if line.lstrip().startswith("//"):
             continue
         if in_enum > 0:
-            match = re.match(r'[ |\t]*} ?([A-Za-z]*);', line)
+            match = re.match(r'[ |\t]*} ?([A-Za-z0-9]*);', line)
             if match:
                 if in_enum == 2:
                     current_name = match.group(1)

@@ -42,6 +42,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Private.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Query_defs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Query_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Replicator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Replicator_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Replicator_native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Socket.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Socket_defs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Socket_native.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece_defs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Fleece_native.cs" />
