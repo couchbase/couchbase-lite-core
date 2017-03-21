@@ -77,6 +77,8 @@ namespace c4 {
         bool commit(C4Error *error)     {return end(true, error);}
         bool abort(C4Error *error)      {return end(false, error);}
 
+        bool active() const             {return _active;}
+
     private:
         C4Database *_db;
         bool _active;

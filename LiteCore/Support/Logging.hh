@@ -193,6 +193,7 @@ static inline bool WillLog(LogLevel lv)     {return DefaultLog.willLog(lv);}
             // does nothing in a release build
         }
 #endif
+        bool willLog(LogLevel level =LogLevel::Info) const         {return _domain.willLog(level);}
 
         void _log(LogLevel level, const char *format, ...) const;// __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;

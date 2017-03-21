@@ -171,7 +171,9 @@ FLDict_GetUnsorted
 FLDict_GetSharedKey
 FLSharedKey_GetKeyString
 FLDictIterator_Begin
+FLDictIterator_BeginShared
 FLDictIterator_GetKey
+FLDictIterator_GetKeyString
 FLDictIterator_GetValue
 FLDictIterator_Next
 FLDictKey_Init
