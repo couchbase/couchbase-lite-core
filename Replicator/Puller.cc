@@ -21,8 +21,7 @@ namespace litecore { namespace repl {
 
 
     Puller::Puller(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, options, "Pull")
-    ,_replicator(replicator)
+    :ReplActor(connection, replicator, options, "Pull")
     ,_dbActor(dbActor)
     {
         registerHandler("changes",&Puller::handleChanges);
@@ -42,18 +41,21 @@ namespace litecore { namespace repl {
             msg["since"_sl] = _lastSequence;
         if (_options.pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
+        msg["batch"_sl] = kChangesBatchSize;
         sendRequest(msg);
     }
 
 
     // Handles an incoming "changes" message
     void Puller::handleChanges(Retained<MessageIn> req) {
-        log("Handling 'changes' message");
+        logVerbose("Handling 'changes' message");
         auto changes = req->JSONBody().asArray();
         if (!changes) {
             warn("Invalid body of 'changes' message");
-            req->respondWithError("BLIP"_sl, 400);
-            return;
+            if (req->body() != "null"_sl) {       // allow null since SG seems to send it(?)
+                req->respondWithError("BLIP"_sl, 400);
+                return;
+            }
         }
 
         if (changes.empty()) {
@@ -107,8 +109,8 @@ namespace litecore { namespace repl {
         rev->historyBuf = msg->property("history"_sl);
         alloc_slice sequence(msg->property("sequence"_sl));
 
-        log("Received revision '%.*s' #%.*s (seq '%.*s')",
-            SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(sequence));
+        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
+                   SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(sequence));
         if (rev->docID.size == 0 || rev->revID.size == 0) {
             warn("Got invalid revision");
             msg->respondWithError("BLIP"_sl, 400);
@@ -180,7 +182,7 @@ namespace litecore { namespace repl {
     // Returns true if a Fleece Dict contains any keys that begin with an underscore.
     static bool hasUnderscoredProperties(Dict root) {
         for (Dict::iterator i(root); i; ++i) {
-            auto key = slice(i.key().asString());
+            auto key = slice(i.keyString());
             if (key.size > 0 && key[0] == '_')
                 return true;
         }
@@ -193,7 +195,7 @@ namespace litecore { namespace repl {
         Encoder e;
         e.beginDict(root.count());
         for (Dict::iterator i(root); i; ++i) {
-            auto key = slice(i.key().asString());
+            auto key = slice(i.keyString());
             if (key.size > 0 && key[0] == '_')
                 continue;
             e.writeKey(key);

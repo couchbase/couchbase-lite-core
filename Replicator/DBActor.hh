@@ -71,6 +71,7 @@ namespace litecore { namespace repl {
     class DBActor : public ReplActor {
     public:
         DBActor(blip::Connection *connection,
+                Replicator*,
                 C4Database *db,
                 const websocket::Address &remoteAddress,
                 Options options);
@@ -99,10 +100,11 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_sendRevision, request, onProgress);
         }
 
-        void insertRevision(std::shared_ptr<RevToInsert> rev) {
-            enqueue(&DBActor::_insertRevision, rev);
-        }
-        
+        void insertRevision(std::shared_ptr<RevToInsert> rev);
+
+    protected:
+        virtual void activityLevelChanged(ActivityLevel level) override;
+
     private:
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
@@ -136,8 +138,10 @@ namespace litecore { namespace repl {
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;
         Retained<Pusher> _pusher;
-        std::vector<std::shared_ptr<RevToInsert>> _revsToInsert;
+        std::unique_ptr<std::vector<std::shared_ptr<RevToInsert>>> _revsToInsert;
+        std::mutex _revsToInsertMutex;
         Timer _insertTimer;
+        bool _insertDocumentMetadata {true}; //FIX: Currently set to true to accomodate SG
     };
 
 } }

@@ -30,12 +30,12 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options,
                            Connection *connection)
-    :ReplActor(connection, options, "Repl")
+    :ReplActor(connection, this, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(delegate)
     ,_pushActivity(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullActivity(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBActor(connection, db, address, options))
+    ,_dbActor(new DBActor(connection, this, db, address, options))
     {
         if (options.push != kC4Disabled)
             _pusher = new Pusher(connection, this, _dbActor, _options);
@@ -85,20 +85,19 @@ namespace litecore { namespace repl {
             _pushActivity = level;
         else if (task == _puller)
             _pullActivity = level;
+        else if (task == _dbActor)
+            _dbActivity = level;
 
-        logDebug("pushActivity=%d, pullActivity=%d", _pushActivity, _pullActivity);
+        logDebug("pushActivity=%d, pullActivity=%d, dbActivity=%d",
+                 _pushActivity, _pullActivity, _dbActivity);
         if (level == kC4Stopped)
             _checkpoint.save();
     }
 
 
     ReplActor::ActivityLevel Replicator::computeActivityLevel() const {
-        if (!connection())
-            return kC4Stopped;
-        switch (connection()->state()) {
-            case Connection::kDisconnected:
-            case Connection::kClosed:
-                return kC4Stopped;
+        auto state = (connection() ? connection()->state() : Connection::kClosed);
+        switch (state) {
             case Connection::kConnecting:
                 return kC4Connecting;
             case Connection::kConnected: {
@@ -118,7 +117,10 @@ namespace litecore { namespace repl {
             }
             case Connection::kClosing:
                 return kC4Busy; // wait for connection to close
-        }
+            case Connection::kDisconnected:
+            case Connection::kClosed:
+                return (_dbActivity == kC4Busy) ? kC4Busy : kC4Stopped; // wait for db to finish
+       }
     }
 
 

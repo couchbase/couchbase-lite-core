@@ -28,11 +28,13 @@ namespace litecore { namespace repl {
 
 
     ReplActor::ReplActor(blip::Connection *connection,
+                         Replicator *replicator,
                          Options options,
                          const char *namePrefix)
     :Actor( string(namePrefix) + connection->name() )
     ,Logging(SyncLog)
     ,_connection(connection)
+    ,_replicator(replicator)
     ,_options(options)
     ,_activityLevel(connection->state() >= Connection::kConnected ? kC4Idle : kC4Connecting)
     { }

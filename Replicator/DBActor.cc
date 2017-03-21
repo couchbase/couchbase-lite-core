@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
@@ -27,8 +28,7 @@ namespace litecore { namespace repl {
     static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
     static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
 
-    static constexpr auto kInsertionDelay = chrono::milliseconds(20);
-    static constexpr size_t kMaxRevsToInsert = 100;
+    static constexpr auto kInsertionDelay = chrono::milliseconds(50);
 
     static constexpr size_t kMinBodySizeToCompress = 500;
     
@@ -39,10 +39,11 @@ namespace litecore { namespace repl {
 
 
     DBActor::DBActor(Connection *connection,
+                     Replicator *replicator,
                      C4Database *db,
                      const websocket::Address &remoteAddress,
                      Options options)
-    :ReplActor(connection, options, "DB")
+    :ReplActor(connection, replicator, options, "DB")
     ,_db(db)
     ,_remoteAddress(remoteAddress)
     ,_insertTimer(bind(&DBActor::insertRevisionsNow, this))
@@ -254,7 +255,12 @@ namespace litecore { namespace repl {
                                      function<void(vector<alloc_slice>)> callback) {
         // Iterate over the array in the message, seeing whether I have each revision:
         auto changes = req->JSONBody().asArray();
-        log("Looking up %u revisions in the db ...", changes.count());
+        if (willLog() && !changes.empty()) {
+            alloc_slice firstSeq(changes[0].asArray()[0].toString());
+            alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
+            log("Looking up %u revisions in the db (seq '%.*s'..'%.*s')",
+                changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
+        }
         MessageBuilder response(req);
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         vector<alloc_slice> requestedSequences;
@@ -347,65 +353,106 @@ namespace litecore { namespace repl {
         if (!history.empty())
             msg["history"_sl] = history;
 
-        auto root = fleeceapi::Value::fromTrustedData(revisionBody);
+        auto root = Value::fromTrustedData(revisionBody).asDict();
         assert(root);
-        msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
-        msg.jsonBody().writeValue(root);        // encode as JSON
-
+        if (_insertDocumentMetadata) {
+            // SG currently requires the metatada properties in the document:
+            auto sk = c4db_getFLSharedKeys(_db);
+            JSONEncoder enc;
+            enc.setSharedKeys(sk);
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(request.docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(request.revID);
+            if (doc->selectedRev.flags & kRevDeleted) {
+                enc.writeKey("deleted"_sl);
+                enc.writeBool(true);
+            }
+            for (Dict::iterator i(root, sk); i; ++i) {
+                enc.writeKey(i.keyString());
+                enc.writeValue(i.value());
+            }
+            enc.endDict();
+            alloc_slice json = enc.finish();
+            msg.write(json);
+        } else {
+            msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
+            msg.jsonBody().writeValue(root);        // encode as JSON
+        }
         sendRequest(msg, onProgress);
     }
 
 
-    // Implementation of insertRevision(). Adds a rev to the database and calls the callback.
-    void DBActor::_insertRevision(std::shared_ptr<RevToInsert> rev)
-    {
-        auto n = _revsToInsert.size();
-        _revsToInsert.push_back(rev);
-        if (n == 0)
+    void DBActor::insertRevision(std::shared_ptr<RevToInsert> rev) {
+        lock_guard<mutex> lock(_revsToInsertMutex);
+        if (!_revsToInsert) {
+            _revsToInsert.reset(new vector<shared_ptr<RevToInsert>>);
+            _revsToInsert->reserve(500);
             enqueueAfter(kInsertionDelay, &DBActor::_insertRevisionsNow);
-        else if (n >= kMaxRevsToInsert)
-            _insertRevisionsNow();
+        }
+        _revsToInsert->push_back(rev);
     }
 
 
     void DBActor::_insertRevisionsNow() {
-        if (_revsToInsert.empty())
-            return;
-        log("Inserting %zu revs:", _revsToInsert.size());
-        Stopwatch st;
-        for (auto rev : _revsToInsert) {
-            log("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
-            vector<C4String> history;
-            history.reserve(10);
-            history.push_back(rev->revID);
-            for (const void *pos=rev->historyBuf.buf, *end = rev->historyBuf.end(); pos < end;) {
-                auto comma = slice(pos, end).findByteOrEnd(',');
-                history.push_back(slice(pos, comma));
-                pos = comma + 1;
-            }
-            C4DocPutRequest put = {};
-            put.body = rev->body;
-            put.docID = rev->docID;
-            put.revFlags = rev->deleted ? kRevDeleted : 0;
-            put.existingRevision = true;
-            put.allowConflict = true;
-            put.history = history.data();
-            put.historyCount = history.size();
-            put.save = true;
-
-            C4Error err;
-            c4::Transaction transaction(_db);
-            if (transaction.begin(&err)) {
-                c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &err);
-                if (doc && transaction.commit(&err)) {
-                    err = {}; // success
-                }
-            }
-            if (rev->onInserted)
-                rev->onInserted(err);
+        __typeof(_revsToInsert) revs;
+        {
+            lock_guard<mutex> lock(_revsToInsertMutex);
+            revs = move(_revsToInsert);
+            _revsToInsert.reset();
         }
-        log("Inserted %zu revs in %.2gms", _revsToInsert.size(), st.elapsedMS());
-        _revsToInsert.clear();
+
+        logVerbose("Inserting %zu revs:", revs->size());
+        Stopwatch st;
+
+        C4Error transactionErr;
+        c4::Transaction transaction(_db);
+        if (transaction.begin(&transactionErr)) {
+            for (auto rev : *revs) {
+                logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
+                vector<C4String> history;
+                history.reserve(10);
+                history.push_back(rev->revID);
+                for (const void *pos=rev->historyBuf.buf, *end = rev->historyBuf.end(); pos < end;) {
+                    auto comma = slice(pos, end).findByteOrEnd(',');
+                    history.push_back(slice(pos, comma));
+                    pos = comma + 1;
+                }
+                C4DocPutRequest put = {};
+                put.body = rev->body;
+                put.docID = rev->docID;
+                put.revFlags = rev->deleted ? kRevDeleted : 0;
+                put.existingRevision = true;
+                put.allowConflict = true;
+                put.history = history.data();
+                put.historyCount = history.size();
+                put.save = true;
+
+                C4Error docErr;
+                c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
+                if (!doc)
+                    warn("Failed to insert '%.*s' #%.*s : error %d/%d",
+                         SPLAT(rev->docID), SPLAT(rev->revID), docErr.domain, docErr.code);
+                if (rev->onInserted)
+                    rev->onInserted(doc ? C4Error{} : docErr);
+            }
+        }
+
+        if (!transaction.active() || !transaction.commit(&transactionErr)) {
+            // Transaction start or commit failed:
+            warn("Transaction failed!");
+            for (auto rev : *revs) {
+                if (rev->onInserted)
+                    rev->onInserted(transactionErr);
+                //TODO: If a c4doc_put failed, then transaction fails, its onInserted is called twice
+            }
+            gotError(transactionErr);
+            return;
+        }
+
+        double t = st.elapsed();
+        log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
     }
 
 
@@ -432,4 +479,10 @@ namespace litecore { namespace repl {
         return revExists;
     }
 
+
+    void DBActor::activityLevelChanged(ActivityLevel level) {
+        _replicator->taskChangedActivityLevel(this, level);
+    }
+
+    
 } }

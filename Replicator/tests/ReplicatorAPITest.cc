@@ -27,10 +27,19 @@ using namespace litecore;
 
 class ReplicatorAPITest : public C4Test {
 public:
+    constexpr static const C4Address kDefaultAddress {kC4Replicator2Scheme, C4STR("localhost"), 4984};
+    constexpr static const C4String kScratchDBName = C4STR("scratch");
+    constexpr static const C4String kITunesDBName = C4STR("itunes");
+
     ReplicatorAPITest()
     :C4Test(0)
     {
         C4RegisterSocketFactory();
+        address.hostname = C4STR("192.168.1.64"); //TEMP
+    }
+
+    ~ReplicatorAPITest() {
+        c4repl_free(repl);
     }
 
     void logState(C4ReplicatorState state) {
@@ -58,7 +67,7 @@ public:
     
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull) {
         C4Error err;
-        repl = c4repl_new(db, address, C4STR("scratch"), push, pull, onStateChanged, this, &err);
+        repl = c4repl_new(db, address, remoteDBName, push, pull, onStateChanged, this, &err);
         REQUIRE(repl);
         C4ReplicatorState state = c4repl_getState(repl);
         logState(state);
@@ -77,13 +86,17 @@ public:
         CHECK(callbackState.error.code == state.error.code);
     }
     
-
-    C4Address address {kC4Replicator2Scheme, C4STR("localhost"), 1235};
+    C4Address address = kDefaultAddress;
+    C4String remoteDBName = kScratchDBName;
     C4Replicator *repl {nullptr};
     C4ReplicatorState callbackState {};
     int numCallbacks {0};
     int numCallbacksWithLevel[5] = {0};
 };
+
+
+constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
+constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName;
 
 
 
@@ -105,6 +118,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.special]") {
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Push][.special]") {
+    remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 

@@ -102,8 +102,7 @@ namespace litecore { namespace repl {
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
         Delegate& _delegate;
-        ActivityLevel _pushActivity;
-        ActivityLevel _pullActivity;
+        ActivityLevel _pushActivity, _pullActivity, _dbActivity;
         Retained<DBActor> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;

@@ -49,7 +49,6 @@ namespace litecore { namespace repl {
         static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
 
-        Replicator* const _replicator;
         DBActor* const _dbActor;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         bool _continuous;

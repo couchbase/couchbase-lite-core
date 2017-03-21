@@ -19,8 +19,7 @@ namespace litecore { namespace repl {
 
 
     Pusher::Pusher(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, options, "Push")
-    ,_replicator(replicator)
+    :ReplActor(connection, replicator, options, "Push")
     ,_dbActor(dbActor)
     ,_continuous(options.push == kC4Continuous)
     {
@@ -180,7 +179,7 @@ namespace litecore { namespace repl {
         }
 //        if (!_revsToSend.empty())
 //            log("Throttling sending revs; _revisionsInFlight=%u, _revisionBytesAwaitingReply=%u",
-//                _revisionsInFlight, _revisionBytesAwaitingReply);//TEMP
+//                _revisionsInFlight, _revisionBytesAwaitingReply);
     }
 
     
@@ -197,7 +196,6 @@ namespace litecore { namespace repl {
                 if (progress.state == MessageProgress::kAwaitingReply) {
                     logDebug("Uploaded rev %.*s #%.*s (seq %llu)",
                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
-                    assert(_revisionsInFlight > 0);//TEMP
                     --_revisionsInFlight;
                     _revisionBytesAwaitingReply += progress.bytesSent;
                     maybeSendMoreRevs();

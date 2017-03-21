@@ -111,15 +111,10 @@ void c4socket_opened(C4Socket *socket) C4API {
 }
 
 void c4socket_closed(C4Socket *socket, C4Error error) C4API {
-    static const CloseReason kDomainToReason[] = {
-        kUnknownError, kUnknownError,
-        kPOSIXError, kUnknownError, kUnknownError, kUnknownError,
-        kDNSError, kWebSocketClose,
-    };
-    alloc_slice message;
-    if (error.internal_info)
-        message = c4error_getMessage(error);
-    internal(socket)->onClose({kDomainToReason[error.domain], error.code, message});
+    int err_no = 0;
+    if (error.code)
+        err_no = (error.domain == POSIXDomain) ? error.code : -1;   //FIX
+    internal(socket)->onClose(err_no);
 }
 
 void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {

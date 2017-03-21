@@ -32,7 +32,8 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void markComplete(const alloc_slice &sequence);
 
-        Replicator* const _replicator;
+        static const unsigned kChangesBatchSize = 500;      // Number of changes in one response
+
         DBActor* const _dbActor;
         alloc_slice _lastSequence;
         bool _caughtUp {false};

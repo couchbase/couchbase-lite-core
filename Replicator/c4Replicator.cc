@@ -53,26 +53,27 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 private:
 
     virtual void replicatorActivityChanged(Replicator*, Replicator::ActivityLevel level) override {
-        if (setActivityLevel(level))
+        if (setActivityLevel(level)) {
             notify();
+            if (level == kC4Stopped)
+                release(this); // balances retain in constructor
+        }
     }
 
     virtual void replicatorConnectionClosed(Replicator*,
-                                              const Replicator::CloseStatus &status) override
+                                            const Replicator::CloseStatus &status) override
     {
+        // The replicator may do a bit of work after the connection closes,
+        // so don't assume it's stopped yet
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, DNSDomain};
 
-        C4ReplicatorState state = _state;
-        if (status.reason == kWebSocketClose && (status.code == kCodeNormal
-                                                 || status.code == kCodeGoingAway)) {
-            state.error = {};
-        } else {
+        if (status.reason != kWebSocketClose || (status.code != kCodeNormal
+                                                 && status.code != kCodeGoingAway)) {
+            C4ReplicatorState state = _state;
             state.error = c4error_make(kDomainForReason[status.reason], status.code, status.message);
+            _state = state;
+            notify();
         }
-        state.level = kC4Stopped;
-        _state = state;
-        notify();
-        release(this); // balances retain in constructor
     }
 
     bool setActivityLevel(C4ReplicatorActivityLevel level) {

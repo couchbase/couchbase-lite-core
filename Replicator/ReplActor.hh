@@ -64,6 +64,7 @@ namespace litecore { namespace repl {
 
     protected:
         ReplActor(blip::Connection *connection,
+                  Replicator *replicator,
                   Options options,
                   const char *namePrefix);
 
