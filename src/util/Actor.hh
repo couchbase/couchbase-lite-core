@@ -143,7 +143,7 @@ namespace litecore {
 #if DEBUG
         int32_t _maxEventCount {0};
         double _maxLatency {0};
-        Timespec _createdAt {Timespec::now()};
+        Stopwatch _createdAt {true};
         Stopwatch _busy {false};
 #endif
     };
