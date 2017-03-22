@@ -10,6 +10,9 @@
 
 package com.couchbase.litecore;
 
+import com.couchbase.litecore.fleece.FLEncoder;
+import com.couchbase.litecore.fleece.FLSliceResult;
+
 public class Database {
 
     //////// DATABASES:
@@ -18,6 +21,8 @@ public class Database {
     public static final int Create = 1;
     public static final int ReadOnly = 2;
     public static final int AutoCompact = 4;
+    public static final int Bundle = 8;
+    public static final int SharedKeys = 0x10;
     public static final int ForestDBStorage = 0x000;
     public static final int SQLiteStorage = 0x100;
 
@@ -25,31 +30,35 @@ public class Database {
     public static final int NoEncryption = 0;
     public static final int AES256Encryption = 1;
 
-    public Database(String path, int flags, int encryptionAlgorithm, byte[] encryptionKey) throws ForestException {
+    public Database(String path, int flags, int encryptionAlgorithm, byte[] encryptionKey) throws LiteCoreException {
         _handle = _open(path, flags, encryptionAlgorithm, encryptionKey);
     }
 
-    public native void close() throws ForestException;
+    public native String getPath();
 
-    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
+    public native void close() throws LiteCoreException;
 
-    public native void compact() throws ForestException;
+    public native void delete() throws LiteCoreException;
+
+    public native void rekey(int encryptionAlgorithm, byte[] encryptionKey) throws LiteCoreException;
+
+    public native void compact() throws LiteCoreException;
 
     public native long getDocumentCount();
 
     public native long getLastSequence();
 
-    public native void beginTransaction() throws ForestException;
+    public native void beginTransaction() throws LiteCoreException;
 
-    public native void endTransaction(boolean commit) throws ForestException;
+    public native void endTransaction(boolean commit) throws LiteCoreException;
 
     public native boolean isInTransaction();
 
-    public Document getDocument(String docID, boolean mustExist) throws ForestException {
+    public Document getDocument(String docID, boolean mustExist) throws LiteCoreException {
         return new Document(_handle, docID, mustExist);
     }
 
-    public Document getDocumentBySequence(long sequence) throws ForestException {
+    public Document getDocumentBySequence(long sequence) throws LiteCoreException {
         return new Document(_handle, sequence);
     }
 
@@ -57,15 +66,15 @@ public class Database {
                                      String endDocID,
                                      int skip,
                                      int iteratorFlags)
-            throws ForestException {
+            throws LiteCoreException {
         return new DocumentIterator(_handle, startDocID, endDocID, skip, iteratorFlags);
     }
 
-    public DocumentIterator iterator(String[] docIDs, int iteratorFlags) throws ForestException {
+    public DocumentIterator iterator(String[] docIDs, int iteratorFlags) throws LiteCoreException {
         return new DocumentIterator(_handle, docIDs, iteratorFlags);
     }
 
-    public DocumentIterator iterateChanges(long sinceSequence, int iteratorFlags) throws ForestException {
+    public DocumentIterator iterateChanges(long sinceSequence, int iteratorFlags) throws LiteCoreException {
         return new DocumentIterator(_handle, sinceSequence, iteratorFlags);
     }
 
@@ -73,34 +82,53 @@ public class Database {
         free();
     }
 
-    private native void free();
+    public native void free();
 
-    /** Sets (or clears) a logging callback for LiteCore. */
+    public native static void deleteAtPath(String path, int flags) throws LiteCoreException;
+
+    /**
+     * Sets (or clears) a logging callback for LiteCore.
+     */
     public native static void setLogger(Logger logger, int level);
 
     private native long _open(String path, int flags,
-                              int encryptionAlgorithm, byte[] encryptionKey) throws ForestException;
+                              int encryptionAlgorithm, byte[] encryptionKey) throws LiteCoreException;
 
     long _handle; // handle to native C4Database*
 
 
     //////// DOCUMENTS
 
+    //TODO: Review parameters with C4DocPutRequest
+    /*
+    https://github.com/couchbase/couchbase-lite-core/blob/7341457cdaccfd810376a4bbc58aa7a251ff26fc/C/include/c4Document.h#L227-L238
+    typedef struct {
+        C4String body;              ///< Revision's body
+        C4String docID;             ///< Document ID
+        C4String docType;           ///< Document type if any (used by indexer)
+        C4RevisionFlags revFlags;   ///< Revision flags (deletion, attachments, keepBody)
+        bool existingRevision;      ///< Is this an already-existing rev coming from replication?
+        bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?
+        const C4String *history;    ///< Array of ancestor revision IDs
+        size_t historyCount;        ///< Size of history[] array
+        bool save;                  ///< Save the document after inserting the revision?
+        uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+    } C4DocPutRequest;
+    */
     public Document put(String docID,
                         byte[] body,
                         String docType,
-                        boolean deletion,
-                        boolean hasAttachments,
                         boolean existingRevision,
                         boolean allowConflict,
                         String[] history,
+                        int flags, // C4RevisionFlags
                         boolean save,
-                        int maxRevTreeDepth) throws ForestException {
-        return new Document(_put(_handle, docID, body, docType, deletion, hasattachments,
-                                 existingRevision, allowConflict, history, save, maxRevTreeDepth));
+                        int maxRevTreeDepth) throws LiteCoreException {
+        return new Document(_put(_handle, docID, body, docType,
+                existingRevision, allowConflict, history, flags, save, maxRevTreeDepth));
     }
 
-    public void purgeDoc(String docID) throws ForestException {
+    public void purgeDoc(String docID) throws LiteCoreException {
         purgeDoc(_handle, docID);
     }
 
@@ -108,54 +136,69 @@ public class Database {
                                     String docID,
                                     byte[] body,
                                     String docType,
-                                    boolean deletion,
-                                    boolean hasAttachments,
                                     boolean existingRevision,
                                     boolean allowConflict,
                                     String[] history,
+                                    int flags, // C4RevisionFlags
                                     boolean save,
-                                    int maxRevTreeDepth) throws ForestException;
-    private native static void purgeDoc(long dbHandle, String docID) throws ForestException;
+                                    int maxRevTreeDepth) throws LiteCoreException;
+
+    private native static void purgeDoc(long dbHandle, String docID) throws LiteCoreException;
 
     //////// EXPIRATION
 
-    public long expirationOfDoc(String docID) throws ForestException {
+    public long expirationOfDoc(String docID) throws LiteCoreException {
         return _handle != 0 ? expirationOfDoc(_handle, docID) : 0;
     }
 
-    public void setExpiration(String docID, long timestamp) throws ForestException {
+    public void setExpiration(String docID, long timestamp) throws LiteCoreException {
         if (_handle != 0)
             setExpiration(_handle, docID, timestamp);
     }
 
-    public long nextDocExpiration() throws ForestException {
+    public long nextDocExpiration() throws LiteCoreException {
         return _handle != 0 ? nextDocExpiration(_handle) : 0;
     }
 
-    public String[] purgeExpiredDocuments() throws ForestException {
+    public String[] purgeExpiredDocuments() throws LiteCoreException {
         return _handle != 0 ? purgeExpiredDocuments(_handle) : null;
     }
 
-    private native static long expirationOfDoc(long dbHandle, String docID) throws ForestException;
+    private native static long expirationOfDoc(long dbHandle, String docID) throws LiteCoreException;
 
-    private native static void setExpiration(long dbHandle, String docID, long timestamp) throws ForestException;
+    private native static void setExpiration(long dbHandle, String docID, long timestamp) throws LiteCoreException;
 
-    private native static long nextDocExpiration(long dbHandle) throws ForestException;
+    private native static long nextDocExpiration(long dbHandle) throws LiteCoreException;
 
-    private native static String[] purgeExpiredDocuments(long dbHandle) throws ForestException;
+    private native static String[] purgeExpiredDocuments(long dbHandle) throws LiteCoreException;
 
     //////// RAW DOCUMENTS (i.e. info or _local)
 
-    public void rawPut(String store, String key, byte[] meta, byte[] body) throws ForestException {
+    public void rawPut(String store, String key, byte[] meta, byte[] body) throws LiteCoreException {
         _rawPut(_handle, store, key, meta, body);
     }
 
     // This returns an array of two byte arrays; the first is the meta, the second is the body
-    public byte[][] rawGet(String store, String key) throws ForestException {
+    public byte[][] rawGet(String store, String key) throws LiteCoreException {
         return _rawGet(_handle, store, key);
     }
 
-    private native static void _rawPut(long db, String store, String key, byte[] meta, byte[] body) throws ForestException;
-    private native static byte[][] _rawGet(long db, String store, String key) throws ForestException;
+    private native static void _rawPut(long db, String store, String key, byte[] meta, byte[] body) throws LiteCoreException;
 
+    private native static byte[][] _rawGet(long db, String store, String key) throws LiteCoreException;
+
+    ////////  FLEECE-SPECIFIC:  Defined in c4Document+Fleece.h
+
+    public FLEncoder createFleeceEncoder() {
+        return new FLEncoder(createFleeceEncoder(_handle));
+    }
+
+    // NOTE: Should param be String instead of byte[]?
+    public FLSliceResult encodeJSON(byte[] jsonData) throws LiteCoreException {
+        return new FLSliceResult(encodeJSON(_handle, jsonData));
+    }
+
+    private native static long createFleeceEncoder(long db);
+
+    private native static long encodeJSON(long db, byte[] jsonData) throws LiteCoreException;
 }

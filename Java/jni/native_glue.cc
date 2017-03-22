@@ -27,9 +27,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved)
     JNIEnv *env;
     if (jvm->GetEnv((void **)&env, JNI_VERSION_1_2) == JNI_OK
             && initDatabase(env)
-            && initDocument(env)
-            && initQueryIterator(env)
-            && initView(env)) {
+            && initDocument(env)) {
         assert(gJVM == nullptr);
         gJVM = jvm;
         return JNI_VERSION_1_2;
@@ -118,7 +116,7 @@ namespace litecore {
         void throwError(JNIEnv *env, C4Error error) {
             if (env->ExceptionOccurred())
                 return;
-            jclass xclass = env->FindClass("com/couchbase/litecore/ForestException");
+            jclass xclass = env->FindClass("com/couchbase/litecore/LiteCoreException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
             jmethodID m = env->GetStaticMethodID(xclass, "throwException",
                                                  "(IILjava/lang/String;)V");

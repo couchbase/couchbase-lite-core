@@ -13,10 +13,12 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#include <c4Base.h>
 #include "com_couchbase_litecore_Database.h"
 #include "native_glue.hh"
 #include "c4Database.h"
 #include "c4Document.h"
+#include "c4Document+Fleece.h"
 #include "c4ExpiryEnumerator.h"
 #include "Logging.hh"
 
@@ -104,12 +106,29 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_rekey
         throwError(env, error);
 }
 
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_close
-(JNIEnv *env, jobject self)
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_Database_getPath
+        (JNIEnv *env, jobject self)
 {
+    auto db = getDbHandle(env, self);
+    C4SliceResult slice = c4db_getPath(db);
+    jstring ret =  toJString(env, slice);
+    c4slice_free(slice);
+    return ret;
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_close(JNIEnv *env, jobject self) {
     auto db = getDbHandle(env, self);
     C4Error error;
     if (!c4db_close(db, &error))
+        throwError(env, error);
+}
+
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_delete
+        (JNIEnv *env, jobject self)
+{
+    auto db = getDbHandle(env, self);
+    C4Error error;
+    if (!c4db_delete(db, &error))
         throwError(env, error);
 }
 
@@ -120,6 +139,20 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_free
     env->SetLongField(self, kHandleField, 0);
     c4db_free(db);
     // Note: This is called only by the finalizer, so no further calls are possible.
+}
+
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    deleteAtPath
+ * Signature: (Ljava/lang/String;I)V
+ */
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_deleteAtPath(JNIEnv *env, jclass klass, jstring jpath, jint jflags) {
+    jstringSlice path(env, jpath);
+    C4DatabaseConfig config{};
+    config.flags=(C4DatabaseFlags)jflags;
+    C4Error error;
+    if (!c4db_deleteAtPath(path, &config, &error))
+        throwError(env, error);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_compact
@@ -196,7 +229,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_setLogger
     sLoggerRef = env->NewGlobalRef(logger);
     if (oldLoggerRef)
         env->DeleteGlobalRef(oldLoggerRef);
-    c4log_register((C4LogLevel)level, &logCallback);
+    //c4log_register((C4LogLevel)level, &logCallback);
 }
 
 #pragma mark - PURGING / EXPIRING:
@@ -297,18 +330,17 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put
 (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody, jstring jdocType,
- jboolean deletion, jboolean hasAttachments, jboolean existingRevision, jboolean allowConflict,
- jobjectArray jhistory, jboolean save, jint maxRevTreeDepth)
+ jboolean existingRevision, jboolean allowConflict,
+ jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth)
 {
     auto db = (C4Database*)dbHandle;
     jstringSlice docID(env, jdocID), docType(env, jdocType);
     C4DocPutRequest rq;
     rq.docID = docID;
     rq.docType = docType;
-    rq.deletion = deletion;
-    rq.hasAttachments = hasAttachments;
     rq.existingRevision = existingRevision;
     rq.allowConflict = allowConflict;
+    rq.revFlags = flags;
     rq.save = save;
     rq.maxRevTreeDepth = maxRevTreeDepth;
     C4Document *doc = nullptr;
@@ -392,3 +424,32 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database__1rawGet
     return rows;
 }
 
+////////  FLEECE-SPECIFIC:  Defined in c4Document+Fleece.h
+
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    createFleeceEncoder
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_Database_createFleeceEncoder(JNIEnv *env, jclass clazz, jlong db) {
+    return (jlong) c4db_createFleeceEncoder((C4Database *) db);
+}
+
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    encodeJSON
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_Database_encodeJSON(JNIEnv *env, jclass clazz, jlong db, jbyteArray jbody) {
+    jbyteArraySlice body(env, jbody, true);
+    C4Error error = {};
+    C4SliceResult res = c4db_encodeJSON((C4Database *) db, (C4Slice)body, &error);
+    if (error.domain!=0&&error.code!=0)
+        throwError(env, error);
+    C4SliceResult* sliceResult = (C4SliceResult* )::malloc(sizeof(C4SliceResult));
+    sliceResult->buf = res.buf;
+    sliceResult->size = res.size;
+    return (jlong)sliceResult;
+}

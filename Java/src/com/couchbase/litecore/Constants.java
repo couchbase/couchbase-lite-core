@@ -15,7 +15,20 @@ package com.couchbase.litecore;
  */
 public interface Constants {
 
+    ////////////////////////////////////
+    // c4Database.h
+    ////////////////////////////////////
+
+    // Document versioning system (also determines database storage schema)
+    interface C4DocumentVersioning{
+        int kC4RevisionTrees = 0;///< CouchDB and Couchbase Mobile 1.x revision trees
+        int kC4VersionVectors = 1;///< Couchbase Mobile 2.x version vectors
+    }
+
+    ////////////////////////////////////
     // fdb_errors.h
+    ////////////////////////////////////
+
     interface FDBErrors {
         /**
          * ForestDB operation success.
@@ -210,6 +223,7 @@ public interface Constants {
         int kDeleted = 0x01;        // The document's current revision is deleted.
         int kConflicted = 0x02;     // The document is in conflict.
         int kHasAttachments = 0x04; // One or more revisions have attachments.
+
         int kExists = 0x1000;       // The document exists (i.e. has revisions.)
     }
 
@@ -220,6 +234,7 @@ public interface Constants {
         int kRevLeaf = 0x02;           // Is this revision a leaf (no children?)
         int kRevNew = 0x04;            // Has this rev been inserted since decoding?
         int kRevHasAttachments = 0x08; // Does this rev's body contain attachments?
+        int kRevKeepBody = 0x10;       // Revision's body should not be discarded when non-leaf
     }
 
     // Flags for document iteration
