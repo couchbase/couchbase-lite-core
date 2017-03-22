@@ -43,10 +43,25 @@ public class DocumentIterator {
         return false;
     }
 
-    public String getCurrentDocID()  {getCurrentInfo(); return _currentIDs[0];}
-    public String getCurrentRevID()  {getCurrentInfo(); return _currentIDs[1];}
-    public int getCurrentDocFlags()  {getCurrentInfo(); return (int)_currentNumbers[0];}
-    public long getCurrentSequence() {getCurrentInfo(); return _currentNumbers[1];}
+    public String getCurrentDocID() {
+        getCurrentInfo();
+        return _currentIDs[0];
+    }
+
+    public String getCurrentRevID() {
+        getCurrentInfo();
+        return _currentIDs[1];
+    }
+
+    public int getCurrentDocFlags() {
+        getCurrentInfo();
+        return (int) _currentNumbers[0];
+    }
+
+    public long getCurrentSequence() {
+        getCurrentInfo();
+        return _currentNumbers[1];
+    }
 
     // Returns current Document
     public Document getDocument() throws LiteCoreException {
@@ -58,7 +73,9 @@ public class DocumentIterator {
         return next() ? getDocument() : null;
     }
 
-    protected void finalize()       { if (_handle != 0) free(_handle); }
+    protected void finalize() {
+        if (_handle != 0) free(_handle);
+    }
 
     private void getCurrentInfo() {
         if (!_hasCurrentInfo) {
@@ -68,16 +85,22 @@ public class DocumentIterator {
     }
 
     private static native long initEnumerateChanges(long dbHandle, long sinceSequence, int optionFlags) throws LiteCoreException;
+
     private static native long initEnumerateAllDocs(long dbHandle,
-                                             String startDocID,
-                                             String endDocID,
-                                             int skip,
-                                             int optionFlags)
+                                                    String startDocID,
+                                                    String endDocID,
+                                                    int skip,
+                                                    int optionFlags)
             throws LiteCoreException;
+
     private static native long initEnumerateSomeDocs(long dbHandle, String[] docIDs, int optionFlags) throws LiteCoreException;
+
     private native static boolean next(long handle) throws LiteCoreException;
+
     private native static long getDocumentHandle(long handle) throws LiteCoreException;
+
     private native static void getDocumentInfo(long handle, Object[] outIDs, long[] outNumbers);
+
     private native static void free(long handle);
 
     private long _handle;

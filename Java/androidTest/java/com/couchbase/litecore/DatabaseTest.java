@@ -73,14 +73,16 @@ public class DatabaseTest extends BaseTest {
         // NOTE: c4db_getUUIDs() is not supported by Java
     }
 
+
     // - "Database OpenBundle"
     @Test
     public void testDatabaseOpenBundle() throws LiteCoreException {
         File bundlePath = new File(context.getFilesDir(), "cbl_core_test_bundle");
-        Database.deleteAtPath(bundlePath.getPath(), Database.Create | Database.Bundle);
+
+        if(bundlePath.exists())
+            Database.deleteAtPath(bundlePath.getPath(), Database.Create | Database.Bundle);
         Database bundle = new Database(bundlePath.getPath(), Database.Create | Database.Bundle, encryptionAlgorithm(), encryptionKey());
         assertNotNull(bundle);
-        String path = db.getPath();
         bundle.close();
         bundle.free();
 

@@ -77,7 +77,7 @@ public class FLEncoder {
         return false;
     }
 
-    public boolean write(Map map){
+    public boolean write(Map map) {
         beginDict(map.size());
         Iterator keys = map.keySet().iterator();
         while (keys.hasNext()) {
@@ -88,7 +88,7 @@ public class FLEncoder {
         return endDict();
     }
 
-    public boolean write(List list){
+    public boolean write(List list) {
         beginArray(list.size());
         for (Object item : list) {
             writeValue(item);

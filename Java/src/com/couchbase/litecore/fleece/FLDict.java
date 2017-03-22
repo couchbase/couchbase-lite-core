@@ -1,6 +1,9 @@
 package com.couchbase.litecore.fleece;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class FLDict {
@@ -22,6 +25,27 @@ public class FLDict {
 //    public FLValue getSharedKey(String key, long sharedKeys){
 //        return new FLValue(getSharedKey(handle, key.getBytes(), sharedKeys));
 //    }
+
+    /**
+     * Return List of keys as Iterator
+     * <p>
+     * NOTE: If the approach of coping all keys does not work with large dataset,
+     * need to concern the approach of binding to FLDictIterator.
+     * However, Iterator does not have free() method. So need to wait to release FLDictIterator
+     * till Iterator is garbage collected.
+     */
+    public Iterator<String> iterator() {
+        List<String> keys = new ArrayList<>();
+        FLDictIterator itr = new FLDictIterator();
+        itr.begin(this);
+        String key;
+        while ((key = itr.getKey().asString()) != null) {
+            keys.add(key);
+            itr.next();
+        }
+        itr.free();
+        return keys.iterator();
+    }
 
     public Map<String, Object> asDict() {
         Map<String, Object> results = new HashMap<>();
