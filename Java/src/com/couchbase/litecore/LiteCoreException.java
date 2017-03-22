@@ -10,17 +10,17 @@
 
 package com.couchbase.litecore;
 
-public class ForestException extends Exception {
+public class LiteCoreException extends Exception {
     public final int domain; // TODO: Should be an enum
     public final int code;
 
-    public ForestException(int domain, int code, String message) {
+    public LiteCoreException(int domain, int code, String message) {
         super(message);
         this.domain = domain;
         this.code = code;
     }
 
-    public static void throwException(int domain, int code, String msg) throws ForestException {
-        throw new ForestException(domain, code, msg);
+    public static void throwException(int domain, int code, String msg) throws LiteCoreException {
+        throw new LiteCoreException(domain, code, msg);
     }
 }

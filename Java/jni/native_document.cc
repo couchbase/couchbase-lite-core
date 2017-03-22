@@ -22,7 +22,6 @@
 using namespace litecore;
 using namespace litecore::jni;
 
-
 static jfieldID kField_Flags;
 static jfieldID kField_DocID;
 static jfieldID kField_RevID;
@@ -31,7 +30,6 @@ static jfieldID kField_SelectedRevID;
 static jfieldID kField_SelectedRevFlags;
 static jfieldID kField_SelectedSequence;
 static jfieldID kField_SelectedBody;
-
 
 bool litecore::jni::initDocument(JNIEnv *env) {
     jclass documentClass = env->FindClass("com/couchbase/litecore/Document");
@@ -139,33 +137,16 @@ JNIEXPORT jint JNICALL Java_com_couchbase_litecore_Document_purgeRevision
     return num;
 }
 
-
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_free
 (JNIEnv *env, jclass clazz, jlong docHandle)
 {
     c4doc_free((C4Document*)docHandle);
 }
 
-
-JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_Document_getType
-(JNIEnv *env, jclass clazz, jlong docHandle) {
-    return toJString(env, c4doc_getType((C4Document*)docHandle));
-}
-
-
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_setType
-(JNIEnv *env, jclass clazz, jlong docHandle, jstring jtype)
-{
-    jstringSlice type(env, jtype);
-    c4doc_setType((C4Document*)docHandle, type);
-}
-
-
 static bool isNotFoundError(C4Error error) {
     return error.domain == LiteCoreDomain && (error.code == kC4ErrorNotFound ||
                                               error.code == kC4ErrorDeleted);
 }
-
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectRevID
 (JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody)
@@ -182,7 +163,6 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectRevID
     return ok;
 }
 
-
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectCurrentRev
 (JNIEnv *env, jobject self, jlong docHandle)
 {
@@ -191,7 +171,6 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectCurrentRev
     updateSelection(env, self, doc);
     return ok;
 }
-
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectParentRev
 (JNIEnv *env, jobject self, jlong docHandle)
@@ -202,7 +181,6 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectParentRev
     return ok;
 }
 
-
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextRev
 (JNIEnv *env, jobject self, jlong docHandle)
 {
@@ -211,7 +189,6 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextRev
     updateSelection(env, self, doc);
     return ok;
 }
-
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextLeaf
 (JNIEnv *env, jobject self, jlong docHandle, jboolean includeDeleted, jboolean withBody)
@@ -226,6 +203,36 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextLeaf
     return ok;
 }
 
+/*
+ * Class:     com_couchbase_litecore_Document
+ * Method:    selectFirstPossibleAncestorOf
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_Document_selectFirstPossibleAncestorOf(JNIEnv *env, jobject self,
+                                                                   jlong docHandle,
+                                                                   jstring jRevID) {
+    jstringSlice revID(env, jRevID);
+    auto doc = (C4Document *) docHandle;
+    bool ok = c4doc_selectFirstPossibleAncestorOf(doc, revID);
+    updateSelection(env, self, doc);
+    return ok;
+}
+
+/*
+ * Class:     com_couchbase_litecore_Document
+ * Method:    selectNextPossibleAncestorOf
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_Document_selectNextPossibleAncestorOf(JNIEnv *env, jobject self,
+                                                                  jlong docHandle, jstring jRevID) {
+    jstringSlice revID(env, jRevID);
+    auto doc = (C4Document *) docHandle;
+    bool ok = c4doc_selectNextPossibleAncestorOf(doc, revID);
+    updateSelection(env, self, doc);
+    return ok;
+}
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBody
 (JNIEnv *env, jobject self, jlong docHandle)
@@ -238,7 +245,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBo
     }
     return toJByteArray(env, doc->selectedRev.body);
 }
-
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_save
 (JNIEnv *env, jobject self, jlong docHandle, jint maxRevTreeDepth) {

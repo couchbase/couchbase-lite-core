@@ -20,14 +20,11 @@ public class Document implements Constants{
 
     public int getFlags()           { return _flags; }
 
-    public String getType()         { return getType(_handle); }
-    public void setType(String t)   { setType(_handle, t); }
-
     public synchronized void free() { if (_handle != 0) {free(_handle); _handle = 0;} }
+
     protected void finalize()       { free(); }
 
-
-    public boolean selectRevID(String revID, boolean withBody) throws ForestException {
+    public boolean selectRevID(String revID, boolean withBody) throws LiteCoreException {
         return selectRevID(_handle, revID, withBody);
     }
 
@@ -43,8 +40,16 @@ public class Document implements Constants{
         return selectNextRev(_handle);
     }
 
-    public boolean selectNextLeaf(boolean includeDeleted, boolean withBody) throws ForestException {
+    public boolean selectNextLeaf(boolean includeDeleted, boolean withBody) throws LiteCoreException {
         return selectNextLeaf(_handle, includeDeleted, withBody);
+    }
+
+    public boolean selectFirstPossibleAncestorOf(String revID){
+        return selectFirstPossibleAncestorOf(_handle, revID);
+    }
+
+    public boolean selectNextPossibleAncestorOf(String revID){
+        return selectNextPossibleAncestorOf(_handle, revID);
     }
 
     public boolean hasRevisionBody() {
@@ -53,7 +58,7 @@ public class Document implements Constants{
 
     public String getSelectedRevID()        { return _selectedRevID; }
 
-    public byte[] getSelectedBody() throws ForestException {
+    public byte[] getSelectedBody() throws LiteCoreException {
         if (_selectedBody == null) {
             _selectedBody = readSelectedBody(_handle);
         }
@@ -68,22 +73,22 @@ public class Document implements Constants{
     public long getSelectedRevFlags() { return _selectedRevFlags; }
 
 
-    public void save(int maxRevTreeDepth) throws ForestException {
+    public void save(int maxRevTreeDepth) throws LiteCoreException {
         save(_handle, maxRevTreeDepth);
     }
 
-    public int purgeRevision(String revID) throws ForestException {
+    public int purgeRevision(String revID) throws LiteCoreException {
         return purgeRevision(_handle, revID);
     }
     
     // INTERNALS:
 
-    Document(long dbHandle, String docID, boolean mustExist) throws ForestException {
+    Document(long dbHandle, String docID, boolean mustExist) throws LiteCoreException {
         _handle = init(dbHandle, docID, mustExist); // also sets _flags and _selectedXXX
         _docID = docID;
         _revID = _selectedRevID;
     }
-    Document(long dbHandle, long sequence) throws ForestException {
+    Document(long dbHandle, long sequence) throws LiteCoreException {
         _handle = initWithSequence(dbHandle, sequence);
         _revID = _selectedRevID;
     }
@@ -93,40 +98,26 @@ public class Document implements Constants{
         _revID = _selectedRevID;
     }
 
-    private native long init(long dbHandle, String docID, boolean mustExist) throws ForestException;
-    private native long initWithSequence(long dbHandle, long sequence) throws ForestException;
+    private native long init(long dbHandle, String docID, boolean mustExist) throws LiteCoreException;
+    private native long initWithSequence(long dbHandle, long sequence) throws LiteCoreException;
     private native String initWithDocHandle(long docHandle);
 
-    private native static String getType(long handle);
-    private native static void setType(long handle, String type);
-
-    private native boolean selectRevID(long handle, String revID, boolean withBody) throws ForestException;
+    private native boolean selectRevID(long handle, String revID, boolean withBody) throws LiteCoreException;
     private native boolean selectCurrentRev(long handle);
     private native boolean selectParentRev(long handle);
     private native boolean selectNextRev(long handle);
-    private native boolean selectNextLeaf(long handle, boolean includeDeleted, boolean withBody) throws ForestException;
+    private native boolean selectNextLeaf(long handle, boolean includeDeleted, boolean withBody) throws LiteCoreException;
+    private native boolean selectFirstPossibleAncestorOf(long handle, String revID);
+    private native boolean selectNextPossibleAncestorOf(long handle, String revID);
 
     private native static boolean hasRevisionBody(long handle);
 
-    private native static int purgeRevision(long handle, String revID) throws ForestException;
+    private native static int purgeRevision(long handle, String revID) throws LiteCoreException;
 
     private native static void free(long handle);
-    private native byte[] readSelectedBody(long handle) throws ForestException;
+    private native byte[] readSelectedBody(long handle) throws LiteCoreException;
 
-    private native boolean insertRevision(long handle,
-                                          String revID,
-                                          byte[] body,
-                                          boolean deleted,
-                                          boolean hasAttachments,
-                                          boolean allowConflict) throws ForestException;
-
-    private native int insertRevisionWithHistory(long handle,
-                                                 byte[] body,
-                                                 boolean deleted,
-                                                 boolean hasAttachments,
-                                                 String[] history) throws ForestException;
-
-    private native void save(long handle, int maxRevTreeDepth) throws ForestException;
+    private native void save(long handle, int maxRevTreeDepth) throws LiteCoreException;
 
     protected long _handle;
     private String _docID, _revID;

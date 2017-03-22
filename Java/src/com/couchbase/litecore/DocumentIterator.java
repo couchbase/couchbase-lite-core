@@ -22,20 +22,20 @@ public class DocumentIterator {
                      String endDocID,
                      int skip,
                      int iteratorFlags)
-            throws ForestException {
+            throws LiteCoreException {
         this(initEnumerateAllDocs(dbHandle, startDocID, endDocID, skip, iteratorFlags), false);
     }
 
-    DocumentIterator(long dbHandle, String[] docIDs, int iteratorFlags) throws ForestException {
+    DocumentIterator(long dbHandle, String[] docIDs, int iteratorFlags) throws LiteCoreException {
         this(initEnumerateSomeDocs(dbHandle, docIDs, iteratorFlags), false);
     }
 
-    DocumentIterator(long dbHandle, long sinceSequence, int iteratorFlags) throws ForestException {
+    DocumentIterator(long dbHandle, long sinceSequence, int iteratorFlags) throws LiteCoreException {
         this(initEnumerateChanges(dbHandle, sinceSequence, iteratorFlags), false);
     }
 
     // Advances iterator. Then call getCurrentDocID(), etc. to get attributes of document. */
-    public boolean next() throws ForestException {
+    public boolean next() throws LiteCoreException {
         _hasCurrentInfo = false;
         if (next(_handle))
             return true;
@@ -49,12 +49,12 @@ public class DocumentIterator {
     public long getCurrentSequence() {getCurrentInfo(); return _currentNumbers[1];}
 
     // Returns current Document
-    public Document getDocument() throws ForestException {
+    public Document getDocument() throws LiteCoreException {
         return new Document(getDocumentHandle(_handle));
     }
 
     // Returns next Document, or null at end
-    public Document nextDocument() throws ForestException {
+    public Document nextDocument() throws LiteCoreException {
         return next() ? getDocument() : null;
     }
 
@@ -67,16 +67,16 @@ public class DocumentIterator {
         }
     }
 
-    private static native long initEnumerateChanges(long dbHandle, long sinceSequence, int optionFlags) throws ForestException;
+    private static native long initEnumerateChanges(long dbHandle, long sinceSequence, int optionFlags) throws LiteCoreException;
     private static native long initEnumerateAllDocs(long dbHandle,
                                              String startDocID,
                                              String endDocID,
                                              int skip,
                                              int optionFlags)
-            throws ForestException;
-    private static native long initEnumerateSomeDocs(long dbHandle, String[] docIDs, int optionFlags) throws ForestException;
-    private native static boolean next(long handle) throws ForestException;
-    private native static long getDocumentHandle(long handle) throws ForestException;
+            throws LiteCoreException;
+    private static native long initEnumerateSomeDocs(long dbHandle, String[] docIDs, int optionFlags) throws LiteCoreException;
+    private native static boolean next(long handle) throws LiteCoreException;
+    private native static long getDocumentHandle(long handle) throws LiteCoreException;
     private native static void getDocumentInfo(long handle, Object[] outIDs, long[] outNumbers);
     private native static void free(long handle);
 

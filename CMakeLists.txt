@@ -168,6 +168,12 @@ add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
 
 #add_subdirectory(Replicator)
 
+### JNI:
+
+if (JNI)
+    add_subdirectory(Java)
+endif()
+
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
