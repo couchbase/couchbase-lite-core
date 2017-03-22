@@ -64,6 +64,8 @@ namespace LiteCore.Interop
         {
             var nextId = Interlocked.Increment(ref _NextID);
             _id = nextId;
+            _callback = callback;
+            _context = context;
             _StaticMap[_id] = this;
             NativeCallback = new C4ReplicatorStateChangedCallback(StateChanged);
             NativeContext = (void *)nextId;
