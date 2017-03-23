@@ -88,6 +88,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		273C77F11E84706B00BD7112 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
+		273C77F21E8470F800BD7112 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
+		273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
+		273C77F41E84716E00BD7112 /* Project_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release.xcconfig; sourceTree = "<group>"; };
+		273C77F51E84716E00BD7112 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
+		273C77F61E84724E00BD7112 /* blip.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = blip.xcconfig; sourceTree = "<group>"; };
 		27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketImpl.cc; sourceTree = "<group>"; };
 		27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketProtocol.hh; sourceTree = "<group>"; };
 		27491CA01E7B417C001DC54B /* WebSocketImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketImpl.hh; sourceTree = "<group>"; };
@@ -174,6 +180,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		273C77F01E846FF000BD7112 /* xcconfigs */ = {
+			isa = PBXGroup;
+			children = (
+				273C77F11E84706B00BD7112 /* Project.xcconfig */,
+				273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */,
+				273C77F41E84716E00BD7112 /* Project_Release.xcconfig */,
+				273C77F61E84724E00BD7112 /* blip.xcconfig */,
+				273C77F51E84716E00BD7112 /* static_lib.xcconfig */,
+				273C77F21E8470F800BD7112 /* XcodeWarnings.xcconfig */,
+			);
+			name = xcconfigs;
+			path = XCode/xcconfigs;
+			sourceTree = "<group>";
+		};
 		27491C8E1E7AFCBE001DC54B /* websocket */ = {
 			isa = PBXGroup;
 			children = (
@@ -215,6 +235,7 @@
 				27EF69C91E2825E6004748DF /* src */,
 				27EF69EE1E28268A004748DF /* tests */,
 				27EF69F11E2829E0004748DF /* vendor */,
+				273C77F01E846FF000BD7112 /* xcconfigs */,
 				27EF69B81E282549004748DF /* Products */,
 				27EF6AAA1E2B0D62004748DF /* Frameworks */,
 			);
@@ -522,140 +543,35 @@
 /* Begin XCBuildConfiguration section */
 		27EF69C01E282549004748DF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = /usr/local/include/;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
-				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator";
 			};
 			name = Debug;
 		};
 		27EF69C11E282549004748DF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F41E84716E00BD7112 /* Project_Release.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = /usr/local/include/;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = macosx;
-				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator";
 			};
 			name = Release;
 		};
 		27EF69C31E282549004748DF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
 			buildSettings = {
-				DEVELOPMENT_TEAM = N2Q372V7W2;
-				EXECUTABLE_PREFIX = lib;
-				GCC_ENABLE_CPP_EXCEPTIONS = YES;
-				GCC_ENABLE_CPP_RTTI = YES;
-				HEADER_SEARCH_PATHS = (
-					/usr/local/include/,
-					"$(SRCROOT)/../../LiteCore/Support/",
-					"$(SRCROOT)/../fleece/Fleece/",
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/zlibcomplete/lib/";
 			};
 			name = Debug;
 		};
 		27EF69C41E282549004748DF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
 			buildSettings = {
-				DEVELOPMENT_TEAM = N2Q372V7W2;
-				EXECUTABLE_PREFIX = lib;
-				GCC_ENABLE_CPP_EXCEPTIONS = YES;
-				GCC_ENABLE_CPP_RTTI = YES;
-				HEADER_SEARCH_PATHS = (
-					/usr/local/include/,
-					"$(SRCROOT)/../../LiteCore/Support/",
-					"$(SRCROOT)/../fleece/Fleece/",
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/zlibcomplete/lib/";
 			};
 			name = Release;
 		};
 		27EF6AA31E2B0CE9004748DF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				DEVELOPMENT_TEAM = N2Q372V7W2;
-				HEADER_SEARCH_PATHS = (
-					/usr/local/include/,
-					"$(SRCROOT)/../fleece/Fleece/",
-				);
-				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -663,12 +579,6 @@
 		27EF6AA41E2B0CE9004748DF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				DEVELOPMENT_TEAM = N2Q372V7W2;
-				HEADER_SEARCH_PATHS = (
-					/usr/local/include/,
-					"$(SRCROOT)/../fleece/Fleece/",
-				);
-				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

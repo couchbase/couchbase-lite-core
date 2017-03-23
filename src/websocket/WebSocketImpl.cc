@@ -46,14 +46,14 @@ namespace uWS {
     template <const bool isServer>
     bool WebSocketProtocol<isServer>::handleFragment(char *data,
                                                      size_t length,
-                                                     unsigned int remainingBytes,
-                                                     int opCode,
+                                                     unsigned int remainingByteCount,
+                                                     int opcode,
                                                      bool fin,
                                                      void *user)
     {
         // WebSocketProtocol expects this method to return true on error, but this confuses me
         // so I'm having my code return false on error, hence the `!`. --jpa
-        return ! _sock->handleFragment(data, length, remainingBytes, opCode, fin);
+        return ! _sock->handleFragment(data, length, remainingByteCount, opcode, fin);
     }
 
 

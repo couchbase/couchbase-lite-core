@@ -236,7 +236,7 @@ namespace litecore { namespace blip {
         /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
         void thawMessage(MessageOut *msg) {
             logVerbose("Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
-            bool removed = _icebox.remove(msg);
+            __unused bool removed = _icebox.remove(msg);
             assert(removed);
             requeue(msg, true);
         }
