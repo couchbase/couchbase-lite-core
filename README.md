@@ -2,7 +2,7 @@
 
 All platform implementations of Couchbase Lite 2.0 are built atop this core, adding higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing and queries, but don't need the higher-level features of Couchbase Lite.
 
-**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE.** As of March 2017, the status is roughly "alpha". We expect a stabl 1.0 release later in 2017. See "Status" section below.
+**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE.** As of March 2017, the status is roughly "alpha". We expect a stable 1.0 release later in 2017. See "Status" section below.
 
 # Features
 
