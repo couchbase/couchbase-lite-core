@@ -1,8 +1,8 @@
-**Couchbase Lite Core** (aka **LiteCore**) is the next-generation core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, as well as document versioning.
+**Couchbase Lite Core** (aka **LiteCore**) is the next-generation core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
 
-All platform implementations of Couchbase Lite 2.0 will be built atop this core, adding replication and higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing and queries, but don't need the higher-level features of Couchbase Lite.
+All platform implementations of Couchbase Lite 2.0 are built atop this core, adding higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing and queries, but don't need the higher-level features of Couchbase Lite.
 
-**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE.** This is currently (December 2016) a work in progress. See "Status" section below.
+**THIS IS NOT A RELEASED PRODUCT. THIS IS NOT FINISHED CODE.** As of March 2017, the status is roughly "alpha". We expect a stabl 1.0 release later in 2017. See "Status" section below.
 
 # Features
 
@@ -20,10 +20,11 @@ All platform implementations of Couchbase Lite 2.0 will be built atop this core,
     * Map-reduce indexes that update incrementally as documents are changed in the source DB (as in Couchbase Lite or CouchDB)
     * JSON-compatible structured keys in indexes, sorted according to CouchDB's JSON collation spec
     * Querying by key range, with typical options like descending order, offset, limit
-* Direct database querying:
+* Direct database querying based on N1QL:
     * Currently only supported in SQLite-based databases
-    * JSON-based query syntax for describing what documents to find and in what order
-    * Can search on arbitrary document properties without requiring any schema
+    * Supports most [N1QL][N1QL] functionality
+    * JSON-based query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate
+    * Can search and index arbitrary document properties without requiring any schema
     * Queries compile into SQL and from there into SQLite compiled bytecode
     * Parameters can be substituted without having to recompile the query
     * Queries don't require indexes, but will run faster if indexes are created on the document
@@ -41,7 +42,14 @@ LiteCore runs on Mac OS, iOS, tvOS, Android, various other flavors of Unix, and 
 
 It is written in C++ (using C++11 features) and compiles with Clang (with libc++), GCC 5+ and MSVC.
 
-An earlier version of LiteCore, known as CBForest, has been in use since mid-2015 in the iOS/Mac version of [Couchbase Lite][CBL] 1.1, and since early 2016 in the 1.2 release on all the above platforms.
+# Status
+
+**As of March 2017:** Under heavy development. Almost all features are implemented, and seem pretty solid, but APIs may still change and there may be short-term build problems if one compiler or another dislikes a recent commit. 
+
+* The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too ,since it's so similar to Mac at this level.
+* The CMake build is generally up to date but may fall behind.
+* The C# bindings are updated within a few days of C API changes.
+* The Java bindings are in progress but may not be fully functional yet.
 
 # Building It
 
@@ -53,12 +61,12 @@ Once you've cloned or downloaded the source tree...
 
 ## macOS, iOS
 
+If you want to use the Objective-C or Swift APIs, you should instead check out and build the `feature/2.0` branch of the [couchbase-lite-ios][CBL_iOS_2] repo, which itself includes LiteCore as a submodule. The following instructions are to build just LiteCore on its own:
+
 * Make sure you have Xcode 8 or later. 
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore dylib**. 
 * Build.
-
-If you want to try the (experimental, unofficial) Objective-C bindings, build the scheme **LiteCoreObjC**.
 
 ## Linux, Android
 
@@ -117,22 +125,15 @@ If this is out of date, or you want a local copy, you can generate your own by r
     
 The main page is then located at `Documentation/html/modules.html`.
 
-# Status
-
-**As of December 2016:** Under heavy development. Almost all features are implemented, and seem pretty solid, but APIs may still change and there may be short-term build problems if one compiler or another dislikes a recent commit. 
-
-* The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too since it's so similar to Mac at this level.
-* The CMake build is generally up to date but may fall behind.
-* The C# bindings may be out of date or incomplete.
-* The Java bindings compile, but none of the newer API calls have been added to them.
-
 # Authors
 
 Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden)), Hideki Itakura ([@hideki](https://github.com/hideki))
 
 # License
 
-Like all Couchbase source code, this is released under the Apache 2 [license](LICENSE).
+Like all Couchbase open source code, this is released under the Apache 2 [license](LICENSE).
 
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
+[CBL_iOS_2]: https://github.com/couchbase/couchbase-lite-ios/tree/feature/2.0
+[N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
