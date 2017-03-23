@@ -136,7 +136,6 @@ namespace litecore {
             beginBusy();
             f();
             afterEvent();
-            endBusy();
         });
     }
 
@@ -150,7 +149,6 @@ namespace litecore {
             beginBusy();
             block();
             afterEvent();
-            endBusy();
         };
         dispatch_async(_queue, wrappedBlock);
     }
@@ -165,7 +163,6 @@ namespace litecore {
             beginBusy();
             block();
             afterEvent();
-            endBusy();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)
@@ -184,7 +181,6 @@ namespace litecore {
             beginBusy();
             f();
             afterEvent();
-            endBusy();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)
@@ -196,13 +192,14 @@ namespace litecore {
 
     void GCDMailbox::afterEvent() {
         _actor->afterEvent();
-        release(_actor);
+        endBusy();
 #if DEBUG
         if (_eventCount > _maxEventCount) {
             _maxEventCount = _eventCount;
         }
 #endif
         --_eventCount;
+        release(_actor);
     }
 
 
