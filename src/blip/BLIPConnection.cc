@@ -87,6 +87,7 @@ namespace litecore { namespace blip {
         MessageNo               _numRequestsReceived {0};
         unique_ptr<uint8_t[]>   _frameBuf;
         std::unordered_map<string, Connection::RequestHandler> _requestHandlers;
+        size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
 
     public:
 
@@ -104,7 +105,7 @@ namespace litecore { namespace blip {
         }
 
         ~BLIPIO() {
-            logDebug("~BLIPIO");
+            Log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
         }
 
         void queueMessage(MessageOut *msg) {
@@ -189,6 +190,9 @@ namespace litecore { namespace blip {
                 log("Sending %s #%llu, flags=%02x",
                     kMessageTypeNames[msg->type()], msg->_number, msg->flags());
             }
+            _maxOutboxDepth = max(_maxOutboxDepth, _outbox.size()+1);
+            _totalOutboxDepth += _outbox.size()+1;
+            ++_countOutboxDepth;
             requeue(msg, true);
         }
 
@@ -214,16 +218,6 @@ namespace litecore { namespace blip {
                 ++i;
             }
             _outbox.emplace(i, msg);  // inserts _at_ position i, before message *i
-
-#if DEBUG
-            MessageNo lastNo = 0;
-            for (auto &msg : _outbox) {
-                if (msg->_bytesSent == 0) {
-                    assert(msg->number() > lastNo);
-                    lastNo = msg->number();
-                }
-            }
-#endif
 
             if (andWrite)
                 writeToWebSocket();
