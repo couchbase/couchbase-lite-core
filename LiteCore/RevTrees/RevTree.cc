@@ -328,7 +328,7 @@ namespace litecore {
                 for (Rev* anc = rev; anc; anc = (Rev*)anc->parent()) {
                     if (++depth > maxDepth) {
                         // Mark revs that are too far away:
-                        anc->revID.size = 0;
+                        anc->revID.setSize(0);
                         numPruned++;
                     }
                 }
@@ -348,7 +348,7 @@ namespace litecore {
             return 0;
         do {
             nPurged++;
-            rev->revID.size = 0;                    // mark for purge
+            rev->revID.setSize(0);                    // mark for purge
             const Rev* parent = (Rev*)rev->parent();
             rev->_parentIndex = Rev::kNoParent; // unlink from parent
             rev = (Rev*)parent;

@@ -269,9 +269,8 @@ namespace litecore {
                     // ... else fall through to match blobs:
                 case SQLITE_TEXT: {
                     valueType type = (argType == SQLITE_TEXT) ? kString : kData;
-                    slice blobVal;
-                    blobVal.buf = sqlite3_value_blob(arg);
-                    blobVal.size = sqlite3_value_bytes(arg);
+                    const void *blob = sqlite3_value_blob(arg);
+                    slice blobVal(blob, sqlite3_value_bytes(arg));
                     for (Array::iterator j(array); j; ++j) {
                         if (j->type() == type && j->asString() == blobVal) {
                             ++found;

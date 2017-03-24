@@ -528,8 +528,8 @@ namespace litecore {
         if (op.size == 1) {
             parameter = operands[0]->toString();
         } else {
+            op.moveStart(1);
             parameter = op;
-            parameter.moveStart(1);
             if (operands.count() > 0)
                 fail("extra operands to '%.*s'", splat(parameter));
         }
@@ -645,7 +645,7 @@ namespace litecore {
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
         // Look up the function name:
-        op.size -= 2;
+        op.shorten(op.size - 2);
         string fnName = op.asString();
         const FunctionSpec *spec;
         for (spec = kFunctionList; spec->name; ++spec) {

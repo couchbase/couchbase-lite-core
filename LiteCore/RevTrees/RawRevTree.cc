@@ -102,8 +102,7 @@ namespace litecore {
 
     void RawRevision::copyTo(Rev &dst) const {
         const void* end = this->next();
-        dst.revID.buf = (char*)this->revID;
-        dst.revID.size = this->revIDLen;
+        dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
         dst._parentIndex = ntohs(this->parentIndex);
         const void *data = offsetby(&this->revID, this->revIDLen);

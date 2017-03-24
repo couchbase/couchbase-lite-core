@@ -41,7 +41,7 @@ namespace litecore {
         version = meta.read()->asString();
         docType = meta.read()->asString();
         if (docType.size == 0)
-            docType.buf = nullptr;
+            docType = nullslice;
     }
 
     alloc_slice DocumentMeta::encode() const {

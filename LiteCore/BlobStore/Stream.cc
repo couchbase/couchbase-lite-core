@@ -29,7 +29,7 @@ namespace litecore {
         if (length > SIZE_MAX)    // overflow check for 32-bit
             throw bad_alloc();
         auto contents = alloc_slice((size_t)length);
-        contents.size = read((void*)contents.buf, contents.size);
+        contents.shorten(read((void*)contents.buf, contents.size));
         return contents;
     }
 

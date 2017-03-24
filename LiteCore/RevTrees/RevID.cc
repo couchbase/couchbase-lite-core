@@ -134,7 +134,7 @@ namespace litecore {
             for (size_t i = 0; i < digest.size; ++i)
                 dst = byteToHex(dst, bytes[i]);
         }
-        expanded_rev.size = dst - (char*)expanded_rev.buf;
+        expanded_rev.setSize(dst - (char*)expanded_rev.buf);
     }
 
     bool revid::expandInto(slice &expanded_rev) const {
@@ -147,9 +147,11 @@ namespace litecore {
     alloc_slice revid::expanded() const {
         if (!buf)
             return alloc_slice();
-        alloc_slice result(expandedSize());
+        alloc_slice resultBuf(expandedSize());
+        slice result(resultBuf);
         _expandInto(result);
-        return result;
+        resultBuf.shorten(result.size);
+        return resultBuf;
     }
 
     unsigned revid::generation() const {
@@ -189,16 +191,14 @@ namespace litecore {
 
     revidBuffer& revidBuffer::operator= (const revidBuffer& other) {
         memcpy(_buffer, other._buffer, sizeof(_buffer));
-        buf = &_buffer;
-        size = other.size;
+        set(&_buffer, other.size);
         return *this;
     }
 
     revidBuffer& revidBuffer::operator= (const revid &other) {
         Assert(other.size <= sizeof(_buffer));
         memcpy(_buffer, other.buf, other.size);
-        buf = &_buffer;
-        size = other.size;
+        set(&_buffer, other.size);
         return *this;
     }
 
@@ -210,7 +210,7 @@ namespace litecore {
         if (type == kClockType)
             *(dst++) = 0;
         dst += PutUVarInt(dst, generation);
-        size = dst + digest.size - _buffer;
+        setSize(dst + digest.size - _buffer);
         if (size > sizeof(_buffer))
             error::_throw(error::CorruptRevisionData); // digest too long!
         memcpy(dst, digest.buf, digest.size);
@@ -229,8 +229,7 @@ namespace litecore {
 
     bool revidBuffer::tryParse(slice ascii, bool allowClock) {
         uint8_t* start = _buffer, *dst = start;
-        buf = start;
-        size = 0;
+        set(start, 0);
 
         // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
         const char *sep = (const char*)ascii.findByte('@');
@@ -272,7 +271,7 @@ namespace litecore {
                 *dst++ = (uint8_t)(16*digittoint(suffix[i]) + digittoint(suffix[i+1]));
             }
         }
-        size = dst - start;
+        setSize(dst - start);
         return true;
     }
 
