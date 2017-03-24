@@ -2,7 +2,7 @@ package com.couchbase.litecore.fleece;
 
 public class FLConstants {
     // Types of Fleece values. Basically JSON, with the addition of Data (raw blob).
-    interface FLValueType {
+    public interface FLValueType {
         int kFLUndefined = -1; // Type of a nullptr FLValue (i.e. no such value)
         int kFLNull = 0;
         int kFLBoolean = 1;
@@ -13,7 +13,7 @@ public class FLConstants {
         int kFLDict = 6;
     }
 
-    interface FLError {
+    public interface FLError {
         int NoError = 0;
         int MemoryError = 1;        // Out of memory, or allocation failed
         int OutOfRange = 2;        // Array index or iterator out of range

@@ -34,6 +34,10 @@ public class FLValue {
         this.handle = handle;
     }
 
+    public int getType(){
+        return getType(handle);
+    }
+
     public boolean asBool() {
         return asBool(handle);
     }
