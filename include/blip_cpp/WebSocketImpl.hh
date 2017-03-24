@@ -68,7 +68,7 @@ namespace litecore { namespace websocket {
         std::mutex _mutex;
         int _curOpCode;
         fleece::alloc_slice _curMessage;
-        size_t _curMessageCapacity;
+        size_t _curMessageLength;
         size_t _bufferedBytes {0};
         Stopwatch _timeConnected {false};
         uint64_t _bytesSent {0}, _bytesReceived {0};

@@ -118,9 +118,9 @@ namespace litecore { namespace websocket {
             if (_closeSent && opcode != CLOSE)
                 return false;
             frame.resize(message.size + 10); // maximum space needed
-            frame.size = ClientProtocol::formatMessage((char*)frame.buf,
-                                                       (const char*)message.buf, message.size,
-                                                       (uWS::OpCode)opcode, message.size, false);
+            frame.shorten(ClientProtocol::formatMessage((char*)frame.buf,
+                                                        (const char*)message.buf, message.size,
+                                                        (uWS::OpCode)opcode, message.size, false));
             _bufferedBytes += frame.size;
             writeable = (_bufferedBytes <= kSendBufferSize);
         }
@@ -176,19 +176,19 @@ namespace litecore { namespace websocket {
         // Beginning:
         if (!_curMessage) {
             _curOpCode = opCode;
-            _curMessageCapacity = length + remainingBytes;
-            _curMessage.reset(_curMessageCapacity);
-            _curMessage.size = 0;
+            _curMessage.reset(length + remainingBytes);
+            _curMessageLength = 0;
         }
 
         // Body:
-        if (_curMessage.size + length > _curMessageCapacity)
+        if (_curMessageLength + length > _curMessage.size)
             return false; // overflow!
-        memcpy((void*)_curMessage.end(), data, length);
-        _curMessage.size += length;
+        memcpy((void*)&_curMessage[_curMessageLength], data, length);
+        _curMessageLength += length;
 
         // End:
         if (fin && remainingBytes == 0) {
+            _curMessage.shorten(_curMessageLength);
             return receivedMessage(_curOpCode, std::move(_curMessage));
             assert(!_curMessage);
         }
@@ -238,8 +238,7 @@ namespace litecore { namespace websocket {
             auto size = ClientProtocol::formatClosePayload((char*)_closeMessage.buf,
                                                            (uint16_t)status,
                                                            (char*)message.buf, message.size);
-            assert(size <= _closeMessage.size);
-            _closeMessage.size = size;
+            _closeMessage.shorten(size);
         }
         sendOp(_closeMessage, uWS::CLOSE);
     }

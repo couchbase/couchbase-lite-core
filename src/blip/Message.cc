@@ -183,7 +183,7 @@ namespace litecore { namespace blip {
                             output.size, _propertiesLength + len1 + len2);
                     memcpy((void*)&output[_propertiesLength],        zip1.data(), len1);
                     memcpy((void*)&output[_propertiesLength + len1], zip2.data(), len2);
-                    output.size = _propertiesLength + len1 + len2;
+                    output.shorten(_propertiesLength + len1 + len2);
                     compressed = true;
                 }
             }

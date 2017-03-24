@@ -320,19 +320,22 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessage(alloc_slice frame, bool binary) {
             if (!binary) {
-                log("Ignoring non-binary message");
+                log("Ignoring non-binary WebSocket message");
                 return;
             }
+            // Read the frame header:
+            slice payload(frame);
             uint64_t msgNo, flagsInt;
-            if (!ReadUVarInt(&frame, &msgNo) || !ReadUVarInt(&frame, &flagsInt)) {
+            if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt)) {
                 warn("Illegal frame header");
                 return;
             }
             auto flags = (FrameFlags)flagsInt;
             logVerbose("Received frame: %s #%llu, flags %02x, length %5ld",
                   kMessageTypeNames[flags & kTypeMask], msgNo,
-                  (flags & ~kTypeMask), (long)frame.size);
+                  (flags & ~kTypeMask), (long)payload.size);
 
+            // Handle the frame according to its type, and look up the MessageIn:
             Retained<MessageIn> msg;
             auto type = (MessageType)(flags & kTypeMask);
             switch (type) {
@@ -345,14 +348,16 @@ namespace litecore { namespace blip {
                     break;
                 case kAckRequestType:
                 case kAckResponseType:
-                    receivedAck(msgNo, (type == kAckResponseType), frame);
+                    receivedAck(msgNo, (type == kAckResponseType), payload);
                     break;
                 default:
                     log("  Unknown frame type received");
                     break;
                 }
             }
-            if (msg && msg->receivedFrame(frame, flags)) {
+
+            // Append the frame to the message:
+            if (msg && msg->receivedFrame(payload, flags)) {
                 // Message complete!
                 if (type == kRequestType)
                     handleRequest(msg);
