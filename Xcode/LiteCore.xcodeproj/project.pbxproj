@@ -143,6 +143,10 @@
 		2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FCF51E6783A000108780 /* Checkpoint.hh */; };
 		2773FCFE1E67A64D00108780 /* RemoteSequenceSet.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		2779CC531E848BB100F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
+		2779CC5D1E848C3000F0D251 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
+		2779CC5E1E848C9400F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
+		2779CC5F1E8498A000F0D251 /* CouchbaseLiteReplicator.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963631D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
@@ -463,6 +467,20 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
 		};
+		2779CC571E848BBC00F0D251 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "LiteCore dylib";
+		};
+		2779CC591E848BC000F0D251 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27CCC7C81E525E6D00CE1989;
+			remoteInfo = Replicator;
+		};
 		2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -595,6 +613,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
+				2779CC5F1E8498A000F0D251 /* CouchbaseLiteReplicator.framework in CopyFiles */,
 				27A924BD1D9B358300086206 /* libLiteCore.dylib in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1043,6 +1062,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2779CC531E848BB100F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */,
 				7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1051,6 +1071,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2779CC5E1E848C9400F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */,
 				7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2016,6 +2037,8 @@
 			buildRules = (
 			);
 			dependencies = (
+				2779CC5A1E848BC000F0D251 /* PBXTargetDependency */,
+				2779CC581E848BBC00F0D251 /* PBXTargetDependency */,
 			);
 			name = "LiteCore-iOS";
 			productName = "LiteCore Shell";
@@ -2384,6 +2407,7 @@
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
+				2779CC5D1E848C3000F0D251 /* ReplicatorAPITest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
 				27A924C51D9B371700086206 /* c4PerfTest.cc in Sources */,
@@ -2626,6 +2650,16 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
 			targetProxy = 27766E1E1982DED300CAA464 /* PBXContainerItemProxy */;
+		};
+		2779CC581E848BBC00F0D251 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			targetProxy = 2779CC571E848BBC00F0D251 /* PBXContainerItemProxy */;
+		};
+		2779CC5A1E848BC000F0D251 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27CCC7C81E525E6D00CE1989 /* Replicator */;
+			targetProxy = 2779CC591E848BC000F0D251 /* PBXContainerItemProxy */;
 		};
 		2797BCB61C10F76F00E5C991 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

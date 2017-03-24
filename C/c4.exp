@@ -217,6 +217,7 @@ _FLEncoder_GetErrorMessage
 _FLEncoder_WriteCFObject
 _FLValue_CopyCFObject
 _FLDict_GetWithCFString
+_FLDictIterator_GetKeyAsNSString
 _FLEncoder_WriteNSObject
 _FLValue_GetNSObject
 _FLDict_GetWithNSString
