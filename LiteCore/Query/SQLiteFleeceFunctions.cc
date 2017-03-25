@@ -19,6 +19,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include <sqlite3.h>
+#include <regex>
 
 using namespace fleece;
 using namespace std;
@@ -324,6 +325,14 @@ namespace litecore {
         auto arg1 = valueAsStringSlice(argv[1]);
         sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
     }
+    
+    static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg0 = valueAsStringSlice(argv[0]);
+        auto arg1 = valueAsStringSlice(argv[1]);
+        regex r((char *)arg1.buf);
+        int result = regex_search((char *)arg0.buf, r) ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
 
     
     static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -356,7 +365,7 @@ namespace litecore {
             { "array_sum",        -1, fl_array_sum },
 
             { "contains",          2, contains },
-            { "regexp_like",       2, unimplemented },
+            { "regexp_like",       2, regexp_like },
 
             { "sqrt",              1, unimplemented },
             { "log",               1, unimplemented },
