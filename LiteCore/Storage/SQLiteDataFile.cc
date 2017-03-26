@@ -56,6 +56,11 @@ namespace litecore {
     // If the database has many bytes of free space, vacuum it
     static const int64_t kVacuumSizeThreshold = 50 * MB;
 
+    // Database busy timeout; generally not needed since we have other arbitration that keeps
+    // multiple threads from trying to start transactions at once, but another process might
+    // open the database and grab the write lock.
+    static const unsigned kBusyTimeoutSecs = 10;
+
 
     LogDomain SQL("SQL");
 
@@ -143,6 +148,8 @@ path.path().c_str());
             error::_throw(error::UnsupportedEncryption);
 
         withFileLock([this]{
+            _sqlDb->setBusyTimeout(kBusyTimeoutSecs * 1000);
+
             // http://www.sqlite.org/pragma.html
             stringstream sql;
             sql <<
