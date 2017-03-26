@@ -30,12 +30,21 @@ public:
     constexpr static const C4Address kDefaultAddress {kC4Replicator2Scheme, C4STR("localhost"), 4984};
     constexpr static const C4String kScratchDBName = C4STR("scratch");
     constexpr static const C4String kITunesDBName = C4STR("itunes");
+    constexpr static const C4String kWikipedia1kDBName = C4STR("wikipedia1k");
 
     ReplicatorAPITest()
     :C4Test(0)
     {
         C4RegisterSocketFactory();
-        address.hostname = C4STR("192.168.1.64"); //TEMP
+        const char *hostname = getenv("REMOTE_HOST");
+        if (hostname)
+            address.hostname = c4str(hostname);
+        const char *portStr = getenv("REMOTE_PORT");
+        if (portStr)
+            address.port = (uint16_t)strtol(portStr, nullptr, 10);
+        const char *remoteDB = getenv("REMOTE_DB");
+        if (remoteDB)
+            remoteDBName = c4str(remoteDB);
     }
 
     ~ReplicatorAPITest() {
@@ -96,7 +105,8 @@ public:
 
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
-constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName;
+constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
+                         ReplicatorAPITest::kWikipedia1kDBName;
 
 
 
@@ -113,6 +123,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.special]")
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.special]") {
     importJSONFile(sFixturesDir + "iTunesMusicLibrary.json");
+    replicate(kC4OneShot, kC4Disabled);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.special]") {
+    importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 

@@ -246,6 +246,25 @@ void C4Test::createNumberedDocs(unsigned numberOfDocs) {
 }
 
 
+string C4Test::listSharedKeys(string delimiter) {
+    stringstream result;
+    auto sk = c4db_getFLSharedKeys(db);
+    REQUIRE(sk);
+    for (int keyCode = 0; true; ++keyCode) {
+        FLSlice key = FLSharedKey_GetKeyString(sk, keyCode, nullptr);
+        if (!key.buf)
+            break;
+        if (keyCode > 0)
+            result << delimiter;
+        result << string((char*)key.buf, key.size);
+    }
+    return result.str();
+}
+
+
+#pragma mark - FILE IMPORT:
+
+
 // Reads a file into memory.
 FLSlice C4Test::readFile(std::string path) {
     INFO("Opening file " << path);
@@ -267,14 +286,14 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
-    char buf[10000];
+    char buf[1000000];  // The Wikipedia dumps have verrry long lines
     while (fd.good()) {
         fd.getline(buf, sizeof(buf));
         auto len = fd.gcount();
         if (len <= 0)
             break;
-        if (buf[len-1] == '\0')
-            --len;
+        REQUIRE(buf[len-1] == '\0');
+        --len;
         if (!callback({buf, (size_t)len}))
             return false;
     }
@@ -289,6 +308,7 @@ unsigned C4Test::importJSONFile(string path, double timeout, bool verbose) {
     auto jsonData = readFile(path);
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
+    REQUIRE(fleeceData.buf != nullptr);
     free((void*)jsonData.buf);
     Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     REQUIRE(root);

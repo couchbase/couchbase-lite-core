@@ -121,6 +121,24 @@ public:
         return (unsigned) docIDs.size();
     }
 
+
+    void readRandomDocs(size_t numDocs, size_t numDocsToRead) {
+        std::cerr << "Reading " <<numDocsToRead<< " random docs...\n";
+        Benchmark b;
+        for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
+            char docID[30];
+            sprintf(docID, "%07lu", ((unsigned)random() % numDocs) + 1);
+            INFO("Reading doc " << docID);
+            b.start();
+            C4Error error;
+            auto doc = c4doc_get(db, c4str(docID), true, &error);
+            REQUIRE(doc);
+            REQUIRE(doc->selectedRev.body.size > 100);
+            c4doc_free(doc);
+            b.stop();
+        }
+        b.printReport(1, "doc");
+    }
 };
 
 
@@ -142,6 +160,35 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
+    // Download https://github.com/arangodb/example-datasets/raw/master/RandomUsers/names_300000.json
+    // to C/tests/data/ before running this test.
+    //
+    // Docs look like:
+    // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
+
+    auto numDocs = importJSONLines(sFixturesDir + "names_300000.json", 30.0, true);
+    const bool complete = (numDocs == 300000);
+#ifdef NDEBUG
+    REQUIRE(numDocs == 300000);
+#endif
+    std:: cerr << "Shared keys:  " << listSharedKeys() << "\n";
+    for (int pass = 0; pass < 2; ++pass) {
+        Stopwatch st;
+        auto n = queryWhere("[\"=\", [\".contact.address.state\"], \"WA\"]");
+        st.printReport("SQL query of state", n, "doc");
+        if (complete) CHECK(n == 5053);
+        if (pass == 0) {
+            Stopwatch st2;
+            C4Error error;
+			C4Slice property = C4STR("[[\".contact.address.state\"]]");
+            REQUIRE(c4db_createIndex(db, property, kC4ValueIndex, nullptr, &error));
+            st2.printReport("Creating SQL index of state", 1, "index");
+        }
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
     // Download https://github.com/arangodb/example-datasets/raw/master/IPRanges/geoblocks.json
     // to C/tests/data/ before running this test.
@@ -151,46 +198,17 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
 
     auto numDocs = importJSONLines(sFixturesDir + "geoblocks.json", 15.0, true);
     reopenDB();
-    {
-        Stopwatch st;
-        auto readNo = 0;
-        for (; readNo < 100000; ++readNo) {
-            char docID[30];
-            sprintf(docID, "%07u", ((unsigned)random() % numDocs) + 1);
-            C4Error error;
-            auto doc = c4doc_get(db, c4str(docID), true, &error);
-            REQUIRE(doc);
-            REQUIRE(doc->selectedRev.body.size > 10);
-            c4doc_free(doc);
-        }
-        st.printReport("Reading random docs", readNo, "doc");
-    }
-	std::this_thread::sleep_for(std::chrono::seconds(1)); //TEMP
+    readRandomDocs(numDocs, 100000);
 }
 
-N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
-    // Download https://github.com/arangodb/example-datasets/raw/master/RandomUsers/names_300000.json
-    // to C/tests/data/ before running this test.
-    //
-    // Docs look like:
-    // {"name":{"first":"Travis","last":"Mutchler"},"gender":"female","birthday":"1990-12-21","contact":{"address":{"street":"22 Kansas Cir","zip":"45384","city":"Wilberforce","state":"OH"},"email":["Travis.Mutchler@nosql-matters.org","Travis@nosql-matters.org"],"region":"937","phone":["937-3512486"]},"likes":["travelling"],"memberSince":"2010-01-01"}
 
-    auto numDocs = importJSONLines(sFixturesDir + "names_300000.json", 15.0, true);
-    const bool complete = (numDocs == 300000);
-#ifdef NDEBUG
-    REQUIRE(numDocs == 300000);
-#endif
-    for (int pass = 0; pass < 2; ++pass) {
-        Stopwatch st;
-        auto n = queryWhere("{\"contact.address.state\": \"WA\"}");
-        st.printReport("SQL query of state", n, "doc");
-        if (complete) CHECK(n == 5053);
-        if (pass == 0) {
-            Stopwatch st2;
-            C4Error error;
-			C4Slice property = C4STR("contact.address.state");
-            REQUIRE(c4db_createIndex(db, property, kC4ValueIndex, nullptr, &error));
-            st2.printReport("Creating SQL index of state", 1, "index");
-        }
-    }
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import Wikipedia", "[Perf][C][.slow]") {
+    // Download https://github.com/diegoceccarelli/json-wikipedia/blob/master/src/test/resources/misc/en-wikipedia-articles-1000-1.json.gz
+    // and unzip to C/tests/data/ before running this test.
+
+    auto numDocs = importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json", 15.0, true);
+    std:: cerr << "Shared keys:  " << listSharedKeys() << "\n";
+
+    reopenDB();
+    readRandomDocs(numDocs, 100000);
 }

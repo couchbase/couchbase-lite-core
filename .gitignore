@@ -19,6 +19,7 @@ stripopts
 empty.cpp
 
 # Huge performance-test files that have to be manually installed:
+C/tests/data/en-wikipedia-*.json
 C/tests/data/geoblocks.json
 C/tests/data/names_300000.json
 
