@@ -59,6 +59,17 @@ public interface Constants {
         int kDefault = kInclusiveStart | kInclusiveEnd | kIncludeNonConflicted | kIncludeBodies;
     }
 
+    //////// INDEXES:
+
+    // Types of indexes.
+    interface C4IndexType {
+        int kC4ValueIndex    = 0; ///< Regular index of property value
+        int kC4FullTextIndex = 1; ///< Full-text index
+        int kC4GeoIndex      = 2; ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
+    }
+
+    //////// ERROR:
+
     // Error domains:
     interface C4ErrorDomain {
         int LiteCoreDomain = 1;     // code is LiteCore-specific code (c4Base.h)

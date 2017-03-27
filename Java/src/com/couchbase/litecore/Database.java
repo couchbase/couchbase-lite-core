@@ -187,6 +187,20 @@ public class Database {
 
     private native static byte[][] _rawGet(long db, String store, String key) throws LiteCoreException;
 
+    ////////  INDEXES:  Defined in c4Query.h
+
+    public boolean createIndex(String expressionsJSON, int indexType, String language, boolean ignoreDiacritics) throws LiteCoreException {
+        return createIndex(_handle, expressionsJSON, indexType, language, ignoreDiacritics);
+    }
+
+    public boolean deleteIndex(String expressionsJSON, int indexType) throws LiteCoreException {
+        return deleteIndex(_handle, expressionsJSON, indexType);
+    }
+
+    private native static boolean createIndex(long db, String expressionsJSON, int indexType, String language, boolean ignoreDiacritics) throws LiteCoreException;
+
+    private native static boolean deleteIndex(long db, String expressionsJSON, int indexType) throws LiteCoreException;
+
     ////////  FLEECE-SPECIFIC:  Defined in c4Document+Fleece.h
 
     public FLEncoder createFleeceEncoder() {
