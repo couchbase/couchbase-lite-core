@@ -1,10 +1,49 @@
 package com.couchbase.litecore;
 
-/**
- * TODO: Implement  c4db_createIndex() and c4db_deleteIndex(). Maybe in Database.
- */
 public class C4Query {
     private long handle; // hold pointer to C4Query
+
+    //-------------------------------------------------------------------------
+    // internal class
+    //-------------------------------------------------------------------------
+    public static class C4QueryOptions {
+        long skip = 0;
+        long limit = Long.MAX_VALUE;
+        boolean rankFullText = true;
+
+        public C4QueryOptions() {
+        }
+
+        public C4QueryOptions(long skip, long limit, boolean rankFullText) {
+            this.skip = skip;
+            this.limit = limit;
+            this.rankFullText = rankFullText;
+        }
+
+        public long getSkip() {
+            return skip;
+        }
+
+        public void setSkip(long skip) {
+            this.skip = skip;
+        }
+
+        public long getLimit() {
+            return limit;
+        }
+
+        public void setLimit(long limit) {
+            this.limit = limit;
+        }
+
+        public boolean isRankFullText() {
+            return rankFullText;
+        }
+
+        public void setRankFullText(boolean rankFullText) {
+            this.rankFullText = rankFullText;
+        }
+    }
 
     //-------------------------------------------------------------------------
     // public methods
@@ -21,9 +60,10 @@ public class C4Query {
         return explain(handle);
     }
 
-    // TODO: Need to work options
-    public C4QueryEnumerator run(long options, String encodedParameters) throws LiteCoreException {
-        return new C4QueryEnumerator(run(handle, options, encodedParameters));
+    public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
+            throws LiteCoreException {
+        return new C4QueryEnumerator(
+                run(handle, options.skip, options.limit, options.rankFullText, encodedParameters));
     }
 
     public String fullTextMatched(String docID, long seq) throws LiteCoreException {
@@ -46,7 +86,7 @@ public class C4Query {
     /**
      * @param db
      * @param expression
-     * @return
+     * @return C4Query*
      * @throws LiteCoreException
      */
     private native static long init(long db, String expression) throws LiteCoreException;
@@ -54,31 +94,38 @@ public class C4Query {
     /**
      * Free C4Query* instance
      *
-     * @param query (C4Query*)
+     * @param c4query (C4Query*)
      */
-    private static native void free(long query);
+    private static native void free(long c4query);
 
     /**
-     * @param query (C4Query*)
+     * @param c4query (C4Query*)
      * @return C4StringResult
      */
-    private static native String explain(long query);
+    private static native String explain(long c4query);
 
     /**
-     * @param query
-     * @param options
+     * @param c4query
+     * @param skip
+     * @param limit
+     * @param rankFullText
      * @param encodedParameters
      * @return C4QueryEnumerator*
      * @throws LiteCoreException
      */
-    private static native long run(long query, long options, String encodedParameters) throws LiteCoreException;
+    private static native long run(long c4query,
+                                   long skip,
+                                   long limit,
+                                   boolean rankFullText,
+                                   String encodedParameters)
+            throws LiteCoreException;
 
     /**
-     * @param query
+     * @param c4query
      * @param docID
      * @param seq
      * @return C4StringResult
      * @throws LiteCoreException
      */
-    private static native String fullTextMatched(long query, String docID, long seq) throws LiteCoreException;
+    private static native String fullTextMatched(long c4query, String docID, long seq) throws LiteCoreException;
 }

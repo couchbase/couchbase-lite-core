@@ -1,6 +1,12 @@
 package com.couchbase.litecore;
 
+import com.couchbase.litecore.fleece.FLSliceResult;
+
 public class C4QueryEnumerator {
+    //-------------------------------------------------------------------------
+    // Member Variables
+    //-------------------------------------------------------------------------
+
     private long handle; // hold pointer to C4QueryEnumerator
 
     //-------------------------------------------------------------------------
@@ -13,6 +19,10 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
+    public FLSliceResult customColumns() {
+        return new FLSliceResult(customColumns(handle));
+    }
+
     public String fullTextMatched() throws LiteCoreException {
         return fullTextMatched(handle);
     }
@@ -28,6 +38,8 @@ public class C4QueryEnumerator {
     public void free() {
         free(handle);
     }
+
+    // -- Accessor methods to C4QueryEnumerator --
 
     public String getDocID() {
         return getDocID(handle);
@@ -58,34 +70,35 @@ public class C4QueryEnumerator {
     // native methods
     //-------------------------------------------------------------------------
 
-
     /**
-     * @param e C4QueryEnumerator*
-     * @return C4SliceResult
+     * @param c4queryenumerator C4QueryEnumerator*
+     * @return C4SliceResult(FLSliceResult)
      */
-    //private static native long customColumns(long e);
+    private static native long customColumns(long c4queryenumerator);
 
     /**
-     * @param e C4QueryEnumerator*
-     * @return C4StringResult
+     * @param c4queryenumerator C4QueryEnumerator*
+     * @return String (C4StringResult)
      * @throws LiteCoreException
      */
-    private static native String fullTextMatched(long e) throws LiteCoreException;
+    private static native String fullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
+    private static native boolean next(long c4queryenumerator) throws LiteCoreException;
 
-    private static native boolean next(long e) throws LiteCoreException;
+    private static native void close(long c4queryenumerator);
 
-    private static native void close(long e);
+    private static native void free(long c4queryenumerator);
 
-    private static native void free(long e);
+    // -- Accessor methods to C4QueryEnumerator --
 
-    // Accessor method to C4QueryEnumerator
-    private static native String getDocID(long e);
+    private static native String getDocID(long c4queryenumerator);
 
-    private static native long getDocSequence(long e);
+    private static native long getDocSequence(long c4queryenumerator);
 
-    private static native String getRevID(long e);
+    private static native String getRevID(long c4queryenumerator);
 
-    private static native long getDocFlags(long e);
-    //private static native long getFullTextTermCount(long e);
+    private static native long getDocFlags(long c4queryenumerator);
+
+    //private static native long getFullTextTermCount(long c4queryenumerator);
+    //private static native long getFullTextTerms(long c4queryenumerator);
 }
