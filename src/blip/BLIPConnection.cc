@@ -453,7 +453,7 @@ namespace litecore { namespace blip {
                 _connection->delegate().onRequestReceived(request);
             } catch (...) {
                 logError("Caught exception thrown from BLIP request handler");
-                request->respondWithError("BLIP"_sl, 501);
+                request->respondWithError({"BLIP"_sl, 501, "unexpected exception"_sl});
             }
         }
 

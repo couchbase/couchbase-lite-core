@@ -92,13 +92,12 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageBuilder::makeError(slice domain, int code, slice message) {
-        assert(domain);
+    void MessageBuilder::makeError(Error err) {
+        assert(err.domain && err.code);
         type = kErrorType;
-        addProperty("Error-Domain"_sl, domain);
-        addProperty("Error-Code"_sl, code);
-        if (message)
-            addProperty("Error-Message"_sl, message);
+        addProperty("Error-Domain"_sl, err.domain);
+        addProperty("Error-Code"_sl, err.code);
+        write(err.message);
     }
 
 
@@ -342,17 +341,12 @@ namespace litecore { namespace blip {
     }
 
 
-    slice MessageIn::errorDomain() const {
+    Error MessageIn::getError() const {
         if (!isError())
-            return nullslice;
-        return property("Error-Domain"_sl);
-    }
-
-
-    int MessageIn::errorCode() const {
-        if (!isError())
-            return 0;
-        return (int) intProperty("Error-Code"_sl);
+            return {};
+        return {property("Error-Domain"_sl),
+                (int) intProperty("Error-Code"_sl),
+                (slice)body()};
     }
 
 
@@ -368,17 +362,17 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::respondWithError(slice domain, int code, slice message) {
+    void MessageIn::respondWithError(Error err) {
         if (!noReply()) {
             MessageBuilder mb(this);
-            mb.makeError(domain, code, message);
+            mb.makeError(err);
             respond(mb);
         }
     }
 
 
     void MessageIn::notHandled() {
-        respondWithError("BLIP"_sl, 404);
+        respondWithError({"BLIP"_sl, 404, "no handler for message"_sl});
     }
 
 

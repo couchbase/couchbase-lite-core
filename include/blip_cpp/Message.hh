@@ -51,6 +51,25 @@ namespace litecore { namespace blip {
     using MessageProgressCallback = std::function<void(const MessageProgress&)>;
 
 
+    struct Error {
+        const slice domain;
+        const int code;
+        const slice message;
+    };
+
+    // Like Error but with an allocated message string
+    struct ErrorBuf : public Error {
+        const alloc_slice messageBuf;
+
+        ErrorBuf()      :Error{}  { }
+
+        ErrorBuf(slice domain, int code, alloc_slice msg)
+        :Error{domain, code, msg}
+        ,messageBuf(msg)
+        { }
+    };
+
+
     /** Abstract base class of messages */
     class Message : public RefCounted {
     public:
@@ -99,17 +118,14 @@ namespace litecore { namespace blip {
         long intProperty(slice property, long defaultValue =0) const;
         bool boolProperty(slice property, bool defaultValue =false) const;
 
-        /** The error domain (if this message is an error.) */
-        slice errorDomain() const;
-
-         /** The error code (if this message is an error.) */
-         int errorCode() const;
+        /** Returns information about an error (if this message is an error.) */
+        Error getError() const;
 
         /** Sends a response. */
         void respond(MessageBuilder&);
 
         /** Sends an error as a response. */
-        void respondWithError(slice domain, int code, slice message = fleece::nullslice);
+        void respondWithError(Error);
 
         /** Responds with an error saying that the message went unhandled.
             Call this if you don't know what to do with a request. */
@@ -169,7 +185,7 @@ namespace litecore { namespace blip {
         propertySetter operator[] (slice name)        { return {*this, name}; }
 
         /** Makes a response an error. */
-        void makeError(slice domain, int code, slice message);
+        void makeError(Error);
 
         /** JSON encoder that can be used to write JSON to the body. */
         fleeceapi::JSONEncoder& jsonBody()          {finishProperties(); return _out;}
