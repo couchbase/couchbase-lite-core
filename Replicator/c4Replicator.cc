@@ -23,6 +23,11 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
+const char* const kC4ReplicatorActivityLevelNames[5] = {
+    "stopped", "offline", "connecting", "idle", "busy"
+};
+
+
 struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     C4Replicator(C4Database* db,
@@ -30,7 +35,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                  C4String remoteDatabaseName,
                  C4ReplicatorMode push,
                  C4ReplicatorMode pull,
-                 C4ReplicatorStateChangedCallback onStateChanged,
+                 C4ReplicatorStatusChangedCallback onStateChanged,
                  void *callbackContext)
     {
         websocket::Address address(asstring(remoteAddress.scheme),
@@ -40,11 +45,11 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         _onStateChanged = onStateChanged;
         _callbackContext = callbackContext;
         _replicator = new Replicator(db, DefaultProvider(), address, *this, { push, pull });
-        _state = {_replicator->activityLevel(), {}};
+        _status = _replicator->status();
         retain(this); // keep myself alive till replicator closes
     }
 
-    C4ReplicatorState state() const     {return _state;}
+    C4ReplicatorStatus status() const   {return _status;}
 
     void stop()                         {_replicator->stop();}
 
@@ -52,49 +57,42 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
 private:
 
-    virtual void replicatorActivityChanged(Replicator*, Replicator::ActivityLevel level) override {
-        if (setActivityLevel(level)) {
-            notify();
-            if (level == kC4Stopped)
-                release(this); // balances retain in constructor
-        }
+    virtual void replicatorStatusChanged(Replicator*,
+                                         const Replicator::Status &newStatus) override
+    {
+        auto oldLevel = _status.load().level;
+        _status = newStatus;
+        notify();
+        if (oldLevel != kC4Stopped && newStatus.level == kC4Stopped)
+            release(this); // balances retain in constructor
     }
 
     virtual void replicatorConnectionClosed(Replicator*,
-                                            const Replicator::CloseStatus &status) override
+                                            const Replicator::CloseStatus &closeStatus) override
     {
         // The replicator may do a bit of work after the connection closes,
         // so don't assume it's stopped yet
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, DNSDomain};
 
-        if (status.reason != kWebSocketClose || (status.code != kCodeNormal
-                                                 && status.code != kCodeGoingAway)) {
-            C4ReplicatorState state = _state;
-            state.error = c4error_make(kDomainForReason[status.reason], status.code, status.message);
-            _state = state;
+        if (closeStatus.reason != kWebSocketClose || (closeStatus.code != kCodeNormal
+                                                 && closeStatus.code != kCodeGoingAway)) {
+            C4ReplicatorStatus status = _status;
+            status.error = c4error_make(kDomainForReason[closeStatus.reason],
+                                        closeStatus.code, closeStatus.message);
+            _status = status;
             notify();
         }
     }
 
-    bool setActivityLevel(C4ReplicatorActivityLevel level) {
-        C4ReplicatorState state = _state;
-        if (state.level == level)
-            return false;
-        state.level = level;
-        _state = state;
-        return true;
-    }
-
-    
     void notify() {
-        C4ReplicatorStateChangedCallback on = _onStateChanged;
+        C4ReplicatorStatusChangedCallback on = _onStateChanged;
         if (on)
-            on(this, _state, _callbackContext);
+            on(this, _status, _callbackContext);
     }
 
     Retained<Replicator> _replicator;
-    atomic<C4ReplicatorState> _state;
-    atomic<C4ReplicatorStateChangedCallback> _onStateChanged;
+    atomic<C4ReplicatorStatus> _status;
+    atomic<C4ReplicatorStatusChangedCallback> _onStateChanged;
     void *_callbackContext;
 };
 
@@ -104,7 +102,7 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4String remoteDatabaseName,
                          C4ReplicatorMode push,
                          C4ReplicatorMode pull,
-                         C4ReplicatorStateChangedCallback onStateChanged,
+                         C4ReplicatorStatusChangedCallback onStatusChanged,
                          void *callbackContext,
                          C4Error *err) C4API
 {
@@ -116,7 +114,7 @@ C4Replicator* c4repl_new(C4Database* db,
             return nullptr;
         }
         return retain(new C4Replicator(db, c4addr, remoteDatabaseName,
-                                       push, pull, onStateChanged, callbackContext));
+                                       push, pull, onStatusChanged, callbackContext));
     } catch (const std::exception &x) {
         if (err)
             *err = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
@@ -140,6 +138,6 @@ void c4repl_free(C4Replicator* repl) C4API {
 }
 
 
-C4ReplicatorState c4repl_getState(C4Replicator *repl) C4API {
-    return repl->state();
+C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
+    return repl->status();
 }

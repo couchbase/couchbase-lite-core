@@ -71,6 +71,7 @@ namespace litecore {
             InvalidQuery,
             NoSuchIndex,
             InvalidQueryParam,
+            RemoteError,
             
             NumLiteCoreErrorsPlus1
         };

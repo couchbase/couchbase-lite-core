@@ -31,7 +31,6 @@ namespace litecore { namespace repl {
         void _start(C4SequenceNumber sinceSequence);
         bool nonPassive() const                         {return _options.push > kC4Passive;}
         virtual ActivityLevel computeActivityLevel() const override;
-        virtual void activityLevelChanged(ActivityLevel level) override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(RevList changes, C4Error err);

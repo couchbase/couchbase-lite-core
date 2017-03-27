@@ -11,6 +11,7 @@
 #include "Checkpoint.hh"
 #include "BLIPConnection.hh"
 #include "FleeceCpp.hh"
+#include "Benchmark.hh"
 
 using namespace litecore::blip;
 
@@ -49,11 +50,11 @@ namespace litecore { namespace repl {
         public:
             virtual ~Delegate() =default;
 
-            virtual void replicatorActivityChanged(Replicator*, ActivityLevel) =0;
+            virtual void replicatorStatusChanged(Replicator*, const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&) =0;
         };
 
-        ActivityLevel activityLevel() const     {return ReplActor::activityLevel();}
+        Status status() const                   {return ReplActor::status();}   //FIX: Needs to be thread-safe
 
         void stop()                             {enqueue(&Replicator::_stop);}
 
@@ -67,8 +68,8 @@ namespace litecore { namespace repl {
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
         
         /** Called by the Pusher and Puller when they finish their duties. */
-        void taskChangedActivityLevel(ReplActor *task, ActivityLevel level) {
-            enqueue(&Replicator::_taskChangedActivityLevel, task, level);
+        void taskChangedStatus(ReplActor *task, const Status &status) {
+            enqueue(&Replicator::_taskChangedStatus, task, status);
         }
 
     protected:
@@ -80,8 +81,12 @@ namespace litecore { namespace repl {
         virtual void onRequestReceived(blip::MessageIn *msg) override
                                     {enqueue(&Replicator::_onRequestReceived,
                                              Retained<blip::MessageIn>(msg));}
+        virtual void changedActivityLevel() override;
 
     private:
+        // How long to wait between delegate calls when only the progress % has changed
+        static constexpr double kMinDelegateCallInterval = 0.2;
+
         Replicator(C4Database*, const websocket::Address&, Delegate&, Options, Connection*);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
@@ -91,9 +96,8 @@ namespace litecore { namespace repl {
         void _stop();
         void getCheckpoints();
         void startReplicating();
-        void _taskChangedActivityLevel(ReplActor *task, ActivityLevel);
+        void _taskChangedStatus(ReplActor *task, Status);
         virtual ActivityLevel computeActivityLevel() const override;
-        virtual void activityLevelChanged(ActivityLevel) override;
 
         void updateCheckpoint();
         void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
@@ -102,10 +106,13 @@ namespace litecore { namespace repl {
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
         Delegate& _delegate;
-        ActivityLevel _pushActivity, _pullActivity, _dbActivity;
         Retained<DBActor> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
+        Status _pushStatus {}, _pullStatus {}, _dbStatus {};
+        Stopwatch _sinceDelegateCall;
+        ActivityLevel _lastDelegateCallLevel {};
+        bool _waitingToCallDelegate {false};
 
         Checkpoint _checkpoint;
         alloc_slice _checkpointDocID;

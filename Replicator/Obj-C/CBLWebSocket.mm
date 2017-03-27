@@ -302,7 +302,7 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
             [self didCloseWithError: error];
         else {
             self->_receivedBytesPending += data.length;
-            LogVerbose("<<< received %zu bytes%s", data.length, (atEOF ? " (EOF)" : ""));
+            LogVerbose("<<< received %zu bytes%s [now %zu pending]", data.length, (atEOF ? " (EOF)" : ""), self->_receivedBytesPending);
             if (data) {
                 auto socket = self->_c4socket;
                 dispatch_async(self->_c4Queue, ^{

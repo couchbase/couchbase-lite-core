@@ -7,6 +7,8 @@
 //
 
 #include "ReplActor.hh"
+#include "Replicator.hh"
+#include "ReplicatorTypes.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
@@ -23,9 +25,6 @@ namespace litecore { namespace repl {
 
     static LogDomain SyncLog("Sync");
 
-    const char* const ReplActor::kActivityLevelName[] = {
-        "stopped", "offline", "connecting", "idle", "busy"};
-
 
     ReplActor::ReplActor(blip::Connection *connection,
                          Replicator *replicator,
@@ -36,8 +35,9 @@ namespace litecore { namespace repl {
     ,_connection(connection)
     ,_replicator(replicator)
     ,_options(options)
-    ,_activityLevel(connection->state() >= Connection::kConnected ? kC4Idle : kC4Connecting)
-    { }
+    {
+        _status.level = (connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting;
+    }
 
 
     void ReplActor::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
@@ -52,21 +52,76 @@ namespace litecore { namespace repl {
             if (!builder.noreply)
                 warn("Ignoring the response to a BLIP message!");
         }
+        assert(_connection);
         _connection->sendRequest(builder);
     }
 
 
+#pragma mark - ERRORS:
+
+
+    static const char* const kErrorDomainNames[] = {
+        nullptr, "LiteCore", "POSIX", nullptr, "SQLite", "Fleece", "DNS", "WebSocket"};
+
+
+    blip::ErrorBuf ReplActor::c4ToBLIPError(C4Error err) {
+        if (!err.code)
+            return { };
+        return {slice(kErrorDomainNames[err.domain]),
+                err.code,
+                alloc_slice(c4error_getMessage(err))};
+    }
+
+
+    C4Error ReplActor::blipToC4Error(const blip::Error &err) {
+        if (!err.domain)
+            return { };
+        C4ErrorDomain domain = LiteCoreDomain;
+        int code = kC4ErrorRemoteError;
+        string domainStr = err.domain.asString();
+        const char* domainCStr = domainStr.c_str();
+        for (uint32_t d = 0; d <= WebSocketDomain; d++) {
+            if (kErrorDomainNames[d] && strcmp(domainCStr, kErrorDomainNames[d]) == 0) {
+                domain = (C4ErrorDomain)d;
+                code = err.code;
+                break;
+            }
+        }
+        return c4error_make(domain, code, err.message);
+    }
+
+
     void ReplActor::gotError(const MessageIn* msg) {
-        // TODO
-        logError("Got error response: %.*s %d",
-                             SPLAT(msg->errorDomain()), msg->errorCode());
+        auto err = msg->getError();
+        logError("Got error response: %.*s %d '%.*s'",
+                 SPLAT(err.domain), err.code, SPLAT(err.message));
+        _status.error = blipToC4Error(err);
+        _statusChanged = true;
     }
 
     void ReplActor::gotError(C4Error err) {
-        // TODO
         alloc_slice message = c4error_getMessage(err);
         logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
+        _status.error = err;
+        _statusChanged = true;
     }
+
+
+#pragma mark - ACTIVITY / PROGRESS:
+
+
+    void ReplActor::setProgress(C4Progress p) {
+        if (p != _status.progress) {
+            _status.progress = p;
+            _statusChanged = true;
+        }
+    }
+
+
+    void ReplActor::addProgress(C4Progress p) {
+        setProgress(p + _status.progress);
+    }
+
 
 
     ReplActor::ActivityLevel ReplActor::computeActivityLevel() const {
@@ -76,15 +131,24 @@ namespace litecore { namespace repl {
             return kC4Idle;
     }
 
-
+    
     // Called after every event; updates busy status & detects when I'm done
     void ReplActor::afterEvent() {
+        bool changed = _statusChanged;
+        _statusChanged = false;
         auto newLevel = computeActivityLevel();
-        if (newLevel != _activityLevel) {
-            _activityLevel = newLevel;
-            log("now %s", kActivityLevelName[newLevel]);
-            activityLevelChanged(newLevel);
+        if (newLevel != _status.level) {
+            _status.level = newLevel;
+            log("now %s", kC4ReplicatorActivityLevelNames[newLevel]);
+            changed = true;
         }
+        if (changed)
+            changedActivityLevel();
+    }
+
+    void ReplActor::changedActivityLevel() {
+        if (_replicator && _replicator != this)
+            _replicator->taskChangedStatus(this, _status);
     }
 
 

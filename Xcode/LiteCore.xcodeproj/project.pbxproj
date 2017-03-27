@@ -782,6 +782,7 @@
 		2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequenceSet.hh; sourceTree = "<group>"; };
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
+		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
@@ -1564,6 +1565,7 @@
 		27CCC7CA1E525E6D00CE1989 /* Replicator */ = {
 			isa = PBXGroup;
 			children = (
+				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
 				275CE1131E5BAC180084E014 /* ReplActor.cc */,
 				275CE1141E5BAC180084E014 /* ReplActor.hh */,
 				27B8425F1E5CC6500094903E /* DBActor.cc */,

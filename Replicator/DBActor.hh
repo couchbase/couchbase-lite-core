@@ -7,66 +7,15 @@
 //
 
 #pragma once
+#include "ReplicatorTypes.hh"
 #include "ReplActor.hh"
-#include "c4Base.h"
-#include "slice.hh"
 #include <string>
 #include <vector>
 
 namespace litecore { namespace repl {
-    using slice = fleece::slice;
-    using alloc_slice = fleece::alloc_slice;
     class Pusher;
 
     
-    /** Metadata of a document revision. */
-    struct Rev {
-        alloc_slice docID;
-        alloc_slice revID;
-        C4SequenceNumber sequence {0};
-
-        Rev() { }
-
-        Rev(slice d, slice r, C4SequenceNumber s)
-        :docID(d), revID(r), sequence(s)
-        { }
-
-        Rev(const C4DocumentInfo &info)
-        :Rev(info.docID, info.revID, info.sequence)
-        { }
-    };
-
-    typedef std::vector<Rev> RevList;
-
-
-    /** A request by the peer to send a revision. */
-    struct RevRequest : public Rev {
-        std::vector<alloc_slice> ancestorRevIDs;    // Known ancestor revIDs the peer already has
-        unsigned maxHistory;                        // Max depth of rev history to send
-
-        RevRequest(const Rev &rev, unsigned maxHistory_)
-        :Rev(rev)
-        ,maxHistory(maxHistory_)
-        { }
-    };
-
-
-    /** A revision I want from the peer; includes the opaque remote revision ID. */
-    struct RequestedRev : public Rev {
-        alloc_slice remoteSequence;
-
-        RequestedRev() { }
-    };
-
-
-    struct RevToInsert : public Rev {
-        bool deleted {false};
-        alloc_slice historyBuf;
-        alloc_slice body;
-        std::function<void(C4Error)> onInserted;
-    };
-
-
     /** Actor that manages database access for the replicator. */
     class DBActor : public ReplActor {
     public:
@@ -101,9 +50,6 @@ namespace litecore { namespace repl {
         }
 
         void insertRevision(std::shared_ptr<RevToInsert> rev);
-
-    protected:
-        virtual void activityLevelChanged(ActivityLevel level) override;
 
     private:
         void handleGetCheckpoint(Retained<blip::MessageIn>);

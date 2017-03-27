@@ -33,8 +33,8 @@ namespace litecore { namespace repl {
     :ReplActor(connection, this, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(delegate)
-    ,_pushActivity(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_pullActivity(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
+    ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
+    ,_pullStatus{options.pull == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_dbActor(new DBActor(connection, this, db, address, options))
     {
         if (options.push != kC4Disabled)
@@ -80,17 +80,24 @@ namespace litecore { namespace repl {
 
 
     // The Pusher or Puller has finished.
-    void Replicator::_taskChangedActivityLevel(ReplActor *task, ActivityLevel level) {
-        if (task == _pusher)
-            _pushActivity = level;
-        else if (task == _puller)
-            _pullActivity = level;
-        else if (task == _dbActor)
-            _dbActivity = level;
+    void Replicator::_taskChangedStatus(ReplActor *task, Status taskStatus)
+    {
+        if (task == _pusher) {
+            _pushStatus = taskStatus;
+        } else if (task == _puller) {
+            _pullStatus = taskStatus;
+        } else if (task == _dbActor) {
+            _dbStatus = taskStatus;
+        }
 
-        logDebug("pushActivity=%d, pullActivity=%d, dbActivity=%d",
-                 _pushActivity, _pullActivity, _dbActivity);
-        if (level == kC4Stopped)
+        setProgress(_pushStatus.progress + _pullStatus.progress);
+
+        logDebug("pushStatus=%d, pullStatus=%d, dbStatus=%d, progress=%llu/%llu",
+                 _pushStatus.level, _pullStatus.level, _dbStatus.level,
+                 status().progress.completed, status().progress.total);
+
+        // Save a checkpoint immediately when push or pull finishes:
+        if (taskStatus.level == kC4Stopped)
             _checkpoint.save();
     }
 
@@ -106,8 +113,8 @@ namespace litecore { namespace repl {
                     level = kC4Busy;
                 else
                     level = ReplActor::computeActivityLevel();
-                level = max(level, max(_pushActivity, _pullActivity));
-                if (level == kC4Idle && !isOpenServer()) {
+                level = max(level, max(_pushStatus.level, _pullStatus.level));
+                if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:
                     log("Replication complete! Closing connection");
                     connection()->close();
@@ -116,16 +123,28 @@ namespace litecore { namespace repl {
                 return level;
             }
             case Connection::kClosing:
-                return kC4Busy; // wait for connection to close
+                // Remain active while I wait for the connection to finish closing:
+                return kC4Busy;
             case Connection::kDisconnected:
             case Connection::kClosed:
-                return (_dbActivity == kC4Busy) ? kC4Busy : kC4Stopped; // wait for db to finish
+                // After connection closes, remain active while I wait for db to finish writes:
+                return (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
        }
     }
 
 
-    void Replicator::activityLevelChanged(ActivityLevel level) {
-        _delegate.replicatorActivityChanged(this, level);
+    void Replicator::changedActivityLevel() {
+        auto curStatus = status();
+        auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
+        if (waitFor <= 0 || curStatus.level != _lastDelegateCallLevel) {
+            _waitingToCallDelegate = false;
+            _lastDelegateCallLevel = curStatus.level;
+            _sinceDelegateCall.reset();
+            _delegate.replicatorStatusChanged(this, curStatus);
+        } else if (!_waitingToCallDelegate) {
+            _waitingToCallDelegate = true;
+            enqueueAfter(Scheduler::duration(waitFor), &Replicator::changedActivityLevel);
+        }
     }
 
 
@@ -165,7 +184,7 @@ namespace litecore { namespace repl {
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         warn("Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
-        msg->respondWithError("BLIP"_sl, 404);
+        msg->notHandled();
     }
 
 
@@ -206,7 +225,8 @@ namespace litecore { namespace repl {
                 Checkpoint remoteCheckpoint;
 
                 if (response->isError()) {
-                    if (!(response->errorDomain() == "HTTP"_sl && response->errorCode() == 404))
+                    auto err = response->getError();
+                    if (!(err.domain == "HTTP"_sl && err.code == 404))
                         return gotError(response);
                     log("No remote checkpoint");
                     _checkpointRevID.reset();

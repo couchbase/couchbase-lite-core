@@ -28,13 +28,14 @@ namespace litecore { namespace repl {
     /** Abstract base class of Actors used by the replicator */
     class ReplActor : public Actor, C4InstanceCounted, protected Logging {
     public:
+
+        /** Replication configuration options */
         struct Options {
             using Mode = C4ReplicatorMode;
 
-            Mode push {kC4Disabled};
-            Mode pull {kC4Disabled};
-
-            duration checkpointSaveDelay        {std::chrono::seconds(5)};
+            Mode     push                   {kC4Disabled};
+            Mode     pull                   {kC4Disabled};
+            duration checkpointSaveDelay    {std::chrono::seconds(5)};
 
             Options()
             { }
@@ -45,12 +46,11 @@ namespace litecore { namespace repl {
 
             static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
             static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
-            static Options passive()                       {return Options(kC4Passive, kC4Passive);}
+            static Options passive()                       {return Options(kC4Passive,kC4Passive);}
         };
 
         using ActivityLevel = C4ReplicatorActivityLevel;
-
-        static const char* const kActivityLevelName[];
+        using Status = C4ReplicatorStatus;
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
@@ -89,12 +89,18 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error);
 
+        static blip::ErrorBuf c4ToBLIPError(C4Error);
+        static C4Error blipToC4Error(const blip::Error&);
+
         bool isOpenClient() const               {return _connection && !_connection->isServer();}
         bool isOpenServer() const               {return _connection &&  _connection->isServer();}
-
+        bool isContinuous() const               {return _options.push == kC4Continuous
+                                                     || _options.pull == kC4Continuous;}
+        const Status& status() const            {return _status;}
         virtual ActivityLevel computeActivityLevel() const;
-        virtual void activityLevelChanged(ActivityLevel level)    { }
-        ActivityLevel activityLevel() const     {return _activityLevel;}
+        virtual void changedActivityLevel();
+        void addProgress(C4Progress);
+        void setProgress(C4Progress);
 
         virtual void afterEvent() override;
         virtual std::string loggingIdentifier() const override {
@@ -107,7 +113,8 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
-        ActivityLevel _activityLevel {kC4Idle};
+        Status _status { };
+        bool _statusChanged {false};
     };
 
 } }

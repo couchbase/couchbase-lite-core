@@ -48,13 +48,17 @@ public:
         replicator = new Replicator(db, DefaultProvider(), address, *this, opts);
 
         Log("Waiting for replication to complete...");
-        while (replicator->activityLevel() > kC4Stopped)
+        while (replicator->status().level > kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
     }
 
-    virtual void replicatorActivityChanged(Replicator* repl, Replicator::ActivityLevel level) override {
-        Log(">> Replicator is %s", ReplActor::kActivityLevelName[level]);
+    virtual void replicatorStatusChanged(Replicator* repl,
+                                         const Replicator::Status &status) override
+    {
+        Log(">> Replicator is %s, progress %llu/%llu",
+            kC4ReplicatorActivityLevelNames[status.level],
+            status.progress.completed, status.progress.total);
     }
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {

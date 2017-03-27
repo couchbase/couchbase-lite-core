@@ -77,16 +77,30 @@ public:
         provider.connect(replClient->webSocket(), replServer->webSocket());
 
         Log("Waiting for replication to complete...");
-        while (replClient->activityLevel() > kC4Stopped || replServer->activityLevel() > kC4Stopped)
+        while (replClient->status().level > kC4Stopped || replServer->status().level > kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
         checkpointID = replClient->checkpointID();
+        CHECK(statusChangedCalls > 0);
+        CHECK(statusReceived.level == kC4Stopped);
+        CHECK(statusReceived.progress.completed == statusReceived.progress.total);
+        CHECK(statusReceived.error.code == 0);
     }
 
-    virtual void replicatorActivityChanged(Replicator* repl, Replicator::ActivityLevel level) override {
+    virtual void replicatorStatusChanged(Replicator* repl,
+                                         const Replicator::Status &status) override
+    {
         if (repl == replClient) {
-            if (repl == replClient)
-                Log(">> Replicator is %s", ReplActor::kActivityLevelName[level]);
+            ++statusChangedCalls;
+            Log(">> Replicator is %s, progress %llu/%llu",
+                kC4ReplicatorActivityLevelNames[status.level],
+                status.progress.completed, status.progress.total);
+            REQUIRE(status.progress.completed <= status.progress.total);
+            if (status.progress.total > 0) {
+                REQUIRE(status.progress.completed >= statusReceived.progress.completed);
+                REQUIRE(status.progress.total     >= statusReceived.progress.total);
+            }
+            statusReceived = status;
         }
     }
 
@@ -176,6 +190,8 @@ public:
     alloc_slice checkpointID;
     unique_ptr<thread> parallelThread;
     future<void> parallelThreadDone;
+    Replicator::Status statusReceived { };
+    unsigned statusChangedCalls {0};
 };
 
 

@@ -41,8 +41,8 @@ namespace litecore { namespace repl {
     void Pusher::handleSubChanges(Retained<MessageIn> req) {
         if (nonPassive()) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
-            req->respondWithError("LiteCore"_sl, kC4ErrorConflict,
-                                  "I'm already pushing"_sl);     //TODO: Proper error code
+            req->respondWithError({"LiteCore"_sl, kC4ErrorConflict,
+                                   "I'm already pushing"_sl});     //TODO: Proper error code
             return;
         }
         auto since = max(req->intProperty("since"_sl), 0l);
@@ -164,6 +164,7 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
         sendRequest(req, onProgress);
+        addProgress({0, changes.size()});
     }
 
 
@@ -225,6 +226,7 @@ namespace litecore { namespace repl {
     void Pusher::markComplete(C4SequenceNumber sequence) {
         if (nonPassive()) {
             _pendingSequences.remove(sequence);
+            addProgress({1, 0});
             auto firstPending = _pendingSequences.first();
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
             if (lastSeq > _lastSequence) {
@@ -253,10 +255,6 @@ namespace litecore { namespace repl {
         } else {
             return kC4Stopped;
         }
-    }
-
-    void Pusher::activityLevelChanged(ActivityLevel level) {
-        _replicator->taskChangedActivityLevel(this, level);
     }
 
 } }

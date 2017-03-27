@@ -109,7 +109,7 @@ namespace litecore { namespace repl {
                                        slice &checkpointID, c4::ref<C4RawDocument> &doc) {
         checkpointID = request->property("client"_sl);
         if (!checkpointID) {
-            request->respondWithError("BLIP"_sl, 400);
+            request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
             return false;
         }
         log("Request to %s checkpoint '%.*s'",
@@ -120,7 +120,7 @@ namespace litecore { namespace repl {
         if (!doc) {
             int status = isNotFoundError(err) ? 404 : 502;
             if (getting || (status != 404)) {
-                request->respondWithError("HTTP"_sl, status);
+                request->respondWithError({"HTTP"_sl, status});
                 return false;
             }
         }
@@ -146,7 +146,7 @@ namespace litecore { namespace repl {
         C4Error err;
         c4::Transaction t(_db);
         if (!t.begin(&err))
-            request->respondWithError("HTTP"_sl, 502);
+            request->respondWithError(c4ToBLIPError(err));
 
         // Get the existing raw doc so we can check its revID:
         slice checkpointID;
@@ -164,7 +164,7 @@ namespace litecore { namespace repl {
 
         // Check for conflict:
         if (request->property("rev"_sl) != actualRev)
-            return request->respondWithError("HTTP"_sl, 409);
+            return request->respondWithError({"HTTP"_sl, 409, "revision ID mismatch"_sl});
 
         // Generate new revID:
         char newRevBuf[30];
@@ -173,7 +173,7 @@ namespace litecore { namespace repl {
         // Save:
         if (!c4raw_put(_db, kPeerCheckpointStore, checkpointID, rev, request->body(), &err)
                 || !t.commit(&err)) {
-            return request->respondWithError("HTTP"_sl, 502);
+            return request->respondWithError(c4ToBLIPError(err));
         }
 
         // Success!
@@ -477,11 +477,6 @@ namespace litecore { namespace repl {
             }
         }
         return revExists;
-    }
-
-
-    void DBActor::activityLevelChanged(ActivityLevel level) {
-        _replicator->taskChangedActivityLevel(this, level);
     }
 
     

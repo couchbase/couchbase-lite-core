@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
         if (!changes) {
             warn("Invalid body of 'changes' message");
             if (req->body() != "null"_sl) {       // allow null since SG seems to send it(?)
-                req->respondWithError("BLIP"_sl, 400);
+                req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
                 return;
             }
         }
@@ -75,6 +75,7 @@ namespace litecore { namespace repl {
                     for (auto &r : requests)
                         _requestedSequences.add(r);
                     log("Now waiting on %zu revisions", _requestedSequences.size());
+                    addProgress({0, requests.size()});
                 }
                 --_pendingCallbacks;
             }));
@@ -113,12 +114,12 @@ namespace litecore { namespace repl {
                    SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(sequence));
         if (rev->docID.size == 0 || rev->revID.size == 0) {
             warn("Got invalid revision");
-            msg->respondWithError("BLIP"_sl, 400);
+            msg->respondWithError({"BLIP"_sl, 400, "invalid revision"_sl});
             return;
         }
         if (nonPassive() && !sequence) {
             warn("Missing sequence in 'rev' message for active puller");
-            msg->respondWithError("BLIP"_sl, 400);
+            msg->respondWithError({"BLIP"_sl, 400, "missing sequence"_sl});
             return;
         }
 
@@ -132,7 +133,7 @@ namespace litecore { namespace repl {
             rev->onInserted = asynchronize([this,msg,sequence](C4Error err) {
                 if (err.code) {
                     if (!msg->noReply())
-                        msg->respondWithError("LiteCore"_sl, err.code);      //TODO: Proper error domain
+                        msg->respondWithError(c4ToBLIPError(err));      //TODO: Proper error domain
                 } else {
                     // Finally, the revision has been added! Check it off:
                     markComplete(sequence);
@@ -152,6 +153,7 @@ namespace litecore { namespace repl {
     // Records that a sequence has been successfully pushed.
     void Puller::markComplete(const alloc_slice &sequence) {
         if (nonPassive()) {
+            addProgress({1, 0});
             if (_requestedSequences.remove(sequence)) {
                 _lastSequence = _requestedSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
@@ -172,10 +174,6 @@ namespace litecore { namespace repl {
         } else {
             return kC4Stopped;
         }
-    }
-
-    void Puller::activityLevelChanged(ActivityLevel level) {
-        _replicator->taskChangedActivityLevel(this, level);
     }
 
 

@@ -21,26 +21,35 @@ extern "C" {
 #define kC4Replicator2TLSScheme C4STR("blips")
 
     /** How to replicate, in either direction */
-    typedef enum {
+    typedef C4_ENUM(int32_t, C4ReplicatorMode) {
         kC4Disabled,        // Do not allow this direction
         kC4Passive,         // Allow peer to initiate this direction
         kC4OneShot,         // Replicate, then stop
         kC4Continuous       // Keep replication active until stopped by application
-    } C4ReplicatorMode;
+    };
 
-    typedef enum {
+    typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
         kC4Stopped,
         kC4Offline,
         kC4Connecting,
         kC4Idle,
         kC4Busy
-    } C4ReplicatorActivityLevel;
+    };
+
+    extern const char* const kC4ReplicatorActivityLevelNames[5];
+
+
+    typedef struct {
+        uint64_t    completed;
+        uint64_t    total;
+    } C4Progress;
 
     /** Current status of replication. Passed to callback. */
     typedef struct {
         C4ReplicatorActivityLevel level;
+        C4Progress progress;
         C4Error error;
-    } C4ReplicatorState;
+    } C4ReplicatorStatus;
 
 
     /** Opaque reference to a replicator. */
@@ -48,9 +57,9 @@ extern "C" {
 
     /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */
-    typedef void (*C4ReplicatorStateChangedCallback)(C4Replicator*,
-                                                     C4ReplicatorState,
-                                                     void *context);
+    typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator*,
+                                                      C4ReplicatorStatus,
+                                                      void *context);
 
     /** Creates a new replicator. */
     C4Replicator* c4repl_new(C4Database* db,
@@ -58,7 +67,7 @@ extern "C" {
                              C4String remoteDatabaseName,
                              C4ReplicatorMode push,
                              C4ReplicatorMode pull,
-                             C4ReplicatorStateChangedCallback onStateChanged,
+                             C4ReplicatorStatusChangedCallback onStateChanged,
                              void *callbackContext,
                              C4Error *err) C4API;
 
@@ -69,7 +78,7 @@ extern "C" {
     void c4repl_stop(C4Replicator* repl) C4API;
 
     /** Returns the current state of a replicator. */
-    C4ReplicatorState c4repl_getState(C4Replicator *repl) C4API;
+    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API;
 
 
     /** @} */

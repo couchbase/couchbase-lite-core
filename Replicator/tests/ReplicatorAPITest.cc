@@ -51,26 +51,27 @@ public:
         c4repl_free(repl);
     }
 
-    void logState(C4ReplicatorState state) {
+    void logState(C4ReplicatorStatus status) {
         char message[200];
-        c4error_getMessageC(state.error, message, sizeof(message));
-        C4Log(">>> C4Replicator state: level=%d, error=%d/%d: %s",
-            state.level, state.error.domain, state.error.code, message);
+        c4error_getMessageC(status.error, message, sizeof(message));
+        C4Log(">>> C4Replicator state: level=%d, progress=%llu/%llu, error=%d/%d: %s",
+              status.level, status.progress.completed, status.progress.total,
+              status.error.domain, status.error.code, message);
     }
 
-    void stateChanged(C4Replicator *r, C4ReplicatorState s) {
+    void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
         REQUIRE(r == repl);
-        callbackState = s;
+        callbackStatus = s;
         ++numCallbacks;
         numCallbacksWithLevel[(int)s.level]++;
-        logState(callbackState);
+        logState(callbackStatus);
     }
 
     static void onStateChanged(C4Replicator *replicator,
-                               C4ReplicatorState state,
+                               C4ReplicatorStatus status,
                                void *context)
     {
-        ((ReplicatorAPITest*)context)->stateChanged(replicator, state);
+        ((ReplicatorAPITest*)context)->stateChanged(replicator, status);
     }
     
     
@@ -78,29 +79,29 @@ public:
         C4Error err;
         repl = c4repl_new(db, address, remoteDBName, push, pull, onStateChanged, this, &err);
         REQUIRE(repl);
-        C4ReplicatorState state = c4repl_getState(repl);
-        logState(state);
-        CHECK(state.level == kC4Connecting);
-        CHECK(state.error.code == 0);
+        C4ReplicatorStatus status = c4repl_getStatus(repl);
+        logState(status);
+        CHECK(status.level == kC4Connecting);
+        CHECK(status.error.code == 0);
 
-        while ((state = c4repl_getState(repl)).level != kC4Stopped)
+        while ((status = c4repl_getStatus(repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
 
-        CHECK(state.error.code == 0);
+        CHECK(status.error.code == 0);
         CHECK(numCallbacks > 0);
         CHECK(numCallbacksWithLevel[kC4Busy] > 0);
         CHECK(numCallbacksWithLevel[kC4Stopped] > 0);
-        CHECK(callbackState.level == state.level);
-        CHECK(callbackState.error.domain == state.error.domain);
-        CHECK(callbackState.error.code == state.error.code);
+        CHECK(callbackStatus.level == status.level);
+        CHECK(callbackStatus.error.domain == status.error.domain);
+        CHECK(callbackStatus.error.code == status.error.code);
     }
     
-    C4Address address = kDefaultAddress;
-    C4String remoteDBName = kScratchDBName;
+    C4Address address {kDefaultAddress};
+    C4String remoteDBName {kScratchDBName};
     C4Replicator *repl {nullptr};
-    C4ReplicatorState callbackState {};
+    C4ReplicatorStatus callbackStatus {};
     int numCallbacks {0};
-    int numCallbacksWithLevel[5] = {0};
+    int numCallbacksWithLevel[5] {0};
 };
 
 
@@ -134,7 +135,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.special]"
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Push][.special]") {
-    remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
