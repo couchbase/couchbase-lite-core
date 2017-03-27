@@ -90,7 +90,7 @@ namespace litecore {
 #pragma mark - MAILBOX:
 
 
-#if DEBUG
+#if ACTORS_TRACK_STATS
 #define beginLatency()  Stopwatch st
 #define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
 #define beginBusy()     _busy.start()
@@ -111,7 +111,7 @@ namespace litecore {
     { }
 
     GCDMailbox::~GCDMailbox() {
-#if DEBUG
+#if ACTORS_TRACK_STATS
         LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
               _actor->actorName().c_str(), _maxEventCount,
               Benchmark::formatTime(_maxLatency).c_str(),
@@ -193,7 +193,7 @@ namespace litecore {
     void GCDMailbox::afterEvent() {
         _actor->afterEvent();
         endBusy();
-#if DEBUG
+#if ACTORS_TRACK_STATS
         if (_eventCount > _maxEventCount) {
             _maxEventCount = _eventCount;
         }

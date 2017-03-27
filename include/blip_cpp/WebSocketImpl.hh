@@ -55,7 +55,6 @@ namespace litecore { namespace websocket {
         using ClientProtocol = uWS::WebSocketProtocol<false>;
 
         bool sendOp(fleece::slice, int opcode);
-        void _onReceive(fleece::alloc_slice);
         bool handleFragment(char *data,
                             size_t length,
                             unsigned int remainingBytes,

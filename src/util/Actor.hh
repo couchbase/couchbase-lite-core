@@ -16,10 +16,6 @@
 #include <string>
 #include <thread>
 
-#if DEBUG
-#include "Benchmark.hh"
-#endif
-
 #if __APPLE__
 #define ACTORS_USE_GCD
 #endif
@@ -27,6 +23,13 @@
 #ifdef ACTORS_USE_GCD
 #include <dispatch/dispatch.h>
 #endif
+
+#define ACTORS_TRACK_STATS  DEBUG
+
+#if ACTORS_TRACK_STATS
+#include "Benchmark.hh"
+#endif
+
 
 namespace litecore {
 
@@ -140,7 +143,7 @@ namespace litecore {
         Actor *_actor;
         dispatch_queue_t _queue;
         std::atomic<int32_t> _eventCount {0};
-#if DEBUG
+#if ACTORS_TRACK_STATS
         int32_t _maxEventCount {0};
         double _maxLatency {0};
         Stopwatch _createdAt {true};
@@ -185,7 +188,7 @@ namespace litecore {
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef xACTORS_USE_GCD
+#ifdef ACTORS_USE_GCD
             // not strictly necessary, but more efficient
             retain(this);
             _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
@@ -200,7 +203,7 @@ namespace litecore {
             Other calls scheduled after this one may end up running before it! */
         template <class Rcvr, class... Args>
         void enqueueAfter(delay_t delay, void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef xACTORS_USE_GCD
+#ifdef ACTORS_USE_GCD
             // not strictly necessary, but more efficient
             retain(this);
             _mailbox.enqueueAfter(delay, ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
