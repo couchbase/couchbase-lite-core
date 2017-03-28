@@ -18,6 +18,14 @@ public class FLSliceResult {
         }
     }
 
+    public long getHandle() {
+        return handle;
+    }
+
+    public void setHandle(long handle) {
+        this.handle = handle;
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------

@@ -129,6 +129,8 @@ Java_com_couchbase_litecore_C4QueryEnumerator_fullTextMatched(JNIEnv *env, jclas
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jlong handle) {
+    if (!handle)
+        return false;
     C4Error error;
     jboolean result = c4queryenum_next((C4QueryEnumerator *) handle, &error);
     if (!result) {
@@ -147,6 +149,8 @@ Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_close(JNIEnv *env, jclass clazz, jlong handle) {
+    if (!handle)
+        return;
     c4queryenum_close((C4QueryEnumerator *) handle);
 }
 
@@ -157,6 +161,8 @@ Java_com_couchbase_litecore_C4QueryEnumerator_close(JNIEnv *env, jclass clazz, j
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_free(JNIEnv *env, jclass clazz, jlong handle) {
+    if (!handle)
+        return;
     c4queryenum_free((C4QueryEnumerator *) handle);
 }
 

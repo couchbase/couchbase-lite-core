@@ -5,7 +5,7 @@ public class C4QueryEnumerator {
     // Member Variables
     //-------------------------------------------------------------------------
 
-    private long handle; // hold pointer to C4QueryEnumerator
+    private long handle = 0; // hold pointer to C4QueryEnumerator
 
     //-------------------------------------------------------------------------
     // Constructor
@@ -18,23 +18,36 @@ public class C4QueryEnumerator {
     // public methods
     //-------------------------------------------------------------------------
     public byte[] customColumns() {
-        return customColumns(handle);
+        if (handle != 0)
+            return customColumns(handle);
+        else
+            return null;
     }
 
     public byte[] fullTextMatched() throws LiteCoreException {
-        return fullTextMatched(handle);
+        if (handle != 0)
+            return fullTextMatched(handle);
+        else
+            return null;
     }
 
     public boolean next() throws LiteCoreException {
-        return next(handle);
+        boolean ok = next(handle);
+        if (!ok)
+            handle = 0;
+        return ok;
     }
 
     public void close() {
-        close(handle);
+        if (handle != 0)
+            close(handle);
     }
 
     public void free() {
-        free(handle);
+        if (handle != 0) {
+            free(handle);
+            handle = 0;
+        }
     }
 
     // -- Accessor methods to C4QueryEnumerator --

@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #include <c4Base.h>
+#include <c4.h>
 #include "com_couchbase_litecore_Database.h"
 #include "native_glue.hh"
 #include "c4Database.h"
@@ -316,7 +317,12 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
 
 #pragma mark - DOCUMENTS:
 
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    _put
+ * Signature: (JLjava/lang/String;[BLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put__JLjava_lang_String_2_3BLjava_lang_String_2ZZ_3Ljava_lang_String_2IZI
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody,
          jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,
@@ -370,7 +376,60 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put
         throwError(env, error);
     return (jlong) doc;
 }
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    _put
+ * Signature: (JLjava/lang/String;JLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put__JLjava_lang_String_2JLjava_lang_String_2ZZ_3Ljava_lang_String_2IZI
+        (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jlong jbody,
+         jstring jdocType,
+         jboolean existingRevision, jboolean allowConflict,
+         jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth){
+    auto db = (C4Database *) dbHandle;
+    C4Slice* pBody = (C4Slice*)jbody;
+    jstringSlice docID(env, jdocID), docType(env, jdocType);
+    C4DocPutRequest rq;
+    rq.docID = docID;
+    rq.body = *pBody;
+    rq.docType = docType;
+    rq.existingRevision = existingRevision;
+    rq.allowConflict = allowConflict;
+    rq.revFlags = flags;
+    rq.save = save;
+    rq.maxRevTreeDepth = maxRevTreeDepth;
+    C4Document *doc = nullptr;
+    size_t commonAncestorIndex;
+    C4Error error;
+    {
+        // Convert jhistory, a Java String[], to a C array of C4Slice:
+        jsize n = env->GetArrayLength(jhistory);
+        if (env->EnsureLocalCapacity(std::min(n + 1, MaxLocalRefsToUse)) < 0)
+            return -1;
+        std::vector<C4Slice> history(n);
+        std::vector<jstringSlice *> historyAlloc;
+        for (jsize i = 0; i < n; i++) {
+            jstring js = (jstring) env->GetObjectArrayElement(jhistory, i);
+            jstringSlice *item = new jstringSlice(env, js);
+            if (i >= MaxLocalRefsToUse)
+                item->copyAndReleaseRef();
+            historyAlloc.push_back(item); // so its memory won't be freed
+            history[i] = *item;
+        }
+        rq.history = history.data();
+        rq.historyCount = history.size();
 
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
+
+        // release memory
+        for (jsize i = 0; i < n; i++)
+            delete historyAlloc.at(i);
+    }
+
+    if (!doc)
+        throwError(env, error);
+    return (jlong) doc;
+}
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database__1rawPut
         (JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jbyteArray jmeta,
          jbyteArray jbody) {
