@@ -208,7 +208,7 @@ public class C4QueryTest extends BaseTest {
 
     private List<String> run(long skip, long limit, String bindings) throws LiteCoreException {
         List<String> docIDs = new ArrayList<>();
-        C4Query.C4QueryOptions opts = new C4Query.C4QueryOptions();
+        C4QueryOptions opts = new C4QueryOptions();
         opts.setSkip(skip);
         opts.setLimit(limit);
         C4QueryEnumerator e = query.run(opts, bindings);

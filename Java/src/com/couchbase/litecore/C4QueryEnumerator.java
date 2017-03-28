@@ -68,6 +68,22 @@ public class C4QueryEnumerator {
         return getDocFlags(handle);
     }
 
+    public long getFullTextTermCount() {
+        return getFullTextTermCount(handle);
+    }
+
+    public long getFullTextTermIndex(long pos) {
+        return getFullTextTermIndex(handle, pos);
+    }
+
+    public long getFullTextTermStart(long pos) {
+        return getFullTextTermStart(handle, pos);
+    }
+
+    public long getFullTextTermLength(long pos) {
+        return getFullTextTermLength(handle, pos);
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -110,6 +126,11 @@ public class C4QueryEnumerator {
 
     private static native long getDocFlags(long c4queryenumerator);
 
-    //private static native long getFullTextTermCount(long c4queryenumerator);
-    //private static native long getFullTextTerms(long c4queryenumerator);
+    private static native long getFullTextTermCount(long c4queryenumerator);
+
+    private static native long getFullTextTermIndex(long c4queryenumerator, long pos);  // C4FullTextTerm.termIndex
+
+    private static native long getFullTextTermStart(long c4queryenumerator, long pos);  // C4FullTextTerm.start
+
+    private static native long getFullTextTermLength(long c4queryenumerator, long pos); // C4FullTextTerm.length
 }
