@@ -324,7 +324,7 @@ namespace litecore { namespace blip {
                 return;
             }
             // Read the frame header:
-            slice payload(frame);
+            slice payload = frame;
             uint64_t msgNo, flagsInt;
             if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt)) {
                 warn("Illegal frame header");

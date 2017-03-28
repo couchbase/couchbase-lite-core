@@ -346,7 +346,7 @@ namespace litecore { namespace blip {
             return {};
         return {property("Error-Domain"_sl),
                 (int) intProperty("Error-Code"_sl),
-                (slice)body()};
+                body()};
     }
 
 
