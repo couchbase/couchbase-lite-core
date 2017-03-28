@@ -1,7 +1,5 @@
 package com.couchbase.litecore;
 
-import com.couchbase.litecore.fleece.FLSliceResult;
-
 public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // Member Variables
@@ -19,11 +17,11 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-    public FLSliceResult customColumns() {
-        return new FLSliceResult(customColumns(handle));
+    public byte[] customColumns() {
+        return customColumns(handle);
     }
 
-    public String fullTextMatched() throws LiteCoreException {
+    public byte[] fullTextMatched() throws LiteCoreException {
         return fullTextMatched(handle);
     }
 
@@ -74,14 +72,14 @@ public class C4QueryEnumerator {
      * @param c4queryenumerator C4QueryEnumerator*
      * @return C4SliceResult(FLSliceResult)
      */
-    private static native long customColumns(long c4queryenumerator);
+    private static native byte[] customColumns(long c4queryenumerator);
 
     /**
      * @param c4queryenumerator C4QueryEnumerator*
      * @return String (C4StringResult)
      * @throws LiteCoreException
      */
-    private static native String fullTextMatched(long c4queryenumerator) throws LiteCoreException;
+    private static native byte[] fullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
     private static native boolean next(long c4queryenumerator) throws LiteCoreException;
 

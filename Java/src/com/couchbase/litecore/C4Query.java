@@ -66,7 +66,7 @@ public class C4Query {
                 run(handle, options.skip, options.limit, options.rankFullText, encodedParameters));
     }
 
-    public String fullTextMatched(String docID, long seq) throws LiteCoreException {
+    public byte[] fullTextMatched(String docID, long seq) throws LiteCoreException {
         return fullTextMatched(handle, docID, seq);
     }
 
@@ -120,12 +120,6 @@ public class C4Query {
                                    String encodedParameters)
             throws LiteCoreException;
 
-    /**
-     * @param c4query
-     * @param docID
-     * @param seq
-     * @return C4StringResult
-     * @throws LiteCoreException
-     */
-    private static native String fullTextMatched(long c4query, String docID, long seq) throws LiteCoreException;
+    private static native byte[] fullTextMatched(long c4query, String docID, long seq)
+            throws LiteCoreException;
 }

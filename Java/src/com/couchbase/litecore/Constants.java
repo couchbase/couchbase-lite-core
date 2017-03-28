@@ -109,5 +109,11 @@ public interface Constants {
         int kC4ErrorIndexBusy = 27;             // View can't be closed while index is enumerating
         int kC4ErrorUnsupported = 28;           // Operation not supported in this database
         int kC4ErrorNotADatabaseFile = 29;      // File is not a database, or encryption key is wrong
+        int kC4ErrorWrongFormat = 30;           // Database exists but not in the format/storage requested
+        int kC4ErrorCrypto = 31;                // Encryption/decryption error
+        int kC4ErrorInvalidQuery = 32;          // Invalid query
+        int kC4ErrorMissingIndex = 33;          // No such index, or query requires a nonexistent index
+        int kC4ErrorInvalidQueryParam = 34;     // Unknown query param name, or param number out of range
+
     }
 }
