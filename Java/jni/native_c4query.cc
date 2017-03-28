@@ -77,19 +77,20 @@ Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
 
 /*
  * Class:     com_couchbase_litecore_C4Query
- * Method:    fullTextMatched
- * Signature: (JLjava/lang/String;J)[B
+ * Method:    getFullTextMatched
+ * Signature: (JLjava/lang/String;J)Ljava/lang/String;
  */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4Query_fullTextMatched(JNIEnv *env, jclass clazz, jlong jquery,
-                                                    jstring jdocid, jlong jseq) {
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4Query_getFullTextMatched
+        (JNIEnv *env, jclass clazz, jlong jquery,
+         jstring jdocid, jlong jseq){
     jstringSlice docID(env, jdocid);
     C4SliceResult s = c4query_fullTextMatched((C4Query *) jquery, docID,
                                               (C4SequenceNumber) jseq, nullptr);
-    jbyteArray res = toJByteArray(env, s);
+    jstring jstr = toJString(env, s);
     c4slice_free(s);
-    return res;
+    return jstr;
 }
+
 
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4QueryEnumerator
@@ -110,18 +111,17 @@ Java_com_couchbase_litecore_C4QueryEnumerator_customColumns(JNIEnv *env, jclass 
 
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    fullTextMatched
+ * Method:    getFullTextMatched
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_fullTextMatched(JNIEnv *env, jclass clazz,
-                                                              jlong handle) {
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatched
+        (JNIEnv *env, jclass clazz,
+         jlong handle){
     C4SliceResult s = c4queryenum_fullTextMatched((C4QueryEnumerator *) handle, nullptr);
-    jbyteArray res = toJByteArray(env, s);
+    jstring jstr = toJString(env, s);
     c4slice_free(s);
-    return res;
+    return jstr;
 }
-
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
  * Method:    next

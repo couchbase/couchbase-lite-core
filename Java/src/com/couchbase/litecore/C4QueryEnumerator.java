@@ -24,9 +24,9 @@ public class C4QueryEnumerator {
             return null;
     }
 
-    public byte[] fullTextMatched() throws LiteCoreException {
+    public String getFullTextMatched() throws LiteCoreException {
         if (handle != 0)
-            return fullTextMatched(handle);
+            return getFullTextMatched(handle);
         else
             return null;
     }
@@ -108,7 +108,7 @@ public class C4QueryEnumerator {
      * @return String (C4StringResult)
      * @throws LiteCoreException
      */
-    private static native byte[] fullTextMatched(long c4queryenumerator) throws LiteCoreException;
+    private static native String getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
     private static native boolean next(long c4queryenumerator) throws LiteCoreException;
 
