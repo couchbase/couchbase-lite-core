@@ -51,12 +51,12 @@ class C4DatabaseTest : public C4Test {
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
-    C4SliceResult msg = c4error_getMessage({ForestDBDomain, 0});
+    C4SliceResult msg = c4error_getMessage({LiteCoreDomain, 0});
     REQUIRE(msg.buf == (const void*)nullptr);
     REQUIRE((unsigned long)msg.size == 0ul);
 
     char buf[256];
-    char *cmsg = c4error_getMessageC({ForestDBDomain, 0}, buf, sizeof(buf));
+    char *cmsg = c4error_getMessageC({LiteCoreDomain, 0}, buf, sizeof(buf));
     REQUIRE(cmsg == &buf[0]);
     REQUIRE(buf[0] == '\0');
 
