@@ -327,7 +327,7 @@ namespace litecore { namespace repl {
         slice revisionBody = doc->selectedRev.body;
 
         // Generate the revision history string:
-        set<slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
+        set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
         stringstream historyStream;
         for (int n = 0; n < request.maxHistory; ++n) {
             if (!c4doc_selectParentRevision(doc))
