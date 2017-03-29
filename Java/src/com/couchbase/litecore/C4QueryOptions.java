@@ -1,10 +1,16 @@
 package com.couchbase.litecore;
 
 public class C4QueryOptions {
-    long skip = 0;
-    long limit = Long.MAX_VALUE;
-    boolean rankFullText = true;
+    //-------------------------------------------------------------------------
+    // Member Variables
+    //-------------------------------------------------------------------------
+    /*package*/ long skip = 0;
+    /*package*/ long limit = Long.MAX_VALUE;
+    /*package*/ boolean rankFullText = true;
 
+    //-------------------------------------------------------------------------
+    // Constructor
+    //-------------------------------------------------------------------------
     public C4QueryOptions() {
     }
 
@@ -14,6 +20,9 @@ public class C4QueryOptions {
         this.rankFullText = rankFullText;
     }
 
+    //-------------------------------------------------------------------------
+    // public methods
+    //-------------------------------------------------------------------------
     public long getSkip() {
         return skip;
     }

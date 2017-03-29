@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class FLDict {
 
-    private long handle; // hold pointer to FLDict
+    private long handle = 0; // hold pointer to FLDict
 
     //-------------------------------------------------------------------------
     // public methods
@@ -98,4 +98,6 @@ public class FLDict {
      */
     // TODO:
     //private static native long getSharedKey(long dict, byte[] keyString, long sharedKeys);
+
+    // TODO: Need free()?
 }

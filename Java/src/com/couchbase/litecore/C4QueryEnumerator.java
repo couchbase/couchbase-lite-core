@@ -5,7 +5,7 @@ public class C4QueryEnumerator {
     // Member Variables
     //-------------------------------------------------------------------------
 
-    private long handle = 0; // hold pointer to C4QueryEnumerator
+    private long handle = 0L; // hold pointer to C4QueryEnumerator
 
     //-------------------------------------------------------------------------
     // Constructor

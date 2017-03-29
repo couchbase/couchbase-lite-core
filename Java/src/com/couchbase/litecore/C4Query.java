@@ -1,7 +1,10 @@
 package com.couchbase.litecore;
 
 public class C4Query {
-    private long handle; // hold pointer to C4Query
+    //-------------------------------------------------------------------------
+    // Member Variables
+    //-------------------------------------------------------------------------
+    private long handle = 0L; // hold pointer to C4Query
 
     //-------------------------------------------------------------------------
     // public methods
@@ -11,7 +14,10 @@ public class C4Query {
     }
 
     public void free() {
-        free(handle);
+        if (handle != 0L) {
+            free(handle);
+            handle = 0L;
+        }
     }
 
     public String explain() {

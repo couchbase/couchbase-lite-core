@@ -2,7 +2,7 @@ package com.couchbase.litecore.fleece;
 
 
 public class FLDictIterator {
-    private long handle; // hold pointer to FLDictIterator
+    private long handle = 0; // hold pointer to FLDictIterator
 
     //-------------------------------------------------------------------------
     // public methods

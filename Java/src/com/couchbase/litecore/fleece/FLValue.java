@@ -22,7 +22,7 @@ public class FLValue {
     //-------------------------------------------------------------------------
     // private variables
     //-------------------------------------------------------------------------
-    private long handle; // pointer to FLValue
+    private long handle = 0L; // pointer to FLValue
 
     //-------------------------------------------------------------------------
     // public methods
@@ -264,9 +264,6 @@ public class FLValue {
      */
     private static native long asDict(long value);
 
-    // TODO: Need free()?????
-
-
     /**
      * Converts valid JSON5 to JSON.
      * @param json5 String
@@ -274,5 +271,8 @@ public class FLValue {
      * @throws LiteCoreException
      */
     private static native String JSON5ToJSON(String json5) throws LiteCoreException;
+
+
+    // TODO: Need free()?
 }
 

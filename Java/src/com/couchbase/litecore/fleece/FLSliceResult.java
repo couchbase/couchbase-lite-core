@@ -2,7 +2,7 @@ package com.couchbase.litecore.fleece;
 
 
 public class FLSliceResult {
-    private long handle; // hold pointer to FLSliceResult
+    private long handle = 0; // hold pointer to FLSliceResult
 
     //-------------------------------------------------------------------------
     // public methods
