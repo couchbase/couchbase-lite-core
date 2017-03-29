@@ -1,5 +1,7 @@
 package com.couchbase.litecore.fleece;
 
+import com.couchbase.litecore.LiteCoreException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +22,7 @@ public class FLValue {
     //-------------------------------------------------------------------------
     // private variables
     //-------------------------------------------------------------------------
-    private long handle; // pointer to FLValue
+    private long handle = 0L; // pointer to FLValue
 
     //-------------------------------------------------------------------------
     // public methods
@@ -110,6 +112,16 @@ public class FLValue {
             default:
                 return null;
         }
+    }
+
+    /**
+     * Converts valid JSON5 to JSON.
+     * @param json5 String
+     * @return JSON String
+     * @throws LiteCoreException
+     */
+    public static String json5ToJson(String json5) throws LiteCoreException{
+        return JSON5ToJSON(json5);
     }
 
     //-------------------------------------------------------------------------
@@ -252,6 +264,15 @@ public class FLValue {
      */
     private static native long asDict(long value);
 
-    // TODO: Need free()?????
+    /**
+     * Converts valid JSON5 to JSON.
+     * @param json5 String
+     * @return JSON String
+     * @throws LiteCoreException
+     */
+    private static native String JSON5ToJSON(String json5) throws LiteCoreException;
+
+
+    // TODO: Need free()?
 }
 

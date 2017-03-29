@@ -31,6 +31,8 @@ set(OPENSSL_LIB_DIR ${TOP}/vendor/openssl/libs/android/clang)
 set(JNI_CLASSPATH  ${PROJECT_SOURCE_DIR}/src)
 set(JNI_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/jni)
 set(JNI_CLASSES
+    com.couchbase.litecore.C4Query
+    com.couchbase.litecore.C4QueryEnumerator
     com.couchbase.litecore.Database
     com.couchbase.litecore.Document
     com.couchbase.litecore.DocumentIterator

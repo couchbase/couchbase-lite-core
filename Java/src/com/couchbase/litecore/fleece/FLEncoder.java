@@ -10,7 +10,7 @@ public class FLEncoder {
     //-------------------------------------------------------------------------
     // private variable
     //-------------------------------------------------------------------------
-    private long handle;
+    private long handle = 0;
 
     //-------------------------------------------------------------------------
     // public methods
@@ -25,7 +25,10 @@ public class FLEncoder {
     }
 
     public void free() {
-        free(handle);
+        if(handle!=0) {
+            free(handle);
+            handle = 0;
+        }
     }
 
     public boolean beginDict(long reserve) {
@@ -98,6 +101,15 @@ public class FLEncoder {
 
     public byte[] finish() throws LiteCoreException {
         return finish(handle);
+    }
+
+    //-------------------------------------------------------------------------
+    // protected methods
+    //-------------------------------------------------------------------------
+    @Override
+    protected void finalize() throws Throwable {
+        free();
+        super.finalize();
     }
 
     //-------------------------------------------------------------------------

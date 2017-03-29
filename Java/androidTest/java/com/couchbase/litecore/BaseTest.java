@@ -5,6 +5,7 @@ import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
 import com.couchbase.litecore.fleece.FLSliceResult;
+import com.couchbase.litecore.fleece.FLValue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -150,7 +151,7 @@ public class BaseTest implements Constants {
                     FLSliceResult body = db.encodeJSON(line.getBytes());
                     String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
                     String[] history = new String[0];
-                    Document doc = db.put(docID, null, null, false, false, history, 0, true, 0);
+                    Document doc = db.put(docID, body, null, false, false, history, 0, true, 0);
                     assertNotNull(doc);
                     doc.free();
                     body.free();
@@ -174,5 +175,17 @@ public class BaseTest implements Constants {
 
         if (verbose) Log.e(LOG_TAG, st.toString("Importing", numDocs, "doc"));
         return numDocs;
+    }
+
+    protected String json5(String input) {
+        String json = null;
+        try {
+            json = FLValue.json5ToJson(input);
+        } catch (LiteCoreException e) {
+            Log.e(LOG_TAG, String.format("Error in json5() input -> %s", input), e);
+            fail(e.getMessage());
+        }
+        assertNotNull(json);
+        return json;
     }
 }
