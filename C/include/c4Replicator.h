@@ -65,6 +65,7 @@ extern "C" {
     C4Replicator* c4repl_new(C4Database* db,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
+                             C4Database* otherLocalDB,
                              C4ReplicatorMode push,
                              C4ReplicatorMode pull,
                              C4ReplicatorStatusChangedCallback onStateChanged,

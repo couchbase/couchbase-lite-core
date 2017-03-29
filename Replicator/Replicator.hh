@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
             virtual ~Delegate() =default;
 
             virtual void replicatorStatusChanged(Replicator*, const Status&) =0;
-            virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&) =0;
+            virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&)  { }
         };
 
         Status status() const                   {return ReplActor::status();}   //FIX: Needs to be thread-safe

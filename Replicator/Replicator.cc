@@ -79,7 +79,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // The Pusher or Puller has finished.
+    // The status of one of the actors has changed; update mine
     void Replicator::_taskChangedStatus(ReplActor *task, Status taskStatus)
     {
         if (task == _pusher) {
@@ -134,6 +134,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::changedActivityLevel() {
+        // Notify the delegate of the current status, but not too often:
         auto curStatus = status();
         auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
         if (waitFor <= 0 || curStatus.level != _lastDelegateCallLevel) {
@@ -166,7 +167,6 @@ namespace litecore { namespace repl {
 
         _checkpoint.stopAutosave();
 
-        //TODO: Save the error info
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
         _dbActor->connectionClosed();
@@ -176,6 +176,25 @@ namespace litecore { namespace repl {
             _puller->connectionClosed();
 
         _closeStatus = status;
+
+        static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, DNSDomain};
+
+        // If this was an unclean close, set my error property:
+        if (status.reason != websocket::kWebSocketClose
+                || (status.code != websocket::kCodeNormal
+                    && status.code != websocket::kCodeGoingAway))
+        {
+            int code = status.code;
+            C4ErrorDomain domain;
+            if (status.reason < sizeof(kDomainForReason)/sizeof(C4ErrorDomain))
+                domain = kDomainForReason[status.reason];
+            else {
+                domain = LiteCoreDomain;
+                code = kC4ErrorRemoteError;
+            }
+            gotError(c4error_make(domain, code, status.message));
+        }
+
         _delegate.replicatorConnectionClosed(this, status);
     }
 

@@ -49,6 +49,7 @@ public:
 
     ~ReplicatorAPITest() {
         c4repl_free(repl);
+        c4db_free(db2);
     }
 
     void logState(C4ReplicatorStatus status) {
@@ -75,9 +76,10 @@ public:
     }
     
     
-    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull) {
+    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
         C4Error err;
-        repl = c4repl_new(db, address, remoteDBName, push, pull, onStateChanged, this, &err);
+        repl = c4repl_new(db, address, remoteDBName, db2,
+                          push, pull, onStateChanged, this, &err);
         REQUIRE(repl);
         C4ReplicatorStatus status = c4repl_getStatus(repl);
         logState(status);
@@ -87,15 +89,18 @@ public:
         while ((status = c4repl_getStatus(repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
 
-        CHECK(status.error.code == 0);
         CHECK(numCallbacks > 0);
-        CHECK(numCallbacksWithLevel[kC4Busy] > 0);
+        if (expectSuccess) {
+            CHECK(numCallbacksWithLevel[kC4Busy] > 0);
+            CHECK(status.error.code == 0);
+        }
         CHECK(numCallbacksWithLevel[kC4Stopped] > 0);
         CHECK(callbackStatus.level == status.level);
         CHECK(callbackStatus.error.domain == status.error.domain);
         CHECK(callbackStatus.error.code == status.error.code);
     }
-    
+
+    C4Database *db2 {nullptr};
     C4Address address {kDefaultAddress};
     C4String remoteDBName {kScratchDBName};
     C4Replicator *repl {nullptr};
@@ -109,6 +114,18 @@ constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
                          ReplicatorAPITest::kWikipedia1kDBName;
 
+
+
+// Try to connect to a nonexistent server (port 1 of localhost) and verify connection error.
+TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
+    address.hostname = C4STR("localhost");
+    address.port = 1;
+    replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(callbackStatus.progress.completed == 0);
+    CHECK(callbackStatus.progress.total == 0);
+    CHECK(callbackStatus.error.domain == POSIXDomain);
+    CHECK(callbackStatus.error.code == ECONNREFUSED);
+}
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[Push][.special]") {
@@ -139,3 +156,23 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Push][.special]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    auto db2Path = TempDir() + "cbl_core_test2";
+    auto db2PathSlice = c4str(db2Path.c_str());
+
+    auto config = c4db_getConfig(db);
+    C4Error error;
+    if (!c4db_deleteAtPath(db2PathSlice, config, &error))
+        REQUIRE(error.code == 0);
+    db2 = c4db_open(db2PathSlice, config, &error);
+    REQUIRE(db2 != nullptr);
+
+    address = { };
+    remoteDBName = nullslice;
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    REQUIRE(c4db_getDocumentCount(db2) == 100);
+}
