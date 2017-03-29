@@ -15,6 +15,8 @@ c4error_getMessage
 c4error_getMessageC
 
 c4db_open
+c4db_openAgain
+c4db_retain
 c4db_free
 c4db_close
 c4db_delete

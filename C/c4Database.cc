@@ -87,6 +87,21 @@ C4Database* c4db_open(C4Slice path,
 }
 
 
+C4Database* c4db_retain(C4Database* db) {
+    return retain(db);
+}
+
+
+C4Database* c4db_openAgain(C4Database* db,
+                           C4Error *outError) noexcept
+{
+    if (!checkParam(db != nullptr, outError))
+        return nullptr;
+    string path = db->path();
+    return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);
+}
+
+
 bool c4db_close(C4Database* database, C4Error *outError) noexcept {
     if (database == nullptr)
         return true;

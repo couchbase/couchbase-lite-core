@@ -20,6 +20,8 @@ _c4error_getMessage
 _c4error_getMessageC
 
 _c4db_open
+_c4db_openAgain
+_c4db_retain
 _c4db_free
 _c4db_close
 _c4db_delete

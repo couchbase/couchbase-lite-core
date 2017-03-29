@@ -83,7 +83,19 @@ extern "C" {
                           const C4DatabaseConfig *config,
                           C4Error *outError) C4API;
 
-    /** Frees a database handle, closing the database first if it's still open. */
+    /** Opens a new handle to the same database file as `db`.
+        The new connection is completely independent and can be used on another thread. */
+    C4Database* c4db_openAgain(C4Database* db,
+                               C4Error *outError) C4API;
+
+    /** Increments the reference count of the database handle. The next call to
+        c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls
+        to c4db_free, to avoid leaks. */
+    C4Database* c4db_retain(C4Database* db);
+
+    /** Frees a database handle, closing the database first if it's still open.
+        (More precisely, this decrements the handle's reference count. The handle is only freed
+        if the count reaches zero, which it will unless c4db_retain has previously been called.) */
     bool c4db_free(C4Database* database) C4API;
 
     /** Closes the database. Does not free the handle, although any operation other than
