@@ -83,17 +83,17 @@ namespace litecore {
          _critical(critical)
         {
             if(jbytes == nullptr){
-                _slice.buf = nullptr;
-                _slice.size = 0;
+                _slice.setBuf(nullptr);
+                _slice.setSize(0);
                 return;
             }
 
             jboolean isCopy;
             if (critical)
-                _slice.buf = env->GetPrimitiveArrayCritical(jbytes, &isCopy);
+                _slice.setBuf(env->GetPrimitiveArrayCritical(jbytes, &isCopy));
             else
-                _slice.buf = env->GetByteArrayElements(jbytes, &isCopy);
-            _slice.size = env->GetArrayLength(jbytes);
+                _slice.setBuf(env->GetByteArrayElements(jbytes, &isCopy));
+            _slice.setSize(env->GetArrayLength(jbytes));
         }
 
         jbyteArraySlice::~jbyteArraySlice() {

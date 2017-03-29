@@ -37,9 +37,12 @@ public:
     jstringSlice(JNIEnv *env, jstring js);
     ~jstringSlice();
 
-    jstringSlice(jstringSlice&& s) // move constructor
-    :_slice(s._slice), _env(s._env), _jstr(s._jstr)
-    { s._env = nullptr; s._slice.buf = nullptr; }
+    jstringSlice(jstringSlice &&s) // move constructor
+            : _slice(s._slice), _env(s._env), _jstr(s._jstr) {
+        s._env = nullptr;
+        s._slice.setBuf(nullptr);
+        s._slice.setSize(0);
+    }
 
     operator slice()    {return _slice;}
     operator C4Slice()  {return {_slice.buf, _slice.size};}
