@@ -24,8 +24,8 @@ public class C4Query {
                 run(handle, options.skip, options.limit, options.rankFullText, encodedParameters));
     }
 
-    public String getFullTextMatched(String docID, long seq) throws LiteCoreException {
-        return getFullTextMatched(handle, docID, seq);
+    public byte[] fullTextMatched(String docID, long seq) throws LiteCoreException {
+        return fullTextMatched(handle, docID, seq);
     }
 
     //-------------------------------------------------------------------------
@@ -78,6 +78,6 @@ public class C4Query {
                                    String encodedParameters)
             throws LiteCoreException;
 
-    private static native String getFullTextMatched(long c4query, String docID, long seq)
+    private static native byte[] fullTextMatched(long c4query, String docID, long seq)
             throws LiteCoreException;
 }
