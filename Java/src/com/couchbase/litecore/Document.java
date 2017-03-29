@@ -10,19 +10,34 @@
 
 package com.couchbase.litecore;
 
-public class Document implements Constants{
+public class Document implements Constants {
 
-    public String getDocID()        { return _docID; }
+    public String getDocID() {
+        return _docID;
+    }
 
-    public String getRevID()        { return _revID; }
+    public String getRevID() {
+        return _revID;
+    }
 
-    public long getSequence()       { return _sequence; }
+    public long getSequence() {
+        return _sequence;
+    }
 
-    public int getFlags()           { return _flags; }
+    public int getFlags() {
+        return _flags;
+    }
 
-    public synchronized void free() { if (_handle != 0) {free(_handle); _handle = 0;} }
+    public synchronized void free() {
+        if (_handle != 0) {
+            free(_handle);
+            _handle = 0;
+        }
+    }
 
-    protected void finalize()       { free(); }
+    protected void finalize() {
+        free();
+    }
 
     public boolean selectRevID(String revID, boolean withBody) throws LiteCoreException {
         return selectRevID(_handle, revID, withBody);
@@ -44,11 +59,11 @@ public class Document implements Constants{
         return selectNextLeaf(_handle, includeDeleted, withBody);
     }
 
-    public boolean selectFirstPossibleAncestorOf(String revID){
+    public boolean selectFirstPossibleAncestorOf(String revID) {
         return selectFirstPossibleAncestorOf(_handle, revID);
     }
 
-    public boolean selectNextPossibleAncestorOf(String revID){
+    public boolean selectNextPossibleAncestorOf(String revID) {
         return selectNextPossibleAncestorOf(_handle, revID);
     }
 
@@ -56,7 +71,9 @@ public class Document implements Constants{
         return hasRevisionBody(_handle);
     }
 
-    public String getSelectedRevID()        { return _selectedRevID; }
+    public String getSelectedRevID() {
+        return _selectedRevID;
+    }
 
     public byte[] getSelectedBody() throws LiteCoreException {
         if (_selectedBody == null) {
@@ -66,11 +83,17 @@ public class Document implements Constants{
     }
 
     // For Test
-    protected byte[] getSelectedBodyTest(){ return _selectedBody; }
+    protected byte[] getSelectedBodyTest() {
+        return _selectedBody;
+    }
 
-    public long getSelectedSequence() { return _selectedSequence; }
+    public long getSelectedSequence() {
+        return _selectedSequence;
+    }
 
-    public long getSelectedRevFlags() { return _selectedRevFlags; }
+    public long getSelectedRevFlags() {
+        return _selectedRevFlags;
+    }
 
 
     public void save(int maxRevTreeDepth) throws LiteCoreException {
@@ -80,7 +103,7 @@ public class Document implements Constants{
     public int purgeRevision(String revID) throws LiteCoreException {
         return purgeRevision(_handle, revID);
     }
-    
+
     // INTERNALS:
 
     Document(long dbHandle, String docID, boolean mustExist) throws LiteCoreException {
@@ -88,10 +111,12 @@ public class Document implements Constants{
         _docID = docID;
         _revID = _selectedRevID;
     }
+
     Document(long dbHandle, long sequence) throws LiteCoreException {
         _handle = initWithSequence(dbHandle, sequence);
         _revID = _selectedRevID;
     }
+
     Document(long docHandle) {
         _handle = docHandle;
         _docID = initWithDocHandle(docHandle);
@@ -99,15 +124,23 @@ public class Document implements Constants{
     }
 
     private native long init(long dbHandle, String docID, boolean mustExist) throws LiteCoreException;
+
     private native long initWithSequence(long dbHandle, long sequence) throws LiteCoreException;
+
     private native String initWithDocHandle(long docHandle);
 
     private native boolean selectRevID(long handle, String revID, boolean withBody) throws LiteCoreException;
+
     private native boolean selectCurrentRev(long handle);
+
     private native boolean selectParentRev(long handle);
+
     private native boolean selectNextRev(long handle);
+
     private native boolean selectNextLeaf(long handle, boolean includeDeleted, boolean withBody) throws LiteCoreException;
+
     private native boolean selectFirstPossibleAncestorOf(long handle, String revID);
+
     private native boolean selectNextPossibleAncestorOf(long handle, String revID);
 
     private native static boolean hasRevisionBody(long handle);
@@ -115,6 +148,7 @@ public class Document implements Constants{
     private native static int purgeRevision(long handle, String revID) throws LiteCoreException;
 
     private native static void free(long handle);
+
     private native byte[] readSelectedBody(long handle) throws LiteCoreException;
 
     private native void save(long handle, int maxRevTreeDepth) throws LiteCoreException;
@@ -130,36 +164,44 @@ public class Document implements Constants{
     private byte[] _selectedBody;
 
     // helper methods for Document
-    public boolean deleted(){
+    public boolean deleted() {
         return isFlags(C4DocumentFlags.kDeleted);
     }
-    public boolean conflicted(){
+
+    public boolean conflicted() {
         return isFlags(C4DocumentFlags.kConflicted);
     }
-    public boolean hasAttachments(){
+
+    public boolean hasAttachments() {
         return isFlags(C4DocumentFlags.kHasAttachments);
     }
-    public boolean exists(){
+
+    public boolean exists() {
         return isFlags(C4DocumentFlags.kExists);
     }
-    private boolean isFlags(int flag){
+
+    private boolean isFlags(int flag) {
         return (_flags & flag) == flag;
     }
 
     // helper methods for Revision
-    public boolean selectedRevDeleted(){
+    public boolean selectedRevDeleted() {
         return isSelectedRevFlags(C4RevisionFlags.kRevDeleted);
     }
-    public boolean selectedRevLeaf(){
+
+    public boolean selectedRevLeaf() {
         return isSelectedRevFlags(C4RevisionFlags.kRevLeaf);
     }
-    public boolean selectedRevNew(){
+
+    public boolean selectedRevNew() {
         return isSelectedRevFlags(C4RevisionFlags.kRevNew);
     }
-    public boolean selectedRevHasAttachments(){
+
+    public boolean selectedRevHasAttachments() {
         return isSelectedRevFlags(C4RevisionFlags.kRevHasAttachments);
     }
-    private boolean isSelectedRevFlags(int flag){
+
+    private boolean isSelectedRevFlags(int flag) {
         return (_selectedRevFlags & flag) == flag;
     }
 }

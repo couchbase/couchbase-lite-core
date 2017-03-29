@@ -127,6 +127,19 @@ public class Database {
         return new Document(_put(_handle, docID, body, docType,
                 existingRevision, allowConflict, history, flags, save, maxRevTreeDepth));
     }
+    public Document put(String docID,
+                        FLSliceResult body, //(C4Slice*)
+                        String docType,
+                        boolean existingRevision,
+                        boolean allowConflict,
+                        String[] history,
+                        int flags, // C4RevisionFlags
+                        boolean save,
+                        int maxRevTreeDepth) throws LiteCoreException {
+        return new Document(_put(_handle, docID, body.getHandle(), docType,
+                existingRevision, allowConflict, history, flags, save, maxRevTreeDepth));
+    }
+
 
     public void purgeDoc(String docID) throws LiteCoreException {
         purgeDoc(_handle, docID);
@@ -135,6 +148,17 @@ public class Database {
     private native static long _put(long dbHandle,
                                     String docID,
                                     byte[] body,
+                                    String docType,
+                                    boolean existingRevision,
+                                    boolean allowConflict,
+                                    String[] history,
+                                    int flags, // C4RevisionFlags
+                                    boolean save,
+                                    int maxRevTreeDepth) throws LiteCoreException;
+
+    private native static long _put(long dbHandle,
+                                    String docID,
+                                    long body, // C4Slice*
                                     String docType,
                                     boolean existingRevision,
                                     boolean allowConflict,
@@ -186,6 +210,20 @@ public class Database {
     private native static void _rawPut(long db, String store, String key, byte[] meta, byte[] body) throws LiteCoreException;
 
     private native static byte[][] _rawGet(long db, String store, String key) throws LiteCoreException;
+
+    ////////  INDEXES:  Defined in c4Query.h
+
+    public boolean createIndex(String expressionsJSON, int indexType, String language, boolean ignoreDiacritics) throws LiteCoreException {
+        return createIndex(_handle, expressionsJSON, indexType, language, ignoreDiacritics);
+    }
+
+    public boolean deleteIndex(String expressionsJSON, int indexType) throws LiteCoreException {
+        return deleteIndex(_handle, expressionsJSON, indexType);
+    }
+
+    private native static boolean createIndex(long db, String expressionsJSON, int indexType, String language, boolean ignoreDiacritics) throws LiteCoreException;
+
+    private native static boolean deleteIndex(long db, String expressionsJSON, int indexType) throws LiteCoreException;
 
     ////////  FLEECE-SPECIFIC:  Defined in c4Document+Fleece.h
 

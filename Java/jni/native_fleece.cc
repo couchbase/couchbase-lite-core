@@ -320,6 +320,21 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLValue_isUnsigned
     return (jboolean)FLValue_IsUnsigned((FLValue)jvalue);
 }
 
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    JSON5ToJSON
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz, jstring jjson5) {
+    jstringSlice json5(env, jjson5);
+    FLError error = {};
+    FLStringResult json = FLJSON5_ToJSON({((slice) json5).buf, ((slice) json5).size}, &error);
+    jstring res = toJString(env, {json.buf, json.size});
+    FLSliceResult_Free(json);
+    return res;
+}
+
 // ----------------------------------------------------------------------------
 // FLSliceResult
 // ----------------------------------------------------------------------------

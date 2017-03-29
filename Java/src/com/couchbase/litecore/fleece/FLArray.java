@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FLArray {
-    private long handle; // hold pointer to FLArray
+    private long handle = 0; // hold pointer to FLArray
 
     //-------------------------------------------------------------------------
     // public methods
@@ -54,4 +54,7 @@ public class FLArray {
      * @return long (FLValue)
      */
     private static native long get(long array, long index);
+
+
+    // TODO: Need free()?
 }
