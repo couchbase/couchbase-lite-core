@@ -17,16 +17,16 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-    public byte[] customColumns() {
+    public byte[] getCustomColumns() {
         if (handle != 0)
-            return customColumns(handle);
+            return getCustomColumns(handle);
         else
             return null;
     }
 
-    public byte[] fullTextMatched() throws LiteCoreException {
+    public byte[] getFullTextMatched() throws LiteCoreException {
         if (handle != 0)
-            return fullTextMatched(handle);
+            return getFullTextMatched(handle);
         else
             return null;
     }
@@ -101,14 +101,14 @@ public class C4QueryEnumerator {
      * @param c4queryenumerator C4QueryEnumerator*
      * @return C4SliceResult(FLSliceResult)
      */
-    private static native byte[] customColumns(long c4queryenumerator);
+    private static native byte[] getCustomColumns(long c4queryenumerator);
 
     /**
      * @param c4queryenumerator C4QueryEnumerator*
      * @return String (C4StringResult)
      * @throws LiteCoreException
      */
-    private static native byte[] fullTextMatched(long c4queryenumerator) throws LiteCoreException;
+    private static native byte[] getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
     private static native boolean next(long c4queryenumerator) throws LiteCoreException;
 

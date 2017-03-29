@@ -77,12 +77,12 @@ Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
 
 /*
  * Class:     com_couchbase_litecore_C4Query
- * Method:    fullTextMatched
+ * Method:    getFullTextMatched
  * Signature: (JLjava/lang/String;J)[B
  */
 JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4Query_fullTextMatched(JNIEnv *env, jclass clazz, jlong jquery,
-                                                    jstring jdocid, jlong jseq) {
+Java_com_couchbase_litecore_C4Query_getFullTextMatched(JNIEnv *env, jclass clazz, jlong jquery,
+                                                       jstring jdocid, jlong jseq) {
     jstringSlice docID(env, jdocid);
     C4SliceResult s = c4query_fullTextMatched((C4Query *) jquery, docID,
                                               (C4SequenceNumber) jseq, nullptr);
@@ -94,14 +94,15 @@ Java_com_couchbase_litecore_C4Query_fullTextMatched(JNIEnv *env, jclass clazz, j
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4QueryEnumerator
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    customColumns
- * Signature: (J)J
+ * Method:    getCustomColumns
+ * Signature: (J)[B
  */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_customColumns(JNIEnv *env, jclass clazz,
-                                                            jlong handle) {
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4QueryEnumerator_getCustomColumns
+        (JNIEnv *env, jclass clazz,
+         jlong handle) {
     C4SliceResult s = c4queryenum_customColumns((C4QueryEnumerator *) handle);
     jbyteArray res = toJByteArray(env, s);
     c4slice_free(s);
@@ -110,12 +111,12 @@ Java_com_couchbase_litecore_C4QueryEnumerator_customColumns(JNIEnv *env, jclass 
 
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    fullTextMatched
- * Signature: (J)Ljava/lang/String;
+ * Method:    getFullTextMatched
+ * Signature: (J)[B
  */
 JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_fullTextMatched(JNIEnv *env, jclass clazz,
-                                                              jlong handle) {
+Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatched(JNIEnv *env, jclass clazz,
+                                                                 jlong handle) {
     C4SliceResult s = c4queryenum_fullTextMatched((C4QueryEnumerator *) handle, nullptr);
     jbyteArray res = toJByteArray(env, s);
     c4slice_free(s);

@@ -1,11 +1,8 @@
 package com.couchbase.litecore;
 
-import com.couchbase.lite.*;
-
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,10 +13,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-public class C4QueryTest extends BaseTest {
+public class C4QueryTest extends C4QueryBaseTest {
     static final String LOG_TAG = C4QueryTest.class.getSimpleName();
-
-    C4Query query = null;
 
     //-------------------------------------------------------------------------
     // public methods
@@ -144,7 +139,7 @@ public class C4QueryTest extends BaseTest {
                 doc.free();
                 updatedDoc.free();
                 commit = true;
-            }finally {
+            } finally {
                 db.endTransaction(commit);
             }
 
@@ -165,58 +160,69 @@ public class C4QueryTest extends BaseTest {
     }
 
     // - DB Query WHAT
-    // - DB Query Aggregate
-    // - DB Query Grouped
-    // - DB Query ANY nested
+    @Test
+    public void testDBQueryWHAT() throws LiteCoreException {
+        List<String> expectedFirst = Arrays.asList("Cleveland", "Georgetta", "Margaretta");
+        List<String> expectedLast = Arrays.asList("Bejcek", "Kolding", "Ogwynn");
+        compile(json5("{WHAT: ['.name.first', '.name.last'], WHERE: ['>=', ['length()', ['.name.first']], 9],ORDER_BY: [['.name.first']]}"));
 
-    //-------------------------------------------------------------------------
-    // private methods
-    //-------------------------------------------------------------------------
-
-    private C4Query compile(String whereExpr) throws LiteCoreException {
-        return compile(whereExpr, null);
-    }
-
-    private C4Query compile(String whereExpr, String sortExpr) throws LiteCoreException {
-        Log.e(LOG_TAG, "whereExpr -> "+whereExpr);
-        Log.e(LOG_TAG, "sortExpr -> "+sortExpr);
-        String queryString = whereExpr;
-        if (sortExpr != null && sortExpr.length() > 0)
-            queryString = "[\"SELECT\", {\"WHERE\": " + whereExpr + ", \"ORDER_BY\": " + sortExpr + "}]";
-        Log.i(LOG_TAG, "Query = %s", queryString);
-        if (query != null) {
-            query.free();
-            query = null;
-        }
-        query = new C4Query(db, queryString);
-        assertNotNull(query);
-        Log.e(LOG_TAG, "expression -> "+query.explain());
-        return query;
-    }
-
-    private List<String> run() throws LiteCoreException {
-        return run(0);
-    }
-
-    private List<String> run(long skip) throws LiteCoreException {
-        return run(skip, Long.MAX_VALUE);
-    }
-
-    private List<String> run(long skip, long limit) throws LiteCoreException {
-        return run(skip, limit, null);
-    }
-
-    private List<String> run(long skip, long limit, String bindings) throws LiteCoreException {
-        List<String> docIDs = new ArrayList<>();
-        C4QueryOptions opts = new C4QueryOptions();
-        opts.setSkip(skip);
-        opts.setLimit(limit);
-        C4QueryEnumerator e = query.run(opts, bindings);
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
+        int i = 0;
         while (e.next()) {
-            docIDs.add(e.getDocID());
+            byte[] columns = e.getCustomColumns();
+            assertEquals(getColumn(columns, 0), expectedFirst.get(i));
+            assertEquals(getColumn(columns, 1), expectedLast.get(i));
+            i++;
         }
         e.free();
-        return docIDs;
+        assertEquals(3, i);
     }
+
+    // - DB Query Aggregate
+    @Test
+    public void testDBQueryAggregate() throws LiteCoreException {
+        compile(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        int i = 0;
+        while (e.next()) {
+            byte[] columns = e.getCustomColumns();
+            assertEquals(getColumn(columns, 0), "Aerni");
+            assertEquals(getColumn(columns, 1), "Zirk");
+            i++;
+        }
+        e.free();
+        assertEquals(1, i);
+    }
+
+    // - DB Query Grouped
+    @Test
+    public void testDBQueryGrouped() throws LiteCoreException {
+
+        final List<String> expectedState = Arrays.asList("AL", "AR", "AZ", "CA");
+        final List<String> expectedMin = Arrays.asList("Laidlaw", "Okorududu", "Kinatyan", "Bejcek");
+        final List<String> expectedMax = Arrays.asList("Mulneix", "Schmith", "Kinatyan", "Visnic");
+        final int expectedRowCount = 42;
+
+        compile(json5("{WHAT: [['.contact.address.state'], ['min()', ['.name.last']], ['max()', ['.name.last']]],GROUP_BY: [['.contact.address.state']]}"));
+
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        int i = 0;
+        while (e.next()) {
+            byte[] columns = e.getCustomColumns();
+            if (i < expectedState.size()) {
+                assertEquals(getColumn(columns, 0), expectedState.get(i));
+                assertEquals(getColumn(columns, 1), expectedMin.get(i));
+                assertEquals(getColumn(columns, 2), expectedMax.get(i));
+            }
+            i++;
+        }
+        e.free();
+        assertEquals(expectedRowCount, i);
+    }
+
+
 }
