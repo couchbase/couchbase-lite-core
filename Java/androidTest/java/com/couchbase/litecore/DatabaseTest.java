@@ -18,6 +18,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,7 +80,7 @@ public class DatabaseTest extends BaseTest {
     public void testDatabaseOpenBundle() throws LiteCoreException {
         File bundlePath = new File(context.getFilesDir(), "cbl_core_test_bundle");
 
-        if(bundlePath.exists())
+        if (bundlePath.exists())
             Database.deleteAtPath(bundlePath.getPath(), Database.Create | Database.Bundle);
         Database bundle = new Database(bundlePath.getPath(), Database.Create | Database.Bundle, encryptionAlgorithm(), encryptionKey());
         assertNotNull(bundle);
@@ -166,7 +167,7 @@ public class DatabaseTest extends BaseTest {
         int i = 1;
         while ((doc = itr.nextDocument()) != null) {
             try {
-                String docID = String.format("doc-%03d", i);
+                String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
                 assertEquals(docID, doc.getDocID());
                 assertEquals(kRevID, doc.getRevID());
                 assertEquals(kRevID, doc.getSelectedRevID());
@@ -187,7 +188,7 @@ public class DatabaseTest extends BaseTest {
         i = 7;
         while ((doc = itr.nextDocument()) != null) {
             try {
-                String docID = String.format("doc-%03d", i);
+                String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
                 assertEquals(docID, doc.getDocID());
                 i++;
             } finally {
@@ -232,7 +233,7 @@ public class DatabaseTest extends BaseTest {
                 if (i == 6)
                     docID = "doc-005DEL";
                 else
-                    docID = String.format("doc-%03d", i >= 6 ? i - 1 : i);
+                    docID = String.format(Locale.ENGLISH, "doc-%03d", i >= 6 ? i - 1 : i);
                 assertEquals(docID, doc.getDocID());
                 i++;
             } finally {
@@ -255,7 +256,7 @@ public class DatabaseTest extends BaseTest {
         int i = 1;
         while ((doc = itr.nextDocument()) != null) {
             try {
-                String docID = String.format("doc-%03d", i);
+                String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
                 assertEquals(docID, doc.getDocID());
                 assertEquals(kRevID, doc.getRevID());
                 assertEquals(kRevID, doc.getSelectedRevID());
@@ -274,7 +275,7 @@ public class DatabaseTest extends BaseTest {
     @Test
     public void testDatabaseChanges() throws LiteCoreException {
         for (int i = 1; i < 100; i++) {
-            String docID = String.format("doc-%03d", i);
+            String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
             createRev(docID, kRevID, kBody.getBytes());
         }
 
@@ -287,7 +288,7 @@ public class DatabaseTest extends BaseTest {
         long seq = 1;
         while ((doc = itr.nextDocument()) != null) {
             try {
-                String docID = String.format("doc-%03d", seq);
+                String docID = String.format(Locale.ENGLISH, "doc-%03d", seq);
                 assertEquals(docID, doc.getDocID());
                 assertEquals(seq, doc.getSelectedSequence());
                 seq++;
@@ -303,7 +304,7 @@ public class DatabaseTest extends BaseTest {
         seq = 7;
         while ((doc = itr.nextDocument()) != null) {
             try {
-                String docID = String.format("doc-%03d", seq);
+                String docID = String.format(Locale.ENGLISH, "doc-%03d", seq);
                 assertEquals(docID, doc.getDocID());
                 assertEquals(seq, doc.getSelectedSequence());
                 seq++;
@@ -373,7 +374,7 @@ public class DatabaseTest extends BaseTest {
 
     private void setupAllDocs() throws LiteCoreException {
         for (int i = 1; i < 100; i++) {
-            String docID = String.format("doc-%03d", i);
+            String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
             createRev(docID, kRevID, kBody.getBytes());
         }
 

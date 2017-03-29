@@ -1,5 +1,7 @@
 package com.couchbase.litecore;
 
+import java.util.Locale;
+
 public class StopWatch {
     private long startTime = 0; // nano seconds
     private long stopTime = 0;
@@ -50,6 +52,6 @@ public class StopWatch {
     }
 
     public String toString(String what, long count, String item) {
-        return String.format("%s; %d %s (took %.3f ms)", what, count, item, getElapsedTimeMillis());
+        return String.format(Locale.ENGLISH, "%s; %d %s (took %.3f ms)", what, count, item, getElapsedTimeMillis());
     }
 }
