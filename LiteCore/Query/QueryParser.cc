@@ -50,6 +50,9 @@ namespace litecore {
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
+    #define require(TEST, FORMAT, ...)  if (TEST) ; else fail(FORMAT, ##__VA_ARGS__)
+
+
     // expands to the printf-style args for a slice; matching format spec should be %.*s
     #define splat(SLICE)    (int)(SLICE).size, (SLICE).buf
 
@@ -83,8 +86,7 @@ namespace litecore {
 
     static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
         auto a = v ? v->asArray() : nullptr;
-        if (!a)
-            fail("%s", elseMessage);
+        require(a, "%s", elseMessage);
         return a;
     }
 
@@ -206,8 +208,7 @@ namespace litecore {
         _1stCustomResultCol = nCol;
 
         nCol += writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
-        if (nCol == 0)
-            fail("No result columns");
+        require(nCol > 0, "No result columns");
 
         // FROM clause:
         _sql << " FROM ";
@@ -216,10 +217,10 @@ namespace litecore {
             fail("FROM parameter to SELECT isn't supported yet, sorry");
         } else {
             _sql << _tableName;
-            unsigned ftsTableNo = 0;
-            for (auto ftsTable : _ftsTables) {
-                _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
-            }
+        unsigned ftsTableNo = 0;
+        for (auto ftsTable : _ftsTables) {
+            _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
+        }
         }
 
         // WHERE clause:
@@ -236,8 +237,7 @@ namespace litecore {
         // HAVING clause:
         auto having = getCaseInsensitive(operands, "HAVING"_sl);
         if (having) {
-            if (!grouped)
-                fail("HAVING requires GROUP_BY");
+            require(grouped, "HAVING requires GROUP_BY");
             _sql << " HAVING ";
             _aggregatesOK = true;
             parseNode(having);
@@ -313,8 +313,8 @@ namespace litecore {
 
 
     void QueryParser::writeStringLiteralAsProperty(slice str) {
-        if (str.size == 0 || str[0] != '.')
-            fail("Invalid property name '%.*s'; must start with '.'", splat(str));
+        require(str.size > 0 && str[0] == '.',
+                "Invalid property name '%.*s'; must start with '.'", splat(str));
         str.moveStart(1);
         writePropertyGetter("fl_value", str.asString());
     }
@@ -356,11 +356,9 @@ namespace litecore {
 
     void QueryParser::parseOpNode(const Array *node) {
         Array::iterator array(node);
-        if (array.count() == 0)
-            fail("Empty JSON array");
+        require(array.count() > 0, "Empty JSON array");
         slice op = array[0]->asString();
-        if (!op)
-            fail("Operation must be a string");
+        require(op, "Operation must be a string");
         ++array;
 
         // Look up the handler:
@@ -477,15 +475,13 @@ namespace litecore {
     // Handles "ANY var IN array SATISFIES expr" (and EVERY, and ANY AND EVERY)
     void QueryParser::anyEveryOp(slice op, Array::iterator& operands) {
         auto var = (string)operands[0]->asString();
-        if (!isValidIdentifier(var))
-            fail("ANY/EVERY first parameter must be an identifier; '%s' is not", var.c_str());
-        if (_variables.count(var) > 0)
-            fail("Variable '%s' is already in use", var.c_str());
+        require(isValidIdentifier(var),
+                "ANY/EVERY first parameter must be an identifier; '%s' is not", var.c_str());
+        require(_variables.count(var) == 0, "Variable '%s' is already in use", var.c_str());
         _variables.insert(var);
 
         string property = propertyFromNode(operands[1]);
-        if (property.empty())
-            fail("ANY/EVERY only supports a property as its source");
+        require(!property.empty(), "ANY/EVERY only supports a property as its source");
 
         bool every = !op.caseEquivalent("ANY"_sl);
         bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
@@ -530,12 +526,11 @@ namespace litecore {
         } else {
             op.moveStart(1);
             parameter = op;
-            if (operands.count() > 0)
-                fail("extra operands to '%.*s'", splat(parameter));
+            require(operands.count() == 0, "extra operands to '%.*s'", splat(parameter));
         }
         auto paramStr = (string)parameter;
-        if (!isAlphanumericOrUnderscore(parameter))
-            fail("Invalid query parameter name '%.*s'", splat(parameter));
+        require(isAlphanumericOrUnderscore(parameter),
+                "Invalid query parameter name '%.*s'", splat(parameter));
         _parameters.insert(paramStr);
         _sql << "$_" << paramStr;
     }
@@ -551,10 +546,8 @@ namespace litecore {
             op.moveStart(1);
             var = op.asString();
         }
-        if (!isValidIdentifier(var))
-            fail("Invalid variable name '%.*s'", splat(op));
-        if (_variables.count(var) == 0)
-            fail("No such variable '%.*s'", splat(op));
+        require(isValidIdentifier(var), "Invalid variable name '%.*s'", splat(op));
+        require(_variables.count(var) > 0, "No such variable '%.*s'", splat(op));
 
         if (operands.count() == 0) {
             _sql << '_' << var << ".value";
@@ -606,8 +599,7 @@ namespace litecore {
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
         // SELECT is unusual in that its operands are encoded as an object
         auto dict = operands[0]->asDict();
-        if (!dict)
-            fail("Argument to SELECT must be an object");
+        require(dict, "Argument to SELECT must be an object");
         if (_context.size() <= 2) {
             // Outer SELECT
             writeSelect(dict);
@@ -652,18 +644,17 @@ namespace litecore {
             if (op.caseEquivalent(spec->name))
                 break;
         }
-        if (!spec->name)
-            fail("Unknown function '%.*s'", splat(op));
+        require(spec->name, "Unknown function '%.*s'", splat(op));
         if (spec->aggregate) {
-            if (!_aggregatesOK)
-                fail("Cannot use aggregate function %.*s() in this context", splat(op));
+            require(_aggregatesOK,
+                    "Cannot use aggregate function %.*s() in this context", splat(op));
             _isAggregateQuery = true;
         }
         auto arity = operands.count();
-        if (arity < spec->minArgs)
-            fail("Too few arguments for function '%.*s'", splat(op));
-        if (arity < 9 && arity > spec->maxArgs)
-            fail("Too many arguments for function '%.*s'", splat(op));
+        require(arity >= spec->minArgs,
+                "Too few arguments for function '%.*s'", splat(op));
+        require(arity <= spec->maxArgs || spec->maxArgs >= 9,
+                "Too many arguments for function '%.*s'", splat(op));
 
         if (spec->sqlite_name)
             op = spec->sqlite_name;
@@ -706,19 +697,15 @@ namespace litecore {
             auto item = i.value();
             auto arr = item->asArray();
             if (arr) {
-                if (n == 0)
-                    fail("Property path can't start with an array index");
+                require(n > 0, "Property path can't start with an array index");
                 // TODO: Support ranges (2 numbers)
-                if (arr->count() != 1)
-                    fail("Property array index must have exactly one item");
-                if (!arr->get(0)->isInteger())
-                    fail("Property array index must be an integer");
+                require(arr->count() == 1, "Property array index must have exactly one item");
+                require(arr->get(0)->isInteger(), "Property array index must be an integer");
                 auto index = arr->get(0)->asInt();
                 property << '[' << index << ']';
             } else {
                 slice name = item->asString();
-                if (!name)
-                    fail("Invalid JSON value in property path");
+                require(name, "Invalid JSON value in property path");
                 if (n > 0)
                     property << '.';
                 property << name;
@@ -763,12 +750,10 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(const string &fn, const string &property) {
         if (property == "_id") {
-            if (fn != "fl_value")
-                fail("can't use '_id' in this context");
+            require(fn == "fl_value", "can't use '_id' in this context");
             _sql << "key";
         } else if (property == "_sequence") {
-            if (fn != "fl_value")
-                fail("can't use '_sequence' in this context");
+            require(fn == "fl_value", "can't use '_sequence' in this context");
             _sql << "sequence";
         } else if (fn == "rank") {
             // FTS rank() needs special treatment
@@ -826,9 +811,8 @@ namespace litecore {
     
     string QueryParser::FTSIndexName(const Value *key) const {
         slice op = mustBeArray(key)->get(0)->asString();
-        if (op.size == 0)
-            fail("Invalid left-hand-side of MATCH");
-        else if (op[0] == '.')
+        require(op.size > 0, "Invalid left-hand-side of MATCH");
+        if (op[0] == '.')
             return FTSIndexName(propertyFromNode(key));     // abbreviation for common case
         else
             return _tableName + "::" + indexName(key->asArray());
