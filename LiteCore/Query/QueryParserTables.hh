@@ -230,4 +230,13 @@ namespace litecore {
         {nullslice}
     };
 
+
+    static const char* const kJoinTypes[] = {
+        "inner",
+        "outer",
+        "left outer",
+        "cross",
+        nullptr
+    };
+
 }

@@ -17,6 +17,13 @@
 using namespace std;
 
 
+static string parse(string json) {
+    QueryParser qp("kv_default");
+    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
+    qp.parse(Value::fromTrustedData(fleece));
+    return qp.SQL();
+}
+
 static string parseWhere(string json) {
     QueryParser qp("kv_default");
     alloc_slice fleece = JSONConverter::convertJSON(json5(json));
@@ -168,6 +175,15 @@ TEST_CASE("QueryParser CASE", "[Query]") {
           == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' END");
     CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', 'whatever']")
           == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE 'whatever' END");
+}
+
+
+TEST_CASE("QueryParser Join", "[Query]") {
+    CHECK(parse("{WHAT: ['.book.title', '.library.name'], \
+                  FROM: [{as: 'book'}, \
+                         {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
+                 WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
+          == "SELECT fl_value(\"book\".body, 'title'), fl_value(\"library\".body, 'name') FROM kv_default AS \"book\" JOIN kv_default AS \"library\" ON fl_value(\"book\".body, 'library') = \"library\".key WHERE fl_value(\"book\".body, 'author') = $_AUTHOR");
 }
 
 

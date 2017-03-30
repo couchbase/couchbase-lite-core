@@ -110,7 +110,10 @@ public:
     std::string listSharedKeys(std::string delimiter =", ");
 
     FLSlice readFile(std::string path); // caller must free buf when done
-    unsigned importJSONFile(std::string path, double timeout =15.0, bool verbose =false);
+    unsigned importJSONFile(std::string path,
+                            std::string idPrefix ="",
+                            double timeout =15.0,
+                            bool verbose =false);
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
     

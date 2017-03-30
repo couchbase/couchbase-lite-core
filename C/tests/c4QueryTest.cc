@@ -73,18 +73,6 @@ protected:
 };
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!throws]") {
-    C4Error error;
-    query = c4query_new(db, c4str("[\"=\"]"), &error);
-    REQUIRE(query == nullptr);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorInvalidQuery);
-    C4StringResult msg = c4error_getMessage(error);
-    CHECK(string((char*)msg.buf, msg.size) == "Wrong number of arguments to =");
-    c4slice_free(msg);
-}
-
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
@@ -276,6 +264,35 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
+    importJSONFile(sFixturesDir + "states_titlecase.json", "state-");
+    vector<string> expectedFirst = {"Cleveland",   "Georgetta", "Margaretta"};
+    vector<string> expectedState  = {"California", "Ohio",      "South Dakota"};
+    compile(json5("{WHAT: ['.person.name.first', '.state.name'],\
+                    FROM: [{as: 'person'}, \
+                           {as: 'state', on: ['=', ['.state.abbreviation'],\
+                                                   ['.person.contact.address.state']]}],\
+                   WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
+                ORDER_BY: [['.person.name.first']]}"));
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        auto customColumns = c4queryenum_customColumns(e);
+        C4Log("first='%s', state='%s'", getColumn(customColumns, 0).c_str(), getColumn(customColumns, 1).c_str());
+        CHECK(getColumn(customColumns, 0) == expectedFirst[i]);
+        CHECK(getColumn(customColumns, 1)  == expectedState[i]);
+        c4slice_free(customColumns);
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == 3);
+    c4queryenum_free(e);
+}
+
+
 class NestedQueryTest : public QueryTest {
 public:
     NestedQueryTest(int which)
@@ -287,4 +304,16 @@ public:
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query ANY nested", "[Query][C]") {
     compile(json5("['ANY', 'Shape', ['.', 'shapes'], ['=', ['?', 'Shape', 'color'], 'red']]"));
     CHECK(run() == (vector<string>{"0000001", "0000003"}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!throws]") {
+    C4Error error;
+    query = c4query_new(db, c4str("[\"=\"]"), &error);
+    REQUIRE(query == nullptr);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorInvalidQuery);
+    C4StringResult msg = c4error_getMessage(error);
+    CHECK(string((char*)msg.buf, msg.size) == "Wrong number of arguments to =");
+    c4slice_free(msg);
 }

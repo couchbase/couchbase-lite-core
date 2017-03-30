@@ -76,6 +76,10 @@ namespace litecore {
         void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
         unsigned writeSelectListClause(const fleece::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
 
+        void parseFromClause(const fleece::Value *from);
+        void writeFromClause(const fleece::Value *from);
+        bool isValidJoinType(const std::string&);
+
         void prefixOp(slice, fleece::Array::iterator&);
         void postfixOp(slice, fleece::Array::iterator&);
         void infixOp(slice, fleece::Array::iterator&);
@@ -95,22 +99,24 @@ namespace litecore {
         void functionOp(slice, fleece::Array::iterator&);
 
         bool writeNestedPropertyOpIfAny(const char *fnName, fleece::Array::iterator &operands);
-        void writePropertyGetter(const std::string &fn, const std::string &property);
+        void writePropertyGetter(const std::string &fn, std::string property);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
         void writeColumnList(fleece::Array::iterator& operands);
         void writeResultColumn(const fleece::Value*);
         void writeStringLiteralAsProperty(slice str);
 
+        void parseJoin(const fleece::Dict*);
+
         void findFTSProperties(const fleece::Value *node);
         size_t FTSPropertyIndex(const fleece::Value *matchLHS, bool canAdd =false);
 
         std::string _tableName;
         std::string _bodyColumnName;
+        std::vector<std::string> _aliases;      // Aliased table/join names
         std::vector<std::string> _baseResultColumns;
         std::string _defaultOffset, _defaultLimit;
         std::stringstream _sql;
-        std::string _propertyPath;
         std::vector<const Operation*> _context;
         std::set<std::string> _parameters;
         std::set<std::string> _variables;

@@ -302,7 +302,7 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
 }
 
 
-unsigned C4Test::importJSONFile(string path, double timeout, bool verbose) {
+unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bool verbose) {
     C4Log("Reading %s ...  ", path.c_str());
     Stopwatch st;
     auto jsonData = readFile(path);
@@ -323,7 +323,7 @@ unsigned C4Test::importJSONFile(string path, double timeout, bool verbose) {
             FLArrayIterator_Next(&iter))
     {
         char docID[20];
-        sprintf(docID, "%07u", numDocs+1);
+        sprintf(docID, "%s%07u", idPrefix.c_str(), numDocs+1);
 
         FLEncoder enc = c4db_createFleeceEncoder(db);
         FLEncoder_WriteValue(enc, item);

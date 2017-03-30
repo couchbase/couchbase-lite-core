@@ -53,6 +53,25 @@ namespace litecore {
     #define require(TEST, FORMAT, ...)  if (TEST) ; else fail(FORMAT, ##__VA_ARGS__)
 
 
+    static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
+        auto a = v ? v->asArray() : nullptr;
+        require(a, "%s", elseMessage);
+        return a;
+    }
+
+    static const Dict* mustBeDict(const Value *v, const char *elseMessage = "Expected a JSON string") {
+        auto d = v ? v->asDict() : nullptr;
+        require(d, "%s", elseMessage);
+        return d;
+    }
+
+    static const slice mustBeString(const Value *v, const char *elseMessage = "Expected a JSON string") {
+        slice s = v ? v->asString() : nullslice;
+        require(s, "%s", elseMessage);
+        return s;
+    }
+
+    
     // expands to the printf-style args for a slice; matching format spec should be %.*s
     #define splat(SLICE)    (int)(SLICE).size, (SLICE).buf
 
@@ -81,30 +100,6 @@ namespace litecore {
     static inline std::ostream& operator<< (std::ostream& o, slice s) {
         o.write((const char*)s.buf, s.size);
         return o;
-    }
-
-
-    static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
-        auto a = v ? v->asArray() : nullptr;
-        require(a, "%s", elseMessage);
-        return a;
-    }
-
-
-    // Appends two property-path strings.
-    static string appendPaths(const string &parent, string child) {
-        if (child[0] == '$') {
-            if (child[1] == '.')
-                child = child.substr(2);
-            else
-                child = child.substr(1);
-        }
-        if (parent.empty())
-            return child;
-        else if (child[0] == '[')
-            return parent + child;
-        else
-            return parent + "." + child;
     }
 
 
@@ -179,6 +174,9 @@ namespace litecore {
         parseNode(expression);
     }
 
+
+#pragma mark - SELECT STATEMENT
+
     
     void QueryParser::writeSelect(const Dict *operands) {
         writeSelect(getCaseInsensitive(operands, "WHERE"_sl), operands);
@@ -190,6 +188,12 @@ namespace litecore {
         if (where)
             findFTSProperties(where);
 
+        // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
+        // before writing the WHAT clause, because that will depend on _aliases.
+        auto from = getCaseInsensitive(operands, "FROM"_sl);
+        if (from)
+            parseFromClause(from);
+
         _sql << "SELECT ";
 
         // DISTINCT:
@@ -199,9 +203,12 @@ namespace litecore {
 
         // WHAT clause:
         // Default result columns:
+        string defaultTablePrefix;
+        if (!_aliases.empty())
+            defaultTablePrefix = _aliases[0] + ".";
         int nCol = 0;
         for (auto &col : _baseResultColumns)
-            _sql << (nCol++ ? ", " : "") << col;
+            _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
         for (auto ftsTable : _ftsTables) {
             _sql << (nCol++ ? ", " : "") << "offsets(\"" << ftsTable << "\")";
         }
@@ -211,17 +218,7 @@ namespace litecore {
         require(nCol > 0, "No result columns");
 
         // FROM clause:
-        _sql << " FROM ";
-        auto from = getCaseInsensitive(operands, "FROM"_sl);
-        if (from) {
-            fail("FROM parameter to SELECT isn't supported yet, sorry");
-        } else {
-            _sql << _tableName;
-        unsigned ftsTableNo = 0;
-        for (auto ftsTable : _ftsTables) {
-            _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
-        }
-        }
+        writeFromClause(from);
 
         // WHERE clause:
         if (where) {
@@ -317,6 +314,60 @@ namespace litecore {
                 "Invalid property name '%.*s'; must start with '.'", splat(str));
         str.moveStart(1);
         writePropertyGetter("fl_value", str.asString());
+    }
+
+
+#pragma mark - "FROM" / "JOIN" clauses:
+
+
+    void QueryParser::parseFromClause(const Value *from) {
+        for (Array::iterator i(mustBeArray(from, "FROM value must be an array")); i; ++i) {
+            auto entry = mustBeDict(i.value(), "FROM items must be dictionaries");
+            string alias = mustBeString(getCaseInsensitive(entry, "AS"_sl),
+                                        "Missing AS in FROM item").asString();
+            require(isAlphanumericOrUnderscore(alias), "AS value must be alphanumeric");
+            _aliases.push_back(alias);
+        }
+    }
+
+
+    void QueryParser::writeFromClause(const Value *from) {
+        _sql << " FROM " << _tableName;
+        if (from) {
+            for (unsigned i = 0; i < _aliases.size(); ++i) {
+                auto entry = from->asArray()->get(i)->asDict();
+                auto on = getCaseInsensitive(entry, "ON"_sl);
+                if (i == 0) {
+                    require(!on, "first FROM item cannot have an ON clause");
+                    _sql << " AS \"" << _aliases[i] << "\"";
+                } else {
+                    require(on, "FROM item needs an ON clause to be a join");
+                    if (i > 1)
+                        _sql << ",";
+                    auto joinType = getCaseInsensitive(entry, "JOIN"_sl);
+                    if (joinType) {
+                        auto typeStr = mustBeString(joinType).asString();
+                        require(isValidJoinType(typeStr), "Unknown JOIN type '%s'", typeStr.c_str());
+                        _sql << " " << typeStr;
+                    }
+                    _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\" ON ";
+                    parseNode(on);
+                }
+            }
+        }
+        unsigned ftsTableNo = 0;
+        for (auto ftsTable : _ftsTables) {
+            _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
+        }
+    }
+
+
+    bool QueryParser::isValidJoinType(const string &str) {
+        for (int i = 0; i < sizeof(kJoinTypes) / sizeof(kJoinTypes[0]); ++i) {
+            if (strcasecmp(kJoinTypes[i], str.c_str()) == 0)
+                return true;
+        }
+        return false;
     }
 
 
@@ -748,13 +799,27 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(const string &fn, const string &property) {
+    void QueryParser::writePropertyGetter(const string &fn, string property) {
+        string tableName;
+        if (!_aliases.empty()) {
+            // Interpret the first component of the property as a db alias:
+            auto dot = property.find('.');
+            auto bra = property.find('[');
+            require(dot != string::npos && (bra == string::npos || dot < bra),
+                    "Missing database alias name in property '%s'", property.c_str());
+            string first = property.substr(0, dot);
+            require(find(_aliases.begin(), _aliases.end(), first) != _aliases.end(),
+                    "Unknown database alias name in property '%s'", property.c_str());
+            tableName = "\"" + first + "\".";
+            property = property.substr(dot+1);
+        }
+
         if (property == "_id") {
             require(fn == "fl_value", "can't use '_id' in this context");
-            _sql << "key";
+            _sql << tableName << "key";
         } else if (property == "_sequence") {
             require(fn == "fl_value", "can't use '_sequence' in this context");
-            _sql << "sequence";
+            _sql << tableName << "sequence";
         } else if (fn == "rank") {
             // FTS rank() needs special treatment
             string fts = FTSIndexName(property);
@@ -762,9 +827,8 @@ namespace litecore {
                 fail("rank() can only be called on FTS-indexed properties");
             _sql << "rank(matchinfo(\"" << fts << "\"))";
         } else {
-            _sql << fn << "(" << _bodyColumnName << ", ";
-            auto path = appendPaths(_propertyPath, property);
-            writeSQLString(_sql, slice(path));
+            _sql << fn << "(" << tableName << _bodyColumnName << ", ";
+            writeSQLString(_sql, slice(property));
             _sql << ")";
         }
     }
