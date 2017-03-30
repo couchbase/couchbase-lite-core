@@ -36,7 +36,7 @@ public class FLValue {
         this.handle = handle;
     }
 
-    public int getType(){
+    public int getType() {
         return getType(handle);
     }
 
@@ -116,11 +116,12 @@ public class FLValue {
 
     /**
      * Converts valid JSON5 to JSON.
+     *
      * @param json5 String
      * @return JSON String
      * @throws LiteCoreException
      */
-    public static String json5ToJson(String json5) throws LiteCoreException{
+    public static String json5ToJson(String json5) throws LiteCoreException {
         return JSON5ToJSON(json5);
     }
 
@@ -266,6 +267,7 @@ public class FLValue {
 
     /**
      * Converts valid JSON5 to JSON.
+     *
      * @param json5 String
      * @return JSON String
      * @throws LiteCoreException

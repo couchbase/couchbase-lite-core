@@ -1,3 +1,16 @@
+/**
+ * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 #include "com_couchbase_litecore_fleece_FLArray.h"
 #include "com_couchbase_litecore_fleece_FLArrayIterator.h"
 #include "com_couchbase_litecore_fleece_FLDict.h"
@@ -25,7 +38,7 @@ using namespace litecore::jni;
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLArray_count(JNIEnv *env, jclass clazz, jlong jarray) {
-    return (jlong)FLArray_Count((FLArray)jarray);
+    return (jlong) FLArray_Count((FLArray) jarray);
 }
 
 /*
@@ -33,8 +46,10 @@ Java_com_couchbase_litecore_fleece_FLArray_count(JNIEnv *env, jclass clazz, jlon
  * Method:    get
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLArray_get(JNIEnv *env, jclass clazz, jlong jarray, jlong jindex){
-    return (jlong)FLArray_Get((FLArray)jarray, (uint32_t)jindex);
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLArray_get(JNIEnv *env, jclass clazz, jlong jarray,
+                                               jlong jindex) {
+    return (jlong) FLArray_Get((FLArray) jarray, (uint32_t) jindex);
 }
 
 // ----------------------------------------------------------------------------
@@ -55,8 +70,10 @@ Java_com_couchbase_litecore_fleece_FLArrayIterator_init(JNIEnv *env, jclass claz
  * Method:    begin
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_begin(JNIEnv *env, jclass clazz, jlong jarray, jlong jitr){
-    FLArrayIterator_Begin((FLArray)jarray, (FLArrayIterator*)jitr);
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLArrayIterator_begin(JNIEnv *env, jclass clazz, jlong jarray,
+                                                         jlong jitr) {
+    FLArrayIterator_Begin((FLArray) jarray, (FLArrayIterator *) jitr);
 }
 
 /*
@@ -64,8 +81,9 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_begin(
  * Method:    getValue
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_getValue(JNIEnv *env, jclass clazz, jlong jitr){
-    return (jlong)FLArrayIterator_GetValue((FLArrayIterator*)jitr);
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLArrayIterator_getValue(JNIEnv *env, jclass clazz, jlong jitr) {
+    return (jlong) FLArrayIterator_GetValue((FLArrayIterator *) jitr);
 }
 
 /*
@@ -73,8 +91,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_getVa
  * Method:    next
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_next(JNIEnv *env, jclass clazz, jlong jitr) {
-    return (jboolean)FLArrayIterator_Next((FLArrayIterator*)jitr);
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLArrayIterator_next(JNIEnv *env, jclass clazz, jlong jitr) {
+    return (jboolean) FLArrayIterator_Next((FLArrayIterator *) jitr);
 }
 
 /*
@@ -84,7 +103,7 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLArrayIterator_ne
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_FLArrayIterator_free(JNIEnv *env, jclass clazz, jlong jitr) {
-    ::free((FLArrayIterator*)jitr);
+    ::free((FLArrayIterator *) jitr);
 }
 
 // ----------------------------------------------------------------------------
@@ -98,7 +117,7 @@ Java_com_couchbase_litecore_fleece_FLArrayIterator_free(JNIEnv *env, jclass claz
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLDict_count(JNIEnv *env, jclass clazz, jlong jdict) {
-    return (jlong)FLDict_Count((FLDict)jdict);
+    return (jlong) FLDict_Count((FLDict) jdict);
 }
 
 /*
@@ -107,9 +126,10 @@ Java_com_couchbase_litecore_fleece_FLDict_count(JNIEnv *env, jclass clazz, jlong
  * Signature: (J[B)J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLDict_get(JNIEnv *env, jclass clazz, jlong jdict, jbyteArray jkeystring) {
+Java_com_couchbase_litecore_fleece_FLDict_get(JNIEnv *env, jclass clazz, jlong jdict,
+                                              jbyteArray jkeystring) {
     jbyteArraySlice key(env, jkeystring, true);
-    return (jlong)FLDict_Get((FLDict)jdict, {((slice)key).buf, ((slice)key).size});
+    return (jlong) FLDict_Get((FLDict) jdict, {((slice) key).buf, ((slice) key).size});
 }
 
 /*
@@ -118,7 +138,8 @@ Java_com_couchbase_litecore_fleece_FLDict_get(JNIEnv *env, jclass clazz, jlong j
  * Signature: (J[BJ)J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLDict_getSharedKey(JNIEnv *env, jclass clazz, jlong jdict, jbyteArray jkeystring, jlong jsharedkeys) {
+Java_com_couchbase_litecore_fleece_FLDict_getSharedKey(JNIEnv *env, jclass clazz, jlong jdict,
+                                                       jbyteArray jkeystring, jlong jsharedkeys) {
     //TODO:
     return 0;
 }
@@ -131,7 +152,8 @@ Java_com_couchbase_litecore_fleece_FLDict_getSharedKey(JNIEnv *env, jclass clazz
  * Method:    init
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_init(JNIEnv *env, jclass clazz){
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_init(JNIEnv *env, jclass clazz) {
     return (jlong) ::malloc(sizeof(FLDictIterator));
 }
 
@@ -140,8 +162,10 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_init(J
  * Method:    begin
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_begin(JNIEnv *env, jclass clazz, jlong jdict, jlong jitr){
-    FLDictIterator_Begin((FLDict)jdict, (FLDictIterator*)jitr);
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_begin(JNIEnv *env, jclass clazz, jlong jdict,
+                                                        jlong jitr) {
+    FLDictIterator_Begin((FLDict) jdict, (FLDictIterator *) jitr);
 }
 
 /*
@@ -149,8 +173,9 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_begin(J
  * Method:    getKey
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_getKey(JNIEnv *env, jclass clazz, jlong jitr){
-    return (jlong)FLDictIterator_GetKey((FLDictIterator*)jitr);
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_getKey(JNIEnv *env, jclass clazz, jlong jitr) {
+    return (jlong) FLDictIterator_GetKey((FLDictIterator *) jitr);
 }
 
 /*
@@ -158,8 +183,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_getKey
  * Method:    getValue
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_getValue(JNIEnv *env, jclass clazz, jlong jitr){
-    return (jlong)FLDictIterator_GetValue((FLDictIterator*)jitr);
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_getValue(JNIEnv *env, jclass clazz, jlong jitr) {
+    return (jlong) FLDictIterator_GetValue((FLDictIterator *) jitr);
 }
 
 /*
@@ -167,8 +193,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_getVal
  * Method:    next
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_next(JNIEnv *env, jclass clazz, jlong jitr){
-    return (jboolean)FLDictIterator_Next((FLDictIterator*)jitr);
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_next(JNIEnv *env, jclass clazz, jlong jitr) {
+    return (jboolean) FLDictIterator_Next((FLDictIterator *) jitr);
 }
 
 /*
@@ -176,8 +203,9 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_nex
  * Method:    free
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_free(JNIEnv *env, jclass clazz, jlong jitr){
-    ::free((FLDictIterator*)jitr);
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLDictIterator_free(JNIEnv *env, jclass clazz, jlong jitr) {
+    ::free((FLDictIterator *) jitr);
 }
 
 // ----------------------------------------------------------------------------
@@ -190,9 +218,10 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_FLDictIterator_free(JN
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLValue_fromTrustedData(JNIEnv *env, jclass clazz, jbyteArray jdata) {
+Java_com_couchbase_litecore_fleece_FLValue_fromTrustedData(JNIEnv *env, jclass clazz,
+                                                           jbyteArray jdata) {
     jbyteArraySlice data(env, jdata, true);
-    return (jlong)FLValue_FromTrustedData({((slice)data).buf, ((slice)data).size});
+    return (jlong) FLValue_FromTrustedData({((slice) data).buf, ((slice) data).size});
 }
 
 /*
@@ -202,7 +231,7 @@ Java_com_couchbase_litecore_fleece_FLValue_fromTrustedData(JNIEnv *env, jclass c
  */
 JNIEXPORT jint JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_getType(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return FLValue_GetType((FLValue)jvalue);
+    return FLValue_GetType((FLValue) jvalue);
 }
 
 /*
@@ -212,7 +241,7 @@ Java_com_couchbase_litecore_fleece_FLValue_getType(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asBool(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (jboolean)FLValue_AsBool((FLValue)jvalue);
+    return (jboolean) FLValue_AsBool((FLValue) jvalue);
 }
 
 /*
@@ -220,8 +249,9 @@ Java_com_couchbase_litecore_fleece_FLValue_asBool(JNIEnv *env, jclass clazz, jlo
  * Method:    asUnsigned
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLValue_asUnsigned(JNIEnv *env, jclass clazz, jlong jvalue){
-    return (jlong)FLValue_AsUnsigned((FLValue)jvalue);
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_asUnsigned(JNIEnv *env, jclass clazz, jlong jvalue) {
+    return (jlong) FLValue_AsUnsigned((FLValue) jvalue);
 }
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
@@ -230,7 +260,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLValue_asUnsigned(JN
  */
 JNIEXPORT jint JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asInt(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (jint)FLValue_AsInt((FLValue)jvalue);
+    return (jint) FLValue_AsInt((FLValue) jvalue);
 }
 
 /*
@@ -240,7 +270,7 @@ Java_com_couchbase_litecore_fleece_FLValue_asInt(JNIEnv *env, jclass clazz, jlon
  */
 JNIEXPORT jfloat JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asFloat(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (jfloat)FLValue_AsFloat((FLValue)jvalue);
+    return (jfloat) FLValue_AsFloat((FLValue) jvalue);
 }
 
 /*
@@ -250,7 +280,7 @@ Java_com_couchbase_litecore_fleece_FLValue_asFloat(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jdouble JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asDouble(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (jdouble)FLValue_AsDouble((FLValue)jvalue);
+    return (jdouble) FLValue_AsDouble((FLValue) jvalue);
 }
 
 /*
@@ -281,7 +311,7 @@ Java_com_couchbase_litecore_fleece_FLValue_asData(JNIEnv *env, jclass clazz, jlo
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asArray(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (long)FLValue_AsArray((FLValue)jvalue);
+    return (long) FLValue_AsArray((FLValue) jvalue);
 }
 
 /*
@@ -291,7 +321,7 @@ Java_com_couchbase_litecore_fleece_FLValue_asArray(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asDict(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (long)FLValue_AsDict((FLValue)jvalue);
+    return (long) FLValue_AsDict((FLValue) jvalue);
 }
 
 /*
@@ -299,8 +329,9 @@ Java_com_couchbase_litecore_fleece_FLValue_asDict(JNIEnv *env, jclass clazz, jlo
  * Method:    isInteger
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLValue_isInteger (JNIEnv *env, jclass clazz, jlong jvalue){
-    return (jboolean)FLValue_IsInteger((FLValue)jvalue);
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_isInteger(JNIEnv *env, jclass clazz, jlong jvalue) {
+    return (jboolean) FLValue_IsInteger((FLValue) jvalue);
 }
 
 /*
@@ -308,16 +339,18 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLValue_isInteger 
  * Method:    isDouble
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLValue_isDouble (JNIEnv *env, jclass clazz, jlong jvalue){
-    return (jboolean)FLValue_IsDouble((FLValue)jvalue);
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_isDouble(JNIEnv *env, jclass clazz, jlong jvalue) {
+    return (jboolean) FLValue_IsDouble((FLValue) jvalue);
 }
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
  * Method:    isUnsigned
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_FLValue_isUnsigned(JNIEnv *env, jclass clazz, jlong jvalue){
-    return (jboolean)FLValue_IsUnsigned((FLValue)jvalue);
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_isUnsigned(JNIEnv *env, jclass clazz, jlong jvalue) {
+    return (jboolean) FLValue_IsUnsigned((FLValue) jvalue);
 }
 
 /*
@@ -361,7 +394,7 @@ Java_com_couchbase_litecore_fleece_FLSliceResult_free(JNIEnv *env, jclass clazz,
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env, jclass clazz) {
-    return (jlong)FLEncoder_New();
+    return (jlong) FLEncoder_New();
 }
 
 /*
@@ -371,7 +404,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env, jclass clazz) {
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env, jclass clazz, jlong jencoder) {
-    FLEncoder_Free((FLEncoder)jencoder);
+    FLEncoder_Free((FLEncoder) jencoder);
 }
 
 /*
@@ -381,7 +414,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env, jclass clazz, jlo
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeNull(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean)FLEncoder_WriteNull((FLEncoder)jencoder);
+    return (jboolean) FLEncoder_WriteNull((FLEncoder) jencoder);
 }
 
 /*
@@ -390,8 +423,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeNull(JNIEnv *env, jclass clazz
  * Signature: (JZ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeBool(JNIEnv *env, jclass clazz, jlong jencoder, jboolean jvalue) {
-    return (jboolean)FLEncoder_WriteBool((FLEncoder)jencoder, (bool)jvalue);
+Java_com_couchbase_litecore_fleece_FLEncoder_writeBool(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                       jboolean jvalue) {
+    return (jboolean) FLEncoder_WriteBool((FLEncoder) jencoder, (bool) jvalue);
 }
 
 /*
@@ -400,8 +434,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeBool(JNIEnv *env, jclass clazz
  * Signature: (JJ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeInt(JNIEnv *env, jclass clazz, jlong jencoder, jlong jvalue) {
-    return (jboolean)FLEncoder_WriteInt((FLEncoder)jencoder, (int64_t)jvalue);
+Java_com_couchbase_litecore_fleece_FLEncoder_writeInt(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                      jlong jvalue) {
+    return (jboolean) FLEncoder_WriteInt((FLEncoder) jencoder, (int64_t) jvalue);
 }
 
 /*
@@ -410,8 +445,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeInt(JNIEnv *env, jclass clazz,
  * Signature: (JF)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeFloat(JNIEnv *env, jclass clazz, jlong jencoder, jfloat jvalue) {
-    return (jboolean)FLEncoder_WriteFloat((FLEncoder)jencoder, (float)jvalue);
+Java_com_couchbase_litecore_fleece_FLEncoder_writeFloat(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                        jfloat jvalue) {
+    return (jboolean) FLEncoder_WriteFloat((FLEncoder) jencoder, (float) jvalue);
 }
 
 /*
@@ -420,8 +456,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeFloat(JNIEnv *env, jclass claz
  * Signature: (JD)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeDouble(JNIEnv *env, jclass clazz, jlong jencoder, jdouble jvalue) {
-    return (jboolean)FLEncoder_WriteDouble((FLEncoder)jencoder, (double)jvalue);
+Java_com_couchbase_litecore_fleece_FLEncoder_writeDouble(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                         jdouble jvalue) {
+    return (jboolean) FLEncoder_WriteDouble((FLEncoder) jencoder, (double) jvalue);
 }
 
 /*
@@ -430,9 +467,11 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeDouble(JNIEnv *env, jclass cla
  * Signature: (JLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeString(JNIEnv *env, jclass clazz, jlong jencoder, jstring jvalue) {
+Java_com_couchbase_litecore_fleece_FLEncoder_writeString(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                         jstring jvalue) {
     jstringSlice value(env, jvalue);
-    return (jboolean)FLEncoder_WriteString((FLEncoder)jencoder, {((slice)value).buf, ((slice)value).size});
+    return (jboolean) FLEncoder_WriteString((FLEncoder) jencoder,
+                                            {((slice) value).buf, ((slice) value).size});
 }
 
 /*
@@ -441,9 +480,11 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeString(JNIEnv *env, jclass cla
  * Signature: (J[B)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeData(JNIEnv *env, jclass clazz, jlong jencoder, jbyteArray jvalue) {
+Java_com_couchbase_litecore_fleece_FLEncoder_writeData(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                       jbyteArray jvalue) {
     jbyteArraySlice value(env, jvalue, true);
-    return (jboolean)FLEncoder_WriteData((FLEncoder)jencoder, {((slice)value).buf, ((slice)value).size});
+    return (jboolean) FLEncoder_WriteData((FLEncoder) jencoder,
+                                          {((slice) value).buf, ((slice) value).size});
 }
 
 /*
@@ -452,8 +493,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeData(JNIEnv *env, jclass clazz
  * Signature: (JJ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_beginArray(JNIEnv *env, jclass clazz, jlong jencoder, jlong jreserve) {
-    return (jboolean)FLEncoder_BeginArray((FLEncoder)jencoder, (size_t)jreserve);
+Java_com_couchbase_litecore_fleece_FLEncoder_beginArray(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                        jlong jreserve) {
+    return (jboolean) FLEncoder_BeginArray((FLEncoder) jencoder, (size_t) jreserve);
 }
 
 /*
@@ -463,7 +505,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_beginArray(JNIEnv *env, jclass claz
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_endArray(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean)FLEncoder_EndArray((FLEncoder)jencoder);
+    return (jboolean) FLEncoder_EndArray((FLEncoder) jencoder);
 }
 
 /*
@@ -472,8 +514,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_endArray(JNIEnv *env, jclass clazz,
  * Signature: (JJ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_beginDict(JNIEnv *env, jclass clazz, jlong jencoder, jlong jreserve) {
-    return (jboolean)FLEncoder_BeginDict((FLEncoder)jencoder, (size_t)jreserve);
+Java_com_couchbase_litecore_fleece_FLEncoder_beginDict(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                       jlong jreserve) {
+    return (jboolean) FLEncoder_BeginDict((FLEncoder) jencoder, (size_t) jreserve);
 }
 
 /*
@@ -483,7 +526,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_beginDict(JNIEnv *env, jclass clazz
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_endDict(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean)FLEncoder_EndDict((FLEncoder)jencoder);
+    return (jboolean) FLEncoder_EndDict((FLEncoder) jencoder);
 }
 
 /*
@@ -495,7 +538,8 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz, jlong jencoder,
                                                       jstring jkey) {
     jstringSlice key(env, jkey);
-    return (jboolean)FLEncoder_WriteKey((FLEncoder)jencoder, {((slice)key).buf, ((slice)key).size});
+    return (jboolean) FLEncoder_WriteKey((FLEncoder) jencoder,
+                                         {((slice) key).buf, ((slice) key).size});
 }
 
 /*
@@ -504,8 +548,9 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz,
  * Signature: (JJ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass clazz, jlong jencoder, jlong jvalue) {
-    return (jboolean)FLEncoder_WriteValue((FLEncoder)jencoder, (FLValue)jvalue);
+Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                        jlong jvalue) {
+    return (jboolean) FLEncoder_WriteValue((FLEncoder) jencoder, (FLValue) jvalue);
 }
 
 /*
@@ -516,6 +561,6 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass claz
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, jlong jencoder) {
     FLError error;
-    FLSliceResult res =  FLEncoder_Finish((FLEncoder)jencoder, &error);
-    return toJByteArray(env,  {res.buf,res.size});
+    FLSliceResult res = FLEncoder_Finish((FLEncoder) jencoder, &error);
+    return toJByteArray(env, {res.buf, res.size});
 }
