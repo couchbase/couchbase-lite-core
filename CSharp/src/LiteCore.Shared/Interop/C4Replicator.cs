@@ -36,7 +36,7 @@ namespace LiteCore.Interop
     public
 #endif
         unsafe delegate void C4ReplicatorStateChangedCallback(C4Replicator* replicator,
-            C4ReplicatorState replicatorState, void* context);
+            C4ReplicatorStatus replicatorState, void* context);
 
 
 #if LITECORE_PACKAGED
@@ -48,7 +48,7 @@ namespace LiteCore.Interop
         unsafe sealed class ReplicatorStateChangedCallback : IDisposable
     {
         private readonly object _context;
-        private readonly Action<C4ReplicatorState, object> _callback;
+        private readonly Action<C4ReplicatorStatus, object> _callback;
         private long _id;
         private static long _NextID = 0L;
 
@@ -59,8 +59,7 @@ namespace LiteCore.Interop
 
         internal void* NativeContext { get; }
 
-        public ReplicatorStateChangedCallback(C4Replicator* replicator,
-            Action<C4ReplicatorState, object> callback, object context)
+        public ReplicatorStateChangedCallback(Action<C4ReplicatorStatus, object> callback, object context)
         {
             var nextId = Interlocked.Increment(ref _NextID);
             _id = nextId;
@@ -72,7 +71,7 @@ namespace LiteCore.Interop
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorStateChangedCallback))]
-        private static void StateChanged(C4Replicator* replicator, C4ReplicatorState state, void* context)
+        private static void StateChanged(C4Replicator* replicator, C4ReplicatorStatus state, void* context)
         {
             var id = (long)context;
             var obj = _StaticMap[id];
@@ -94,9 +93,10 @@ namespace LiteCore.Interop
         unsafe static partial class Native
     {
         public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName,
-            C4ReplicatorMode push, C4ReplicatorMode pull, ReplicatorStateChangedCallback onStateChanged, C4Error* err)
+            C4Database *otherDb, C4ReplicatorMode push, C4ReplicatorMode pull, ReplicatorStateChangedCallback onStateChanged, 
+            C4Error* err)
         {
-            return Native.c4repl_new(db, remoteAddress, remoteDatabaseName, push, pull, onStateChanged.NativeCallback,
+            return Native.c4repl_new(db, remoteAddress, remoteDatabaseName, otherDb, push, pull, onStateChanged.NativeCallback,
                 onStateChanged.NativeContext, err);
         }
     }

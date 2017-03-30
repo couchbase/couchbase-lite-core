@@ -37,8 +37,7 @@ namespace LiteCore.Interop
     {
         LiteCoreDomain = 1,
         POSIXDomain,
-        ForestDBDomain,
-        SQLiteDomain,
+        SQLiteDomain = 4,
         FleeceDomain,
         DNSDomain,
         WebSocketDomain,

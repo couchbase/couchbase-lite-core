@@ -18,7 +18,7 @@ namespace LiteCore.Tests
         [Fact]
         public void TestErrorMessages()
         {
-            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.ForestDBDomain, 0));
+            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.LiteCoreDomain, 0));
             msg.Should().BeNull("because there was no error");
 
             AssertMessage(C4ErrorDomain.SQLiteDomain, (int)SQLiteStatus.Corrupt, "database disk image is malformed");

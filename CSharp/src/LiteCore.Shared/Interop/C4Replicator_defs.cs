@@ -33,7 +33,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    enum C4ReplicatorMode
+    enum C4ReplicatorMode : int
     {
         Disabled,
         Passive,
@@ -46,13 +46,24 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    enum C4ReplicatorActivityLevel
+    enum C4ReplicatorActivityLevel : int
     {
         Stopped,
         Offline,
         Connecting,
         Idle,
         Busy
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    unsafe struct C4Progress
+    {
+        public ulong completed;
+        public ulong total;
     }
 
 #if LITECORE_PACKAGED
@@ -69,9 +80,10 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    unsafe struct C4ReplicatorState
+    unsafe struct C4ReplicatorStatus
     {
         public C4ReplicatorActivityLevel level;
+        public C4Progress progress;
         public C4Error error;
     }
 }

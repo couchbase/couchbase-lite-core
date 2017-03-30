@@ -92,7 +92,7 @@ namespace LiteCore.Interop
         private static SocketWriteDelegateManaged _externalWrite;
         private static SocketCompletedReceiveDelegateManaged _externalCompletedReceive;
 
-        internal static C4SocketFactory InternalFactory { get; }
+        private static C4SocketFactory InternalFactory { get; }
 
         static SocketFactory()
         {
