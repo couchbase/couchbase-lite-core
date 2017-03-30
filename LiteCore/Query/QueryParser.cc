@@ -21,6 +21,7 @@
 #include "Fleece.hh"
 #include "Path.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <utility>
 #include <algorithm>
 #ifdef _MSC_VER
@@ -40,42 +41,36 @@ namespace litecore {
     static void fail(const char *format, ...) {
         va_list args;
         va_start(args, format);
-        char *cmessage;
-        vasprintf(&cmessage, format, args);
+        string message = vformat(format, args);
         va_end(args);
 
-        Warn("Invalid query: %s", cmessage);
-        string message{cmessage};
-        free(cmessage);
+        Warn("Invalid LiteCore query: %s", message.c_str());
         throw error(error::LiteCore, error::InvalidQuery, message);
     }
 
     #define require(TEST, FORMAT, ...)  if (TEST) ; else fail(FORMAT, ##__VA_ARGS__)
 
 
-    static const Array* mustBeArray(const Value *v, const char *elseMessage = "Expected a JSON array") {
-        auto a = v ? v->asArray() : nullptr;
-        require(a, "%s", elseMessage);
-        return a;
+    template <class T>
+    static T required(T val, const char *name, const char *message = "is missing") {
+        require(val, "%s %s", name, message);
+        return val;
     }
 
-    static const Dict* mustBeDict(const Value *v, const char *elseMessage = "Expected a JSON string") {
-        auto d = v ? v->asDict() : nullptr;
-        require(d, "%s", elseMessage);
-        return d;
+
+    static const Array* requiredArray(const Value *v, const char *what) {
+        return required(required(v, what)->asArray(), what, "must be an array");
     }
 
-    static const slice mustBeString(const Value *v, const char *elseMessage = "Expected a JSON string") {
-        slice s = v ? v->asString() : nullslice;
-        require(s, "%s", elseMessage);
-        return s;
+    static const Dict* requiredDict(const Value *v, const char *what) {
+        return required(required(v, what)->asDict(), what, "must be a dictionary");
+    }
+
+    static slice requiredString(const Value *v, const char *what) {
+        return required(required(v, what)->asString(), what, "must be a string");
     }
 
     
-    // expands to the printf-style args for a slice; matching format spec should be %.*s
-    #define splat(SLICE)    (int)(SLICE).size, (SLICE).buf
-
-
     static bool isAlphanumericOrUnderscore(slice str) {
         if (str.size == 0)
             return false;
@@ -261,7 +256,7 @@ namespace litecore {
     {
         auto param = getCaseInsensitive(operands, key);
         if (!param) return 0;
-        auto list = mustBeArray(param);
+        auto list = requiredArray(param, "WHAT / GROUP BY / ORDER BY parameter");
         int count = list->count();
         if (count == 0) return 0;
 
@@ -311,7 +306,7 @@ namespace litecore {
 
     void QueryParser::writeStringLiteralAsProperty(slice str) {
         require(str.size > 0 && str[0] == '.',
-                "Invalid property name '%.*s'; must start with '.'", splat(str));
+                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
         str.moveStart(1);
         writePropertyGetter("fl_value", str.asString());
     }
@@ -321,11 +316,11 @@ namespace litecore {
 
 
     void QueryParser::parseFromClause(const Value *from) {
-        for (Array::iterator i(mustBeArray(from, "FROM value must be an array")); i; ++i) {
-            auto entry = mustBeDict(i.value(), "FROM items must be dictionaries");
-            string alias = mustBeString(getCaseInsensitive(entry, "AS"_sl),
-                                        "Missing AS in FROM item").asString();
-            require(isAlphanumericOrUnderscore(alias), "AS value must be alphanumeric");
+        for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
+            auto entry = requiredDict(i.value(), "FROM item");
+            string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
+                                          "AS in FROM item").asString();
+            require(isAlphanumericOrUnderscore(alias), "AS value");
             _aliases.push_back(alias);
         }
     }
@@ -346,7 +341,7 @@ namespace litecore {
                         _sql << ",";
                     auto joinType = getCaseInsensitive(entry, "JOIN"_sl);
                     if (joinType) {
-                        auto typeStr = mustBeString(joinType).asString();
+                        auto typeStr = requiredString(joinType, "JOIN value").asString();
                         require(isValidJoinType(typeStr), "Unknown JOIN type '%s'", typeStr.c_str());
                         _sql << " " << typeStr;
                     }
@@ -408,8 +403,7 @@ namespace litecore {
     void QueryParser::parseOpNode(const Array *node) {
         Array::iterator array(node);
         require(array.count() > 0, "Empty JSON array");
-        slice op = array[0]->asString();
-        require(op, "Operation must be a string");
+        slice op = requiredString(array[0], "operation");
         ++array;
 
         // Look up the handler:
@@ -424,7 +418,7 @@ namespace litecore {
             }
         }
         if (nameMatched && !def->op)
-            fail("Wrong number of arguments to %.*s", splat(op));
+            fail("Wrong number of arguments to %.*s", SPLAT(op));
         handleOperation(def, op, array);
     }
 
@@ -525,7 +519,7 @@ namespace litecore {
 
     // Handles "ANY var IN array SATISFIES expr" (and EVERY, and ANY AND EVERY)
     void QueryParser::anyEveryOp(slice op, Array::iterator& operands) {
-        auto var = (string)operands[0]->asString();
+        auto var = (string)requiredString(operands[0], "ANY/EVERY first parameter");
         require(isValidIdentifier(var),
                 "ANY/EVERY first parameter must be an identifier; '%s' is not", var.c_str());
         require(_variables.count(var) == 0, "Variable '%s' is already in use", var.c_str());
@@ -577,11 +571,11 @@ namespace litecore {
         } else {
             op.moveStart(1);
             parameter = op;
-            require(operands.count() == 0, "extra operands to '%.*s'", splat(parameter));
+            require(operands.count() == 0, "extra operands to '%.*s'", SPLAT(parameter));
         }
         auto paramStr = (string)parameter;
         require(isAlphanumericOrUnderscore(parameter),
-                "Invalid query parameter name '%.*s'", splat(parameter));
+                "Invalid query parameter name '%.*s'", SPLAT(parameter));
         _parameters.insert(paramStr);
         _sql << "$_" << paramStr;
     }
@@ -597,8 +591,8 @@ namespace litecore {
             op.moveStart(1);
             var = op.asString();
         }
-        require(isValidIdentifier(var), "Invalid variable name '%.*s'", splat(op));
-        require(_variables.count(var) > 0, "No such variable '%.*s'", splat(op));
+        require(isValidIdentifier(var), "Invalid variable name '%.*s'", SPLAT(op));
+        require(_variables.count(var) > 0, "No such variable '%.*s'", SPLAT(op));
 
         if (operands.count() == 0) {
             _sql << '_' << var << ".value";
@@ -649,8 +643,7 @@ namespace litecore {
     // Handles SELECT
     void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
         // SELECT is unusual in that its operands are encoded as an object
-        auto dict = operands[0]->asDict();
-        require(dict, "Argument to SELECT must be an object");
+        auto dict = requiredDict(operands[0], "Argument to SELECT");
         if (_context.size() <= 2) {
             // Outer SELECT
             writeSelect(dict);
@@ -680,7 +673,7 @@ namespace litecore {
         } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
             functionOp(op, operands);
         } else {
-            fail("Unknown operator '%.*s'", splat(op));
+            fail("Unknown operator '%.*s'", SPLAT(op));
         }
     }
 
@@ -695,17 +688,17 @@ namespace litecore {
             if (op.caseEquivalent(spec->name))
                 break;
         }
-        require(spec->name, "Unknown function '%.*s'", splat(op));
+        require(spec->name, "Unknown function '%.*s'", SPLAT(op));
         if (spec->aggregate) {
             require(_aggregatesOK,
-                    "Cannot use aggregate function %.*s() in this context", splat(op));
+                    "Cannot use aggregate function %.*s() in this context", SPLAT(op));
             _isAggregateQuery = true;
         }
         auto arity = operands.count();
         require(arity >= spec->minArgs,
-                "Too few arguments for function '%.*s'", splat(op));
+                "Too few arguments for function '%.*s'", SPLAT(op));
         require(arity <= spec->maxArgs || spec->maxArgs >= 9,
-                "Too many arguments for function '%.*s'", splat(op));
+                "Too many arguments for function '%.*s'", SPLAT(op));
 
         if (spec->sqlite_name)
             op = spec->sqlite_name;
@@ -874,7 +867,7 @@ namespace litecore {
 
     
     string QueryParser::FTSIndexName(const Value *key) const {
-        slice op = mustBeArray(key)->get(0)->asString();
+        slice op = requiredArray(key, "left-hand side of MATCH expression")->get(0)->asString();
         require(op.size > 0, "Invalid left-hand-side of MATCH");
         if (op[0] == '.')
             return FTSIndexName(propertyFromNode(key));     // abbreviation for common case
