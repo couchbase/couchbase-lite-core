@@ -25,7 +25,7 @@ public class FLEncoder {
     }
 
     public void free() {
-        if(handle!=0) {
+        if (handle != 0) {
             free(handle);
             handle = 0;
         }
