@@ -13,6 +13,7 @@
 #include "Actor.hh"
 #include "Logging.hh"
 #include "varint.hh"
+#include "PlatformCompat.hh"
 #include <algorithm>
 #include <assert.h>
 #include <atomic>
