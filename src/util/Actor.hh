@@ -101,6 +101,8 @@ namespace litecore {
         void enqueue(std::function<void()>);
         void enqueueAfter(Scheduler::duration delay, std::function<void()>);
 
+        void logStats()                                     { /* TODO */ }
+
     private:
         friend class Scheduler;
         
@@ -136,6 +138,8 @@ namespace litecore {
         void enqueueAfter(Scheduler::duration delay, void (^block)());
 
         static void startScheduler(Scheduler *)             { }
+
+        void logStats();
 
     private:
         void afterEvent();
@@ -237,6 +241,10 @@ namespace litecore {
         }
 
         virtual void afterEvent()                    { }
+
+        void logStats() {
+            _mailbox.logStats();
+        }
 
     private:
         friend class ThreadedMailbox;

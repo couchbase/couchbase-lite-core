@@ -111,13 +111,6 @@ namespace litecore {
     { }
 
     GCDMailbox::~GCDMailbox() {
-#if ACTORS_TRACK_STATS
-        LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
-              _actor->actorName().c_str(), _maxEventCount,
-              Benchmark::formatTime(_maxLatency).c_str(),
-              Benchmark::formatTime(_busy.elapsed()).c_str(),
-              (_busy.elapsed() / _createdAt.elapsed())*100.0);
-#endif
         dispatch_release(_queue);
     }
 
@@ -200,6 +193,17 @@ namespace litecore {
 #endif
         --_eventCount;
         release(_actor);
+    }
+
+
+    void GCDMailbox::logStats() {
+#if ACTORS_TRACK_STATS
+        LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
+              _actor->actorName().c_str(), _maxEventCount,
+              Benchmark::formatTime(_maxLatency).c_str(),
+              Benchmark::formatTime(_busy.elapsed()).c_str(),
+              (_busy.elapsed() / _createdAt.elapsed())*100.0);
+#endif
     }
 
 
