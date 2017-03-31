@@ -384,10 +384,10 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::insertRevision(std::shared_ptr<RevToInsert> rev) {
+    void DBActor::insertRevision(RevToInsert *rev) {
         lock_guard<mutex> lock(_revsToInsertMutex);
         if (!_revsToInsert) {
-            _revsToInsert.reset(new vector<shared_ptr<RevToInsert>>);
+            _revsToInsert.reset(new vector<RevToInsert*>);
             _revsToInsert->reserve(500);
             enqueueAfter(kInsertionDelay, &DBActor::_insertRevisionsNow);
         }

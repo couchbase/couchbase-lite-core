@@ -55,8 +55,9 @@ public:
     void logState(C4ReplicatorStatus status) {
         char message[200];
         c4error_getMessageC(status.error, message, sizeof(message));
-        C4Log(">>> C4Replicator state: level=%d, progress=%llu/%llu, error=%d/%d: %s",
-              status.level, status.progress.completed, status.progress.total,
+        C4Log(">>> C4Replicator state: %s, progress=%llu/%llu, error=%d/%d: %s",
+              kC4ReplicatorActivityLevelNames[status.level],
+              status.progress.completed, status.progress.total,
               status.error.domain, status.error.code, message);
     }
 

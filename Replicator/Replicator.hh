@@ -75,12 +75,11 @@ namespace litecore { namespace repl {
     protected:
         // BLIP ConnectionDelegate API:
         virtual void onConnect() override
-                                    {enqueue(&Replicator::_onConnect);}
+                                                {enqueue(&Replicator::_onConnect);}
         virtual void onClose(Connection::CloseStatus status) override
-                                    {enqueue(&Replicator::_onClose, status);}
+                                                {enqueue(&Replicator::_onClose, status);}
         virtual void onRequestReceived(blip::MessageIn *msg) override
-                                    {enqueue(&Replicator::_onRequestReceived,
-                                             Retained<blip::MessageIn>(msg));}
+                                        {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedActivityLevel() override;
 
     private:

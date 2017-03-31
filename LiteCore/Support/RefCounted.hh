@@ -86,4 +86,10 @@ namespace litecore {
     };
 
 
+    template <typename REFCOUNTED>
+    inline Retained<REFCOUNTED> retained(REFCOUNTED *r) noexcept {
+        return Retained<REFCOUNTED>(r);
+    }
+
+
 }

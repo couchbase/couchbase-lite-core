@@ -230,6 +230,10 @@
 		27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
+		27E35AA11E8DD9AA00E103F9 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
+		27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */; };
+		27E35AA61E8EE05700E103F9 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
+		27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
 		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD381DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
@@ -535,6 +539,13 @@
 			remoteInfo = blip_cpp;
 		};
 		27CCC7EE1E52981800CE1989 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
+		27E35AA71E8EE07D00E103F9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
 			proxyType = 1;
@@ -900,6 +911,8 @@
 		27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentKeysTest.cc; sourceTree = "<group>"; };
 		27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentKeys.hh; sourceTree = "<group>"; };
 		27E11A5F1BD1EBAD00D8DB7D /* Constants.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Constants.java; path = src/com/couchbase/litecore/Constants.java; sourceTree = "<group>"; };
+		27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingRev.cc; sourceTree = "<group>"; };
+		27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingRev.hh; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Database.cc; path = Database/Database.cc; sourceTree = "<group>"; };
@@ -1072,6 +1085,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27E35AA61E8EE05700E103F9 /* libFleece.a in Frameworks */,
 				275CE1001E5B79220084E014 /* libLiteCore.dylib in Frameworks */,
 				275CE0FF1E5B79150084E014 /* CouchbaseLiteReplicator.framework in Frameworks */,
 			);
@@ -1593,6 +1607,8 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				27CCC7DE1E526CCC00CE1989 /* Puller.cc */,
 				27CCC7DF1E526CCC00CE1989 /* Puller.hh */,
+				27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */,
+				27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */,
 				27CCC7E21E52965200CE1989 /* Pusher.cc */,
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 				2773FCF41E6783A000108780 /* Checkpoint.cc */,
@@ -1868,6 +1884,7 @@
 				2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */,
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
 				2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */,
+				27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */,
 				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
 				275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */,
 				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
@@ -2038,6 +2055,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27E35AA81E8EE07D00E103F9 /* PBXTargetDependency */,
 				275CE1041E5B794B0084E014 /* PBXTargetDependency */,
 				275CE1021E5B79470084E014 /* PBXTargetDependency */,
 			);
@@ -2448,6 +2466,7 @@
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
 				27B842611E5CC6500094903E /* DBActor.cc in Sources */,
+				27E35AA11E8DD9AA00E103F9 /* IncomingRev.cc in Sources */,
 				27491CB21E7DBEA0001DC54B /* CBLWebSocket.mm in Sources */,
 				275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */,
 				27491C9F1E7B2532001DC54B /* c4Socket.cc in Sources */,
@@ -2508,6 +2527,7 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
+				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
@@ -2717,6 +2737,11 @@
 			isa = PBXTargetDependency;
 			name = Fleece;
 			targetProxy = 27CCC7EE1E52981800CE1989 /* PBXContainerItemProxy */;
+		};
+		27E35AA81E8EE07D00E103F9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 27E35AA71E8EE07D00E103F9 /* PBXContainerItemProxy */;
 		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

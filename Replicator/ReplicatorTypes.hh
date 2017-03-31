@@ -76,7 +76,11 @@ namespace litecore { namespace repl {
         alloc_slice historyBuf;
         alloc_slice body;
         std::function<void(C4Error)> onInserted;
+
+        void clear() {
+            docID = revID = historyBuf = body = fleece::nullslice;
+            onInserted = nullptr;
+        }
     };
-    
-    
+
 } }

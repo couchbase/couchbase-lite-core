@@ -35,8 +35,21 @@ namespace litecore { namespace repl {
     ,_connection(connection)
     ,_replicator(replicator)
     ,_options(options)
+    ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting, {}}
+    { }
+
+
+    ReplActor::ReplActor(ReplActor *parent,
+                         const char *namePrefix)
+    :ReplActor(parent->_connection, parent->_replicator, parent->_options, namePrefix)
     {
-        _status.level = (connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting;
+
+    }
+
+
+    ReplActor::~ReplActor() {
+        if (_important)
+            logStats();
     }
 
 
@@ -139,7 +152,8 @@ namespace litecore { namespace repl {
         auto newLevel = computeActivityLevel();
         if (newLevel != _status.level) {
             _status.level = newLevel;
-            log("now %s", kC4ReplicatorActivityLevelNames[newLevel]);
+            if (_important)
+                log("now %s", kC4ReplicatorActivityLevelNames[newLevel]);
             changed = true;
         }
         if (changed)

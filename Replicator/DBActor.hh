@@ -49,7 +49,7 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_sendRevision, request, onProgress);
         }
 
-        void insertRevision(std::shared_ptr<RevToInsert> rev);
+        void insertRevision(RevToInsert *rev);
 
     private:
         void handleGetCheckpoint(Retained<blip::MessageIn>);
@@ -66,7 +66,7 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
-        void _insertRevision(std::shared_ptr<RevToInsert> rev);
+        void _insertRevision(RevToInsert *rev);
 
 
         void insertRevisionsNow()   {enqueue(&DBActor::_insertRevisionsNow);}
@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;
         Retained<Pusher> _pusher;
-        std::unique_ptr<std::vector<std::shared_ptr<RevToInsert>>> _revsToInsert;
+        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
         std::mutex _revsToInsertMutex;
         Timer _insertTimer;
         bool _insertDocumentMetadata {true}; //FIX: Currently set to true to accomodate SG

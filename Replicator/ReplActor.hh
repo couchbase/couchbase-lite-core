@@ -68,6 +68,10 @@ namespace litecore { namespace repl {
                   Options options,
                   const char *namePrefix);
 
+        ReplActor(ReplActor *parent, const char *namePrefix);
+
+        ~ReplActor();
+
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>
         void registerHandler(const char *profile,
@@ -109,6 +113,7 @@ namespace litecore { namespace repl {
 
         Options _options;
         Replicator* _replicator {nullptr};
+        bool _important {true};
 
     private:
         Retained<blip::Connection> _connection;
