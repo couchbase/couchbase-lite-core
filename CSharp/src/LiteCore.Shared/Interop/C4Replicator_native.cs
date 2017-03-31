@@ -41,13 +41,13 @@ namespace LiteCore.Interop
             }
         }
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4repl_free(C4Replicator* repl);
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4repl_stop(C4Replicator* repl);
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4ReplicatorStatus c4repl_getStatus(C4Replicator* repl);
 
 
@@ -60,7 +60,7 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStateChangedCallback onStateChanged, void* callbackContext, C4Error* err);
 
 

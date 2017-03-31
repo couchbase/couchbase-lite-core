@@ -299,12 +299,16 @@ namespace LiteCore.Interop
 
                 const uint loadWithAlteredSearchPath = 8;
                 var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
-                if (ptr != IntPtr.Zero) {
-                    return;
+                if (ptr == IntPtr.Zero) {
+                    Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
+                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
                 }
 
-                Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
-                throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
+                foundPath = foundPath.Replace("LiteCore.dll", "Replicator.dll");
+                ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
+                if (ptr == IntPtr.Zero) {
+                    Debug.WriteLine("Could not load Replicator.dll!  Replication is not going to work!");
+                }
 #if !NET_46
             }
 #endif
