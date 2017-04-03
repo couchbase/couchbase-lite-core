@@ -61,7 +61,7 @@ namespace litecore { namespace blip {
     struct ErrorBuf : public Error {
         const alloc_slice messageBuf;
 
-        ErrorBuf()      :Error{}  { }
+        ErrorBuf()      :Error{fleece::nullslice, 0, fleece::nullslice}  { }
 
         ErrorBuf(slice domain, int code, alloc_slice msg)
         :Error{domain, code, msg}

@@ -66,7 +66,7 @@ namespace litecore {
 
     void Scheduler::task(unsigned taskID) {
         LogToAt(ActorLog, Verbose, "   task %d starting", taskID);
-#ifndef MSC_VER
+#ifndef _MSC_VER
         {
             char name[100];
             sprintf(name, "LiteCore Scheduler #%u", taskID);

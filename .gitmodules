@@ -1,3 +1,6 @@
 [submodule "vendor/zlibcomplete"]
 	path = vendor/zlibcomplete
 	url = https://github.com/rudi-cilibrasi/zlibcomplete.git
+[submodule "vendor/zlib"]
+	path = vendor/zlib
+	url = https://github.com/couchbasedeps/zlib

@@ -295,7 +295,7 @@ namespace litecore { namespace websocket {
                 else {
                     auto msg = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
                                                                  _closeMessage.size);
-                    status.code = msg.code ?: kCodeStatusCodeExpected;
+                    status.code = msg.code ? msg.code : kCodeStatusCodeExpected;
                     status.message = slice(msg.message, msg.length);
                 }
             } else {

@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <functional>
 #include <thread>
+#include <mutex>
 
 
 namespace litecore {

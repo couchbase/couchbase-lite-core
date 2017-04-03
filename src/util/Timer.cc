@@ -26,7 +26,7 @@ namespace litecore {
 
     // Body of the manager's background thread. Waits for timers and calls their callbacks.
     void Timer::Manager::run() {
-#ifndef MSC_VER
+#ifndef _MSC_VER
 #if __APPLE__
         pthread_setname_np("LiteCore Timer");
 #else
