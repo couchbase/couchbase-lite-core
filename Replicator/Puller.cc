@@ -5,6 +5,7 @@
 //  Created by Jens Alfke on 2/13/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
+//  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
 #include "DBActor.hh"
@@ -111,7 +112,7 @@ namespace litecore { namespace repl {
             if (_requestedSequences.remove(sequence)) {
                 _lastSequence = _requestedSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-                _replicator->updatePullCheckpoint(_lastSequence);
+                replicator()->updatePullCheckpoint(_lastSequence);
             }
         }
 
@@ -119,6 +120,12 @@ namespace litecore { namespace repl {
             logDebug("Recycling IncomingRev<%p>", inc.get());
             _spareIncomingRevs.push_back(inc);
         }
+    }
+
+
+    void Puller::_childChangedStatus(ReplActor *task, Status status) {
+        // Combine the IncomingRev's progress into mine:
+        addProgress(status.progressDelta);
     }
 
     

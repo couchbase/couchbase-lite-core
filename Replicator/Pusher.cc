@@ -5,9 +5,11 @@
 //  Created by Jens Alfke on 2/13/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
+//  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
 #include "DBActor.hh"
+#include "c4BlobStore.h"
 #include "StringUtil.hh"
 #include <algorithm>
 
@@ -235,7 +237,7 @@ namespace litecore { namespace repl {
                 else
                     logVerbose("Checkpoint now at %llu", lastSeq);
                 _lastSequence = lastSeq;
-                _replicator->updatePushCheckpoint(_lastSequence);
+                replicator()->updatePushCheckpoint(_lastSequence);
             }
         }
     }

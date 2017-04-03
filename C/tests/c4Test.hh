@@ -107,6 +107,13 @@ public:
 
     void createNumberedDocs(unsigned numberOfDocs);
 
+    std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID,
+                                                 std::vector<std::string> attachments,
+                                                 const char *contentType);
+    void checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData);
+    void checkAttachments(C4Database *inDB, std::vector<C4BlobKey> blobKeys,
+                          std::vector<std::string> expectedData);
+
     std::string listSharedKeys(std::string delimiter =", ");
 
     FLSlice readFile(std::string path); // caller must free buf when done

@@ -262,6 +262,58 @@ string C4Test::listSharedKeys(string delimiter) {
 }
 
 
+#pragma mark - ATTACHMENTS / BLOBS:
+
+
+vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
+                                                vector<string> attachments,
+                                                const char *contentType)
+{
+    vector<C4BlobKey> keys;
+    C4Error c4err;
+    stringstream json;
+    json << "{attached: [";
+    for (string &attachment : attachments) {
+        C4BlobKey key;
+        REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), c4str(attachment.c_str()),
+                              nullptr, &key,  &c4err));
+        keys.push_back(key);
+        C4SliceResult keyStr = c4blob_keyToString(key);
+        json << "{'_cbltype': 'blob', 'digest': '" << string((char*)keyStr.buf, keyStr.size)
+             << "', length: " << attachment.size()
+             << ", content_type: '" << contentType << "'},";
+        c4slice_free(keyStr);
+    }
+    json << "]}";
+    string jsonStr = json5(json.str());
+    C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), &c4err);
+    REQUIRE(body.buf);
+
+    // Save document:
+    C4DocPutRequest rq = {};
+    rq.docID = docID;
+    rq.revFlags = kRevHasAttachments;
+    rq.body = (C4Slice)body;
+    rq.save = true;
+    C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
+    c4slice_free(body);
+    REQUIRE(doc != nullptr);
+    c4doc_free(doc);
+    return keys;
+}
+
+void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
+    C4Error c4err;
+    C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, &c4err);
+    CHECK(blob == expectedData);
+    c4slice_free(blob);
+}
+
+void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vector<string> expectedData) {
+    for (unsigned i = 0; i < blobKeys.size(); ++i)
+        checkAttachment(inDB, blobKeys[i], c4str(expectedData[i].c_str()));
+}
+
 #pragma mark - FILE IMPORT:
 
 

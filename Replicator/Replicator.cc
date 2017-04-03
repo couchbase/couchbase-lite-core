@@ -5,8 +5,7 @@
 //  Created by Jens Alfke on 2/13/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
-
-//  https://github.com/couchbaselabs/couchbase-lite-api/wiki/New-Replication-Protocol
+//  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Replicator.hh"
 #include "DBActor.hh"
@@ -80,7 +79,7 @@ namespace litecore { namespace repl {
 
 
     // The status of one of the actors has changed; update mine
-    void Replicator::_taskChangedStatus(ReplActor *task, Status taskStatus)
+    void Replicator::_childChangedStatus(ReplActor *task, Status taskStatus)
     {
         if (task == _pusher) {
             _pushStatus = taskStatus;
@@ -133,7 +132,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::changedActivityLevel() {
+    void Replicator::changedStatus() {
         // Notify the delegate of the current status, but not too often:
         auto curStatus = status();
         auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
@@ -144,7 +143,7 @@ namespace litecore { namespace repl {
             _delegate.replicatorStatusChanged(this, curStatus);
         } else if (!_waitingToCallDelegate) {
             _waitingToCallDelegate = true;
-            enqueueAfter(Scheduler::duration(waitFor), &Replicator::changedActivityLevel);
+            enqueueAfter(Scheduler::duration(waitFor), &Replicator::changedStatus);
         }
     }
 

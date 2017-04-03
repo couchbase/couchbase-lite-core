@@ -50,11 +50,22 @@ namespace litecore { namespace repl {
         };
 
         using ActivityLevel = C4ReplicatorActivityLevel;
-        using Status = C4ReplicatorStatus;
+
+        struct Status : public C4ReplicatorStatus {
+            Status(ActivityLevel lvl =kC4Stopped) {
+                level = lvl; error = {}; progress = progressDelta = {};
+            }
+            C4Progress progressDelta;
+        };
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
             enqueue(&ReplActor::_connectionClosed);
+        }
+
+        /** Called by child actors when their status changes. */
+        void childChangedStatus(ReplActor *task, const Status &status) {
+            enqueue(&ReplActor::_childChangedStatus, task, status);
         }
 
 #if !DEBUG
@@ -64,7 +75,7 @@ namespace litecore { namespace repl {
 
     protected:
         ReplActor(blip::Connection *connection,
-                  Replicator *replicator,
+                  ReplActor *parent,
                   Options options,
                   const char *namePrefix);
 
@@ -102,17 +113,20 @@ namespace litecore { namespace repl {
                                                      || _options.pull == kC4Continuous;}
         const Status& status() const            {return _status;}
         virtual ActivityLevel computeActivityLevel() const;
-        virtual void changedActivityLevel();
+        virtual void changedStatus();
         void addProgress(C4Progress);
         void setProgress(C4Progress);
 
-        virtual void afterEvent() override;
+        virtual void _childChangedStatus(ReplActor *task, Status) { }
+
+       virtual void afterEvent() override;
+
         virtual std::string loggingIdentifier() const override {
             return actorName();
         }
 
         Options _options;
-        Replicator* _replicator {nullptr};
+        ReplActor* _parent;
         bool _important {true};
 
     private:

@@ -27,21 +27,21 @@ namespace litecore { namespace repl {
 
 
     ReplActor::ReplActor(blip::Connection *connection,
-                         Replicator *replicator,
+                         ReplActor *parent,
                          Options options,
                          const char *namePrefix)
     :Actor( string(namePrefix) + connection->name() )
     ,Logging(SyncLog)
     ,_connection(connection)
-    ,_replicator(replicator)
+    ,_parent(parent)
     ,_options(options)
-    ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting, {}}
+    ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     { }
 
 
     ReplActor::ReplActor(ReplActor *parent,
                          const char *namePrefix)
-    :ReplActor(parent->_connection, parent->_replicator, parent->_options, namePrefix)
+    :ReplActor(parent->_connection, parent, parent->_options, namePrefix)
     {
 
     }
@@ -78,6 +78,7 @@ namespace litecore { namespace repl {
 
 
     blip::ErrorBuf ReplActor::c4ToBLIPError(C4Error err) {
+        //FIX: Map common errors to more standard domains
         if (!err.code)
             return { };
         return {slice(kErrorDomainNames[err.domain]),
@@ -124,15 +125,16 @@ namespace litecore { namespace repl {
 
 
     void ReplActor::setProgress(C4Progress p) {
-        if (p != _status.progress) {
-            _status.progress = p;
-            _statusChanged = true;
-        }
+        addProgress(p - _status.progress);
     }
 
 
     void ReplActor::addProgress(C4Progress p) {
-        setProgress(p + _status.progress);
+        if (p.completed || p.total) {
+            _status.progressDelta += p;
+            _status.progress += p;
+            _statusChanged = true;
+        }
     }
 
 
@@ -157,12 +159,13 @@ namespace litecore { namespace repl {
             changed = true;
         }
         if (changed)
-            changedActivityLevel();
+            changedStatus();
+        _status.progressDelta = {0, 0};
     }
 
-    void ReplActor::changedActivityLevel() {
-        if (_replicator && _replicator != this)
-            _replicator->taskChangedStatus(this, _status);
+    void ReplActor::changedStatus() {
+        if (_parent)
+            _parent->childChangedStatus(this, _status);
     }
 
 

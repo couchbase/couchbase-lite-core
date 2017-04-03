@@ -9,6 +9,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "ReplActor.hh"
+#include "c4BlobStore.h"
 #include <string>
 #include <vector>
 
@@ -49,6 +50,16 @@ namespace litecore { namespace repl {
             enqueue(&DBActor::_sendRevision, request, onProgress);
         }
 
+        void findBlobs(std::vector<BlobRequest> blobs,
+                       std::function<void(std::vector<BlobRequest>)> callback) {
+            enqueue(&DBActor::_findBlobs, blobs, callback);
+        }
+
+        void insertBlob(C4BlobKey key, alloc_slice data,
+                        std::function<void(C4Error err)> callback) {
+            enqueue(&DBActor::_insertBlob, key, data, callback);
+        }
+
         void insertRevision(RevToInsert *rev);
 
     private:
@@ -66,7 +77,12 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<alloc_slice>)> callback);
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
+        void _findBlobs(std::vector<BlobRequest>,
+                              std::function<void(std::vector<BlobRequest>)> callback);
+        void _insertBlob(C4BlobKey, alloc_slice data,
+                         std::function<void(C4Error err)> callback);
         void _insertRevision(RevToInsert *rev);
+        void handleGetAttachment(Retained<blip::MessageIn>);
 
 
         void insertRevisionsNow()   {enqueue(&DBActor::_insertRevisionsNow);}

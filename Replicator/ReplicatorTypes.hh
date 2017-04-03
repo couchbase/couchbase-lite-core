@@ -29,6 +29,13 @@ namespace litecore { namespace repl {
     static inline C4Progress operator+ (const C4Progress &p1, const C4Progress &p2) {
         return C4Progress {p1.completed + p2.completed, p1.total + p2.total};
     }
+    static inline C4Progress operator- (const C4Progress &p1, const C4Progress &p2) {
+        return C4Progress {p1.completed - p2.completed, p1.total - p2.total};
+    }
+    static inline C4Progress& operator+= (C4Progress &p1, const C4Progress &p2) {
+        p1 = p1 + p2;
+        return p1;
+    }
 
     
     /** Metadata of a document revision. */
@@ -72,15 +79,22 @@ namespace litecore { namespace repl {
 
 
     struct RevToInsert : public Rev {
-        bool deleted {false};
+        C4RevisionFlags flags {0};
         alloc_slice historyBuf;
         alloc_slice body;
         std::function<void(C4Error)> onInserted;
 
         void clear() {
             docID = revID = historyBuf = body = fleece::nullslice;
+            flags = 0;
             onInserted = nullptr;
         }
+    };
+
+
+    struct BlobRequest {
+        C4BlobKey key;
+        uint64_t size;
     };
 
 } }

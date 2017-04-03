@@ -11,6 +11,7 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "c4Document+Fleece.h"
 #include <iostream>
 #include "c4Test.hh"
 #include "Replicator.hh"
@@ -274,6 +275,36 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pul
     runReplicators(Replicator::Options::passive(),
                    Replicator::Options::pulling(kC4Continuous));
     //FIX: Stop this when bg thread stops adding docs
+}
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    checkAttachments(db2, blobKeys, attachments);
+}
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":1}");
+
+    checkAttachments(db2, blobKeys, attachments);
 }
 
 #endif // DEBUG

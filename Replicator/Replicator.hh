@@ -67,11 +67,6 @@ namespace litecore { namespace repl {
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
         
-        /** Called by the Pusher and Puller when they finish their duties. */
-        void taskChangedStatus(ReplActor *task, const Status &status) {
-            enqueue(&Replicator::_taskChangedStatus, task, status);
-        }
-
     protected:
         // BLIP ConnectionDelegate API:
         virtual void onConnect() override
@@ -80,7 +75,7 @@ namespace litecore { namespace repl {
                                                 {enqueue(&Replicator::_onClose, status);}
         virtual void onRequestReceived(blip::MessageIn *msg) override
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
-        virtual void changedActivityLevel() override;
+        virtual void changedStatus() override;
 
     private:
         // How long to wait between delegate calls when only the progress % has changed
@@ -95,12 +90,13 @@ namespace litecore { namespace repl {
         void _stop();
         void getCheckpoints();
         void startReplicating();
-        void _taskChangedStatus(ReplActor *task, Status);
         virtual ActivityLevel computeActivityLevel() const override;
 
         void updateCheckpoint();
         void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
         void _saveCheckpoint(alloc_slice json);
+
+        virtual void _childChangedStatus(ReplActor *task, Status taskStatus) override;
 
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;

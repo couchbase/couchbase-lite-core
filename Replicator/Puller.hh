@@ -27,10 +27,12 @@ namespace litecore { namespace repl {
 
     protected:
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
-        virtual ActivityLevel computeActivityLevel() const;
+        virtual void _childChangedStatus(ReplActor *task, Status) override;
+        virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);
 
     private:
+        Replicator* replicator() const          {return (Replicator*)_parent;}
         void _start(alloc_slice sinceSequence);
         void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);

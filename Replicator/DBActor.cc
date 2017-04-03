@@ -16,6 +16,7 @@
 #include "Benchmark.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include <chrono>
 
 using namespace std;
@@ -50,6 +51,7 @@ namespace litecore { namespace repl {
     {
         registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBActor::handleSetCheckpoint);
+        registerHandler("getAttachment",    &DBActor::handleGetAttachment);
     }
 
 
@@ -307,7 +309,31 @@ namespace litecore { namespace repl {
     }
 
 
-#pragma mark - REVISIONS:
+    // Returns true if revision exists; else returns false and sets ancestors to an array of
+    // ancestor revisions I do have (empty if doc doesn't exist at all)
+    bool DBActor::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+        C4Error err;
+        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
+        bool revExists = doc && c4doc_selectRevision(doc, revID, false, &err);
+        if (!revExists) {
+            ancestors.resize(0);
+            if (!isNotFoundError(err)) {
+                gotError(err);
+            } else if (doc) {
+                // Revision isn't found, but look for ancestors:
+                if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
+                    do {
+                        ancestors.emplace_back(doc->selectedRev.revID);
+                    } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
+                             && ancestors.size() < kMaxPossibleAncestors);
+                }
+            }
+        }
+        return revExists;
+    }
+
+
+#pragma mark - SENDING REVISIONS:
 
 
     // Sends a document revision in a "rev" request.
@@ -384,6 +410,34 @@ namespace litecore { namespace repl {
     }
 
 
+#pragma mark - INSERTING REVISIONS:
+
+
+    void DBActor::_findBlobs(vector<BlobRequest> blobs,
+                             function<void(vector<BlobRequest>)> callback) {
+        vector<BlobRequest> missing;
+        C4Error err;
+        auto blobStore = c4db_getBlobStore(_db, &err);
+        for (auto &blob : blobs) {
+            if (c4blob_getSize(blobStore, blob.key) < 0)
+                missing.push_back(blob);
+        }
+        callback(move(missing));
+    }
+
+
+    void DBActor::_insertBlob(C4BlobKey key, alloc_slice data, function<void(C4Error)> callback) {
+        C4Error err;
+        auto blobStore = c4db_getBlobStore(_db, &err);
+        if (blobStore) {
+            C4BlobKey createdKey;
+            if (c4blob_create(blobStore, data, &key, &createdKey, &err))
+                err = {};           // success
+        }
+        callback(err);
+    }
+
+
     void DBActor::insertRevision(RevToInsert *rev) {
         lock_guard<mutex> lock(_revsToInsertMutex);
         if (!_revsToInsert) {
@@ -409,7 +463,7 @@ namespace litecore { namespace repl {
         C4Error transactionErr;
         c4::Transaction transaction(_db);
         if (transaction.begin(&transactionErr)) {
-            for (auto rev : *revs) {
+            for (auto &rev : *revs) {
                 logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
                 vector<C4String> history;
                 history.reserve(10);
@@ -422,7 +476,7 @@ namespace litecore { namespace repl {
                 C4DocPutRequest put = {};
                 put.body = rev->body;
                 put.docID = rev->docID;
-                put.revFlags = rev->deleted ? kRevDeleted : 0;
+                put.revFlags = rev->flags;
                 put.existingRevision = true;
                 put.allowConflict = true;
                 put.history = history.data();
@@ -431,52 +485,60 @@ namespace litecore { namespace repl {
 
                 C4Error docErr;
                 c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
-                if (!doc)
+                if (!doc) {
                     warn("Failed to insert '%.*s' #%.*s : error %d/%d",
                          SPLAT(rev->docID), SPLAT(rev->revID), docErr.domain, docErr.code);
-                if (rev->onInserted)
-                    rev->onInserted(doc ? C4Error{} : docErr);
-            }
-        }
-
-        if (!transaction.active() || !transaction.commit(&transactionErr)) {
-            // Transaction start or commit failed:
-            warn("Transaction failed!");
-            for (auto rev : *revs) {
-                if (rev->onInserted)
-                    rev->onInserted(transactionErr);
-                //TODO: If a c4doc_put failed, then transaction fails, its onInserted is called twice
-            }
-            gotError(transactionErr);
-            return;
-        }
-
-        double t = st.elapsed();
-        log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
-    }
-
-
-    // Returns true if revision exists; else returns false and sets ancestors to an array of
-    // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool DBActor::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
-        C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
-        bool revExists = doc && c4doc_selectRevision(doc, revID, false, &err);
-        if (!revExists) {
-            ancestors.resize(0);
-            if (!isNotFoundError(err)) {
-                gotError(err);
-            } else if (doc) {
-                // Revision isn't found, but look for ancestors:
-                if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
-                    do {
-                        ancestors.emplace_back(doc->selectedRev.revID);
-                    } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
-                             && ancestors.size() < kMaxPossibleAncestors);
+                    if (rev->onInserted)
+                        rev->onInserted(docErr);
+                    rev = nullptr;
                 }
             }
         }
-        return revExists;
+
+        if (transaction.active() && transaction.commit(&transactionErr))
+            transactionErr = { };
+        else
+            warn("Transaction failed!");
+
+        // Notify all revs (that didn't already fail):
+        for (auto rev : *revs) {
+            if (rev && rev->onInserted)
+                rev->onInserted(transactionErr);
+        }
+
+        if (transactionErr.code)
+            gotError(transactionErr);
+        else {
+            double t = st.elapsed();
+            log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
+        }
+    }
+
+
+#pragma mark - SENDING ATTACHMENTS:
+
+
+    void DBActor::handleGetAttachment(Retained<MessageIn> req) {
+        slice digest = req->property("digest"_sl);
+        C4BlobKey key;
+        if (!c4blob_keyFromString(digest, &key)) {
+            req->respondWithError({"BLIP"_sl, 400, "Missing or invalid 'digest'"_sl});
+            return;
+        }
+        C4Error err;
+        auto blobStore = c4db_getBlobStore(_db, &err);
+        if (blobStore) {
+            //FIX: Stream blob instead of loading it all into memory
+            alloc_slice blob = c4blob_getContents(blobStore, key, &err);
+            if (blob) {
+                log("Sending attachment %.*s (%zu bytes)", SPLAT(digest), blob.size);
+                MessageBuilder reply(req);
+                reply.write(blob);
+                req->respond(reply);
+                return;
+            }
+        }
+        req->respondWithError(c4ToBLIPError(err));
     }
 
     
