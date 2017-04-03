@@ -320,7 +320,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
         Encoder &enc = db->sharedEncoder();
         JSONConverter jc(enc);
         if (!jc.encodeJSON(jsonData)) {
-            recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);
+            recordError(FleeceDomain, jc.errorCode(), jc.errorMessage(), outError);
             return C4SliceResult{};
         }
         return sliceResult(enc.extractOutput());

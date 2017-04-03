@@ -157,6 +157,7 @@ namespace litecore {
             "path syntax error",
             "internal error",
             "item not found",
+            "misuse of Fleece shared-keys API",
         };
         const char *str = nullptr;
         if (code < sizeof(kFleeceMessages)/sizeof(char*))

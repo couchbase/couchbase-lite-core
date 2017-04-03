@@ -25,7 +25,7 @@ public:
         enc.setSharedKeys(db->documentKeys());
         JSONConverter jc(enc);
         jc.encodeJSON(slice(json));
-        REQUIRE(jc.error() == 0);
+        REQUIRE(jc.errorCode() == 0);
         auto out = enc.extractOutput();
         REQUIRE(out.size > 0);
         return out;
