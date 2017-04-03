@@ -93,8 +93,17 @@ extern "C" {
         Also, it goes without saying that the caller MUST not modify the file! */
     C4StringResult c4blob_getFilePath(C4BlobStore*, C4BlobKey, C4Error*) C4API;
 
-    /** Stores a blob. The associated key will be written to `outKey`. */
-    bool c4blob_create(C4BlobStore*, C4Slice contents, C4BlobKey *outKey, C4Error*) C4API;
+    /** Derives the key of the given data, without storing it. */
+    C4BlobKey c4blob_computeKey(C4Slice contents);
+
+    /** Stores a blob. The associated key will be written to `outKey`.
+        If `expectedKey` is not NULL, then the operation will fail unless the contents actually
+        have that key. */
+    bool c4blob_create(C4BlobStore *store,
+                       C4Slice contents,
+                       const C4BlobKey *expectedKey,
+                       C4BlobKey *outKey,
+                       C4Error *error) C4API;
 
     /** Deletes a blob from the store given its key. */
     bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error*) C4API;

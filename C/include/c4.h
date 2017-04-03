@@ -9,6 +9,7 @@
 #pragma once
 
 #include "c4Base.h"
+#include "c4BlobStore.h"
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"

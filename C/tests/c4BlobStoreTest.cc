@@ -97,7 +97,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
     // Add blob to the store:
     C4BlobKey key;
     C4Error error;
-    REQUIRE(c4blob_create(store, blobToStore, &key, &error));
+    REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, &error));
 
     auto str = c4blob_keyToString(key);
     CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
@@ -129,8 +129,28 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
 
     // Try storing it again
     C4BlobKey key2;
-    REQUIRE(c4blob_create(store, blobToStore, &key2, &error));
+    REQUIRE(c4blob_create(store, blobToStore, nullptr, &key2, &error));
     CHECK(memcmp(&key2, &key, sizeof(key2)) == 0);
+}
+
+
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blob, key mismatch", "[blob][C][!throws]") {
+    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
+
+    // Add blob to the store but give an expectedKey that doesn't match:
+    C4BlobKey key, expectedKey;
+    memset(&expectedKey, 0x55, sizeof(expectedKey));
+    C4Error error;
+    c4log_warnOnErrors(false);
+    bool success = c4blob_create(store, blobToStore, &expectedKey, &key, &error);
+    c4log_warnOnErrors(true);
+    CHECK(!success);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorCorruptData);
+
+    // Try again but give the correct expectedKey:
+    c4blob_keyFromString(C4STR("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E="), &expectedKey);
+    CHECK(c4blob_create(store, blobToStore, &expectedKey, &key, &error));
 }
 
 
@@ -140,7 +160,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     // Add blob to the store:
     C4BlobKey key;
     C4Error error;
-    REQUIRE(c4blob_create(store, {blob.data(), blob.size()}, &key, &error));
+    REQUIRE(c4blob_create(store, {blob.data(), blob.size()}, nullptr,  &key, &error));
 
     CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
 

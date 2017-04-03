@@ -197,9 +197,13 @@ namespace litecore {
     }
 
 
-    Blob BlobStore::put(slice data) {
+    Blob BlobStore::put(slice data, const blobKey *expectedKey) {
         BlobWriteStream stream(*this);
         stream.write(data);
+        if (expectedKey && stream.computeKey() != *expectedKey) {
+            stream.close();
+            error::_throw(error::CorruptData);
+        }
         return stream.install();
     }
 

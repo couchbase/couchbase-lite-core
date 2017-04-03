@@ -34,6 +34,13 @@ namespace litecore {
         std::string base64String() const;
         std::string filename() const;
 
+        bool operator== (const blobKey &k) const {
+            return 0 == memcmp(bytes, k.bytes, sizeof(bytes));
+        }
+        bool operator!= (const blobKey &k) const {
+            return !(*this == k);
+        }
+
         static blobKey computeFrom(slice data);
     };
 
@@ -121,7 +128,7 @@ namespace litecore {
         const Blob get(const blobKey &key) const    {return Blob(*this, key);}
         Blob get(const blobKey &key)                {return Blob(*this, key);}
 
-        Blob put(slice data);
+        Blob put(slice data, const blobKey *expectedKey =nullptr);
 
     private:
         FilePath const          _dir;                           // Location

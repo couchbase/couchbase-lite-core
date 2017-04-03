@@ -31,6 +31,7 @@ public:
 
 static inline const blobKey& internal(const C4BlobKey &key) {return *(blobKey*)&key;}
 static inline const C4BlobKey& external(const blobKey &key) {return *(C4BlobKey*)&key;}
+static inline const blobKey* internal(const C4BlobKey *key) {return (const blobKey*)key;}
 static SeekableReadStream* internal(C4ReadStream* s)        {return (SeekableReadStream*)s;}
 static inline C4ReadStream* external(SeekableReadStream* s) {return (C4ReadStream*)s;}
 static BlobWriteStream* internal(C4WriteStream* s)          {return (BlobWriteStream*)s;}
@@ -128,9 +129,19 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
 }
 
 
-bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey *outKey, C4Error* outError) noexcept {
+C4BlobKey c4blob_computeKey(C4Slice contents) {
+    return external(blobKey::computeFrom(contents));
+}
+
+
+bool c4blob_create(C4BlobStore* store,
+                   C4Slice contents,
+                   const C4BlobKey *expectedKey,
+                   C4BlobKey *outKey,
+                   C4Error* outError) noexcept
+{
     try {
-        Blob blob = store->put(contents);
+        Blob blob = store->put(contents, internal(expectedKey));
         if (outKey)
             *outKey = external(blob.key());
         return true;
