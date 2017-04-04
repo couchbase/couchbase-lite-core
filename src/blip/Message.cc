@@ -343,10 +343,10 @@ namespace litecore { namespace blip {
 
     Error MessageIn::getError() const {
         if (!isError())
-            return {nullslice, 0, nullslice};
-        return {property("Error-Domain"_sl),
-                (int) intProperty("Error-Code"_sl),
-                body()};
+            return Error();
+        return Error(property("Error-Domain"_sl),
+                     (int) intProperty("Error-Code"_sl),
+                     body());
     }
 
 
