@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
         void sendChangeList(RevList);
         void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
-        void markComplete(C4SequenceNumber sequence);
+        void markComplete(const Rev&);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg

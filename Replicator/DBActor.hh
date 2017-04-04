@@ -41,7 +41,7 @@ namespace litecore { namespace repl {
         void getChanges(C4SequenceNumber since, unsigned limit, bool continuous, Pusher*);
 
         void findOrRequestRevs(Retained<blip::MessageIn> req,
-                               std::function<void(std::vector<alloc_slice>)> callback) {
+                               std::function<void(std::vector<bool>)> callback) {
             enqueue(&DBActor::_findOrRequestRevs, req, callback);
         }
 
@@ -74,7 +74,7 @@ namespace litecore { namespace repl {
         void _getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                          Retained<Pusher>);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
-                                std::function<void(std::vector<alloc_slice>)> callback);
+                                std::function<void(std::vector<bool>)> callback);
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
         void _findBlobs(std::vector<BlobRequest>,

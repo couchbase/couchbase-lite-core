@@ -42,17 +42,26 @@ namespace litecore { namespace repl {
     struct Rev {
         alloc_slice docID;
         alloc_slice revID;
-        C4SequenceNumber sequence {0};
+        C4SequenceNumber sequence;
+        uint64_t bodySize;
+        C4RevisionFlags flags {0};
 
         Rev() { }
 
-        Rev(slice d, slice r, C4SequenceNumber s)
-        :docID(d), revID(r), sequence(s)
+        Rev(slice d, slice r, C4SequenceNumber s, uint64_t size =0)
+        :docID(d), revID(r), sequence(s), bodySize(size)
         { }
 
         Rev(const C4DocumentInfo &info)
-        :Rev(info.docID, info.revID, info.sequence)
-        { }
+        :Rev(info.docID, info.revID, info.sequence, info.bodySize)
+        {
+            // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
+            flags = info.flags & kRevDeleted;
+            if (info.flags & kHasAttachments)
+                flags |= kRevHasAttachments;
+        }
+
+        bool deleted() const        {return (flags & kRevDeleted) != 0;}
     };
 
     typedef std::vector<Rev> RevList;
@@ -78,8 +87,8 @@ namespace litecore { namespace repl {
     };
 
 
+    /** A revision to be added to the database, complete with body. */
     struct RevToInsert : public Rev {
-        C4RevisionFlags flags {0};
         alloc_slice historyBuf;
         alloc_slice body;
         std::function<void(C4Error)> onInserted;
@@ -87,6 +96,7 @@ namespace litecore { namespace repl {
         void clear() {
             docID = revID = historyBuf = body = fleece::nullslice;
             flags = 0;
+            bodySize = 0;
             onInserted = nullptr;
         }
     };

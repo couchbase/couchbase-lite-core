@@ -254,7 +254,7 @@ namespace litecore { namespace repl {
 
     // Called by the Pusher; it passes on the "changes" message
     void DBActor::_findOrRequestRevs(Retained<MessageIn> req,
-                                     function<void(vector<alloc_slice>)> callback) {
+                                     function<void(vector<bool>)> callback) {
         // Iterate over the array in the message, seeing whether I have each revision:
         auto changes = req->JSONBody().asArray();
         if (willLog() && !changes.empty()) {
@@ -265,12 +265,13 @@ namespace litecore { namespace repl {
         }
         MessageBuilder response(req);
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
-        vector<alloc_slice> requestedSequences;
+        vector<bool> whichRequested(changes.count());
         unsigned i = 0, itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
         auto &encoder = response.jsonBody();
         encoder.beginArray();
         for (auto item : changes) {
+            // Look up each revision in the `req` list:
             auto change = item.asArray();
             slice docID = change[1].asString();
             slice revID = change[2].asString();
@@ -282,27 +283,21 @@ namespace litecore { namespace repl {
             if (!findAncestors(docID, revID, ancestors)) {
                 // I don't have this revision, so request it:
                 ++requested;
+                whichRequested[i] = true;
+
                 while (++itemsWritten < i)
                     encoder.writeInt(0);
                 encoder.beginArray();
                 for (slice ancestor : ancestors)
                     encoder.writeString(ancestor);
                 encoder.endArray();
-
-                if (callback) {
-                    alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
-                    if (sequence)
-                        requestedSequences.push_back(sequence);
-                    else
-                        warn("Empty/invalid sequence in 'changes' message");
-                }
             }
             ++i;
         }
         encoder.endArray();
 
         if (callback)
-            callback(requestedSequences);
+            callback(whichRequested);
 
         log("Responding w/request for %u revs", requested);
         req->respond(response);

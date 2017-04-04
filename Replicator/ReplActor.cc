@@ -151,12 +151,18 @@ namespace litecore { namespace repl {
     void ReplActor::afterEvent() {
         bool changed = _statusChanged;
         _statusChanged = false;
+        if (changed && _important) {
+            logVerbose("progress +%llu/+%llu -- now %llu / %llu",
+                       _status.progressDelta.completed, _status.progressDelta.total,
+                       _status.progress.completed, _status.progress.total);
+        }
+
         auto newLevel = computeActivityLevel();
         if (newLevel != _status.level) {
             _status.level = newLevel;
+            changed = true;
             if (_important)
                 log("now %s", kC4ReplicatorActivityLevelNames[newLevel]);
-            changed = true;
         }
         if (changed)
             changedStatus();

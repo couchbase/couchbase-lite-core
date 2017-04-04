@@ -126,7 +126,7 @@ namespace litecore { namespace repl {
                         logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
                                    SPLAT(request->docID), SPLAT(request->revID), request->sequence);
                     } else {
-                        markComplete(change.sequence);  // unwanted, so we're done with it
+                        markComplete(change);  // unwanted, so we're done with it
                     }
                     ++index;
                 }
@@ -160,13 +160,19 @@ namespace litecore { namespace repl {
         for (auto &change : changes) {
             if (nonPassive())
                 _pendingSequences.add(change.sequence);
+            // Write the info array for this change: [sequence, docID, revID, deleted, size]
             enc.beginArray();
             enc << change.sequence << change.docID << change.revID;
+            if (change.deleted() || change.bodySize > 0) {
+                enc << change.deleted();
+                if (change.bodySize > 0)
+                    enc << change.bodySize;
+            }
+            addProgress({0, change.bodySize});
             enc.endArray();
         }
         enc.endArray();
         sendRequest(req, onProgress);
-        addProgress({0, changes.size()});
     }
 
 
@@ -210,7 +216,7 @@ namespace litecore { namespace repl {
                     else {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
-                        markComplete(rev.sequence);
+                        markComplete(rev);
                     }
                     maybeSendMoreRevs();
                 }
@@ -225,10 +231,10 @@ namespace litecore { namespace repl {
 
 
     // Records that a sequence has been successfully pushed.
-    void Pusher::markComplete(C4SequenceNumber sequence) {
+    void Pusher::markComplete(const Rev &rev) {
         if (nonPassive()) {
-            _pendingSequences.remove(sequence);
-            addProgress({1, 0});
+            _pendingSequences.remove(rev.sequence);
+            addProgress({rev.bodySize, 0});
             auto firstPending = _pendingSequences.first();
             auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
             if (lastSeq > _lastSequence) {

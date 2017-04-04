@@ -44,27 +44,30 @@ namespace litecore { namespace repl {
         }
 
         /** Adds a sequence to the set. */
-        void add(sequence s) {
+        void add(sequence s, uint64_t bodySize) {
             bool wasEmpty = empty();
-            auto p = _sequences.insert({s, {_nextOrder++, _lastAdded}});
+            auto p = _sequences.insert({s, {_nextOrder++, _lastAdded, bodySize}});
             _lastAdded = s;
             if (wasEmpty)
                 _first = p.first;
         }
 
         /** Removes the sequence if it's in the set. Returns true if it was the earliest. */
-        bool remove(sequence s) {
+        void remove(sequence s, bool &wasEarliest, uint64_t &outBodySize) {
             auto i = _sequences.find(s);
             if (i == _sequences.end()) {
-                return false;
-            } else if (i == _first) {
+                outBodySize = 0;
+                wasEarliest = false;
+                return;
+            }
+            outBodySize = i->second.bodySize;
+            wasEarliest = (i == _first);
+            if (wasEarliest) {
                 size_t minOrder = i->second.order;
                 _sequences.erase(i);
                 findFirst(minOrder + 1);
-                return true;
             } else {
                 _sequences.erase(i);
-                return false;
             }
         }
 
@@ -89,6 +92,7 @@ namespace litecore { namespace repl {
         struct value {
             size_t order;                   // Chronological order in which this sequence was added
             sequence prevSequence;          // The previously-added sequence
+            uint64_t bodySize;              // Approx doc size, for client's use
         };
         using sequenceMap = std::map<sequence, value>;
 
