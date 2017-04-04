@@ -18,10 +18,10 @@
 #ifdef __cplusplus
 extern "C" {
 
-extern std::atomic_int gC4InstanceCount;
+    CBL_CORE_API extern std::atomic_int gC4InstanceCount;
 
 #else
-extern atomic_int gC4InstanceCount;
+    CBL_CORE_API extern atomic_int gC4InstanceCount;
 #endif
 
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;

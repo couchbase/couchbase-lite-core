@@ -29,7 +29,7 @@
 using namespace litecore;
 
 extern "C" {
-std::atomic_int gC4InstanceCount;
+    CBL_CORE_API std::atomic_int gC4InstanceCount;
 }
 
 
