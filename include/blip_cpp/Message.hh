@@ -26,9 +26,6 @@ namespace zlibcomplete {
 
 namespace litecore { namespace blip {
 
-    using slice = fleece::slice;
-    using alloc_slice = fleece::alloc_slice;
-
     class Connection;
     class MessageBuilder;
     class MessageIn;
@@ -52,18 +49,18 @@ namespace litecore { namespace blip {
 
 
     struct Error {
-        const slice domain;
+        const fleece::slice domain;
         const int code;
-        const slice message;
+        const fleece::slice message;
     };
 
     // Like Error but with an allocated message string
     struct ErrorBuf : public Error {
-        const alloc_slice messageBuf;
+        const fleece::alloc_slice messageBuf;
 
         ErrorBuf()      :Error{fleece::nullslice, 0, fleece::nullslice}  { }
 
-        ErrorBuf(slice domain, int code, alloc_slice msg)
+        ErrorBuf(fleece::slice domain, int code, fleece::alloc_slice msg)
         :Error{domain, code, msg}
         ,messageBuf(msg)
         { }
@@ -73,6 +70,9 @@ namespace litecore { namespace blip {
     /** Abstract base class of messages */
     class Message : public RefCounted {
     public:
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+        
         bool isResponse() const             {return type() >= kResponseType;}
         bool isError() const                {return type() == kErrorType;}
         bool urgent() const                 {return hasFlag(kUrgent);}
@@ -156,6 +156,9 @@ namespace litecore { namespace blip {
         The message is sent by calling Connection::sendRequest() or MessageIn::respond(). */
     class MessageBuilder {
     public:
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+
         typedef std::pair<slice, slice> property;
 
         /** Constructs a MessageBuilder for a request, optionally setting its Profile property. */
