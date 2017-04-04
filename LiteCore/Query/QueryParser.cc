@@ -22,6 +22,7 @@
 #include "Path.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "PlatformIO.hh"
 #include <utility>
 #include <algorithm>
 #ifdef _MSC_VER
