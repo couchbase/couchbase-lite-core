@@ -12,6 +12,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
+#include "BLIP.hh"
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #include <cxxabi.h>

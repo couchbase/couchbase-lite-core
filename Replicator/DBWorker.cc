@@ -9,14 +9,13 @@
 #include "DBWorker.hh"
 #include "Pusher.hh"
 #include "FleeceCpp.hh"
-#include "BLIPConnection.hh"
-#include "Message.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "Benchmark.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "BLIP.hh"
 #include <chrono>
 
 using namespace std;

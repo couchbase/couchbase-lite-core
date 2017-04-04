@@ -11,6 +11,7 @@
 #include "DBWorker.hh"
 #include "IncomingRev.hh"
 #include "StringUtil.hh"
+#include "BLIP.hh"
 
 using namespace std;
 using namespace fleece;

@@ -14,6 +14,7 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
+#include "BLIP.hh"
 
 using namespace std;
 using namespace std::placeholders;

@@ -11,6 +11,7 @@
 #include "DBWorker.hh"
 #include "c4BlobStore.h"
 #include "StringUtil.hh"
+#include "BLIP.hh"
 #include <algorithm>
 
 using namespace std;

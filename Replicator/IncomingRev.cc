@@ -10,6 +10,7 @@
 #include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
+#include "BLIP.hh"
 
 using namespace std;
 using namespace fleece;
