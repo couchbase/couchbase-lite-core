@@ -49,7 +49,11 @@ namespace litecore { namespace repl {
             static Options passive()                       {return Options(kC4Passive,kC4Passive);}
         };
 
+        
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
+
 
         struct Status : public C4ReplicatorStatus {
             Status(ActivityLevel lvl =kC4Stopped) {
@@ -57,6 +61,7 @@ namespace litecore { namespace repl {
             }
             C4Progress progressDelta;
         };
+
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {

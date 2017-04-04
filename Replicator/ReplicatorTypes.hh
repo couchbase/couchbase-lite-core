@@ -16,10 +16,7 @@
 #include <vector>
 
 namespace litecore { namespace repl {
-    using slice = fleece::slice;
-    using alloc_slice = fleece::alloc_slice;
 
-    
     static inline bool operator== (const C4Progress &p1, const C4Progress &p2) {
         return p1.completed == p2.completed && p1.total == p2.total;
     }
@@ -40,6 +37,9 @@ namespace litecore { namespace repl {
     
     /** Metadata of a document revision. */
     struct Rev {
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+
         alloc_slice docID;
         alloc_slice revID;
         C4SequenceNumber sequence;

@@ -11,8 +11,6 @@
 #include "ReplicatorTypes.hh"
 
 namespace litecore { namespace repl {
-    using slice = fleece::slice;
-    using alloc_slice = fleece::alloc_slice;
     class DBWorker;
     class Puller;
 

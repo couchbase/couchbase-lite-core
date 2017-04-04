@@ -119,7 +119,7 @@ namespace litecore {
     struct SHA1 {
         char bytes[20];
 
-        SHA1(slice s) {
+        SHA1(fleece::slice s) {
             sha1Context context;
             sha1_begin(&context);
             sha1_add(&context, s.buf, s.size);
