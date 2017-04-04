@@ -99,6 +99,7 @@ struct C4DocEnumerator: C4InstanceCounted {
         outInfo->revID = _docRevID;
         outInfo->flags = _docFlags;
         outInfo->sequence = _e.record().sequence();
+        outInfo->bodySize = _e.record().bodySize();
         return true;
     }
 

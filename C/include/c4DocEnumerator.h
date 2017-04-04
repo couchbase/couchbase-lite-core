@@ -50,9 +50,10 @@ extern "C" {
     /** Metadata about a document (actually about its current revision.) */
     typedef struct {
         C4DocumentFlags flags;      ///< Document flags
-        C4String docID;              ///< Document ID
-        C4String revID;              ///< RevID of current revision
+        C4String docID;             ///< Document ID
+        C4String revID;             ///< RevID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
+        uint64_t bodySize;          ///< Size in bytes of document body (approx)
     } C4DocumentInfo;
 
 

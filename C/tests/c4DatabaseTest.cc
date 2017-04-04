@@ -196,6 +196,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         REQUIRE(info.docID == c4str(docID));
         REQUIRE(info.flags == kExists);
         REQUIRE(info.revID == kRevID);
+        REQUIRE(info.bodySize >= 11);
+        REQUIRE(info.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
 
         c4doc_free(doc);
         i++;
@@ -286,6 +288,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") 
         REQUIRE(doc.revID == kRevID);
         REQUIRE(doc.sequence == (uint64_t)i);
         REQUIRE(doc.flags == (C4DocumentFlags)kExists);
+        REQUIRE(doc.bodySize >= 11);
+        REQUIRE(doc.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
         i++;
     }
     c4enum_free(e);
