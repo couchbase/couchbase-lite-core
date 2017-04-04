@@ -24,6 +24,7 @@ namespace LiteCore
     internal static class Constants
     {
         internal const string DllName = "LiteCore";
+        internal const string ReplicatorDllName = "Replicator";
 
 #if LITECORE_PACKAGED
         internal

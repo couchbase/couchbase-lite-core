@@ -38,7 +38,7 @@ static websocket::Address addressFrom(const C4Address &addr, C4String remoteData
 
 
 static websocket::Address addressFrom(C4Database* otherDB) {
-    alloc_slice path(c4db_getPath(otherDB));
+    litecore::blip::alloc_slice path(c4db_getPath(otherDB));
     return websocket::Address("file", "", 0, path.asString());
 }
 
@@ -138,8 +138,8 @@ private:
 
 
 static bool isValidScheme(C4Slice scheme) {
-    static const slice kValidSchemes[] = {"ws"_sl, "wss"_sl, "blip"_sl, "blips"_sl};
-    for (int i=0; i < sizeof(kValidSchemes)/sizeof(slice); i++)
+    static const litecore::blip::slice kValidSchemes[] = {"ws"_sl, "wss"_sl, "blip"_sl, "blips"_sl};
+    for (int i=0; i < sizeof(kValidSchemes)/sizeof(litecore::blip::slice); i++)
         if (scheme == kValidSchemes[i])
             return true;
     return false;
@@ -196,7 +196,7 @@ C4Replicator* c4repl_new(C4Database* db,
         return retain(replicator);
     } catch (const std::exception &x) {
         // TODO: Return a better error
-        c4error_return(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()), outError);
+        c4error_return(LiteCoreDomain, kC4ErrorUnexpectedError, litecore::blip::slice(x.what()), outError);
         return nullptr;
     }
 }
