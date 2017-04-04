@@ -1,12 +1,12 @@
 //
-//  DBActor.cc
+//  DBWorker.cc
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/21/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "Pusher.hh"
 #include "FleeceCpp.hh"
 #include "BLIPConnection.hh"
@@ -39,19 +39,24 @@ namespace litecore { namespace repl {
     }
 
 
-    DBActor::DBActor(Connection *connection,
+    DBWorker::DBWorker(Connection *connection,
                      Replicator *replicator,
                      C4Database *db,
                      const websocket::Address &remoteAddress,
                      Options options)
-    :ReplActor(connection, replicator, options, "DB")
-    ,_db(db)
+    :Worker(connection, replicator, options, "DB")
+    ,_db(c4db_retain(db))
     ,_remoteAddress(remoteAddress)
-    ,_insertTimer(bind(&DBActor::insertRevisionsNow, this))
+    ,_insertTimer(bind(&DBWorker::insertRevisionsNow, this))
     {
-        registerHandler("getCheckpoint",    &DBActor::handleGetCheckpoint);
-        registerHandler("setCheckpoint",    &DBActor::handleSetCheckpoint);
-        registerHandler("getAttachment",    &DBActor::handleGetAttachment);
+        registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
+        registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
+        registerHandler("getAttachment",    &DBWorker::handleGetAttachment);
+    }
+
+
+    DBWorker::~DBWorker() {
+        c4db_free(_db);
     }
 
 
@@ -59,7 +64,7 @@ namespace litecore { namespace repl {
 
 
     // Implementation of public getCheckpoint(): Reads the local checkpoint & calls the callback
-    void DBActor::_getCheckpoint(CheckpointCallback callback) {
+    void DBWorker::_getCheckpoint(CheckpointCallback callback) {
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(_db,
@@ -75,7 +80,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
+    void DBWorker::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
         if (c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
@@ -87,7 +92,7 @@ namespace litecore { namespace repl {
 
 
     // Computes the ID of the checkpoint document.
-    slice DBActor::effectiveRemoteCheckpointDocID() {
+    slice DBWorker::effectiveRemoteCheckpointDocID() {
         if (_remoteCheckpointDocID.empty()) {
             // Simplistic default value derived from db UUID and remote URL:
             C4UUID privateUUID;
@@ -107,7 +112,7 @@ namespace litecore { namespace repl {
     }
 
 
-    bool DBActor::getPeerCheckpointDoc(MessageIn* request, bool getting,
+    bool DBWorker::getPeerCheckpointDoc(MessageIn* request, bool getting,
                                        slice &checkpointID, c4::ref<C4RawDocument> &doc) {
         checkpointID = request->property("client"_sl);
         if (!checkpointID) {
@@ -131,7 +136,7 @@ namespace litecore { namespace repl {
 
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
-    void DBActor::handleGetCheckpoint(Retained<MessageIn> request) {
+    void DBWorker::handleGetCheckpoint(Retained<MessageIn> request) {
         c4::ref<C4RawDocument> doc;
         slice checkpointID;
         if (!getPeerCheckpointDoc(request, true, checkpointID, doc))
@@ -144,7 +149,7 @@ namespace litecore { namespace repl {
 
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
-    void DBActor::handleSetCheckpoint(Retained<MessageIn> request) {
+    void DBWorker::handleSetCheckpoint(Retained<MessageIn> request) {
         C4Error err;
         c4::Transaction t(_db);
         if (!t.begin(&err))
@@ -188,13 +193,13 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    void DBActor::getChanges(C4SequenceNumber since, unsigned limit, bool cont, Pusher *pusher) {
-        enqueue(&DBActor::_getChanges, since, limit, cont, Retained<Pusher>(pusher));
+    void DBWorker::getChanges(C4SequenceNumber since, unsigned limit, bool cont, Pusher *pusher) {
+        enqueue(&DBWorker::_getChanges, since, limit, cont, Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBActor::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
+    void DBWorker::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
                               Retained<Pusher> pusher)
     {
         log("Reading %u local changes from %llu", limit, since);
@@ -219,8 +224,8 @@ namespace litecore { namespace repl {
             _pusher = pusher;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
-                                                 auto self = (DBActor*)context;
-                                                 self->enqueue(&DBActor::dbChanged);
+                                                 auto self = (DBWorker*)context;
+                                                 self->enqueue(&DBWorker::dbChanged);
                                              },
                                              this);
         }
@@ -230,7 +235,7 @@ namespace litecore { namespace repl {
 
 
     // Callback from the C4DatabaseObserver when the database has changed
-    void DBActor::dbChanged() {
+    void DBWorker::dbChanged() {
         static const uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
         bool external;
@@ -253,7 +258,7 @@ namespace litecore { namespace repl {
 
 
     // Called by the Pusher; it passes on the "changes" message
-    void DBActor::_findOrRequestRevs(Retained<MessageIn> req,
+    void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
                                      function<void(vector<bool>)> callback) {
         // Iterate over the array in the message, seeing whether I have each revision:
         auto changes = req->JSONBody().asArray();
@@ -306,7 +311,7 @@ namespace litecore { namespace repl {
 
     // Returns true if revision exists; else returns false and sets ancestors to an array of
     // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool DBActor::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+    bool DBWorker::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
         bool revExists = doc && c4doc_selectRevision(doc, revID, false, &err);
@@ -332,7 +337,7 @@ namespace litecore { namespace repl {
 
 
     // Sends a document revision in a "rev" request.
-    void DBActor::_sendRevision(RevRequest request,
+    void DBWorker::_sendRevision(RevRequest request,
                                 MessageProgressCallback onProgress)
     {
         if (!connection())
@@ -408,7 +413,7 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING REVISIONS:
 
 
-    void DBActor::_findBlobs(vector<BlobRequest> blobs,
+    void DBWorker::_findBlobs(vector<BlobRequest> blobs,
                              function<void(vector<BlobRequest>)> callback) {
         vector<BlobRequest> missing;
         C4Error err;
@@ -421,7 +426,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::_insertBlob(C4BlobKey key, alloc_slice data, function<void(C4Error)> callback) {
+    void DBWorker::_insertBlob(C4BlobKey key, alloc_slice data, function<void(C4Error)> callback) {
         C4Error err;
         auto blobStore = c4db_getBlobStore(_db, &err);
         if (blobStore) {
@@ -433,18 +438,18 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBActor::insertRevision(RevToInsert *rev) {
+    void DBWorker::insertRevision(RevToInsert *rev) {
         lock_guard<mutex> lock(_revsToInsertMutex);
         if (!_revsToInsert) {
             _revsToInsert.reset(new vector<RevToInsert*>);
             _revsToInsert->reserve(500);
-            enqueueAfter(kInsertionDelay, &DBActor::_insertRevisionsNow);
+            enqueueAfter(kInsertionDelay, &DBWorker::_insertRevisionsNow);
         }
         _revsToInsert->push_back(rev);
     }
 
 
-    void DBActor::_insertRevisionsNow() {
+    void DBWorker::_insertRevisionsNow() {
         __typeof(_revsToInsert) revs;
         {
             lock_guard<mutex> lock(_revsToInsertMutex);
@@ -513,7 +518,7 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING ATTACHMENTS:
 
 
-    void DBActor::handleGetAttachment(Retained<MessageIn> req) {
+    void DBWorker::handleGetAttachment(Retained<MessageIn> req) {
         slice digest = req->property("digest"_sl);
         C4BlobKey key;
         if (!c4blob_keyFromString(digest, &key)) {

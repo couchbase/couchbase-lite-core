@@ -8,7 +8,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "c4BlobStore.h"
 #include "StringUtil.hh"
 #include <algorithm>
@@ -20,8 +20,8 @@ using namespace fleeceapi;
 namespace litecore { namespace repl {
 
 
-    Pusher::Pusher(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, replicator, options, "Push")
+    Pusher::Pusher(Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options)
+    :Worker(connection, replicator, options, "Push")
     ,_dbActor(dbActor)
     ,_continuous(options.push == kC4Continuous)
     {
@@ -249,9 +249,9 @@ namespace litecore { namespace repl {
     }
 
 
-    ReplActor::ActivityLevel Pusher::computeActivityLevel() const {
+    Worker::ActivityLevel Pusher::computeActivityLevel() const {
         logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
-        if (ReplActor::computeActivityLevel() == kC4Busy
+        if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
                 || _revisionsInFlight > 0

@@ -1,5 +1,5 @@
 //
-//  ReplActor.hh
+//  Worker.hh
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/20/17.
@@ -26,7 +26,7 @@ namespace litecore { namespace repl {
 
 
     /** Abstract base class of Actors used by the replicator */
-    class ReplActor : public Actor, C4InstanceCounted, protected Logging {
+    class Worker : public Actor, C4InstanceCounted, protected Logging {
     public:
 
         /** Replication configuration options */
@@ -60,12 +60,12 @@ namespace litecore { namespace repl {
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
-            enqueue(&ReplActor::_connectionClosed);
+            enqueue(&Worker::_connectionClosed);
         }
 
         /** Called by child actors when their status changes. */
-        void childChangedStatus(ReplActor *task, const Status &status) {
-            enqueue(&ReplActor::_childChangedStatus, task, status);
+        void childChangedStatus(Worker *task, const Status &status) {
+            enqueue(&Worker::_childChangedStatus, task, status);
         }
 
 #if !DEBUG
@@ -74,14 +74,14 @@ namespace litecore { namespace repl {
         blip::Connection* connection() const                {return _connection;}
 
     protected:
-        ReplActor(blip::Connection *connection,
-                  ReplActor *parent,
+        Worker(blip::Connection *connection,
+                  Worker *parent,
                   Options options,
                   const char *namePrefix);
 
-        ReplActor(ReplActor *parent, const char *namePrefix);
+        Worker(Worker *parent, const char *namePrefix);
 
-        ~ReplActor();
+        ~Worker();
 
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>
@@ -117,7 +117,7 @@ namespace litecore { namespace repl {
         void addProgress(C4Progress);
         void setProgress(C4Progress);
 
-        virtual void _childChangedStatus(ReplActor *task, Status) { }
+        virtual void _childChangedStatus(Worker *task, Status) { }
 
        virtual void afterEvent() override;
 
@@ -126,7 +126,7 @@ namespace litecore { namespace repl {
         }
 
         Options _options;
-        ReplActor* _parent;
+        Worker* _parent;
         bool _important {true};
 
     private:

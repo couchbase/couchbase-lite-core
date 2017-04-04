@@ -8,7 +8,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "IncomingRev.hh"
 #include "StringUtil.hh"
 
@@ -18,8 +18,8 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Connection *connection, Replicator *replicator, DBActor *dbActor, Options options)
-    :ReplActor(connection, replicator, options, "Pull")
+    Puller::Puller(Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options)
+    :Worker(connection, replicator, options, "Pull")
     ,_dbActor(dbActor)
     {
         registerHandler("changes",&Puller::handleChanges);
@@ -67,7 +67,7 @@ namespace litecore { namespace repl {
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
         } else {
-            // Pass the buck to the DBActor so it can find the missing revs & request them:
+            // Pass the buck to the DBWorker so it can find the missing revs & request them:
             ++_pendingCallbacks;
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
                 --_pendingCallbacks;
@@ -136,14 +136,14 @@ namespace litecore { namespace repl {
     }
 
 
-    void Puller::_childChangedStatus(ReplActor *task, Status status) {
+    void Puller::_childChangedStatus(Worker *task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
     }
 
     
-    ReplActor::ActivityLevel Puller::computeActivityLevel() const {
-        if (ReplActor::computeActivityLevel() == kC4Busy
+    Worker::ActivityLevel Puller::computeActivityLevel() const {
+        if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || !_requestedSequences.empty()
                 || _pendingCallbacks > 0) {

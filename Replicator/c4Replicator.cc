@@ -67,7 +67,6 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     :C4Replicator(db, loopbackProvider(), addressFrom(otherDB),
                   push, pull, onStateChanged, callbackContext)
     {
-        _otherDB = c4db_retain(otherDB);
         auto provider = loopbackProvider();
         auto dbAddr = addressFrom(db);
         _otherReplicator = new Replicator(otherDB,
@@ -92,18 +91,12 @@ private:
                  C4ReplicatorMode pull,
                  C4ReplicatorStatusChangedCallback onStateChanged,
                  void *callbackContext)
-    :_db(c4db_retain(db))
-    ,_onStateChanged(onStateChanged)
+    :_onStateChanged(onStateChanged)
     ,_callbackContext(callbackContext)
     ,_replicator(new Replicator(db, provider, address, *this, { push, pull }))
     ,_status(_replicator->status())
     {
         retain(this); // keep myself alive till replicator closes
-    }
-
-    ~C4Replicator() {
-        c4db_free(_db);
-        c4db_free(_otherDB);
     }
 
     static LoopbackProvider& loopbackProvider() {
@@ -127,8 +120,6 @@ private:
             on(this, _status, _callbackContext);
     }
 
-    C4Database* _db {nullptr};
-    C4Database* _otherDB {nullptr};
     atomic<C4ReplicatorStatusChangedCallback> _onStateChanged;
     void *_callbackContext;
     Retained<Replicator> _replicator;

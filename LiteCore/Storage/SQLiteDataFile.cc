@@ -20,11 +20,13 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SharedKeys.hh"
+#include "Benchmark.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
 #include <mutex>
+#include <thread>
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"
@@ -60,6 +62,9 @@ namespace litecore {
     // multiple threads from trying to start transactions at once, but another process might
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
+
+    // How long deleteDataFile() should wait for other threads to close their connections
+    static const unsigned kOtherDBCloseTimeoutSecs = 3;
 
 
     LogDomain SQL("SQL");
@@ -415,8 +420,15 @@ path.path().c_str());
 
 
     void SQLiteDataFile::deleteDataFile() {
-        if (factory().openCount(filePath()) > 1)
-            error::_throw(error::Busy);
+        // Wait for other connections to close -- in multithreaded setups there may be races where
+        // another thread takes a bit longer to close its connection.
+        Stopwatch st;
+        while (factory().openCount(filePath()) > 1) {
+            if (st.elapsed() > kOtherDBCloseTimeoutSecs)
+                error::_throw(error::Busy);
+            else
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
         close();
         factory().deleteFile(filePath());
     }

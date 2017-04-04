@@ -15,9 +15,9 @@ namespace litecore { namespace repl {
     class IncomingRev;
 
 
-    class Puller : public ReplActor {
+    class Puller : public Worker {
     public:
-        Puller(blip::Connection*, Replicator*, DBActor*, Options options);
+        Puller(blip::Connection*, Replicator*, DBWorker*, Options options);
 
         // Starts an active pull
         void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
@@ -27,7 +27,7 @@ namespace litecore { namespace repl {
 
     protected:
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
-        virtual void _childChangedStatus(ReplActor *task, Status) override;
+        virtual void _childChangedStatus(Worker *task, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);
 
@@ -41,7 +41,7 @@ namespace litecore { namespace repl {
         static const unsigned kChangesBatchSize = 500;      // Number of changes in one response
         static const unsigned kMaxSpareIncomingRevs = 500;
 
-        DBActor* const _dbActor;
+        DBWorker* const _dbActor;
         alloc_slice _lastSequence;
         bool _caughtUp {false};
         RemoteSequenceSet _requestedSequences;

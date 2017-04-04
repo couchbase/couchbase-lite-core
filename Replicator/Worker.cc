@@ -1,12 +1,12 @@
 //
-//  ReplActor.cc
+//  Worker.cc
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/20/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "ReplActor.hh"
+#include "Worker.hh"
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
 #include "Logging.hh"
@@ -26,8 +26,8 @@ namespace litecore { namespace repl {
     static LogDomain SyncLog("Sync");
 
 
-    ReplActor::ReplActor(blip::Connection *connection,
-                         ReplActor *parent,
+    Worker::Worker(blip::Connection *connection,
+                         Worker *parent,
                          Options options,
                          const char *namePrefix)
     :Actor( string(namePrefix) + connection->name() )
@@ -39,21 +39,21 @@ namespace litecore { namespace repl {
     { }
 
 
-    ReplActor::ReplActor(ReplActor *parent,
+    Worker::Worker(Worker *parent,
                          const char *namePrefix)
-    :ReplActor(parent->_connection, parent, parent->_options, namePrefix)
+    :Worker(parent->_connection, parent, parent->_options, namePrefix)
     {
 
     }
 
 
-    ReplActor::~ReplActor() {
+    Worker::~Worker() {
         if (_important)
             logStats();
     }
 
 
-    void ReplActor::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
+    void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
         if (callback) {
             ++_pendingResponseCount;
             builder.onProgress = asynchronize([=](MessageProgress progress) {
@@ -77,7 +77,7 @@ namespace litecore { namespace repl {
         nullptr, "LiteCore", "POSIX", nullptr, "SQLite", "Fleece", "DNS", "WebSocket"};
 
 
-    blip::ErrorBuf ReplActor::c4ToBLIPError(C4Error err) {
+    blip::ErrorBuf Worker::c4ToBLIPError(C4Error err) {
         //FIX: Map common errors to more standard domains
         if (!err.code)
             return { };
@@ -87,7 +87,7 @@ namespace litecore { namespace repl {
     }
 
 
-    C4Error ReplActor::blipToC4Error(const blip::Error &err) {
+    C4Error Worker::blipToC4Error(const blip::Error &err) {
         if (!err.domain)
             return { };
         C4ErrorDomain domain = LiteCoreDomain;
@@ -105,7 +105,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void ReplActor::gotError(const MessageIn* msg) {
+    void Worker::gotError(const MessageIn* msg) {
         auto err = msg->getError();
         logError("Got error response: %.*s %d '%.*s'",
                  SPLAT(err.domain), err.code, SPLAT(err.message));
@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
         _statusChanged = true;
     }
 
-    void ReplActor::gotError(C4Error err) {
+    void Worker::gotError(C4Error err) {
         alloc_slice message = c4error_getMessage(err);
         logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
         _status.error = err;
@@ -124,12 +124,12 @@ namespace litecore { namespace repl {
 #pragma mark - ACTIVITY / PROGRESS:
 
 
-    void ReplActor::setProgress(C4Progress p) {
+    void Worker::setProgress(C4Progress p) {
         addProgress(p - _status.progress);
     }
 
 
-    void ReplActor::addProgress(C4Progress p) {
+    void Worker::addProgress(C4Progress p) {
         if (p.completed || p.total) {
             _status.progressDelta += p;
             _status.progress += p;
@@ -139,7 +139,7 @@ namespace litecore { namespace repl {
 
 
 
-    ReplActor::ActivityLevel ReplActor::computeActivityLevel() const {
+    Worker::ActivityLevel Worker::computeActivityLevel() const {
         if (eventCount() > 1 || _pendingResponseCount > 0)
             return kC4Busy;
         else
@@ -148,7 +148,7 @@ namespace litecore { namespace repl {
 
     
     // Called after every event; updates busy status & detects when I'm done
-    void ReplActor::afterEvent() {
+    void Worker::afterEvent() {
         bool changed = _statusChanged;
         _statusChanged = false;
         if (changed && _important) {
@@ -169,7 +169,7 @@ namespace litecore { namespace repl {
         _status.progressDelta = {0, 0};
     }
 
-    void ReplActor::changedStatus() {
+    void Worker::changedStatus() {
         if (_parent)
             _parent->childChangedStatus(this, _status);
     }

@@ -7,20 +7,20 @@
 //
 
 #pragma once
-#include "ReplActor.hh"
+#include "Worker.hh"
 #include "ReplicatorTypes.hh"
 
 namespace litecore { namespace repl {
     using slice = fleece::slice;
     using alloc_slice = fleece::alloc_slice;
-    class DBActor;
+    class DBWorker;
     class Puller;
 
 
     /** Manages pulling a single document. */
-    class IncomingRev : public ReplActor {
+    class IncomingRev : public Worker {
     public:
-        IncomingRev(Puller*, DBActor*);
+        IncomingRev(Puller*, DBWorker*);
 
         void handleRev(blip::MessageIn* revMessage) {
             enqueue(&IncomingRev::_handleRev, retained(revMessage));
@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
         slice remoteSequence() const            {return _revMessage->property(slice("sequence"));}
         
         Puller* _puller;
-        DBActor* _dbActor;
+        DBWorker* _dbActor;
         Retained<blip::MessageIn> _revMessage;
         RevToInsert _rev;
         unsigned _pendingCallbacks {0};

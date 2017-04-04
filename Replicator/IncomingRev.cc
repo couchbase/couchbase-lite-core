@@ -7,7 +7,7 @@
 //
 
 #include "IncomingRev.hh"
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
 
@@ -23,8 +23,8 @@ namespace litecore { namespace repl {
     static void findBlobReferences(Dict, vector<BlobRequest> &keys);
 
 
-    IncomingRev::IncomingRev(Puller *puller, DBActor *dbActor)
-    :ReplActor(puller, "inc")
+    IncomingRev::IncomingRev(Puller *puller, DBWorker *dbActor)
+    :Worker(puller, "inc")
     ,_puller(puller)
     ,_dbActor(dbActor)
     {
@@ -194,8 +194,8 @@ namespace litecore { namespace repl {
     }
 
 
-    ReplActor::ActivityLevel IncomingRev::computeActivityLevel() const {
-        if (ReplActor::computeActivityLevel() == kC4Busy
+    Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
+        if (Worker::computeActivityLevel() == kC4Busy
                 || _pendingCallbacks > 0 || _pendingBlobs > 0) {
             return kC4Busy;
         } else {

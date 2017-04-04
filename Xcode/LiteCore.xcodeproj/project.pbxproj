@@ -115,8 +115,8 @@
 		275CE0FF1E5B79150084E014 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
 		275CE1001E5B79220084E014 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		275CE1061E5B79A80084E014 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
-		275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* ReplActor.cc */; };
-		275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275CE1141E5BAC180084E014 /* ReplActor.hh */; };
+		275CE1151E5BAC180084E014 /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
+		275CE1161E5BAC180084E014 /* Worker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275CE1141E5BAC180084E014 /* Worker.hh */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -186,8 +186,8 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
-		27B842611E5CC6500094903E /* DBActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBActor.cc */; };
-		27B842621E5CC6500094903E /* DBActor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B842601E5CC6500094903E /* DBActor.hh */; };
+		27B842611E5CC6500094903E /* DBWorker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBWorker.cc */; };
+		27B842621E5CC6500094903E /* DBWorker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B842601E5CC6500094903E /* DBWorker.hh */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
@@ -364,8 +364,8 @@
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
-		93CD010B1E933BE100AFB3FA /* ReplActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* ReplActor.cc */; };
-		93CD010C1E933BE100AFB3FA /* DBActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBActor.cc */; };
+		93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
+		93CD010C1E933BE100AFB3FA /* DBWorker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBWorker.cc */; };
 		93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
 		93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
 		93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
@@ -788,8 +788,8 @@
 		275CE0FB1E5B772D0084E014 /* ReplicatorTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ReplicatorTests.xcconfig; sourceTree = "<group>"; };
 		275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorLoopbackTest.cc; sourceTree = "<group>"; };
 		275CE10F1E5B93060084E014 /* Replicator_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Replicator_Release.xcconfig; sourceTree = "<group>"; };
-		275CE1131E5BAC180084E014 /* ReplActor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplActor.cc; sourceTree = "<group>"; };
-		275CE1141E5BAC180084E014 /* ReplActor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplActor.hh; sourceTree = "<group>"; };
+		275CE1131E5BAC180084E014 /* Worker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Worker.cc; sourceTree = "<group>"; };
+		275CE1141E5BAC180084E014 /* Worker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Worker.hh; sourceTree = "<group>"; };
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TreeDocument.cc; path = Database/TreeDocument.cc; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
@@ -868,8 +868,8 @@
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
-		27B8425F1E5CC6500094903E /* DBActor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DBActor.cc; sourceTree = "<group>"; };
-		27B842601E5CC6500094903E /* DBActor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DBActor.hh; sourceTree = "<group>"; };
+		27B8425F1E5CC6500094903E /* DBWorker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DBWorker.cc; sourceTree = "<group>"; };
+		27B842601E5CC6500094903E /* DBWorker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DBWorker.hh; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
@@ -1599,10 +1599,10 @@
 			isa = PBXGroup;
 			children = (
 				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
-				275CE1131E5BAC180084E014 /* ReplActor.cc */,
-				275CE1141E5BAC180084E014 /* ReplActor.hh */,
-				27B8425F1E5CC6500094903E /* DBActor.cc */,
-				27B842601E5CC6500094903E /* DBActor.hh */,
+				275CE1131E5BAC180084E014 /* Worker.cc */,
+				275CE1141E5BAC180084E014 /* Worker.hh */,
+				27B8425F1E5CC6500094903E /* DBWorker.cc */,
+				27B842601E5CC6500094903E /* DBWorker.hh */,
 				27CCC7D61E52613C00CE1989 /* Replicator.cc */,
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				27CCC7DE1E526CCC00CE1989 /* Puller.cc */,
@@ -1885,8 +1885,8 @@
 				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
 				2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */,
 				27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */,
-				27B842621E5CC6500094903E /* DBActor.hh in Headers */,
-				275CE1161E5BAC180084E014 /* ReplActor.hh in Headers */,
+				27B842621E5CC6500094903E /* DBWorker.hh in Headers */,
+				275CE1161E5BAC180084E014 /* Worker.hh in Headers */,
 				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
 				2773FCFE1E67A64D00108780 /* RemoteSequenceSet.hh in Headers */,
 			);
@@ -2465,10 +2465,10 @@
 				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
-				27B842611E5CC6500094903E /* DBActor.cc in Sources */,
+				27B842611E5CC6500094903E /* DBWorker.cc in Sources */,
 				27E35AA11E8DD9AA00E103F9 /* IncomingRev.cc in Sources */,
 				27491CB21E7DBEA0001DC54B /* CBLWebSocket.mm in Sources */,
-				275CE1151E5BAC180084E014 /* ReplActor.cc in Sources */,
+				275CE1151E5BAC180084E014 /* Worker.cc in Sources */,
 				27491C9F1E7B2532001DC54B /* c4Socket.cc in Sources */,
 				27491CB31E7DBEA0001DC54B /* CBLHTTPLogic.m in Sources */,
 				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
@@ -2544,7 +2544,7 @@
 				27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
-				93CD010C1E933BE100AFB3FA /* DBActor.cc in Sources */,
+				93CD010C1E933BE100AFB3FA /* DBWorker.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
@@ -2583,7 +2583,7 @@
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
-				93CD010B1E933BE100AFB3FA /* ReplActor.cc in Sources */,
+				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

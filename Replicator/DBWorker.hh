@@ -1,5 +1,5 @@
 //
-//  DBActor.hh
+//  DBWorker.hh
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/21/17.
@@ -8,7 +8,7 @@
 
 #pragma once
 #include "ReplicatorTypes.hh"
-#include "ReplActor.hh"
+#include "Worker.hh"
 #include "c4BlobStore.h"
 #include <string>
 #include <vector>
@@ -18,9 +18,9 @@ namespace litecore { namespace repl {
 
     
     /** Actor that manages database access for the replicator. */
-    class DBActor : public ReplActor {
+    class DBWorker : public Worker {
     public:
-        DBActor(blip::Connection *connection,
+        DBWorker(blip::Connection *connection,
                 Replicator*,
                 C4Database *db,
                 const websocket::Address &remoteAddress,
@@ -31,38 +31,40 @@ namespace litecore { namespace repl {
                                                       C4Error err)>;
 
         void getCheckpoint(CheckpointCallback cb) {
-            enqueue(&DBActor::_getCheckpoint, cb);
+            enqueue(&DBWorker::_getCheckpoint, cb);
         }
 
         void setCheckpoint(const alloc_slice &data, std::function<void()> onComplete) {
-            enqueue(&DBActor::_setCheckpoint, data, onComplete);
+            enqueue(&DBWorker::_setCheckpoint, data, onComplete);
         }
 
         void getChanges(C4SequenceNumber since, unsigned limit, bool continuous, Pusher*);
 
         void findOrRequestRevs(Retained<blip::MessageIn> req,
                                std::function<void(std::vector<bool>)> callback) {
-            enqueue(&DBActor::_findOrRequestRevs, req, callback);
+            enqueue(&DBWorker::_findOrRequestRevs, req, callback);
         }
 
         void sendRevision(const RevRequest &request,
                           blip::MessageProgressCallback onProgress) {
-            enqueue(&DBActor::_sendRevision, request, onProgress);
+            enqueue(&DBWorker::_sendRevision, request, onProgress);
         }
 
         void findBlobs(std::vector<BlobRequest> blobs,
                        std::function<void(std::vector<BlobRequest>)> callback) {
-            enqueue(&DBActor::_findBlobs, blobs, callback);
+            enqueue(&DBWorker::_findBlobs, blobs, callback);
         }
 
         void insertBlob(C4BlobKey key, alloc_slice data,
                         std::function<void(C4Error err)> callback) {
-            enqueue(&DBActor::_insertBlob, key, data, callback);
+            enqueue(&DBWorker::_insertBlob, key, data, callback);
         }
 
         void insertRevision(RevToInsert *rev);
 
     private:
+        virtual ~DBWorker();
+        
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
@@ -85,7 +87,7 @@ namespace litecore { namespace repl {
         void handleGetAttachment(Retained<blip::MessageIn>);
 
 
-        void insertRevisionsNow()   {enqueue(&DBActor::_insertRevisionsNow);}
+        void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
         void _insertRevisionsNow();
 
             void dbChanged();

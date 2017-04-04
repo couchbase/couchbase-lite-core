@@ -7,7 +7,7 @@
 //
 
 #pragma once
-#include "ReplActor.hh"
+#include "Worker.hh"
 #include "Checkpoint.hh"
 #include "BLIPConnection.hh"
 #include "FleeceCpp.hh"
@@ -19,13 +19,13 @@ namespace litecore { namespace repl {
 
     class Pusher;
     class Puller;
-    class DBActor;
+    class DBWorker;
 
 
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
-    class Replicator : public ReplActor, ConnectionDelegate {
+    class Replicator : public Worker, ConnectionDelegate {
     public:
 
         class Delegate;
@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
             virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&)  { }
         };
 
-        Status status() const                   {return ReplActor::status();}   //FIX: Needs to be thread-safe
+        Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
         void stop()                             {enqueue(&Replicator::_stop);}
 
@@ -96,12 +96,12 @@ namespace litecore { namespace repl {
         void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
         void _saveCheckpoint(alloc_slice json);
 
-        virtual void _childChangedStatus(ReplActor *task, Status taskStatus) override;
+        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
 
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
         Delegate& _delegate;
-        Retained<DBActor> _dbActor;
+        Retained<DBWorker> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
         Status _pushStatus {}, _pullStatus {}, _dbStatus {};

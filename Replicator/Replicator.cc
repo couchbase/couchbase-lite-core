@@ -8,7 +8,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Replicator.hh"
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
@@ -29,12 +29,12 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options,
                            Connection *connection)
-    :ReplActor(connection, this, options, "Repl")
+    :Worker(connection, this, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(delegate)
     ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_pullStatus{options.pull == kC4Disabled ? kC4Stopped : kC4Busy}
-    ,_dbActor(new DBActor(connection, this, db, address, options))
+    ,_dbActor(new DBWorker(connection, this, db, address, options))
     {
         if (options.push != kC4Disabled)
             _pusher = new Pusher(connection, this, _dbActor, _options);
@@ -79,7 +79,7 @@ namespace litecore { namespace repl {
 
 
     // The status of one of the actors has changed; update mine
-    void Replicator::_childChangedStatus(ReplActor *task, Status taskStatus)
+    void Replicator::_childChangedStatus(Worker *task, Status taskStatus)
     {
         if (task == _pusher) {
             _pushStatus = taskStatus;
@@ -101,7 +101,7 @@ namespace litecore { namespace repl {
     }
 
 
-    ReplActor::ActivityLevel Replicator::computeActivityLevel() const {
+    Worker::ActivityLevel Replicator::computeActivityLevel() const {
         auto state = (connection() ? connection()->state() : Connection::kClosed);
         switch (state) {
             case Connection::kConnecting:
@@ -111,7 +111,7 @@ namespace litecore { namespace repl {
                 if (_checkpoint.isUnsaved())
                     level = kC4Busy;
                 else
-                    level = ReplActor::computeActivityLevel();
+                    level = Worker::computeActivityLevel();
                 level = max(level, max(_pushStatus.level, _pullStatus.level));
                 if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:

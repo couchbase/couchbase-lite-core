@@ -8,7 +8,7 @@
 
 #pragma once
 #include "Replicator.hh"
-#include "DBActor.hh"
+#include "DBWorker.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include <queue>
@@ -16,9 +16,9 @@
 namespace litecore { namespace repl {
 
 
-    class Pusher : public ReplActor {
+    class Pusher : public Worker {
     public:
-        Pusher(blip::Connection *connection, Replicator *replicator, DBActor *dbActor, Options options);
+        Pusher(blip::Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options);
 
         // Starts an active push
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
@@ -49,7 +49,7 @@ namespace litecore { namespace repl {
         static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
 
-        DBActor* const _dbActor;
+        DBWorker* const _dbActor;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         bool _continuous;
 
