@@ -7,7 +7,7 @@
 //
 
 #pragma once
-#include "Message.hh"
+#include "MessageBuilder.hh"
 #include "Logging.hh"
 
 namespace litecore { namespace blip {

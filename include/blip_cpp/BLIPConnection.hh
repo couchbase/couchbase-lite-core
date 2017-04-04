@@ -9,6 +9,7 @@
 #pragma once
 #include "WebSocketInterface.hh"
 #include "Message.hh"
+#include "Logging.hh"
 #include <atomic>
 
 namespace litecore { namespace blip {

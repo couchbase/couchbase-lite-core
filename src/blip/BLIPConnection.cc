@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <atomic>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;

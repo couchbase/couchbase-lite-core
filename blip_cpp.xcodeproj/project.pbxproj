@@ -24,6 +24,9 @@
 		2773FD021E69FD9100108780 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
 		2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FD031E69FE2000108780 /* ActorProperty.cc */; };
 		2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD041E69FE2000108780 /* ActorProperty.hh */; };
+		2799762C1E944B2F00B27639 /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762A1E944B2F00B27639 /* MessageBuilder.hh */; };
+		2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2799762D1E94509000B27639 /* MessageBuilder.cc */; };
+		279976301E94518200B27639 /* BLIP.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762F1E94518200B27639 /* BLIP.hh */; };
 		27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A51E524F0B00CE1989 /* Logging.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
 		27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */; };
@@ -113,6 +116,9 @@
 		2773FD001E69FD9100108780 /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
 		2773FD031E69FE2000108780 /* ActorProperty.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorProperty.cc; sourceTree = "<group>"; };
 		2773FD041E69FE2000108780 /* ActorProperty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ActorProperty.hh; sourceTree = "<group>"; };
+		2799762A1E944B2F00B27639 /* MessageBuilder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageBuilder.hh; sourceTree = "<group>"; };
+		2799762D1E94509000B27639 /* MessageBuilder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageBuilder.cc; sourceTree = "<group>"; };
+		2799762F1E94518200B27639 /* BLIP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -261,9 +267,11 @@
 		27EF69C81E2825E6004748DF /* blip_cpp */ = {
 			isa = PBXGroup;
 			children = (
+				2799762F1E94518200B27639 /* BLIP.hh */,
 				27EF69E41E282662004748DF /* BLIPConnection.hh */,
 				27EF69E51E282662004748DF /* BLIPProtocol.hh */,
 				27EF69E71E282662004748DF /* Message.hh */,
+				2799762A1E944B2F00B27639 /* MessageBuilder.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
 				27491CA01E7B417C001DC54B /* WebSocketImpl.hh */,
 			);
@@ -284,6 +292,7 @@
 			isa = PBXGroup;
 			children = (
 				27EF69D11E28260D004748DF /* Message.cc */,
+				2799762D1E94509000B27639 /* MessageBuilder.cc */,
 				27EF69D31E28260D004748DF /* BLIPConnection.cc */,
 				27EF69D61E28260D004748DF /* BLIPInternal.hh */,
 			);
@@ -401,12 +410,14 @@
 				2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */,
 				2773FD021E69FD9100108780 /* Timer.hh in Headers */,
 				27EF6A531E2857F7004748DF /* slice.hh in Headers */,
+				279976301E94518200B27639 /* BLIP.hh in Headers */,
 				27EF6A691E2858E7004748DF /* Actor.hh in Headers */,
 				2759DC1C1E7088F900F3C4B2 /* gzipcomplete.hpp in Headers */,
 				2759DC1E1E7088F900F3C4B2 /* zlibcomplete.hpp in Headers */,
 				27EF6A571E2857F7004748DF /* Writer.hh in Headers */,
 				2759DC1D1E7088F900F3C4B2 /* zlibbase.hpp in Headers */,
 				2759DC1F1E7088F900F3C4B2 /* zlibmisc.hpp in Headers */,
+				2799762C1E944B2F00B27639 /* MessageBuilder.hh in Headers */,
 				27EF6A751E28594F004748DF /* PlatformCompat.hh in Headers */,
 				27EF69E91E282662004748DF /* BLIPConnection.hh in Headers */,
 				27EF6A621E28587A004748DF /* decode.h in Headers */,
@@ -501,6 +512,7 @@
 				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
 				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
 				27EF6A681E2858E7004748DF /* Actor.cc in Sources */,
+				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
 				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
 				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
 				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
