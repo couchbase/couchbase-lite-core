@@ -360,6 +360,17 @@
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
+		93CD010B1E933BE100AFB3FA /* ReplActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* ReplActor.cc */; };
+		93CD010C1E933BE100AFB3FA /* DBActor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBActor.cc */; };
+		93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
+		93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
+		93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
+		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
+		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
+		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		93CD01131E933BE100AFB3FA /* CBLWebSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */; };
+		93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */; };
+		93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -585,6 +596,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27EF807319142C2500A327B9;
 			remoteInfo = Tokenizer;
+		};
+		93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF69B61E282549004748DF;
+			remoteInfo = blip_cpp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -1098,6 +1116,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */,
 				27FA09CB1D70BA42005888AA /* libFleece.a in Frameworks */,
 				27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */,
 			);
@@ -2114,6 +2133,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				93CD01191E933C0600AFB3FA /* PBXTargetDependency */,
 				27FA09CA1D70BA3C005888AA /* PBXTargetDependency */,
 				27EF81161917EF4000A327B9 /* PBXTargetDependency */,
 			);
@@ -2494,6 +2514,7 @@
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
+				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
@@ -2502,15 +2523,20 @@
 				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */,
+				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
+				93CD010C1E933BE100AFB3FA /* DBActor.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
+				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
+				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
+				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
@@ -2519,12 +2545,15 @@
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
+				93CD01131E933BE100AFB3FA /* CBLWebSocket.mm in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
+				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
+				93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */,
 				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
@@ -2534,6 +2563,7 @@
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
+				93CD010B1E933BE100AFB3FA /* ReplActor.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2712,6 +2742,11 @@
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
 			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
+		};
+		93CD01191E933C0600AFB3FA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = blip_cpp;
+			targetProxy = 93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
