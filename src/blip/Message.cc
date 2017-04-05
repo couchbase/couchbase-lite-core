@@ -102,84 +102,130 @@ namespace litecore { namespace blip {
     }
 
 
-    bool MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
+    MessageIn::ReceiveState MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
+        ReceiveState state = kOther;
         MessageSize bytesReceived = frame.size;
-        if (_in) {
-            bytesReceived += _in->bytesWritten();
-        } else {
-            // On first frame, update my flags and allocate the Writer:
-            assert(_number > 0);
-            _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-            _connection->log("Receiving %s #%llu, flags=%02x",
-                             kMessageTypeNames[type()], _number, flags());
-            _in.reset(new fleeceapi::JSONEncoder);
-            // Get the length of the properties, and move `frame` past the length field:
-            if (!ReadUVarInt32(&frame, &_propertiesSize))
-                throw "frame too small";
-        }
+        {
+            // First, lock the mutex:
+            lock_guard<mutex> lock(_receiveMutex);
+            if (_in) {
+                bytesReceived += _in->bytesWritten();
+            } else {
+                // On first frame, update my flags and allocate the Writer:
+                assert(_number > 0);
+                _flags = (FrameFlags)(frameFlags & ~kMoreComing);
+                _connection->log("Receiving %s #%llu, flags=%02x",
+                                 kMessageTypeNames[type()], _number, flags());
+                _in.reset(new fleeceapi::JSONEncoder);
+                // Get the length of the properties, and move `frame` past the length field:
+                if (!ReadUVarInt32(&frame, &_propertiesSize))
+                    throw "frame too small";
+            }
 
-        if (!_properties && (_in->bytesWritten() + frame.size) >= _propertiesSize) {
-            // OK, we now have the complete properties:
-            size_t remaining = _propertiesSize - _in->bytesWritten();
-            _in->writeRaw({frame.buf, remaining});
-            frame.moveStart(remaining);
-            _properties = _in->finish();
-            if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
-                throw "message properties not null-terminated";
+            if (!_properties && (_in->bytesWritten() + frame.size) >= _propertiesSize) {
+                // OK, we now have the complete properties:
+                size_t remaining = _propertiesSize - _in->bytesWritten();
+                _in->writeRaw({frame.buf, remaining});
+                frame.moveStart(remaining);
+                _properties = _in->finish();
+                if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
+                    throw "message properties not null-terminated";
+                _in->reset();
+                state = kBeginning;
+            }
+
+            _unackedBytes += frame.size;
+            if (_unackedBytes >= kIncomingAckThreshold) {
+                // Send an ACK every 50k bytes:
+                MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
+                uint8_t buf[kMaxVarintLen64];
+                alloc_slice payload(buf, PutUVarInt(buf, bytesReceived));
+                Retained<MessageOut> ack = new MessageOut(_connection,
+                                                          (FrameFlags)(msgType | kUrgent | kNoReply),
+                                                          payload,
+                                                          _number);
+                _connection->send(ack);
+                _unackedBytes = 0;
+            }
+
+            if (_properties && (_flags & kCompressed)) {
+                if (!_decompressor)
+                    _decompressor.reset( new zlibcomplete::GZipDecompressor );
+                string output = _decompressor->decompress(frame.asString());
+                if (output.empty())
+                    throw "invalid gzipped data";
+                _in->writeRaw(slice(output));
+            } else {
+                _in->writeRaw(frame);
+            }
+
+            if (!(frameFlags & kMoreComing)) {
+                // Completed!
+                if (!_properties)
+                    throw "message ends before end of properties";
+                _body = _in->finish();
+                _in.reset();
+                _decompressor.reset();
+                _complete = true;
+
+                _connection->log("Finished receiving %s #%llu, flags=%02x",
+                                 kMessageTypeNames[type()], _number, flags());
+                state = kEnd;
+            }
+        }
+        // ...mutex is now unlocked
+
+        // Send progress. ("kReceivingReply" is somewhat misleading if this isn't a reply.)
+        sendProgress(state == kEnd ? MessageProgress::kComplete : MessageProgress::kReceivingReply,
+                     _outgoingSize, bytesReceived,
+                     (_properties ? this : nullptr));
+        return state;
+    }
+
+
+    void MessageIn::setProgressCallback(MessageProgressCallback callback) {
+        lock_guard<mutex> lock(_receiveMutex);
+        _onProgress = callback;
+    }
+
+
+    bool MessageIn::isComplete() const {
+        lock_guard<mutex> lock(const_cast<MessageIn*>(this)->_receiveMutex);
+        return _complete;
+    }
+
+
+#pragma mark - MESSAGE BODY:
+
+
+    alloc_slice MessageIn::body() const {
+        lock_guard<mutex> lock(const_cast<MessageIn*>(this)->_receiveMutex);
+        return _body;
+    }
+
+
+    fleeceapi::Value MessageIn::JSONBody() {
+        lock_guard<mutex> lock(_receiveMutex);
+        if (!_bodyAsFleece)
+            _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
+        return fleeceapi::Value::fromData(_bodyAsFleece);
+    }
+
+
+    alloc_slice MessageIn::extractBody() {
+        lock_guard<mutex> lock(_receiveMutex);
+        alloc_slice body = _body;
+        if (body) {
+            _body = nullslice;
+        } else if (_in) {
+            body = _in->finish();
             _in->reset();
         }
-
-        _unackedBytes += frame.size;
-        if (_unackedBytes >= kIncomingAckThreshold) {
-            // Send an ACK every 50k bytes:
-            MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
-            uint8_t buf[kMaxVarintLen64];
-            alloc_slice payload(buf, PutUVarInt(buf, bytesReceived));
-            Retained<MessageOut> ack = new MessageOut(_connection,
-                                                      (FrameFlags)(msgType | kUrgent | kNoReply),
-                                                      payload,
-                                                      _number);
-            _connection->send(ack);
-            _unackedBytes = 0;
-        }
-
-        if (_properties && (_flags & kCompressed)) {
-            if (!_decompressor)
-                _decompressor.reset( new zlibcomplete::GZipDecompressor );
-            string output = _decompressor->decompress(frame.asString());
-            if (output.empty())
-                throw "invalid gzipped data";
-            _in->writeRaw(slice(output));
-        } else {
-            _in->writeRaw(frame);
-        }
-
-        if (frameFlags & kMoreComing) {
-            sendProgress(MessageProgress::kReceivingReply, _outgoingSize, bytesReceived, nullptr);
-            return false;
-        } else {
-            // Completed!
-            if (!_properties)
-                throw "message ends before end of properties";
-            _body = _in->finish();
-            _in.reset();
-            _decompressor.reset();
-
-            _connection->log("Finished receiving %s #%llu, flags=%02x",
-                             kMessageTypeNames[type()], _number, flags());
-            sendProgress(MessageProgress::kComplete, _outgoingSize, bytesReceived, this);
-            return true;
-        }
+        return body;
     }
 
 
-    Error MessageIn::getError() const {
-        if (!isError())
-            return Error();
-        return Error(property("Error-Domain"_sl),
-                     (int) intProperty("Error-Code"_sl),
-                     body());
-    }
+#pragma mark - RESPONSES:
 
 
     void MessageIn::respond(MessageBuilder &mb) {
@@ -206,6 +252,9 @@ namespace litecore { namespace blip {
     void MessageIn::notHandled() {
         respondWithError({"BLIP"_sl, 404, "no handler for message"_sl});
     }
+
+
+#pragma mark - PROPERTIES:
 
 
     slice MessageIn::property(slice property) const {
@@ -255,12 +304,13 @@ namespace litecore { namespace blip {
             return intProperty(name, defaultValue) != 0;
     }
 
-
-    fleeceapi::Value MessageIn::JSONBody() {
-        if (!_bodyAsFleece)
-            _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
-        return fleeceapi::Value::fromData(_bodyAsFleece);
+    
+    Error MessageIn::getError() const {
+        if (!isError())
+            return Error();
+        return Error(property("Error-Domain"_sl),
+                     (int) intProperty("Error-Code"_sl),
+                     body());
     }
-
 
 } }

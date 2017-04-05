@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <atomic>
 #include <mutex>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -77,7 +78,9 @@ namespace litecore { namespace blip {
     /** The guts of a Connection. */
     class BLIPIO : public Actor, public Logging, public websocket::Delegate {
     private:
-        typedef unordered_map<MessageNo, Retained<MessageIn>> MessageMap;
+        using MessageMap = unordered_map<MessageNo, Retained<MessageIn>>;
+        using HandlerKey = pair<string, bool>;
+        using RequestHandlers = map<HandlerKey, Connection::RequestHandler>;
 
         Retained<Connection>    _connection;
         WebSocket*              _webSocket {nullptr};
@@ -88,7 +91,7 @@ namespace litecore { namespace blip {
         atomic<MessageNo>       _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
         unique_ptr<uint8_t[]>   _frameBuf;
-        std::unordered_map<string, Connection::RequestHandler> _requestHandlers;
+        RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
 
     public:
@@ -114,8 +117,9 @@ namespace litecore { namespace blip {
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
         }
 
-        void setRequestHandler(std::string profile, Connection::RequestHandler handler) {
-            enqueue(&BLIPIO::_setRequestHandler, profile, handler);
+        void setRequestHandler(std::string profile, bool atBeginning,
+                               Connection::RequestHandler handler) {
+            enqueue(&BLIPIO::_setRequestHandler, profile, atBeginning, handler);
         }
 
         void close() {
@@ -359,12 +363,14 @@ namespace litecore { namespace blip {
             }
 
             // Append the frame to the message:
-            if (msg && msg->receivedFrame(payload, flags)) {
-                // Message complete!
-                if (type == kRequestType)
-                    handleRequest(msg);
-                else
-                    _connection->delegate().onResponseReceived(msg);
+            if (msg) {
+                auto state = msg->receivedFrame(payload, flags);
+                if (type == kRequestType) {
+                    if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
+                        // Message complete!
+                        handleRequestReceived(msg, state);
+                    }
+                }
             }
         }
 
@@ -433,26 +439,39 @@ namespace litecore { namespace blip {
         }
 
 
-        void _setRequestHandler(std::string profile, Connection::RequestHandler handler) {
+        void _setRequestHandler(std::string profile, bool atBeginning,
+                                Connection::RequestHandler handler)
+        {
+            HandlerKey key{profile, atBeginning};
             if (handler)
-                _requestHandlers.emplace(profile, handler);
+                _requestHandlers.emplace(key, handler);
             else
-                _requestHandlers.erase(profile);
+                _requestHandlers.erase(key);
         }
 
 
-        void handleRequest(MessageIn *request) {
+        void handleRequestBeginning(MessageIn *request) {
+            
+        }
+
+        void handleRequestReceived(MessageIn *request, MessageIn::ReceiveState state) {
             try {
+                if (state == MessageIn::kOther)
+                    return;
+                bool beginning = (state == MessageIn::kBeginning);
                 auto profile = request->property("Profile"_sl);
                 if (profile) {
-                    auto i = _requestHandlers.find(profile.asString());
+                    auto i = _requestHandlers.find({profile.asString(), beginning});
                     if (i != _requestHandlers.end()) {
                         i->second(request);
                         return;
                     }
                 }
                 // No handler; just pass it to the delegate:
-                _connection->delegate().onRequestReceived(request);
+                if (beginning)
+                    _connection->delegate().onRequestBeginning(request);
+                else
+                    _connection->delegate().onRequestReceived(request);
             } catch (...) {
                 logError("Caught exception thrown from BLIP request handler");
                 request->respondWithError({"BLIP"_sl, 501, "unexpected exception"_sl});
@@ -518,8 +537,8 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::setRequestHandler(string profile, RequestHandler handler) {
-        _io->setRequestHandler(profile, handler);
+    void Connection::setRequestHandler(string profile, bool atBeginning, RequestHandler handler) {
+        _io->setRequestHandler(profile, atBeginning, handler);
     }
 
 

@@ -13,6 +13,7 @@
 #include "slice.hh"
 #include <functional>
 #include <memory>
+#include <mutex>
 
 namespace fleeceapi {
     class Value;
@@ -112,11 +113,6 @@ namespace litecore { namespace blip {
     /** An incoming message. */
     class MessageIn : public Message {
     public:
-        /** The body of the message. */
-        alloc_slice body() const            {return _body;}
-
-        fleeceapi::Value JSONBody();
-
         /** Gets a property value */
         slice property(slice property) const;
         long intProperty(slice property, long defaultValue =0) const;
@@ -125,26 +121,49 @@ namespace litecore { namespace blip {
         /** Returns information about an error (if this message is an error.) */
         Error getError() const;
 
-        /** Sends a response. */
+        void setProgressCallback(MessageProgressCallback callback);
+
+        /** Returns true if the message has been completely received including the body. */
+        bool isComplete() const;
+
+        /** The body of the message. */
+        alloc_slice body() const;
+
+        /** Returns the body, removing it from the message. The next call to extractBody() or
+            body() will return only the data that's been read since this call. */
+        alloc_slice extractBody();
+
+        /** Converts the body from JSON to Fleece and returns a pointer to the root object. */
+        fleeceapi::Value JSONBody();
+
+        /** Sends a response. (The message must be complete.) */
         void respond(MessageBuilder&);
 
-        /** Sends an error as a response. */
+        /** Sends an error as a response. (The message must be complete.) */
         void respondWithError(Error);
 
         /** Responds with an error saying that the message went unhandled.
-            Call this if you don't know what to do with a request. */
+            Call this if you don't know what to do with a request.
+            (The message must be complete.) */
         void notHandled();
 
     protected:
         friend class MessageOut;
         friend class BLIPIO;
 
+        enum ReceiveState {
+            kOther,
+            kBeginning,
+            kEnd
+        };
+
         MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr, MessageSize outgoingSize =0);
         virtual ~MessageIn();
-        bool receivedFrame(slice, FrameFlags);
+        ReceiveState receivedFrame(slice, FrameFlags);
 
     private:
         Connection* const _connection;          // The owning BLIP connection
+        std::mutex _receiveMutex;
         std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates message data (not just JSON)
         std::unique_ptr<zlibcomplete::GZipDecompressor> _decompressor;
         uint32_t _propertiesSize {0};           // Length of properties in bytes
@@ -152,7 +171,8 @@ namespace litecore { namespace blip {
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body
         alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
-        const MessageSize _outgoingSize;
+        const MessageSize _outgoingSize {0};
+        bool _complete {false};
     };
 
 } }

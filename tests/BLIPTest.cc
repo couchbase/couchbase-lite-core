@@ -114,10 +114,6 @@ public:
             Log("******** DONE ********\n\n");
     }
 
-    virtual void onResponseReceived(blip::MessageIn *msg) override {
-        Log("** BLIP response #%llu received", msg->number());
-    }
-
     const size_t _numEchoers;
 };
 

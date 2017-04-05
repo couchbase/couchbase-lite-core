@@ -57,7 +57,7 @@ namespace litecore { namespace blip {
         typedef std::function<void(MessageIn*)> RequestHandler;
 
         /** Registers a callback that will be called when a message with a given profile arrives. */
-        void setRequestHandler(std::string profile, RequestHandler);
+        void setRequestHandler(std::string profile, bool atBeginning, RequestHandler);
 
         /** Closes the connection. */
         void close();
@@ -103,11 +103,12 @@ namespace litecore { namespace blip {
             @param status  The reason for the close, a status code, and a message. */
         virtual void onClose(Connection::CloseStatus status)  =0;
 
-        /** Called when an incoming request is received. */
-        virtual void onRequestReceived(MessageIn* request)      {request->notHandled();}
+        /** Called when the beginning of an incoming request arrives. The properties will be
+            complete, but the body is likely to be incomplete. */
+        virtual void onRequestBeginning(MessageIn* request)      { }
 
-        /** Called when a response to an outgoing request arrives. */
-        virtual void onResponseReceived(MessageIn*)             { }
+        /** Called when an incoming request is completely received. */
+        virtual void onRequestReceived(MessageIn* request)      {request->notHandled();}
     };
 
 } }
