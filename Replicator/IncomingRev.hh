@@ -31,15 +31,14 @@ namespace litecore { namespace repl {
 
     private:
         void _handleRev(Retained<blip::MessageIn>);
-        void requestBlob(const BlobRequest&);
-        void insertBlob(const BlobRequest&, blip::MessageIn*);
-        void blobCompleted(const BlobRequest&);
         void insertRevision();
         void finish();
         void clear();
+        virtual void _childChangedStatus(Worker *task, Status status) override;
 
         slice remoteSequence() const            {return _revMessage->property(slice("sequence"));}
-        
+
+        C4BlobStore *_blobStore;
         Puller* _puller;
         DBWorker* _dbActor;
         Retained<blip::MessageIn> _revMessage;

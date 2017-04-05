@@ -7,6 +7,7 @@
 //
 
 #include "IncomingRev.hh"
+#include "IncomingBlob.hh"
 #include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
@@ -104,67 +105,36 @@ namespace litecore { namespace repl {
             insertRevision();
         } else {
             _rev.flags |= kRevHasAttachments;
-            _dbActor->findBlobs(move(blobs), asynchronize([=](vector<BlobRequest> missing) {
+            _dbActor->findBlobs(move(blobs), asynchronize([=](vector<BlobRequest> missing,
+                                                              C4BlobStore *blobStore) {
                 if (missing.empty()) {
                     insertRevision();
                 } else {
-                    for (auto &key : missing)
-                        requestBlob(key);
+                    for (auto &request : missing) {
+                        Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
+                        b->start(request);
+                        ++_pendingBlobs;
+                    }
                 }
             }));
         }
     }
 
 
-    // Sends the peer a message requesting the body of the blob.
-    void IncomingRev::requestBlob(const BlobRequest &blob) {
-        alloc_slice digest = c4blob_keyToString(blob.key);
-        logVerbose("Requesting blob %.*s (%llu bytes) for doc '%.*s'",
-                   SPLAT(digest), blob.size, SPLAT(_rev.docID));
-        addProgress({0, blob.size});
-        ++_pendingBlobs;
-        MessageBuilder req("getAttachment"_sl);
-        req["digest"_sl] = digest;
-        sendRequest(req, asynchronize([=](blip::MessageProgress progress) {
-            //... After request is sent:
-            if (progress.state == MessageProgress::kComplete) {
-                insertBlob(blob, progress.reply);
-            }
-        }));
-    }
-
-
-    void IncomingRev::insertBlob(const BlobRequest &blob, MessageIn *msg) {
-        auto error = msg->getError();
-        alloc_slice digest = c4blob_keyToString(blob.key);
-        logVerbose("Got response for blob %.*s, err=%.*s/%d",
-                   SPLAT(digest),
-                   SPLAT(error.domain), error.code);
-        if (_error.code != 0) {
-            blobCompleted(blob);
-        } else if (msg->isError()) {
-            _error = blipToC4Error(error);
-            blobCompleted(blob);
-        } else {
-            _dbActor->insertBlob(blob.key, msg->body(), asynchronize([this,blob](C4Error err) {
-                // ...after blob is inserted:
-                if (err.code != 0)
-                    _error = err;
-                blobCompleted(blob);
-            }));
-        }
-    }
-
-
-    void IncomingRev::blobCompleted(const BlobRequest &blob) {
-        addProgress({blob.size, 0});
-        if (--_pendingBlobs == 0) {
-            // All blobs completed, now finish:
-            if (_error.code == 0) {
-                logVerbose("All blobs received, now inserting revision");
-                insertRevision();
-            } else {
-                finish();
+    void IncomingRev::_childChangedStatus(Worker *task, Status status) {
+        addProgress(status.progressDelta);
+        if (status.level == kC4Stopped) {
+            if (status.error.code && !_error.code)
+                _error = status.error;
+            assert(_pendingBlobs > 0);
+            if (--_pendingBlobs == 0) {
+                // All blobs completed, now finish:
+                if (_error.code == 0) {
+                    logVerbose("All blobs received, now inserting revision");
+                    insertRevision();
+                } else {
+                    finish();
+                }
             }
         }
     }

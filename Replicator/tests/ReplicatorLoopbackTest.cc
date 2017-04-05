@@ -307,4 +307,23 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     checkAttachments(db2, blobKeys, attachments);
 }
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]") {
+    string att1(100000, '!');
+    string att2( 80000, '?');
+    string att3(110000, '/');
+    string att4(  3000, '.');
+    vector<string> attachments = {att1, att2, att3, att4};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":1}");
+
+    checkAttachments(db2, blobKeys, attachments);
+}
+
 #endif // DEBUG

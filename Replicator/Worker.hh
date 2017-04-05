@@ -80,9 +80,9 @@ namespace litecore { namespace repl {
 
     protected:
         Worker(blip::Connection *connection,
-                  Worker *parent,
-                  Options options,
-                  const char *namePrefix);
+               Worker *parent,
+               Options options,
+               const char *namePrefix);
 
         Worker(Worker *parent, const char *namePrefix);
 
@@ -94,7 +94,7 @@ namespace litecore { namespace repl {
                              void (ACTOR::*method)(Retained<blip::MessageIn>)) {
             std::function<void(Retained<blip::MessageIn>)> fn(
                                         std::bind(method, (ACTOR*)this, std::placeholders::_1) );
-            _connection->setRequestHandler(profile, asynchronize(fn));
+            _connection->setRequestHandler(profile, false, asynchronize(fn));
         }
 
         /** Implementation of connectionClosed(). Maybe overridden, but call super. */
@@ -107,7 +107,8 @@ namespace litecore { namespace repl {
                          blip::MessageProgressCallback onProgress = nullptr);
 
         void gotError(const blip::MessageIn*);
-        void gotError(C4Error);
+        void gotError(C4Error) ;
+        virtual void onError(C4Error);         // don't call this, but you can override
 
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
@@ -131,7 +132,7 @@ namespace litecore { namespace repl {
         }
 
         Options _options;
-        Worker* _parent;
+        Retained<Worker> _parent;
         bool _important {true};
 
     private:

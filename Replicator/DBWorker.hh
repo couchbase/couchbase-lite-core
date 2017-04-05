@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
         }
 
         void findBlobs(std::vector<BlobRequest> blobs,
-                       std::function<void(std::vector<BlobRequest>)> callback) {
+                       std::function<void(std::vector<BlobRequest>, C4BlobStore*)> callback) {
             enqueue(&DBWorker::_findBlobs, blobs, callback);
         }
 
@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
         void _findBlobs(std::vector<BlobRequest>,
-                              std::function<void(std::vector<BlobRequest>)> callback);
+                              std::function<void(std::vector<BlobRequest>, C4BlobStore*)> callback);
         void _insertBlob(C4BlobKey, alloc_slice data,
                          std::function<void(C4Error err)> callback);
         void _insertRevision(RevToInsert *rev);

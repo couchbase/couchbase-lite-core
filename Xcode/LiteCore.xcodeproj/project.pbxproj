@@ -164,6 +164,9 @@
 		279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
+		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
+		279976341E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
+		279976351E94AAD000B27639 /* IncomingBlob.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279976321E94AAD000B27639 /* IncomingBlob.hh */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
 		279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
@@ -828,6 +831,8 @@
 		279794B31D34583A001D0F3A /* RevisionTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionTest.cc; sourceTree = "<group>"; };
 		279794B91D355A31001D0F3A /* RevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStoreTest.cc; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
+		279976311E94AAD000B27639 /* IncomingBlob.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingBlob.cc; sourceTree = "<group>"; };
+		279976321E94AAD000B27639 /* IncomingBlob.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingBlob.hh; sourceTree = "<group>"; };
 		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cpp; sourceTree = "<group>"; };
 		27A6578D1CBC189800A7A1D7 /* Base.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base.swift; sourceTree = "<group>"; };
 		27A6578E1CBC189800A7A1D7 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
@@ -1609,6 +1614,8 @@
 				27CCC7DF1E526CCC00CE1989 /* Puller.hh */,
 				27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */,
 				27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */,
+				279976311E94AAD000B27639 /* IncomingBlob.cc */,
+				279976321E94AAD000B27639 /* IncomingBlob.hh */,
 				27CCC7E21E52965200CE1989 /* Pusher.cc */,
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 				2773FCF41E6783A000108780 /* Checkpoint.cc */,
@@ -1887,6 +1894,7 @@
 				27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */,
 				27B842621E5CC6500094903E /* DBWorker.hh in Headers */,
 				275CE1161E5BAC180084E014 /* Worker.hh in Headers */,
+				279976351E94AAD000B27639 /* IncomingBlob.hh in Headers */,
 				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
 				2773FCFE1E67A64D00108780 /* RemoteSequenceSet.hh in Headers */,
 			);
@@ -2463,6 +2471,7 @@
 			files = (
 				2754B0C21E5F49AA00A05FD0 /* StringUtil.cc in Sources */,
 				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
+				279976341E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
 				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
 				27B842611E5CC6500094903E /* DBWorker.cc in Sources */,
@@ -2572,6 +2581,7 @@
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
+				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */,
 				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,

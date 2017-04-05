@@ -37,7 +37,7 @@ namespace litecore {
     blobKey::blobKey(slice s) {
         if (s.size != sizeof(bytes))
             error::_throw(error::WrongFormat);
-        memcpy(bytes, s.buf, sizeof(bytes));
+        memcpy((void*)bytes, s.buf, sizeof(bytes));
     }
 
     blobKey::blobKey(const string &str) {
@@ -124,9 +124,9 @@ namespace litecore {
         _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
         auto &options = _store.options();
         if (options.encryptionAlgorithm != kNoEncryption) {
-            _writer = shared_ptr<WriteStream> {new EncryptedWriteStream(_writer,
-                                                                    options.encryptionAlgorithm,
-                                                                    options.encryptionKey)};
+            _writer = make_shared<EncryptedWriteStream>(_writer,
+                                                        options.encryptionAlgorithm,
+                                                        options.encryptionKey);
         }
         sha1_begin(&_sha1ctx);
     }
@@ -167,9 +167,12 @@ namespace litecore {
     }
 
 
-    Blob BlobWriteStream::install() {
+    Blob BlobWriteStream::install(const blobKey *expectedKey) {
         close();
-        Blob blob(_store, computeKey());
+        auto key = computeKey();
+        if (expectedKey && *expectedKey != key)
+            error::_throw(error::CorruptData);
+        Blob blob(_store, key);
         _tmpPath.setReadOnly(true);
         _tmpPath.moveTo(blob.path());
         _installed = true;
@@ -200,11 +203,7 @@ namespace litecore {
     Blob BlobStore::put(slice data, const blobKey *expectedKey) {
         BlobWriteStream stream(*this);
         stream.write(data);
-        if (expectedKey && stream.computeKey() != *expectedKey) {
-            stream.close();
-            error::_throw(error::CorruptData);
-        }
-        return stream.install();
+        return stream.install(expectedKey);
     }
 
 }

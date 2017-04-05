@@ -25,7 +25,7 @@ namespace litecore {
     struct blobKey {
         uint8_t bytes[20];
 
-        blobKey() { }
+        blobKey() :bytes{} { }
         blobKey(slice);
         blobKey(const std::string &base64);
 
@@ -45,7 +45,7 @@ namespace litecore {
     };
 
 
-    /** Represents a blob stored in a BlobStore. */
+    /** Represents a blob stored in a BlobStore. This class is thread-safe. */
     class Blob {
     public:
         bool exists() const             {return _path.exists();}
@@ -66,7 +66,7 @@ namespace litecore {
         
         Blob(const BlobStore&, const blobKey&);
 
-        FilePath _path;
+        const FilePath _path;
         const blobKey _key;
         const BlobStore &_store;
     };
@@ -86,8 +86,10 @@ namespace litecore {
         blobKey computeKey() noexcept;
 
         /** Adds the blob to the store and returns a Blob referring to it.
-            No more data can be written after this is called. */
-        Blob install();
+            No more data can be written after this is called.
+            If expectedKey is not null, and doesn't match the actual computed key,
+            a CorruptData exception is thrown. */
+        Blob install(const blobKey *expectedKey =nullptr);
 
     private:
         BlobStore &_store;
@@ -100,7 +102,8 @@ namespace litecore {
     };
 
 
-    /** Manages a content-addressable store of binary blobs, stored as files in a directory. */
+    /** Manages a content-addressable store of binary blobs, stored as files in a directory.
+        This class is thread-safe. */
     class BlobStore {
     public:
         struct Options {
@@ -132,7 +135,7 @@ namespace litecore {
 
     private:
         FilePath const          _dir;                           // Location
-        Options                 _options;                       // Option/capability flags
+        Options const           _options;                       // Option/capability flags
     };
 
 }

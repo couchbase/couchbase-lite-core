@@ -413,7 +413,7 @@ namespace litecore { namespace repl {
 
 
     void DBWorker::_findBlobs(vector<BlobRequest> blobs,
-                             function<void(vector<BlobRequest>)> callback) {
+                             function<void(vector<BlobRequest>, C4BlobStore*)> callback) {
         vector<BlobRequest> missing;
         C4Error err;
         auto blobStore = c4db_getBlobStore(_db, &err);
@@ -421,7 +421,7 @@ namespace litecore { namespace repl {
             if (c4blob_getSize(blobStore, blob.key) < 0)
                 missing.push_back(blob);
         }
-        callback(move(missing));
+        callback(move(missing), blobStore);
     }
 
 

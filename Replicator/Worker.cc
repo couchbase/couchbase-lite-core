@@ -51,6 +51,7 @@ namespace litecore { namespace repl {
     Worker::~Worker() {
         if (_important)
             logStats();
+        logDebug("deleting %s [%p]", actorName().c_str(), this);
     }
 
 
@@ -110,13 +111,16 @@ namespace litecore { namespace repl {
         auto err = msg->getError();
         logError("Got error response: %.*s %d '%.*s'",
                  SPLAT(err.domain), err.code, SPLAT(err.message));
-        _status.error = blipToC4Error(err);
-        _statusChanged = true;
+        onError(blipToC4Error(err));
     }
 
     void Worker::gotError(C4Error err) {
         alloc_slice message = c4error_getMessage(err);
         logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
+        onError(err);
+    }
+
+    void Worker::onError(C4Error err) {
         _status.error = err;
         _statusChanged = true;
     }
@@ -173,6 +177,8 @@ namespace litecore { namespace repl {
     void Worker::changedStatus() {
         if (_parent)
             _parent->childChangedStatus(this, _status);
+        if (_status.level == kC4Stopped)
+            _parent = nullptr;
     }
 
 

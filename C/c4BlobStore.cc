@@ -227,9 +227,11 @@ C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) noexcept {
 }
 
 
-bool c4stream_install(C4WriteStream* stream, C4Error *outError) noexcept {
+bool c4stream_install(C4WriteStream* stream,
+                      const C4BlobKey *expectedKey,
+                      C4Error *outError) noexcept {
     try {
-        internal(stream)->install();
+        internal(stream)->install(internal(expectedKey));
         return true;
     } catchError(outError)
     return false;

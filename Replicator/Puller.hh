@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
         void activityLevelChanged(ActivityLevel level);
 
     private:
-        Replicator* replicator() const          {return (Replicator*)_parent;}
+        Replicator* replicator() const          {return (Replicator*)_parent.get();}
         void _start(alloc_slice sinceSequence);
         void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);

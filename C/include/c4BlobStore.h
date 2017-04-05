@@ -76,6 +76,10 @@ extern "C" {
     /** \name Blob API
         @{ */
 
+    /* NOTE: Every function in this section is thread-safe, as long as the C4BlobStore
+       reference remains valid while the function executes, i.e. there are no concurrent calls
+       to c4blob_freeStore, c4blob_deleteStore or c4db_close. */
+
     /** Gets the content size of a blob given its key. Returns -1 if it doesn't exist.
         WARNING: If the blob is encrypted, the return value is a conservative estimate that may
         be up to 16 bytes larger than the actual size. */
@@ -115,6 +119,10 @@ extern "C" {
 
     /** \name Streamed Reads
         @{ */
+
+    /* NOTE: These functions are thread-safe in the same manner as described in the previous
+       section, with the additional restriction that a stream cannot be called concurrently on
+       multiple threads. */
 
     /** An open stream for reading data from a blob. */
     typedef struct c4ReadStream C4ReadStream;
@@ -166,14 +174,18 @@ extern "C" {
         called after writing the entire data. No more data can be written after this call. */
     C4BlobKey c4stream_computeBlobKey(C4WriteStream*) C4API;
 
-    /** Adds the data written to the stream as a finished blob to the store, and returns its key.
-        If you skip this call, the blob will not be added to the store. (You might do this if you
-        were unable to receive all of the data from the network, or if you've called
-        c4stream_computeBlobKey and found that the data does not match the expected digest/key.) */
-    bool c4stream_install(C4WriteStream*, C4Error*) C4API;
+    /** Adds the data written to the stream as a finished blob to the store.
+        If `expectedKey` is not NULL, then the operation will fail unless the contents actually
+        have that key. (If you don't know ahead of time what the key should be, call
+        c4stream_computeBlobKey beforehand to derive it, and pass NULL for expectedKey.)
+        This function does not close the writer. */
+    bool c4stream_install(C4WriteStream*,
+                          const C4BlobKey *expectedKey,
+                          C4Error*) C4API;
 
-    /** Closes a blob write-stream. If c4stream_install was not already called, the temporary file
-        will be deleted without adding the blob to the store. (A NULL parameter is allowed.) */
+    /** Closes a blob write-stream. If c4stream_install was not already called (or was called but
+        failed), the temporary file will be deleted without adding the blob to the store. 
+        (A NULL parameter is allowed, and is a no-op.) */
     void c4stream_closeWriter(C4WriteStream*) C4API;
 
 

@@ -105,6 +105,7 @@ namespace litecore { namespace repl {
     struct BlobRequest {
         C4BlobKey key;
         uint64_t size;
+        C4WriteStream *stream;
     };
 
 } }

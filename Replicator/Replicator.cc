@@ -30,7 +30,7 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options,
                            Connection *connection)
-    :Worker(connection, this, options, "Repl")
+    :Worker(connection, nullptr, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(delegate)
     ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
@@ -134,8 +134,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::changedStatus() {
-        // Notify the delegate of the current status, but not too often:
         auto curStatus = status();
+        if (curStatus.level == kC4Stopped) {
+            _pusher = nullptr;
+            _puller = nullptr;
+            _dbActor = nullptr;
+        }
+
+        // Notify the delegate of the current status, but not too often:
         auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
         if (waitFor <= 0 || curStatus.level != _lastDelegateCallLevel) {
             _waitingToCallDelegate = false;
