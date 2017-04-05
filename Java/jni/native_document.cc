@@ -16,8 +16,6 @@
 #include "com_couchbase_litecore_Document.h"
 #include "native_glue.hh"
 #include "c4Document.h"
-#include <algorithm>
-#include <vector>
 
 using namespace litecore;
 using namespace litecore::jni;

@@ -23,6 +23,15 @@ public interface Constants {
     // c4Database.h
     ////////////////////////////////////
 
+    // Boolean options for C4DatabaseConfig
+    interface C4DatabaseFlags {
+        int kC4DB_Create = 1;        ///< Create the file if it doesn't exist
+        int kC4DB_ReadOnly = 2;      ///< Open file read-only
+        int kC4DB_AutoCompact = 4;   ///< Enable auto-compaction
+        int kC4DB_Bundled = 8;       ///< Store db & attachments inside a directory
+        int kC4DB_SharedKeys = 0x10; ///< Enable shared-keys optimization at creation time
+    }
+
     // Document versioning system (also determines database storage schema)
     interface C4DocumentVersioning {
         int kC4RevisionTrees = 0;///< CouchDB and Couchbase Mobile 1.x revision trees

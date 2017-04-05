@@ -6,8 +6,12 @@ javah -d ./jni -classpath ./src \
 	com.couchbase.litecore.DocumentIterator \
 	com.couchbase.litecore.LiteCoreException \
 	com.couchbase.litecore.Logger \
+	com.couchbase.litecore.C4BlobKey \
+	com.couchbase.litecore.C4BlobStore \
 	com.couchbase.litecore.C4Query \
 	com.couchbase.litecore.C4QueryEnumerator \
+	com.couchbase.litecore.C4BlobReadStream \
+	com.couchbase.litecore.C4BlobWriteStream \
 	com.couchbase.litecore.fleece.FLArray \
 	com.couchbase.litecore.fleece.FLArrayIterator \
 	com.couchbase.litecore.fleece.FLDict \

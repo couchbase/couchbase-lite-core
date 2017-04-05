@@ -26,6 +26,14 @@ public class FLSliceResult {
         this.handle = handle;
     }
 
+    public byte[] getBuf(){
+        return getBuf(handle);
+    }
+
+    public long getSize() {
+        return getSize(handle);
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -45,4 +53,8 @@ public class FLSliceResult {
      * @param slice (FLSliceResult)
      */
     private static native void free(long slice);
+
+    private static native byte[] getBuf(long slice);
+
+    private static native long getSize(long slice);
 }
