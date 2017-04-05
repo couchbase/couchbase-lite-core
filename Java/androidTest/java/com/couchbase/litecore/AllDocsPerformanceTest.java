@@ -91,6 +91,6 @@ public class AllDocsPerformanceTest extends BaseTest {
         assertEquals(kNumDocuments, i);
 
         double elapsed = st.getElapsedTimeMillis();
-        Log.e(TAG, String.format("Enumerating %d docs took %.3f ms (%.3f ms/doc)", i, elapsed, elapsed / i));
+        Log.i(TAG, String.format("Enumerating %d docs took %.3f ms (%.3f ms/doc)", i, elapsed, elapsed / i));
     }
 }

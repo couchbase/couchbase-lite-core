@@ -17,11 +17,8 @@
 #include <c4.h>
 #include "com_couchbase_litecore_Database.h"
 #include "native_glue.hh"
-#include "c4Database.h"
-#include "c4Query.h"
-#include "c4Document.h"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
-#include "c4ExpiryEnumerator.h"
 #include "Logging.hh"
 
 #undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
@@ -470,6 +467,23 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database__1rawGet
 
     return rows;
 }
+
+//////// BLOB STORE API:
+
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    getBlobStore
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_Database_getBlobStore(JNIEnv *env, jclass clazz, jlong db) {
+    C4Error error = {};
+    C4BlobStore *store = c4db_getBlobStore((C4Database *) db, &error);
+    if (store == NULL)
+        throwError(env, error);
+    return (jlong) store;
+}
+
 
 ////////  INDEXES:  Defined in c4Query.h
 

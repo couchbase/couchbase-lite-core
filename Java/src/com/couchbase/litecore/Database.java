@@ -216,6 +216,20 @@ public class Database {
 
     private native static byte[][] _rawGet(long db, String store, String key) throws LiteCoreException;
 
+
+    //////// BLOB STORE API:
+
+    /**
+     * Returns the BlobStore associated with a bundled database.
+     * Fails if the database is not bundled.
+     * NOTE: DO NOT call c4blob_freeStore on this! The C4Database will free it when it closes.
+     */
+    public C4BlobStore getBlobStore() throws LiteCoreException {
+        return new C4BlobStore(getBlobStore(_handle));
+    }
+
+    private native static long getBlobStore(long db) throws LiteCoreException;
+
     ////////  INDEXES:  Defined in c4Query.h
 
     public boolean createIndex(String expressionsJSON, int indexType, String language, boolean ignoreDiacritics) throws LiteCoreException {

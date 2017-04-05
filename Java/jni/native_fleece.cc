@@ -20,9 +20,6 @@
 #include "com_couchbase_litecore_fleece_FLSliceResult.h"
 #include "native_glue.hh"
 #include "Fleece.h"
-#include <errno.h>
-#include <vector>
-#include <Fleece.h>
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -371,6 +368,7 @@ Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz
 // ----------------------------------------------------------------------------
 // FLSliceResult
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_fleece_FLSliceResult
  * Method:    free
@@ -382,6 +380,26 @@ Java_com_couchbase_litecore_fleece_FLSliceResult_free(JNIEnv *env, jclass clazz,
     ::free((FLSliceResult *) jslice);
 }
 
+/*
+ * Class:     com_couchbase_litecore_fleece_FLSliceResult
+ * Method:    getBuf
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL
+Java_com_couchbase_litecore_fleece_FLSliceResult_getBuf(JNIEnv *env, jclass clazz, jlong jslice) {
+    FLSliceResult *res = (FLSliceResult *) jslice;
+    return toJByteArray(env, {res->buf, res->size});
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLSliceResult
+ * Method:    getSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLSliceResult_getSize(JNIEnv *env, jclass clazz, jlong jslice) {
+    return (jlong) ((FLSliceResult *) jslice)->size;
+}
 
 // ----------------------------------------------------------------------------
 // FLValue

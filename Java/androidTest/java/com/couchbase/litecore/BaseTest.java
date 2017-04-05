@@ -53,7 +53,7 @@ public class BaseTest implements Constants {
         }
     }
 
-    public static final String LOG_TAG = "BaseTest";
+    public static final String LOG_TAG = BaseTest.class.getSimpleName();
 
     protected int encryptionAlgorithm() {
         return Database.NoEncryption;
@@ -150,7 +150,7 @@ public class BaseTest implements Constants {
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
     protected long importJSONLines(File path, double timeout, boolean verbose) throws LiteCoreException, IOException {
-        Log.d(LOG_TAG, String.format("Reading %s ...  ", path));
+        Log.i(LOG_TAG, String.format("Reading %s ...  ", path));
         StopWatch st = new StopWatch();
         long numDocs = 0;
         boolean commit = false;
@@ -160,7 +160,6 @@ public class BaseTest implements Constants {
             try {
                 String line = null;
                 while ((line = br.readLine()) != null) {
-                    Log.e(LOG_TAG, line + "\n");
                     FLSliceResult body = db.encodeJSON(line.getBytes());
                     String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
                     String[] history = new String[0];
@@ -182,11 +181,11 @@ public class BaseTest implements Constants {
             }
             commit = true;
         } finally {
-            Log.e(LOG_TAG, "Committing...");
+            Log.i(LOG_TAG, "Committing...");
             db.endTransaction(commit);
         }
 
-        if (verbose) Log.e(LOG_TAG, st.toString("Importing", numDocs, "doc"));
+        if (verbose) Log.i(LOG_TAG, st.toString("Importing", numDocs, "doc"));
         return numDocs;
     }
 

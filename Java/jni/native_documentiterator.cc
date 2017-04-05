@@ -17,7 +17,6 @@
 #include "native_glue.hh"
 #include "c4DocEnumerator.h"
 #include <errno.h>
-#include <vector>
 
 using namespace litecore::jni;
 
