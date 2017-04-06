@@ -10,10 +10,13 @@
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Socket.h"
-#include "c4Socket+Internal.hh"
-#include "WebSocketImpl.hh"
+#include "Logging.hh"
+#include "Benchmark.hh"
+#include "WebSocketInterface.hh"
 #include "WebSocketProtocol.hh"
 #include "StringUtil.hh"
+#include <mutex>
+#include <set>
 #include <atomic>
 #include <exception>
 
@@ -184,7 +187,7 @@ namespace litecore { namespace websocket {
             else {
                 // Peer is initiating a close. Save its message and echo it:
                 if (willLog()) {
-                    auto close = ClientProtocol::parseClosePayload((char*)message.buf, message.size);
+                    auto close = parseClosePayload((char*)message.buf, message.size);
                     log("Client is requesting close (%d '%.*s'); echoing it",
                         close.code, (int)close.length, close.message);
                 }
