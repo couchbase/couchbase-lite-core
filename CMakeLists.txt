@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
+OPTION(BLIP_NO_FRAMING "Disable BLIP web socket framing (useful for cases where the library has no way to send raw frames)")
 
 add_definitions(-DCMAKE)
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
