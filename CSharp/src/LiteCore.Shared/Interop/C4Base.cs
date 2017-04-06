@@ -324,7 +324,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-         delegate void C4LogCallback(C4LogDomain domain, C4LogLevel level, C4Slice message);
+         unsafe delegate void C4LogCallback(C4LogDomain* domain, C4LogLevel level, C4Slice message);
 }
 
 // EPIC HACK: This is required for iOS callbacks, but not available in .NET Standard
