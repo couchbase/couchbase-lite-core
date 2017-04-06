@@ -84,7 +84,7 @@ namespace litecore {
         unsigned _numThreads;
         Channel<ThreadedMailbox*> _queue;
         std::vector<std::thread> _threadPool;
-        std::atomic_flag _started;
+        std::atomic_flag _started = ATOMIC_FLAG_INIT;
     };
 
 
