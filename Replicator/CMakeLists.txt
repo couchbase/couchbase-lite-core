@@ -28,6 +28,7 @@ if (APPLE)
     )
 elseif(WIN32)
     set(SRC ${SRC}
+        "../MSVC/arc4random.cc"
         "../MSVC/vasprintf-msvc.c"
         "../MSVC/asprintf.c"
     )
