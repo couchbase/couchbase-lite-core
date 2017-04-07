@@ -64,9 +64,9 @@ namespace litecore {
         T* get() const noexcept                  {return _ref;}
 
         Retained& operator=(T *t) noexcept {
-            retain(t);
-            release(_ref);
-            _ref = t;
+            auto oldRef = _ref;
+            _ref = retain(t);
+            release(oldRef);
             return *this;
         }
 
@@ -75,9 +75,10 @@ namespace litecore {
         }
 
         Retained& operator= (Retained &&r) noexcept {
-            release(_ref);
+            auto oldRef = _ref;
             _ref = r._ref;
             r._ref = nullptr;
+            release(oldRef);
             return *this;
         }
 
