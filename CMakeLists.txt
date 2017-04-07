@@ -48,6 +48,16 @@ endif()
 
 ### SUBMODULES:
 
+include_directories("vendor/fleece/Fleece" 
+                    "vendor/fleece/vendor" 
+                    "vendor/SQLiteCpp/include"
+                    "vendor/sqlite3-unicodesn"
+                    "vendor/BLIP-Cpp/include/blip_cpp"
+                    "vendor/BLIP-Cpp/src/util")
+
+if(WIN32)
+      include_directories("MSVC")
+
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
@@ -65,14 +75,6 @@ if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
     endif()
 endif()
 
-
-include_directories("vendor/fleece/Fleece" 
-                    "vendor/fleece/vendor" 
-                    "vendor/SQLiteCpp/include"
-                    "vendor/sqlite3-unicodesn"
-                    "vendor/BLIP-Cpp/include/blip_cpp"
-                    "vendor/BLIP-Cpp/src/util")
-
 ### MORE BUILD SETTINGS:
 
 add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
@@ -88,8 +90,6 @@ if (APPLE)
 else()
     include_directories(${OPENSSL_INCLUDE_DIR}
       ${SQLITE3_INCLUDE_DIR})
-    if(WIN32)
-      include_directories("MSVC")
     elseif(ANDROID)
       include_directories("LiteCore/Android")
     endif()

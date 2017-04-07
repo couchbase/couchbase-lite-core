@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
                     for (size_t i = 0; i < which.size(); ++i) {
                         if (which[i]) {
                             auto change = changes[(unsigned)i].asArray();
-                            uint64_t bodySize = max(change[4].asUnsigned(), 1ull);
+                            uint64_t bodySize = max(change[4].asUnsigned(), (uint64_t)1);
                             alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
                             if (sequence)
                                 _requestedSequences.add(sequence, bodySize);
