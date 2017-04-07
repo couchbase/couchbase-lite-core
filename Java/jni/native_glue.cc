@@ -14,8 +14,6 @@
 //  and limitations under the License.
 
 #include "native_glue.hh"
-#include "c4Database.h"
-#include <assert.h>
 
 using namespace litecore::jni;
 

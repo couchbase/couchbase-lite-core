@@ -28,7 +28,7 @@ if (APPLE)
     )
 elseif(WIN32)
     set(SRC ${SRC}
-        "../MSVC/arc4random.c"
+        "../MSVC/arc4random.cc"
         "../MSVC/vasprintf-msvc.c"
         "../MSVC/asprintf.c"
     )
@@ -52,6 +52,6 @@ if (APPLE)
     set_target_properties(Replicator PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/Replicator.exp")
 else()
-    target_compile_definitions(zlibstatic PUBLIC -D_CRYPTO_OPENSSL)
+    target_compile_definitions(Replicator PUBLIC -D_CRYPTO_OPENSSL)
     target_link_libraries(Replicator PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
 endif()

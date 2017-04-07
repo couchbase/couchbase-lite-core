@@ -44,19 +44,25 @@ public class C4QueryBaseTest extends BaseTest {
     }
 
     protected C4Query compile(String whereExpr, String sortExpr) throws LiteCoreException {
-        Log.e(LOG_TAG, "whereExpr -> " + whereExpr);
-        Log.e(LOG_TAG, "sortExpr -> " + sortExpr);
+
+        Log.i(LOG_TAG, "whereExpr -> " + whereExpr);
+        Log.i(LOG_TAG, "sortExpr -> " + sortExpr);
+
         String queryString = whereExpr;
         if (sortExpr != null && sortExpr.length() > 0)
             queryString = "[\"SELECT\", {\"WHERE\": " + whereExpr + ", \"ORDER_BY\": " + sortExpr + "}]";
+
         Log.i(LOG_TAG, "Query = %s", queryString);
+
         if (query != null) {
             query.free();
             query = null;
         }
         query = new C4Query(db, queryString);
         assertNotNull(query);
-        Log.e(LOG_TAG, "expression -> " + query.explain());
+
+        Log.i(LOG_TAG, "query.explain() -> " + query.explain());
+
         return query;
     }
 

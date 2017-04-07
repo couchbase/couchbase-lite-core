@@ -16,9 +16,6 @@
 #include "com_couchbase_litecore_C4QueryEnumerator.h"
 #include "native_glue.hh"
 #include "c4Query.h"
-#include <errno.h>
-#include <vector>
-#include <c4.h>
 
 using namespace litecore;
 using namespace litecore::jni;

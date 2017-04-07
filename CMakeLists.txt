@@ -13,9 +13,9 @@ set(CMAKE_C_STANDARD 11)
 OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
 
 add_definitions(-DCMAKE)
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    add_definitions(-DDEBUG)
-endif()
+set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
+    $<$<CONFIG:Debug>:DEBUG>
+)
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 -D_CRT_SECURE_NO_WARNINGS=1")
 endif()
@@ -124,7 +124,7 @@ if(MSVC)
 	include_directories("vendor/fleece/MSVC")
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
 			     vendor/fleece/MSVC/memmem.cc MSVC/mkstemp.cc MSVC/strlcat.c MSVC/strlcat.c
-			     MSVC/vasprintf-msvc.c MSVC/arc4random.c)
+			     MSVC/vasprintf-msvc.c MSVC/arc4random.cc)
 elseif(ANDROID)
   set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/strlcat.c)
 endif()
