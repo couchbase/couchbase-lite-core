@@ -34,20 +34,20 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class Native
     {
-        public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStateChangedCallback onStateChanged, void* callbackContext, C4Error* err)
+        public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStatusChangedCallback onStateChanged, void* callbackContext, C4Error* err)
         {
             using(var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
                 return NativeRaw.c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherLocalDB, push, pull, onStateChanged, callbackContext, err);
             }
         }
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4repl_free(C4Replicator* repl);
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4repl_stop(C4Replicator* repl);
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4ReplicatorStatus c4repl_getStatus(C4Replicator* repl);
 
 
@@ -60,8 +60,8 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStateChangedCallback onStateChanged, void* callbackContext, C4Error* err);
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStatusChangedCallback onStateChanged, void* callbackContext, C4Error* err);
 
 
     }

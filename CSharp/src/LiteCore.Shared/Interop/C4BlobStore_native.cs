@@ -82,10 +82,17 @@ namespace LiteCore.Interop
             }
         }
 
-        public static bool c4blob_create(C4BlobStore* store, byte[] contents, C4BlobKey* outKey, C4Error* outError)
+        public static C4BlobKey c4blob_computeKey(byte[] contents)
         {
             fixed(byte *contents_ = contents) {
-                return NativeRaw.c4blob_create(store, new C4Slice(contents_, (ulong)contents.Length), outKey, outError);
+                return NativeRaw.c4blob_computeKey(new C4Slice(contents_, (ulong)contents.Length));
+            }
+        }
+
+        public static bool c4blob_create(C4BlobStore* store, byte[] contents, C4BlobKey* expectedKey, C4BlobKey* outKey, C4Error* error)
+        {
+            fixed(byte *contents_ = contents) {
+                return NativeRaw.c4blob_create(store, new C4Slice(contents_, (ulong)contents.Length), expectedKey, outKey, error);
             }
         }
 
@@ -126,7 +133,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4stream_install(C4WriteStream* stream, C4Error* outError);
+        public static extern bool c4stream_install(C4WriteStream* stream, C4BlobKey* expectedKey, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4stream_closeWriter(C4WriteStream* stream);
@@ -158,8 +165,11 @@ namespace LiteCore.Interop
         public static extern C4SliceResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4BlobKey c4blob_computeKey(C4Slice contents);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey* outKey, C4Error* outError);
+        public static extern bool c4blob_create(C4BlobStore* store, C4Slice contents, C4BlobKey* expectedKey, C4BlobKey* outKey, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr c4stream_read(C4ReadStream* stream, [Out]byte[] buffer, UIntPtr maxBytesToRead, C4Error* outError);

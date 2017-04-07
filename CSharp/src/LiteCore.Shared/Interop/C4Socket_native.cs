@@ -34,13 +34,13 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class Native
     {
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_registerFactory(C4SocketFactory factory);
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_opened(C4Socket* socket);
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_closed(C4Socket* socket, C4Error errorIfAny);
 
         public static void c4socket_completedWrite(C4Socket* socket, ulong byteCount)
@@ -65,10 +65,10 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_completedWrite(C4Socket* socket, UIntPtr byteCount);
 
-        [DllImport(Constants.ReplicatorDllName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_received(C4Socket* socket, C4Slice data);
 
 

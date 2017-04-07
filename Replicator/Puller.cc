@@ -12,6 +12,7 @@
 #include "IncomingRev.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;

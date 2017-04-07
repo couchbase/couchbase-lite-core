@@ -50,6 +50,8 @@ endif()
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
+
 if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
     set(SQLITECPP_INTERNAL_SQLITE OFF)
     add_library(sqlite3 SHARED
@@ -67,7 +69,9 @@ endif()
 include_directories("vendor/fleece/Fleece" 
                     "vendor/fleece/vendor" 
                     "vendor/SQLiteCpp/include"
-                    "vendor/sqlite3-unicodesn")
+                    "vendor/sqlite3-unicodesn"
+                    "vendor/BLIP-Cpp/include/blip_cpp"
+                    "vendor/BLIP-Cpp/src/util")
 
 ### MORE BUILD SETTINGS:
 
@@ -108,6 +112,14 @@ aux_source_directory(LiteCore/Storage         STORAGE_SRC)
 aux_source_directory(LiteCore/VersionVectors  VERSIONVECTORS_SRC)
 aux_source_directory(LiteCore/Support         SUPPORT_SRC)
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
+aux_source_directory(Replicator               REPLICATOR_SRC)
+if (APPLE)
+    include_directories("Obj-C")
+    set(REPLICATOR_SRC ${REPLICATOR_SRC}
+      "Replicator/Obj-C/CBLWebSocket.mm"
+      "Replicator/Obj-C/CBLHTTPLogic.m"
+    )
+endif()
 
 if(!MSVC)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage) 
@@ -115,11 +127,19 @@ endif()
 
 ### BUILDING THE LIBRARY:
 
-set(ALL_SRC_FILES ${BLOBSTORE_SRC} ${DATABASE_SRC} ${INDEXES_SRC} ${QUERY_SRC} ${REVTREES_SRC} 
-                  ${STORAGE_SRC} ${SUPPORT_SRC} ${VERSIONVECTORS_SRC}
-                  ${C_SRC}
-                  ${SQLITECPP_SRC} )
-							  
+set(ALL_SRC_FILES 
+  ${BLOBSTORE_SRC} 
+  ${DATABASE_SRC} 
+  ${INDEXES_SRC} 
+  ${QUERY_SRC} 
+  ${REVTREES_SRC} 
+  ${STORAGE_SRC} 
+  ${SUPPORT_SRC} 
+  ${VERSIONVECTORS_SRC}
+  ${C_SRC}
+  ${SQLITECPP_SRC}
+  ${REPLICATOR_SRC})
+
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
@@ -140,7 +160,7 @@ endif()
 
 target_link_libraries(LiteCore PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreStatic
 								FleeceStatic 
-                SQLite3_UnicodeSN ${NO_WHOLE_LIBRARY_FLAG})
+                SQLite3_UnicodeSN BLIPStatic ${NO_WHOLE_LIBRARY_FLAG})
 								
 target_link_libraries(LiteCore PUBLIC sqlite3)
 		   
@@ -150,24 +170,23 @@ if (APPLE)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
     target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation" 
-                                    "-framework Foundation")
+                                    "-framework Foundation"
+                                    "-framework CFNetwork"
+                                    "-framework Security"
+                                    z)
 elseif(UNIX AND NOT ANDROID)
     target_link_libraries(LiteCore PRIVATE crypto  bsd)
+    target_link_libraries(LiteCore PUBLIC z)
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_OPENSSL)
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
+    target_link_libraries(LiteCore PUBLIC z)
 else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
-    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} Ws2_32)
+    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32)
 endif()
-
-### REPLICATOR:
-
-add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
-
-add_subdirectory(Replicator)
 
 ### JNI:
 

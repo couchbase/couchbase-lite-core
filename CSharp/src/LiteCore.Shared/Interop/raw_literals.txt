@@ -15,3 +15,6 @@ FLEncoder_GetErrorMessage
 c4dbobs_getChanges
         public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4DatabaseChange[] outChanges, uint maxChanges, bool* outExternal);
 
+c4log_getDomain
+        public static extern C4LogDomain* c4log_getDomain(byte* name, [MarshalAs(UnmanagedType.U1)]bool create);
+
