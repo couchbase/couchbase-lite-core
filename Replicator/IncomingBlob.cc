@@ -59,14 +59,13 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::finishBlob() {
+        alloc_slice digest = c4blob_keyToString(_blob.key);
+        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _blob.size);
         C4Error err;
         if (!c4stream_install(_writer, &_blob.key, &err))
             gotError(err);
         c4stream_closeWriter(_writer);
         _writer = nullptr;
-
-        alloc_slice digest = c4blob_keyToString(_blob.key);
-        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _blob.size);
     }
 
 

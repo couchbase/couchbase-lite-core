@@ -214,6 +214,8 @@ C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) noe
 
 
 bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4Error* outError) noexcept {
+    if (length == 0)
+        return true;
     try {
         internal(stream)->write(slice(bytes, length));
         return true;

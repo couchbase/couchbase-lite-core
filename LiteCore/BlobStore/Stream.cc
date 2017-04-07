@@ -91,7 +91,7 @@ namespace litecore {
 
     void FileWriteStream::write(slice data) {
         if (fwrite(data.buf, 1, data.size, _file) < data.size)
-        checkErr(_file);
+            checkErr(_file);
     }
 
 }

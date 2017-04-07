@@ -517,6 +517,7 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING ATTACHMENTS:
 
 
+    // Incoming request to send an attachment/blob
     void DBWorker::handleGetAttachment(Retained<MessageIn> req) {
         slice digest = req->property("digest"_sl);
         C4BlobKey key;
@@ -527,12 +528,22 @@ namespace litecore { namespace repl {
         C4Error err;
         auto blobStore = c4db_getBlobStore(_db, &err);
         if (blobStore) {
-            //FIX: Stream blob instead of loading it all into memory
-            alloc_slice blob = c4blob_getContents(blobStore, key, &err);
+            auto blob = c4blob_openReadStream(blobStore, key, &err);
             if (blob) {
-                log("Sending attachment %.*s (%zu bytes)", SPLAT(digest), blob.size);
+                log("Sending attachment %.*s", SPLAT(digest));
                 MessageBuilder reply(req);
-                reply.write(blob);
+                reply.dataSource = [this,blob](void *buf, size_t capacity) {
+                    // Callback to read bytes from the blob into the BLIP message:
+                    C4Error err;
+                    auto bytesRead = c4stream_read(blob, buf, capacity, &err);
+                    if (bytesRead < capacity)
+                        c4stream_close(blob);
+                    if (err.code) {
+                        warn("Error reading from blob: %d/%d", err.domain, err.code);
+                        return -1;
+                    }
+                    return (int)bytesRead;
+                };
                 req->respond(reply);
                 return;
             }
