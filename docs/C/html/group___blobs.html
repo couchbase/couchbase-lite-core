@@ -77,18 +77,21 @@ Blob Keys</h2></td></tr>
 <tr class="memitem:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memItemLeft" align="right" valign="top">typedef struct c4BlobStore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a></td></tr>
 <tr class="memdesc:ga1f93de2ae8a31d160f02db45bc412b58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for an object that manages storage of blobs.  <a href="#ga1f93de2ae8a31d160f02db45bc412b58">More...</a><br /></td></tr>
 <tr class="separator:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab8e9a28fd896003a2c82fa0e6a6a1894"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gab8e9a28fd896003a2c82fa0e6a6a1894">c4blob_keyFromString</a> (<a class="el" href="struct_c4_slice.html">C4Slice</a> str, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gab8e9a28fd896003a2c82fa0e6a6a1894"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decodes a string of the form "sha1-"+base64 into a raw key.  <a href="#gab8e9a28fd896003a2c82fa0e6a6a1894">More...</a><br /></td></tr>
-<tr class="separator:gab8e9a28fd896003a2c82fa0e6a6a1894"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaae61d3b1d2b38954ff98fcac44ecd365"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gaae61d3b1d2b38954ff98fcac44ecd365">c4blob_keyToString</a> (<a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaae61d3b1d2b38954ff98fcac44ecd365"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes a blob key to a string of the form "sha1-"+base64.  <a href="#gaae61d3b1d2b38954ff98fcac44ecd365">More...</a><br /></td></tr>
-<tr class="separator:gaae61d3b1d2b38954ff98fcac44ecd365"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3d41e7e5defcaf5ab4c84d6ecfd55491"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga3d41e7e5defcaf5ab4c84d6ecfd55491">c4blob_keyFromString</a> (<a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> str, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga3d41e7e5defcaf5ab4c84d6ecfd55491"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decodes a string of the form "sha1-"+base64 into a raw key.  <a href="#ga3d41e7e5defcaf5ab4c84d6ecfd55491">More...</a><br /></td></tr>
+<tr class="separator:ga3d41e7e5defcaf5ab4c84d6ecfd55491"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1b8b16028de4b2c71c4c351734e93479"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga1b8b16028de4b2c71c4c351734e93479">c4blob_keyToString</a> (<a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga1b8b16028de4b2c71c4c351734e93479"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes a blob key to a string of the form "sha1-"+base64.  <a href="#ga1b8b16028de4b2c71c4c351734e93479">More...</a><br /></td></tr>
+<tr class="separator:ga1b8b16028de4b2c71c4c351734e93479"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Blob Store API</h2></td></tr>
-<tr class="memitem:ga5e1fa3de86c1c63e366b7488c0aee765"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga5e1fa3de86c1c63e366b7488c0aee765">c4blob_openStore</a> (<a class="el" href="struct_c4_slice.html">C4Slice</a> dirPath, C4DatabaseFlags flags, const <a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *encryptionKey, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga5e1fa3de86c1c63e366b7488c0aee765"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a BlobStore in a directory.  <a href="#ga5e1fa3de86c1c63e366b7488c0aee765">More...</a><br /></td></tr>
-<tr class="separator:ga5e1fa3de86c1c63e366b7488c0aee765"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e277a9d2760e9e5da40283be4b91601"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga0e277a9d2760e9e5da40283be4b91601">c4db_getBlobStore</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga0e277a9d2760e9e5da40283be4b91601"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the BlobStore associated with a bundled database.  <a href="#ga0e277a9d2760e9e5da40283be4b91601">More...</a><br /></td></tr>
+<tr class="separator:ga0e277a9d2760e9e5da40283be4b91601"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1044656098f2504f6c7bfb133b93a62f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga1044656098f2504f6c7bfb133b93a62f">c4blob_openStore</a> (<a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> dirPath, C4DatabaseFlags flags, const <a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *encryptionKey, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga1044656098f2504f6c7bfb133b93a62f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a BlobStore in a directory.  <a href="#ga1044656098f2504f6c7bfb133b93a62f">More...</a><br /></td></tr>
+<tr class="separator:ga1044656098f2504f6c7bfb133b93a62f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga39acb7777a01fbfaa998d4611140b1e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga39acb7777a01fbfaa998d4611140b1e1">c4blob_freeStore</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga39acb7777a01fbfaa998d4611140b1e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes/frees a BlobStore.  <a href="#ga39acb7777a01fbfaa998d4611140b1e1">More...</a><br /></td></tr>
 <tr class="separator:ga39acb7777a01fbfaa998d4611140b1e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -104,9 +107,15 @@ Blob API</h2></td></tr>
 <tr class="memitem:gada23c9c53438b35173c2f526a92e5f1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gada23c9c53438b35173c2f526a92e5f1b">c4blob_getContents</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:gada23c9c53438b35173c2f526a92e5f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads the entire contents of a blob into memory.  <a href="#gada23c9c53438b35173c2f526a92e5f1b">More...</a><br /></td></tr>
 <tr class="separator:gada23c9c53438b35173c2f526a92e5f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae995980da3ec1b3ccead3e16cfd48e7f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gae995980da3ec1b3ccead3e16cfd48e7f">c4blob_create</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *, <a class="el" href="struct_c4_slice.html">C4Slice</a> contents, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *outKey, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gae995980da3ec1b3ccead3e16cfd48e7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a blob.  <a href="#gae995980da3ec1b3ccead3e16cfd48e7f">More...</a><br /></td></tr>
-<tr class="separator:gae995980da3ec1b3ccead3e16cfd48e7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa431b8f8b881cb2d59e69a1eb153fe2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gaa431b8f8b881cb2d59e69a1eb153fe2e">c4blob_getFilePath</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaa431b8f8b881cb2d59e69a1eb153fe2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the path of the file that stores the blob, if possible.  <a href="#gaa431b8f8b881cb2d59e69a1eb153fe2e">More...</a><br /></td></tr>
+<tr class="separator:gaa431b8f8b881cb2d59e69a1eb153fe2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga82e6ec02e29d690585e6dabd6efd0db4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga82e6ec02e29d690585e6dabd6efd0db4">c4blob_computeKey</a> (<a class="el" href="struct_c4_slice.html">C4Slice</a> contents)</td></tr>
+<tr class="memdesc:ga82e6ec02e29d690585e6dabd6efd0db4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Derives the key of the given data, without storing it.  <a href="#ga82e6ec02e29d690585e6dabd6efd0db4">More...</a><br /></td></tr>
+<tr class="separator:ga82e6ec02e29d690585e6dabd6efd0db4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga583af16e31526de0560dd4b771e34022"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga583af16e31526de0560dd4b771e34022">c4blob_create</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *store, <a class="el" href="struct_c4_slice.html">C4Slice</a> contents, const <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *expectedKey, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *outKey, <a class="el" href="struct_c4_error.html">C4Error</a> *error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga583af16e31526de0560dd4b771e34022"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a blob.  <a href="#ga583af16e31526de0560dd4b771e34022">More...</a><br /></td></tr>
+<tr class="separator:ga583af16e31526de0560dd4b771e34022"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf030d7287512edc083804c3104faa416"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gaf030d7287512edc083804c3104faa416">c4blob_delete</a> (<a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:gaf030d7287512edc083804c3104faa416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes a blob from the store given its key.  <a href="#gaf030d7287512edc083804c3104faa416">More...</a><br /></td></tr>
 <tr class="separator:gaf030d7287512edc083804c3104faa416"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,9 +155,9 @@ Streamed Writes</h2></td></tr>
 <tr class="memitem:ga99d7d5ab9f2159f32722052ae48801ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga99d7d5ab9f2159f32722052ae48801ca">c4stream_computeBlobKey</a> (<a class="el" href="group___blobs.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga99d7d5ab9f2159f32722052ae48801ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the blob-key (digest) of the data written to the stream.  <a href="#ga99d7d5ab9f2159f32722052ae48801ca">More...</a><br /></td></tr>
 <tr class="separator:ga99d7d5ab9f2159f32722052ae48801ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga22d17c416d6db4901bdcd4bd824a6b80"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga22d17c416d6db4901bdcd4bd824a6b80">c4stream_install</a> (<a class="el" href="group___blobs.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga22d17c416d6db4901bdcd4bd824a6b80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the data written to the stream as a finished blob to the store, and returns its key.  <a href="#ga22d17c416d6db4901bdcd4bd824a6b80">More...</a><br /></td></tr>
-<tr class="separator:ga22d17c416d6db4901bdcd4bd824a6b80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad737ea8583271a49289a4722df3dea19"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gad737ea8583271a49289a4722df3dea19">c4stream_install</a> (<a class="el" href="group___blobs.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *, const <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *expectedKey, <a class="el" href="struct_c4_error.html">C4Error</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gad737ea8583271a49289a4722df3dea19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the data written to the stream as a finished blob to the store.  <a href="#gad737ea8583271a49289a4722df3dea19">More...</a><br /></td></tr>
+<tr class="separator:gad737ea8583271a49289a4722df3dea19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3bfe789d86778b97b197a30af19b315d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga3bfe789d86778b97b197a30af19b315d">c4stream_closeWriter</a> (<a class="el" href="group___blobs.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga3bfe789d86778b97b197a30af19b315d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes a blob write-stream.  <a href="#ga3bfe789d86778b97b197a30af19b315d">More...</a><br /></td></tr>
 <tr class="separator:ga3bfe789d86778b97b197a30af19b315d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -204,8 +213,28 @@ Streamed Writes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gae995980da3ec1b3ccead3e16cfd48e7f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae995980da3ec1b3ccead3e16cfd48e7f">&sect;&nbsp;</a></span>c4blob_create()</h2>
+<a id="ga82e6ec02e29d690585e6dabd6efd0db4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga82e6ec02e29d690585e6dabd6efd0db4">&sect;&nbsp;</a></span>c4blob_computeKey()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> c4blob_computeKey </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramname"><em>contents</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Derives the key of the given data, without storing it. </p>
+
+</div>
+</div>
+<a id="ga583af16e31526de0560dd4b771e34022"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga583af16e31526de0560dd4b771e34022">&sect;&nbsp;</a></span>c4blob_create()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -214,13 +243,19 @@ Streamed Writes</h2></td></tr>
           <td class="memname">bool c4blob_create </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>store</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
           <td class="paramname"><em>contents</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *&#160;</td>
+          <td class="paramname"><em>expectedKey</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -232,7 +267,7 @@ Streamed Writes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
-          <td class="paramname">&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -243,7 +278,7 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Stores a blob. </p>
-<p>The associated key will be written to <code>outKey</code>. </p>
+<p>The associated key will be written to <code>outKey</code>. If <code>expectedKey</code> is not NULL, then the operation will fail unless the contents actually have that key. </p>
 
 </div>
 </div>
@@ -371,6 +406,43 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
+<a id="gaa431b8f8b881cb2d59e69a1eb153fe2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa431b8f8b881cb2d59e69a1eb153fe2e">&sect;&nbsp;</a></span>c4blob_getFilePath()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4blob_getFilePath </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a> *&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the path of the file that stores the blob, if possible. </p>
+<p>This call may fail with error kC4ErrorWrongFormat if the blob is encrypted (in which case the file would be unreadable by the caller) or with kC4ErrorUnsupported if for some implementation reason the blob isn't stored as a standalone file. Thus, the caller MUST use this function only as an optimization, and fall back to reading the contents via the API if it fails. Also, it goes without saying that the caller MUST not modify the file! </p>
+
+</div>
+</div>
 <a id="gaf6eeb49cf824eb59586e103c60ce5f12"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaf6eeb49cf824eb59586e103c60ce5f12">&sect;&nbsp;</a></span>c4blob_getSize()</h2>
 
@@ -402,8 +474,8 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
-<a id="gab8e9a28fd896003a2c82fa0e6a6a1894"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab8e9a28fd896003a2c82fa0e6a6a1894">&sect;&nbsp;</a></span>c4blob_keyFromString()</h2>
+<a id="ga3d41e7e5defcaf5ab4c84d6ecfd55491"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3d41e7e5defcaf5ab4c84d6ecfd55491">&sect;&nbsp;</a></span>c4blob_keyFromString()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -411,7 +483,7 @@ Streamed Writes</h2></td></tr>
         <tr>
           <td class="memname">bool c4blob_keyFromString </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>str</em>, </td>
         </tr>
         <tr>
@@ -432,14 +504,14 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
-<a id="gaae61d3b1d2b38954ff98fcac44ecd365"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaae61d3b1d2b38954ff98fcac44ecd365">&sect;&nbsp;</a></span>c4blob_keyToString()</h2>
+<a id="ga1b8b16028de4b2c71c4c351734e93479"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1b8b16028de4b2c71c4c351734e93479">&sect;&nbsp;</a></span>c4blob_keyToString()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> c4blob_keyToString </td>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4blob_keyToString </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a>&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -488,8 +560,8 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5e1fa3de86c1c63e366b7488c0aee765"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5e1fa3de86c1c63e366b7488c0aee765">&sect;&nbsp;</a></span>c4blob_openStore()</h2>
+<a id="ga1044656098f2504f6c7bfb133b93a62f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1044656098f2504f6c7bfb133b93a62f">&sect;&nbsp;</a></span>c4blob_openStore()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -497,7 +569,7 @@ Streamed Writes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a>* c4blob_openStore </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>dirPath</em>, </td>
         </tr>
         <tr>
@@ -527,7 +599,7 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a BlobStore in a directory. </p>
-<p>If the flags allow creating, the directory will be created if necessary. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If the flags allow creating, the directory will be created if necessary. Call <a class="el" href="group___blobs.html#ga39acb7777a01fbfaa998d4611140b1e1" title="Closes/frees a BlobStore. ">c4blob_freeStore()</a> when finished using the BlobStore. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">dirPath</td><td>The filesystem path of the directory holding the attachments. </td></tr>
     <tr><td class="paramname">flags</td><td>Specifies options like create, read-only </td></tr>
@@ -571,6 +643,37 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
+<a id="ga0e277a9d2760e9e5da40283be4b91601"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0e277a9d2760e9e5da40283be4b91601">&sect;&nbsp;</a></span>c4db_getBlobStore()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___blobs.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a>* c4db_getBlobStore </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramname"><em>db</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the BlobStore associated with a bundled database. </p>
+<p>Fails if the database is not bundled. DO NOT call c4blob_freeStore on this! The C4Database will free it when it closes. </p>
+
+</div>
+</div>
 <a id="ga30790a3c54b7132f1ac312346cc1e5ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga30790a3c54b7132f1ac312346cc1e5ea">&sect;&nbsp;</a></span>c4stream_close()</h2>
 
@@ -609,7 +712,7 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Closes a blob write-stream. </p>
-<p>If c4stream_install was not already called, the temporary file will be deleted without adding the blob to the store. (A NULL parameter is allowed.) </p>
+<p>If c4stream_install was not already called (or was called but failed), the temporary file will be deleted without adding the blob to the store. (A NULL parameter is allowed, and is a no-op.) </p>
 
 </div>
 </div>
@@ -664,8 +767,8 @@ Streamed Writes</h2></td></tr>
 
 </div>
 </div>
-<a id="ga22d17c416d6db4901bdcd4bd824a6b80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga22d17c416d6db4901bdcd4bd824a6b80">&sect;&nbsp;</a></span>c4stream_install()</h2>
+<a id="gad737ea8583271a49289a4722df3dea19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad737ea8583271a49289a4722df3dea19">&sect;&nbsp;</a></span>c4stream_install()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -675,6 +778,12 @@ Streamed Writes</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___blobs.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *&#160;</td>
           <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *&#160;</td>
+          <td class="paramname"><em>expectedKey</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -690,8 +799,8 @@ Streamed Writes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds the data written to the stream as a finished blob to the store, and returns its key. </p>
-<p>If you skip this call, the blob will not be added to the store. (You might do this if you were unable to receive all of the data from the network, or if you've called c4stream_computeBlobKey and found that the data does not match the expected digest/key.) </p>
+<p>Adds the data written to the stream as a finished blob to the store. </p>
+<p>If <code>expectedKey</code> is not NULL, then the operation will fail unless the contents actually have that key. (If you don't know ahead of time what the key should be, call c4stream_computeBlobKey beforehand to derive it, and pass NULL for expectedKey.) This function does not close the writer. </p>
 
 </div>
 </div>

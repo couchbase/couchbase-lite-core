@@ -62,57 +62,60 @@ $(function() {
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">C4QueryEnumerator Struct Reference<div class="ingroups"><a class="el" href="group___querying_views.html">Querying Views</a></div></div>  </div>
+<div class="title">C4QueryEnumerator Struct Reference<div class="ingroups"><a class="el" href="group___querying_d_b.html">Querying the Database</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>A view query result enumerator.  
+<p>A query result enumerator.  
  <a href="struct_c4_query_enumerator.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="c4_view_8h_source.html">c4View.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="c4_query_8h_source.html">c4Query.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a10993a09c2997af9b5ca7ae49792d742"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a10993a09c2997af9b5ca7ae49792d742">docID</a></td></tr>
-<tr class="memdesc:a10993a09c2997af9b5ca7ae49792d742"><td class="mdescLeft">&#160;</td><td class="mdescRight">ID of doc that emitted this row.  <a href="#a10993a09c2997af9b5ca7ae49792d742">More...</a><br /></td></tr>
-<tr class="separator:a10993a09c2997af9b5ca7ae49792d742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6520813b4ad5aaed9f0fac15f56ef7e6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a6520813b4ad5aaed9f0fac15f56ef7e6">docID</a></td></tr>
+<tr class="memdesc:a6520813b4ad5aaed9f0fac15f56ef7e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">ID of doc that emitted this row.  <a href="#a6520813b4ad5aaed9f0fac15f56ef7e6">More...</a><br /></td></tr>
+<tr class="separator:a6520813b4ad5aaed9f0fac15f56ef7e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44a2c235875948339718ef692c9d8504"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a44a2c235875948339718ef692c9d8504">docSequence</a></td></tr>
 <tr class="memdesc:a44a2c235875948339718ef692c9d8504"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sequence number of doc that emitted row.  <a href="#a44a2c235875948339718ef692c9d8504">More...</a><br /></td></tr>
 <tr class="separator:a44a2c235875948339718ef692c9d8504"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e952fa17a654c123f5dabcfa3b82c29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a2e952fa17a654c123f5dabcfa3b82c29">value</a></td></tr>
-<tr class="memdesc:a2e952fa17a654c123f5dabcfa3b82c29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encoded emitted value.  <a href="#a2e952fa17a654c123f5dabcfa3b82c29">More...</a><br /></td></tr>
-<tr class="separator:a2e952fa17a654c123f5dabcfa3b82c29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e87ce19b5f31d55ee27829c95129728"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_key_reader.html">C4KeyReader</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a6e87ce19b5f31d55ee27829c95129728">key</a></td></tr>
-<tr class="memdesc:a6e87ce19b5f31d55ee27829c95129728"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encoded emitted key.  <a href="#a6e87ce19b5f31d55ee27829c95129728">More...</a><br /></td></tr>
-<tr class="separator:a6e87ce19b5f31d55ee27829c95129728"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af868abb26a01aae9099d30c3fd6491a8"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#af868abb26a01aae9099d30c3fd6491a8">fullTextID</a></td></tr>
-<tr class="memdesc:af868abb26a01aae9099d30c3fd6491a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">opaque 'cookie' for getting the full text string  <a href="#af868abb26a01aae9099d30c3fd6491a8">More...</a><br /></td></tr>
-<tr class="separator:af868abb26a01aae9099d30c3fd6491a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af68ac78bd7c3d93c2060b4d111f94887"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#af68ac78bd7c3d93c2060b4d111f94887">revID</a></td></tr>
+<tr class="separator:af68ac78bd7c3d93c2060b4d111f94887"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3a4625e8a9b3829113207f0448625f7"><td class="memItemLeft" align="right" valign="top">C4DocumentFlags&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#ac3a4625e8a9b3829113207f0448625f7">docFlags</a></td></tr>
+<tr class="separator:ac3a4625e8a9b3829113207f0448625f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a632523828738c016004fa51686a78d99"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a632523828738c016004fa51686a78d99">fullTextTermCount</a></td></tr>
 <tr class="memdesc:a632523828738c016004fa51686a78d99"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of terms that were matched.  <a href="#a632523828738c016004fa51686a78d99">More...</a><br /></td></tr>
 <tr class="separator:a632523828738c016004fa51686a78d99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a581aee4cdfa7f5c635bcccea13da8529"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="struct_c4_full_text_term.html">C4FullTextTerm</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a581aee4cdfa7f5c635bcccea13da8529">fullTextTerms</a></td></tr>
 <tr class="memdesc:a581aee4cdfa7f5c635bcccea13da8529"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array of terms that were matched.  <a href="#a581aee4cdfa7f5c635bcccea13da8529">More...</a><br /></td></tr>
 <tr class="separator:a581aee4cdfa7f5c635bcccea13da8529"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ac78793fed5de5912a32fb1a77c99db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_geo_area.html">C4GeoArea</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a5ac78793fed5de5912a32fb1a77c99db">geoBBox</a></td></tr>
-<tr class="memdesc:a5ac78793fed5de5912a32fb1a77c99db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bounding box of emitted geoJSON shape.  <a href="#a5ac78793fed5de5912a32fb1a77c99db">More...</a><br /></td></tr>
-<tr class="separator:a5ac78793fed5de5912a32fb1a77c99db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab93a7cee5dc839961015179fe83831cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#ab93a7cee5dc839961015179fe83831cf">geoJSON</a></td></tr>
-<tr class="memdesc:ab93a7cee5dc839961015179fe83831cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">GeoJSON description of the shape.  <a href="#ab93a7cee5dc839961015179fe83831cf">More...</a><br /></td></tr>
-<tr class="separator:ab93a7cee5dc839961015179fe83831cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A view query result enumerator. </p>
-<p>Created by c4view_query, c4view_fullTextQuery, or c4view_geoQuery. Must be freed with c4queryenum_free. The fields of this struct represent the current matched index row, and are replaced by the next call to c4queryenum_next or c4queryenum_free. The memory pointed to by slice fields is valid until the enumerator is advanced or freed. </p>
+<div class="textblock"><p>A query result enumerator. </p>
+<p>Created by c4db_query. Must be freed with c4queryenum_free. The fields of this struct represent the current matched index row, and are replaced by the next call to c4queryenum_next or c4queryenum_free. The memory pointed to by slice fields is valid until the enumerator is advanced or freed. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="a10993a09c2997af9b5ca7ae49792d742"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10993a09c2997af9b5ca7ae49792d742">&sect;&nbsp;</a></span>docID</h2>
+<a id="ac3a4625e8a9b3829113207f0448625f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3a4625e8a9b3829113207f0448625f7">&sect;&nbsp;</a></span>docFlags</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="struct_c4_slice.html">C4Slice</a> C4QueryEnumerator::docID</td>
+          <td class="memname">C4DocumentFlags C4QueryEnumerator::docFlags</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6520813b4ad5aaed9f0fac15f56ef7e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6520813b4ad5aaed9f0fac15f56ef7e6">&sect;&nbsp;</a></span>docID</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> C4QueryEnumerator::docID</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -134,22 +137,6 @@ Data Fields</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sequence number of doc that emitted row. </p>
-
-</div>
-</div>
-<a id="af868abb26a01aae9099d30c3fd6491a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af868abb26a01aae9099d30c3fd6491a8">&sect;&nbsp;</a></span>fullTextID</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned C4QueryEnumerator::fullTextID</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>opaque 'cookie' for getting the full text string </p>
 
 </div>
 </div>
@@ -185,72 +172,22 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="a5ac78793fed5de5912a32fb1a77c99db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ac78793fed5de5912a32fb1a77c99db">&sect;&nbsp;</a></span>geoBBox</h2>
+<a id="af68ac78bd7c3d93c2060b4d111f94887"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af68ac78bd7c3d93c2060b4d111f94887">&sect;&nbsp;</a></span>revID</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="struct_c4_geo_area.html">C4GeoArea</a> C4QueryEnumerator::geoBBox</td>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> C4QueryEnumerator::revID</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Bounding box of emitted geoJSON shape. </p>
-
-</div>
-</div>
-<a id="ab93a7cee5dc839961015179fe83831cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab93a7cee5dc839961015179fe83831cf">&sect;&nbsp;</a></span>geoJSON</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="struct_c4_slice.html">C4Slice</a> C4QueryEnumerator::geoJSON</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>GeoJSON description of the shape. </p>
-
-</div>
-</div>
-<a id="a6e87ce19b5f31d55ee27829c95129728"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e87ce19b5f31d55ee27829c95129728">&sect;&nbsp;</a></span>key</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="struct_c4_key_reader.html">C4KeyReader</a> C4QueryEnumerator::key</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Encoded emitted key. </p>
-
-</div>
-</div>
-<a id="a2e952fa17a654c123f5dabcfa3b82c29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e952fa17a654c123f5dabcfa3b82c29">&sect;&nbsp;</a></span>value</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="struct_c4_slice.html">C4Slice</a> C4QueryEnumerator::value</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Encoded emitted value. </p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/<a class="el" href="c4_view_8h_source.html">c4View.h</a></li>
+<li>include/<a class="el" href="c4_query_8h_source.html">c4Query.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
