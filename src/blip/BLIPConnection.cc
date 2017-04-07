@@ -7,7 +7,7 @@
 //
 
 #include "BLIPConnection.hh"
-#include "Message.hh"
+#include "MessageOut.hh"
 #include "BLIPInternal.hh"
 #include "WebSocketInterface.hh"
 #include "Actor.hh"

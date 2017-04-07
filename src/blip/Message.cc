@@ -7,6 +7,7 @@
 //
 
 #include "Message.hh"
+#include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
 #include "FleeceCpp.hh"
@@ -33,64 +34,9 @@ namespace litecore { namespace blip {
     }
 
 
-#pragma mark - MESSAGE OUT:
-
-
-    MessageOut::MessageOut(Connection *connection,
-                           FrameFlags flags,
-                           alloc_slice payload,
-                           MessageNo number)
-    :Message(flags, number)
-    ,_connection(connection)
-    ,_payload(payload)
-    {
-        assert(payload.size <= UINT32_MAX);
-    }
-
-
-    slice MessageOut::nextFrameToSend(size_t maxSize, FrameFlags &outFlags) {
-        size_t size = min(maxSize, _payload.size - _bytesSent);
-        slice frame = _payload(_bytesSent, size);
-        _bytesSent += size;
-        _unackedBytes += size;
-        outFlags = flags();
-        MessageProgress::State state;
-        if (_bytesSent < _payload.size) {
-            outFlags = (FrameFlags)(outFlags | kMoreComing);
-            state = MessageProgress::kSending;
-        } else if (noReply()) {
-            state = MessageProgress::kComplete;
-        } else {
-            state = MessageProgress::kAwaitingReply;
-        }
-        sendProgress(state, _bytesSent, 0, nullptr);
-        return frame;
-    }
-
-
-    void MessageOut::receivedAck(uint32_t byteCount) {
-        if (byteCount <= _bytesSent)
-            _unackedBytes = min(_unackedBytes, (uint32_t)(_bytesSent - byteCount));
-    }
-
-
-    MessageIn* MessageOut::createResponse() {
-        if (type() != kRequestType || noReply())
-            return nullptr;
-        // Note: The MessageIn's flags will be updated when the 1st frame of the response arrives;
-        // the type might become kErrorType, and kUrgent or kCompressed might be set.
-        return new MessageIn(_connection, (FrameFlags)kResponseType, _number,
-                             _onProgress, _payload.size);
-    }
-
-
-#pragma mark - MESSAGE IN:
-
-
     MessageIn::~MessageIn()
-    {
-        
-    }
+    { }
+
 
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n,
                          MessageProgressCallback onProgress, MessageSize outgoingSize)
@@ -131,7 +77,8 @@ namespace litecore { namespace blip {
                 if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
                     throw "message properties not null-terminated";
                 _in->reset();
-                state = kBeginning;
+                if (!isError())
+                    state = kBeginning;
             }
 
             _unackedBytes += frame.size;
@@ -143,6 +90,7 @@ namespace litecore { namespace blip {
                 Retained<MessageOut> ack = new MessageOut(_connection,
                                                           (FrameFlags)(msgType | kUrgent | kNoReply),
                                                           payload,
+                                                          nullptr,
                                                           _number);
                 _connection->send(ack);
                 _unackedBytes = 0;
@@ -176,9 +124,12 @@ namespace litecore { namespace blip {
         // ...mutex is now unlocked
 
         // Send progress. ("kReceivingReply" is somewhat misleading if this isn't a reply.)
+        // Include a pointer to myself when my properties are available, _unless_ I'm an
+        // incomplete error. (We need the error body first since it contains the message.)
+        bool includeThis = (state == kEnd || (_properties && !isError()));
         sendProgress(state == kEnd ? MessageProgress::kComplete : MessageProgress::kReceivingReply,
                      _outgoingSize, bytesReceived,
-                     (_properties ? this : nullptr));
+                     (includeThis ? this : nullptr));
         return state;
     }
 

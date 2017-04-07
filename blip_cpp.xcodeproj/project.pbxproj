@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		272850731E95BCCF009CA22F /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850711E95BCCF009CA22F /* MessageOut.cc */; };
+		272850741E95BCCF009CA22F /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
 		27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */; };
 		27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */; };
 		27491CA11E7B417C001DC54B /* WebSocketImpl.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA01E7B417C001DC54B /* WebSocketImpl.hh */; };
@@ -91,6 +93,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		272850711E95BCCF009CA22F /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
+		272850721E95BCCF009CA22F /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
 		273C77F11E84706B00BD7112 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		273C77F21E8470F800BD7112 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
@@ -293,6 +297,8 @@
 			children = (
 				27EF69D11E28260D004748DF /* Message.cc */,
 				2799762D1E94509000B27639 /* MessageBuilder.cc */,
+				272850711E95BCCF009CA22F /* MessageOut.cc */,
+				272850721E95BCCF009CA22F /* MessageOut.hh */,
 				27EF69D31E28260D004748DF /* BLIPConnection.cc */,
 				27EF69D61E28260D004748DF /* BLIPInternal.hh */,
 			);
@@ -401,6 +407,7 @@
 				27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */,
 				27EF69EC1E282662004748DF /* Message.hh in Headers */,
 				27491CA11E7B417C001DC54B /* WebSocketImpl.hh in Headers */,
+				272850741E95BCCF009CA22F /* MessageOut.hh in Headers */,
 				27EF69ED1E282662004748DF /* WebSocketInterface.hh in Headers */,
 				27EF6A551E2857F7004748DF /* varint.hh in Headers */,
 				27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */,
@@ -521,6 +528,7 @@
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
 				27EF6A541E2857F7004748DF /* varint.cc in Sources */,
 				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
+				272850731E95BCCF009CA22F /* MessageOut.cc in Sources */,
 				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,

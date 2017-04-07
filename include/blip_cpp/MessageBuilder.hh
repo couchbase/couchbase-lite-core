@@ -12,6 +12,11 @@
 
 namespace litecore { namespace blip {
 
+    /** A callback to provide data for an outgoing message. When called, it should copy data
+        to the location in the `buf` parameter, with a maximum length of `capacity`. It should
+        return the number of bytes written, or 0 on EOF, or a negative number on error. */
+    using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
+
     /** A temporary object used to construct an outgoing message (request or response).
         The message is sent by calling Connection::sendRequest() or MessageIn::respond(). */
     class MessageBuilder {
@@ -59,6 +64,9 @@ namespace litecore { namespace blip {
 
         /** Clears the MessageBuilder so it can be used to create another message. */
         void reset();
+
+        /** Callback to provide the body of the message; will be called whenever data is needed. */
+        MessageDataSource dataSource;
 
         /** Callback to be invoked as the message is delivered (and replied to, if appropriate) */
         MessageProgressCallback onProgress;
