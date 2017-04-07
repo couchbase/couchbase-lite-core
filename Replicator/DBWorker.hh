@@ -26,6 +26,9 @@ namespace litecore { namespace repl {
                 const websocket::Address &remoteAddress,
                 Options options);
 
+        /** The blob store is thread-safe so it can be accessed directly. */
+        C4BlobStore* blobStore() const                  {return _blobStore;}
+
         using CheckpointCallback = std::function<void(alloc_slice checkpointID,
                                                       alloc_slice data,
                                                       C4Error err)>;
@@ -50,16 +53,6 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_sendRevision, request, onProgress);
         }
 
-        void findBlobs(std::vector<BlobRequest> blobs,
-                       std::function<void(std::vector<BlobRequest>, C4BlobStore*)> callback) {
-            enqueue(&DBWorker::_findBlobs, blobs, callback);
-        }
-
-        void insertBlob(C4BlobKey key, alloc_slice data,
-                        std::function<void(C4Error err)> callback) {
-            enqueue(&DBWorker::_insertBlob, key, data, callback);
-        }
-
         void insertRevision(RevToInsert *rev);
 
     private:
@@ -79,12 +72,7 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<bool>)> callback);
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
-        void _findBlobs(std::vector<BlobRequest>,
-                              std::function<void(std::vector<BlobRequest>, C4BlobStore*)> callback);
-        void _insertBlob(C4BlobKey, alloc_slice data,
-                         std::function<void(C4Error err)> callback);
         void _insertRevision(RevToInsert *rev);
-        void handleGetAttachment(Retained<blip::MessageIn>);
 
 
         void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
@@ -98,6 +86,7 @@ namespace litecore { namespace repl {
         static const size_t kMaxPossibleAncestors = 10;
 
         C4Database* const _db;
+        C4BlobStore* _blobStore;
         const websocket::Address _remoteAddress;
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;

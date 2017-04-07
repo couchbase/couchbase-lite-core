@@ -16,19 +16,20 @@ namespace litecore { namespace repl {
     public:
         IncomingBlob(Worker *parent, C4BlobStore*);
 
-        void start(BlobRequest blob) {
-            enqueue(&IncomingBlob::_start, blob);
+        void start(C4BlobKey key, uint64_t size) {
+            enqueue(&IncomingBlob::_start, key, size);
         }
 
     private:
-        void _start(BlobRequest);
+        void _start(C4BlobKey, uint64_t);
         void writeToBlob(fleece::alloc_slice);
         void finishBlob();
         virtual void onError(C4Error) override;
         virtual ActivityLevel computeActivityLevel() const override;
 
         C4BlobStore* const _blobStore;
-        BlobRequest _blob;
+        C4BlobKey _key;
+        uint64_t _size;
         C4WriteStream* _writer {nullptr};
     };
 } }

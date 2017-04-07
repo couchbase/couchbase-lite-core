@@ -41,6 +41,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
         void markComplete(const Rev&);
+        void handleGetAttachment(Retained<MessageIn>);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
@@ -49,7 +50,7 @@ namespace litecore { namespace repl {
         static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
 
-        DBWorker* const _dbActor;
+        DBWorker* const _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         bool _continuous;
 
@@ -62,6 +63,7 @@ namespace litecore { namespace repl {
         unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
         unsigned _revisionsInFlight {0};                // # 'rev' messages being sent
         unsigned _revisionBytesAwaitingReply {0};       // # 'rev' message bytes sent but not replied
+        unsigned _blobsInFlight {0};                    // # of blobs being sent
         std::deque<RevRequest> _revsToSend;             // Revs to send to peer but not sent yet
     };
     

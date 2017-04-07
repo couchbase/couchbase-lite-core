@@ -22,13 +22,15 @@ namespace litecore { namespace repl {
 
     static bool hasUnderscoredProperties(Dict);
     static alloc_slice stripUnderscoredProperties(Dict);
-    static void findBlobReferences(Dict, vector<BlobRequest> &keys);
+
+    using FindBlobCallback = function<void(const C4BlobKey &key, uint64_t size)>;
+    static void findBlobReferences(Dict, const FindBlobCallback&);
 
 
-    IncomingRev::IncomingRev(Puller *puller, DBWorker *dbActor)
+    IncomingRev::IncomingRev(Puller *puller, DBWorker *dbWorker)
     :Worker(puller, "inc")
     ,_puller(puller)
-    ,_dbActor(dbActor)
+    ,_dbWorker(dbWorker)
     {
         _important = false;
     }
@@ -98,26 +100,18 @@ namespace litecore { namespace repl {
         _rev.body = fleeceBody;
 
         // Check for blobs:
-        vector<BlobRequest> blobs;
-        findBlobReferences(root, blobs);
-        if (blobs.empty()) {
-            // No blobs, so insert immediately:
-            insertRevision();
-        } else {
+        auto blobStore = _dbWorker->blobStore();
+        findBlobReferences(root, [=](const C4BlobKey &key, uint64_t size) {
+            if (c4blob_getSize(blobStore, key) < 0) {
+                Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
+                b->start(key, size);
+                ++_pendingBlobs;
+            }
+        });
+        if (_pendingBlobs > 0)
             _rev.flags |= kRevHasAttachments;
-            _dbActor->findBlobs(move(blobs), asynchronize([=](vector<BlobRequest> missing,
-                                                              C4BlobStore *blobStore) {
-                if (missing.empty()) {
-                    insertRevision();
-                } else {
-                    for (auto &request : missing) {
-                        Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
-                        b->start(request);
-                        ++_pendingBlobs;
-                    }
-                }
-            }));
-        }
+        else
+            insertRevision();
     }
 
 
@@ -149,7 +143,7 @@ namespace litecore { namespace repl {
             finish();
         });
 
-        _dbActor->insertRevision(&_rev);
+        _dbWorker->insertRevision(&_rev);
     }
 
 
@@ -178,7 +172,7 @@ namespace litecore { namespace repl {
 #pragma mark - UTILITIES:
 
 
-    // Returns true if a Fleece Dict contains any keys that begin with an underscore.
+    // Returns true if a Fleece Dict contains any top-level keys that begin with an underscore.
     static bool hasUnderscoredProperties(Dict root) {
         for (Dict::iterator i(root); i; ++i) {
             auto key = slice(i.keyString());
@@ -206,31 +200,32 @@ namespace litecore { namespace repl {
 
 
     // Finds blob references in a Fleece value, recursively.
-    static void findBlobReferences(Value val, vector<BlobRequest> &blobs) {
+    static void findBlobReferences(Value val, const FindBlobCallback &callback) {
         auto d = val.asDict();
         if (d) {
-            findBlobReferences(d, blobs);
+            findBlobReferences(d, callback);
             return;
         }
         auto a = val.asArray();
         if (a) {
             for (Array::iterator i(a); i; ++i)
-                findBlobReferences(i.value(), blobs);
+                findBlobReferences(i.value(), callback);
         }
     }
 
 
     // Finds blob references in a Fleece Dict, recursively.
-    static void findBlobReferences(Dict dict, vector<BlobRequest> &blobs) {
+    static void findBlobReferences(Dict dict, const FindBlobCallback &callback)
+    {
         if (slice(dict["_cbltype"_sl].asString()) == "blob"_sl) {
             C4BlobKey key;
             auto digest = dict["digest"_sl].asString();
             uint64_t length = dict["length"_sl].asUnsigned();
             if (c4blob_keyFromString(digest, &key))
-                blobs.push_back({key, length});
+                callback(key, length);
         } else {
             for (Dict::iterator i(dict); i; ++i)
-                findBlobReferences(i.value(), blobs);
+                findBlobReferences(i.value(), callback);
         }
     }
 

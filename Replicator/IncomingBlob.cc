@@ -21,17 +21,18 @@ namespace litecore { namespace repl {
     { }
 
 
-    void IncomingBlob::_start(BlobRequest blob) {
-        _blob = blob;
-        alloc_slice digest = c4blob_keyToString(_blob.key);
-        logVerbose("Requesting blob %.*s (%llu bytes)", SPLAT(digest), _blob.size);
+    void IncomingBlob::_start(C4BlobKey key, uint64_t size) {
+        _key = key;
+        _size = size;
+        alloc_slice digest = c4blob_keyToString(_key);
+        logVerbose("Requesting blob %.*s (%llu bytes)", SPLAT(digest), _size);
 
         C4Error err;
         _writer = c4blob_openWriteStream(_blobStore, &err);
         if (!_writer)
             return gotError(err);
 
-        addProgress({0, _blob.size});
+        addProgress({0, _size});
 
         MessageBuilder req("getAttachment"_sl);
         req["digest"_sl] = digest;
@@ -59,10 +60,10 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::finishBlob() {
-        alloc_slice digest = c4blob_keyToString(_blob.key);
-        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _blob.size);
+        alloc_slice digest = c4blob_keyToString(_key);
+        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _size);
         C4Error err;
-        if (!c4stream_install(_writer, &_blob.key, &err))
+        if (!c4stream_install(_writer, &_key, &err))
             gotError(err);
         c4stream_closeWriter(_writer);
         _writer = nullptr;
@@ -74,7 +75,7 @@ namespace litecore { namespace repl {
         _writer = nullptr;
         Worker::onError(err);
         // Bump progress to 100% so as not to mess up overall progress tracking:
-        setProgress({_blob.size, _blob.size});
+        setProgress({_size, _size});
     }
 
 

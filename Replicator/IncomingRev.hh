@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
 
         C4BlobStore *_blobStore;
         Puller* _puller;
-        DBWorker* _dbActor;
+        DBWorker* _dbWorker;
         Retained<blip::MessageIn> _revMessage;
         RevToInsert _rev;
         unsigned _pendingCallbacks {0};

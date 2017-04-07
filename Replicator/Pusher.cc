@@ -23,10 +23,11 @@ namespace litecore { namespace repl {
 
     Pusher::Pusher(Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options)
     :Worker(connection, replicator, options, "Push")
-    ,_dbActor(dbActor)
+    ,_dbWorker(dbActor)
     ,_continuous(options.push == kC4Continuous)
     {
         registerHandler("subChanges",       &Pusher::handleSubChanges);
+        registerHandler("getAttachment",    &Pusher::handleGetAttachment);
     }
 
 
@@ -69,7 +70,7 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             ++_changeListsInFlight;
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbActor->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, this);
+            _dbWorker->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, this);
             // response will be to call _gotChanges
         }
     }
@@ -224,7 +225,45 @@ namespace litecore { namespace repl {
             });
         }
         // Tell the DBAgent to actually read from the DB and send the message:
-        _dbActor->sendRevision(rev, onProgress);
+        _dbWorker->sendRevision(rev, onProgress);
+    }
+
+
+#pragma mark - SENDING ATTACHMENTS:
+
+
+    // Incoming request to send an attachment/blob
+    void Pusher::handleGetAttachment(Retained<MessageIn> req) {
+        slice digest = req->property("digest"_sl);
+        C4BlobKey key;
+        if (!c4blob_keyFromString(digest, &key)) {
+            req->respondWithError({"BLIP"_sl, 400, "Missing or invalid 'digest'"_sl});
+            return;
+        }
+        C4Error err;
+        auto blob = c4blob_openReadStream(_dbWorker->blobStore(), key, &err);
+        if (blob) {
+            log("Sending attachment %.*s", SPLAT(digest));
+            ++_blobsInFlight;
+            MessageBuilder reply(req);
+            reply.dataSource = [this,blob](void *buf, size_t capacity) {
+                // Callback to read bytes from the blob into the BLIP message:
+                C4Error err;
+                auto bytesRead = c4stream_read(blob, buf, capacity, &err);
+                if (bytesRead < capacity) {
+                    c4stream_close(blob);
+                    --_blobsInFlight;
+                }
+                if (err.code) {
+                    warn("Error reading from blob: %d/%d", err.domain, err.code);
+                    return -1;
+                }
+                return (int)bytesRead;
+            };
+            req->respond(reply);
+            return;
+        }
+        req->respondWithError(c4ToBLIPError(err));
     }
 
 
@@ -256,6 +295,7 @@ namespace litecore { namespace repl {
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
                 || _revisionsInFlight > 0
+                || _blobsInFlight > 0
                 || !_revsToSend.empty()
                 || !_pendingSequences.empty()) {
             return kC4Busy;

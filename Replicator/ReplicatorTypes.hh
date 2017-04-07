@@ -17,6 +17,8 @@
 
 namespace litecore { namespace repl {
 
+    // Operations on C4Progress objects:
+    
     static inline bool operator== (const C4Progress &p1, const C4Progress &p2) {
         return p1.completed == p2.completed && p1.total == p2.total;
     }
@@ -99,13 +101,6 @@ namespace litecore { namespace repl {
             bodySize = 0;
             onInserted = nullptr;
         }
-    };
-
-
-    struct BlobRequest {
-        C4BlobKey key;
-        uint64_t size;
-        C4WriteStream *stream;
     };
 
 } }

@@ -45,12 +45,12 @@ namespace litecore { namespace repl {
                      Options options)
     :Worker(connection, replicator, options, "DB")
     ,_db(c4db_retain(db))
+    ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteAddress(remoteAddress)
     ,_insertTimer(bind(&DBWorker::insertRevisionsNow, this))
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
-        registerHandler("getAttachment",    &DBWorker::handleGetAttachment);
     }
 
 
@@ -412,31 +412,6 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING REVISIONS:
 
 
-    void DBWorker::_findBlobs(vector<BlobRequest> blobs,
-                             function<void(vector<BlobRequest>, C4BlobStore*)> callback) {
-        vector<BlobRequest> missing;
-        C4Error err;
-        auto blobStore = c4db_getBlobStore(_db, &err);
-        for (auto &blob : blobs) {
-            if (c4blob_getSize(blobStore, blob.key) < 0)
-                missing.push_back(blob);
-        }
-        callback(move(missing), blobStore);
-    }
-
-
-    void DBWorker::_insertBlob(C4BlobKey key, alloc_slice data, function<void(C4Error)> callback) {
-        C4Error err;
-        auto blobStore = c4db_getBlobStore(_db, &err);
-        if (blobStore) {
-            C4BlobKey createdKey;
-            if (c4blob_create(blobStore, data, &key, &createdKey, &err))
-                err = {};           // success
-        }
-        callback(err);
-    }
-
-
     void DBWorker::insertRevision(RevToInsert *rev) {
         lock_guard<mutex> lock(_revsToInsertMutex);
         if (!_revsToInsert) {
@@ -512,44 +487,5 @@ namespace litecore { namespace repl {
             log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
         }
     }
-
-
-#pragma mark - SENDING ATTACHMENTS:
-
-
-    // Incoming request to send an attachment/blob
-    void DBWorker::handleGetAttachment(Retained<MessageIn> req) {
-        slice digest = req->property("digest"_sl);
-        C4BlobKey key;
-        if (!c4blob_keyFromString(digest, &key)) {
-            req->respondWithError({"BLIP"_sl, 400, "Missing or invalid 'digest'"_sl});
-            return;
-        }
-        C4Error err;
-        auto blobStore = c4db_getBlobStore(_db, &err);
-        if (blobStore) {
-            auto blob = c4blob_openReadStream(blobStore, key, &err);
-            if (blob) {
-                log("Sending attachment %.*s", SPLAT(digest));
-                MessageBuilder reply(req);
-                reply.dataSource = [this,blob](void *buf, size_t capacity) {
-                    // Callback to read bytes from the blob into the BLIP message:
-                    C4Error err;
-                    auto bytesRead = c4stream_read(blob, buf, capacity, &err);
-                    if (bytesRead < capacity)
-                        c4stream_close(blob);
-                    if (err.code) {
-                        warn("Error reading from blob: %d/%d", err.domain, err.code);
-                        return -1;
-                    }
-                    return (int)bytesRead;
-                };
-                req->respond(reply);
-                return;
-            }
-        }
-        req->respondWithError(c4ToBLIPError(err));
-    }
-
     
 } }
