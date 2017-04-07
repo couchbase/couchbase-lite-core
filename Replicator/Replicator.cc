@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
                            Connection *connection)
     :Worker(connection, nullptr, options, "Repl")
     ,_remoteAddress(address)
-    ,_delegate(delegate)
+    ,_delegate(&delegate)
     ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_pullStatus{options.pull == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_dbActor(new DBWorker(connection, this, db, address, options))
@@ -120,6 +120,7 @@ namespace litecore { namespace repl {
                     connection()->close();
                     level = kC4Busy;
                 }
+                assert(level > kC4Stopped);
                 return level;
             }
             case Connection::kClosing:
@@ -136,10 +137,14 @@ namespace litecore { namespace repl {
     void Replicator::changedStatus() {
         auto curStatus = status();
         if (curStatus.level == kC4Stopped) {
+            assert(!connection());
             _pusher = nullptr;
             _puller = nullptr;
             _dbActor = nullptr;
         }
+
+        if (!_delegate)
+            return;
 
         // Notify the delegate of the current status, but not too often:
         auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
@@ -147,7 +152,9 @@ namespace litecore { namespace repl {
             _waitingToCallDelegate = false;
             _lastDelegateCallLevel = curStatus.level;
             _sinceDelegateCall.reset();
-            _delegate.replicatorStatusChanged(this, curStatus);
+            _delegate->replicatorStatusChanged(this, curStatus);
+            if (curStatus.level == kC4Stopped)
+                _delegate = nullptr;        // Never call delegate after telling it I've stopped
         } else if (!_waitingToCallDelegate) {
             _waitingToCallDelegate = true;
             enqueueAfter(Scheduler::duration(waitFor), &Replicator::changedStatus);
@@ -201,7 +208,8 @@ namespace litecore { namespace repl {
             gotError(c4error_make(domain, code, status.message));
         }
 
-        _delegate.replicatorConnectionClosed(this, status);
+        if (_delegate)
+            _delegate->replicatorConnectionClosed(this, status);
     }
 
 

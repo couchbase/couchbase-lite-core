@@ -72,6 +72,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         _otherReplicator = new Replicator(otherDB,
                                           provider.createWebSocket(dbAddr), dbAddr,
                                           *this, { kC4Passive, kC4Passive });
+        _otherLevel = _otherReplicator->status().level;
         provider.connect(_replicator->webSocket(), _otherReplicator->webSocket());
     }
 
@@ -95,23 +96,26 @@ private:
     ,_callbackContext(callbackContext)
     ,_replicator(new Replicator(db, provider, address, *this, { push, pull }))
     ,_status(_replicator->status())
-    {
-        retain(this); // keep myself alive till replicator closes
-    }
+    ,_selfRetain(this) // keep myself alive till replicator closes
+    { }
 
     static LoopbackProvider& loopbackProvider() {
         static LoopbackProvider sProvider;
         return sProvider;
     }
 
-    virtual void replicatorStatusChanged(Replicator*,
+    virtual void replicatorStatusChanged(Replicator *repl,
                                          const Replicator::Status &newStatus) override
     {
-        auto oldLevel = _status.load().level;
-        _status = newStatus;
-        notify();
-        if (oldLevel != kC4Stopped && newStatus.level == kC4Stopped)
-            release(this); // balances retain in constructor
+        if (repl == _replicator) {
+            _status = newStatus;
+            notify();
+        } else if (repl == _otherReplicator) {
+            _otherLevel = newStatus.level;
+        }
+
+        if (status().level == kC4Stopped && _otherLevel == kC4Stopped)
+            _selfRetain = nullptr; // balances retain in constructor
     }
 
     void notify() {
@@ -125,6 +129,8 @@ private:
     Retained<Replicator> _replicator;
     Retained<Replicator> _otherReplicator;
     atomic<C4ReplicatorStatus> _status;
+    C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
+    Retained<C4Replicator> _selfRetain;
 };
 
 

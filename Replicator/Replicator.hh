@@ -100,7 +100,7 @@ namespace litecore { namespace repl {
 
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
-        Delegate& _delegate;
+        Delegate* _delegate;
         Retained<DBWorker> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
