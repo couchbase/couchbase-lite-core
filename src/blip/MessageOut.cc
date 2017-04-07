@@ -9,6 +9,7 @@
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;
