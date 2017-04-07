@@ -205,7 +205,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][C]") {
 
     // Get the blob key, and install it:
     C4BlobKey key = c4stream_computeBlobKey(stream);
-    CHECK(c4stream_install(stream, &error));
+    CHECK(c4stream_install(stream, nullptr, &error));
     c4stream_closeWriter(stream);
     c4stream_closeWriter(nullptr);
 
@@ -258,7 +258,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][C]") 
 
         // Get the blob key, and install it:
         C4BlobKey key = c4stream_computeBlobKey(stream);
-        CHECK(c4stream_install(stream, &error));
+        CHECK(c4stream_install(stream, nullptr, &error));
         c4stream_closeWriter(stream);
 
         // Read it back using the key:
