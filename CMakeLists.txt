@@ -56,7 +56,9 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/BLIP-Cpp/src/util")
 
 if(WIN32)
-      include_directories("MSVC")
+  include_directories("MSVC")
+elseif(ANDROID)
+  include_directories("LiteCore/Android")
 endif()
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
@@ -91,9 +93,6 @@ if (APPLE)
 else()
     include_directories(${OPENSSL_INCLUDE_DIR}
       ${SQLITE3_INCLUDE_DIR})
-    if(ANDROID)
-      include_directories("LiteCore/Android")
-    endif()
 endif()
 
 ### SOURCE FILES:

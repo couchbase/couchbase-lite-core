@@ -177,7 +177,7 @@ namespace litecore {
         free(unmangled);
         return result;
 #else
-        return format("%p", name, this);
+        return format("%s %p", name, this);
 #endif
     }
 
