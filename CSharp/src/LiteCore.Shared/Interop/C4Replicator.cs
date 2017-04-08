@@ -35,7 +35,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-        unsafe delegate void C4ReplicatorStateChangedCallback(C4Replicator* replicator,
+        unsafe delegate void C4ReplicatorStatusChangedCallback(C4Replicator* replicator,
             C4ReplicatorStatus replicatorState, void* context);
 
 
@@ -55,7 +55,7 @@ namespace LiteCore.Interop
         private static readonly Dictionary<long, ReplicatorStateChangedCallback> _StaticMap =
             new Dictionary<long, ReplicatorStateChangedCallback>();
 
-        internal C4ReplicatorStateChangedCallback NativeCallback { get; }
+        internal C4ReplicatorStatusChangedCallback NativeCallback { get; }
 
         internal void* NativeContext { get; }
 
@@ -66,11 +66,11 @@ namespace LiteCore.Interop
             _callback = callback;
             _context = context;
             _StaticMap[_id] = this;
-            NativeCallback = new C4ReplicatorStateChangedCallback(StateChanged);
+            NativeCallback = new C4ReplicatorStatusChangedCallback(StateChanged);
             NativeContext = (void *)nextId;
         }
 
-        [MonoPInvokeCallback(typeof(C4ReplicatorStateChangedCallback))]
+        [MonoPInvokeCallback(typeof(C4ReplicatorStatusChangedCallback))]
         private static void StateChanged(C4Replicator* replicator, C4ReplicatorStatus state, void* context)
         {
             var id = (long)context;
@@ -96,8 +96,8 @@ namespace LiteCore.Interop
             C4Database *otherDb, C4ReplicatorMode push, C4ReplicatorMode pull, ReplicatorStateChangedCallback onStateChanged, 
             C4Error* err)
         {
-            return Native.c4repl_new(db, remoteAddress, remoteDatabaseName, otherDb, push, pull, onStateChanged.NativeCallback,
-                onStateChanged.NativeContext, err);
+            return Native.c4repl_new(db, remoteAddress, remoteDatabaseName, otherDb, push, pull, onStateChanged?.NativeCallback,
+                onStateChanged != null ? onStateChanged.NativeContext : null, err);
         }
     }
 }
