@@ -57,6 +57,7 @@ include_directories("vendor/fleece/Fleece"
 
 if(WIN32)
       include_directories("MSVC")
+endif()
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
@@ -90,7 +91,7 @@ if (APPLE)
 else()
     include_directories(${OPENSSL_INCLUDE_DIR}
       ${SQLITE3_INCLUDE_DIR})
-    elseif(ANDROID)
+    if(ANDROID)
       include_directories("LiteCore/Android")
     endif()
 endif()
