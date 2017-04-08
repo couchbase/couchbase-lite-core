@@ -26,6 +26,11 @@ using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::websocket;
 
+extern "C" {
+    void C4RegisterSocketFactory() {
+       
+    }
+}
 
 namespace litecore { namespace websocket {
 

@@ -54,7 +54,8 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/SQLiteCpp/include"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
-                    "vendor/BLIP-Cpp/src/util")
+                    "vendor/BLIP-Cpp/src/util"
+                    "vendor/BLIP-Cpp/src/websocket")
 
 if(WIN32)
   include_directories("MSVC")
@@ -114,12 +115,18 @@ aux_source_directory(LiteCore/VersionVectors  VERSIONVECTORS_SRC)
 aux_source_directory(LiteCore/Support         SUPPORT_SRC)
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 aux_source_directory(Replicator               REPLICATOR_SRC)
-if (APPLE)
+if (APPLE AND NOT BLIP_NO_FRAMING)
     include_directories("Obj-C")
     set(REPLICATOR_SRC ${REPLICATOR_SRC}
       "Replicator/Obj-C/CBLWebSocket.mm"
       "Replicator/Obj-C/CBLHTTPLogic.m"
     )
+endif()
+
+if(BLIP_NO_FRAMING)
+    LIST(REMOVE_ITEM REPLICATOR_SRC Replicator/c4Socket.cc)
+else()
+    LIST(REMOVE_ITEM REPLICATOR_SRC Replicator/c4WebSocket.cc)
 endif()
 
 if(!MSVC)

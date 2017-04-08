@@ -14,12 +14,12 @@ mkdir ios-sim
 mkdir ios-fat
 
 pushd ios
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=IOS -DIOS_DEPLOYMENT_TARGET=8.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo $ENABLE_BITCODE ../..
+cmake -DBLIP_NO_FRAMING=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=IOS -DIOS_DEPLOYMENT_TARGET=8.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo $ENABLE_BITCODE ../..
 make -j8 LiteCore
 
 popd
 pushd ios-sim
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=IOS-SIMULATOR -DIOS_DEPLOYMENT_TARGET=8.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
+cmake -DBLIP_NO_FRAMING=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=IOS-SIMULATOR -DIOS_DEPLOYMENT_TARGET=8.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
 make -j8 LiteCore
 
 popd

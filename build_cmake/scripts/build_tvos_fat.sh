@@ -14,12 +14,12 @@ mkdir tvos-sim
 mkdir tvos-fat
 
 pushd tvos
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo $ENABLE_BITCODE ../..
+cmake -DBLIP_NO_FRAMING=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo $ENABLE_BITCODE ../..
 make -j8 LiteCore
 
 popd
 pushd tvos-sim
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS-SIMULATOR -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
+cmake -DBLIP_NO_FRAMING=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS-SIMULATOR -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
 make -j8 LiteCore
 
 popd
