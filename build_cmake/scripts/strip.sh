@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT_DIR=`dirname $0`
 PREFIX=""
 if [[ $# > 0 ]]; then
   PREFIX="${1}"
@@ -10,7 +11,7 @@ while read line; do
   if [[ "$line" != "" && "${line:0:1}" != "#" ]]; then
     echo "-K ${line:1}" >> stripopts
   fi
-done < ../C/c4.exp
+done < $SCRIPT_DIR/../../C/c4.exp
 
 echo "libLiteCore.so" >> stripopts
 

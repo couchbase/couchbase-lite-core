@@ -175,7 +175,7 @@ if (APPLE)
                                     "-framework Security"
                                     z)
 elseif(UNIX AND NOT ANDROID)
-    target_link_libraries(LiteCore PRIVATE crypto  bsd)
+    target_link_libraries(LiteCore PRIVATE crypto bsd atomic)
     target_link_libraries(LiteCore PUBLIC z)
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_OPENSSL)
