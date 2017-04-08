@@ -49,8 +49,16 @@
         #define be64toh(x) ntohll(x)
     #endif
 #else
+    #ifndef _BSD_SOURCE
     #define _BSD_SOURCE
+    #endif
     #include <endian.h>
+    #include <arpa/inet.h>
+#ifdef __ANDROID__
+    #include <arc4random.h>
+#else
+    #include <bsd/stdlib.h>
+#endif
 #endif
 //jpa: End of code adapted from Networking.h
 
