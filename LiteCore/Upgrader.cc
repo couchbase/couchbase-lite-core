@@ -21,6 +21,11 @@ using namespace std;
 using namespace fleece;
 using namespace c4Internal;
 
+// If 1, `_attachment` dicts in revisions will be modified to add "_cbltype":"blob" and remove
+// obsolete keys "stub", "follows", "revpos". But this is probably a bad idea because a revision
+// is supposed to be globally immutable. --jpa 4/10/17
+#define MODIFY_REVS 0
+
 namespace litecore {
 
     class Upgrader {
@@ -136,8 +141,13 @@ namespace litecore {
                 if (current) {
                     // Convert the JSON body to Fleece:
                     body = convertBody(asSlice(_allRevs->getColumn(5)));
-                    if (hasAttachments)
+                    if (hasAttachments) {
+#if MODIFY_REVS
                         body = convertAttachments(body);
+#else
+                        copyAttachments(body);
+#endif
+                    }
                     put.body = body;
                 } else {
                     put.body = nullslice;
@@ -161,8 +171,27 @@ namespace litecore {
         }
 
 
+        void copyAttachments(slice fleeceBody) {
+            auto root = Value::fromTrustedData(fleeceBody)->asDict();
+            if (!root) return;
+            auto atts = root->get("_attachments"_sl, _sharedKeys);
+            if (!atts) return;
+            auto attsDict = atts->asDict();
+            if (!attsDict) return;
+            for (Dict::iterator i(attsDict, _sharedKeys); i; ++i) {
+                auto meta = i.value()->asDict();
+                if (meta) {
+                    auto digest = meta->get("digest"_sl, _sharedKeys);
+                    if (digest)
+                        copyAttachment((string)digest->asString());
+                }
+            }
+        }
+
+
         // Further converts a Fleece document body by removing "stub", "follows", "revpos" keys
         // from attachment metadata. Also copies all referenced blobs to the new db.
+        // (Only called when MODIFY_REVS is set.)
         alloc_slice convertAttachments(slice fleeceBody) {
             Encoder &enc = _newDB->sharedEncoder();
             const Dict *root = Value::fromTrustedData(fleeceBody)->asDict();
@@ -196,6 +225,7 @@ namespace litecore {
 
         // Copies attachment metadata to the encoder, omitting obsolete keys.
         // Also copies the referenced blob to the new db if it exists in the old one.
+        // (Only called when MODIFY_REVS is set.)
         void writeAttachment(Encoder &enc, const Dict *attachment) {
             enc.beginDictionary();
             enc.writeKey("_cbltype"_sl);
