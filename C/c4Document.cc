@@ -330,13 +330,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
 
 C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        auto root = Value::fromTrustedData(doc->selectedRev.body);
-        if (!root) {
-            recordError(LiteCoreDomain, kC4ErrorCorruptData, outError);
-            return C4SliceResult();
-        }
-        Database *db = c4Internal::internal(doc)->database();
-        return sliceResult(root->toJSON(db->documentKeys()));
+        return sliceResult(c4Internal::internal(doc)->bodyAsJSON());
     });
 }
 

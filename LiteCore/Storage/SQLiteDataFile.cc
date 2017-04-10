@@ -94,6 +94,19 @@ namespace litecore {
     }
 
 
+    SQLiteDataFile::Factory::Factory() {
+        sqlite3_config(SQLITE_CONFIG_LOG, [](void *pArg, int errCode, const char *msg) {
+            int baseCode = errCode & 0xFF;
+            if (baseCode == SQLITE_SCHEMA)
+                return;     // ignore harmless "statement aborts ... database schema has changed" warning
+            if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY)
+                Log("SQLite message: %s", msg);
+            else
+                Warn("SQLite error (code %d): %s", errCode, msg);
+        }, NULL);
+    }
+
+
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
         static int sEncryptionEnabled = -1;
         static once_flag once;

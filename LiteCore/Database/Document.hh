@@ -13,6 +13,7 @@
 #include "DataFile.hh"
 #include "RefCounted.hh"
 #include "Logging.hh"
+#include "Value.hh"
 
 namespace litecore {
     class Record;
@@ -100,6 +101,13 @@ namespace c4Internal {
             return result;
         }
 
+        alloc_slice bodyAsJSON() {
+            auto root = fleece::Value::fromTrustedData(selectedRev.body);
+            if (!root)
+                error::_throw(error::CorruptData);
+            return root->toJSON(database()->documentKeys());
+        }
+
         virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
         virtual bool putNewRevision(const C4DocPutRequest&) =0;
 
@@ -110,6 +118,8 @@ namespace c4Internal {
         virtual bool removeSelectedRevBody() noexcept {
             return false;
         }
+
+        virtual void save(unsigned maxRevTreeDepth =0) { }
 
     protected:
         void clearSelectedRevision() noexcept {

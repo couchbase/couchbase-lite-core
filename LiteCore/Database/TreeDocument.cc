@@ -190,7 +190,7 @@ namespace c4Internal {
             return true;
         }
 
-        void save(unsigned maxRevTreeDepth) {
+        void save(unsigned maxRevTreeDepth) override {
             if (maxRevTreeDepth == 0)
                 maxRevTreeDepth = _db->maxRevTreeDepth();
             _versionedDoc.prune(maxRevTreeDepth);

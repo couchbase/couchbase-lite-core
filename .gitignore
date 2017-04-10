@@ -31,6 +31,10 @@ CSharp/native
 project.lock.json
 *.cs.template
 
+# SQLite log files:
+*.sqlite3-wal
+*.sqlite3-shm
+
 # Misc / Uncategorized:
 *.sdf
 *.opensdf

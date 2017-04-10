@@ -58,7 +58,7 @@ using namespace std;
 class DataFileTestFixture {
 public:
 
-    static const int numberOfOptions = 2;
+    static const int numberOfOptions = 1;
 
     DataFileTestFixture()   :DataFileTestFixture(0) { }     // defaults to SQLite, rev-trees
     DataFileTestFixture(int testOption);

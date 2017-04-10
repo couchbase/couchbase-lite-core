@@ -44,6 +44,7 @@ namespace litecore {
 
         class Factory : public DataFile::Factory {
         public:
+            Factory();
             virtual const char* cname() override {return "SQLite";}
             virtual std::string filenameExtension() override {return ".sqlite3";}
             virtual bool encryptionEnabled(EncryptionAlgorithm) override;
