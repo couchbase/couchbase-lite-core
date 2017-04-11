@@ -66,11 +66,6 @@
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		2745DE4C1E735B9000F02CA0 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
-		27491C9F1E7B2532001DC54B /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
-		27491CB21E7DBEA0001DC54B /* CBLWebSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */; };
-		27491CB31E7DBEA0001DC54B /* CBLHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */; };
-		27491CB41E7DBF8C001DC54B /* CBLWebSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA41E7B6E88001DC54B /* CBLWebSocket.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		27491CB51E7DBFA3001DC54B /* c4Socket.h in Headers */ = {isa = PBXBuildFile; fileRef = 27491C9A1E7B1001001DC54B /* c4Socket.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
@@ -102,28 +97,19 @@
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
-		2754B0C21E5F49AA00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
-		2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2759DC081E6F682200F3C4B2 /* ReplicatorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2759DC071E6F682200F3C4B2 /* ReplicatorTest.cc */; };
-		2759DC261E70908900F3C4B2 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
-		275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
-		275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		275CE0FD1E5B78770084E014 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		275CE0FE1E5B78F70084E014 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
-		275CE0FF1E5B79150084E014 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
 		275CE1001E5B79220084E014 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		275CE1061E5B79A80084E014 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
-		275CE1151E5BAC180084E014 /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
-		275CE1161E5BAC180084E014 /* Worker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275CE1141E5BAC180084E014 /* Worker.hh */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
-		2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */; };
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
@@ -139,14 +125,7 @@
 		276D15421DFF54B800543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
 		276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		277015261D55112E008BADD7 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
-		2773FCF61E6783A000108780 /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
-		2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FCF51E6783A000108780 /* Checkpoint.hh */; };
-		2773FCFE1E67A64D00108780 /* RemoteSequenceSet.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
-		2779CC531E848BB100F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
-		2779CC5D1E848C3000F0D251 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
-		2779CC5E1E848C9400F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; };
-		2779CC5F1E8498A000F0D251 /* CouchbaseLiteReplicator.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963631D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
@@ -165,8 +144,6 @@
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
-		279976341E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
-		279976351E94AAD000B27639 /* IncomingBlob.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279976321E94AAD000B27639 /* IncomingBlob.hh */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
 		279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
@@ -189,18 +166,7 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
-		27B842611E5CC6500094903E /* DBWorker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBWorker.cc */; };
-		27B842621E5CC6500094903E /* DBWorker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B842601E5CC6500094903E /* DBWorker.hh */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
-		27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
-		27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
-		27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7D71E52613C00CE1989 /* Replicator.hh */; };
-		27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
-		27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7DF1E526CCC00CE1989 /* Puller.hh */; };
-		27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
-		27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7E31E52965200CE1989 /* Pusher.hh */; };
-		27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A701D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
@@ -233,8 +199,6 @@
 		27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
 		27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */ = {isa = PBXBuildFile; fileRef = 27E11A5F1BD1EBAD00D8DB7D /* Constants.java */; };
-		27E35AA11E8DD9AA00E103F9 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
-		27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */; };
 		27E35AA61E8EE05700E103F9 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
 		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
@@ -367,6 +331,20 @@
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72C086961CBDFD6600808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
+		72DE48081E9C550A00B60952 /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
+		72DE48091E9C550A00B60952 /* DBWorker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBWorker.cc */; };
+		72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
+		72DE480B1E9C550A00B60952 /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
+		72DE480C1E9C550A00B60952 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
+		72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
+		72DE480E1E9C550A00B60952 /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
+		72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
+		72DE48101E9C550A00B60952 /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
+		72DE48111E9C550A00B60952 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		72DE48121E9C550A00B60952 /* CBLWebSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */; };
+		72DE48131E9C550A00B60952 /* CBLHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */; };
+		72DE48181E9C559000B60952 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
+		72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
 		93CD010C1E933BE100AFB3FA /* DBWorker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* DBWorker.cc */; };
 		93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
@@ -457,13 +435,6 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
 		};
-		275CE1031E5B794B0084E014 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27CCC7C81E525E6D00CE1989;
-			remoteInfo = Replicator;
-		};
 		27732CE11D734EFB006D3802 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -492,26 +463,12 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
 		};
-		2779CC591E848BC000F0D251 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27CCC7C81E525E6D00CE1989;
-			remoteInfo = Replicator;
-		};
 		2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
-		};
-		27A924AD1D9B316D00086206 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27A924931D9B316D00086206;
-			remoteInfo = "LiteCore Shell";
 		};
 		27CCC7BC1E525DD800CE1989 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -526,27 +483,6 @@
 			proxyType = 2;
 			remoteGlobalIDString = 27EF6A9E1E2B0CE9004748DF;
 			remoteInfo = bliptest;
-		};
-		27CCC7E81E52980800CE1989 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
-			remoteInfo = "LiteCore dylib";
-		};
-		27CCC7EA1E52981000CE1989 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 27EF69B61E282549004748DF;
-			remoteInfo = blip_cpp;
-		};
-		27CCC7EE1E52981800CE1989 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
-			remoteInfo = Fleece;
 		};
 		27E35AA71E8EE07D00E103F9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -611,6 +547,13 @@
 			remoteGlobalIDString = 27EF807319142C2500A327B9;
 			remoteInfo = Tokenizer;
 		};
+		72DE48191E9C559300B60952 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF69B61E282549004748DF;
+			remoteInfo = blip_cpp;
+		};
 		93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
@@ -645,7 +588,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
-				2779CC5F1E8498A000F0D251 /* CouchbaseLiteReplicator.framework in CopyFiles */,
 				27A924BD1D9B358300086206 /* libLiteCore.dylib in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -878,7 +820,6 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
-		27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CouchbaseLiteReplicator.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CouchbaseLiteReplicator.h; path = ../Xcode/Replicator/CouchbaseLiteReplicator.h; sourceTree = "<group>"; };
 		27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Replicator-Info.plist"; path = "../Xcode/Replicator/Replicator-Info.plist"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
@@ -1092,7 +1033,6 @@
 			files = (
 				27E35AA61E8EE05700E103F9 /* libFleece.a in Frameworks */,
 				275CE1001E5B79220084E014 /* libLiteCore.dylib in Frameworks */,
-				275CE0FF1E5B79150084E014 /* CouchbaseLiteReplicator.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1100,7 +1040,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2779CC531E848BB100F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */,
 				7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1109,18 +1048,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2779CC5E1E848C9400F0D251 /* CouchbaseLiteReplicator.framework in Frameworks */,
 				7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27CCC7C51E525E6D00CE1989 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27CCC7E61E5297E900CE1989 /* libLiteCore.dylib in Frameworks */,
-				27CCC7D11E52602800CE1989 /* libblip_cpp.a in Frameworks */,
-				2759DC261E70908900F3C4B2 /* libz.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1145,6 +1073,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
+				72DE48181E9C559000B60952 /* libblip_cpp.a in Frameworks */,
 				27FA09C31D70AE90005888AA /* libFleece.a in Frameworks */,
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
 				27FA09C11D70AE24005888AA /* libsqlite3.tbd in Frameworks */,
@@ -1326,7 +1256,6 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
-				27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */,
 				275CE0F41E5B769C0084E014 /* ReplicatorTests */,
 			);
 			name = Products;
@@ -1878,28 +1807,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27CCC7C61E525E6D00CE1989 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				27CCC7CD1E525E6D00CE1989 /* CouchbaseLiteReplicator.h in Headers */,
-				27491CB51E7DBFA3001DC54B /* c4Socket.h in Headers */,
-				275CE0E41E57B7E70084E014 /* c4Replicator.h in Headers */,
-				2754B0C31E5F49AA00A05FD0 /* StringUtil.hh in Headers */,
-				27491CB41E7DBF8C001DC54B /* CBLWebSocket.h in Headers */,
-				27CCC7E51E52965200CE1989 /* Pusher.hh in Headers */,
-				2773FCF71E6783A000108780 /* Checkpoint.hh in Headers */,
-				27CCC7D91E52613C00CE1989 /* Replicator.hh in Headers */,
-				2766F9E71E64CC03008FC9E5 /* SequenceSet.hh in Headers */,
-				27E35AA21E8DD9AA00E103F9 /* IncomingRev.hh in Headers */,
-				27B842621E5CC6500094903E /* DBWorker.hh in Headers */,
-				275CE1161E5BAC180084E014 /* Worker.hh in Headers */,
-				279976351E94AAD000B27639 /* IncomingBlob.hh in Headers */,
-				27CCC7E11E526CCC00CE1989 /* Puller.hh in Headers */,
-				2773FCFE1E67A64D00108780 /* RemoteSequenceSet.hh in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		27EF807219142C2500A327B9 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -2064,7 +1971,6 @@
 			);
 			dependencies = (
 				27E35AA81E8EE07D00E103F9 /* PBXTargetDependency */,
-				275CE1041E5B794B0084E014 /* PBXTargetDependency */,
 				275CE1021E5B79470084E014 /* PBXTargetDependency */,
 			);
 			name = ReplicatorTests;
@@ -2084,7 +1990,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				2779CC5A1E848BC000F0D251 /* PBXTargetDependency */,
 				2779CC581E848BBC00F0D251 /* PBXTargetDependency */,
 			);
 			name = "LiteCore-iOS";
@@ -2103,33 +2008,11 @@
 			buildRules = (
 			);
 			dependencies = (
-				27A924AE1D9B316D00086206 /* PBXTargetDependency */,
 			);
 			name = "LiteCore-iOS Tests";
 			productName = "LiteCore ShellTests";
 			productReference = 27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		27CCC7C81E525E6D00CE1989 /* Replicator */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 27CCC7CE1E525E6D00CE1989 /* Build configuration list for PBXNativeTarget "Replicator" */;
-			buildPhases = (
-				27CCC7C41E525E6D00CE1989 /* Sources */,
-				27CCC7C51E525E6D00CE1989 /* Frameworks */,
-				27CCC7C61E525E6D00CE1989 /* Headers */,
-				27CCC7C71E525E6D00CE1989 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				27CCC7EF1E52981800CE1989 /* PBXTargetDependency */,
-				27CCC7EB1E52981000CE1989 /* PBXTargetDependency */,
-				27CCC7E91E52980800CE1989 /* PBXTargetDependency */,
-			);
-			name = Replicator;
-			productName = Replicator;
-			productReference = 27CCC7C91E525E6D00CE1989 /* CouchbaseLiteReplicator.framework */;
-			productType = "com.apple.product-type.framework";
 		};
 		27EF807319142C2500A327B9 /* Tokenizer */ = {
 			isa = PBXNativeTarget;
@@ -2180,6 +2063,7 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
+				72DE481A1E9C559300B60952 /* PBXTargetDependency */,
 				27FA09C51D70AE96005888AA /* PBXTargetDependency */,
 				720EA4241BA8F388002B8416 /* PBXTargetDependency */,
 			);
@@ -2223,10 +2107,6 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = 27A924931D9B316D00086206;
 					};
-					27CCC7C81E525E6D00CE1989 = {
-						CreatedOnToolsVersion = 8.2.1;
-						ProvisioningStyle = Automatic;
-					};
 				};
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
@@ -2257,7 +2137,6 @@
 				27139B2F18F8E9750021A9A3 /* LiteCore Tests */,
 				2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */,
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
-				27CCC7C81E525E6D00CE1989 /* Replicator */,
 				275CE0F31E5B769C0084E014 /* ReplicatorTests */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
@@ -2330,13 +2209,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				276D15351DFCE21500543B1B /* data in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27CCC7C71E525E6D00CE1989 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2455,33 +2327,12 @@
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
-				2779CC5D1E848C3000F0D251 /* ReplicatorAPITest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
 				27A924C51D9B371700086206 /* c4PerfTest.cc in Sources */,
 				27A924C41D9B371700086206 /* c4AllDocsPerformanceTest.cc in Sources */,
 				27A924C61D9B371700086206 /* c4ThreadingTest.cc in Sources */,
 				27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		27CCC7C41E525E6D00CE1989 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2754B0C21E5F49AA00A05FD0 /* StringUtil.cc in Sources */,
-				27CCC7E41E52965200CE1989 /* Pusher.cc in Sources */,
-				279976341E94AAD000B27639 /* IncomingBlob.cc in Sources */,
-				27CCC7E01E526CCC00CE1989 /* Puller.cc in Sources */,
-				27CCC7D81E52613C00CE1989 /* Replicator.cc in Sources */,
-				27B842611E5CC6500094903E /* DBWorker.cc in Sources */,
-				27E35AA11E8DD9AA00E103F9 /* IncomingRev.cc in Sources */,
-				27491CB21E7DBEA0001DC54B /* CBLWebSocket.mm in Sources */,
-				275CE1151E5BAC180084E014 /* Worker.cc in Sources */,
-				27491C9F1E7B2532001DC54B /* c4Socket.cc in Sources */,
-				27491CB31E7DBEA0001DC54B /* CBLHTTPLogic.m in Sources */,
-				275CE0E31E57B7E70084E014 /* c4Replicator.cc in Sources */,
-				2773FCF61E6783A000108780 /* Checkpoint.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2622,30 +2473,42 @@
 				27D74A831D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27D74A7B1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				27D74A811D4D3F2300D806E0 /* Exception.cpp in Sources */,
+				72DE48081E9C550A00B60952 /* Worker.cc in Sources */,
 				278963631D7A376900493096 /* EncryptedStream.cc in Sources */,
 				2705154E1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
+				72DE480E1E9C550A00B60952 /* Pusher.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				27D74A7F1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27D74A7D1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
+				72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */,
 				276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
+				72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
+				72DE48121E9C550A00B60952 /* CBLWebSocket.mm in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
+				72DE48101E9C550A00B60952 /* c4Socket.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
+				72DE480C1E9C550A00B60952 /* IncomingRev.cc in Sources */,
 				276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */,
+				72DE48091E9C550A00B60952 /* DBWorker.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
+				72DE48111E9C550A00B60952 /* c4Replicator.cc in Sources */,
+				72DE480B1E9C550A00B60952 /* Puller.cc in Sources */,
 				2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				279794A71D307626001D0F3A /* RevisionStore.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
+				72DE48131E9C550A00B60952 /* CBLHTTPLogic.m in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
+				72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,
 				27393A881C8A353A00829C9B /* Error.cc in Sources */,
@@ -2693,11 +2556,6 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 275CE1011E5B79470084E014 /* PBXContainerItemProxy */;
 		};
-		275CE1041E5B794B0084E014 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27CCC7C81E525E6D00CE1989 /* Replicator */;
-			targetProxy = 275CE1031E5B794B0084E014 /* PBXContainerItemProxy */;
-		};
 		27732CE21D734EFB006D3802 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */;
@@ -2718,35 +2576,10 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 2779CC571E848BBC00F0D251 /* PBXContainerItemProxy */;
 		};
-		2779CC5A1E848BC000F0D251 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27CCC7C81E525E6D00CE1989 /* Replicator */;
-			targetProxy = 2779CC591E848BC000F0D251 /* PBXContainerItemProxy */;
-		};
 		2797BCB61C10F76F00E5C991 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
-		};
-		27A924AE1D9B316D00086206 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27A924931D9B316D00086206 /* LiteCore-iOS */;
-			targetProxy = 27A924AD1D9B316D00086206 /* PBXContainerItemProxy */;
-		};
-		27CCC7E91E52980800CE1989 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
-			targetProxy = 27CCC7E81E52980800CE1989 /* PBXContainerItemProxy */;
-		};
-		27CCC7EB1E52981000CE1989 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = blip_cpp;
-			targetProxy = 27CCC7EA1E52981000CE1989 /* PBXContainerItemProxy */;
-		};
-		27CCC7EF1E52981800CE1989 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = Fleece;
-			targetProxy = 27CCC7EE1E52981800CE1989 /* PBXContainerItemProxy */;
 		};
 		27E35AA81E8EE07D00E103F9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2777,6 +2610,11 @@
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
 			targetProxy = 720EA4231BA8F388002B8416 /* PBXContainerItemProxy */;
+		};
+		72DE481A1E9C559300B60952 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = blip_cpp;
+			targetProxy = 72DE48191E9C559300B60952 /* PBXContainerItemProxy */;
 		};
 		93CD01191E933C0600AFB3FA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3049,20 +2887,6 @@
 			};
 			name = Release;
 		};
-		27CCC7CF1E525E6D00CE1989 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27CCC7F01E52993400CE1989 /* Replicator.xcconfig */;
-			buildSettings = {
-			};
-			name = Debug;
-		};
-		27CCC7D01E525E6D00CE1989 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 275CE10F1E5B93060084E014 /* Replicator_Release.xcconfig */;
-			buildSettings = {
-			};
-			name = Release;
-		};
 		27EF807619142C2500A327B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
@@ -3185,15 +3009,6 @@
 			buildConfigurations = (
 				27B7E0F318F8FB4800044EBA /* Debug */,
 				27B7E0F418F8FB4800044EBA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		27CCC7CE1E525E6D00CE1989 /* Build configuration list for PBXNativeTarget "Replicator" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				27CCC7CF1E525E6D00CE1989 /* Debug */,
-				27CCC7D01E525E6D00CE1989 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
