@@ -124,7 +124,7 @@ namespace litecore {
 
         void sort();
 
-        void saved();
+        void saved(sequence_t newSequence);
 
 #if DEBUG
         std::string dump();

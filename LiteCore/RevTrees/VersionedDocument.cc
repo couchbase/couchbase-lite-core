@@ -97,10 +97,10 @@ namespace litecore {
             // into the existing body buffer.
             auto result = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
             _rec.updateSequence(result.seq);
+            saved(result.seq);
         } else {
             _db.del(_rec.key(), transaction);
         }
-        saved();
         _changed = false;
     }
 

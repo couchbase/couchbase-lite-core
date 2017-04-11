@@ -201,6 +201,8 @@ namespace c4Internal {
             selectedRev.flags &= ~kRevNew;
             if (_versionedDoc.sequence() > sequence) {
                 sequence = _versionedDoc.sequence();
+                if (selectedRev.sequence == 0)
+                    selectedRev.sequence = sequence;
                 _db->saved(this);
             }
         }

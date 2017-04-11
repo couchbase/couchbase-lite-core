@@ -439,9 +439,12 @@ namespace litecore {
         _sorted = true;
     }
 
-    void RevTree::saved() {
-        for (auto &rev : _revs)
+    void RevTree::saved(sequence_t newSequence) {
+        for (auto &rev : _revs) {
             rev.clearFlag(Rev::kNew);
+            if (rev.sequence == 0)
+                rev.sequence = newSequence;
+        }
     }
 
 #if DEBUG
