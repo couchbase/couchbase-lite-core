@@ -166,7 +166,4 @@ namespace litecore { namespace websocket {
         std::set<std::string> _protocols;
     };
 
-
-    LogDomain MockWebSocket::WSMock("WSMock");
-
 } }
