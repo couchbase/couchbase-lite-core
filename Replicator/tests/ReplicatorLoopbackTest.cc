@@ -6,14 +6,10 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#if DEBUG // This uses internal APIs that aren't exported in release builds of the replicator
-
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
-#include <iostream>
-#include "c4Test.hh"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
 #include "StringUtil.hh"
@@ -21,6 +17,8 @@
 #include <chrono>
 #include <future>
 #include <thread>
+
+#include "c4Test.hh"
 
 using namespace std;
 using namespace fleece;
@@ -186,7 +184,7 @@ public:
     }
 
     LoopbackProvider provider;
-    C4Database* db2;
+    C4Database* db2 {nullptr};
     Retained<Replicator> replClient, replServer;
     alloc_slice checkpointID;
     unique_ptr<thread> parallelThread;
@@ -325,5 +323,3 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
 
     checkAttachments(db2, blobKeys, attachments);
 }
-
-#endif // DEBUG

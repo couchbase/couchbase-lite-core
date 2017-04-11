@@ -1,0 +1,18 @@
+//
+//  CppTests.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 4/11/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "Tests.xcconfig"
+
+SDKROOT                     = macosx
+SUPPORTED_PLATFORMS         = macosx
+
+HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece/  $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp $(SRCROOT)/../vendor/BLIP-Cpp/src/util $(SRCROOT)/../vendor/fleece/vendor/catch/
+
+ONLY_ACTIVE_ARCH            = YES
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1
