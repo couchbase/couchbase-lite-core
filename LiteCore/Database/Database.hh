@@ -123,6 +123,7 @@ namespace c4Internal {
 
     private:
         static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
+        void _cleanupTransaction(bool committed);
 
         unique_ptr<DataFile>        _db;                    // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null

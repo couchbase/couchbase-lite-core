@@ -398,19 +398,22 @@ namespace c4Internal {
                 else
                     t->abort();
             } catch (...) {
-                delete t;
-                _transaction = nullptr;
-                {
-                    lock_guard<mutex> lock(_sequenceTracker->mutex());
-                    _sequenceTracker->endTransaction(false);
-                }
+                _cleanupTransaction(false);
                 throw;
             }
-            delete t;
-            _transaction = nullptr;
+            _cleanupTransaction(commit);
+        }
+    #if C4DB_THREADSAFE
+        _transactionMutex.unlock(); // undoes lock in beginTransaction()
+    #endif
+    }
 
+
+    // The cleanup part of endTransaction
+    void Database::_cleanupTransaction(bool committed) {
+        {
             lock_guard<mutex> lock(_sequenceTracker->mutex());
-            if (commit) {
+            if (committed) {
                 // Notify other Database instances on this file:
                 _db->forOtherDataFiles([&](DataFile *other) {
                     auto otherDatabase = (Database*)other->owner();
@@ -418,12 +421,10 @@ namespace c4Internal {
                         otherDatabase->externalTransactionCommitted(*_sequenceTracker);
                 });
             }
-
-            _sequenceTracker->endTransaction(commit);
+            _sequenceTracker->endTransaction(committed);
         }
-    #if C4DB_THREADSAFE
-        _transactionMutex.unlock(); // undoes lock in beginTransaction()
-    #endif
+        delete _transaction;
+        _transaction = nullptr;
     }
 
 
