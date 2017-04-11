@@ -145,6 +145,7 @@ C4Test::C4Test(int testOption)
         FLEncoder_EndDict(enc);
         auto result = FLEncoder_Finish(enc, nullptr);
         kFleeceBody = {result.buf, result.size};
+        FLEncoder_Free(enc);
     }
 
 #if 0
