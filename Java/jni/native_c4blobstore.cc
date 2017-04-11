@@ -168,7 +168,7 @@ Java_com_couchbase_litecore_C4BlobStore_create(JNIEnv *env, jclass clazz, jlong 
 
     C4BlobKey blobKey;
     C4Error error = {};
-    if (!c4blob_create((C4BlobStore *) jblobstore, ccontents, &blobKey, &error)) {
+    if (!c4blob_create((C4BlobStore *) jblobstore, ccontents, nullptr, &blobKey, &error)) {
         throwError(env, error);
     }
 
@@ -236,7 +236,7 @@ Java_com_couchbase_litecore_C4BlobReadStream_read(JNIEnv *env, jclass clazz, jlo
     char buff[(size_t) jsize];
     size_t read = c4stream_read((C4ReadStream *) jstream,
                                 buff,
-                                (size_t)jsize,
+                                (size_t) jsize,
                                 &error);
     return toJByteArray(env, {buff, read});
 }
@@ -314,9 +314,10 @@ Java_com_couchbase_litecore_C4BlobWriteStream_computeBlobKey(JNIEnv *env, jclass
  * Method:    install
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4BlobWriteStream_install(JNIEnv *env, jclass clazz, jlong jstream) {
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4BlobWriteStream_install(JNIEnv *env, jclass clazz, jlong jstream) {
     C4Error error = {};
-    if (!c4stream_install((C4WriteStream *) jstream, &error))
+    if (!c4stream_install((C4WriteStream *) jstream, nullptr, &error))
         throwError(env, error);
 }
 
