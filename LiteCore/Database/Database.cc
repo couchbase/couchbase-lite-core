@@ -488,8 +488,11 @@ namespace c4Internal {
     void Database::saved(Document* doc) {
         WITH_LOCK(this);
         lock_guard<mutex> lock(_sequenceTracker->mutex());
-        _sequenceTracker->documentChanged(doc->_docIDBuf, doc->_revIDBuf, doc->sequence);
-        //NOTE: This assumes the doc's current revID is the new revision's
+        Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
+        _sequenceTracker->documentChanged(doc->_docIDBuf,
+                                          doc->_selectedRevIDBuf,
+                                          doc->selectedRev.sequence,
+                                          doc->selectedRev.body.size);
     }
 
 }

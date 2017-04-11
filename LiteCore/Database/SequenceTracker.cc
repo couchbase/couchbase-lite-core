@@ -72,7 +72,8 @@ namespace litecore {
                 nextEntry = next(entry);
                 if (!entry->isPlaceholder()) {
                     // moves entry!
-                    _documentChanged(entry->docID, entry->revID, entry->committedSequence);
+                    _documentChanged(entry->docID, entry->revID,
+                                     entry->committedSequence, entry->bodySize);
                 }
             } while (entry != lastEntry);
         }
@@ -84,18 +85,21 @@ namespace litecore {
 
     void SequenceTracker::documentChanged(const alloc_slice &docID,
                                           const alloc_slice &revID,
-                                          sequence_t sequence) {
+                                          sequence_t sequence,
+                                          uint64_t bodySize) {
         Assert(inTransaction());
         Assert(sequence > _lastSequence);
         _lastSequence = sequence;
-        _documentChanged(docID, revID, sequence);
+        _documentChanged(docID, revID, sequence, bodySize);
     }
 
 
     void SequenceTracker::_documentChanged(const alloc_slice &docID,
                                            const alloc_slice &revID,
-                                           sequence_t sequence)
+                                           sequence_t sequence,
+                                           uint64_t bodySize)
     {
+        auto shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool listChanged = true;
         Entry *entry;
         auto i = _byDocID.find(docID);
@@ -115,9 +119,10 @@ namespace litecore {
             // Update its revID & sequence:
             entry->revID = revID;
             entry->sequence = sequence;
+            entry->bodySize = shortBodySize;
         } else {
             // or create a new entry at the end:
-            _changes.emplace_back(docID, revID, sequence);
+            _changes.emplace_back(docID, revID, sequence, shortBodySize);
             iterator change = prev(_changes.end());
             _byDocID[change->docID] = change;
             entry = &*change;
@@ -153,7 +158,8 @@ namespace litecore {
 
     void SequenceTracker::documentsChanged(const vector<const Entry*>& entries) {
         for (auto change : entries)
-            documentChanged(change->docID, change->revID, change->committedSequence);
+            documentChanged(change->docID, change->revID,
+                            change->committedSequence, change->bodySize);
     }
 
 
@@ -162,7 +168,7 @@ namespace litecore {
         Assert(other.inTransaction());
         for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
             _lastSequence = e->sequence;
-            _documentChanged(e->docID, e->revID, e->sequence);
+            _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
         }
     }
 
@@ -228,7 +234,7 @@ namespace litecore {
                     external = i->external;
                 else if (i->external != external)
                     break;
-                changes[n++] = {i->docID, i->revID, i->sequence};
+                changes[n++] = {i->docID, i->revID, i->sequence, i->bodySize};
             }
             ++i;
         }
@@ -269,7 +275,7 @@ namespace litecore {
             entry = i->second;
         } else {
             // Document isn't known yet; create an entry and put it in the _idle list
-            entry = _idle.emplace(_idle.end(), alloc_slice(docID), alloc_slice(), 0);
+            entry = _idle.emplace(_idle.end(), alloc_slice(docID), alloc_slice(), 0, 0);
             entry->idle = true;
             _byDocID[entry->docID] = entry;
         }
@@ -291,7 +297,7 @@ namespace litecore {
 
 
 #if DEBUG
-    string SequenceTracker::dump() const {
+    string SequenceTracker::dump(bool verbose) const {
         stringstream s;
         s << "[";
         bool first = true;
@@ -302,6 +308,8 @@ namespace litecore {
                 s << ", ";
             if (!i->isPlaceholder()) {
                 s << (string)i->docID << "@" << i->sequence;
+                if (verbose)
+                    s << '#' << i->bodySize;
                 if (i->external)
                     s << "'";
             } else if (_transaction && i == _transaction->_placeholder) {

@@ -248,7 +248,8 @@ namespace litecore { namespace repl {
                 nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                changes.emplace_back(c4change->docID, c4change->revID, c4change->sequence);
+                changes.emplace_back(c4change->docID, c4change->revID,
+                                     c4change->sequence, c4change->bodySize);
             }
             C4Error error = {};
             _pusher->gotChanges(changes, error);

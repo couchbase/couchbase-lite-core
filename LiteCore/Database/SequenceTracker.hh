@@ -47,7 +47,8 @@ namespace litecore {
         /** Document implementation calls this to register the change with the Notifier. */
         void documentChanged(const alloc_slice &docID,
                              const alloc_slice &revID,
-                             sequence_t sequence);
+                             sequence_t sequence,
+                             uint64_t bodySize);
 
         void documentsChanged(const std::vector<const Entry*>&);
 
@@ -65,14 +66,15 @@ namespace litecore {
             alloc_slice const               docID;
             alloc_slice                     revID;
             std::vector<DocChangeNotifier*> documentObservers;
+            uint32_t                        bodySize;
             bool                            idle     :1;
             bool                            external :1;
 
             // Placeholder entry (when sequence == 0):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
-            Entry(const alloc_slice &d, alloc_slice r, sequence_t s)
-            :docID(d), revID(r), sequence(s), idle(false), external(false) { }
+            Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs)
+            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) { }
             Entry(DatabaseChangeNotifier *o)
             :databaseObserver(o) { }    // placeholder
 
@@ -84,14 +86,16 @@ namespace litecore {
             slice docID;
             slice revID;
             sequence_t sequence;
+            uint32_t bodySize;
         };
 
 #if DEBUG
         /** Writes a string representation for debugging/testing purposes. Format is a list of
             comma-separated entries, inside square brackets. Each entry is either "docid@sequence"
             for a change, or "*" for a placeholder. The entries in an open transaction are
-            inside a pair of parentheses. */
-        std::string dump() const;
+            inside a pair of parentheses.
+            The `verbose` flag adds '#' followed by the body size to each entry. */
+        std::string dump(bool verbose =false) const;
 #endif
 
     protected:
@@ -128,7 +132,8 @@ namespace litecore {
 
         void _documentChanged(const alloc_slice &docID,
                               const alloc_slice &revID,
-                              sequence_t sequence);
+                              sequence_t sequence,
+                              uint64_t bodySize);
         const_iterator _since(sequence_t s) const;
 
         typedef std::list<Entry>::iterator iterator;

@@ -15,7 +15,6 @@
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
-#include <future>
 #include <thread>
 
 #include "c4Test.hh"
@@ -89,15 +88,16 @@ public:
     virtual void replicatorStatusChanged(Replicator* repl,
                                          const Replicator::Status &status) override
     {
+        // Note: Can't use Catch on a background thread
         if (repl == replClient) {
             ++statusChangedCalls;
             Log(">> Replicator is %s, progress %llu/%llu",
                 kC4ReplicatorActivityLevelNames[status.level],
                 status.progress.completed, status.progress.total);
-            REQUIRE(status.progress.completed <= status.progress.total);
+            assert(status.progress.completed <= status.progress.total);
             if (status.progress.total > 0) {
-                REQUIRE(status.progress.completed >= statusReceived.progress.completed);
-                REQUIRE(status.progress.total     >= statusReceived.progress.total);
+                assert(status.progress.completed >= statusReceived.progress.completed);
+                assert(status.progress.total     >= statusReceived.progress.total);
             }
             statusReceived = status;
         }
@@ -113,8 +113,7 @@ public:
 
     void runInParallel(function<void(C4Database*)> callback) {
         C4Error error;
-        alloc_slice path = c4db_getPath(db);
-        C4Database *parallelDB = c4db_open(path, c4db_getConfig(db), &error);
+        C4Database *parallelDB = c4db_openAgain(db, &error);
         REQUIRE(parallelDB != nullptr);
 
         parallelThread.reset(new thread([=]() mutable {
@@ -123,20 +122,21 @@ public:
         }));
     }
 
-    void addDocsInParallel(duration interval) {
+    void addDocsInParallel(duration interval, int total) {
         runInParallel([=](C4Database *bgdb) {
             int docNo = 1;
-            for (int i = 1; i <= 3; i++) {
+            for (int i = 1; docNo <= total; i++) {
                 this_thread::sleep_for(interval);
                 Log("-------- Creating %d docs --------", 2*i);
                 c4::Transaction t(bgdb);
-                t.begin(nullptr);
+                C4Error err;
+                assert(t.begin(&err));
                 for (int j = 0; j < 2*i; j++) {
-                    char docID[10];
+                    char docID[20];
                     sprintf(docID, "newdoc%d", docNo++);
                     createRev(bgdb, c4str(docID), "1-11"_sl, kFleeceBody);
                 }
-                t.commit(nullptr);
+                assert(t.commit(&err));
             }
         });
     }
@@ -188,7 +188,6 @@ public:
     Retained<Replicator> replClient, replServer;
     alloc_slice checkpointID;
     unique_ptr<thread> parallelThread;
-    future<void> parallelThreadDone;
     Replicator::Status statusReceived { };
     unsigned statusChangedCalls {0};
 };
@@ -262,16 +261,23 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][.neverending]") {
-    addDocsInParallel(chrono::milliseconds(1500));
+    addDocsInParallel(chrono::milliseconds(1500), 6);
     runReplicators(Replicator::Options::pushing(kC4Continuous),
                    Replicator::Options::passive());
     //FIX: Stop this when bg thread stops adding docs
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][.neverending]") {
-    addDocsInParallel(chrono::milliseconds(1500));
+    addDocsInParallel(chrono::milliseconds(1500), 6);
     runReplicators(Replicator::Options::passive(),
                    Replicator::Options::pulling(kC4Continuous));
+    //FIX: Stop this when bg thread stops adding docs
+}
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][.neverending]") {
+    addDocsInParallel(chrono::milliseconds(250), 1000000);
+    runReplicators(Replicator::Options::pushing(kC4Continuous),
+                   Replicator::Options::passive());
     //FIX: Stop this when bg thread stops adding docs
 }
 
