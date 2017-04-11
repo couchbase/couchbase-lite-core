@@ -8,6 +8,8 @@ public class FLSliceResult {
     // public methods
     //-------------------------------------------------------------------------
     public FLSliceResult(long handle) {
+        if (handle == 0)
+            throw new IllegalArgumentException("handle is 0");
         this.handle = handle;
     }
 

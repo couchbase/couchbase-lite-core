@@ -128,7 +128,7 @@ public class Database {
                         int flags, // C4RevisionFlags
                         boolean save,
                         int maxRevTreeDepth) throws LiteCoreException {
-        return new Document(_put(_handle, docID, body, docType,
+        return new Document(put1(_handle, docID, body, docType,
                 existingRevision, allowConflict, history, flags, save, maxRevTreeDepth));
     }
 
@@ -141,7 +141,7 @@ public class Database {
                         int flags, // C4RevisionFlags
                         boolean save,
                         int maxRevTreeDepth) throws LiteCoreException {
-        return new Document(_put(_handle, docID, body.getHandle(), docType,
+        return new Document(put2(_handle, docID, body.getHandle(), docType,
                 existingRevision, allowConflict, history, flags, save, maxRevTreeDepth));
     }
 
@@ -150,7 +150,7 @@ public class Database {
         purgeDoc(_handle, docID);
     }
 
-    private native static long _put(long dbHandle,
+    private native static long put1(long dbHandle,
                                     String docID,
                                     byte[] body,
                                     String docType,
@@ -161,7 +161,7 @@ public class Database {
                                     boolean save,
                                     int maxRevTreeDepth) throws LiteCoreException;
 
-    private native static long _put(long dbHandle,
+    private native static long put2(long dbHandle,
                                     String docID,
                                     long body, // C4Slice*
                                     String docType,

@@ -579,6 +579,8 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass claz
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, jlong jencoder) {
     FLError error;
-    FLSliceResult res = FLEncoder_Finish((FLEncoder) jencoder, &error);
-    return toJByteArray(env, {res.buf, res.size});
+    FLSliceResult result = FLEncoder_Finish((FLEncoder) jencoder, &error);
+    jbyteArray res = toJByteArray(env, {result.buf, result.size});
+    FLSliceResult_Free(result);
+    return res;
 }

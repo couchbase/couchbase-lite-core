@@ -316,10 +316,10 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
 
 /*
  * Class:     com_couchbase_litecore_Database
- * Method:    _put
+ * Method:    put1
  * Signature: (JLjava/lang/String;[BLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put__JLjava_lang_String_2_3BLjava_lang_String_2ZZ_3Ljava_lang_String_2IZI
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put1
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody,
          jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,
@@ -375,10 +375,10 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put__JLjava_lang_
 }
 /*
  * Class:     com_couchbase_litecore_Database
- * Method:    _put
+ * Method:    put2
  * Signature: (JLjava/lang/String;JLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database__1put__JLjava_lang_String_2JLjava_lang_String_2ZZ_3Ljava_lang_String_2IZI
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put2
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jlong jbody,
          jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,

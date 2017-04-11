@@ -31,6 +31,34 @@ public class FLEncoder {
         }
     }
 
+    public boolean writeNull() {
+        return writeNull(handle);
+    }
+
+    public boolean writeBool(boolean value) {
+        return writeBool(handle, value);
+    }
+
+    public boolean writeInt(long value) {
+        return writeInt(handle, value);
+    }
+
+    public boolean writeFloat(float value) {
+        return writeFloat(handle, value);
+    }
+
+    public boolean writeDouble(double value) {
+        return writeDouble(handle, value);
+    }
+
+    public boolean writeString(String value) {
+        return writeString(handle, value);
+    }
+
+    public boolean writeData(byte[] value) {
+        return writeData(handle, value);
+    }
+
     public boolean beginDict(long reserve) {
         return beginDict(handle, reserve);
     }
