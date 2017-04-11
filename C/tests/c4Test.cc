@@ -102,18 +102,7 @@ static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
 
 #pragma mark - C4TEST CLASS
 
-
-#if defined(CMAKE) && !defined(__ANDROID__)
-    #ifdef _MSC_VER
-        string C4Test::sFixturesDir = "../../../../C/tests/data/";
-    #else
-        string C4Test::sFixturesDir = "../../../C/tests/data/";
-    #endif
-#else
-    string C4Test::sFixturesDir = "C/tests/data/";
-#endif
-
-
+string C4Test::sFixturesDir = "C/tests/data/";
 
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),

@@ -7,6 +7,7 @@ add_definitions(-DLITECORE_CPP_TESTS=1 -D_USE_MATH_DEFINES)
 
 include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
+                    ${TOP}LiteCore/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
                     ${TOP}vendor/SQLiteCpp/include/
@@ -25,6 +26,8 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
                                 sqlite3
                                 SQLite3_UnicodeSN)
+
+file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 if(NOT APPLE)
     if(UNIX AND NOT ANDROID)
         target_link_libraries(CppTests  crypto  bsd c++abi)
