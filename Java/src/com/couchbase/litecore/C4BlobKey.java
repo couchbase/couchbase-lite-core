@@ -61,9 +61,19 @@ public class C4BlobKey {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
+
+    /**
+     * Decode a string of the form "shar1-"+base64 into a raw key
+     */
     private native static long fromString(String str) throws LiteCoreException;
 
+    /**
+     * Encodes a blob key to a string of the form "sha1-"+base64.
+     */
     private native static String toString(long blobKey);
 
+    /**
+     * Release C4BlobKey
+     */
     private native static void free(long blobKey);
 }
