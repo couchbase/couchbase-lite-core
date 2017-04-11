@@ -106,7 +106,7 @@ namespace litecore {
             put.history = history;
 
             _allRevs->reset();
-            _allRevs->bind(1, oldDocKey);
+            _allRevs->bind(1, (long long)oldDocKey);
             while (_allRevs->executeStep()) {
                 // Get the revID and the parent's revID:
                 string revID = _allRevs->getColumn(1);

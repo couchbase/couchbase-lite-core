@@ -99,10 +99,11 @@ namespace litecore {
             int baseCode = errCode & 0xFF;
             if (baseCode == SQLITE_SCHEMA)
                 return;     // ignore harmless "statement aborts ... database schema has changed" warning
-            if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY)
+            if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
                 Log("SQLite message: %s", msg);
-            else
+            } else {
                 Warn("SQLite error (code %d): %s", errCode, msg);
+            }
         }, NULL);
     }
 
