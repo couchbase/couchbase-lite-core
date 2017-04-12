@@ -14,12 +14,15 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                 )
                     
 aux_source_directory(.  TEST_SRC)
-if(WIN32)
+if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
 elseif(ANDROID)
   set(TEST_SRC ${TEST_SRC} ../Android/arc4random.cc)
 endif()
 
+if(NOT MSVC)
+    file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
+endif()
 add_executable(CppTests ${TEST_SRC})
 
 target_link_libraries(CppTests  LiteCoreStatic
@@ -27,7 +30,7 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 sqlite3
                                 SQLite3_UnicodeSN)
 
-file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
+
 if(NOT APPLE)
     if(UNIX AND NOT ANDROID)
         target_link_libraries(CppTests  crypto  bsd c++abi)

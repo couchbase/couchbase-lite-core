@@ -40,10 +40,12 @@ namespace litecore {
 
 #ifdef _MSC_VER
     static const char  kSeparatorChar = '\\';
+    static const char  kBackupSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
 #else
     static const char  kSeparatorChar = '/';
+    static const char  kBackupSeparatorChar = '\\';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
 #endif
@@ -54,6 +56,8 @@ namespace litecore {
     {
         if (_dir.empty())
             _dir = kCurrentDir;
+        else if (_dir[_dir.size() - 1] == kBackupSeparatorChar)
+            _dir[_dir.size() - 1] = kSeparatorChar;
         else if (_dir[_dir.size()-1] != kSeparatorChar)
             _dir += kSeparatorChar;
     }
@@ -67,10 +71,13 @@ namespace litecore {
     pair<string,string> FilePath::splitPath(const string &path) {
         string dirname, basename;
         auto slash = path.rfind(kSeparatorChar);
-        if (slash == string::npos)
-            return {kCurrentDir, path};
-        else
-            return {path.substr(0, slash+1), path.substr(slash+1)};
+        if (slash == string::npos) {
+            slash = path.rfind(kBackupSeparatorChar);
+            if (slash == string::npos)
+                return{ kCurrentDir, path };
+        }
+        
+        return {path.substr(0, slash+1), path.substr(slash+1)};
     }
 
     pair<string,string> FilePath::splitExtension(const string &file) {
@@ -141,7 +148,7 @@ namespace litecore {
         Assert(isDir());
         if (name.empty())
             return *this;
-        else if (name[name.size()-1] == kSeparatorChar)
+        else if (name[name.size()-1] == kSeparatorChar || name[name.size() - 1] == kBackupSeparatorChar)
             return FilePath(_dir + name, "");
         else
             return FilePath(_dir, name);

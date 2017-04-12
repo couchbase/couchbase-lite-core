@@ -60,6 +60,8 @@ public:
 
     static const int numberOfOptions = 1;
 
+    static std::string sFixturesDir;
+
     DataFileTestFixture()   :DataFileTestFixture(0) { }     // defaults to SQLite, rev-trees
     DataFileTestFixture(int testOption);
     ~DataFileTestFixture();

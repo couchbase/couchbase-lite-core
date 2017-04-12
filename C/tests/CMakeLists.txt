@@ -23,7 +23,10 @@ endif()
 add_executable(C4Tests ${TEST_SRC} )
 
 target_link_libraries(C4Tests  LiteCore)
-file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
+if(NOT MSVC)
+    file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
+endif()
+
 if(MSVC)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
     set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3
