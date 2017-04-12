@@ -73,6 +73,18 @@ namespace litecore {
         LogTo(SQL, "... %s", st.getQuery().c_str());
     }
 
+    static void sqlite3_log_callback(void *pArg, int errCode, const char *msg) {
+        int baseCode = errCode & 0xFF;
+        if (baseCode == SQLITE_SCHEMA)
+            return;     // ignore harmless "statement aborts ... database schema has changed" warning
+        if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
+            Log("SQLite message: %s", msg);
+        }
+        else {
+            Warn("SQLite error (code %d): %s", errCode, msg);
+        }
+    }
+
 
     UsingStatement::UsingStatement(SQLite::Statement &stmt) noexcept
     :_stmt(stmt)
@@ -95,16 +107,7 @@ namespace litecore {
 
 
     SQLiteDataFile::Factory::Factory() {
-        sqlite3_config(SQLITE_CONFIG_LOG, [](void *pArg, int errCode, const char *msg) {
-            int baseCode = errCode & 0xFF;
-            if (baseCode == SQLITE_SCHEMA)
-                return;     // ignore harmless "statement aborts ... database schema has changed" warning
-            if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
-                Log("SQLite message: %s", msg);
-            } else {
-                Warn("SQLite error (code %d): %s", errCode, msg);
-            }
-        }, NULL);
+        sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
     }
 
 
