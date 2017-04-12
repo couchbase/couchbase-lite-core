@@ -92,7 +92,9 @@ namespace litecore {
 
 
     // Indexed by C4ErrorDomain
-    static const char* kDomainNames[] = {"LiteCore", "POSIX", "ForestDB", "SQLite"};
+    static const char* kDomainNames[] = {"0",
+                                         "LiteCore", "POSIX", "ForestDB", "SQLite", "Fleece",
+                                         "DNS", "WebSocket"};
 
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
@@ -133,6 +135,8 @@ namespace litecore {
             "missing database index",
             "invalid query parameter name/number",
             "error on remote server",
+            "database is in an old file format that can't be opened",
+            "database is in a newer file format than this software supports",
         };
         static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
                         error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
@@ -300,6 +304,8 @@ namespace litecore {
 
     void error::_throw() {
         if (sWarnOnError && !isUnremarkable()) {
+            static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) ==
+                          error::NumDomainsPlus1, "Incomplete domain name table");
             WarnError("LiteCore throwing %s error %d: %s",
                       kDomainNames[domain], code, what());
             if (WillLog(LogLevel::Error))

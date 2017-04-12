@@ -26,13 +26,18 @@ namespace litecore {
     struct error : public std::runtime_error {
 
         enum Domain {
-            LiteCore,
+            LiteCore = 1,
             POSIX,
-            ForestDB,
+            ForestDB, // unused
             SQLite,
             Fleece,
             DNS,
             WebSocket,
+
+            // Add new domain here.
+            // You MUST add a name string to kDomainNames in Error.cc!
+            // You MUST add a corresponding domain to C4ErrorDomain in c4Base.h!
+            NumDomainsPlus1
         };
 
         // Error codes in LiteCore domain:
@@ -72,6 +77,11 @@ namespace litecore {
             NoSuchIndex,
             InvalidQueryParam,
             RemoteError,
+            DatabaseTooOld,
+            DatabaseTooNew,
+
+            // Add new codes here. You MUST add messages to kLiteCoreMessages!
+            // You MUST add corresponding kC4Err codes to the enum in C4Base.h!
             
             NumLiteCoreErrorsPlus1
         };

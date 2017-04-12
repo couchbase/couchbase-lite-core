@@ -80,10 +80,8 @@ namespace c4Internal {
     
 
     void recordException(const exception &e, C4Error* outError) noexcept {
-        static const C4ErrorDomain domainMap[] = {LiteCoreDomain, POSIXDomain,
-                                                  (C4ErrorDomain)0, SQLiteDomain, FleeceDomain};
         error err = error::convertException(e).standardized();
-        recordError(domainMap[err.domain], err.code, e.what(), outError);
+        recordError((C4ErrorDomain)err.domain, err.code, e.what(), outError);
     }
 
 
@@ -108,7 +106,7 @@ C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API {
 C4SliceResult c4error_getMessage(C4Error err) noexcept {
     if (err.code == 0) {
         return sliceResult(nullptr);
-    } else if (err.domain < 1 || err.domain > WebSocketDomain) {
+    } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
         return sliceResult("unknown error domain");
     } else {
         // Custom message referenced in info field?
@@ -116,11 +114,7 @@ C4SliceResult c4error_getMessage(C4Error err) noexcept {
         if (!message.empty())
             return sliceResult(message);
         // No; get the regular error message for this domain/code:
-        static constexpr error::Domain kDomains[] = {error::LiteCore, error::POSIX,
-                                                     error::ForestDB, error::SQLite,
-                                                     error::Fleece,   error::DNS,
-                                                     error::WebSocket};
-        error e(kDomains[err.domain - 1], err.code);
+        error e((error::Domain)err.domain, err.code);
         return sliceResult(e.what());
     }
 }

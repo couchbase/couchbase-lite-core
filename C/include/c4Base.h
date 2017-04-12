@@ -84,6 +84,7 @@ typedef uint64_t C4SequenceNumber;
 //////// ERRORS:
 
 
+// (These are identical to the internal C++ error::Domain enum values.)
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
@@ -133,6 +134,8 @@ enum {
     kC4ErrorMissingIndex,           // No such index, or query requires a nonexistent index
     kC4ErrorInvalidQueryParam,      // Unknown query param name, or param number out of range
     kC4ErrorRemoteError,            // Unknown error from remote server
+    kC4ErrorDatabaseTooOld,         // Database file format is older than what I can open
+    kC4ErrorDatabaseTooNew,         // Database file format is newer than what I can open
 
     kC4NumErrorCodesPlus1
 };
