@@ -247,7 +247,10 @@ namespace litecore {
         bool copyAttachment(string digest) {
             Log("            attachment '%s'", digest.c_str());
             blobKey key(digest);
-            FilePath src = _attachments[key.hexString() + ".blob"];
+            string hex = key.hexString();
+            for (char &c : hex)
+                c = (char)toupper(c);
+            FilePath src = _attachments[hex + ".blob"];
             if (!src.exists())
                 return false;
 
