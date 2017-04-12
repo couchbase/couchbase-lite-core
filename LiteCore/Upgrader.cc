@@ -28,6 +28,9 @@ using namespace c4Internal;
 
 namespace litecore {
 
+    static const int kMinOldUserVersion = 100;
+    static const int kMaxOldUserVersion = 149;
+
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
@@ -36,7 +39,8 @@ namespace litecore {
 
 
         Upgrader(const FilePath &oldPath, Database *newDB)
-        :_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
+        :_oldPath(oldPath)
+        ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
         ,_newDB(newDB)
         ,_sharedKeys(newDB->documentKeys())
         ,_attachments(oldPath["attachments/"])
@@ -60,6 +64,14 @@ namespace litecore {
 
         // Top-level method to invoke the upgrader.
         void run() {
+            int userVersion = _oldDB.execAndGet("PRAGMA user_version");
+            Log("Upgrading CBL 1.x database <%s>, user_version=%d)",
+                _oldPath.path().c_str(), userVersion);
+            if (userVersion < kMinOldUserVersion)
+                error::_throw(error::DatabaseTooOld);
+            else if (userVersion > kMaxOldUserVersion)
+                error::_throw(error::DatabaseTooNew);
+
             _newDB->beginTransaction();
             try {
                 copyDocs();
@@ -285,7 +297,7 @@ namespace litecore {
             }
         }
 
-    private:
+        FilePath _oldPath;
         SQLite::Database _oldDB;
         Retained<Database> _newDB;
         SharedKeys* _sharedKeys;

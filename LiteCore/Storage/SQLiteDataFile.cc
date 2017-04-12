@@ -21,6 +21,7 @@
 #include "FilePath.hh"
 #include "SharedKeys.hh"
 #include "Benchmark.hh"
+#include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <mutex>
 #include <sqlite3.h>
@@ -44,6 +45,10 @@ namespace litecore {
 
     static const int64_t MB = 1024 * 1024;
 
+    // Min/max user_version of db files I can read
+    static const int kMinUserVersion = 200;
+    static const int kMaxUserVersion = 299;
+
     // SQLite page size
     static const int64_t kPageSize = 4096;
 
@@ -51,7 +56,7 @@ namespace litecore {
     static const int64_t kJournalSize = 5 * MB;
 
     // Amount of file to memory-map
-    static const int64_t kMMapSize = 50 * MB;
+    static const size_t kMMapSize = 50 * MB;
 
     // If this fraction of the database is composed of free pages, vacuum it
     static const float kVacuumFractionThreshold = 0.25;
@@ -107,6 +112,8 @@ namespace litecore {
 
 
     SQLiteDataFile::Factory::Factory() {
+        // One-time initialization at startup:
+        Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
     }
 
@@ -164,43 +171,61 @@ path.path().c_str());
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
-        _sqlDb = make_unique<SQLite::Database>(filePath().path().c_str(), sqlFlags);
+        _sqlDb = make_unique<SQLite::Database>(filePath().path().c_str(),
+                                               sqlFlags,
+                                               kBusyTimeoutSecs * 1000);
 
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
 
-        withFileLock([this]{
-            _sqlDb->setBusyTimeout(kBusyTimeoutSecs * 1000);
+        if (sqlite3_libversion_number() < 003012) {
+            // Prior to 3.12, the default page size was 1024, which is less than optimal.
+            // Note that setting the page size has to be done before any other command that touches
+            // the database file.
+            exec(format("PRAGMA page_size=%lld; ", kPageSize));
+        }
 
+        withFileLock([this]{
             // http://www.sqlite.org/pragma.html
-            stringstream sql;
-            sql <<
-            "PRAGMA mmap_size=" <<kMMapSize<< "; " // mmap improves performance
-            "PRAGMA page_size=" <<kPageSize<< "; " // in case SQLite is older than 3.12
-            "PRAGMA journal_mode=WAL; "            // faster writes, better concurrency
-            "PRAGMA journal_size_limit="<<kJournalSize<<"; "  // trim WAL file
-            "PRAGMA auto_vacuum=incremental; "     // incremental vacuum mode
-            "PRAGMA synchronous=normal; "          // faster commits
-            "CREATE TABLE IF NOT EXISTS "          // Table of metadata about KeyStores
-            "kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID";
-            exec(sql.str());
+            int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+            if (userVersion == 0) {
+                // Configure persistent db settings, and create the schema:
+                exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
+                     "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
+                     "BEGIN; "
+                     "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
+                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
+                // Create the default KeyStore's table:
+                (void)defaultKeyStore();
+                exec("PRAGMA user_version=200; "
+                     "END;");
+            } else if (userVersion < kMinUserVersion) {
+                error::_throw(error::DatabaseTooOld);
+            } else if (userVersion > kMaxUserVersion) {
+                error::_throw(error::DatabaseTooNew);
+            }
+        });
+
+        exec(format("PRAGMA mmap_size=%zu; "            // Memory-mapped I/O FTW
+                    "PRAGMA synchronous=normal; "       // Speeds up commits
+                    "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
+                    kMMapSize, kJournalSize));
 
 #if DEBUG
-            if (arc4random() % 1)              // deliberately make unordered queries unpredictable
-                _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
+        // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
+        // unintentionally relies on ordering:
+        if (arc4random() % 1)
+            _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
 #endif
 
-            // Configure number of extra threads to be used by SQLite:
-            int maxThreads = 0;
+        // Configure number of extra threads to be used by SQLite:
+        int maxThreads = 0;
 #if TARGET_OS_OSX
-            maxThreads = 2;
-            // TODO: Configure for other platforms
+        maxThreads = 2;
+        // TODO: Configure for other platforms
 #endif
+        if (maxThreads > 0)
             sqlite3_limit(_sqlDb->getHandle(), SQLITE_LIMIT_WORKER_THREADS, maxThreads);
-
-            // Create the default KeyStore's table:
-            (void)defaultKeyStore();
-        });
     }
 
 
