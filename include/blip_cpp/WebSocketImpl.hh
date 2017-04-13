@@ -29,8 +29,7 @@ namespace litecore { namespace websocket {
         messages. */
     class WebSocketImpl : public WebSocket, Logging {
     public:
-
-        WebSocketImpl(ProviderImpl&, const Address&);
+        WebSocketImpl(ProviderImpl&, const Address&, bool framing);
         virtual ~WebSocketImpl();
 
         virtual bool send(fleece::slice message, bool binary =true) override;
@@ -38,7 +37,9 @@ namespace litecore { namespace websocket {
 
         // Concrete socket implementation needs to call these:
         void onConnect();
-        void onClose(int err_no);
+        void onCloseRequested(int status, fleece::slice message);
+        void onClose(int posixErrno);
+        void onClose(CloseStatus);
         void onReceive(fleece::slice);
         void onWriteComplete(size_t);
         
@@ -63,17 +64,20 @@ namespace litecore { namespace websocket {
         bool receivedMessage(int opCode, fleece::alloc_slice message);
         bool receivedClose(fleece::slice);
 
-        std::unique_ptr<ClientProtocol> _protocol;
-        std::mutex _mutex;
+        bool _framing;                              // true if I should implement WebSocket framing
+        std::unique_ptr<ClientProtocol> _protocol;  // 3rd party class that does the framing
+        std::mutex _mutex;                          //
+        fleece::alloc_slice _curMessage;            // Message being received
         int _curOpCode;
-        fleece::alloc_slice _curMessage;
         size_t _curMessageLength;
-        size_t _bufferedBytes {0};
-        Stopwatch _timeConnected {false};
-        uint64_t _bytesSent {0}, _bytesReceived {0};
-        bool _closeSent {false}, _closeReceived {false};
-        fleece::alloc_slice _closeMessage;
-    };
+        size_t _bufferedBytes {0};                  // # bytes written but not yet completed
+        bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
+        fleece::alloc_slice _closeMessage;                  // The encoded close request message
+
+        // Connection diagnostics, logged on close:
+        Stopwatch _timeConnected {false};           // Time since socket opened
+        uint64_t _bytesSent {0}, _bytesReceived {0};// Total byte count sent/received
+};
 
 
     /** Provider implementation that creates WebSocketImpls. */
@@ -94,6 +98,8 @@ namespace litecore { namespace websocket {
         virtual void closeSocket(WebSocketImpl*) =0;
         virtual void sendBytes(WebSocketImpl*, fleece::alloc_slice) =0;
         virtual void receiveComplete(WebSocketImpl*, size_t byteCount) =0;
+
+        virtual void requestClose(WebSocketImpl*, int status, fleece::slice message) =0;
 
         std::set<std::string> _protocols;
     };
