@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -84,7 +84,7 @@ namespace LiteCore.Tests
                 var key = new C4BlobKey();
                 var localKey = &key;
                 LiteCoreBridge.Check(err => {
-                    return Native.c4blob_create(_store, blobToStore, localKey, err);
+                    return Native.c4blob_create(_store, blobToStore, null, localKey, err);
                 });
 
                 var str = Native.c4blob_keyToString(key);
@@ -118,7 +118,7 @@ namespace LiteCore.Tests
                 var key2 = new C4BlobKey();
                 localKey = &key2;
                 LiteCoreBridge.Check(err => {
-                    return Native.c4blob_create(_store, blobToStore, localKey, err);
+                    return Native.c4blob_create(_store, blobToStore, null, localKey, err);
                 });
                 key.Equals(key2).Should().BeTrue("because the two keys are for the same attachment");
             });
@@ -134,7 +134,7 @@ namespace LiteCore.Tests
                 var key = new C4BlobKey();
                 LiteCoreBridge.Check(err => {
                     var localKey = key;
-                    var retVal = Native.c4blob_create(_store, blob, &localKey, err);
+                    var retVal = Native.c4blob_create(_store, blob, null, &localKey, err);
                     key = localKey;
                     return retVal;
                 });
@@ -180,7 +180,7 @@ namespace LiteCore.Tests
 
                 // Get the blob key, and install it:
                 var key = Native.c4stream_computeBlobKey(stream);
-                LiteCoreBridge.Check(err => Native.c4stream_install(stream, err));
+                LiteCoreBridge.Check(err => Native.c4stream_install(stream, null, err));
                 Native.c4stream_closeWriter(stream);
                 Native.c4stream_closeWriter(null); // Just for fun, to make sure it doesn't crash
 
@@ -232,7 +232,7 @@ namespace LiteCore.Tests
 
                     // Get the blob key, and install it:
                     var key = Native.c4stream_computeBlobKey(stream);
-                    LiteCoreBridge.Check(err => Native.c4stream_install(stream, err));
+                    LiteCoreBridge.Check(err => Native.c4stream_install(stream, null, err));
                     Native.c4stream_closeWriter(stream);
 
                     // Read it back using the key:

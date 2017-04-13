@@ -1,5 +1,4 @@
-//
-// C4Socket_defs.cs
+﻿// C4Socket_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -80,17 +79,22 @@ namespace LiteCore.Interop
 #endif 
     unsafe struct C4SocketFactory
     {
+        private byte providesWebSockets;
         public IntPtr open;
-        public IntPtr close;
         public IntPtr write;
         public IntPtr completedReceive;
+        private IntPtr close; // unused in .NET
+        public IntPtr requestClose;
 
-        public C4SocketFactory(SocketOpenDelegate open, SocketCloseDelegate close, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)
+        public C4SocketFactory(SocketOpenDelegate open, SocketRequestCloseDelegate requestClose, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)
         {
             this.open = Marshal.GetFunctionPointerForDelegate(open);
-            this.close = Marshal.GetFunctionPointerForDelegate(close);
             this.write = Marshal.GetFunctionPointerForDelegate(write);
             this.completedReceive = Marshal.GetFunctionPointerForDelegate(completedReceive);
+            this.close = IntPtr.Zero;
+            this.requestClose = Marshal.GetFunctionPointerForDelegate(requestClose);
+			this.providesWebSockets = 1;
         }
     }
+
 }
