@@ -11,6 +11,7 @@
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
+#include "Error.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
 #include <atomic>
@@ -27,8 +28,8 @@ namespace litecore { namespace websocket {
 
     class C4SocketImpl : public WebSocketImpl, public C4Socket {
     public:
-        C4SocketImpl(ProviderImpl &provider, const Address &address)
-        :WebSocketImpl(provider, address)
+        C4SocketImpl(ProviderImpl &provider, const Address &address, bool framing)
+        :WebSocketImpl(provider, address, framing)
         {
             nativeHandle = nullptr;
         }
@@ -38,11 +39,24 @@ namespace litecore { namespace websocket {
     class C4Provider : public ProviderImpl {
     public:
         C4Provider(C4SocketFactory f)
-        :factory(f)
-        { }
+        :_factory(f)
+        {
+#if DEBUG
+            Assert(f.open != nullptr);
+            Assert(f.write != nullptr);
+            Assert(f.completedReceive != nullptr);
+            if (f.providesWebSockets) {
+                Assert(f.close == nullptr);
+                Assert(f.requestClose != nullptr);
+            } else {
+                Assert(f.close != nullptr);
+                Assert(f.requestClose == nullptr);
+            }
+#endif
+        }
 
         virtual WebSocketImpl* createWebSocket(const Address &address) override {
-            return new C4SocketImpl(*this, address);
+            return new C4SocketImpl(*this, address, !_factory.providesWebSockets);
         }
 
         static void registerFactory(const C4SocketFactory &factory) {
@@ -65,24 +79,29 @@ namespace litecore { namespace websocket {
                 address.port,
                 slice(address.path)
             };
-            factory.open((C4SocketImpl*)s, &c4addr);
+            _factory.open((C4SocketImpl*)s, &c4addr);
+        }
+
+        virtual void requestClose(WebSocketImpl *s, int status, fleece::slice message) override {
+            _factory.requestClose((C4SocketImpl*)s, status, message);
         }
 
         virtual void closeSocket(WebSocketImpl *s) override {
-            factory.close((C4SocketImpl*)s);
+            _factory.close((C4SocketImpl*)s);
         }
 
         virtual void sendBytes(WebSocketImpl *s, alloc_slice bytes) override {
             bytes.retain();
-            factory.write((C4SocketImpl*)s, {(void*)bytes.buf, bytes.size});
+            _factory.write((C4SocketImpl*)s, {(void*)bytes.buf, bytes.size});
         }
 
         virtual void receiveComplete(WebSocketImpl *s, size_t byteCount) override {
-            factory.completedReceive((C4SocketImpl*)s, byteCount);
+            _factory.completedReceive((C4SocketImpl*)s, byteCount);
         }
 
     private:
-        const C4SocketFactory factory;
+        const C4SocketFactory _factory;
+
         static C4Provider *sInstance;
     };
 
@@ -110,11 +129,20 @@ void c4socket_opened(C4Socket *socket) C4API {
     internal(socket)->onConnect();
 }
 
+void c4socket_closeRequested(C4Socket *socket, int status, C4String message) {
+    internal(socket)->onCloseRequested(status, message);
+}
+
 void c4socket_closed(C4Socket *socket, C4Error error) C4API {
-    int err_no = 0;
-    if (error.code)
-        err_no = (error.domain == POSIXDomain) ? error.code : -1;   //FIX
-    internal(socket)->onClose(err_no);
+    alloc_slice message = c4error_getMessage(error);
+    CloseStatus status {kUnknownError, error.code, message};
+    if (error.domain == WebSocketDomain)
+        status.reason = kWebSocketClose;
+    else if (error.domain == POSIXDomain)
+        status.reason = kPOSIXError;
+    else if (error.domain == DNSDomain)
+        status.reason = kDNSError;
+    internal(socket)->onClose(status);
 }
 
 void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {

@@ -70,6 +70,7 @@ static bool sLogEnabled;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         c4socket_registerFactory({
+            .providesWebSockets = false,
             .open = &doOpen,
             .close = &doClose,
             .write = &doWrite,

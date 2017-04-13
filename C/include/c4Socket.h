@@ -58,12 +58,22 @@ extern "C" {
     /** A group of callbacks that define the implementation of sockets; the client must fill this
         out and pass it to c4socket_registerFactory() before using any socket-based API.
         These callbacks will be invoked on arbitrary background threads owned by LiteCore.
-        They should return quickly, and perform the operation asynchronously without blocking. */
+        They should return quickly, and perform the operation asynchronously without blocking.
+     
+        The `providesWebSockets` flag indicates whether this factory provides a WebSocket
+        implementation or just a raw TCP socket. */
     typedef struct {
+        bool providesWebSockets;
+
         void (*open)(C4Socket*, const C4Address*);              ///< open the socket
-        void (*close)(C4Socket*);                               ///< close the socket
         void (*write)(C4Socket*, C4SliceResult allocatedData);  ///< Write bytes; free when done
         void (*completedReceive)(C4Socket*, size_t byteCount);  ///< Completion of c4socket_received
+
+        // Only called if providesWebSockets is false:
+        void (*close)(C4Socket*);                               ///< close the socket
+
+        // Only called if providesWebSockets is true:
+        void (*requestClose)(C4Socket*, int status, C4String message);
     } C4SocketFactory;
 
 
@@ -77,9 +87,15 @@ extern "C" {
 
     /** Notification that a socket has finished closing, or that it disconnected, or failed to open.
         If this is a normal close in response to a C4SocketFactory.close request, the error
-        parameter should have a code of 0. Otherwise the error should be filled in with an
-        appropriate error domain and code. */
+        parameter should have a code of 0.
+        If it's a socket-level error, set the C4Error appropriately.
+        If it's a WebSocket-level close (when the factory's providesWebSockets is true),
+        set the error domain to WebSocketDomain and the code to the WebSocket status code. */
     void c4socket_closed(C4Socket *socket, C4Error errorIfAny) C4API;
+
+    /** Notification that the peer has requested to close the socket using the WebSocket protocol.
+        LiteCore will call the factory's requestClose callback in response when it's ready. */
+    void c4socket_closeRequested(C4Socket *socket, int status, C4String message);
 
     /** Notification that bytes have been written to the socket, in response to a
         C4SocketFactory.write request. */
