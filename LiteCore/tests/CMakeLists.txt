@@ -36,7 +36,7 @@ target_link_libraries(CppTests  LiteCoreStatic
 
 if(NOT APPLE)
     if(UNIX AND NOT ANDROID)
-        target_link_libraries(CppTests  crypto  bsd c++abi z)
+        target_link_libraries(CppTests  crypto  bsd c++abi z pthread atomic)
     elseif(ANDROID)
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log" "z")
     else()
