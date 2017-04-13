@@ -103,7 +103,7 @@ static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
 #pragma mark - C4TEST CLASS
 
 #if defined(CMAKE) && defined(_MSC_VER)
-string C4Test::sFixturesDir = "../../../../C/tests/data/";
+string C4Test::sFixturesDir = "../C/tests/data/";
 #else
 string C4Test::sFixturesDir = "C/tests/data/";
 #endif

@@ -11,6 +11,8 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
                     ${TOP}vendor/SQLiteCpp/include/
+                    ${TOP}Replicator/
+                    ${TOP}C/tests/
                 )
                     
 aux_source_directory(.  TEST_SRC)
@@ -20,25 +22,26 @@ elseif(ANDROID)
   set(TEST_SRC ${TEST_SRC} ../Android/arc4random.cc)
 endif()
 
-if(NOT MSVC)
-    file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
-endif()
-add_executable(CppTests ${TEST_SRC})
+file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
+file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
+add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc 
+  ../../C/tests/c4Test.cc)
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
                                 sqlite3
-                                SQLite3_UnicodeSN)
+                                SQLite3_UnicodeSN
+                                BLIPStatic)
 
 
 if(NOT APPLE)
     if(UNIX AND NOT ANDROID)
-        target_link_libraries(CppTests  crypto  bsd c++abi)
+        target_link_libraries(CppTests  crypto  bsd c++abi z)
     elseif(ANDROID)
-        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log" "z")
     else()
         set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 )
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 zlibstatic)
         set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3)
         add_custom_command(TARGET CppTests POST_BUILD
             COMMAND ${CMAKE_COMMAND}
@@ -46,5 +49,7 @@ if(NOT APPLE)
             -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
             -P ${TOP}MSVC/copy_artifacts.cmake)
     endif()
+else()
+  target_link_libraries(CppTests  z)
 endif()
 

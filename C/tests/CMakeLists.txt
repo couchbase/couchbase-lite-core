@@ -23,9 +23,7 @@ endif()
 add_executable(C4Tests ${TEST_SRC} )
 
 target_link_libraries(C4Tests  LiteCore)
-if(NOT MSVC)
-    file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
-endif()
+file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 
 if(MSVC)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")

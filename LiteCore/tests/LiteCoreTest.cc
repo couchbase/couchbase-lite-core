@@ -31,7 +31,7 @@
 using namespace std;
 
 #if defined(CMAKE) && defined(_MSC_VER)
-string DataFileTestFixture::sFixturesDir = "../../../../LiteCore/tests/data/";
+string DataFileTestFixture::sFixturesDir = "../LiteCore/tests/data/";
 #else
 string DataFileTestFixture::sFixturesDir = "LiteCore/tests/data/";
 #endif
