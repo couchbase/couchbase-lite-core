@@ -48,9 +48,6 @@ public:
     }
 
     ~ReplicatorAPITest() {
-        // Wait for any delayed call on the Replicator to complete, since the Replicator won't be
-        // freed until after that. (progressChanged issues delayed calls.)
-        this_thread::sleep_for(chrono::milliseconds(250));
         c4repl_free(repl);
         c4db_free(db2);
     }
