@@ -10,6 +10,10 @@
 		272850731E95BCCF009CA22F /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850711E95BCCF009CA22F /* MessageOut.cc */; };
 		272850741E95BCCF009CA22F /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
 		272850F01E9D4DC7009CA22F /* MockProvider.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850EF1E9D4DC7009CA22F /* MockProvider.cc */; };
+		272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850F61EA022B5009CA22F /* GCDMailbox.cc */; };
+		272850F91EA022B5009CA22F /* GCDMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850F71EA022B5009CA22F /* GCDMailbox.hh */; };
+		272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */; };
+		272850FD1EA02B49009CA22F /* ThreadedMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */; };
 		27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */; };
 		27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */; };
 		27491CA11E7B417C001DC54B /* WebSocketImpl.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA01E7B417C001DC54B /* WebSocketImpl.hh */; };
@@ -58,7 +62,6 @@
 		27EF6A611E28587A004748DF /* cencode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5B1E28587A004748DF /* cencode.h */; };
 		27EF6A621E28587A004748DF /* decode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5C1E28587A004748DF /* decode.h */; };
 		27EF6A631E28587A004748DF /* encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5D1E28587A004748DF /* encode.h */; };
-		27EF6A681E2858E7004748DF /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A641E2858E7004748DF /* Actor.cc */; };
 		27EF6A691E2858E7004748DF /* Actor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A651E2858E7004748DF /* Actor.hh */; };
 		27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A661E2858E7004748DF /* Channel.cc */; };
 		27EF6A6B1E2858E7004748DF /* Channel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A671E2858E7004748DF /* Channel.hh */; };
@@ -97,6 +100,10 @@
 		272850711E95BCCF009CA22F /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
 		272850721E95BCCF009CA22F /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
 		272850EF1E9D4DC7009CA22F /* MockProvider.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MockProvider.cc; sourceTree = "<group>"; };
+		272850F61EA022B5009CA22F /* GCDMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GCDMailbox.cc; sourceTree = "<group>"; };
+		272850F71EA022B5009CA22F /* GCDMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GCDMailbox.hh; sourceTree = "<group>"; };
+		272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ThreadedMailbox.cc; sourceTree = "<group>"; };
+		272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadedMailbox.hh; sourceTree = "<group>"; };
 		273C77F11E84706B00BD7112 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		273C77F21E8470F800BD7112 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
@@ -157,7 +164,6 @@
 		27EF6A5B1E28587A004748DF /* cencode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cencode.h; path = vendor/libb64/cencode.h; sourceTree = "<group>"; };
 		27EF6A5C1E28587A004748DF /* decode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = decode.h; path = vendor/libb64/decode.h; sourceTree = "<group>"; };
 		27EF6A5D1E28587A004748DF /* encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encode.h; path = vendor/libb64/encode.h; sourceTree = "<group>"; };
-		27EF6A641E2858E7004748DF /* Actor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Actor.cc; sourceTree = "<group>"; };
 		27EF6A651E2858E7004748DF /* Actor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Actor.hh; sourceTree = "<group>"; };
 		27EF6A661E2858E7004748DF /* Channel.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Channel.cc; sourceTree = "<group>"; };
 		27EF6A671E2858E7004748DF /* Channel.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Channel.hh; sourceTree = "<group>"; };
@@ -310,8 +316,11 @@
 		27EF69CB1E2825E6004748DF /* util */ = {
 			isa = PBXGroup;
 			children = (
-				27EF6A641E2858E7004748DF /* Actor.cc */,
 				27EF6A651E2858E7004748DF /* Actor.hh */,
+				272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */,
+				272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */,
+				272850F61EA022B5009CA22F /* GCDMailbox.cc */,
+				272850F71EA022B5009CA22F /* GCDMailbox.hh */,
 				2773FD031E69FE2000108780 /* ActorProperty.cc */,
 				2773FD041E69FE2000108780 /* ActorProperty.hh */,
 				27EF6ABA1E2E97B5004748DF /* Future.cc */,
@@ -424,6 +433,7 @@
 				27EF6A691E2858E7004748DF /* Actor.hh in Headers */,
 				2759DC1C1E7088F900F3C4B2 /* gzipcomplete.hpp in Headers */,
 				2759DC1E1E7088F900F3C4B2 /* zlibcomplete.hpp in Headers */,
+				272850F91EA022B5009CA22F /* GCDMailbox.hh in Headers */,
 				27EF6A571E2857F7004748DF /* Writer.hh in Headers */,
 				2759DC1D1E7088F900F3C4B2 /* zlibbase.hpp in Headers */,
 				2759DC1F1E7088F900F3C4B2 /* zlibmisc.hpp in Headers */,
@@ -432,6 +442,7 @@
 				27EF69E91E282662004748DF /* BLIPConnection.hh in Headers */,
 				27EF6A621E28587A004748DF /* decode.h in Headers */,
 				27EF6A5F1E28587A004748DF /* cdecode.h in Headers */,
+				272850FD1EA02B49009CA22F /* ThreadedMailbox.hh in Headers */,
 				27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */,
 				27CCC7AC1E524F0B00CE1989 /* PlatformIO.hh in Headers */,
 			);
@@ -521,7 +532,7 @@
 			files = (
 				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
 				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
-				27EF6A681E2858E7004748DF /* Actor.cc in Sources */,
+				272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */,
 				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
 				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
 				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
@@ -531,6 +542,7 @@
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
 				27EF6A541E2857F7004748DF /* varint.cc in Sources */,
 				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
+				272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */,
 				272850731E95BCCF009CA22F /* MessageOut.cc in Sources */,
 				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,

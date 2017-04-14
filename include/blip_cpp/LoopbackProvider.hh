@@ -39,7 +39,7 @@ namespace litecore { namespace websocket {
     protected:
         friend class LoopbackProvider;
 
-        LoopbackWebSocket(MockProvider &provider, const Address &address, delay_t latency)
+        LoopbackWebSocket(MockProvider &provider, const Address &address, actor::delay_t latency)
         :MockWebSocket(provider, address)
         ,_latency(latency)
         { }
@@ -95,7 +95,7 @@ namespace litecore { namespace websocket {
         }
 
     private:
-        delay_t _latency {0.0};
+        actor::delay_t _latency {0.0};
         Retained<LoopbackWebSocket> _peer;
         std::atomic<size_t> _bufferedBytes {0};
     };
@@ -107,7 +107,7 @@ namespace litecore { namespace websocket {
 
         /** Constructs a WebSocketProvider. A latency time can be provided, which is the delay
             before a message sent by one connection is received by its peer. */
-        LoopbackProvider(LoopbackWebSocket::delay_t latency = LoopbackWebSocket::delay_t::zero())
+        LoopbackProvider(actor::delay_t latency = actor::delay_t::zero())
         :_latency(latency)
         { }
 
@@ -125,7 +125,7 @@ namespace litecore { namespace websocket {
         }
 
     private:
-        LoopbackWebSocket::delay_t _latency {0.0};
+        actor::delay_t _latency {0.0};
     };
 
 

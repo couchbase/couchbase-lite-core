@@ -20,7 +20,7 @@ namespace litecore { namespace websocket {
 
     /** A nonfunctional WebSocket connection for testing. It simply logs messages.
         The handler methods can be overridden to examine messages or do other things with them. */
-    class MockWebSocket : public WebSocket, public Actor {
+    class MockWebSocket : public WebSocket, public actor::Actor {
     public:
 
         ~MockWebSocket() {
@@ -43,13 +43,13 @@ namespace litecore { namespace websocket {
 
         // Mock API -- call this to simulate incoming events:
 
-        void simulateConnected(delay_t latency = delay_t::zero()) {
+        void simulateConnected(actor::delay_t latency = actor::delay_t::zero()) {
             enqueueAfter(latency, &MockWebSocket::_simulateConnected);
         }
 
         void simulateReceived(fleece::slice message,
                               bool binary =true,
-                              delay_t latency = delay_t::zero())
+                              actor::delay_t latency = actor::delay_t::zero())
         {
             enqueueAfter(latency, &MockWebSocket::_simulateReceived, fleece::alloc_slice(message), binary);
         }
@@ -57,7 +57,7 @@ namespace litecore { namespace websocket {
         void simulateClosed(CloseReason reason =kWebSocketClose,
                             int status =1000,
                             const char *message =nullptr,
-                            delay_t latency = delay_t::zero())
+                            actor::delay_t latency = actor::delay_t::zero())
         {
             enqueueAfter(latency,
                          &MockWebSocket::_simulateClosed,

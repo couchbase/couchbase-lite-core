@@ -15,7 +15,7 @@
 #include <thread>
 #include <vector>
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     /** An object that can trigger a callback at (approximately) a specific future time. */
     class Timer {
@@ -98,4 +98,4 @@ namespace litecore {
         Manager::map::iterator _entry;          // My map entry in Manager::_schedule
     };
 
-}
+} }

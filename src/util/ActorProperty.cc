@@ -10,7 +10,7 @@
 
 using namespace std;
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     template <class T>
     PropertyImpl<T>& PropertyImpl<T>::operator= (const T &t) {
@@ -29,4 +29,4 @@ namespace litecore {
         _observers.push_back(observer);
     }
 
-}
+} }

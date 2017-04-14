@@ -7,7 +7,7 @@
 //
 
 #pragma once
-#include "Channel.hh"
+#include "ThreadedMailbox.hh"
 #include "RefCounted.hh"
 #include "Future.hh"
 #include <assert.h>
@@ -21,20 +21,16 @@
 #endif
 
 #ifdef ACTORS_USE_GCD
-#include <dispatch/dispatch.h>
+#include "GCDMailbox.hh"
 #endif
-
-#define ACTORS_TRACK_STATS  DEBUG
 
 #if ACTORS_TRACK_STATS
 #include "Benchmark.hh"
 #endif
 
 
-namespace litecore {
-
+namespace litecore { namespace actor {
     class Actor;
-    class ThreadedMailbox;
 
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
@@ -48,122 +44,12 @@ namespace litecore {
     std::function<RetVal(Args...)> get_fun_type(RetVal (*)(Args...));
     ////
 
-
-    /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.
-        It managers a thread pool on which Mailboxes and Actors will run. */
-    class Scheduler {
-    public:
-        using duration = std::chrono::duration<double>; // time duration in floating-point seconds
-
-        Scheduler(unsigned numThreads =0)
-        :_numThreads(numThreads)
-        { }
-
-        /** Returns a per-process shared instance. */
-        static Scheduler* sharedScheduler();
-
-        /** Starts the background threads that will run queued Actors. */
-        void start();
-
-        /** Stops the background threads. Blocks until all pending messages are handled. */
-        void stop();
-
-        /** Runs the scheduler on the current thread; doesn't return until all pending
-            messages are handled. */
-        void runSynchronous()                               {task(0);}
-
-    protected:
-        friend class ThreadedMailbox;
-
-        /** A request for an Actor's performNextMessage method to be called. */
-        void schedule(ThreadedMailbox* mbox)                {_queue.push(mbox);}
-
-    private:
-        void task(unsigned taskID);
-
-        unsigned _numThreads;
-        Channel<ThreadedMailbox*> _queue;
-        std::vector<std::thread> _threadPool;
-        std::atomic_flag _started = ATOMIC_FLAG_INIT;
-    };
-
-
-
-    /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
-    class ThreadedMailbox : Channel<std::function<void()>> {
-    public:
-        ThreadedMailbox(Actor*, const std::string &name ="");
-
-        const std::string& name() const                     {return _name;}
-
-        unsigned eventCount() const                         {return (unsigned)size();}
-
-        void enqueue(std::function<void()>);
-        void enqueueAfter(Scheduler::duration delay, std::function<void()>);
-
-        void logStats()                                     { /* TODO */ }
-
-    private:
-        friend class Scheduler;
-        
-        void reschedule();
-        void performNextMessage();
-
-        Actor* const _actor;
-        std::string const _name;
-#if DEBUG
-        std::atomic_int _active {0};
-#endif
-    };
-
-
-#ifdef ACTORS_USE_GCD
-    /** Actor mailbox that uses a Grand Central Dispatch (GCD) serial dispatch_queue.
-        Available on Apple platforms, or elsewhere if libdispatch is installed. */
-    class GCDMailbox {
-    public:
-        GCDMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr);
-        ~GCDMailbox();
-
-        std::string name() const;
-
-        Scheduler* scheduler() const                        {return nullptr;}
-        void setScheduler(Scheduler *s)                     { }
-
-        unsigned eventCount() const                         {return _eventCount;}
-
-        void enqueue(std::function<void()> f);
-        void enqueue(void (^block)());
-        void enqueueAfter(Scheduler::duration delay, std::function<void()>);
-        void enqueueAfter(Scheduler::duration delay, void (^block)());
-
-        static void startScheduler(Scheduler *)             { }
-
-        void logStats();
-
-    private:
-        void afterEvent();
-        
-        Actor *_actor;
-        dispatch_queue_t _queue;
-        std::atomic<int32_t> _eventCount {0};
-#if ACTORS_TRACK_STATS
-        int32_t _maxEventCount {0};
-        double _maxLatency {0};
-        Stopwatch _createdAt {true};
-        Stopwatch _busy {false};
-#endif
-    };
-#endif
-
-
     // Use GCD if available, as it's more efficient and has better integration with OS & debugger.
 #ifdef ACTORS_USE_GCD
     typedef GCDMailbox Mailbox;
 #else
     typedef ThreadedMailbox Mailbox;
 #endif
-
 
 
     /** Abstract base actor class. Subclasses should implement their public methods as calls to
@@ -200,8 +86,6 @@ namespace litecore {
             _mailbox.enqueue(std::bind(fn, (Rcvr*)this, args...));
 #endif
         }
-
-        using delay_t = Scheduler::duration;
 
         /** Schedules a call to a method, after a delay.
             Other calls scheduled after this one may end up running before it! */
@@ -248,16 +132,9 @@ namespace litecore {
 
     private:
         friend class ThreadedMailbox;
-#ifdef ACTORS_USE_GCD
         friend class GCDMailbox;
-#endif
 
         Mailbox _mailbox;
     };
 
-
-    // This prevents the compiler from specializing Channel in every compilation unit:
-    extern template class Channel<ThreadedMailbox*>;
-    extern template class Channel<std::function<void()>>;
-
-}
+} }

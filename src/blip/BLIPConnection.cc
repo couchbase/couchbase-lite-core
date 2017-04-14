@@ -76,7 +76,7 @@ namespace litecore { namespace blip {
 
 
     /** The guts of a Connection. */
-    class BLIPIO : public Actor, public Logging, public websocket::Delegate {
+    class BLIPIO : public actor::Actor, public Logging, public websocket::Delegate {
     private:
         using MessageMap = unordered_map<MessageNo, Retained<MessageIn>>;
         using HandlerKey = pair<string, bool>;

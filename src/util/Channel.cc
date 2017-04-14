@@ -8,7 +8,7 @@
 
 #include "Channel.hh"
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     template <class T>
     bool Channel<T>::push(const T &t) {
@@ -91,4 +91,4 @@ namespace litecore {
         }
     }
 
-}
+} }

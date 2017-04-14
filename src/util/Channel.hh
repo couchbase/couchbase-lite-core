@@ -11,7 +11,7 @@
 #include <mutex>
 #include <queue>
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     /** A simple thread-safe producer/consumer queue. */
     template <class T>
@@ -57,4 +57,4 @@ namespace litecore {
         bool _closed {false};
     };
     
-}
+} }

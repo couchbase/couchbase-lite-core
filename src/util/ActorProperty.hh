@@ -10,7 +10,7 @@
 #include "Actor.hh"
 #include <functional>
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     template <class T>
     class Observer;
@@ -65,4 +65,4 @@ namespace litecore {
         PropertyImpl<T> &_impl;
     };
 
-}
+} }

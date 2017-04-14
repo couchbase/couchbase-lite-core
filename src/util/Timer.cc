@@ -11,7 +11,7 @@
 
 using namespace std;
 
-namespace litecore {
+namespace litecore { namespace actor {
 
     Timer::Manager& Timer::manager() {
         static Manager* sManager = new Manager;
@@ -111,4 +111,4 @@ namespace litecore {
     }
 
 
-}
+} }
