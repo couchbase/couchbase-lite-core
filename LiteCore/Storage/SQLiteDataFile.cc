@@ -183,7 +183,7 @@ path.path().c_str());
             // Prior to 3.12, the default page size was 1024, which is less than optimal.
             // Note that setting the page size has to be done before any other command that touches
             // the database file.
-            exec(format("PRAGMA page_size=%lld; ", kPageSize));
+            exec(format("PRAGMA page_size=%lld; ", (long long)kPageSize));
         }
 
         withFileLock([this]{
@@ -210,7 +210,7 @@ path.path().c_str());
         exec(format("PRAGMA mmap_size=%zu; "            // Memory-mapped I/O FTW
                     "PRAGMA synchronous=normal; "       // Speeds up commits
                     "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
-                    kMMapSize, kJournalSize));
+                    kMMapSize, (long long)kJournalSize));
 
 #if DEBUG
         // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
