@@ -91,6 +91,7 @@ namespace litecore { namespace repl {
         void getCheckpoints();
         void startReplicating();
         virtual ActivityLevel computeActivityLevel() const override;
+        void reportStatus();
 
         void updateCheckpoint();
         void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}

@@ -26,7 +26,7 @@ namespace litecore { namespace repl {
 
 
     /** Abstract base class of Actors used by the replicator */
-    class Worker : public Actor, C4InstanceCounted, protected Logging {
+    class Worker : public actor::Actor, C4InstanceCounted, protected Logging {
     public:
 
         /** Replication configuration options */

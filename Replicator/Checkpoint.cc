@@ -101,7 +101,7 @@ namespace litecore { namespace repl {
         LOCK();
         _saveCallback = cb;
         _saveTime = saveTime;
-        _timer.reset( new Timer( bind(&Checkpoint::save, this) ) );
+        _timer.reset( new actor::Timer( bind(&Checkpoint::save, this) ) );
     }
 
 

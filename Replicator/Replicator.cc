@@ -130,35 +130,38 @@ namespace litecore { namespace repl {
             case Connection::kClosed:
                 // After connection closes, remain active while I wait for db to finish writes:
                 return (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
-       }
+        }
     }
 
 
     void Replicator::changedStatus() {
-        auto curStatus = status();
-        if (curStatus.level == kC4Stopped) {
+        if (status().level == kC4Stopped) {
             assert(!connection());
             _pusher = nullptr;
             _puller = nullptr;
             _dbActor = nullptr;
         }
-
-        if (!_delegate)
-            return;
-
-        // Notify the delegate of the current status, but not too often:
-        auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
-        if (waitFor <= 0 || curStatus.level != _lastDelegateCallLevel) {
-            _waitingToCallDelegate = false;
-            _lastDelegateCallLevel = curStatus.level;
-            _sinceDelegateCall.reset();
-            _delegate->replicatorStatusChanged(this, curStatus);
-            if (curStatus.level == kC4Stopped)
-                _delegate = nullptr;        // Never call delegate after telling it I've stopped
-        } else if (!_waitingToCallDelegate) {
-            _waitingToCallDelegate = true;
-            enqueueAfter(Scheduler::duration(waitFor), &Replicator::changedStatus);
+        if (_delegate) {
+            // Notify the delegate of the current status, but not too often:
+            auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
+            if (waitFor <= 0 || status().level != _lastDelegateCallLevel) {
+                reportStatus();
+            } else if (!_waitingToCallDelegate) {
+                _waitingToCallDelegate = true;
+                enqueueAfter(actor::delay_t(waitFor), &Replicator::reportStatus);
+            }
         }
+    }
+
+
+    void Replicator::reportStatus() {
+        _waitingToCallDelegate = false;
+        _lastDelegateCallLevel = status().level;
+        _sinceDelegateCall.reset();
+        if (_delegate)
+            _delegate->replicatorStatusChanged(this, status());
+        if (status().level == kC4Stopped)
+            _delegate = nullptr;        // Never call delegate after telling it I've stopped
     }
 
 

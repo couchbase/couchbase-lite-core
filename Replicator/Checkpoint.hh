@@ -77,7 +77,7 @@ namespace litecore { namespace repl {
         bool _changed  {false};
         bool _saving {false};
         bool _overdueForSave {false};
-        std::unique_ptr<Timer> _timer;
+        std::unique_ptr<actor::Timer> _timer;
         SaveCallback _saveCallback;
         duration _saveTime;
     };

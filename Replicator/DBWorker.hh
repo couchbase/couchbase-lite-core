@@ -93,7 +93,7 @@ namespace litecore { namespace repl {
         Retained<Pusher> _pusher;
         std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
         std::mutex _revsToInsertMutex;
-        Timer _insertTimer;
+        actor::Timer _insertTimer;
         bool _insertDocumentMetadata {true}; //FIX: Currently set to true to accomodate SG
     };
 
