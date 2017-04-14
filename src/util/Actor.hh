@@ -24,7 +24,7 @@
 #include "GCDMailbox.hh"
 #endif
 
-#if ACTORS_TRACK_STATS
+#ifdef ACTORS_TRACK_STATS
 #include "Benchmark.hh"
 #endif
 

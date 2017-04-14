@@ -26,6 +26,10 @@ aux_source_directory("src/util"                 UTIL_SRC)
 aux_source_directory("src/websocket"            WEBSOCKET_SRC)
 aux_source_directory("vendor/zlibcomplete/lib"  ZLIBCOMPLETE_SRC)
 
+if(NOT APPLE)
+    list(REMOVE_ITEM UTIL_SRC src/util/GCDMailbox.cc)
+endif()
+
 set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC} tests/MockProvider.cc)
 
 ### LIBRARY:
