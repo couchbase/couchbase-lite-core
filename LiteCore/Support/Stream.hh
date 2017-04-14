@@ -68,6 +68,9 @@ namespace litecore {
         FILE* _file {nullptr};
     };
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4250)
+#endif
 
     /** Concrete WriteStream that writes to a file. (It can also read.) */
     class FileWriteStream : public virtual FileReadStream, public virtual ReadWriteStream {
@@ -78,5 +81,9 @@ namespace litecore {
         virtual void write(slice) override;
         virtual void close() override                           {FileReadStream::close();}
     };
+
+#ifdef _MSC_VER
+#pragma warning(default: 4250)
+#endif
 
 }

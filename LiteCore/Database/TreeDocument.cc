@@ -359,7 +359,7 @@ bool c4doc_save(C4Document *doc,
 {
     auto idoc = internal(doc);
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
-        return -1;
+        return false;
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {

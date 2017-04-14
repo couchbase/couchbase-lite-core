@@ -80,7 +80,7 @@ namespace c4Internal {
         }
 
     #define catchExceptions() \
-        catch (const exception &x) { }
+        catch (const exception &) { }
 
     #define checkParam(TEST, OUTERROR) \
         ((TEST) || (recordError(LiteCoreDomain, kC4ErrorInvalidParameter, OUTERROR), false))

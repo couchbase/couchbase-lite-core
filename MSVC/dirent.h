@@ -626,10 +626,9 @@ extern "C" {
 		dirp = (DIR*)malloc(sizeof(struct DIR));
 		if (dirp) {
 			wchar_t wname[PATH_MAX];
-			size_t n;
 
 			/* Convert directory name to wide-character string */
-			int rc = MultiByteToWideChar(CP_UTF8, 0, dirname, strnlen_s(dirname, PATH_MAX) + 1, wname, PATH_MAX);
+			int rc = MultiByteToWideChar(CP_UTF8, 0, dirname, (int)strnlen_s(dirname, PATH_MAX) + 1, wname, PATH_MAX);
 			if (rc) {
 
 				/* Open directory stream using wide-character name */

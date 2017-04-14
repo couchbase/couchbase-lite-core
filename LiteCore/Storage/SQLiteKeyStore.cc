@@ -193,7 +193,7 @@ namespace litecore {
 
         sequence seq = (int64_t)stmt.getColumn(0);
         uint64_t offset = _capabilities.getByOffset ? seq : 0;
-        bool deleted = (int)stmt.getColumn(1);
+        bool deleted = (int)stmt.getColumn(1) != 0;
         updateDoc(rec, seq, offset, deleted);
         setRecordMetaAndBody(rec, stmt, options);
         return !rec.deleted();
@@ -213,7 +213,7 @@ namespace litecore {
         stmt.bind(1, (long long)seq);
         if (stmt.executeStep()) {
             uint64_t offset = _capabilities.getByOffset ? seq : 0;
-            bool deleted = (int)stmt.getColumn(1);
+            bool deleted = (int)stmt.getColumn(1) != 0;
             updateDoc(rec, seq, offset, deleted);
             rec.setKey(columnAsSlice(stmt.getColumn(2)));
             setRecordMetaAndBody(rec, stmt, options);
@@ -335,7 +335,7 @@ namespace litecore {
             auto f = Value::fromTrustedData(expressionFleece);
             if (f)
                 params = f->asArray();
-        } catch (const FleeceException &x) { }
+        } catch (const FleeceException &) { }
         if (!params || params->count() == 0)
             error::_throw(error::InvalidQuery);
 

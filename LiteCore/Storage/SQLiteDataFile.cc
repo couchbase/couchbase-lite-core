@@ -331,12 +331,12 @@ path.path().c_str());
             // Replace it with the new one:
             try {
                 factory().deleteFile(realPath);
-            } catch (const error &e) {
+            } catch (const error &) {
                 // ignore errors deleting old files
             }
             factory().moveFile(tempPath, realPath);
 
-        } catch (const exception &x) {
+        } catch (const exception &) {
             // Back out and rethrow:
             close();
             factory().deleteFile(tempPath);

@@ -88,7 +88,7 @@ std::string sliceToHexDump(slice result, size_t width) {
 
 
 void randomBytes(slice dst) {
-    arc4random_buf((void*)dst.buf, dst.size);
+    arc4random_buf((void*)dst.buf, (int)dst.size);
 }
 
 namespace fleece {

@@ -19,6 +19,7 @@
     #define ftello      ftell
     #define strncasecmp _strnicmp
     #define strcasecmp  _stricmp
+    #define fdclose ::_close
 
     namespace litecore {
         int mkdir_u8(const char* const path, int mode);
@@ -35,6 +36,8 @@
     #include <stdio.h>
     #include <sys/stat.h>
     #include <unistd.h>
+
+    #define fdclose ::close
 
     namespace litecore {
         inline int mkdir_u8(const char* const path, int mode) {

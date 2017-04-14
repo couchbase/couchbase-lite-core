@@ -17,7 +17,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 -D_CRT_SECURE_NO_WARNINGS=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 /wd4018 /wd4819 -D_CRT_SECURE_NO_WARNINGS=1")
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -190,7 +190,7 @@ elseif(ANDROID)
 else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
-			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
+			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def /ignore:4099")	
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32)
 endif()
 

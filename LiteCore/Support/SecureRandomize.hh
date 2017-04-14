@@ -34,7 +34,7 @@
     #include <openssl/rand.h>
 
     static inline void SecureRandomize(fleece::slice s) {
-        RAND_bytes((unsigned char *)s.buf, s.size);
+        RAND_bytes((unsigned char *)s.buf, (int)s.size);
     }
 
     #define SECURE_RANDOMIZE_AVAILABLE 1

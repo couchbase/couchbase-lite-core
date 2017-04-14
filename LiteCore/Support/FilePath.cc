@@ -400,7 +400,7 @@ namespace litecore {
         if (outHandle)
             *outHandle = fdopen(fd, "w");
         else
-            close(fd);
+            fdclose(fd);
         return FilePath(pathBuf);
     }
 

@@ -166,7 +166,7 @@ namespace litecore {
             if (!root)
                 return;
             setResultFromValue(ctx, evaluatePath(ctx, valueAsSlice(argv[1]), root));
-        } catch (const std::exception &x) {
+        } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
         }
     }
