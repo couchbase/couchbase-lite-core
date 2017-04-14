@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Channel.hh"
+#include "RefCounted.hh"
 #include <atomic>
 #include <string>
 #include <thread>
@@ -17,6 +18,7 @@
 namespace litecore { namespace actor {
     class Scheduler;
     class Actor;
+    class MailboxProxy;
 
 
     /** A delay expressed in floating-point seconds */
@@ -27,6 +29,7 @@ namespace litecore { namespace actor {
     class ThreadedMailbox : Channel<std::function<void()>> {
     public:
         ThreadedMailbox(Actor*, const std::string &name ="");
+        ~ThreadedMailbox();
 
         const std::string& name() const                     {return _name;}
 
@@ -45,6 +48,7 @@ namespace litecore { namespace actor {
 
         Actor* const _actor;
         std::string const _name;
+        Retained<MailboxProxy> _proxy;
 #if DEBUG
         std::atomic_int _active {0};
 #endif

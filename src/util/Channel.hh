@@ -50,8 +50,10 @@ namespace litecore { namespace actor {
             default T value instead of blocking. */
         void close();
 
-    private:
+    protected:
         std::mutex _mutex;
+        
+    private:
         std::condition_variable _cond;
         std::queue<T> _queue;
         bool _closed {false};
