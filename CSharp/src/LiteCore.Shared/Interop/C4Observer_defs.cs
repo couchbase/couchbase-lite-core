@@ -40,6 +40,7 @@ namespace LiteCore.Interop
         public C4Slice docID;
         public C4Slice revID;
         public ulong sequence;
+        public uint bodySize;
     }
 
 #if LITECORE_PACKAGED

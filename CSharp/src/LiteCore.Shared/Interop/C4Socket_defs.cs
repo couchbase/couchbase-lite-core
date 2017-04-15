@@ -1,4 +1,5 @@
-﻿// C4Socket_defs.cs
+//
+// C4Socket_defs.cs
 //
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
@@ -93,7 +94,7 @@ namespace LiteCore.Interop
             this.completedReceive = Marshal.GetFunctionPointerForDelegate(completedReceive);
             this.close = IntPtr.Zero;
             this.requestClose = Marshal.GetFunctionPointerForDelegate(requestClose);
-			this.providesWebSockets = 1;
+            this.providesWebSockets = 1;
         }
     }
 
