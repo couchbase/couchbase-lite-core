@@ -33,6 +33,7 @@ extern "C" {
         kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
         kC4DB_Bundled       = 8,    ///< Store db & attachments inside a directory
         kC4DB_SharedKeys    = 0x10, ///< Enable shared-keys optimization at creation time
+        kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
     };
 
     /** Document versioning system (also determines database storage schema) */

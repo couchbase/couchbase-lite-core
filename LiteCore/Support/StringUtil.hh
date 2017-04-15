@@ -20,6 +20,12 @@ namespace litecore {
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char *fmt, va_list);
 
+    /** Removes last character from string (in place.) Does nothing if string is empty. */
+    void chop(std::string&);
+
+    /** Removes last character from string (in place), but only if it equals `ending` */
+    void chomp(std::string&, char ending);
+
 }
 
 

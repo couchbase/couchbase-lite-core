@@ -23,6 +23,7 @@
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
 #include "BlobStore.hh"
+#include "Upgrader.hh"
 #include "forestdb_endian.h"
 #include "SecureRandomize.hh"
 
@@ -114,7 +115,18 @@ namespace c4Internal {
         DataFile::Factory *storage = DataFile::factoryNamed((string)(storageEngine));
         if (!storage)
             error::_throw(error::Unimplemented);
-        return storage->openFile(path, &options);
+
+        try {
+            // Open the DataFile:
+            return storage->openFile(path, &options);
+        } catch (const error &x) {
+            if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld) {
+                // This is an old 1.x database; upgrade it in place, then open:
+                if (UpgradeDatabaseInPlace(path.dir(), config))
+                    return storage->openFile(path, &options);
+            }
+            throw;
+        }
     }
 
 

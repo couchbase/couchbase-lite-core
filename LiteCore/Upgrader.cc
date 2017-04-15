@@ -16,6 +16,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include <sqlite3.h>
+#include <thread>
 
 using namespace std;
 using namespace fleece;
@@ -313,6 +314,49 @@ namespace litecore {
 
     void UpgradeDatabase(const FilePath &oldPath, Database *newDB) {
         Upgrader(oldPath, newDB).run();
+    }
+
+
+    bool UpgradeDatabaseInPlace(const FilePath &path, C4DatabaseConfig config) {
+        if (!(config.flags & kC4DB_Bundled) || (config.flags & (kC4DB_NoUpgrade | kC4DB_ReadOnly))) return false;
+
+        string p = path.path();
+        chomp(p, '/');
+        FilePath newTempPath(p + "_TEMP/");
+        auto trashPath(FilePath::tempDirectory()["CBL_Obsolete_DB-"].mkTempDir());
+
+        try {
+            // Upgrade to a new db:
+            auto newConfig = config;
+            newConfig.flags |= kC4DB_Create;
+            Log("Upgrader upgrading db <%s>; creating new db at <%s>",
+                path.path().c_str(), newTempPath.path().c_str());
+            UpgradeDatabase(path, newTempPath, newConfig);
+
+            // Move the old db aside, to be deleted later:
+            path.moveTo(trashPath);
+
+            try {
+                // Move the new db to the real path:
+                newTempPath.moveTo(path);
+            } catch (...) {
+                // Shazbatt! Back out moving the old db:
+                trashPath.moveTo(path);
+                throw;
+            }
+        } catch (...) {
+            newTempPath.delRecursive();
+            throw;
+        }
+
+        // Finally delete the old db, asynchronously:
+        thread( [=]{
+            trashPath.delRecursive();
+            Log("Upgrader finished async delete of old db at <%s>", trashPath.path().c_str());
+        } ).detach();
+        
+        Log("Upgrader finished");
+        return true;
     }
 
 }

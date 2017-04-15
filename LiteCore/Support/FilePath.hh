@@ -39,6 +39,7 @@ namespace litecore {
 
         std::string dirName() const         {return _dir;}
         std::string fileName() const        {return _file;}
+        std::string fileOrDirName() const;
         std::string path() const            {return _dir + _file;}
 
         operator std::string () const       {return path();}
@@ -94,6 +95,9 @@ namespace litecore {
             If the `outHandle` parameter is non-null, it will be set to a writeable file handle. */
         FilePath mkTempFile(FILE* *outHandle =nullptr) const;
 
+        /** Creates an empty temporary directory by appending a random 6-letter/digit string. */
+        FilePath mkTempDir() const;
+
         /** Deletes the file, or empty directory, at this path.
             If the item doesn't exist, returns false instead of throwing an exception. */
         bool del() const;
@@ -101,11 +105,15 @@ namespace litecore {
         /** Deletes the file or directory tree at this path. */
         bool delRecursive() const;
 
-        bool delWithAllExtensions() const;
+        bool delWithAllExtensions(char separator ='.') const;
 
-        /** Moves this file to a different path. */
+        /** Moves this file/directory to a different path. */
         void moveTo(const FilePath& to) const  {moveTo(to.path());}
         void moveTo(const std::string&) const;
+
+        /** Copies this file (or directory, recursively) to a different path. */
+        void copyTo(const FilePath& to) const  {copyTo(to.path());}
+        void copyTo(const std::string&) const;
 
         void setReadOnly(bool readOnly) const;
 

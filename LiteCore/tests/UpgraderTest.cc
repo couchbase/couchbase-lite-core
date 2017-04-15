@@ -20,6 +20,8 @@ using namespace fleece;
 class UpgradeTestFixture {
 protected:
 
+    Retained<Database> db;
+
     void upgrade(string oldPath) {
         FilePath newPath = FilePath::tempDirectory()["upgraded.cblite3/"];
         newPath.delRecursive();
@@ -34,7 +36,26 @@ protected:
         db = new Database(newPath, config);
     }
 
-    Retained<Database> db;
+    void upgradeInPlace(string fixturePath) {
+        auto srcPath = FilePath(fixturePath);
+        FilePath dbPath = FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
+        dbPath.delRecursive();
+        srcPath.copyTo(dbPath);
+
+        C4DatabaseConfig config { };
+        config.flags = kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_NoUpgrade;
+        config.storageEngine = kC4SQLiteStorageEngine;
+        config.versioning = kC4RevisionTrees;
+
+        // First check that NoUpgrade flag correctly triggers an exception:
+        ExpectException(error::LiteCore, error::DatabaseTooOld, [&]{
+            db = new Database(dbPath, config);
+        });
+
+        // Now allow the upgrade:
+        config.flags &= ~kC4DB_NoUpgrade;
+        db = new Database(dbPath, config);
+    }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
         unique_ptr<Document> doc1( db->documentFactory().newDocumentInstance(toc4slice(docID)) );
@@ -131,4 +152,20 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.3", "[Upgrade]") {
               {"2-acae7bbf5269a5a9be40493e0601b28e"_sl, "1-cd809becc169215072fd567eebd8b8de"_sl});
     verifyAttachment("sha1-v1M1+8aDtoX7zr6cJ2O7BlaaPAo=");
     verifyAttachment("sha1-vX2fVqJf4pIbehLdk0L2cB4QXzI=");
+}
+
+
+#pragma mark - UPGRADING IN PLACE:
+
+TEST_CASE_METHOD(UpgradeTestFixture, "Open and upgrade", "[Upgrade]") {
+    upgradeInPlace(DataFileTestFixture::sFixturesDir + "replacedb/android120/androiddb.cblite2/");
+
+    verifyDoc("doc1"_sl,
+              "{\"key\":\"1\",\"_attachments\":{\"attach1\":{\"length\":7,\"digest\":\"sha1-P1i5kI/sosq745/9BDR7kEghKps=\",\"revpos\":2,\"content_type\":\"text/plain; charset=utf-8\",\"stub\":true}}}"_sl,
+              {"2-db9941f74d7fd45d60c272b796ae50c7"_sl, "1-e2a2bdc0b00e32ecd0b6bc546024808b"_sl});
+    verifyDoc("doc2"_sl,
+              "{\"key\":\"2\",\"_attachments\":{\"attach2\":{\"length\":7,\"digest\":\"sha1-iTebnQazmdAhRBH64y9E6JqwSoc=\",\"revpos\":2,\"content_type\":\"text/plain; charset=utf-8\",\"stub\":true}}}"_sl,
+              {"2-aaeb2815a598000a2f2afbbbf1ef4a89"_sl, "1-9eb68a4a7b2272dc7a972a3bc136c39d"_sl});
+    verifyAttachment("sha1-P1i5kI/sosq745/9BDR7kEghKps=");
+    verifyAttachment("sha1-iTebnQazmdAhRBH64y9E6JqwSoc=");
 }

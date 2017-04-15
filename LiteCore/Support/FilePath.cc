@@ -17,6 +17,7 @@
 #include "Base.hh"
 #include "Logging.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "PlatformIO.hh"
 #include <dirent.h>
 #include <errno.h>
@@ -30,6 +31,10 @@
 #include <direct.h>
 #include <io.h>
 #include "mkstemp.h"
+#endif
+
+#if __APPLE__
+#include <copyfile.h>
 #endif
 
 
@@ -155,6 +160,20 @@ namespace litecore {
     }
 
 
+    string FilePath::fileOrDirName() const {
+        if (!isDir())
+            return fileName();
+        // Remove the trailing separator from _dir:
+        auto path = _dir;
+        if (path.size() <= 1 || path == kCurrentDir)
+            return "";
+        chomp(path, kSeparatorChar);
+        // Now return the last component:
+        auto split = splitPath(path);
+        return split.second;
+    }
+
+
     FilePath FilePath::fileNamed(const std::string &filename) const {
         return FilePath(_dir, filename);
     }
@@ -275,17 +294,37 @@ namespace litecore {
     }
 
 
+    static constexpr size_t kPathBufSize = 1024; // MAXPATHLEN
+
+    static void makePathTemplate(const FilePath *fp, char *pathBuf) {
+        string path = fp->path();
+        const char *basePath = path.c_str();
+        Assert(strlen(basePath) + 6 < kPathBufSize - 1);
+        sprintf(pathBuf, "%sXXXXXX", basePath);
+    }
+
+
     FilePath FilePath::mkTempFile(FILE* *outHandle) const {
-        char templ[1024]; // MAXPATHLEN
-        sprintf(templ, "%sXXXXXX", path().c_str());
-        int fd = mkstemp(templ);
+        char pathBuf[kPathBufSize];
+        makePathTemplate(this, pathBuf);
+        int fd = mkstemp(pathBuf);
         if (fd < 0)
             error::_throwErrno();
         if (outHandle)
             *outHandle = fdopen(fd, "w");
         else
             close(fd);
-        return FilePath(templ);
+        return FilePath(pathBuf);
+    }
+
+
+    FilePath FilePath::mkTempDir() const {
+        char pathBuf[kPathBufSize];
+        makePathTemplate(this, pathBuf);
+        if (mkdtemp(pathBuf) == nullptr)
+            error::_throwErrno();
+        strlcat(pathBuf, "/", sizeof(pathBuf));
+        return FilePath(pathBuf);
     }
 
 
@@ -310,9 +349,9 @@ namespace litecore {
         error::_throwErrno();
     }
 
-    bool FilePath::delWithAllExtensions() const {
+    bool FilePath::delWithAllExtensions(char separator) const {
         bool deleted = del();
-        FilePath(_dir, _file + ".").forEachMatch([&](const FilePath &f) {
+        FilePath(_dir, _file + separator).forEachMatch([&](const FilePath &f) {
             if (f.del())
                 deleted = true;
         });
@@ -344,7 +383,16 @@ namespace litecore {
         return true;
     }
 
-    
+
+    void FilePath::copyTo(const string &to) const {
+#if __APPLE__
+        copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
+        check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+#else
+#error implement me!
+#endif
+    }
+
     void FilePath::moveTo(const string &to) const {
 #ifdef _MSC_VER
         int result = chmod_u8(to.c_str(), 0600);

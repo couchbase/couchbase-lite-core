@@ -293,7 +293,7 @@ namespace litecore {
             return true;
         switch (domain) {
             case LiteCore:
-                return code == NotFound || code == Deleted;
+                return code == NotFound || code == Deleted || code == DatabaseTooOld;
             case POSIX:
                 return code == ENOENT;
             default:
