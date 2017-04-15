@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
             _connection->setRequestHandler(profile, false, asynchronize(fn));
         }
 
-        /** Implementation of connectionClosed(). Maybe overridden, but call super. */
+        /** Implementation of connectionClosed(). May be overridden, but call super. */
         virtual void _connectionClosed() {
             _connection = nullptr;
         }

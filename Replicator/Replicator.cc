@@ -25,6 +25,7 @@ using namespace fleeceapi;
 namespace litecore { namespace repl {
 
 
+    // The 'designated initializer', in Obj-C terms :)
     Replicator::Replicator(C4Database* db,
                            const websocket::Address &address,
                            Delegate &delegate,
@@ -33,6 +34,7 @@ namespace litecore { namespace repl {
     :Worker(connection, nullptr, options, "Repl")
     ,_remoteAddress(address)
     ,_delegate(&delegate)
+    ,_connectionState(connection->state())
     ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_pullStatus{options.pull == kC4Disabled ? kC4Stopped : kC4Busy}
     ,_dbActor(new DBWorker(connection, this, db, address, options))
@@ -64,8 +66,10 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_stop() {
-        if (connection())
+        if (connection()) {
             connection()->close();
+            _connectionState = Connection::kClosing;
+        }
     }
 
 
@@ -103,8 +107,7 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Replicator::computeActivityLevel() const {
-        auto state = (connection() ? connection()->state() : Connection::kClosed);
-        switch (state) {
+        switch (_connectionState) {
             case Connection::kConnecting:
                 return kC4Connecting;
             case Connection::kConnected: {
@@ -117,7 +120,7 @@ namespace litecore { namespace repl {
                 if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:
                     log("Replication complete! Closing connection");
-                    connection()->close();
+                    const_cast<Replicator*>(this)->_stop();
                     level = kC4Busy;
                 }
                 assert(level > kC4Stopped);
@@ -136,7 +139,7 @@ namespace litecore { namespace repl {
 
     void Replicator::changedStatus() {
         if (status().level == kC4Stopped) {
-            assert(!connection());
+            assert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
             _dbActor = nullptr;
@@ -170,16 +173,19 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         log("BLIP Connected");
+        _connectionState = Connection::kConnected;
         if (_options.push > kC4Passive || _options.pull > kC4Passive)
             getCheckpoints();
     }
 
 
-    void Replicator::_onClose(Connection::CloseStatus status) {
+    void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
         static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error",
                                              "Unknown error"};
         log("Connection closed with %s %d: \"%.*s\"",
             kReasonNames[status.reason], status.code, SPLAT(status.message));
+
+        _connectionState = state;
 
         _checkpoint.stopAutosave();
 

@@ -71,8 +71,8 @@ namespace litecore { namespace repl {
         // BLIP ConnectionDelegate API:
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
-        virtual void onClose(Connection::CloseStatus status) override
-                                                {enqueue(&Replicator::_onClose, status);}
+        virtual void onClose(Connection::CloseStatus status, Connection::State state) override
+                                                {enqueue(&Replicator::_onClose, status, state);}
         virtual void onRequestReceived(blip::MessageIn *msg) override
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
         Replicator(C4Database*, const websocket::Address&, Delegate&, Options, Connection*);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
-        void _onClose(Connection::CloseStatus);
+        void _onClose(Connection::CloseStatus, Connection::State);
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
         void _stop();
@@ -105,6 +105,7 @@ namespace litecore { namespace repl {
         Retained<DBWorker> _dbActor;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
+        Connection::State _connectionState;
         Status _pushStatus {}, _pullStatus {}, _dbStatus {};
         Stopwatch _sinceDelegateCall;
         ActivityLevel _lastDelegateCallLevel {};
