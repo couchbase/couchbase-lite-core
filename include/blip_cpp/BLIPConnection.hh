@@ -100,8 +100,9 @@ namespace litecore { namespace blip {
         virtual void onConnect()                                { }
 
         /** Called when the connection closes, or fails to open.
-            @param status  The reason for the close, a status code, and a message. */
-        virtual void onClose(Connection::CloseStatus status)  =0;
+            @param status  The reason for the close, a status code, and a message.
+            @param state  The Connection's new state: kDisconnected or kClosed. */
+        virtual void onClose(Connection::CloseStatus status, Connection::State state)  =0;
 
         /** Called when the beginning of an incoming request arrives. The properties will be
             complete, but the body is likely to be incomplete. */

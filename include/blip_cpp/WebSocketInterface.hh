@@ -63,10 +63,30 @@ namespace litecore { namespace websocket {
         kUnknownError
     };
 
+    /** Standardized WebSocket close codes. */
+    enum CloseCode {
+        kCodeNormal = 1000,
+        kCodeGoingAway,
+        kCodeProtocolError,
+        kCodeUnsupportedData,
+        kCodeStatusCodeExpected = 1005,
+        kCodeAbnormal,
+        kCodeInconsistentData,
+        kCodePolicyViolation,
+        kCodeMessageTooBig,
+        kCodeExtensionNotNegotiated,
+        kCodeUnexpectedCondition,
+        kCodeFailedTLSHandshake = 1015,
+    };
+
     struct CloseStatus {
         CloseReason reason;
         int code;
         fleece::alloc_slice message;
+
+        bool isNormal() const {
+            return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway);
+        }
     };
 
 
@@ -153,22 +173,6 @@ namespace litecore { namespace websocket {
             name = (std::string)_address;
         connect();
     }
-
-
-    enum CloseCode {
-        kCodeNormal = 1000,
-        kCodeGoingAway,
-        kCodeProtocolError,
-        kCodeUnsupportedData,
-        kCodeStatusCodeExpected = 1005,
-        kCodeAbnormal,
-        kCodeInconsistentData,
-        kCodePolicyViolation,
-        kCodeMessageTooBig,
-        kCodeExtensionNotNegotiated,
-        kCodeUnexpectedCondition,
-        kCodeFailedTLSHandshake = 1015,
-    };
 
 
 } }

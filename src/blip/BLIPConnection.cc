@@ -561,13 +561,9 @@ namespace litecore { namespace blip {
         log("Closed with %s %d: %.*s",
               kReasonNames[status.reason], status.code,
               (int)status.message.size, status.message.buf);
-        if (status.reason == kWebSocketClose && (status.code == kCodeNormal
-                                              || status.code == kCodeGoingAway))
-            _state = kClosed;
-        else
-            _state = kDisconnected;
+        _state = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;
-        delegate().onClose(status);
+        delegate().onClose(status, _state);
     }
 
 
