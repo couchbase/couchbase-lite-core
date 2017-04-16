@@ -35,6 +35,13 @@
 
 #if __APPLE__
 #include <copyfile.h>
+#elif defined(__linux__)
+#ifdef __ANDROID__
+#include "strlcat.h"
+#else
+#include <bsd/string.h>
+#endif
+#include <sys/sendfile.h>
 #endif
 
 
@@ -388,6 +395,16 @@ namespace litecore {
 #if __APPLE__
         copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
         check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+#elif defined(__linux__)
+        int read_fd, write_fd;
+        off_t offset;
+        struct stat stat_buf;
+        read_fd = open(path().c_str(), O_RDONLY);
+        fstat(read_fd, &stat_buf);
+        write_fd = open(to.c_str(), O_WRONLY | O_CREAT, stat_buf.st_mode);
+        sendfile(write_fd, read_fd, &offset, stat_buf.st_size);
+        close(read_fd);
+        close(write_fd);
 #else
 #error implement me!
 #endif
