@@ -322,6 +322,7 @@ namespace litecore {
 
         string p = path.path();
         chomp(p, '/');
+        chomp(p, '\\');
         FilePath newTempPath(p + "_TEMP/");
         auto trashPath(FilePath::tempDirectory()["CBL_Obsolete_DB-"].mkTempDir());
 

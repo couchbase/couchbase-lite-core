@@ -27,12 +27,6 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #include <sys/stat.h>
-#else
-#include <direct.h>
-#include <io.h>
-#include "mkstemp.h"
-#endif
-
 #if __APPLE__
 #include <copyfile.h>
 #elif defined(__linux__)
@@ -42,12 +36,17 @@
 #include <bsd/string.h>
 #endif
 #include <sys/sendfile.h>
-#elif defined(_MSC_VER)
+#endif
+#else
 #include <atlbase.h>
 #include <atlconv.h>
 #include <WinBase.h>
+#include <direct.h>
+#include <io.h>
+#include "strlcat.h"
+#include "mkstemp.h"
+#include "mkdtemp.h"
 #endif
-
 
 using namespace std;
 using namespace fleece;
@@ -104,7 +103,16 @@ static int copyfile(const char* from, const char* to)
 {
     CA2WEX<256> wideFrom(from, CP_UTF8);
     CA2WEX<256> wideTo(to, CP_UTF8);
-    int err = CopyFile2(wideFrom, wideTo, nullptr);
+    int err = 0;
+    HMODULE kernelLib = LoadLibraryA("kernel32.dll");
+    FARPROC cpFile2 = GetProcAddress(kernelLib, "CopyFile2");
+    if (cpFile2 != nullptr) {
+        err = CopyFile2(wideFrom, wideTo, nullptr);
+    }
+    else {
+        err = CopyFileW(wideFrom, wideTo, false);
+    }
+
     if(err != S_OK) {
         return -1;
     }
@@ -148,12 +156,18 @@ namespace litecore {
     pair<string,string> FilePath::splitPath(const string &path) {
         string dirname, basename;
         auto slash = path.rfind(kSeparatorChar);
-        if (slash == string::npos) {
-            slash = path.rfind(kBackupSeparatorChar);
-            if (slash == string::npos)
-                return{ kCurrentDir, path };
+        auto backupSlash = path.rfind(kBackupSeparatorChar);
+        if (slash == string::npos && backupSlash == string::npos) {
+            return{ kCurrentDir, path };
         }
         
+        if (slash == string::npos) {
+            slash = backupSlash;
+        }
+        else if (backupSlash != string::npos) {
+            slash = max(slash, backupSlash);
+        }
+
         return {path.substr(0, slash+1), path.substr(slash+1)};
     }
 
@@ -240,6 +254,7 @@ namespace litecore {
         if (path.size() <= 1 || path == kCurrentDir)
             return "";
         chomp(path, kSeparatorChar);
+        chomp(path, kBackupSeparatorChar);
         // Now return the last component:
         auto split = splitPath(path);
         return split.second;
@@ -395,7 +410,7 @@ namespace litecore {
         makePathTemplate(this, pathBuf);
         if (mkdtemp(pathBuf) == nullptr)
             error::_throwErrno();
-        strlcat(pathBuf, "/", sizeof(pathBuf));
+        strlcat(pathBuf, &kSeparatorChar, sizeof(pathBuf));
         return FilePath(pathBuf);
     }
 
@@ -480,7 +495,12 @@ namespace litecore {
                 error::_throwErrno();
             }
         } else {
-            check(unlink_u8(to.c_str()));
+            if ((FilePath(to).isDir())) {
+                check(rmdir_u8(to.c_str()));
+            }
+            else {
+                check(unlink_u8(to.c_str()));
+            }
         }
 #endif
         check(rename_u8(path().c_str(), to.c_str()));
