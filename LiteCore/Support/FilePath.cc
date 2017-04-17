@@ -42,11 +42,76 @@
 #include <bsd/string.h>
 #endif
 #include <sys/sendfile.h>
+#elif defined(_MSC_VER)
+#include <atlbase.h>
+#include <atlconv.h>
+#include <WinBase.h>
 #endif
 
 
 using namespace std;
 using namespace fleece;
+
+#ifdef __linux__
+static int copyfile(const char* from, const char* to)
+{
+    int read_fd, write_fd;
+    off_t offset = 0;
+    struct stat stat_buf;
+    read_fd = open(from, O_RDONLY);
+    if(read_fd < 0) {
+        return read_fd;
+    }
+    
+    if(fstat(read_fd, &stat_buf) < 0) {
+        int e = errno;
+        close(read_fd);
+        errno = e;
+        return -1;
+    }
+    
+    write_fd = open(to, O_WRONLY | O_CREAT, stat_buf.st_mode);
+    if(write_fd < 0) {
+        int e = errno;
+        close(read_fd);
+        errno = e;
+        return write_fd;
+    }
+    
+    if(sendfile(write_fd, read_fd, &offset, stat_buf.st_size) < 0) {
+        int e = errno;
+        close(read_fd);
+        close(write_fd);
+        errno = e;
+        return -1;
+    }
+    
+    if(close(read_fd) < 0) {
+        int e = errno;
+        close(write_fd);
+        errno = e;
+        return -1;
+    }
+    
+    if(close(write_fd) < 0) {
+        return -1;
+    }
+    
+    return 0;
+}
+#elif defined(_MSC_VER)
+static int copyfile(const char* from, const char* to)
+{
+    CA2WEX<256> wideFrom(from, CP_UTF8);
+    CA2WEX<256> wideTo(to, CP_UTF8);
+    int err = CopyFile2(wideFrom, wideTo, nullptr);
+    if(err != S_OK) {
+        return -1;
+    }
+    
+    return 0;
+}
+#endif
 
 namespace litecore {
 
@@ -390,23 +455,20 @@ namespace litecore {
         return true;
     }
 
-
     void FilePath::copyTo(const string &to) const {
 #if __APPLE__
         copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
         check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
-#elif defined(__linux__)
-        int read_fd, write_fd;
-        off_t offset;
-        struct stat stat_buf;
-        read_fd = open(path().c_str(), O_RDONLY);
-        fstat(read_fd, &stat_buf);
-        write_fd = open(to.c_str(), O_WRONLY | O_CREAT, stat_buf.st_mode);
-        sendfile(write_fd, read_fd, &offset, stat_buf.st_size);
-        close(read_fd);
-        close(write_fd);
 #else
-#error implement me!
+        if (isDir()) {
+            FilePath toPath(to);
+            toPath.mkdir();
+            forEachFile([&toPath](const FilePath &f) {
+                f.copyTo(toPath[f.fileOrDirName() + (f.isDir() ? "/" : "")]);
+            });
+        } else {
+            check(copyfile(path().c_str(), to.c_str()));
+        }
 #endif
     }
 
