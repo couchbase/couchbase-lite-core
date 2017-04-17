@@ -410,7 +410,9 @@ namespace litecore {
         makePathTemplate(this, pathBuf);
         if (mkdtemp(pathBuf) == nullptr)
             error::_throwErrno();
-        strlcat(pathBuf, &kSeparatorChar, sizeof(pathBuf));
+        
+        static const char separator[2] = { kSeparatorChar, (char)0 };
+        strlcat(pathBuf, separator, sizeof(pathBuf));
         return FilePath(pathBuf);
     }
 
