@@ -617,8 +617,8 @@
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
-		272850A91E9AF53B009CA22F /* Upgrader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Upgrader.cc; sourceTree = "<group>"; };
-		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Upgrader.hh; sourceTree = "<group>"; };
+		272850A91E9AF53B009CA22F /* Upgrader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Upgrader.cc; path = Database/Upgrader.cc; sourceTree = "<group>"; };
+		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Upgrader.hh; path = Database/Upgrader.hh; sourceTree = "<group>"; };
 		272850B41E9BE361009CA22F /* UpgraderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UpgraderTest.cc; sourceTree = "<group>"; };
 		272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CppTests.xcconfig; sourceTree = "<group>"; };
 		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };

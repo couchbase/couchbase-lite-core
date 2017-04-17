@@ -97,16 +97,15 @@ endif()
 
 ### SOURCE FILES:
               
-include_directories(LiteCore
-  LiteCore/BlobStore
-  LiteCore/Database
-  LiteCore/Indexes
-  LiteCore/Query
-  LiteCore/RevTrees 
-  LiteCore/Storage 
-  LiteCore/Support 
-  LiteCore/VersionVectors
-  C/include C)
+include_directories(LiteCore/BlobStore
+                    LiteCore/Database
+                    LiteCore/Indexes
+                    LiteCore/Query
+                    LiteCore/RevTrees
+                    LiteCore/Storage
+                    LiteCore/Support
+                    LiteCore/VersionVectors
+                    C/include C)
 
 # TODO: CMake docs say it's better to list the source files explicitly than use aux_source_directory
 aux_source_directory(C                        C_SRC)
