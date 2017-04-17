@@ -1,0 +1,15 @@
+//
+//  REST-dylib.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 4/17/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "dylib.xcconfig"
+
+EXPORTED_SYMBOLS_FILE        = $(SRCROOT)/../REST/c4REST.exp
+GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
+GCC_PRECOMPILE_PREFIX_HEADER = YES
+HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/civetweb/include/
+PRODUCT_NAME                 = LiteCoreListener

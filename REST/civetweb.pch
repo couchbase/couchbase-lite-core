@@ -1,0 +1,17 @@
+//
+//  civetweb.pch
+//  LiteCore
+//
+//  Created by Jens Alfke on 4/17/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+// Unfortunately civetweb also uses a configuration symbol 'DEBUG', to enable debug-level logging.
+
+#if DEBUG
+    void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...);
+    #define DEBUG_TRACE(fmt, ...) \
+        lc_civet_trace(__func__, __LINE__, fmt, __VA_ARGS__)
+#endif
+
+#undef DEBUG
