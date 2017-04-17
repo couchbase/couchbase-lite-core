@@ -144,8 +144,7 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}
-  LiteCore/Upgrader.cc)
+  ${REPLICATOR_SRC})
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
