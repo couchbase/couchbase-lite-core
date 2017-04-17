@@ -49,35 +49,30 @@
 
 int mkstemp(char *tmp)
 {
-	int start, i;
-	int val;
-	val = getpid();
-	start = strlen(tmp) - 1;
-	while (tmp[start] == 'X') {
-		tmp[start] = '0' + val % 10;
-		val /= 10;
-		start--;
-	}
+    char		*start, *cp;
+    unsigned	 int tries;
 
-	do {
-		int fd;
-		CA2WEX<256> wtmp(tmp, CP_UTF8);
-		fd = _wopen(wtmp, O_RDWR | O_CREAT | O_EXCL, 0600);
-		if (fd >= 0 || errno != EEXIST)
-			return fd;
-		i = start + 1;
-		do {
-			if (tmp[i] == 0)
-				return -1;
-			tmp[i]++;
-			if (tmp[i] == '9' + 1)
-				tmp[i] = 'a';
-			if (tmp[i] <= 'z')
-				break;
-			tmp[i] = 'a';
-			i++;
-		} while (1);
-	} while (1);
+    start = strchr(tmp, '\0');
+    while (start > tmp && start[-1] == 'X')
+        start--;
+
+    for (tries = INT_MAX; tries; tries--) {
+        if (mktemp(tmp) == NULL) {
+            errno = EEXIST;
+            return NULL;
+        }
+        CA2WEX<256> wpath(tmp, CP_UTF8);
+        int fd = _wopen(wpath, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
+        if (fd >= 0 || errno != EEXIST) {
+            return fd;
+        }
+
+        for (cp = start; *cp != '\0'; cp++)
+            *cp = 'X';
+    }
+
+    errno = EEXIST;
+    return -1;
 }
 
 #endif

@@ -28,29 +28,33 @@
 
 char *mkdtemp(char *path)
 {
-	wchar_t		*start, *cp;
-	unsigned	 int tries;
+    char		*start, *cp;
+    unsigned	 int tries;
 
-	CA2WEX<256> wpath(path, CP_UTF8);
-	start = wcschr(wpath, L'\0');
-	while (start > wpath && start[-1] == L'X')
-		start--;
+    start = strchr(path, '\0');
+    while (start > path && start[-1] == 'X') {
+        start--;
+    }
 
-	for (tries = INT_MAX; tries; tries--) {
-		if (_wmktemp(wpath) == NULL) {
-			errno = EEXIST;
-			return NULL;
-		}
-		if (_wmkdir(wpath) == 0) {
-			CW2AEX<256> retVal(wpath, CP_UTF8);
-			strcpy(path, retVal.m_psz);
-			return path;
-		}
-		if (errno != EEXIST)
-			return NULL;
-		for (cp = start; *cp != '\0'; cp++)
-			*cp = 'X';
-	}
-	errno = EEXIST;
-	return NULL;
+    for (tries = INT_MAX; tries; tries--) {
+        if (mktemp(path) == NULL) {
+            errno = EEXIST;
+            return NULL;
+        }
+
+        CA2WEX<256> wpath(path, CP_UTF8);
+        if (_wmkdir(wpath) == 0) {
+            return path;
+        }
+
+        if (errno != EEXIST) {
+            return NULL;
+        }
+
+        for (cp = start; *cp != '\0'; cp++)
+            *cp = 'X';
+    }
+
+    errno = EEXIST;
+    return NULL;
 }
