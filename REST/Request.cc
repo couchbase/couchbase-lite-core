@@ -18,8 +18,9 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    Request::Request(mg_connection *conn)
-    :_conn(conn)
+    Request::Request(Server *server, mg_connection *conn)
+    :_server(server)
+    ,_conn(conn)
     {
         char date[50];
         time_t curtime = time(NULL);
@@ -58,8 +59,27 @@ namespace litecore { namespace REST {
     std::string Request::query(const char *param) const {
         std::string result;
         auto query = mg_get_request_info(_conn)->query_string;
+        if (!query)
+            return string();
         litecore::REST::getParam(query, strlen(query), param, result, 0);
         return result;
+    }
+
+    int64_t Request::intQuery(const char *param, int64_t defaultValue) const {
+        string val = query(param);
+        if (!val.empty()) {
+            try {
+                return stoll(val);
+            } catch (...) { }
+        }
+        return defaultValue;
+    }
+
+    bool Request::boolQuery(const char *param, bool defaultValue) const {
+        string val = query(param);
+        if (val.empty())
+            return defaultValue;
+        return val != "false" && val != "0";        // same behavior as Obj-C CBL 1.x
     }
 
 
@@ -122,10 +142,7 @@ namespace litecore { namespace REST {
             if (!_sentStatus)
                 setStatus(200, "OK");
 
-            if (_contentLength < 0 && !_chunked)
-                setContentLength(0);
             _headers << "\r\n";
-
             auto str = _headers.str();
             mg_write(_conn, str.data(), str.size());
             _headers.clear();
@@ -161,7 +178,19 @@ namespace litecore { namespace REST {
     }
 
 
+    fleeceapi::JSONEncoder& Request::json() {
+        setHeader("Content-Type", "application/json");
+        if (!_json)
+            _json.reset(new fleeceapi::JSONEncoder);
+        return *_json;
+    }
+
+
     void Request::finish() {
+        if (_json) {
+            alloc_slice json = _json->finish();
+            write(json);
+        }
         sendHeaders();
         assert(_contentLength < 0 || _contentLength == _contentSent);
         if (_chunked) {

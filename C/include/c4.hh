@@ -12,6 +12,8 @@
 #error "This is C++ only"
 #endif
 
+#include "slice.hh"
+#include "FleeceCpp.hh"
 #include "c4.h"
 #include <assert.h>
 

@@ -1,0 +1,10 @@
+//
+//  LiteCoreServ.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 4/18/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+PRODUCT_NAME                       = $(TARGET_NAME)
+VALID_ARCHS                        = x86_64

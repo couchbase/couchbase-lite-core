@@ -34,7 +34,9 @@ namespace litecore { namespace REST {
 #endif
 
 
-    Server::Server(const char **options) {
+    Server::Server(const char **options, void *owner)
+    :_owner(owner)
+    {
         if (!RESTLog)
             RESTLog = c4log_getDomain("REST", true);
 
@@ -58,20 +60,23 @@ namespace litecore { namespace REST {
 
 
     void Server::addHandler(Method method, const char *uri, const Handler &h) {
+        lock_guard<mutex> lock(_mutex);
+
         string uriStr(uri);
         auto i = _handlers.find(uriStr);
         if (i == _handlers.end()) {
             URIHandlers handlers;
-            handlers[method] = h;
+            handlers.server = this;
+            handlers.methods[method] = h;
             bool inserted;
             tie(i, inserted) = _handlers.insert({uriStr, handlers});
-            mg_set_request_handler(_context, uri, &requestHandler, &i->second);
+            mg_set_request_handler(_context, uri, &handleRequest, &i->second);
         }
-        i->second[method] = h;
+        i->second.methods[method] = h;
     }
 
 
-    int Server::requestHandler(struct mg_connection *conn, void *cbdata) {
+    int Server::handleRequest(struct mg_connection *conn, void *cbdata) {
         const char *m = mg_get_request_info(conn)->request_method;
         Method method;
         if (strcmp(m, "GET") == 0)
@@ -84,10 +89,15 @@ namespace litecore { namespace REST {
             method = POST;
         else
             return 0;
-        
+
         auto handlers = (URIHandlers*)cbdata;
-        Handler &handler = (*handlers)[method] ? (*handlers)[method] : (*handlers)[DEFAULT];
-        Request rq(conn);
+        Handler handler;
+        {
+            lock_guard<mutex> lock(handlers->server->_mutex);
+            handler = handlers->methods[method] ? handlers->methods[method] : handlers->methods[DEFAULT];
+        }
+
+        Request rq(handlers->server, conn);
         if (!handler)
             rq.respondWithError(405, "Method not allowed");
         else

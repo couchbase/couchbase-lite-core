@@ -10,9 +10,11 @@
 #include "c4.hh"
 #include <map>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 namespace litecore { namespace REST {
+    class Request;
     class Server;
 
     class Listener {
@@ -23,7 +25,17 @@ namespace litecore { namespace REST {
         /** Makes a database visible via the REST API. Or pass NULL to unregister. */
         void registerDatabase(std::string name, C4Database*);
 
+        C4Database* databaseNamed(const std::string &name);
+        std::vector<std::string> databaseNames();
+
     private:
+        static void handleGetRoot(Request&);
+        static void handleGetAllDBs(Request&);
+        static void handleGetDatabase(Request&);
+        static void handleGetAllDocs(Request&);
+        static void handleGetDoc(Request&);
+
+        std::mutex _mutex;
         std::unique_ptr<Server> _server;
         std::map<std::string, c4::ref<C4Database>> _databases;
     };

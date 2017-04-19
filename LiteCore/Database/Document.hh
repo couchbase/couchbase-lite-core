@@ -102,6 +102,8 @@ namespace c4Internal {
         }
 
         alloc_slice bodyAsJSON() {
+            if (!selectedRev.body.buf)
+                error::_throw(error::NotFound);
             auto root = fleece::Value::fromTrustedData(selectedRev.body);
             if (!root)
                 error::_throw(error::CorruptData);

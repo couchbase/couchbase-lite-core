@@ -165,6 +165,9 @@
 		279D41241EA557E500D8DD9D /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		279D41251EA5580A00D8DD9D /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		279D41271EA5598500D8DD9D /* c4REST.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D41261EA5598500D8DD9D /* c4REST.h */; };
+		279D414D1EA591C900D8DD9D /* LiteCoreServ.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */; };
+		279D414E1EA592C800D8DD9D /* libLiteCoreListener.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreListener.dylib */; };
+		279D414F1EA592D000D8DD9D /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		27A82D0E1BBB2727005CB742 /* Logger.java in Sources */ = {isa = PBXBuildFile; fileRef = 27A82D0D1BBB2727005CB742 /* Logger.java */; };
 		27A924981D9B316D00086206 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.m */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
@@ -516,6 +519,20 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
 		};
+		279D41501EA592D500D8DD9D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 279D410D1EA5558100D8DD9D;
+			remoteInfo = LiteCoreREST;
+		};
+		279D41521EA592D900D8DD9D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
+			remoteInfo = "LiteCore dylib";
+		};
 		27CCC7BC1E525DD800CE1989 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
@@ -604,6 +621,15 @@
 
 /* Begin PBXCopyFilesBuildPhase section */
 		2708FE4E1CF4CC880022F721 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		279D41401EA5918200D8DD9D /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -828,6 +854,9 @@
 		279D41261EA5598500D8DD9D /* c4REST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4REST.h; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
+		279D41421EA5918200D8DD9D /* LiteCoreServ */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LiteCoreServ; sourceTree = BUILT_PRODUCTS_DIR; };
+		279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreServ.cc; sourceTree = "<group>"; };
+		279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ.xcconfig; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		27A82D0D1BBB2727005CB742 /* Logger.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Logger.java; path = src/com/couchbase/litecore/Logger.java; sourceTree = "<group>"; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1074,6 +1103,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		279D413F1EA5918200D8DD9D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				279D414F1EA592D000D8DD9D /* libLiteCore.dylib in Frameworks */,
+				279D414E1EA592C800D8DD9D /* libLiteCoreListener.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27A924911D9B316D00086206 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1173,6 +1211,7 @@
 				279D40F51EA533D900D8DD9D /* civetUtils.cc */,
 				279D40F61EA533D900D8DD9D /* civetUtils.hh */,
 				279D41041EA54D2600D8DD9D /* civetweb.pch */,
+				279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */,
 			);
 			name = REST;
 			path = ../REST;
@@ -1237,6 +1276,7 @@
 				273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */,
 				279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */,
 				279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */,
+				279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */,
 				273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */,
 				273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */,
 				272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */,
@@ -1325,6 +1365,7 @@
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
 				279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */,
 				279D410E1EA5558100D8DD9D /* libLiteCoreListener.dylib */,
+				279D41421EA5918200D8DD9D /* LiteCoreServ */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2053,6 +2094,25 @@
 			productReference = 279D410E1EA5558100D8DD9D /* libLiteCoreListener.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
+		279D41411EA5918200D8DD9D /* LiteCoreServ */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 279D414B1EA5918200D8DD9D /* Build configuration list for PBXNativeTarget "LiteCoreServ" */;
+			buildPhases = (
+				279D413E1EA5918200D8DD9D /* Sources */,
+				279D413F1EA5918200D8DD9D /* Frameworks */,
+				279D41401EA5918200D8DD9D /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				279D41531EA592D900D8DD9D /* PBXTargetDependency */,
+				279D41511EA592D500D8DD9D /* PBXTargetDependency */,
+			);
+			name = LiteCoreServ;
+			productName = LiteCoreServ;
+			productReference = 279D41421EA5918200D8DD9D /* LiteCoreServ */;
+			productType = "com.apple.product-type.tool";
+		};
 		27A924931D9B316D00086206 /* LiteCore-iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27A924B31D9B316D00086206 /* Build configuration list for PBXNativeTarget "LiteCore-iOS" */;
@@ -2178,6 +2238,10 @@
 						CreatedOnToolsVersion = 8.3;
 						ProvisioningStyle = Automatic;
 					};
+					279D41411EA5918200D8DD9D = {
+						CreatedOnToolsVersion = 8.3;
+						ProvisioningStyle = Automatic;
+					};
 					27A924931D9B316D00086206 = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = N2Q372V7W2;
@@ -2220,6 +2284,7 @@
 				2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */,
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
 				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
+				279D41411EA5918200D8DD9D /* LiteCoreServ */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
 				279D40FD1EA54A9D00D8DD9D /* civetweb */,
@@ -2401,6 +2466,14 @@
 				279D411E1EA557A800D8DD9D /* civetUtils.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* Listener.cc in Sources */,
 				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		279D413E1EA5918200D8DD9D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				279D414D1EA591C900D8DD9D /* LiteCoreServ.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2698,6 +2771,16 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 279D41211EA557DB00D8DD9D /* PBXContainerItemProxy */;
 		};
+		279D41511EA592D500D8DD9D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 279D410D1EA5558100D8DD9D /* LiteCoreREST */;
+			targetProxy = 279D41501EA592D500D8DD9D /* PBXContainerItemProxy */;
+		};
+		279D41531EA592D900D8DD9D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			targetProxy = 279D41521EA592D900D8DD9D /* PBXContainerItemProxy */;
+		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27EF807319142C2500A327B9 /* Tokenizer */;
@@ -2859,6 +2942,20 @@
 		279D41181EA5558100D8DD9D /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		279D41461EA5918200D8DD9D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		279D41471EA5918200D8DD9D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;
@@ -3120,6 +3217,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		279D414B1EA5918200D8DD9D /* Build configuration list for PBXNativeTarget "LiteCoreServ" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				279D41461EA5918200D8DD9D /* Debug */,
+				279D41471EA5918200D8DD9D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		27A924B31D9B316D00086206 /* Build configuration list for PBXNativeTarget "LiteCore-iOS" */ = {
 			isa = XCConfigurationList;
