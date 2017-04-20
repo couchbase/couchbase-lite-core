@@ -9,7 +9,9 @@
 #pragma once
 #include "slice.hh"
 #include "FleeceCpp.hh"
+#include "c4Base.h"
 #include <functional>
+#include <map>
 #include <memory>
 #include <sstream>
 
@@ -22,17 +24,27 @@ namespace litecore { namespace REST {
     class Request {
     public:
         Server* server() const                              {return _server;}
-        
-        const char* operator[] (const char *header) const;
 
-        const char* path() const;
+        fleece::slice method() const;
+
+        fleece::slice header(const char *name) const;
+        fleece::slice operator[] (const char *name) const   {return header(name);}
+
+        fleece::slice path() const;
         fleece::slice path(int i) const;
 
         std::string query(const char *param) const;
         int64_t intQuery(const char *param, int64_t defaultValue =0) const;
         bool boolQuery(const char *param, bool defaultValue =false) const;
 
+        bool hasContentType(fleece::slice contentType) const;
+        fleece::alloc_slice requestBody() const;
+        fleeceapi::Value requestJSON() const;
+
+        // RESPONSE:
+
         void respondWithError(int status, const char *message =nullptr);
+        void respondWithError(C4Error);
 
         void setStatus(unsigned status, const char *message);
 
@@ -43,6 +55,8 @@ namespace litecore { namespace REST {
         void setHeader(const char *header, int64_t value) {
             setHeader(header, std::to_string(value).c_str());
         }
+
+        void addHeaders(std::map<std::string, std::string>);
 
         // If you call write() more than once, you must first call setContentLength or setChunked.
         void setContentLength(uint64_t length);
@@ -70,6 +84,12 @@ namespace litecore { namespace REST {
 
         Server* const _server;
         mg_connection* const _conn;
+        // Request stuff:
+        bool _gotRequestBody {false};
+        fleece::alloc_slice _requestBody;
+        bool _gotRequestBodyFleece {false};
+        fleece::alloc_slice _requestBodyFleece;
+        // Response stuff:
         unsigned _status {200};
         std::stringstream _headers;
         bool _sentStatus {false};

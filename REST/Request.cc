@@ -7,11 +7,13 @@
 //
 
 #include "Request.hh"
+#include "Writer.hh"
 #include "civetUtils.hh"
 #include "civetweb.h"
 
 using namespace std;
 using namespace fleece;
+using namespace fleeceapi;
 
 namespace litecore { namespace REST {
 
@@ -28,14 +30,18 @@ namespace litecore { namespace REST {
         setHeader("Date", date);
     }
 
+
+    slice Request::method() const {
+        return slice(mg_get_request_info(_conn)->request_method);
+    }
     
-    const char* Request::operator[] (const char *header) const {
-        return mg_get_header(_conn, header);
+    slice Request::header(const char *header) const {
+        return slice(mg_get_header(_conn, header));
     }
 
 
-    const char* Request::path() const {
-        return mg_get_request_info(_conn)->request_uri;
+    slice Request::path() const {
+        return slice(mg_get_request_info(_conn)->request_uri);
     }
 
     
@@ -99,6 +105,49 @@ namespace litecore { namespace REST {
     }
 
 
+    bool Request::hasContentType(slice contentType) const {
+        slice actualType = header("Content-Type");
+        return actualType.size >= contentType.size
+            && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
+            && (actualType.size == contentType.size || actualType[contentType.size] == ';');
+    }
+
+
+    alloc_slice Request::requestBody() const {
+        if (!_gotRequestBody) {
+            fleece::Writer writer;
+            int bytesRead;
+            do {
+                char buf[1024];
+                bytesRead = mg_read(_conn, buf, sizeof(buf));
+                writer.write(buf, bytesRead);
+            } while (bytesRead > 0);
+            if (bytesRead < 0)
+                return {};
+            alloc_slice body = writer.extractOutput();
+            if (body.size == 0)
+                body.reset();
+            const_cast<Request*>(this)->_requestBody = body;
+            const_cast<Request*>(this)->_gotRequestBody = true;
+        }
+        return _requestBody;
+    }
+
+
+    Value Request::requestJSON() const {
+        if (!_gotRequestBodyFleece) {
+            if (hasContentType("application/json"_sl)) {
+                alloc_slice body = requestBody();
+                if (body)
+                    const_cast<Request*>(this)->_requestBodyFleece =
+                                                        JSONEncoder::convertJSON(body, nullptr);
+            }
+            const_cast<Request*>(this)->_gotRequestBodyFleece = true;
+        }
+        return _requestBodyFleece ? Value::fromData(_requestBodyFleece) : nullptr;
+    }
+
+
 #pragma mark - RESPONSE:
 
 
@@ -109,10 +158,48 @@ namespace litecore { namespace REST {
         _sentStatus = true;
     }
 
+
     void Request::respondWithError(int status, const char *message) {
         assert(!_sentStatus);
         mg_send_http_error(_conn, status, "%s", message);
+        _status = status;
+        _sentStatus = true;
         _sentHeaders = true;
+    }
+
+
+    void Request::respondWithError(C4Error err) {
+        assert(err.code != 0);
+        alloc_slice message = c4error_getMessage(err);
+        int status = 500;
+        // TODO: Add more mappings, and make these table-driven
+        switch (err.domain) {
+            case LiteCoreDomain:
+                switch (err.code) {
+                    case kC4ErrorInvalidParameter:
+                    case kC4ErrorBadRevisionID:
+                        status = 400; break;
+                    case kC4ErrorNotADatabaseFile:
+                    case kC4ErrorCrypto:
+                        status = 401; break;
+                    case kC4ErrorNotWriteable:
+                        status = 403; break;
+                    case kC4ErrorNotFound:
+                    case kC4ErrorDeleted:
+                        status = 404; break;
+                    case kC4ErrorConflict:
+                        status = 409; break;
+                    case kC4ErrorUnimplemented:
+                    case kC4ErrorUnsupported:
+                        status = 501; break;
+                    case kC4ErrorRemoteError:
+                        status = 502; break;
+                }
+                break;
+            default:
+                break;
+        }
+        respondWithError(status, message.asString().c_str());
     }
 
 
@@ -120,6 +207,13 @@ namespace litecore { namespace REST {
         assert(!_sentHeaders);
         _headers << header << ": " << value << "\r\n";
     }
+
+
+    void Request::addHeaders(map<string, string> headers) {
+        for (auto &entry : headers)
+            setHeader(entry.first.c_str(), entry.second.c_str());
+    }
+
 
     void Request::setContentLength(uint64_t length) {
         assert(!_chunked);
@@ -136,6 +230,7 @@ namespace litecore { namespace REST {
             _chunked = true;
         }
     }
+
 
     void Request::sendHeaders() {
         if (!_sentHeaders) {
@@ -198,6 +293,5 @@ namespace litecore { namespace REST {
             mg_write(_conn, "\r\n", 2);
         }
     }
-
 
 } }

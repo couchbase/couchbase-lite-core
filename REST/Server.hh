@@ -26,6 +26,8 @@ namespace litecore { namespace REST {
 
         void* owner() const                         {return _owner;}
 
+        void setExtraHeaders(const std::map<std::string, std::string> &headers);
+
         enum Method {
             DEFAULT,
             GET,
@@ -52,6 +54,7 @@ namespace litecore { namespace REST {
         std::mutex _mutex;
         mg_context* _context;
         std::map<std::string, URIHandlers> _handlers;
+        std::map<std::string, std::string> _extraHeaders;
     };
 
 } }

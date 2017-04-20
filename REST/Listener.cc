@@ -19,24 +19,13 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleeceapi;
 
 
 namespace litecore { namespace REST {
 
 #define kKeepAliveTimeoutMS     "1000"
 #define kMaxConnections         "8"
-
-
-    static Listener& listener(Request &rq) {
-        return *(Listener*)rq.server()->owner();
-    }
-
-    static C4Database* database(Request &rq) {
-        auto dbName = rq.path(0);
-        if (!dbName)
-            return nullptr;
-        return listener(rq).databaseNamed((string)dbName);
-    }
 
 
     Listener::Listener(uint16_t port) {
@@ -49,6 +38,7 @@ namespace litecore { namespace REST {
             nullptr
         };
         _server.reset(new Server(options, this));
+        _server->setExtraHeaders({{"Server", "LiteCoreServ/0.0"}});
 
         auto notFound =  [](Request &rq) { rq.respondWithError(404, "Not Found"); };
 
@@ -57,19 +47,20 @@ namespace litecore { namespace REST {
 
         // Top-level special handlers:
         _server->addHandler(Server::GET, "/_all_dbs$", [](Request &rq) { handleGetAllDBs(rq); });
-
         _server->addHandler(Server::DEFAULT, "/_", notFound);
 
         // Database:
-        _server->addHandler(Server::GET, "/*$|/*/$", [](Request &rq) { handleGetDatabase(rq); });
+        _server->addHandler(Server::GET,  "/*$|/*/$", [](Request &rq) { handleGetDatabase(rq); });
+        _server->addHandler(Server::POST, "/*$|/*/$", [](Request &rq) { handleModifyDoc(rq); });
 
         // Database-level special handlers:
         _server->addHandler(Server::GET, "/*/_all_docs$", [](Request &rq) { handleGetAllDocs(rq); });
-
         _server->addHandler(Server::DEFAULT, "/*/_", notFound);
 
         // Document:
-        _server->addHandler(Server::GET, "/*/*$", [](Request &rq) { handleGetDoc(rq); });
+        _server->addHandler(Server::GET,   "/*/*$", [](Request &rq) { handleGetDoc(rq); });
+        _server->addHandler(Server::PUT,   "/*/*$", [](Request &rq) { handleModifyDoc(rq); });
+        _server->addHandler(Server::DELETE,"/*/*$", [](Request &rq) { handleModifyDoc(rq); });
     }
 
 
@@ -101,6 +92,26 @@ namespace litecore { namespace REST {
     }
 
 
+#pragma mark - UTILITIES:
+
+
+    static Listener& listener(Request &rq) {
+        return *(Listener*)rq.server()->owner();
+    }
+
+    static C4Database* database(Request &rq) {
+        auto dbName = rq.path(0);
+        if (!dbName) {
+            rq.respondWithError(400);
+            return nullptr;
+        }
+        auto db = listener(rq).databaseNamed((string)dbName);
+        if (!db)
+            rq.respondWithError(404);
+        return db;
+    }
+
+    
 #pragma mark - HANDLERS:
 
 
@@ -134,7 +145,7 @@ namespace litecore { namespace REST {
     void Listener::handleGetDatabase(Request &rq) {
         C4Database *db = database(rq);
         if (!db)
-            return rq.respondWithError(404);
+            return;
 
         auto docCount = c4db_getDocumentCount(db);
         auto lastSequence = c4db_getLastSequence(db);
@@ -161,7 +172,7 @@ namespace litecore { namespace REST {
     void Listener::handleGetAllDocs(Request &rq) {
         C4Database *db = database(rq);
         if (!db)
-            return rq.respondWithError(404);
+            return;
 
         // Apply options:
         C4EnumeratorOptions options;
@@ -178,7 +189,7 @@ namespace litecore { namespace REST {
         C4Error err;
         c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &err);
         if (!e)
-            return rq.respondWithError(400);
+            return rq.respondWithError(err);
 
         // Enumerate, building JSON:
         auto &json = rq.json();
@@ -202,10 +213,10 @@ namespace litecore { namespace REST {
             if (includeDocs) {
                 c4::ref<C4Document> doc = c4enum_getDocument(e, &err);
                 if (!doc)
-                    return rq.respondWithError(400);
+                    return rq.respondWithError(err);
                 alloc_slice docBody = c4doc_bodyAsJSON(doc, &err);
                 if (!docBody)
-                    return rq.respondWithError(400);
+                    return rq.respondWithError(err);
                 json.writeKey("doc"_sl);
                 json.writeRaw(docBody);
             }
@@ -219,27 +230,29 @@ namespace litecore { namespace REST {
     void Listener::handleGetDoc(Request &rq) {
         C4Database *db = database(rq);
         if (!db)
-            return rq.respondWithError(404);
+            return;
         slice docID = rq.path(1);
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
         if (!doc)
-            return rq.respondWithError(404);        //FIX: Get status from err
+            return rq.respondWithError(err);
 
         string revID = rq.query("rev");
         if (revID.empty()) {
+            if (doc->flags & kDeleted)
+                return rq.respondWithError(404);
             revID = slice(doc->revID).asString();
         } else {
             if (!c4doc_selectRevision(doc, slice(revID), true, &err))
-                return rq.respondWithError(404);        //FIX: Get status from err
+                return rq.respondWithError(err);
         }
 
-        // Get the drevision
+        // Get the revision
         if (!doc->selectedRev.body.buf)
             return rq.respondWithError(404);
         alloc_slice json = c4doc_bodyAsJSON(doc, &err);
         if (!json)
-            return rq.respondWithError(400);        //FIX: Get status from err
+            return rq.respondWithError(err);
 
         // Splice the _id and _rev into the start of the JSON:
         rq.setHeader("Content-Type", "application/json");
@@ -248,6 +261,8 @@ namespace litecore { namespace REST {
         rq.write(docID);
         rq.write("\",\"_rev\":\"");
         rq.write(revID);
+        if (doc->selectedRev.flags & kRevDeleted)
+            rq.write("\",\"_deleted\":true");
         if (json.size > 2) {
             rq.write("\",");
             slice suffix = json;
@@ -256,6 +271,85 @@ namespace litecore { namespace REST {
         } else {
             rq.write("}");
         }
+    }
+
+
+    void Listener::handleModifyDoc(Request &rq) {
+        C4Database *db = database(rq);
+        if (!db)
+            return;
+        slice docID = rq.path(1);                       // will be null for POST
+
+        // Parse the body:
+        bool deleting = (rq.method() == "DELETE"_sl);
+        Dict body = rq.requestJSON().asDict();
+        if (!body) {
+            if (!deleting || rq.requestBody())
+                return rq.respondWithError(400);
+        }
+
+        // Get the revID from either the JSON body or the "rev" query param:
+        slice revID = body["_rev"_sl].asString();
+        string revIDQuery = rq.query("rev");
+        if (!revIDQuery.empty()) {
+            if (revID) {
+                if (revID != slice(revIDQuery))
+                    return rq.respondWithError(400);
+            } else {
+                revID = slice(revIDQuery);
+            }
+        }
+
+        if (!docID) {
+            if (revID)
+                return rq.respondWithError(400);            // Can't specify revID on a POST
+            docID = slice(body["_id"].asString());
+        }
+
+        if (body["_deleted"_sl].asBool())
+            deleting = true;
+
+        // Encode body as Fleece (and strip _id and _rev):
+        alloc_slice encodedBody = c4doc_encodeStrippingOldMetaProperties(body);
+
+        // Save the revision:
+        C4Slice history[1] = {revID};
+        C4DocPutRequest put = {};
+        put.body = encodedBody;
+        put.docID = docID;
+        put.revFlags = (deleting ? kRevDeleted : 0);
+        put.existingRevision = false;
+        put.allowConflict = false;
+        put.history = history;
+        put.historyCount = revID ? 1 : 0;
+        put.save = true;
+
+        c4::ref<C4Document> doc;
+        {
+            C4Error err;
+            c4::Transaction t(db);
+            if (t.begin(&err))
+                doc = c4doc_put(db, &put, nullptr, &err);
+            if (!doc || !t.commit(&err))
+                return rq.respondWithError(err);
+        }
+        revID = slice(doc->selectedRev.revID);
+
+        // Return a JSON object:
+        auto &json = rq.json();
+        json.beginDict();
+        json.writeKey("ok"_sl);
+        json.writeBool(true);
+        json.writeKey("id"_sl);
+        json.writeString(doc->docID);
+        json.writeKey("rev"_sl);
+        json.writeString(doc->selectedRev.revID);
+        json.endDict();
+
+        if (deleting)
+            rq.setStatus(200, "Deleted");
+        else
+            rq.setStatus(201, "Created");
     }
 
 } }

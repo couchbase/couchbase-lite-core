@@ -59,6 +59,12 @@ namespace litecore { namespace REST {
     }
 
 
+    void Server::setExtraHeaders(const std::map<std::string, std::string> &headers) {
+        lock_guard<mutex> lock(_mutex);
+        _extraHeaders = headers;
+    }
+
+
     void Server::addHandler(Method method, const char *uri, const Handler &h) {
         lock_guard<mutex> lock(_mutex);
 
@@ -92,12 +98,17 @@ namespace litecore { namespace REST {
 
         auto handlers = (URIHandlers*)cbdata;
         Handler handler;
+        map<string, string> extraHeaders;
         {
             lock_guard<mutex> lock(handlers->server->_mutex);
-            handler = handlers->methods[method] ? handlers->methods[method] : handlers->methods[DEFAULT];
+            handler = handlers->methods[method];
+            if (!handler)
+                handler = handlers->methods[DEFAULT];
+            extraHeaders = handlers->server->_extraHeaders;
         }
 
         Request rq(handlers->server, conn);
+        rq.addHeaders(extraHeaders);
         if (!handler)
             rq.respondWithError(405, "Method not allowed");
         else

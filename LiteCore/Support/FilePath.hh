@@ -125,10 +125,10 @@ namespace litecore {
             item in the directory. */
         void forEachMatch(function_ref<void(const FilePath&)> fn) const;
 
-    private:
         static std::pair<std::string,std::string> splitPath(const std::string &path);
         static std::pair<std::string,std::string> splitExtension(const std::string &filename);
 
+    private:
         std::string _dir;    // Directory; always non-empty, always ends with separator ('/')
         std::string _file;   // Filename, or empty if this represents a directory
     };

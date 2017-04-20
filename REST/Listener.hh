@@ -34,6 +34,7 @@ namespace litecore { namespace REST {
         static void handleGetDatabase(Request&);
         static void handleGetAllDocs(Request&);
         static void handleGetDoc(Request&);
+        static void handleModifyDoc(Request&);
 
         std::mutex _mutex;
         std::unique_ptr<Server> _server;
