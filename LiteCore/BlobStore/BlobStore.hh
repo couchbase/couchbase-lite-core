@@ -29,6 +29,8 @@ namespace litecore {
         blobKey(slice);
         blobKey(const std::string &base64);
 
+        bool readFromBase64(slice base64);
+
         operator slice() const          {return slice(bytes, sizeof(bytes));}
         std::string hexString() const   {return operator slice().hexString();}
         std::string base64String() const;

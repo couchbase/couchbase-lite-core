@@ -11,6 +11,7 @@
 #include "c4Document.h"
 #include "Database.hh"
 #include "DataFile.hh"
+#include "BlobStore.hh"
 #include "RefCounted.hh"
 #include "Logging.hh"
 #include "Value.hh"
@@ -123,6 +124,23 @@ namespace c4Internal {
 
         virtual void save(unsigned maxRevTreeDepth =0) { }
 
+        // STATIC UTILITY FUNCTIONS:
+
+        /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
+        static bool isOldMetaProperty(slice key);
+
+        /** Returns true if the document contains 1.x metadata properties (at top level). */
+        static bool hasOldMetaProperties(const fleece::Dict*);
+
+        /** Re-encodes to Fleece, without any 1.x metadata properties. */
+        static alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict*);
+
+        /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
+        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey);
+
+        using FindBlobCallback = function<void(const blobKey &key, uint64_t size)>;
+        static void findBlobReferences(const fleece::Dict*, const FindBlobCallback&);
+
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
@@ -132,6 +150,8 @@ namespace c4Internal {
             selectedRev.body = kC4SliceNull;
             _loadedBody = nullslice;
         }
+
+        static void findBlobReferences(const fleece::Value *val, const FindBlobCallback &callback);
 
         Retained<Database> _db;
     };

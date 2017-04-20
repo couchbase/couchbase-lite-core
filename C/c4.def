@@ -66,6 +66,10 @@ c4doc_setExpiration
 c4doc_getExpiration
 c4db_nextDocExpiration
 c4doc_bodyAsJSON
+c4doc_isOldMetaProperty
+c4doc_hasOldMetaProperties
+c4doc_dictIsBlob
+c4doc_encodeStrippingOldMetaProperties
 
 c4rev_getGeneration
 

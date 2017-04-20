@@ -11,6 +11,7 @@
 #include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
+#include "c4Document+Fleece.h"
 #include "BLIP.hh"
 
 using namespace std;
@@ -19,9 +20,6 @@ using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
-
-    static bool hasUnderscoredProperties(Dict);
-    static alloc_slice stripUnderscoredProperties(Dict);
 
     using FindBlobCallback = function<void(const C4BlobKey &key, uint64_t size)>;
     static void findBlobReferences(Dict, const FindBlobCallback&);
@@ -66,7 +64,7 @@ namespace litecore { namespace repl {
             _rev.revID = _revMessage->property("rev"_sl);
             if (_revMessage->property("deleted"_sl))
                 _rev.flags |= kRevDeleted;
-            stripUnderscores = hasUnderscoredProperties(root);
+            stripUnderscores = c4doc_hasOldMetaProperties(root);
         } else {
             // No metadata properties; look inside the JSON:
             _rev.docID = (slice)root["_id"_sl].asString();
@@ -94,7 +92,7 @@ namespace litecore { namespace repl {
 
         // Populate the RevToInsert's body:
         if (stripUnderscores) {
-            fleeceBody = stripUnderscoredProperties(root);
+            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root);
             root = Value::fromTrustedData(fleeceBody).asDict();
         }
         _rev.body = fleeceBody;
@@ -172,33 +170,6 @@ namespace litecore { namespace repl {
 #pragma mark - UTILITIES:
 
 
-    // Returns true if a Fleece Dict contains any top-level keys that begin with an underscore.
-    static bool hasUnderscoredProperties(Dict root) {
-        for (Dict::iterator i(root); i; ++i) {
-            auto key = slice(i.keyString());
-            if (key.size > 0 && key[0] == '_')
-                return true;
-        }
-        return false;
-    }
-
-
-    // Encodes a Dict, skipping top-level properties whose names begin with an underscore.
-    static alloc_slice stripUnderscoredProperties(Dict root) {
-        Encoder e;
-        e.beginDict(root.count());
-        for (Dict::iterator i(root); i; ++i) {
-            auto key = slice(i.keyString());
-            if (key.size > 0 && key[0] == '_')
-                continue;
-            e.writeKey(key);
-            e.writeValue(i.value());
-        }
-        e.endDict();
-        return e.finish();
-    }
-
-
     // Finds blob references in a Fleece value, recursively.
     static void findBlobReferences(Value val, const FindBlobCallback &callback) {
         auto d = val.asDict();
@@ -217,12 +188,12 @@ namespace litecore { namespace repl {
     // Finds blob references in a Fleece Dict, recursively.
     static void findBlobReferences(Dict dict, const FindBlobCallback &callback)
     {
-        if (slice(dict["_cbltype"_sl].asString()) == "blob"_sl) {
+        if (dict["_cbltype"_sl]) {
             C4BlobKey key;
-            auto digest = dict["digest"_sl].asString();
-            uint64_t length = dict["length"_sl].asUnsigned();
-            if (c4blob_keyFromString(digest, &key))
+            if (c4doc_dictIsBlob(dict, &key)) {
+                uint64_t length = dict["length"_sl].asUnsigned();
                 callback(key, length);
+            }
         } else {
             for (Dict::iterator i(dict); i; ++i)
                 findBlobReferences(i.value(), callback);

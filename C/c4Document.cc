@@ -16,9 +16,8 @@
 #define NOMINMAX
 #include "c4Internal.hh"
 #include "Database.hh"
-#include "c4Document.h"
+#include "c4.h"
 #include "c4Document+Fleece.h"
-#include "c4Database.h"
 #include "c4Private.h"
 
 #include "Document.hh"
@@ -343,4 +342,27 @@ FLDictKey c4db_initFLDictKey(C4Database *db, C4Slice string) noexcept {
 
 FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
     return (FLSharedKeys)db->documentKeys();
+}
+
+
+bool c4doc_isOldMetaProperty(C4Slice prop) noexcept {
+    return Document::isOldMetaProperty(prop);
+}
+
+
+bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
+    return Document::hasOldMetaProperties((Dict*)doc);
+}
+
+
+bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
+    assert(outKey);
+    return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey);
+}
+
+
+C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]{
+        return sliceResult(Document::encodeStrippingOldMetaProperties((const Dict*)doc));
+    });
 }

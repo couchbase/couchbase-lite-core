@@ -41,7 +41,12 @@ namespace litecore {
     }
 
     blobKey::blobKey(const string &str) {
-        slice data = slice(str);
+        if (!readFromBase64(slice(str)))
+            error::_throw(error::WrongFormat);
+    }
+
+
+    bool blobKey::readFromBase64(slice data) {
         if (data.size == kBlobKeyStringLength && 0 == memcmp(data.buf, "sha1-", 5)) {
             data.moveStart(5);
             // Decoder always writes a multiple of 3 bytes, so round up:
@@ -49,10 +54,10 @@ namespace litecore {
             slice result = data.readBase64Into(slice(buf, sizeof(buf)));
             if (result.size == 20) {
                 memcpy(bytes, result.buf, result.size);
-                return;
+                return true;
             }
         }
-        error::_throw(error::WrongFormat);
+        return false;
     }
 
 
