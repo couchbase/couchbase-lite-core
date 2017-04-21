@@ -182,7 +182,6 @@
 		279D41231EA557E100D8DD9D /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		279D41241EA557E500D8DD9D /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		279D41251EA5580A00D8DD9D /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
-		279D41271EA5598500D8DD9D /* c4REST.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D41261EA5598500D8DD9D /* c4REST.h */; };
 		279D414D1EA591C900D8DD9D /* LiteCoreServ.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */; };
 		279D414E1EA592C800D8DD9D /* libLiteCoreListener.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreListener.dylib */; };
 		279D414F1EA592D000D8DD9D /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
@@ -894,7 +893,6 @@
 		279D410E1EA5558100D8DD9D /* libLiteCoreListener.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreListener.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D41191EA555E900D8DD9D /* dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib.xcconfig; sourceTree = "<group>"; };
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
-		279D41261EA5598500D8DD9D /* c4REST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4REST.h; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		279D41421EA5918200D8DD9D /* LiteCoreServ */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LiteCoreServ; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1066,6 +1064,7 @@
 		27F7A0C21D5E646000447BC6 /* RefCounted.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
 		27F7A0C31D5E657C00447BC6 /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
 		27FA09D31D70EDBF005888AA /* Catch_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Catch_Tests.mm; sourceTree = "<group>"; };
+		27FC81E01EAA9B430028E38E /* c4REST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4REST.h; sourceTree = "<group>"; };
 		27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceEach.cc; sourceTree = "<group>"; };
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
@@ -1248,7 +1247,6 @@
 		272851111EA44902009CA22F /* REST */ = {
 			isa = PBXGroup;
 			children = (
-				279D41261EA5598500D8DD9D /* c4REST.h */,
 				272851201EA4537A009CA22F /* Listener.cc */,
 				272851211EA4537A009CA22F /* Listener.hh */,
 				2728512C1EA46475009CA22F /* Server.cc */,
@@ -1919,6 +1917,7 @@
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
+				27FC81E01EAA9B430028E38E /* c4REST.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
 			);
 			path = include;
@@ -1957,7 +1956,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D41271EA5598500D8DD9D /* c4REST.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
