@@ -9,7 +9,7 @@
 
 #include "Listener.hh"
 #include "c4.hh"
-#include "c4REST.h"
+#include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "Server.hh"
 #include "Request.hh"
@@ -24,17 +24,24 @@ using namespace fleeceapi;
 
 namespace litecore { namespace REST {
 
-#define kKeepAliveTimeoutMS     "1000"
-#define kMaxConnections         "8"
+    static constexpr uint16_t kDefaultPort = 4984;
+
+    static constexpr const char* kKeepAliveTimeoutMS = "1000";
+    static constexpr const char* kMaxConnections = "8";
 
 
-    Listener::Listener(uint16_t port) {
-        auto portStr = to_string(port);
+    Listener::Listener(const Config &config)
+    :_directory(config.directory.buf ? new FilePath(slice(config.directory).asString()) : nullptr)
+    ,_allowCreateDB(config.allowCreateDBs && _directory)
+    ,_allowDeleteDB(config.allowDeleteDBs)
+    {
+        auto portStr = to_string(config.port ? config.port : kDefaultPort);
         const char* options[] {
             "listening_ports",          portStr.c_str(),
             "enable_keep_alive",        "yes",
             "keep_alive_timeout_ms",    kKeepAliveTimeoutMS,
             "num_threads",              kMaxConnections,
+            "decode_url",               "no",   // otherwise it decodes escaped slashes
             nullptr
         };
         _server.reset(new Server(options, this));
@@ -43,24 +50,26 @@ namespace litecore { namespace REST {
         auto notFound =  [](Request &rq) { rq.respondWithError(404, "Not Found"); };
 
         // Root:
-        _server->addHandler(Server::GET, "/$", [](Request &rq) { handleGetRoot(rq); });
+        _server->addHandler(Server::GET, "/$", [=](Request &rq) { handleGetRoot(rq); });
 
         // Top-level special handlers:
-        _server->addHandler(Server::GET, "/_all_dbs$", [](Request &rq) { handleGetAllDBs(rq); });
+        _server->addHandler(Server::GET, "/_all_dbs$", [=](Request &rq) { handleGetAllDBs(rq); });
         _server->addHandler(Server::DEFAULT, "/_", notFound);
 
         // Database:
-        _server->addHandler(Server::GET,  "/*$|/*/$", [](Request &rq) { handleGetDatabase(rq); });
-        _server->addHandler(Server::POST, "/*$|/*/$", [](Request &rq) { handleModifyDoc(rq); });
+        _server->addHandler(Server::GET,   "/*$|/*/$", [=](Request &rq) {handleGetDatabase(rq);});
+        _server->addHandler(Server::PUT,   "/*$|/*/$", [this](Request &rq) {handleCreateDatabase(rq);});
+        _server->addHandler(Server::DELETE,"/*$|/*/$", [this](Request &rq) {handleDeleteDatabase(rq);});
+        _server->addHandler(Server::POST,  "/*$|/*/$", [this](Request &rq) {handleModifyDoc(rq);});
 
         // Database-level special handlers:
-        _server->addHandler(Server::GET, "/*/_all_docs$", [](Request &rq) { handleGetAllDocs(rq); });
+        _server->addHandler(Server::GET, "/*/_all_docs$", [this](Request &rq) { handleGetAllDocs(rq); });
         _server->addHandler(Server::DEFAULT, "/*/_", notFound);
 
         // Document:
-        _server->addHandler(Server::GET,   "/*/*$", [](Request &rq) { handleGetDoc(rq); });
-        _server->addHandler(Server::PUT,   "/*/*$", [](Request &rq) { handleModifyDoc(rq); });
-        _server->addHandler(Server::DELETE,"/*/*$", [](Request &rq) { handleModifyDoc(rq); });
+        _server->addHandler(Server::GET,   "/*/*$", [this](Request &rq) { handleGetDoc(rq); });
+        _server->addHandler(Server::PUT,   "/*/*$", [this](Request &rq) { handleModifyDoc(rq); });
+        _server->addHandler(Server::DELETE,"/*/*$", [this](Request &rq) { handleModifyDoc(rq); });
     }
 
 
@@ -68,18 +77,111 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::registerDatabase(string name, C4Database *db) {
-        lock_guard<mutex> lock(_mutex);
-        _databases[name] = c4db_retain(db);
+#pragma mark - REGISTERING DATABASES:
+
+
+    static void replace(string &str, char oldChar, char newChar) {
+        for (char &c : str)
+            if (c == oldChar)
+                c = newChar;
     }
 
 
-    C4Database* Listener::databaseNamed(const string &name) {
+    static bool returnError(C4Error* outError,
+                            C4ErrorDomain domain, int code, const char *message =nullptr)
+    {
+        if (outError)
+            *outError = c4error_make(domain, code, c4str(message));
+        return false;
+    }
+
+
+    string Listener::databaseNameFromPath(const FilePath &path) {
+        string name = path.fileOrDirName();
+        auto split = FilePath::splitExtension(name);
+        if (split.second != kC4DatabaseFilenameExtension)
+            return string();
+        name = split.first;
+        replace(name, ':', '/');
+        if (!isValidDatabaseName(name))
+            return string();
+        return name;
+    }
+
+
+    bool Listener::pathFromDatabaseName(const string &name, FilePath &path) {
+        if (!_directory || !isValidDatabaseName(name))
+            return false;
+        string filename = name;
+        replace(filename, '/', ':');
+        path = (*_directory)[filename + kC4DatabaseFilenameExtension + "/"];
+        return true;
+    }
+
+
+    bool Listener::isValidDatabaseName(const string &name) {
+        // Same rules as Couchbase Lite 1.x and CouchDB
+        return name.size() > 0 && name.size() < 240
+            && islower(name[0])
+            && !slice(name).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
+    }
+
+
+    bool Listener::openDatabase(std::string name,
+                                const FilePath &path,
+                                const C4DatabaseConfig *config,
+                                C4Error *outError)
+    {
+        if (name.empty()) {
+            name = databaseNameFromPath(path);
+            if (name.empty())
+                return returnError(outError, LiteCoreDomain, kC4ErrorInvalidParameter,
+                                   "Invalid database name");
+        }
+        if (databaseNamed(name) != nullptr)
+            return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
+        c4::ref<C4Database> db = c4db_open(slice(path.path()), config, outError);
+        if (!db)
+            return false;
+        if (!registerDatabase(name, db)) {
+            //FIX: If db didn't exist before the c4db_open call, should delete it
+            return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
+        }
+        return db;
+    }
+
+
+    bool Listener::registerDatabase(string name, C4Database *db) {
+        if (!isValidDatabaseName(name))
+            return false;
+        lock_guard<mutex> lock(_mutex);
+        if (_databases.find(name) != _databases.end())
+            return false;
+        _databases[name] = c4db_retain(db);
+        return true;
+    }
+
+
+    bool Listener::unregisterDatabase(std::string name) {
+        lock_guard<mutex> lock(_mutex);
+        auto i = _databases.find(name);
+        if (i == _databases.end())
+            return false;
+        _databases.erase(i);
+        return true;
+    }
+
+
+    c4::ref<C4Database> Listener::databaseNamed(const string &name) {
         lock_guard<mutex> lock(_mutex);
         auto i = _databases.find(name);
         if (i == _databases.end())
             return nullptr;
-        return i->second;
+        //FIX: Prevent multiple handlers from accessing the same db at once. Need a mutex per db, I think.
+
+        // Retain the database to avoid a race condition if it gets unregistered while this
+        // thread's handler is still using it.
+        return c4::ref<C4Database>(c4db_retain(i->second));
     }
 
 
@@ -95,28 +197,24 @@ namespace litecore { namespace REST {
 #pragma mark - UTILITIES:
 
 
-    static Listener& listener(Request &rq) {
-        return *(Listener*)rq.server()->owner();
-    }
-
-    static C4Database* database(Request &rq) {
-        auto dbName = rq.path(0);
-        if (!dbName) {
+    c4::ref<C4Database> Listener::databaseFor(Request &rq) {
+        string dbName = rq.path(0);
+        if (dbName.empty()) {
             rq.respondWithError(400);
             return nullptr;
         }
-        auto db = listener(rq).databaseNamed((string)dbName);
+        auto db = databaseNamed(dbName);
         if (!db)
             rq.respondWithError(404);
         return db;
     }
 
     
-#pragma mark - HANDLERS:
+#pragma mark - ROOT / DATABASE HANDLERS:
 
 
     void Listener::handleGetRoot(Request &rq) {
-        auto &json = rq.json();
+        auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("couchdb"_sl);
         json.writeString("Welcome"_sl);
@@ -134,16 +232,16 @@ namespace litecore { namespace REST {
 
 
     void Listener::handleGetAllDBs(Request &rq) {
-        auto &json = rq.json();
+        auto &json = rq.jsonEncoder();
         json.beginArray();
-        for (string &name : listener(rq).databaseNames())
+        for (string &name : databaseNames())
             json.writeString(name);
         json.endArray();
     }
 
 
     void Listener::handleGetDatabase(Request &rq) {
-        C4Database *db = database(rq);
+        auto db = databaseFor(rq);
         if (!db)
             return;
 
@@ -153,7 +251,7 @@ namespace litecore { namespace REST {
         c4db_getUUIDs(db, &uuid, nullptr, nullptr);
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
 
-        auto &json = rq.json();
+        auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("db_name"_sl);
         json.writeString(rq.path(0));
@@ -169,8 +267,50 @@ namespace litecore { namespace REST {
     }
 
 
+    void Listener::handleCreateDatabase(Request &rq) {
+        if (!_allowCreateDB)
+            return rq.respondWithError(403, "Cannot create databases");
+        string dbName = rq.path(0);
+        if (databaseNamed(dbName))
+            return rq.respondWithError(412, "Database exists");
+        FilePath path;
+        if (!pathFromDatabaseName(dbName, path))
+            return rq.respondWithError(400, "Invalid database name");
+
+        C4DatabaseConfig config = { kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_Create };
+        C4Error err;
+        if (!openDatabase(dbName, path, &config, &err)) {
+            if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
+                return rq.respondWithError(412);
+            else
+                return rq.respondWithError(err);
+        }
+        rq.setStatus(201, "Created");
+    }
+
+
+    void Listener::handleDeleteDatabase(Request &rq) {
+        if (!_allowDeleteDB)
+            return rq.respondWithError(403, "Cannot delete databases");
+        auto db = databaseFor(rq);
+        if (!db)
+            return;
+        string name = rq.path(0);
+        if (!unregisterDatabase(name))
+            return rq.respondWithError(404);
+        C4Error err;
+        if (!c4db_delete(db, &err)) {
+            registerDatabase(name, db);
+            return rq.respondWithError(err);
+        }
+    }
+
+
+#pragma mark - DOCUMENT HANDLERS:
+
+
     void Listener::handleGetAllDocs(Request &rq) {
-        C4Database *db = database(rq);
+        auto db = databaseFor(rq);
         if (!db)
             return;
 
@@ -192,7 +332,7 @@ namespace litecore { namespace REST {
             return rq.respondWithError(err);
 
         // Enumerate, building JSON:
-        auto &json = rq.json();
+        auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("rows"_sl);
         json.beginArray();
@@ -228,12 +368,12 @@ namespace litecore { namespace REST {
 
 
     void Listener::handleGetDoc(Request &rq) {
-        C4Database *db = database(rq);
+        auto db = databaseFor(rq);
         if (!db)
             return;
-        slice docID = rq.path(1);
+        string docID = rq.path(1);
         C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
+        c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, &err);
         if (!doc)
             return rq.respondWithError(err);
 
@@ -274,17 +414,18 @@ namespace litecore { namespace REST {
     }
 
 
+    // This handles PUT and DELETE of a document, as well as POST to a database.
     void Listener::handleModifyDoc(Request &rq) {
-        C4Database *db = database(rq);
+        auto db = databaseFor(rq);
         if (!db)
             return;
-        slice docID = rq.path(1);                       // will be null for POST
+        string docID = rq.path(1);                       // will be null for POST
 
         // Parse the body:
         bool deleting = (rq.method() == "DELETE"_sl);
-        Dict body = rq.requestJSON().asDict();
+        Dict body = rq.bodyAsJSON().asDict();
         if (!body) {
-            if (!deleting || rq.requestBody())
+            if (!deleting || rq.body())
                 return rq.respondWithError(400);
         }
 
@@ -300,10 +441,10 @@ namespace litecore { namespace REST {
             }
         }
 
-        if (!docID) {
+        if (docID.empty()) {
             if (revID)
                 return rq.respondWithError(400);            // Can't specify revID on a POST
-            docID = slice(body["_id"].asString());
+            docID = slice(body["_id"].asString()).asString();
         }
 
         if (body["_deleted"_sl].asBool())
@@ -316,7 +457,7 @@ namespace litecore { namespace REST {
         C4Slice history[1] = {revID};
         C4DocPutRequest put = {};
         put.body = encodedBody;
-        put.docID = docID;
+        put.docID = slice(docID);
         put.revFlags = (deleting ? kRevDeleted : 0);
         put.existingRevision = false;
         put.allowConflict = false;
@@ -336,7 +477,7 @@ namespace litecore { namespace REST {
         revID = slice(doc->selectedRev.revID);
 
         // Return a JSON object:
-        auto &json = rq.json();
+        auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("ok"_sl);
         json.writeBool(true);
@@ -357,17 +498,32 @@ namespace litecore { namespace REST {
 
 #pragma mark - C API:
 
+using namespace litecore;
 using namespace litecore::REST;
+
+const char* const kC4DatabaseFilenameExtension = ".cblite2";
 
 static inline Listener* internal(C4RESTListener* r) {return (Listener*)r;}
 static inline C4RESTListener* external(Listener* r) {return (C4RESTListener*)r;}
 
-C4RESTListener* c4rest_start(uint16_t port, C4Error *error) noexcept {
-    return external(new Listener(port));
+C4RESTListener* c4rest_start(C4RESTConfig *config, C4Error *error) noexcept {
+
+    return external(new Listener(*config));
 }
 
 void c4rest_free(C4RESTListener *listener) noexcept {
     delete internal(listener);
+}
+
+
+C4StringResult c4rest_databaseNameFromPath(C4String pathSlice) noexcept {
+    auto pathStr = slice(pathSlice).asString();
+    string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
+    if (name.empty())
+        return {};
+    alloc_slice result(name);
+    result.retain();
+    return {(char*)result.buf, result.size};
 }
 
 void c4rest_shareDB(C4RESTListener *listener, C4String name, C4Database *db) noexcept {

@@ -8,7 +8,27 @@
 //  This code is adapted from civetweb.c and CivetServer.cpp; see original license at end of file.
 
 #include "civetUtils.hh"
+#include "c4.h"
 #include "civetweb.h"
+#include <assert.h>
+
+
+#ifndef NDEBUG
+// Also declared in civetweb.pch
+extern "C" void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...);
+
+void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...) {
+    char *message;
+    va_list args;
+    va_start(args, fmt);
+    vasprintf(&message, fmt, args);
+    va_end(args);
+
+    c4log(c4log_getDomain("REST", true), kC4LogDebug, "%s  (%s:%u)", message, func, line);
+    free(message);
+}
+#endif
+
 
 namespace litecore { namespace REST {
 

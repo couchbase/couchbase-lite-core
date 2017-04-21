@@ -9,9 +9,15 @@
 // Unfortunately civetweb also uses a configuration symbol 'DEBUG', to enable debug-level logging.
 
 #if DEBUG
-    void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...);
-    #define DEBUG_TRACE(fmt, ...) \
-        lc_civet_trace(__func__, __LINE__, fmt, __VA_ARGS__)
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
+        void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...);
+        #define DEBUG_TRACE(fmt, ...) \
+            lc_civet_trace(__func__, __LINE__, fmt, __VA_ARGS__)
+    #ifdef __cplusplus
+    }
+    #endif
 #endif
 
 #undef DEBUG

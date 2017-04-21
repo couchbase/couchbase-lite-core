@@ -7,6 +7,9 @@
 //
 
 #pragma once
+#include <stdlib.h>
+#include <time.h>
+#include <string>
 
 namespace litecore { namespace REST {
 

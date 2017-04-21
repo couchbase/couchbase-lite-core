@@ -20,9 +20,8 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    Request::Request(Server *server, mg_connection *conn)
-    :_server(server)
-    ,_conn(conn)
+    Request::Request(mg_connection *conn)
+    :Body(conn)
     {
         char date[50];
         time_t curtime = time(NULL);
@@ -30,13 +29,9 @@ namespace litecore { namespace REST {
         setHeader("Date", date);
     }
 
-
+    
     slice Request::method() const {
         return slice(mg_get_request_info(_conn)->request_method);
-    }
-    
-    slice Request::header(const char *header) const {
-        return slice(mg_get_header(_conn, header));
     }
 
 
@@ -45,20 +40,21 @@ namespace litecore { namespace REST {
     }
 
     
-    slice Request::path(int i) const {
+    string Request::path(int i) const {
         slice path(mg_get_request_info(_conn)->request_uri);
         assert(path[0] == '/');
         path.moveStart(1);
         for (; i > 0; --i) {
             auto slash = path.findByteOrEnd('/');
             if (slash == path.end())
-                return nullslice;
+                return "";
             path.setStart(slash + 1);
         }
         auto slash = path.findByteOrEnd('/');
         if (slash == path.buf)
-            return nullslice;
-        return slice(path.buf, slash);
+            return "";
+        auto component = slice(path.buf, slash).asString();
+        return urlDecode(component);
     }
 
     
@@ -86,65 +82,6 @@ namespace litecore { namespace REST {
         if (val.empty())
             return defaultValue;
         return val != "false" && val != "0";        // same behavior as Obj-C CBL 1.x
-    }
-
-
-    std::string Request::urlDecode(const std::string &str) {
-        std::string result;
-        result.reserve(str.size());
-        litecore::REST::urlDecode(str.data(), str.size(), result, false);
-        return result;
-    }
-
-
-    std::string Request::urlEncode(const std::string &str) {
-        std::string result;
-        result.reserve(str.size() + 16);
-        litecore::REST::urlEncode(str.data(), str.size(), result, false);
-        return result;
-    }
-
-
-    bool Request::hasContentType(slice contentType) const {
-        slice actualType = header("Content-Type");
-        return actualType.size >= contentType.size
-            && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-            && (actualType.size == contentType.size || actualType[contentType.size] == ';');
-    }
-
-
-    alloc_slice Request::requestBody() const {
-        if (!_gotRequestBody) {
-            fleece::Writer writer;
-            int bytesRead;
-            do {
-                char buf[1024];
-                bytesRead = mg_read(_conn, buf, sizeof(buf));
-                writer.write(buf, bytesRead);
-            } while (bytesRead > 0);
-            if (bytesRead < 0)
-                return {};
-            alloc_slice body = writer.extractOutput();
-            if (body.size == 0)
-                body.reset();
-            const_cast<Request*>(this)->_requestBody = body;
-            const_cast<Request*>(this)->_gotRequestBody = true;
-        }
-        return _requestBody;
-    }
-
-
-    Value Request::requestJSON() const {
-        if (!_gotRequestBodyFleece) {
-            if (hasContentType("application/json"_sl)) {
-                alloc_slice body = requestBody();
-                if (body)
-                    const_cast<Request*>(this)->_requestBodyFleece =
-                                                        JSONEncoder::convertJSON(body, nullptr);
-            }
-            const_cast<Request*>(this)->_gotRequestBodyFleece = true;
-        }
-        return _requestBodyFleece ? Value::fromData(_requestBodyFleece) : nullptr;
     }
 
 
@@ -273,17 +210,17 @@ namespace litecore { namespace REST {
     }
 
 
-    fleeceapi::JSONEncoder& Request::json() {
+    fleeceapi::JSONEncoder& Request::jsonEncoder() {
         setHeader("Content-Type", "application/json");
-        if (!_json)
-            _json.reset(new fleeceapi::JSONEncoder);
-        return *_json;
+        if (!_jsonEncoder)
+            _jsonEncoder.reset(new fleeceapi::JSONEncoder);
+        return *_jsonEncoder;
     }
 
 
     void Request::finish() {
-        if (_json) {
-            alloc_slice json = _json->finish();
+        if (_jsonEncoder) {
+            alloc_slice json = _jsonEncoder->finish();
             write(json);
         }
         sendHeaders();

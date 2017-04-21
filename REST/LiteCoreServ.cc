@@ -16,15 +16,15 @@ using namespace std;
 using namespace litecore;
 
 
-static const char* kCBLiteFileExtension = ".cblite2";
-
-static uint16_t gPort = 59840;
-
 static C4RESTListener *gListener;
 
-static C4DatabaseConfig gConfig = {
+static C4RESTConfig gRESTConfig;
+
+static C4DatabaseConfig gDatabaseConfig = {
     kC4DB_Bundled | kC4DB_SharedKeys
 };
+
+static string gDirectory;
 
 
 static inline string to_string(C4String s) {
@@ -69,20 +69,20 @@ static void failMisuse(const char *message ="Invalid parameters") {
 }
 
 
-static string dbNameFromPath(const char *cpath) {
-    FilePath path(cpath);
-    string name = path.fileOrDirName();
-    auto split = FilePath::splitExtension(name);
-    if (split.second != kCBLiteFileExtension)
-        fail("Database filename must end with '.cblite2'");
-    return split.first;
+static string databaseNameFromPath(const char *path) {
+    C4StringResult nameSlice = c4rest_databaseNameFromPath(c4str(path));
+    if (!nameSlice.buf)
+        return string();
+    string name((char*)nameSlice.buf, nameSlice.size);
+    c4slice_free(nameSlice);
+    return name;
 }
 
 
 static void startListener() {
     C4Error err;
     if (!gListener) {
-        gListener = c4rest_start(gPort, &err);
+        gListener = c4rest_start(&gRESTConfig, &err);
         if (!gListener)
             fail("starting REST listener", err);
     }
@@ -92,7 +92,7 @@ static void startListener() {
 static void shareDatabase(const char *path, string name) {
     startListener();
     C4Error err;
-    auto db = c4db_open(c4str(path), &gConfig, &err);
+    auto db = c4db_open(c4str(path), &gDatabaseConfig, &err);
     if (!db)
         fail("opening database", err);
     c4rest_shareDB(gListener, c4str(name), db);
@@ -101,16 +101,20 @@ static void shareDatabase(const char *path, string name) {
 
 
 static void shareDatabaseDir(const char *dirPath) {
+    gDirectory = dirPath;
+    gRESTConfig.directory = c4str(gDirectory);
     cerr << "Sharing all databases in " << dirPath << ": ";
     int n = 0;
     FilePath dir(dirPath, "");
     dir.forEachFile([=](const FilePath &file) mutable {
-        if (file.extension() == kCBLiteFileExtension && file.existsAsDir()) {
+        if (file.extension() == kC4DatabaseFilenameExtension && file.existsAsDir()) {
             if (n++) cerr << ", ";
             auto dbPath = file.path().c_str();
-            string name = dbNameFromPath(dbPath);
-            cerr << name;
-            shareDatabase(dbPath, name);
+            string name = databaseNameFromPath(dbPath);
+            if (!name.empty()) {
+                cerr << name;
+                shareDatabase(dbPath, name);
+            }
         }
     });
     cerr << "\n";
@@ -120,6 +124,9 @@ static void shareDatabaseDir(const char *dirPath) {
 
 
 int main(int argc, const char** argv) {
+    gRESTConfig.port = 59840;
+    gRESTConfig.allowCreateDBs = gRESTConfig.allowDeleteDBs = true;
+
     try {
         auto restLog = c4log_getDomain("REST", true);
         c4log_setLevel(restLog, kC4LogInfo);
@@ -141,17 +148,20 @@ int main(int argc, const char** argv) {
                 } else if (flag == "port") {
                     if (++i >= argc)
                         failMisuse();
-                    gPort = (uint16_t) stoi(string(argv[i]));
+                    gRESTConfig.port = (uint16_t) stoi(string(argv[i]));
                 } else if (flag == "readonly") {
-                    gConfig.flags |= kC4DB_ReadOnly;
+                    gDatabaseConfig.flags |= kC4DB_ReadOnly;
+                    gRESTConfig.allowCreateDBs = gRESTConfig.allowDeleteDBs = false;
                 } else if (flag == "create") {
-                    gConfig.flags |= kC4DB_Create;
+                    gDatabaseConfig.flags |= kC4DB_Create;
                 } else {
                     failMisuse("Unknown flag");
                 }
             } else {
                 // Paths:
-                string name = dbNameFromPath(arg);
+                string name = databaseNameFromPath(arg);
+                if (name.empty())
+                    fail("Invalid database name");
                 cerr << "Sharing database '" << name << "' from " << arg << " ...\n";
                 shareDatabase(arg, name);
             }
@@ -166,7 +176,7 @@ int main(int argc, const char** argv) {
         fail(x.what());
     }
 
-    cerr << "LiteCoreServ is now listening at http://localhost:" << gPort << "/ ...\n";
+    cerr << "LiteCoreServ is now listening at http://localhost:" << gRESTConfig.port << "/ ...\n";
 
     // Sleep to keep the process from exiting, while the server threads run:
     while(true)

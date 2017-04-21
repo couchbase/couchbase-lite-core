@@ -17,29 +17,12 @@ namespace litecore { namespace REST {
 
     C4LogDomain RESTLog;
 
-#if DEBUG
-    // Also declared in civetweb.pch
-    extern "C" void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...);
-
-    void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...) {
-        char *message;
-        va_list args;
-        va_start(args, fmt);
-        vasprintf(&message, fmt, args);
-        va_end(args);
-
-        c4log(RESTLog, kC4LogDebug, "%s  (%s:%u)", message, func, line);
-        free(message);
-    }
-#endif
-
 
     Server::Server(const char **options, void *owner)
     :_owner(owner)
     {
         if (!RESTLog)
             RESTLog = c4log_getDomain("REST", true);
-
         mg_callbacks cb { };
         cb.log_message = [](const struct mg_connection *, const char *message) {
             c4log(RESTLog, kC4LogInfo, "%s", message);
@@ -107,7 +90,7 @@ namespace litecore { namespace REST {
             extraHeaders = handlers->server->_extraHeaders;
         }
 
-        Request rq(handlers->server, conn);
+        Request rq(conn);
         rq.addHeaders(extraHeaders);
         if (!handler)
             rq.respondWithError(405, "Method not allowed");
