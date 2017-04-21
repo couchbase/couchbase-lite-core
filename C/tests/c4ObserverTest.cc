@@ -72,7 +72,7 @@ static void docObserverCallback(C4DocumentObserver* obs,
 
 
 TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
-    dbObserver = c4dbobs_create(db, c4DBObsCallback, this);
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
     createRev(C4STR("A"), C4STR("1-aa"), kBody);
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
 
 
 TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
-    dbObserver = c4dbobs_create(db, c4DBObsCallback, this);
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
     createRev(C4STR("A"), C4STR("1-aa"), kBody);
