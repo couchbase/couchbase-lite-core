@@ -345,7 +345,7 @@ FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
 }
 
 
-bool c4doc_isOldMetaProperty(C4Slice prop) noexcept {
+bool c4doc_isOldMetaProperty(C4String prop) noexcept {
     return Document::isOldMetaProperty(prop);
 }
 

@@ -26,7 +26,7 @@ extern "C" {
 
     /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.)
      Does NOT return true for "_attachments" because that property isn't obsolete. */
-    bool c4doc_isOldMetaProperty(C4Slice prop) C4API;
+    bool c4doc_isOldMetaProperty(C4String prop) C4API;
 
     /** Returns true if the document contains 1.x metadata properties at top level. */
     bool c4doc_hasOldMetaProperties(FLDict doc) C4API;
@@ -41,7 +41,7 @@ extern "C" {
     C4StringResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) C4API;
 
     /** Creates a Fleece encoder for creating documents for a given database. */
-    FLEncoder c4db_createFleeceEncoder(C4Database*) C4API;
+    FLEncoder c4db_createFleeceEncoder(C4Database* db) C4API;
 
     /** Encodes JSON data to Fleece, to store into a document. */
     C4SliceResult c4db_encodeJSON(C4Database*, C4String jsonData, C4Error *outError) C4API;
