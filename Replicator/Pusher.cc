@@ -170,7 +170,6 @@ namespace litecore { namespace repl {
                 if (change.bodySize > 0)
                     enc << change.bodySize;
             }
-            assert(change.bodySize > 0);//TEMP
             addProgress({0, change.bodySize});
             enc.endArray();
         }
