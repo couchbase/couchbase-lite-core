@@ -41,6 +41,7 @@ namespace LiteCore.Interop
         AutoCompact   = 4,
         Bundled       = 8,
         SharedKeys    = 0x10,
+        NoUpgrade     = 0x20,
     }
 
 #if LITECORE_PACKAGED

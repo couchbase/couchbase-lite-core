@@ -43,6 +43,13 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_closed(C4Socket* socket, C4Error errorIfAny);
 
+        public static void c4socket_closeRequested(C4Socket* socket, int status, string message)
+        {
+            using(var message_ = new C4String(message)) {
+                NativeRaw.c4socket_closeRequested(socket, status, message_.AsC4Slice());
+            }
+        }
+
         public static void c4socket_completedWrite(C4Socket* socket, ulong byteCount)
         {
             NativeRaw.c4socket_completedWrite(socket, (UIntPtr)byteCount);
@@ -65,6 +72,9 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4socket_closeRequested(C4Socket* socket, int status, C4Slice message);
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_completedWrite(C4Socket* socket, UIntPtr byteCount);
 

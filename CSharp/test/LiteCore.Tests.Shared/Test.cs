@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -18,7 +18,7 @@ namespace LiteCore.Tests
 #elif WINDOWS_UWP
         public static readonly string TestDir = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
 #elif __IOS__
-        public static readonly string TestDir = "/tmp/";
+        public static readonly string TestDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "tmp");
 #else
         public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
             "C:\\tmp\\" : "/tmp/";
@@ -202,12 +202,19 @@ namespace LiteCore.Tests
             using (var tr = new StreamReader(ctx.Assets.Open(path))) {
                 string line;
                 while((line = tr.ReadLine()) != null) { 
+#elif __IOS__
+			var bundlePath = Foundation.NSBundle.MainBundle.PathForResource(Path.GetFileNameWithoutExtension(path), Path.GetExtension(path));
+			using (var tr = new StreamReader(File.Open(bundlePath, FileMode.Open, FileAccess.Read)))
+			{
+				string line;
+				while ((line = tr.ReadLine()) != null)
+				{
 #else
             using(var tr = new StreamReader(File.Open(path, FileMode.Open))) {
                 string line;
                 while((line = tr.ReadLine()) != null) {
 #endif
-            using(var c4 = new C4String(line)) {
+					using(var c4 = new C4String(line)) {
                         if(!callback((FLSlice)c4.AsC4Slice())) {
                             return false;
                         }

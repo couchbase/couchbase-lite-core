@@ -34,6 +34,28 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class Native
     {
+        public static bool c4doc_isOldMetaProperty(byte[] prop)
+        {
+            fixed(byte *prop_ = prop) {
+                return NativeRaw.c4doc_isOldMetaProperty(new C4Slice(prop_, (ulong)prop.Length));
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_hasOldMetaProperties(FLDict doc);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey);
+
+        public static byte[] c4doc_encodeStrippingOldMetaProperties(FLDict doc)
+        {
+            using(var retVal = NativeRaw.c4doc_encodeStrippingOldMetaProperties(doc)) {
+                return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
         public static string c4doc_bodyAsJSON(C4Document* doc, C4Error* outError)
         {
             using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, outError)) {
@@ -73,6 +95,13 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_isOldMetaProperty(C4Slice prop);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc);
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_bodyAsJSON(C4Document* doc, C4Error* outError);
 
