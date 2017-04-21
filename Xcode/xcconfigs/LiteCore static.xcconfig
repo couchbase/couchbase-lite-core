@@ -5,14 +5,10 @@
 // https://github.com/dempseyatgithub/BuildSettingExtractor
 //
 
+#include "LiteCore.xcconfig"
 #include "static_lib.xcconfig"
 
 DSTROOT                      = /tmp/LiteCore_iOS.dst
-GCC_PRECOMPILE_PREFIX_HEADER = YES
-GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
-GCC_PRECOMPILE_PREFIX_HEADER = YES
-GCC_PREPROCESSOR_DEFINITIONS = $(inherited) SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
-HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/ $(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp $(SRCROOT)/../vendor/BLIP-Cpp/src/util
 PRODUCT_NAME                 = LiteCore-static
 SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO
