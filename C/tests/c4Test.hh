@@ -40,7 +40,7 @@ using namespace fleeceapi;
 
 #define TEMPDIR(PATH) c4str((TempDir() + PATH).c_str())
 
-std::string TempDir();
+const std::string& TempDir();
 
 
 std::ostream& operator<< (std::ostream& o, C4Slice s);
@@ -90,6 +90,7 @@ public:
     ~C4Test();
 
     C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
+    const std::string& databasePathString() const  {return _dbPath;}
 
     C4Database *db;
 

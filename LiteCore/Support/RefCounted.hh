@@ -29,8 +29,13 @@ namespace litecore {
         friend T* retain(T*) noexcept;
         friend void release(RefCounted*) noexcept;
 
+#if DEBUG
+        void _retain() noexcept;
+        void _release() noexcept;
+#else
         inline void _retain() noexcept          { ++_refCount; }
         inline void _release() noexcept         { if (--_refCount <= 0) delete this; }
+#endif
 
         std::atomic<int32_t> _refCount {0};
     };

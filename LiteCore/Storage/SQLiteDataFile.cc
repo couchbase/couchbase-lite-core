@@ -79,13 +79,14 @@ namespace litecore {
     }
 
     static void sqlite3_log_callback(void *pArg, int errCode, const char *msg) {
+        if (errCode == SQLITE_NOTICE_RECOVER_WAL)
+            return;     // harmless "recovered __ frames from WAL file" message
         int baseCode = errCode & 0xFF;
         if (baseCode == SQLITE_SCHEMA)
             return;     // ignore harmless "statement aborts ... database schema has changed" warning
         if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
             Log("SQLite message: %s", msg);
-        }
-        else {
+        } else {
             Warn("SQLite error (code %d): %s", errCode, msg);
         }
     }

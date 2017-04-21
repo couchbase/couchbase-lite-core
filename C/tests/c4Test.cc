@@ -14,6 +14,7 @@
 #include <fstream>
 #include <stdio.h>
 #include "PlatformIO.hh"
+#include <thread>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -21,16 +22,26 @@
 using namespace std;
 
 
-std::string TempDir() {
-    const char* tmpDir = getenv("TMPDIR");
-    if (tmpDir == nullptr) {
+const std::string& TempDir() {
+    static string kTempDir;
+
+    once_flag f;
+    call_once(f, [=] {
+        const char* tmpDir = getenv("TMPDIR");
+        if (tmpDir == nullptr) {
 #ifdef _MSC_VER
-        tmpDir = "C:\\tmp";
+            tmpDir = "C:\\tmp";
 #else
-        tmpDir = "/tmp";
+            tmpDir = "/tmp";
 #endif
-    }
-    return string(tmpDir) + kPathSeparator;
+        }
+        string path = string(tmpDir) + kPathSeparator + "LiteCore_C_Tests" + kPathSeparator;
+
+        mkdir(path.c_str(), 0700);
+        kTempDir = path;
+    });
+
+    return kTempDir;
 }
 
 

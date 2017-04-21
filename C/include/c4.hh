@@ -15,6 +15,7 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.h"
+#include "c4REST.h"
 #include <assert.h>
 
 
@@ -29,8 +30,10 @@ namespace c4 {
     static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
     static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
     static inline void freeRef(C4Query* c)             {c4query_free(c);}
+    static inline void freeRef(C4RESTListener* c)      {c4rest_free(c);}
 
 
+    /** A simple little smart pointer that frees the C4 object when it leaves scope. */
     template <class T>
     class ref {
     public:
@@ -43,10 +46,11 @@ namespace c4 {
         T* operator -> () const     {return _obj;}
 
         ref& operator=(T *t)        {if (_obj) freeRef(_obj); _obj = t; return *this;}
+        ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr;}
 
     private:
         ref(const ref&) =delete;
-        ref& operator=(const ref&) =delete;
+        ref& operator=(const ref&) =delete;   // would require ref-counting
 
         T* _obj;
     };

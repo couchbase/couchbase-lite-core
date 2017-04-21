@@ -453,7 +453,7 @@ namespace c4Internal {
 
     void Database::mustNotBeInTransaction() {
         if (inTransaction())
-            error::_throw(error::NotInTransaction);
+            error::_throw(error::TransactionNotClosed);
     }
 
 
