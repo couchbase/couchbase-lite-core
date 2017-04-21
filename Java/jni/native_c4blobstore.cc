@@ -11,13 +11,12 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
-#include <c4Base.h>
+#include <c4.h>
 #include "com_couchbase_litecore_C4BlobKey.h"
 #include "com_couchbase_litecore_C4BlobReadStream.h"
 #include "com_couchbase_litecore_C4BlobStore.h"
 #include "com_couchbase_litecore_C4BlobWriteStream.h"
 #include "native_glue.hh"
-#include "c4BlobStore.h"
 
 using namespace litecore;
 using namespace litecore::jni;

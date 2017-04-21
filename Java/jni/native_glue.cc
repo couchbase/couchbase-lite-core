@@ -15,34 +15,39 @@
 
 #include "native_glue.hh"
 
+using namespace litecore;
 using namespace litecore::jni;
 
-
-// Will be called by JNI when the library is loaded
+/*
+ * Will be called by JNI when the library is loaded
+ *
+ * NOTE:
+ *  All resources allocated here are never released by application
+ *  we rely on system to free all global refs when it goes away,
+ *  the pairing function JNI_OnUnload() never get called at all.
+ */
 JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *jvm, void *reserved)
-{
+JNI_OnLoad(JavaVM *jvm, void *reserved) {
     JNIEnv *env;
-    if (jvm->GetEnv((void **)&env, JNI_VERSION_1_2) == JNI_OK
-            && initDatabase(env)
-            && initDocument(env)) {
+    if (jvm->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK
+        && initDatabase(env)
+        && initDocument(env)
+        && initC4Observer(env)) {
         assert(gJVM == nullptr);
         gJVM = jvm;
-        return JNI_VERSION_1_2;
+        return JNI_VERSION_1_6;
     } else {
         return JNI_ERR;
     }
 }
 
-
 namespace litecore {
     namespace jni {
 
         JavaVM *gJVM;
-        
+
         jstringSlice::jstringSlice(JNIEnv *env, jstring js)
-        :_env(nullptr)
-        {
+                : _env(nullptr) {
             assert(env != nullptr);
             if (js != nullptr) {
                 jboolean isCopy;
@@ -57,14 +62,14 @@ namespace litecore {
 
         jstringSlice::~jstringSlice() {
             if (_env)
-                _env->ReleaseStringUTFChars(_jstr, (const char*)_slice.buf);
+                _env->ReleaseStringUTFChars(_jstr, (const char *) _slice.buf);
             else if (_slice.buf)
-                free((void*)_slice.buf);        // detached
+                free((void *) _slice.buf);        // detached
         }
 
         void jstringSlice::copyAndReleaseRef() {
             if (_env) {
-                auto cstr = (const char*)_slice.buf;
+                auto cstr = (const char *) _slice.buf;
                 _slice = _slice.copy();
                 _env->ReleaseStringUTFChars(_jstr, cstr);
                 _env->DeleteLocalRef(_jstr);
@@ -76,11 +81,10 @@ namespace litecore {
         // ATTN: In critical, should not call any other JNI methods.
         // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html
         jbyteArraySlice::jbyteArraySlice(JNIEnv *env, jbyteArray jbytes, bool critical)
-        :_env(env),
-         _jbytes(jbytes),
-         _critical(critical)
-        {
-            if(jbytes == nullptr){
+                : _env(env),
+                  _jbytes(jbytes),
+                  _critical(critical) {
+            if (jbytes == nullptr) {
                 _slice.setBuf(nullptr);
                 _slice.setSize(0);
                 return;
@@ -97,16 +101,16 @@ namespace litecore {
         jbyteArraySlice::~jbyteArraySlice() {
             if (_slice.buf) {
                 if (_critical)
-                    _env->ReleasePrimitiveArrayCritical(_jbytes, (void*)_slice.buf, JNI_ABORT);
+                    _env->ReleasePrimitiveArrayCritical(_jbytes, (void *) _slice.buf, JNI_ABORT);
                 else
-                    _env->ReleaseByteArrayElements(_jbytes, (jbyte*)_slice.buf, JNI_ABORT);
+                    _env->ReleaseByteArrayElements(_jbytes, (jbyte *) _slice.buf, JNI_ABORT);
             }
         }
 
         alloc_slice jbyteArraySlice::copy(JNIEnv *env, jbyteArray jbytes) {
             jsize size = env->GetArrayLength(jbytes);
             alloc_slice slice(size);
-            env->GetByteArrayRegion(jbytes, 0, size, (jbyte*)slice.buf);
+            env->GetByteArrayRegion(jbytes, 0, size, (jbyte *) slice.buf);
             return slice;
         }
 
@@ -124,14 +128,14 @@ namespace litecore {
             jstring msg = toJString(env, msgSlice);
             c4slice_free(msgSlice);
 
-            env->CallStaticVoidMethod(xclass, m, (jint)error.domain, (jint)error.code, msg);
+            env->CallStaticVoidMethod(xclass, m, (jint) error.domain, (jint) error.code, msg);
         }
 
 
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == nullptr)
                 return nullptr;
-            std::string utf8Buf((char*)s.buf, s.size);
+            std::string utf8Buf((char *) s.buf, s.size);
             // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
             return env->NewStringUTF(utf8Buf.c_str());
         }
@@ -141,16 +145,15 @@ namespace litecore {
                 return nullptr;
             // NOTE: Local reference is taken care by JVM.
             // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html#global_local
-            jbyteArray array = env->NewByteArray((jsize)s.size);
+            jbyteArray array = env->NewByteArray((jsize) s.size);
             if (array)
-                env->SetByteArrayRegion(array, 0, (jsize)s.size, (const jbyte*)s.buf);
+                env->SetByteArrayRegion(array, 0, (jsize) s.size, (const jbyte *) s.buf);
             return array;
         }
 
         bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes,
-                              C4EncryptionKey *outKey)
-        {
-            outKey->algorithm = (C4EncryptionAlgorithm)keyAlg;
+                              C4EncryptionKey *outKey) {
+            outKey->algorithm = (C4EncryptionAlgorithm) keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
                 fleece::slice keySlice = keyBytes;

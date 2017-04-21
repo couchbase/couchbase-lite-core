@@ -122,10 +122,18 @@ public class BaseTest implements Constants {
         createRev(docID, revID, body, 0);
     }
 
+    protected void createRev(Database db, String docID, String revID, byte[] body) throws LiteCoreException {
+        createRev(db, docID, revID, body, 0);
+    }
+
+    protected void createRev(String docID, String revID, byte[] body, int flags) throws LiteCoreException {
+        createRev(this.db, docID, revID, body, flags);
+    }
+
     /**
      * @param flags C4RevisionFlags
      */
-    protected void createRev(String docID, String revID, byte[] body, int flags) throws LiteCoreException {
+    protected void createRev(Database db, String docID, String revID, byte[] body, int flags) throws LiteCoreException {
         boolean commit = false;
         db.beginTransaction();
         try {

@@ -37,6 +37,8 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4QueryEnumerator
     com.couchbase.litecore.C4BlobReadStream
     com.couchbase.litecore.C4BlobWriteStream
+    com.couchbase.litecore.C4DatabaseObserver
+    com.couchbase.litecore.C4DocumentObserver
     com.couchbase.litecore.Database
     com.couchbase.litecore.Document
     com.couchbase.litecore.DocumentIterator
