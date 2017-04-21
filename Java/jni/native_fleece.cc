@@ -11,6 +11,8 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
+#include <c4.h>
+#include <Fleece.h>
 #include "com_couchbase_litecore_fleece_FLArray.h"
 #include "com_couchbase_litecore_fleece_FLArrayIterator.h"
 #include "com_couchbase_litecore_fleece_FLDict.h"
@@ -19,7 +21,7 @@
 #include "com_couchbase_litecore_fleece_FLEncoder.h"
 #include "com_couchbase_litecore_fleece_FLSliceResult.h"
 #include "native_glue.hh"
-#include "Fleece.h"
+
 
 using namespace litecore;
 using namespace litecore::jni;

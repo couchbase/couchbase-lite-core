@@ -13,9 +13,9 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#include <c4.h>
 #include "com_couchbase_litecore_Document.h"
 #include "native_glue.hh"
-#include "c4Document.h"
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -42,7 +42,7 @@ bool litecore::jni::initDocument(JNIEnv *env) {
     kField_SelectedSequence = env->GetFieldID(documentClass, "_selectedSequence", "J");
     kField_SelectedBody = env->GetFieldID(documentClass, "_selectedBody", "[B");
     return kField_Flags && kField_RevID && kField_SelectedRevID
-        && kField_SelectedRevFlags && kField_SelectedSequence && kField_SelectedBody;
+           && kField_SelectedRevFlags && kField_SelectedSequence && kField_SelectedBody;
 }
 
 // Updates the _docID field of the Java Document object
@@ -52,15 +52,15 @@ static void updateDocID(JNIEnv *env, jobject self, C4Document *doc) {
 
 // Updates the _revID and _flags fields of the Java Document object
 static void updateRevIDAndFlags
-(JNIEnv *env, jobject self, C4Document *doc) {
+        (JNIEnv *env, jobject self, C4Document *doc) {
     env->SetObjectField(self, kField_RevID, toJString(env, doc->revID));
-    env->SetLongField  (self, kField_Sequence, doc->sequence);
-    env->SetIntField   (self, kField_Flags, doc->flags);
+    env->SetLongField(self, kField_Sequence, doc->sequence);
+    env->SetIntField(self, kField_Flags, doc->flags);
 }
 
 // Updates the "_selectedXXXX" fields of the Java Document object
 static void updateSelection
-(JNIEnv *env, jobject self, C4Document *doc, bool withBody =false) {
+        (JNIEnv *env, jobject self, C4Document *doc, bool withBody = false) {
     auto sel = &doc->selectedRev;
 
     jobject jRevID;
@@ -70,10 +70,10 @@ static void updateSelection
     } else {
         jRevID = toJString(env, sel->revID);
     }
-    env->SetObjectField(self, kField_SelectedRevID,    jRevID);
-    env->SetLongField  (self, kField_SelectedSequence, sel->sequence);
-    env->SetIntField   (self, kField_SelectedRevFlags, sel->flags);
-    if(withBody)
+    env->SetObjectField(self, kField_SelectedRevID, jRevID);
+    env->SetLongField(self, kField_SelectedSequence, sel->sequence);
+    env->SetIntField(self, kField_SelectedRevFlags, sel->flags);
+    if (withBody)
         env->SetObjectField(self, kField_SelectedBody, toJByteArray(env, sel->body));
     else
         env->SetObjectField(self, kField_SelectedBody, nullptr);
@@ -81,25 +81,23 @@ static void updateSelection
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Document_init
-(JNIEnv *env, jobject self, jlong dbHandle, jstring jdocID, jboolean mustExist)
-{
+        (JNIEnv *env, jobject self, jlong dbHandle, jstring jdocID, jboolean mustExist) {
     jstringSlice docID(env, jdocID);
     C4Error error;
-    C4Document *doc = c4doc_get((C4Database*)dbHandle, docID, mustExist, &error);
+    C4Document *doc = c4doc_get((C4Database *) dbHandle, docID, mustExist, &error);
     if (!doc) {
         throwError(env, error);
         return 0;
     }
     updateRevIDAndFlags(env, self, doc);
     updateSelection(env, self, doc, true);
-    return (jlong)doc;
+    return (jlong) doc;
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Document_initWithSequence
-        (JNIEnv *env, jobject self, jlong dbHandle, jlong sequence)
-{
+        (JNIEnv *env, jobject self, jlong dbHandle, jlong sequence) {
     C4Error error;
-    C4Document *doc = c4doc_getBySequence((C4Database*)dbHandle, sequence, &error);
+    C4Document *doc = c4doc_getBySequence((C4Database *) dbHandle, sequence, &error);
     if (!doc) {
         throwError(env, error);
         return 0;
@@ -107,25 +105,24 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Document_initWithSequence
     updateDocID(env, self, doc);
     updateRevIDAndFlags(env, self, doc);
     updateSelection(env, self, doc, true);
-    return (jlong)doc;
+    return (jlong) doc;
 }
 
 JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_Document_initWithDocHandle
-(JNIEnv *env, jobject self, jlong docHandle)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle) {
+    auto doc = (C4Document *) docHandle;
     updateRevIDAndFlags(env, self, doc);
     updateSelection(env, self, doc);
     return toJString(env, doc->docID);
 }
+
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_hasRevisionBody
-        (JNIEnv *env, jclass clazz, jlong docHandle)
-{
+        (JNIEnv *env, jclass clazz, jlong docHandle) {
     return c4doc_hasRevisionBody((C4Document *) docHandle);
 }
 
 JNIEXPORT jint JNICALL Java_com_couchbase_litecore_Document_purgeRevision
-        (JNIEnv *env, jclass clazz, jlong docHandle, jstring jrevid){
+        (JNIEnv *env, jclass clazz, jlong docHandle, jstring jrevid) {
     auto doc = (C4Document *) docHandle;
     jstringSlice revID(env, jrevid);
     C4Error error;
@@ -136,9 +133,8 @@ JNIEXPORT jint JNICALL Java_com_couchbase_litecore_Document_purgeRevision
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_free
-(JNIEnv *env, jclass clazz, jlong docHandle)
-{
-    c4doc_free((C4Document*)docHandle);
+        (JNIEnv *env, jclass clazz, jlong docHandle) {
+    c4doc_free((C4Document *) docHandle);
 }
 
 static bool isNotFoundError(C4Error error) {
@@ -147,9 +143,8 @@ static bool isNotFoundError(C4Error error) {
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectRevID
-(JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle, jstring jrevID, jboolean withBody) {
+    auto doc = (C4Document *) docHandle;
     jstringSlice revID(env, jrevID);
     C4Error error;
     bool ok = c4doc_selectRevision(doc, revID, withBody, &error);
@@ -162,36 +157,32 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectRevID
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectCurrentRev
-(JNIEnv *env, jobject self, jlong docHandle)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle) {
+    auto doc = (C4Document *) docHandle;
     bool ok = c4doc_selectCurrentRevision(doc);
     updateSelection(env, self, doc);
     return ok;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectParentRev
-(JNIEnv *env, jobject self, jlong docHandle)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle) {
+    auto doc = (C4Document *) docHandle;
     bool ok = c4doc_selectParentRevision(doc);
     updateSelection(env, self, doc);
     return ok;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextRev
-(JNIEnv *env, jobject self, jlong docHandle)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle) {
+    auto doc = (C4Document *) docHandle;
     bool ok = c4doc_selectNextRevision(doc);
     updateSelection(env, self, doc);
     return ok;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectNextLeaf
-(JNIEnv *env, jobject self, jlong docHandle, jboolean includeDeleted, jboolean withBody)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle, jboolean includeDeleted, jboolean withBody) {
+    auto doc = (C4Document *) docHandle;
     C4Error error;
     bool ok = c4doc_selectNextLeafRevision(doc, includeDeleted, withBody, &error);
     if (ok || error.code == 0 || isNotFoundError(error))  // 404 or 410 don't trigger exceptions
@@ -233,9 +224,8 @@ Java_com_couchbase_litecore_Document_selectNextPossibleAncestorOf(JNIEnv *env, j
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBody
-(JNIEnv *env, jobject self, jlong docHandle)
-{
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle) {
+    auto doc = (C4Document *) docHandle;
     C4Error error;
     if (!c4doc_loadRevisionBody(doc, &error)) {
         throwError(env, error);
@@ -245,8 +235,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_Document_readSelectedBo
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_save
-(JNIEnv *env, jobject self, jlong docHandle, jint maxRevTreeDepth) {
-    auto doc = (C4Document*)docHandle;
+        (JNIEnv *env, jobject self, jlong docHandle, jint maxRevTreeDepth) {
+    auto doc = (C4Document *) docHandle;
     C4Error error;
     if (c4doc_save(doc, maxRevTreeDepth, &error))
         updateRevIDAndFlags(env, self, doc);

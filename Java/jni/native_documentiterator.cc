@@ -13,57 +13,57 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#include <errno.h>
+#include <c4.h>
 #include "com_couchbase_litecore_DocumentIterator.h"
 #include "native_glue.hh"
-#include "c4DocEnumerator.h"
-#include <errno.h>
 
+using namespace litecore;
 using namespace litecore::jni;
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateAllDocs
         (JNIEnv *env, jclass clazz, jlong dbHandle, jstring jStartDocID, jstring jEndDocID,
-         jint skip, jint optionFlags)
-{
+         jint skip, jint optionFlags) {
     jstringSlice startDocID(env, jStartDocID);
     jstringSlice endDocID(env, jEndDocID);
     const C4EnumeratorOptions options = {unsigned(skip), C4EnumeratorFlags(optionFlags)};
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database*)dbHandle, startDocID, endDocID, &options, &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database *) dbHandle, startDocID, endDocID,
+                                               &options, &error);
     if (!e) {
         throwError(env, error);
         return 0;
     }
-    return (jlong)e;
+    return (jlong) e;
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateSomeDocs
-        (JNIEnv *env, jclass clazz, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags)
-{
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jobjectArray jdocIDs, jint optionFlags) {
     // Convert jdocIDs, a Java String[], to a C array of C4Slice:
 
     jsize n = env->GetArrayLength(jdocIDs);
 
-    C4Slice* docIDs = (C4Slice*)::malloc(sizeof(C4Slice) * n);
-    if(docIDs  == nullptr){
+    C4Slice *docIDs = (C4Slice *) ::malloc(sizeof(C4Slice) * n);
+    if (docIDs == nullptr) {
         throwError(env, C4Error{POSIXDomain, errno});
         return 0;
     }
 
     std::vector<jstringSlice *> keeper;
     for (jsize i = 0; i < n; i++) {
-        jstring js = (jstring)env->GetObjectArrayElement(jdocIDs, i);
-        jstringSlice* item = new jstringSlice(env, js);
+        jstring js = (jstring) env->GetObjectArrayElement(jdocIDs, i);
+        jstringSlice *item = new jstringSlice(env, js);
         docIDs[i] = *item;
         keeper.push_back(item); // so its memory won't be freed
     }
 
     const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateSomeDocs((C4Database*)dbHandle, docIDs, n, &options,
+    C4DocEnumerator *e = c4db_enumerateSomeDocs((C4Database *) dbHandle, docIDs, n, &options,
                                                 &error);
 
     // release memory
-    for(jsize i = 0; i < n; i++){
+    for (jsize i = 0; i < n; i++) {
         delete keeper.at(i);
     }
     keeper.clear();
@@ -73,27 +73,25 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumera
         throwError(env, error);
         return 0;
     }
-    return (jlong)e;
+    return (jlong) e;
 }
 
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_initEnumerateChanges
-        (JNIEnv *env, jclass clazz, jlong dbHandle, jlong since, jint optionFlags)
-{
+        (JNIEnv *env, jclass clazz, jlong dbHandle, jlong since, jint optionFlags) {
     const C4EnumeratorOptions options = {unsigned(0), C4EnumeratorFlags(optionFlags)};
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateChanges((C4Database*)dbHandle, since, &options, &error);
+    C4DocEnumerator *e = c4db_enumerateChanges((C4Database *) dbHandle, since, &options, &error);
     if (!e) {
         throwError(env, error);
         return 0;
     }
-    return (jlong)e;
+    return (jlong) e;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_DocumentIterator_next
-(JNIEnv *env, jclass clazz, jlong handle)
-{
-    auto e = (C4DocEnumerator*)handle;
+        (JNIEnv *env, jclass clazz, jlong handle) {
+    auto e = (C4DocEnumerator *) handle;
     if (!e)
         return 0;
     C4Error error;
@@ -108,9 +106,8 @@ JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_DocumentIterator_next
 }
 
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_getDocumentHandle
-(JNIEnv *env, jclass clazz, jlong handle)
-{
-    auto e = (C4DocEnumerator*)handle;
+        (JNIEnv *env, jclass clazz, jlong handle) {
+    auto e = (C4DocEnumerator *) handle;
     if (!e)
         return 0;
     C4Error error;
@@ -118,25 +115,23 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_DocumentIterator_getDocument
     if (!doc) {
         throwError(env, error);
     }
-    return (jlong)doc;
+    return (jlong) doc;
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_DocumentIterator_getDocumentInfo
-(JNIEnv *env, jclass clazz, jlong handle, jobjectArray ids, jlongArray numbers)
-{
-    auto e = (C4DocEnumerator*)handle;
+        (JNIEnv *env, jclass clazz, jlong handle, jobjectArray ids, jlongArray numbers) {
+    auto e = (C4DocEnumerator *) handle;
     C4DocumentInfo info;
     if (!e || !c4enum_getDocumentInfo(e, &info)) {
         memset(&info, 0, sizeof(info));
     }
     env->SetObjectArrayElement(ids, 0, toJString(env, info.docID));
     env->SetObjectArrayElement(ids, 1, toJString(env, info.revID));
-    jlong flagsAndSequence[2] = {info.flags, (jlong)info.sequence};
+    jlong flagsAndSequence[2] = {info.flags, (jlong) info.sequence};
     env->SetLongArrayRegion(numbers, 0, 2, flagsAndSequence);
 }
 
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_DocumentIterator_free
-(JNIEnv *env, jclass clazz, jlong handle)
-{
-    c4enum_free((C4DocEnumerator*)handle);
+        (JNIEnv *env, jclass clazz, jlong handle) {
+    c4enum_free((C4DocEnumerator *) handle);
 }

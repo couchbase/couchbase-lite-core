@@ -13,12 +13,10 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-#include <c4Base.h>
 #include <c4.h>
+#include <c4Document+Fleece.h>
 #include "com_couchbase_litecore_Database.h"
 #include "native_glue.hh"
-#include "c4BlobStore.h"
-#include "c4Document+Fleece.h"
 #include "Logging.hh"
 
 #undef DEBUG_TERMINATION // Define this to install a C++ termination handler that dumps a backtrace
@@ -359,7 +357,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put1
             // `body` is a "critical" JNI ref. This is the fastest way to access its bytes, but
             // it's illegal to make any more JNI calls until the critical ref is released.
             // We declare it in a nested block, so it'll be released immediately. (java-core#793)
-            jbyteArraySlice body(env, jbody, true);
+            //jbyteArraySlice body(env, jbody, true);
+            jbyteArraySlice body(env, jbody, false);
             rq.body = body;
             doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
         }
@@ -382,9 +381,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put2
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jlong jbody,
          jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,
-         jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth){
+         jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth) {
     auto db = (C4Database *) dbHandle;
-    C4Slice* pBody = (C4Slice*)jbody;
+    C4Slice *pBody = (C4Slice *) jbody;
     jstringSlice docID(env, jdocID), docType(env, jdocType);
     C4DocPutRequest rq;
     rq.docID = docID;
@@ -427,6 +426,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put2
         throwError(env, error);
     return (jlong) doc;
 }
+
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database__1rawPut
         (JNIEnv *env, jclass clazz, jlong db, jstring jstore, jstring jkey, jbyteArray jmeta,
          jbyteArray jbody) {
