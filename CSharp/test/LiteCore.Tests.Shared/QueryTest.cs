@@ -1,10 +1,17 @@
 using LiteCore.Interop;
 using FluentAssertions;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class QueryTest : QueryTestBase
     {
         protected override string JsonPath
@@ -14,10 +21,12 @@ namespace LiteCore.Tests
             }
         }
 
+#if !WINDOWS_UWP
         public QueryTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         [Fact]
         public void TestQueryDB()

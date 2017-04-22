@@ -4,14 +4,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [TestClass]
+#endif
     public abstract class TestBase
     {
+#if !WINDOWS_UWP
         protected readonly ITestOutputHelper _output;
+#else
+        protected TestContext _output;
+
+        public virtual TestContext TestContext
+        {
+            get => _output;
+            set => _output = value;
+        }
+#endif
         private StringBuilder _sb = new StringBuilder();
 
         protected abstract int NumberOfOptions { get; }
@@ -21,19 +39,20 @@ namespace LiteCore.Tests
         protected abstract void SetupVariant(int option);
         protected abstract void TeardownVariant(int option);
 
+#if !WINDOWS_UWP
         protected TestBase(ITestOutputHelper output)
         {
             _output = output;
         }
+#endif
 
         protected void WriteLine(string line = "")
         {
             _output.WriteLine($"{_sb.ToString()}{line}");
-            _sb.Clear();
         }
 
         protected void Write(string str)
-        {
+        { 
             _sb.Append(str);
         }
 

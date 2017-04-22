@@ -6,11 +6,18 @@ using System.Runtime.InteropServices;
 using System.Text;
 using FluentAssertions;
 using LiteCore.Interop;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class BlobStoreTest : TestBase
     {
         protected override int NumberOfOptions
@@ -24,10 +31,12 @@ namespace LiteCore.Tests
         private C4BlobStore* _store;
         private C4BlobKey _bogusKey = new C4BlobKey();
 
+#if !WINDOWS_UWP
         public BlobStoreTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         [Fact]
         public void TestParseBlobKeys()

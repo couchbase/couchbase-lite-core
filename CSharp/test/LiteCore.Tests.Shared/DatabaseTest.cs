@@ -3,17 +3,26 @@ using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class DatabaseTest : Test
     {
+#if !WINDOWS_UWP
         public DatabaseTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         [Fact]
         public void TestErrorMessages()

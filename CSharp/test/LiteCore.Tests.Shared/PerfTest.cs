@@ -5,21 +5,30 @@ using System.IO;
 using System.Runtime.InteropServices;
 using FluentAssertions;
 using LiteCore.Interop;
-using LiteCore.Tests.Util;
 using LiteCore.Util;
+#if !WINDOWS_UWP
+using LiteCore.Tests.Util;
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class PerfTest : Test
     {
         private const string JsonFilePath = "../../../C/tests/data/iTunesMusicLibrary.json";
 
+#if !WINDOWS_UWP
         public PerfTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
 #if PERFORMANCE
 

@@ -2,12 +2,18 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
-using System.Threading;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class ThreadingTest : Test
     {
         private bool Log = false;
@@ -16,10 +22,12 @@ namespace LiteCore.Tests
         private object _observerMutex = new object();
         private bool _changesToObserve;
 
+#if !WINDOWS_UWP
         public ThreadingTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         [Fact]
         public void TestCreateVsEnumerate()

@@ -7,10 +7,19 @@ using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Tests.Util;
 using LiteCore.Util;
+#if !WINDOWS_UWP
+using LiteCore.Tests.Util;
+using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class Test : TestBase
     {
 #if __ANDROID__
@@ -81,10 +90,12 @@ namespace LiteCore.Tests
             FleeceBody = result;
         }
 
+#if !WINDOWS_UWP
         public Test(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         protected bool IsRevTrees()
         {

@@ -6,20 +6,29 @@ using System.Linq;
 using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Util;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class AllDocsPerformanceTest : Test
     {
         private const int SizeOfDocument = 1000;
         private const int NumDocuments = 100000;
 
+#if !WINDOWS_UWP
         public AllDocsPerformanceTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
 #if PERFORMANCE
 

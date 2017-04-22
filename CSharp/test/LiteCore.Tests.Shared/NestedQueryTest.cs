@@ -1,9 +1,16 @@
 using FluentAssertions;
+#if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe class NestedQueryTest : QueryTestBase
     {
         protected override string JsonPath 
@@ -13,10 +20,12 @@ namespace LiteCore.Tests
             }
         }
 
+#if !WINDOWS_UWP
         public NestedQueryTest(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         [Fact]
         public void TestDBQueryAnyNested()

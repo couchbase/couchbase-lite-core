@@ -2,12 +2,18 @@ using LiteCore.Interop;
 using FluentAssertions;
 
 using System.Collections.Generic;
-using System;
-using System.Runtime.CompilerServices;
+#if !WINDOWS_UWP
+using Xunit;
 using Xunit.Abstractions;
+#else
+using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#endif
 
 namespace LiteCore.Tests
 {
+#if WINDOWS_UWP
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+#endif
     public unsafe abstract class QueryTestBase : Test
     {
         internal C4Query *_query;
@@ -17,10 +23,12 @@ namespace LiteCore.Tests
             get;
         }
 
+#if !WINDOWS_UWP
         protected QueryTestBase(ITestOutputHelper output) : base(output)
         {
 
         }
+#endif
 
         protected IList<string> Run(ulong skip = 0, ulong limit = ulong.MaxValue, string bindings = null)
         {
