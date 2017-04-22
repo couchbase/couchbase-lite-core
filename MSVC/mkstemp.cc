@@ -1,4 +1,4 @@
-?¿/*
+/*
 * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska HÃ¶gskolan
 * (Royal Institute of Technology, Stockholm, Sweden).
 * All rights reserved.
@@ -57,7 +57,7 @@ int mkstemp(char *tmp)
         start--;
 
     for (tries = INT_MAX; tries; tries--) {
-        if (mktemp(tmp) == NULL) {
+        if (_mktemp(tmp) == NULL) {
             errno = EEXIST;
             return NULL;
         }

@@ -37,7 +37,7 @@ char *mkdtemp(char *path)
     }
 
     for (tries = INT_MAX; tries; tries--) {
-        if (mktemp(path) == NULL) {
+        if (_mktemp(path) == NULL) {
             errno = EEXIST;
             return NULL;
         }
