@@ -16,12 +16,6 @@
 #include "PlatformIO.hh"
 #include <thread>
 #include <mutex>
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
-#include <direct.h>
-#define mkdir(STR, MODE) _mkdir(STR)
-#endif
 
 using namespace std;
 
@@ -41,7 +35,7 @@ const std::string& TempDir() {
         }
         string path = string(tmpDir) + kPathSeparator + "LiteCore_C_Tests" + kPathSeparator;
 
-        mkdir(path.c_str(), 0700);
+        litecore::mkdir_u8(path.c_str(), 0700);
         kTempDir = path;
     });
 
@@ -458,7 +452,3 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
 C4Slice C4Test::kFleeceBody;
-
-#ifdef _MSC_VER
-#undef mkdir
-#endif

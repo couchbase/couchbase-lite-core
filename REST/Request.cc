@@ -10,6 +10,8 @@
 #include "Writer.hh"
 #include "civetUtils.hh"
 #include "civetweb.h"
+#include "PlatformIO.hh"
+#include <stdarg.h>
 
 using namespace std;
 using namespace fleece;

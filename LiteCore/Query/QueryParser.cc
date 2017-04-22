@@ -25,9 +25,6 @@
 #include "PlatformIO.hh"
 #include <utility>
 #include <algorithm>
-#ifdef _MSC_VER
-#include "asprintf.h"
-#endif
 
 using namespace std;
 using namespace fleece;

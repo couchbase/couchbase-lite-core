@@ -9,6 +9,7 @@
 
 #include "civetUtils.hh"
 #include "c4.h"
+#include "PlatformIO.hh"
 #include "civetweb.h"
 #include <assert.h>
 

@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Response.hh"
+#include "PlatformCompat.hh"
 
 namespace litecore { namespace REST {
 

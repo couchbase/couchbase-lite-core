@@ -16,6 +16,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "FleeceException.hh"
+#include "PlatformIO.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include <errno.h>
@@ -23,8 +24,6 @@
 
 #if __ANDROID__
 #include <android/log.h>
-#elif defined(_MSC_VER)
-#include "asprintf.h"
 #endif
 
 #ifdef _MSC_VER
@@ -37,7 +36,6 @@
 
 #if defined(__clang__) && !defined(__ANDROID__) // For logBacktrace:
 #include <execinfo.h>   // Not available in Windows?
-#include <unistd.h>
 #include <cxxabi.h>
 #endif
 

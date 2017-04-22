@@ -13,6 +13,7 @@
 #ifdef _MSC_VER
 
     #include <cstdio>
+    #include "asprintf.h"
 
     #define fdopen      ::_fdopen
     #define fseeko      fseek

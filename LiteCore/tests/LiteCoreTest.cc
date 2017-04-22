@@ -9,6 +9,7 @@
 #include "LiteCoreTest.hh"
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
+#include "PlatformIO.hh"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -21,10 +22,7 @@
 
 #ifdef _MSC_VER
     #include <arc4random.h>
-    #include "asprintf.h"
     #undef min
-#else
-    #include <unistd.h>
 #endif
 
 

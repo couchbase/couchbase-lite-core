@@ -7,13 +7,8 @@
 //
 
 #include "StringUtil.hh"
+#include "PlatformIO.hh"
 #include <stdlib.h>
-
-#ifdef _MSC_VER
-#include "asprintf.h"
-#else
-#include <unistd.h>
-#endif
 
 namespace litecore {
 

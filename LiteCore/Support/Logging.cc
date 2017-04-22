@@ -22,14 +22,12 @@
 #include <sstream>
 #include <mutex>
 #include "PlatformIO.hh"
+
 #if __APPLE__
 #include <sys/time.h>
 #endif
 #if __ANDROID__
 #include <android/log.h>
-#endif
-#ifdef _MSC_VER
-#include "asprintf.h"
 #endif
 
 #if defined(__clang__) && !defined(__ANDROID__)
