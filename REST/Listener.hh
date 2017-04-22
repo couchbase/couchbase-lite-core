@@ -9,6 +9,7 @@
 #pragma once
 #include "c4.hh"
 #include "c4REST.h"
+#include "Server.hh"
 #include "FilePath.hh"
 #include <map>
 #include <memory>
@@ -53,17 +54,21 @@ namespace litecore { namespace REST {
     private:
         /** Returns the database for this request, or null on error. */
         c4::ref<C4Database> databaseFor(Request&);
+
+        using DBHandler = void(Listener::*)(Request&, C4Database*);
+
+        void addDBHandler(Server::Method, const char *uri, DBHandler);
         
         void handleGetRoot(Request&);
         void handleGetAllDBs(Request&);
 
-        void handleGetDatabase(Request&);
+        void handleGetDatabase(Request&, C4Database*);
         void handleCreateDatabase(Request&);
-        void handleDeleteDatabase(Request&);
+        void handleDeleteDatabase(Request&, C4Database*);
 
-        void handleGetAllDocs(Request&);
-        void handleGetDoc(Request&);
-        void handleModifyDoc(Request&);
+        void handleGetAllDocs(Request&, C4Database*);
+        void handleGetDoc(Request&, C4Database*);
+        void handleModifyDoc(Request&, C4Database*);
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;

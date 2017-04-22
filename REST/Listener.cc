@@ -57,19 +57,19 @@ namespace litecore { namespace REST {
         _server->addHandler(Server::DEFAULT, "/_", notFound);
 
         // Database:
-        _server->addHandler(Server::GET,   "/*$|/*/$", [=](Request &rq) {handleGetDatabase(rq);});
+        addDBHandler(Server::GET,   "/*$|/*/$", &Listener::handleGetDatabase);
         _server->addHandler(Server::PUT,   "/*$|/*/$", [this](Request &rq) {handleCreateDatabase(rq);});
-        _server->addHandler(Server::DELETE,"/*$|/*/$", [this](Request &rq) {handleDeleteDatabase(rq);});
-        _server->addHandler(Server::POST,  "/*$|/*/$", [this](Request &rq) {handleModifyDoc(rq);});
+        addDBHandler(Server::DELETE,"/*$|/*/$", &Listener::handleDeleteDatabase);
+        addDBHandler(Server::POST,  "/*$|/*/$", &Listener::handleModifyDoc);
 
         // Database-level special handlers:
-        _server->addHandler(Server::GET, "/*/_all_docs$", [this](Request &rq) { handleGetAllDocs(rq); });
+        addDBHandler(Server::GET, "/*/_all_docs$", &Listener::handleGetAllDocs);
         _server->addHandler(Server::DEFAULT, "/*/_", notFound);
 
         // Document:
-        _server->addHandler(Server::GET,   "/*/*$", [this](Request &rq) { handleGetDoc(rq); });
-        _server->addHandler(Server::PUT,   "/*/*$", [this](Request &rq) { handleModifyDoc(rq); });
-        _server->addHandler(Server::DELETE,"/*/*$", [this](Request &rq) { handleModifyDoc(rq); });
+        addDBHandler(Server::GET,   "/*/*$", &Listener::handleGetDoc);
+        addDBHandler(Server::PUT,   "/*/*$", &Listener::handleModifyDoc);
+        addDBHandler(Server::DELETE,"/*/*$", &Listener::handleModifyDoc);
     }
 
 
@@ -157,7 +157,7 @@ namespace litecore { namespace REST {
         lock_guard<mutex> lock(_mutex);
         if (_databases.find(name) != _databases.end())
             return false;
-        _databases[name] = c4db_retain(db);
+        _databases.emplace(name, c4db_retain(db));
         return true;
     }
 
@@ -197,6 +197,23 @@ namespace litecore { namespace REST {
 #pragma mark - UTILITIES:
 
 
+    void Listener::addDBHandler(Server::Method method, const char *uri, DBHandler handler) {
+        _server->addHandler(method, uri, [this,handler](Request &rq) {
+            c4::ref<C4Database> db = databaseFor(rq);
+            if (db) {
+                c4db_lock(db);
+                try {
+                    (this->*handler)(rq, db);
+                } catch (...) {
+                    c4db_unlock(db);
+                    throw;
+                }
+                c4db_unlock(db);
+            }
+        });
+    }
+
+    
     c4::ref<C4Database> Listener::databaseFor(Request &rq) {
         string dbName = rq.path(0);
         if (dbName.empty()) {
@@ -240,11 +257,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleGetDatabase(Request &rq) {
-        auto db = databaseFor(rq);
-        if (!db)
-            return;
-
+    void Listener::handleGetDatabase(Request &rq, C4Database *db) {
         auto docCount = c4db_getDocumentCount(db);
         auto lastSequence = c4db_getLastSequence(db);
         C4UUID uuid;
@@ -289,12 +302,9 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleDeleteDatabase(Request &rq) {
+    void Listener::handleDeleteDatabase(Request &rq, C4Database *db) {
         if (!_allowDeleteDB)
             return rq.respondWithError(403, "Cannot delete databases");
-        auto db = databaseFor(rq);
-        if (!db)
-            return;
         string name = rq.path(0);
         if (!unregisterDatabase(name))
             return rq.respondWithError(404);
@@ -309,11 +319,7 @@ namespace litecore { namespace REST {
 #pragma mark - DOCUMENT HANDLERS:
 
 
-    void Listener::handleGetAllDocs(Request &rq) {
-        auto db = databaseFor(rq);
-        if (!db)
-            return;
-
+    void Listener::handleGetAllDocs(Request &rq, C4Database *db) {
         // Apply options:
         C4EnumeratorOptions options;
         options.flags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
@@ -367,10 +373,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleGetDoc(Request &rq) {
-        auto db = databaseFor(rq);
-        if (!db)
-            return;
+    void Listener::handleGetDoc(Request &rq, C4Database *db) {
         string docID = rq.path(1);
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, &err);
@@ -415,10 +418,7 @@ namespace litecore { namespace REST {
 
 
     // This handles PUT and DELETE of a document, as well as POST to a database.
-    void Listener::handleModifyDoc(Request &rq) {
-        auto db = databaseFor(rq);
-        if (!db)
-            return;
+    void Listener::handleModifyDoc(Request &rq, C4Database *db) {
         string docID = rq.path(1);                       // will be null for POST
 
         // Parse the body:
