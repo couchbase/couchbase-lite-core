@@ -16,13 +16,6 @@
 #include "c4Private.h"
 
 
-#if C4DB_THREADSAFE
-#define WITH_LOCK(db) lock_guard<mutex> _lock((db)->_mutex)
-#else
-#define WITH_LOCK(db) do { } while (0)  // no-op
-#endif
-
-
 namespace fleece {
     class Encoder;
     class SharedKeys;
@@ -52,7 +45,7 @@ namespace c4Internal {
         DataFile* dataFile()                                {return _db.get();}
         FilePath path() const;
         uint64_t countDocuments();
-        sequence_t lastSequence()       {WITH_LOCK(this); return defaultKeyStore().lastSequence();}
+        sequence_t lastSequence()                       {return defaultKeyStore().lastSequence();}
 
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);
@@ -100,11 +93,6 @@ namespace c4Internal {
 
         BlobStore* blobStore();
 
-#if C4DB_THREADSAFE
-        // Mutex for synchronizing DataFile calls. Non-recursive!
-        mutex _mutex;
-#endif
-
     public:
         // should be private, but called from Document
         void saved(Document*);
@@ -129,11 +117,6 @@ namespace c4Internal {
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-    #if C4DB_THREADSAFE
-        // Recursive mutex for accessing _transaction and _transactionLevel.
-        // Must be acquired BEFORE _mutex, or deadlock may occur!
-        recursive_mutex             _transactionMutex;
-    #endif
         unique_ptr<fleece::Encoder> _encoder;
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
         unique_ptr<BlobStore>       _blobStore;

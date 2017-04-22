@@ -37,13 +37,7 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
 
 
 struct C4QueryEnumInternal : public C4QueryEnumerator, C4InstanceCounted {
-#if C4DB_THREADSAFE
-    C4QueryEnumInternal(mutex &m)
-    :_mutex(m)
-#else
-    C4QueryEnumInternal()
-#endif
-    {
+    C4QueryEnumInternal() {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));   // init public fields
     }
 
@@ -55,10 +49,6 @@ struct C4QueryEnumInternal : public C4QueryEnumerator, C4InstanceCounted {
     }
 
     virtual void close() noexcept { }
-
-#if C4DB_THREADSAFE
-    mutex &_mutex;
-#endif
 };
 
 static C4QueryEnumInternal* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumInternal*)e;}
@@ -68,7 +58,6 @@ bool c4queryenum_next(C4QueryEnumerator *e,
                       C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
-        WITH_LOCK(asInternal(e));
         if (asInternal(e)->next())
             return true;
         clearError(outError);      // end of iteration is not an error
@@ -79,7 +68,6 @@ bool c4queryenum_next(C4QueryEnumerator *e,
 
 void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     if (e) {
-        WITH_LOCK(asInternal(e));
         asInternal(e)->close();
     }
 }
@@ -124,11 +112,7 @@ void c4query_free(C4Query *query) noexcept {
 struct C4DBQueryEnumerator : public C4QueryEnumInternal {
     C4DBQueryEnumerator(C4Query *query,
                         const QueryEnumerator::Options *options)
-    :C4QueryEnumInternal(
-#if C4DB_THREADSAFE
-        query->database()->_mutex
-#endif
-    )
+    :C4QueryEnumInternal()
     ,_database(query->database())
     ,_enum(query->query(), options)
     ,_hasFullText(_enum.hasFullText())
@@ -170,7 +154,6 @@ C4QueryEnumerator* c4query_run(C4Query *query,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        WITH_LOCK(query->database());
         QueryEnumerator::Options qeOpts;
         if (options) {
             qeOpts.skip = options->skip;
@@ -194,7 +177,6 @@ C4StringResult c4query_explain(C4Query *query) noexcept {
 
 C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        WITH_LOCK(asInternal(e));
         return sliceResult(((C4DBQueryEnumerator*)e)->getCustomColumns());
     });
 }
@@ -206,7 +188,6 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
                                       C4Error *outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        WITH_LOCK(query->database());
         return sliceResult(query->query()->getMatchedText(docID, seq));
     });
 }
@@ -216,7 +197,6 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
                                           C4Error *outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        WITH_LOCK(asInternal(e));
         return sliceResult(((C4DBQueryEnumerator*)e)->getMatchedText());
     });
 }
@@ -234,7 +214,6 @@ bool c4db_createIndex(C4Database *database,
     static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
                   "IndexOptions types must match");
     return tryCatch(outError, [&]{
-        WITH_LOCK(database);
         database->defaultKeyStore().createIndex((string)propertyPath,
                                                 (KeyStore::IndexType)indexType,
                                                 (const KeyStore::IndexOptions*)indexOptions);
@@ -248,7 +227,6 @@ bool c4db_deleteIndex(C4Database *database,
                       C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
-        WITH_LOCK(database);
         database->defaultKeyStore().deleteIndex((string)propertyPath,
                                                 (KeyStore::IndexType)indexType);
     });

@@ -20,8 +20,3 @@
 #ifdef __OBJC__
     #import <Foundation/Foundation.h>
 #endif
-
-// Enables thread safety of C API:
-//#ifndef C4DB_THREADSAFE
-//#define C4DB_THREADSAFE 1
-//#endif

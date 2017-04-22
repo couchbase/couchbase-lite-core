@@ -179,14 +179,12 @@ namespace c4Internal {
 
     void Database::close() {
         mustNotBeInTransaction();
-        WITH_LOCK(this);
         _db->close();
     }
 
 
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
-        WITH_LOCK(this);
         FilePath bundle = path().dir();
         _db->deleteDataFile();
         if (config.flags & kC4DB_Bundled)
@@ -238,20 +236,17 @@ namespace c4Internal {
 
     void Database::compact() {
         mustNotBeInTransaction();
-        WITH_LOCK(this);
         dataFile()->compact();
     }
 
 
     void Database::setOnCompact(DataFile::OnCompactCallback callback) noexcept {
-        WITH_LOCK(this);
         dataFile()->setOnCompact(callback);
     }
 
 
     void Database::rekey(const C4EncryptionKey *newKey) {
         mustNotBeInTransaction();
-        WITH_LOCK(this);
         rekeyDataFile(dataFile(), newKey);
     }
 
@@ -279,7 +274,6 @@ namespace c4Internal {
 
 
     uint64_t Database::countDocuments() {
-        WITH_LOCK(this);
         RecordEnumerator::Options opts;
         opts.contentOptions = kMetaOnly;
 
@@ -376,11 +370,7 @@ namespace c4Internal {
 
 
     void Database::beginTransaction() {
-    #if C4DB_THREADSAFE
-        _transactionMutex.lock(); // this is a recursive mutex
-    #endif
         if (++_transactionLevel == 1) {
-            WITH_LOCK(this);
             _transaction = new Transaction(_db.get());
             lock_guard<mutex> lock(_sequenceTracker->mutex());
             _sequenceTracker->beginTransaction();
@@ -388,21 +378,14 @@ namespace c4Internal {
     }
 
     bool Database::inTransaction() noexcept {
-    #if C4DB_THREADSAFE
-        lock_guard<recursive_mutex> lock(_transactionMutex);
-    #endif
         return _transactionLevel > 0;
     }
 
 
     void Database::endTransaction(bool commit) {
-    #if C4DB_THREADSAFE
-        lock_guard<recursive_mutex> lock(_transactionMutex);
-    #endif
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
         if (--_transactionLevel == 0) {
-            WITH_LOCK(this);
             auto t = _transaction;
             try {
                 if (commit)
@@ -415,9 +398,6 @@ namespace c4Internal {
             }
             _cleanupTransaction(commit);
         }
-    #if C4DB_THREADSAFE
-        _transactionMutex.unlock(); // undoes lock in beginTransaction()
-    #endif
     }
 
 
@@ -468,19 +448,16 @@ namespace c4Internal {
 
     
     bool Database::purgeDocument(slice docID) {
-        WITH_LOCK(this);
         return defaultKeyStore().del(docID, transaction());
     }
 
 
     Record Database::getRawDocument(const string &storeName, slice key) {
-        WITH_LOCK(this);
         return getKeyStore(storeName).get(key);
     }
 
 
     void Database::putRawDocument(const string &storeName, slice key, slice meta, slice body) {
-        WITH_LOCK(this);
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
@@ -491,14 +468,12 @@ namespace c4Internal {
 
 
     fleece::Encoder& Database::sharedEncoder() {
-        WITH_LOCK(this);
         _encoder->reset();
         return *_encoder.get();
     }
 
 
     void Database::saved(Document* doc) {
-        WITH_LOCK(this);
         lock_guard<mutex> lock(_sequenceTracker->mutex());
         Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
         _sequenceTracker->documentChanged(doc->_docIDBuf,

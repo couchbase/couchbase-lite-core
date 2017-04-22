@@ -87,7 +87,6 @@ namespace c4Internal {
 
         void loadRevisions() override {
             if (!_versionedDoc.revsAvailable()) {
-                WITH_LOCK(_db);
                 _versionedDoc.read();
                 selectRevision(_versionedDoc.currentRevision());
             }
@@ -96,7 +95,6 @@ namespace c4Internal {
         bool hasRevisionBody() noexcept override {
             if (!revisionsLoaded())
                 Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
-            WITH_LOCK(database());
             return _selectedRev && _selectedRev->isBodyAvailable();
         }
 
@@ -195,7 +193,6 @@ namespace c4Internal {
                 maxRevTreeDepth = _db->maxRevTreeDepth();
             _versionedDoc.prune(maxRevTreeDepth);
             {
-                WITH_LOCK(_db);
                 _versionedDoc.save(_db->transaction());
             }
             selectedRev.flags &= ~kRevNew;

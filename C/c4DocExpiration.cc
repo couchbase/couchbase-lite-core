@@ -109,7 +109,6 @@ uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
 uint64_t c4db_nextDocExpiration(C4Database *database) noexcept
 {
     return tryCatch<uint64_t>(nullptr, [database]{
-        WITH_LOCK(database);
         KeyStore& expiryKvs = database->getKeyStore("expiry");
         RecordEnumerator e(expiryKvs);
         if(e.next() && e.record().body() == nullslice) {
@@ -189,7 +188,6 @@ private:
 
 C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError) noexcept {
     return tryCatch<C4ExpiryEnumerator*>(outError, [&]{
-        WITH_LOCK(database);
         return new C4ExpiryEnumerator(database);
     });
 }
@@ -211,7 +209,6 @@ bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError) noexcept {
     if (!c4db_beginTransaction(e->getDatabase(), outError))
         return false;
     bool commit = tryCatch(outError, [&]{
-        WITH_LOCK(e->getDatabase());
         e->reset();
         Transaction &t = e->getDatabase()->transaction();
         KeyStore& expiry = e->getDatabase()->getKeyStore("expiry");

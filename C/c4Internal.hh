@@ -16,15 +16,6 @@
 #include <functional>
 
 
-// Defining C4DB_THREADSAFE as 1 will make C4Database thread-safe: the same handle can be called
-// simultaneously from multiple threads. Transactions will be single-threaded: once a thread has
-// called c4db_beginTransaction, other threads making that call will block until the transaction
-// ends.
-#if C4DB_THREADSAFE
-#include <mutex>
-#endif
-
-
 struct C4DocEnumerator;
 
 namespace litecore {

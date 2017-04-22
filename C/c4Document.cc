@@ -38,7 +38,6 @@ C4Document* c4doc_get(C4Database *database,
                       C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        WITH_LOCK(database);
         auto doc = database->documentFactory().newDocumentInstance(docID);
         if (mustExist && !internal(doc)->exists()) {
             delete doc;
@@ -55,7 +54,6 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        WITH_LOCK(database);
         auto doc = database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
         if (!internal(doc)->exists()) {
             delete doc;

@@ -147,7 +147,6 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        WITH_LOCK(database);
         return new C4DocEnumerator(database, since+1, UINT64_MAX,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
@@ -161,7 +160,6 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        WITH_LOCK(database);
         return new C4DocEnumerator(database, startDocID, endDocID,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
@@ -180,7 +178,6 @@ C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
             string docID = (string)docIDs[i];
             docIDStrings.push_back(docID);
         }
-        WITH_LOCK(database);
         return new C4DocEnumerator(database, docIDStrings,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
