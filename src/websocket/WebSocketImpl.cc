@@ -222,7 +222,7 @@ namespace litecore { namespace websocket {
             case CLOSE:
                 return receivedClose(message);
             case PING:
-                send(message, PONG);
+                sendOp(message, PONG);
                 return true;
             case PONG:
                 //receivedPong(message);
