@@ -6,23 +6,30 @@ set(TOP ${PROJECT_SOURCE_DIR}/../../)
 add_definitions(-DC4_TESTS)
 
 include_directories(${TOP}C/include/
+                    ${TOP}C/tests/
                     ${TOP}C/
+                    ${TOP}REST/
                     ${TOP}vendor/fleece/Fleece/
+                    ${TOP}vendor/civetweb/include/
                     ${TOP}vendor/fleece/vendor/catch/
                 )
                     
 aux_source_directory(.  TEST_SRC)
+aux_source_directory(${TOP}/REST/tests  REST_TEST_SRC)
+
 set(TEST_SRC ${TEST_SRC} 
+             ${REST_TEST_SRC}
              ${TOP}/LiteCore/tests/main.cpp
              ${TOP}/LiteCore/Support/Logging.cc
-             ${TOP}/LiteCore/Support/StringUtil.cc)
+             ${TOP}/LiteCore/Support/StringUtil.cc
+             ${TOP}/REST/Response.cc)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c)
 endif()
 
 add_executable(C4Tests ${TEST_SRC} )
 
-target_link_libraries(C4Tests  LiteCore)
+target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb Fleece)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 
 if(MSVC)

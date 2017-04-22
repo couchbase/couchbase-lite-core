@@ -61,9 +61,11 @@ elseif(ANDROID)
   include_directories("LiteCore/Android")
 endif()
 
+add_subdirectory(REST)
+
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
-add_subdirectory(vendor/BLIP-Cpp   EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
 
 if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
     set(SQLITECPP_INTERNAL_SQLITE OFF)
@@ -164,11 +166,16 @@ if(UNIX AND NOT APPLE)
     set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive")
 endif()
 
-target_link_libraries(LiteCore PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreStatic
+set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
+                                LiteCoreStatic
 								FleeceStatic 
-                SQLite3_UnicodeSN BLIPStatic ${NO_WHOLE_LIBRARY_FLAG})
-								
-target_link_libraries(LiteCore PUBLIC sqlite3)
+                                SQLite3_UnicodeSN 
+                                BLIPStatic 
+                                ${NO_WHOLE_LIBRARY_FLAG})
+set(LITECORE_LIBRARIES_PUBLIC   sqlite3)
+
+target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+target_link_libraries(LiteCore PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 		   
 
 # Mac/iOS stuff
@@ -199,6 +206,26 @@ endif()
 if (JNI)
     add_subdirectory(Java)
 endif()
+
+### REST LISTENER LIBRARY:
+
+add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
+                                LiteCore/Support/FilePath.cc
+                                LiteCore/Support/Logging.cc
+                                LiteCore/Support/StringUtil.cc)
+target_link_libraries(LiteCoreREST PRIVATE LiteCoreREST_Static LiteCore Fleece)
+
+if (APPLE)
+    set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
+                          "-exported_symbols_list ${PROJECT_SOURCE_DIR}/REST/c4REST.exp")
+endif()
+
+### LITECORESERV:
+
+add_executable(LiteCoreServ REST/LiteCoreServ.cc)
+target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static)
+target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 
 ### TESTS:
 
