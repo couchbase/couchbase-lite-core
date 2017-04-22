@@ -14,6 +14,8 @@
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "c4Private.h"
+#include <memory>
+#include <mutex>
 
 
 namespace fleece {
@@ -93,6 +95,9 @@ namespace c4Internal {
 
         BlobStore* blobStore();
 
+        void lockClientMutex()                              {_clientMutex.lock();}
+        void unlockClientMutex()                            {_clientMutex.unlock();}
+
     public:
         // should be private, but called from Document
         void saved(Document*);
@@ -121,6 +126,7 @@ namespace c4Internal {
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
         unique_ptr<BlobStore>       _blobStore;
         uint32_t                    _maxRevTreeDepth {0};
+        recursive_mutex             _clientMutex;
     };
 
 

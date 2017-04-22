@@ -28,6 +28,9 @@ C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 
 void c4log_warnOnErrors(bool) C4API;
 
+void c4db_lock(C4Database *db) C4API;
+void c4db_unlock(C4Database *db) C4API;
+
 C4Document* c4doc_getForPut(C4Database *database,
                             C4Slice docID,
                             C4Slice parentRevID,

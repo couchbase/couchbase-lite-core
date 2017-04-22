@@ -216,6 +216,16 @@ bool c4db_endTransaction(C4Database* database,
 }
 
 
+void c4db_lock(C4Database *db) C4API {
+    db->lockClientMutex();
+}
+
+
+void c4db_unlock(C4Database *db) C4API {
+    db->unlockClientMutex();
+}
+
+
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     try {
         if (database->purgeDocument(docID))
@@ -225,6 +235,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexc
     } catchError(outError)
     return false;
 }
+
 
 bool c4_shutdown(C4Error *outError) noexcept {
     return tryCatch(outError, [] {

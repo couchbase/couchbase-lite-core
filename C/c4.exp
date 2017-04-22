@@ -42,6 +42,8 @@ _c4db_createFleeceEncoder
 _c4db_encodeJSON
 _c4db_initFLDictKey
 _c4db_getFLSharedKeys
+_c4db_lock
+_c4db_unlock
 
 _c4raw_free
 _c4raw_get
