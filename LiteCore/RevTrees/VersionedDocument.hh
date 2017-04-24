@@ -45,9 +45,6 @@ namespace litecore {
 
         const Record& record() const    {return _rec;}
 
-        slice docType() const       {return _meta.docType;}
-        void setDocType(slice type) {_meta.docType = _docTypeBuf = type;}
-
         bool changed() const        {return _changed;}
         void save(Transaction& transaction);
 

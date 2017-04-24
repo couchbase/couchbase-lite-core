@@ -25,7 +25,7 @@ namespace litecore {
     /** Document metadata. Encodes itself to store in a Record's meta(). */
     struct DocumentMeta {
         DocumentMeta()                      :flags() { }
-        DocumentMeta(DocumentFlags, slice version, slice docType);
+        DocumentMeta(DocumentFlags, slice version);
         DocumentMeta(slice meta);
         DocumentMeta(const Record &rec)     :DocumentMeta(rec.meta()) { }
 
@@ -38,6 +38,5 @@ namespace litecore {
 
         DocumentFlags flags;
         slice version;
-        slice docType;
     };
 }

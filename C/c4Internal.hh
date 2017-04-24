@@ -107,9 +107,7 @@ namespace c4Internal {
 
     // DOC ENUMERATORS:
 
-    typedef function<bool(const Record&,
-                          uint32_t documentFlags,  // C4DocumentFlags
-                          slice docType)> EnumFilter;
+    typedef function<bool(const Record&, uint32_t/*C4DocumentFlags*/ documentFlags)> EnumFilter;
 
     void setEnumFilter(C4DocEnumerator*, EnumFilter);
 

@@ -15,10 +15,9 @@ using namespace fleece;
 
 namespace litecore {
 
-    DocumentMeta::DocumentMeta(DocumentFlags f, slice v, slice t)
+    DocumentMeta::DocumentMeta(DocumentFlags f, slice v)
     :flags(f)
     ,version(v)
-    ,docType(t)
     { }
 
     DocumentMeta::DocumentMeta(slice metaBytes) {
@@ -28,20 +27,17 @@ namespace litecore {
     void DocumentMeta::decode(slice metaBytes) {
         if (!metaBytes) {
             flags = DocumentFlags::kNone;
-            version = docType = nullslice;
+            version = nullslice;
             return;
         }
         auto metaValue = fleece::Value::fromTrustedData(metaBytes);
         if (!metaValue || !metaValue->asArray())
             error::_throw(error::CorruptRevisionData);
         fleece::Array::iterator meta(metaValue->asArray());
-        if (meta.count() < 3)
+        if (meta.count() < 2)
             error::_throw(error::CorruptRevisionData);
         flags = (DocumentFlags)meta.read()->asUnsigned();
         version = meta.read()->asString();
-        docType = meta.read()->asString();
-        if (docType.size == 0)
-            docType = nullslice;
     }
 
     alloc_slice DocumentMeta::encode() const {
@@ -49,7 +45,6 @@ namespace litecore {
         enc.beginArray(3);
         enc << (unsigned)flags;
         enc << version;
-        enc << docType;
         enc.endArray();
         return enc.extractOutput();
     }

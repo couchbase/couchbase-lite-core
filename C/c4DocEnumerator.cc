@@ -110,7 +110,7 @@ private:
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
             _docRevID = nullslice;
-            return (!_filter || _filter(_e.record(), 0, nullslice));
+            return (!_filter || _filter(_e.record(), 0));
         }
         DocumentMeta meta(_e.record());
         _docRevID = _database->documentFactory().revIDFromMeta(meta);
@@ -118,7 +118,7 @@ private:
         auto optFlags = _options.flags;
         return (optFlags & kC4IncludeDeleted       || !(_docFlags & ::kDeleted))
             && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kConflicted))
-            && (!_filter || _filter(_e.record(), _docFlags, meta.docType));
+            && (!_filter || _filter(_e.record(), _docFlags));
     }
 
     Retained<Database> _database;

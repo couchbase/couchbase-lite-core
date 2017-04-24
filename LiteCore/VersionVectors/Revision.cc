@@ -40,7 +40,6 @@ namespace litecore {
             _meta.flags = kDeleted;
         if (p.hasAttachments)
             _meta.setFlag(kHasAttachments);
-        _meta.docType = p.docType;
 
         writeMeta(vers);
 

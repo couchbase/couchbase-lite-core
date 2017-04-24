@@ -25,13 +25,12 @@ static void verifyRev(const Revision &rev) {
     REQUIRE(rev.hasAttachments());
     REQUIRE_FALSE(rev.isDeleted());
     REQUIRE_FALSE(rev.isConflicted());
-    REQUIRE(rev.docType() == "O-"_sl);
     REQUIRE(rev.isCurrent());
 }
 
 TEST_CASE("CreateRev", "[Revision]") {
     Revision rev("DOC"_sl, kTestVers(),
-                 Revision::BodyParams{"{\"foo\":true}"_sl, "O-"_sl, false, true},
+                 Revision::BodyParams{"{\"foo\":true}"_sl, false, true},
                  true);
     verifyRev(rev);
     REQUIRE(rev.record().key() == "DOC"_sl);

@@ -143,28 +143,3 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[
     REQUIRE(v.currentRevisions().size() == 1);
     REQUIRE(v.currentRevisions()[0] == v.currentRevision());
 }
-
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument DocType", "[VersionedDocument]") {
-    revidBuffer rev1ID("1-aaaa"_sl);
-    {
-        VersionedDocument v(*store, "foo"_sl);
-
-        litecore::slice rev1Data("body of revision");
-        int httpStatus;
-        v.insert(rev1ID, rev1Data, Rev::kDeleted,
-                 revid(), false, httpStatus);
-
-        v.setDocType("moose"_sl);
-        REQUIRE(v.docType() == "moose"_sl);
-        Transaction t(db);
-        v.save(t);
-        t.commit();
-    }
-    {
-        VersionedDocument v(*store, "foo"_sl);
-        REQUIRE(v.flags() == DocumentFlags::kDeleted);
-        REQUIRE(v.revID() == (revid)rev1ID);
-        REQUIRE(v.docType() == "moose"_sl);
-    }
-}

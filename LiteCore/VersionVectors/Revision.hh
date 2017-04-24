@@ -22,7 +22,6 @@ namespace litecore {
 
         struct BodyParams {
             slice body;
-            slice docType;
             bool deleted;
             bool hasAttachments;
             bool conflicted;
@@ -52,7 +51,6 @@ namespace litecore {
         bool exists() const                 {return _rec.exists();}
         sequence_t sequence() const         {return _rec.sequence();}
 
-        slice docType() const               {return _meta.docType;}
         slice body() const                  {return _rec.body();}
 
         Record& record()                    {return _rec;}

@@ -15,16 +15,16 @@ static const slice kDoc1ID("Doc1");
 static const slice kRev1ID("1@*");
 
 static const Revision::BodyParams kBody1 {
-    "{\"foo\":true}"_sl, "foodoc"_sl, false, false
+    "{\"foo\":true}"_sl, false, false
 };
 static const Revision::BodyParams kBody2 {
-    "{\"foo\":23,\"_attachments\":{}}"_sl, "foodoc"_sl, false, true
+    "{\"foo\":23,\"_attachments\":{}}"_sl, false, true
 };
 static const Revision::BodyParams kBody3 {
-    "{\"foo\":24,\"_attachments\":{}}"_sl, "foodoc"_sl, false, true
+    "{\"foo\":24,\"_attachments\":{}}"_sl, false, true
 };
 static const Revision::BodyParams kBody4 {
-    "{\"foo\":25,\"_attachments\":{}}"_sl, "foodoc"_sl, false, true
+    "{\"foo\":25,\"_attachments\":{}}"_sl, false, true
 };
 
 
