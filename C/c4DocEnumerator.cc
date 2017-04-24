@@ -36,8 +36,8 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 
 struct C4DocEnumerator: C4InstanceCounted {
     C4DocEnumerator(C4Database *database,
-                    sequence start,
-                    sequence end,
+                    sequence_t start,
+                    sequence_t end,
                     const C4EnumeratorOptions &options)
     :_database(database),
      _e(database->defaultKeyStore(), start, end, allDocOptions(options)),

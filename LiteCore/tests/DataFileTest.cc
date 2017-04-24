@@ -102,8 +102,8 @@ static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("rec-%03d", i);
-        sequence seq = store->set(slice(docID), litecore::nullslice, slice(docID), t);
-        REQUIRE(seq == (sequence)i);
+        sequence_t seq = store->set(slice(docID), litecore::nullslice, slice(docID), t);
+        REQUIRE(seq == (sequence_t)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
     t.commit();
@@ -134,7 +134,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             for (; e.next(); ++i) {
                 string expectedDocID = stringWithFormat("rec-%03d", i);
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
-                REQUIRE(e->sequence() == (sequence)i);
+                REQUIRE(e->sequence() == (sequence_t)i);
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
             }
             REQUIRE(i == 101);
@@ -146,7 +146,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
         }
         REQUIRE(i == 30);
@@ -157,7 +157,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
         for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e->key() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
         }
         REQUIRE(i == 29);
@@ -197,7 +197,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, nullslice, nullslice, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 0);
     }
@@ -207,7 +207,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, nullslice, "rec-090"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 89);
     }
@@ -217,7 +217,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, "rec-010"_sl, nullslice, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 0);
     }
@@ -227,7 +227,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 23);
     }
@@ -237,7 +237,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, "rec-029b"_sl, "rec-024"_sl, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 23);
     }
@@ -249,7 +249,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, optsExcl); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence)i);
+            REQUIRE(e->sequence() == (sequence_t)i);
         }
         REQUIRE(i == 24);
     }
@@ -286,8 +286,8 @@ static void addNumberedDocs(KeyStore *store) {
         enc.endDictionary();
         alloc_slice body = enc.extractOutput();
 
-        sequence seq = store->set(slice(docID), litecore::nullslice, body, t);
-        REQUIRE(seq == (sequence)i);
+        sequence_t seq = store->set(slice(docID), litecore::nullslice, body, t);
+        REQUIRE(seq == (sequence_t)i);
     }
     t.commit();
 }
@@ -304,7 +304,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT query", "[DataFile][Query
         for (QueryEnumerator e(query.get()); e.next(); ++i) {
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e.recordID() == alloc_slice(expectedDocID));
-            REQUIRE(e.sequence() == (sequence)i);
+            REQUIRE(e.sequence() == (sequence_t)i);
             REQUIRE(!e.getCustomColumns());
         }
         st.printReport("Query of $.num", i, "row");
@@ -328,7 +328,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT WHAT query", "[DataFile][
     for (QueryEnumerator e(query.get()); e.next(); ++num) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
         REQUIRE(e.recordID() == alloc_slice(expectedDocID));
-        REQUIRE(e.sequence() == (sequence)num);
+        REQUIRE(e.sequence() == (sequence_t)num);
         auto encodedCols = e.getCustomColumns();
         REQUIRE(encodedCols);
         auto cols = Value::fromData(encodedCols);

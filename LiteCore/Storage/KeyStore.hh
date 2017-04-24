@@ -19,7 +19,7 @@ namespace litecore {
     class Query;
 
     /** A sequence number in a KeyStore. */
-    typedef uint64_t sequence;
+    typedef uint64_t sequence_t;
 
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
@@ -44,7 +44,7 @@ namespace litecore {
         Capabilities capabilities() const           {return _capabilities;}
 
         virtual uint64_t recordCount() const =0;
-        virtual sequence lastSequence() const =0;
+        virtual sequence_t lastSequence() const =0;
 
         virtual void erase() =0;
 
@@ -53,10 +53,10 @@ namespace litecore {
         // Keys/values:
 
         Record get(slice key, ContentOptions = kDefaultContent) const;
-        virtual Record get(sequence, ContentOptions = kDefaultContent) const =0;
+        virtual Record get(sequence_t, ContentOptions = kDefaultContent) const =0;
 
         virtual void get(slice key, ContentOptions, function_ref<void(const Record&)>);
-        virtual void get(sequence, ContentOptions, function_ref<void(const Record&)>);
+        virtual void get(sequence_t, ContentOptions, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
         virtual bool read(Record &rec, ContentOptions options = kDefaultContent) const =0;
@@ -70,12 +70,12 @@ namespace litecore {
 
         //////// Writing:
 
-        virtual sequence set(slice key, slice meta, slice value, Transaction&) =0;
-        sequence set(slice key, slice value, Transaction &t) {return set(key, nullslice, value, t);}
+        virtual sequence_t set(slice key, slice meta, slice value, Transaction&) =0;
+        sequence_t set(slice key, slice value, Transaction &t) {return set(key, nullslice, value, t);}
         void write(Record&, Transaction&);
 
         bool del(slice key, Transaction&);
-        bool del(sequence s, Transaction&);
+        bool del(sequence_t s, Transaction&);
         bool del(const Record&, Transaction&);
 
         //////// INDEXING:
@@ -108,14 +108,14 @@ namespace litecore {
         virtual void close()                            { }
 
         virtual bool _del(slice key, Transaction&) =0;
-        virtual bool _del(sequence s, Transaction&) =0;
+        virtual bool _del(sequence_t s, Transaction&) =0;
 
         virtual RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey,
                                                        RecordEnumerator::Options&) =0;
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max,
                                                        RecordEnumerator::Options&) =0;
 
-        void updateDoc(Record &rec, sequence seq, bool deleted = false) const {
+        void updateDoc(Record &rec, sequence_t seq, bool deleted = false) const {
             rec.update(seq, deleted);
         }
 

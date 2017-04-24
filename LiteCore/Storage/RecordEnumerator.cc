@@ -71,14 +71,14 @@ namespace litecore {
 
     // Sequence-range constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                 sequence start, sequence end,
+                                 sequence_t start, sequence_t end,
                                  const Options& options)
     :RecordEnumerator(store, options)
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
                 store.name().c_str(), (unsigned long long)start, (unsigned long long)end, this);
 
-        sequence minSeq = start, maxSeq = end;
+        sequence_t minSeq = start, maxSeq = end;
         if (options.descending)
             swap(minSeq, maxSeq);
 

@@ -28,12 +28,12 @@ namespace litecore {
     class SQLiteKeyStore : public KeyStore {
     public:
         uint64_t recordCount() const override;
-        sequence lastSequence() const override;
+        sequence_t lastSequence() const override;
 
-        Record get(sequence, ContentOptions) const override;
+        Record get(sequence_t, ContentOptions) const override;
         bool read(Record &rec, ContentOptions options) const override;
 
-        sequence set(slice key, slice meta, slice value, Transaction&) override;
+        sequence_t set(slice key, slice meta, slice value, Transaction&) override;
 
         void erase() override;
 
@@ -47,11 +47,11 @@ namespace litecore {
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}
         bool _del(slice key, Transaction &t) override       {return _del(key, 0, t);}
-        bool _del(sequence s, Transaction &t) override      {return _del(nullslice, s, t);}
-        bool _del(slice key, sequence s, Transaction&);
+        bool _del(sequence_t s, Transaction &t) override      {return _del(nullslice, s, t);}
+        bool _del(slice key, sequence_t s, Transaction&);
 
         RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, RecordEnumerator::Options&) override;
-        RecordEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max, RecordEnumerator::Options&) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max, RecordEnumerator::Options&) override;
         Query* compileQuery(slice expression) override;
 
         SQLite::Statement* compile(const std::string &sql) const;
@@ -77,7 +77,7 @@ namespace litecore {
         std::string subst(const char *sqlTemplate) const;
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options &options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options &options);
-        void setLastSequence(sequence seq);
+        void setLastSequence(sequence_t seq);
         std::string SQLIndexName(const fleece::Array*, IndexType, bool quoted =false);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;

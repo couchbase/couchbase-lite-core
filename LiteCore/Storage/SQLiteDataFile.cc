@@ -446,8 +446,8 @@ path.path().c_str());
     }
 
     
-    sequence SQLiteDataFile::lastSequence(const string& keyStoreName) const {
-        sequence seq = 0;
+    sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
+        sequence_t seq = 0;
         compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         UsingStatement u(_getLastSeqStmt);
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
@@ -456,7 +456,7 @@ path.path().c_str());
         return seq;
     }
 
-    void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence seq) {
+    void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
         compile(_setLastSeqStmt,
                 "INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)");
         UsingStatement u(_setLastSeqStmt);

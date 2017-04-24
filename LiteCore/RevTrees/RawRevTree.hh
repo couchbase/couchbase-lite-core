@@ -22,7 +22,7 @@ namespace litecore {
     public:
         static std::vector<Rev> decodeTree(slice raw_tree,
                                                 RevTree *owner,
-                                                sequence curSeq);
+                                                sequence_t curSeq);
 
         static alloc_slice encodeTree(const std::vector<Rev> &revs);
 

@@ -41,7 +41,7 @@ namespace litecore {
         fn(rec);
     }
 
-    void KeyStore::get(sequence seq, ContentOptions options, function_ref<void(const Record&)> fn) {
+    void KeyStore::get(sequence_t seq, ContentOptions options, function_ref<void(const Record&)> fn) {
         fn(get(seq, options));
     }
 
@@ -74,7 +74,7 @@ namespace litecore {
         return ok;
     }
 
-    bool KeyStore::del(sequence s, Transaction &t) {
+    bool KeyStore::del(sequence_t s, Transaction &t) {
         LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)s);
         bool ok = _del(s, t);
         if (ok && _capabilities.softDeletes)

@@ -62,8 +62,8 @@ namespace litecore {
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const std::string &name) override;
 
-        sequence lastSequence(const std::string& keyStoreName) const;
-        void setLastSequence(SQLiteKeyStore&, sequence);
+        sequence_t lastSequence(const std::string& keyStoreName) const;
+        void setLastSequence(SQLiteKeyStore&, sequence_t);
 
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;

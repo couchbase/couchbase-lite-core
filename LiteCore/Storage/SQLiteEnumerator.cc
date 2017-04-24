@@ -107,8 +107,8 @@ namespace litecore {
     }
 
     // iterate by sequence:
-    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence min, sequence max,
-                                                           RecordEnumerator::Options &options)
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence_t min, sequence_t max,
+                                                              RecordEnumerator::Options &options)
     {
         if (!_capabilities.sequences)
             error::_throw(error::NoSequences);

@@ -31,12 +31,12 @@
 namespace litecore {
     using namespace fleece;
 
-    RevTree::RevTree(slice raw_tree, sequence seq)
+    RevTree::RevTree(slice raw_tree, sequence_t seq)
     :_revs(RawRevision::decodeTree(raw_tree, this, seq))
     {
     }
 
-    void RevTree::decode(litecore::slice raw_tree, sequence seq) {
+    void RevTree::decode(litecore::slice raw_tree, sequence_t seq) {
         _revs = RawRevision::decodeTree(raw_tree, this, seq);
     }
 
@@ -82,7 +82,7 @@ namespace litecore {
         return nullptr;
     }
 
-    const Rev* RevTree::getBySequence(sequence seq) const {
+    const Rev* RevTree::getBySequence(sequence_t seq) const {
         for (auto &rev : _revs) {
             if (rev.sequence == seq)
                 return &rev;

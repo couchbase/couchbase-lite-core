@@ -77,10 +77,10 @@ namespace litecore {
     class RevTree {
     public:
         RevTree() { }
-        RevTree(slice raw_tree, sequence seq);
+        RevTree(slice raw_tree, sequence_t seq);
         virtual ~RevTree() { }
 
-        void decode(slice raw_tree, sequence seq);
+        void decode(slice raw_tree, sequence_t seq);
 
         alloc_slice encode();
 
@@ -89,7 +89,7 @@ namespace litecore {
         const Rev* get(revid) const;
         const Rev* operator[](unsigned index) const {return get(index);}
         const Rev* operator[](revid revID) const    {return get(revID);}
-        const Rev* getBySequence(sequence) const;
+        const Rev* getBySequence(sequence_t) const;
 
         const std::vector<Rev>& allRevisions() const    {return _revs;}
         const Rev* currentRevision();

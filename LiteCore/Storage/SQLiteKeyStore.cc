@@ -122,17 +122,17 @@ namespace litecore {
     }
 
 
-    sequence SQLiteKeyStore::lastSequence() const {
+    sequence_t SQLiteKeyStore::lastSequence() const {
         if (_lastSequence >= 0)
             return _lastSequence;
-        sequence seq = db().lastSequence(_name);
+        sequence_t seq = db().lastSequence(_name);
         if (db().inTransaction())
             const_cast<SQLiteKeyStore*>(this)->_lastSequence = seq;
         return seq;
     }
 
     
-    void SQLiteKeyStore::setLastSequence(sequence seq) {
+    void SQLiteKeyStore::setLastSequence(sequence_t seq) {
         if (_capabilities.sequences) {
             _lastSequence = seq;
             _lastSequenceChanged = true;
@@ -184,7 +184,7 @@ namespace litecore {
         if (!stmt.executeStep())
             return false;
 
-        sequence seq = (int64_t)stmt.getColumn(0);
+        sequence_t seq = (int64_t)stmt.getColumn(0);
         bool deleted = (int)stmt.getColumn(1) != 0;
         updateDoc(rec, seq, deleted);
         setRecordMetaAndBody(rec, stmt, options);
@@ -192,7 +192,7 @@ namespace litecore {
     }
 
 
-    Record SQLiteKeyStore::get(sequence seq, ContentOptions options) const {
+    Record SQLiteKeyStore::get(sequence_t seq, ContentOptions options) const {
         if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
         Record rec;
@@ -221,7 +221,7 @@ namespace litecore {
         _setStmt->bindNoCopy(2, meta.buf, (int)meta.size);
         _setStmt->bindNoCopy(3, body.buf, (int)body.size);
 
-        sequence seq = 0;
+        sequence_t seq = 0;
         if (_capabilities.sequences) {
             seq = lastSequence() + 1;
             _setStmt->bind(4, (long long)seq);
@@ -235,7 +235,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::_del(slice key, sequence delSeq, Transaction&) {
+    bool SQLiteKeyStore::_del(slice key, sequence_t delSeq, Transaction&) {
         auto& stmt = delSeq ? _delBySeqStmt : _delByKeyStmt;
         if (!stmt) {
             stringstream sql;
@@ -250,7 +250,7 @@ namespace litecore {
             compile(stmt, sql.str().c_str());
         }
 
-        sequence newSeq = 0;
+        sequence_t newSeq = 0;
         int param = 1;
         if (_capabilities.softDeletes && _capabilities.sequences) {
             newSeq = lastSequence() + 1;

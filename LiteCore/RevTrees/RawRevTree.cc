@@ -28,7 +28,7 @@ using namespace fleece;
 
 namespace litecore {
 
-    std::vector<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence curSeq) {
+    std::vector<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence_t curSeq) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
