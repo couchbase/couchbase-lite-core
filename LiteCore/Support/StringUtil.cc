@@ -42,4 +42,14 @@ namespace litecore {
             str.resize(sz - 1);
     }
 
+
+    bool hasPrefix(const std::string &str, const std::string &prefix) {
+        return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
+    }
+
+    bool hasSuffix(const std::string &str, const std::string &suffix) {
+        return str.size() >= suffix.size()
+            && memcmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
+    }
+
 }

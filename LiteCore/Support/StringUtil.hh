@@ -26,6 +26,10 @@ namespace litecore {
     /** Removes last character from string (in place), but only if it equals `ending` */
     void chomp(std::string&, char ending);
 
+    bool hasPrefix(const std::string &str, const std::string &prefix);
+
+    bool hasSuffix(const std::string &str, const std::string &suffix);
+
 }
 
 
