@@ -80,8 +80,8 @@ static string databaseNameFromPath(const char *path) {
 
 
 static void startListener() {
-    C4Error err;
     if (!gListener) {
+        C4Error err;
         gListener = c4rest_start(&gRESTConfig, &err);
         if (!gListener)
             fail("starting REST listener", err);
@@ -103,6 +103,7 @@ static void shareDatabase(const char *path, string name) {
 static void shareDatabaseDir(const char *dirPath) {
     gDirectory = dirPath;
     gRESTConfig.directory = c4str(gDirectory);
+    startListener();
     cerr << "Sharing all databases in " << dirPath << ": ";
     int n = 0;
     FilePath dir(dirPath, "");
@@ -118,8 +119,6 @@ static void shareDatabaseDir(const char *dirPath) {
         }
     });
     cerr << "\n";
-    if (n == 0)
-        fail("No databases found");
 }
 
 
@@ -135,6 +134,9 @@ int main(int argc, const char** argv) {
             auto arg = argv[i];
             if (arg[0] == '-') {
                 // Flags:
+                if (gListener)
+                    fail("Flags can't go after a database path or directory");
+
                 while (arg[0] == '-')
                     ++arg;
                 string flag = arg;
@@ -168,7 +170,7 @@ int main(int argc, const char** argv) {
         }
 
         if (!gListener) {
-            failMisuse("You must provide the path to at least one Couchbase Lite database to share.");
+            failMisuse("Please specify a database directory or at least one database path");
             exit(1);
         }
     } catch (const exception &x) {
