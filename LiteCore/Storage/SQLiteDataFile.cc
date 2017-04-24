@@ -56,7 +56,11 @@ namespace litecore {
     static const int64_t kJournalSize = 5 * MB;
 
     // Amount of file to memory-map
-    static const size_t kMMapSize = 50 * MB;
+#if TARGET_OS_OSX || TARGET_OS_SIMULATOR
+    static const int kMMapSize =  -1;    // Avoid possible file corruption hazard on macOS
+#else
+    static const int kMMapSize = 50 * MB;
+#endif
 
     // If this fraction of the database is composed of free pages, vacuum it
     static const float kVacuumFractionThreshold = 0.25;
@@ -207,7 +211,7 @@ path.path().c_str());
             }
         });
 
-        exec(format("PRAGMA mmap_size=%zu; "            // Memory-mapped I/O FTW
+        exec(format("PRAGMA mmap_size=%d; "             // Memory-mapped reads
                     "PRAGMA synchronous=normal; "       // Speeds up commits
                     "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
                     kMMapSize, (long long)kJournalSize));
