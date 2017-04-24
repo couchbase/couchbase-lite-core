@@ -48,10 +48,12 @@ namespace litecore {
     :KeyStore(db, name, capabilities)
     {
         if (!db.keyStoreExists(name)) {
+            // Here's the table schema. The body comes last because it may be very large, and it's
+            // more efficient in SQLite to keep large columns at the end of a row.
             // Create the sequence and deleted columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
             db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ (key BLOB PRIMARY KEY, meta BLOB, "
-                          "body BLOB, sequence INTEGER, deleted INTEGER DEFAULT 0)"));
+                          "sequence INTEGER, deleted INTEGER DEFAULT 0, body BLOB)"));
             if (capabilities.getByOffset) {
                 // shadow table for overwritten records
                 db.exec(subst("CREATE TABLE IF NOT EXISTS kvold_@ ("
