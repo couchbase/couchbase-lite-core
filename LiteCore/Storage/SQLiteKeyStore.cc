@@ -54,15 +54,6 @@ namespace litecore {
             // complicated to customize all the SQL queries to conditionally use them...
             db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ (key BLOB PRIMARY KEY, meta BLOB, "
                           "sequence INTEGER, deleted INTEGER DEFAULT 0, body BLOB)"));
-            if (capabilities.getByOffset) {
-                // shadow table for overwritten records
-                db.exec(subst("CREATE TABLE IF NOT EXISTS kvold_@ ("
-                                  "sequence INTEGER PRIMARY KEY, key BLOB, meta BLOB, body BLOB); "
-                              "PRAGMA recursive_triggers = 1; "
-                              "CREATE TRIGGER backup_@ BEFORE DELETE ON kv_@ BEGIN "
-                              "  INSERT INTO kvold_@ (sequence, key, meta, body) "
-                              "    VALUES (OLD.sequence, OLD.key, OLD.meta, OLD.body); END"));
-            }
         }
     }
 
@@ -194,9 +185,8 @@ namespace litecore {
             return false;
 
         sequence seq = (int64_t)stmt.getColumn(0);
-        uint64_t offset = _capabilities.getByOffset ? seq : 0;
         bool deleted = (int)stmt.getColumn(1) != 0;
-        updateDoc(rec, seq, offset, deleted);
+        updateDoc(rec, seq, deleted);
         setRecordMetaAndBody(rec, stmt, options);
         return !rec.deleted();
     }
@@ -214,9 +204,8 @@ namespace litecore {
         UsingStatement u(stmt);
         stmt.bind(1, (long long)seq);
         if (stmt.executeStep()) {
-            uint64_t offset = _capabilities.getByOffset ? seq : 0;
             bool deleted = (int)stmt.getColumn(1) != 0;
-            updateDoc(rec, seq, offset, deleted);
+            updateDoc(rec, seq, deleted);
             rec.setKey(columnAsSlice(stmt.getColumn(2)));
             setRecordMetaAndBody(rec, stmt, options);
         }
@@ -224,29 +213,7 @@ namespace litecore {
     }
 
 
-    Record SQLiteKeyStore::getByOffsetNoErrors(uint64_t offset, sequence seq) const {
-        Assert(offset == seq);
-        Record rec;
-        if (!_capabilities.getByOffset)
-            return rec;
-
-        auto &stmt = compile(_getByOffStmt, "SELECT key, meta, body FROM kvold_@ WHERE sequence=?");
-        UsingStatement u(stmt);
-        stmt.bind(1, (long long)seq);
-        if (stmt.executeStep()) {
-            updateDoc(rec, seq, seq);
-            rec.setKey(columnAsSlice(stmt.getColumn(0)));
-            rec.setMeta(columnAsSlice(stmt.getColumn(1)));
-            rec.setBody(columnAsSlice(stmt.getColumn(2)));
-            return rec;
-        } else {
-            // Maybe the sequence is still current...
-            return get(seq, kDefaultContent);
-        }
-    }
-
-
-    KeyStore::setResult SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+    sequence_t SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
         LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
         compile(_setStmt,
                 "INSERT OR REPLACE INTO kv_@ (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
@@ -264,7 +231,7 @@ namespace litecore {
         UsingStatement u(_setStmt);
         _setStmt->exec();
         setLastSequence(seq);
-        return {seq, (_capabilities.getByOffset ? seq : 0)};
+        return seq;
     }
 
 

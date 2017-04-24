@@ -36,10 +36,6 @@ namespace litecore {
         sequence_t sequence() const             {return _sequence;}
         bool deleted() const                    {return _deleted;}
 
-        /** A storage-system-dependent position in the database file, that can be used later
-            to retrieve the record. Not supported by all storage systems. */
-        uint64_t offset() const                 {return _offset;}
-
         bool exists() const                     {return _exists;}
 
         template <typename T>
@@ -72,14 +68,13 @@ namespace litecore {
         friend class Transaction;
         friend class RecordEnumerator;
 
-        void update(sequence_t sequence, uint64_t offset, bool deleted) {
-            _sequence = sequence; _offset = offset; _deleted = deleted; _exists = !deleted;
+        void update(sequence_t sequence, bool deleted) {
+            _sequence = sequence; _deleted = deleted; _exists = !deleted;
         }
 
         alloc_slice _key, _meta, _body;     // The key, metadata and body of the record
         size_t      _bodySize {0};          // Size of body, if body wasn't loaded
         sequence_t  _sequence {0};          // Sequence number (if KeyStore supports sequences)
-        uint64_t    _offset {0};            // File offset in db, if KeyStore supports that
         bool        _deleted {false};       // Is the record deleted?
         bool        _exists {false};        // Does the record exist?
     };

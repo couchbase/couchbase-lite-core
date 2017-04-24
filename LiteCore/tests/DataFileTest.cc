@@ -102,7 +102,7 @@ static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("rec-%03d", i);
-        sequence seq = store->set(slice(docID), litecore::nullslice, slice(docID), t).seq;
+        sequence seq = store->set(slice(docID), litecore::nullslice, slice(docID), t);
         REQUIRE(seq == (sequence)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
@@ -136,8 +136,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
                 REQUIRE(e->sequence() == (sequence)i);
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
-                if (store->capabilities().getByOffset)
-                    REQUIRE(e->offset() > 0);
             }
             REQUIRE(i == 101);
             REQUIRE_FALSE(e);
@@ -150,8 +148,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-            if (store->capabilities().getByOffset)
-                REQUIRE(e->offset() > 0);
         }
         REQUIRE(i == 30);
 
@@ -163,8 +159,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->key() == alloc_slice(expectedDocID));
             REQUIRE(e->sequence() == (sequence)i);
             REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-            if (store->capabilities().getByOffset)
-                REQUIRE(e->offset() > 0);
         }
         REQUIRE(i == 29);
         opts.inclusiveStart = opts.inclusiveEnd = true;
@@ -185,8 +179,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(e->exists() == i < 6);
             if (i < 6) {
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-                if (store->capabilities().getByOffset)
-                    REQUIRE(e->offset() > 0);
             }
         }
         REQUIRE(i == 7);
@@ -294,7 +286,7 @@ static void addNumberedDocs(KeyStore *store) {
         enc.endDictionary();
         alloc_slice body = enc.extractOutput();
 
-        sequence seq = store->set(slice(docID), litecore::nullslice, body, t).seq;
+        sequence seq = store->set(slice(docID), litecore::nullslice, body, t);
         REQUIRE(seq == (sequence)i);
     }
     t.commit();
@@ -564,55 +556,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
     REQUIRE(s.lastSequence() == 0);
     Record rec = s.get(key);
     REQUIRE_FALSE(rec.exists());
-}
-
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreGetByOffset", "[DataFile]") {
-    auto cap = KeyStore::Capabilities::defaults;
-    cap.getByOffset = cap.sequences = true;
-    KeyStore &s = db->getKeyStore("store", cap);
-    alloc_slice key("key");
-    docOffset offset1;
-    // Create a rec:
-    {
-        Transaction t(db);
-        Record rec(key);
-        rec.setBody("value1"_sl);
-        s.write(rec, t);
-        offset1 = rec.offset();
-        CHECK(offset1 > 0);
-        t.commit();
-    }
-    // Get it by offset:
-    Record doc1 = s.getByOffsetNoErrors(offset1, 1);
-    REQUIRE(doc1.key() == key);
-    REQUIRE(doc1.body() == "value1"_sl);
-    REQUIRE(doc1.sequence() == 1);
-    REQUIRE(doc1.offset() == offset1);
-
-    // Update rec:
-    docOffset offset2;
-    {
-        Transaction t(db);
-        auto result = s.set(key, "value2"_sl, t);
-        offset2 = result.off;
-        CHECK(offset2 > 0);
-        CHECK(result.seq == 2);
-        t.commit();
-    }
-    // Get it by offset:
-    Record doc2 = s.getByOffsetNoErrors(offset2, 2);
-    REQUIRE(doc2.key() == key);
-    REQUIRE(doc2.body() == "value2"_sl);
-    REQUIRE(doc2.sequence() == 2);
-    REQUIRE(doc2.offset() == offset2);
-
-    // Get old version (Seq 1) by offset:
-    Record doc1again = s.getByOffsetNoErrors(offset1, 1);
-    REQUIRE(doc1again.key() == key);
-    REQUIRE(doc1again.body() == "value1"_sl);
-    REQUIRE(doc1again.sequence() == 1);
-    REQUIRE(doc1again.offset() == offset1);
 }
 
 

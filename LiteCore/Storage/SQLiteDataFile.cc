@@ -506,9 +506,6 @@ path.path().c_str());
             Transaction t(this);
             for (auto& name : allKeyStoreNames()) {
                 auto removed = exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
-                if (options().keyStores.getByOffset) {
-                    removed += exec(string("DELETE FROM kvold_")+name);
-                }
                 LogTo(DBLog, "Removed %d deleted keys from kv_%s", removed, name.c_str());
             }
             updatePurgeCount(t);

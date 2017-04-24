@@ -32,9 +32,8 @@ namespace litecore {
 
         Record get(sequence, ContentOptions) const override;
         bool read(Record &rec, ContentOptions options) const override;
-        Record getByOffsetNoErrors(uint64_t offset, sequence) const override;
 
-        setResult set(slice key, slice meta, slice value, Transaction&) override;
+        sequence set(slice key, slice meta, slice value, Transaction&) override;
 
         void erase() override;
 

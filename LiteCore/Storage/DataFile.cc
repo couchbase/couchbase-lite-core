@@ -217,8 +217,9 @@ namespace litecore {
 
 
     const DataFile::Options DataFile::Options::defaults = DataFile::Options {
-        {true, true, false},
-        true, true};
+        {true, true},
+        true, true
+    };
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)

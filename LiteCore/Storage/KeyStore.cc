@@ -26,7 +26,7 @@ namespace litecore {
 
     extern LogDomain DBLog;
 
-    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false, false};
+    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false};
 
     Record KeyStore::get(slice key, ContentOptions options) const {
         Record rec(key);
@@ -61,8 +61,8 @@ namespace litecore {
         if (rec.deleted()) {
             del(rec, t);
         } else {
-            auto result = set(rec.key(), rec.meta(), rec.body(), t);
-            updateDoc(rec, result.seq, result.off);
+            auto seq = set(rec.key(), rec.meta(), rec.body(), t);
+            updateDoc(rec, seq);
         }
     }
 

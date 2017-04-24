@@ -95,9 +95,9 @@ namespace litecore {
             removeNonLeafBodies();
             // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions
             // into the existing body buffer.
-            auto result = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
-            _rec.updateSequence(result.seq);
-            saved(result.seq);
+            sequence_t seq = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
+            _rec.updateSequence(seq);
+            saved(seq);
         } else {
             _db.del(_rec.key(), transaction);
         }

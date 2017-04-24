@@ -32,7 +32,6 @@ namespace litecore {
      _body(d._body),
      _bodySize(d._bodySize),
      _sequence(d._sequence),
-     _offset(d._offset),
      _deleted(d._deleted),
      _exists(d._exists)
     { }
@@ -43,7 +42,6 @@ namespace litecore {
      _body(move(d._body)),
      _bodySize(d._bodySize),
      _sequence(d._sequence),
-     _offset(d._offset),
      _deleted(d._deleted),
      _exists(d._exists)
     { }
@@ -51,7 +49,7 @@ namespace litecore {
     void Record::clearMetaAndBody() noexcept {
         setMeta(nullslice);
         setBody(nullslice);
-        _bodySize = _sequence = _offset = 0;
+        _bodySize = _sequence = 0;
         _exists = _deleted = false;
     }
 

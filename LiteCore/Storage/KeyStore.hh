@@ -20,7 +20,6 @@ namespace litecore {
 
     /** A sequence number in a KeyStore. */
     typedef uint64_t sequence;
-    typedef uint64_t docOffset;
 
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
@@ -35,7 +34,6 @@ namespace litecore {
         struct Capabilities {
             bool sequences      :1;     ///< Records have sequences & can be enumerated by sequence
             bool softDeletes    :1;     ///< Deleted records have sequence numbers (until compact)
-            bool getByOffset    :1;     ///< getByOffset can retrieve overwritten docs
 
             static const Capabilities defaults;
         };
@@ -67,19 +65,13 @@ namespace litecore {
             Does nothing if the record's body is non-null. */
         virtual void readBody(Record &rec) const;
 
-        virtual Record getByOffsetNoErrors(docOffset, sequence) const
-                {return Record();}
-
         /** Creates a database query object. */
         virtual Query* compileQuery(slice expr);
 
         //////// Writing:
 
-        struct setResult {sequence seq; docOffset off;};
-
-        virtual setResult set(slice key, slice meta, slice value, Transaction&) =0;
-        setResult set(slice key, slice value, Transaction &t)
-                                                        {return set(key, nullslice, value, t);}
+        virtual sequence set(slice key, slice meta, slice value, Transaction&) =0;
+        sequence set(slice key, slice value, Transaction &t) {return set(key, nullslice, value, t);}
         void write(Record&, Transaction&);
 
         bool del(slice key, Transaction&);
@@ -123,8 +115,8 @@ namespace litecore {
         virtual RecordEnumerator::Impl* newEnumeratorImpl(sequence min, sequence max,
                                                        RecordEnumerator::Options&) =0;
 
-        void updateDoc(Record &rec, sequence seq, docOffset offset =0, bool deleted = false) const {
-            rec.update(seq, offset, deleted);
+        void updateDoc(Record &rec, sequence seq, bool deleted = false) const {
+            rec.update(seq, deleted);
         }
 
         DataFile &          _db;            // The DataFile I'm contained in
