@@ -31,7 +31,8 @@ namespace litecore { namespace REST {
 
 
     Listener::Listener(const Config &config)
-    :_directory(config.directory.buf ? new FilePath(slice(config.directory).asString()) : nullptr)
+    :_directory(config.directory.buf ? new FilePath(slice(config.directory).asString(), "")
+                                     : nullptr)
     ,_allowCreateDB(config.allowCreateDBs && _directory)
     ,_allowDeleteDB(config.allowDeleteDBs)
     {
