@@ -94,7 +94,7 @@ public class BaseTest implements Constants {
         deleteDatabaseFile(dbFilename);
         context = InstrumentationRegistry.getContext();
         dir = new File(context.getFilesDir(), dbFilename);
-        db = new Database(dir.getPath(), Database.Create, encryptionAlgorithm(), encryptionKey());
+        db = new Database(dir.getPath(), Database.Create | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
     }
 
     protected void deleteDatabaseFile(String dbFileName) {

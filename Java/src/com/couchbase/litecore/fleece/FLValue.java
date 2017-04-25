@@ -2,6 +2,8 @@ package com.couchbase.litecore.fleece;
 
 import com.couchbase.litecore.LiteCoreException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +86,7 @@ public class FLValue {
         return asFLArray().asArray();
     }
 
-    public Object asObject() {
+    /*package*/ Object asObject() {
         switch (getType(handle)) {
             case kFLNull:
                 return null;
@@ -114,6 +116,74 @@ public class FLValue {
         }
     }
 
+    public interface ISharedKeys {
+        String getKey(int index);
+    }
+
+    // TODO: This method should be in `com.couchbase.lite.Properties` or `com.couchbase.lite.Document` ?
+    // Equivalent to
+    // in Value+ObjC.mm
+    // id Value::toNSObject(__unsafe_unretained NSMapTable *sharedStrings, const SharedKeys *sk) const
+    // In FLValueConverter.cs
+    // public static object ToObject(FLValue* value, SharedStringCache sharedKeys)
+    public Object toObject(Map<Integer, String> sharedStrings, ISharedKeys sharedKeys) {
+        switch (getType()) {
+            case kFLNull:
+                return null;
+            case kFLBoolean:
+                return Boolean.valueOf(asBool());
+            case kFLNumber:
+                if (isInteger()) {
+                    if (isUnsigned())
+                        return Long.valueOf(asUnsigned());
+                    return Integer.valueOf(asInt());
+                } else if (isDouble()) {
+                    return Double.valueOf(asDouble());
+                } else {
+                    return Float.valueOf(asFloat());
+                }
+            case kFLString:
+                return asString();
+            case kFLData:
+                return asData();
+            case kFLArray: {
+                List<Object> results = new ArrayList<>();
+                FLArrayIterator itr = new FLArrayIterator();
+                itr.begin(asFLArray());
+                FLValue value;
+                while ((value = itr.getValue()) != null) {
+                    results.add(value.toObject(sharedStrings, sharedKeys));
+                    if (!itr.next())
+                        break;
+                }
+                itr.free();
+                return results;
+            }
+            case kFLDict: {
+                Map<String, Object> results = new HashMap<>();
+                FLDict dict = asFLDict();
+                FLDictIterator itr = new FLDictIterator();
+                itr.begin(dict);
+                do {
+                    FLValue rawKey = itr.getKey();
+                    String key;
+                    if (rawKey.isInteger()) {
+                        key = sharedKeys.getKey(rawKey.asInt());
+                    } else {
+                        key = rawKey.asString();
+                    }
+                    Object value = itr.getValue().toObject(sharedStrings, sharedKeys);
+                    results.put(key, value);
+
+                } while (itr.next());
+                itr.free();
+                return results;
+            }
+            default:
+                return null; // TODO: Throw Exeption?
+        }
+    }
+
     /**
      * Converts valid JSON5 to JSON.
      *
@@ -125,6 +195,18 @@ public class FLValue {
         return JSON5ToJSON(json5);
     }
 
+    public boolean isInteger() {
+        return isInteger(handle);
+    }
+
+    public boolean isDouble() {
+        return isDouble(handle);
+    }
+
+    public boolean isUnsigned() {
+        return isUnsigned(handle);
+    }
+
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
@@ -132,21 +214,10 @@ public class FLValue {
         return handle;
     }
 
-
     //-------------------------------------------------------------------------
     // private methods
     //-------------------------------------------------------------------------
-    private boolean isInteger() {
-        return isInteger(handle);
-    }
 
-    private boolean isDouble() {
-        return isDouble(handle);
-    }
-
-    private boolean isUnsigned() {
-        return isUnsigned(handle);
-    }
 
     //-------------------------------------------------------------------------
     // native methods
@@ -258,7 +329,7 @@ public class FLValue {
     private static native long asArray(long value);
 
     /**
-     * If a FLValue represents an array, returns it cast to FLArray, else nullptr.
+     * If a FLValue represents an array, returns it cast to FLDict, else nullptr.
      *
      * @param value FLValue
      * @return long (FLDict)
@@ -273,7 +344,6 @@ public class FLValue {
      * @throws LiteCoreException
      */
     private static native String JSON5ToJSON(String json5) throws LiteCoreException;
-
 
     // TODO: Need free()?
 }

@@ -28,7 +28,7 @@ public class FLSliceResult {
         this.handle = handle;
     }
 
-    public byte[] getBuf(){
+    public byte[] getBuf() {
         return getBuf(handle);
     }
 

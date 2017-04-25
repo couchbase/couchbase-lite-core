@@ -555,3 +555,14 @@ Java_com_couchbase_litecore_Database_encodeJSON(JNIEnv *env, jclass clazz, jlong
     sliceResult->size = res.size;
     return (jlong) sliceResult;
 }
+
+
+/*
+ * Class:     com_couchbase_litecore_Database
+ * Method:    getFLSharedKeys
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_Database_getFLSharedKeys(JNIEnv *env, jclass clazz, jlong db) {
+    return (jlong) c4db_getFLSharedKeys((C4Database *) db);
+}
