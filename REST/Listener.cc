@@ -421,7 +421,7 @@ namespace litecore { namespace REST {
 
     // This handles PUT and DELETE of a document, as well as POST to a database.
     void Listener::handleModifyDoc(Request &rq, C4Database *db) {
-        string docID = rq.path(1);                       // will be null for POST
+        string docID = rq.path(1);                       // will be empty for POST
 
         // Parse the body:
         bool deleting = (rq.method() == "DELETE"_sl);
@@ -459,7 +459,8 @@ namespace litecore { namespace REST {
         C4Slice history[1] = {revID};
         C4DocPutRequest put = {};
         put.body = encodedBody;
-        put.docID = slice(docID);
+        if (!docID.empty())
+            put.docID = slice(docID);
         put.revFlags = (deleting ? kRevDeleted : 0);
         put.existingRevision = false;
         put.allowConflict = false;

@@ -51,7 +51,15 @@ namespace litecore { namespace REST {
         Response(const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
-                 const std::string &uri);
+                 const std::string &uri,
+                 fleece::slice body =fleece::nullslice);
+
+        Response(const std::string &method,
+                 const std::string &hostname,
+                 uint16_t port,
+                 const std::string &uri,
+                 const std::map<std::string, std::string> &headers,
+                 fleece::slice body =fleece::nullslice);
 
         ~Response();
 

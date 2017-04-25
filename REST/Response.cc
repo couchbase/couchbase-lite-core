@@ -8,6 +8,7 @@
 
 #include "Response.hh"
 #include "Writer.hh"
+#include "StringUtil.hh"
 #include "civetUtils.hh"
 #include "civetweb.h"
 
@@ -90,14 +91,44 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
+    static mg_connection* sendRequest(const std::string &method,
+                                      const std::string &hostname,
+                                      uint16_t port,
+                                      const std::string &uri,
+                                      const std::map<std::string, std::string> &headers,
+                                      fleece::slice body,
+                                      char *errorBuf, size_t errorBufSize)
+    {
+        stringstream hdrs;
+        if (!headers.empty()) {
+            for (auto &header : headers)
+                hdrs << header.first << ": " << header.second << "\r\n";
+            hdrs << "Content-Length: " << body.size << "\r\n";
+        }
+        fprintf(stderr, "Headers: %s\n", hdrs.str().c_str());//TEMP
+        return mg_download(hostname.c_str(), port, false,
+                           errorBuf, errorBufSize,
+                           "%s %s HTTP/1.0\r\n%s\r\n%.*s",
+                           method.c_str(), uri.c_str(), hdrs.str().c_str(), SPLAT(body));
+    }
+
+
+    Response::Response(const std::string &method,
+                       const std::string &hostname,
+                       uint16_t port,
+                       const std::string &uri,
+                       const std::map<std::string, std::string> &headers,
+                       fleece::slice body)
+    :Body(sendRequest(method, hostname, port, uri, headers, body, _errorBuf, sizeof(_errorBuf)))
+    { }
+
+
     Response::Response(const string &method,
                        const string &hostname,
                        uint16_t port,
-                       const string &uri)
-    :Body(mg_download(hostname.c_str(), port, false,
-                      _errorBuf, sizeof(_errorBuf),
-                      "%s %s HTTP/1.0\r\n\r\n",
-                      method.c_str(), uri.c_str()))
+                       const string &uri,
+                       slice body)
+    :Response(method, hostname, port, uri, {}, body)
     { }
 
 
