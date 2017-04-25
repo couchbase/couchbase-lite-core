@@ -11,6 +11,39 @@
 #include "Benchmark.hh"
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
+    c4log_warnOnErrors(false);
+    TransactionHelper t(db);
+
+    auto checkPutBadDocID = [this](C4Slice docID) {
+        C4Error error;
+        C4DocPutRequest rq = {};
+        rq.body = C4Test::kBody;
+        rq.save = true;
+        rq.docID = docID;
+        CHECK(c4doc_put(db, &rq, nullptr, &error) == nullptr);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorBadDocID);
+    };
+
+    SECTION("empty") {
+        checkPutBadDocID(C4STR(""));
+    }
+    SECTION("too long") {
+        char buf[241];
+        memset(buf, 'x', sizeof(buf));
+        checkPutBadDocID({buf, sizeof(buf)});
+    }
+    SECTION("bad UTF-8") {
+        checkPutBadDocID(C4STR("oops\x00oops"));
+    }
+    SECTION("control character") {
+        checkPutBadDocID(C4STR("oops\noops"));
+    }
+    c4log_warnOnErrors(true);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
     importJSONLines(sFixturesDir + "names_100.json");
 }

@@ -79,6 +79,7 @@ namespace litecore {
             RemoteError,
             DatabaseTooOld,
             DatabaseTooNew,
+            BadDocID,
 
             // Add new codes here. You MUST add messages to kLiteCoreMessages!
             // You MUST add corresponding kC4Err codes to the enum in C4Base.h!

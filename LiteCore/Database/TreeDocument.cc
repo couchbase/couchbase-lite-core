@@ -189,6 +189,7 @@ namespace c4Internal {
         }
 
         void save(unsigned maxRevTreeDepth) override {
+            requireValidDocID();
             if (maxRevTreeDepth == 0)
                 maxRevTreeDepth = _db->maxRevTreeDepth();
             _versionedDoc.prune(maxRevTreeDepth);

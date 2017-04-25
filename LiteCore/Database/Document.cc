@@ -7,6 +7,7 @@
 //
 
 #include "Document.hh"
+#include "StringUtil.hh"
 #include "Fleece.hh"
 
 using namespace fleece;
@@ -85,5 +86,16 @@ namespace c4Internal {
                 findBlobReferences(i.value(), callback);
         }
     }
-    
+
+
+    bool Document::isValidDocID(slice docID) {
+        return docID.size >= 1 && docID.size <= 240 && docID[0] != '_'
+            && isValidUTF8(docID) && hasNoControlCharacters(docID);
+    }
+
+    void Document::requireValidDocID() {
+        if (!isValidDocID(docID))
+            error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID));
+    }
+
 }

@@ -186,6 +186,7 @@ namespace c4Internal {
 
 
         virtual int32_t putExistingRevision(const C4DocPutRequest &rq) override {
+            requireValidDocID();
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             bool hasAttachments = (rq.revFlags & kRevHasAttachments) != 0;
             VersionVector vers(rq.history[0]);
@@ -204,6 +205,7 @@ namespace c4Internal {
 
 
         virtual bool putNewRevision(const C4DocPutRequest &rq) override {
+            requireValidDocID();
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             bool hasAttachments = (rq.revFlags & kRevHasAttachments) != 0;
             Revision::BodyParams bodyParams {rq.body, deletion, hasAttachments};

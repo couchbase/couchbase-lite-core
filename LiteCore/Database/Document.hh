@@ -124,7 +124,11 @@ namespace c4Internal {
 
         virtual void save(unsigned maxRevTreeDepth =0) { }
 
+        void requireValidDocID();   // Throws if invalid
+
         // STATIC UTILITY FUNCTIONS:
+
+        static bool isValidDocID(slice);
 
         /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
         static bool isOldMetaProperty(slice key);

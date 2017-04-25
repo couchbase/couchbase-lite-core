@@ -136,7 +136,8 @@ enum {
     kC4ErrorRemoteError,            // Unknown error from remote server
     kC4ErrorDatabaseTooOld,         // Database file format is older than what I can open
     kC4ErrorDatabaseTooNew,         // Database file format is newer than what I can open
-
+    kC4ErrorBadDocID,               // Invalid document ID
+    
     kC4NumErrorCodesPlus1
 };
 
