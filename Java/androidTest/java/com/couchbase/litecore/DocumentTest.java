@@ -104,7 +104,7 @@ public class DocumentTest extends BaseTest {
         boolean commit = false;
         db.beginTransaction();
         try {
-            doc = db.put(kDocID, kBody.getBytes(), null, true, false, new String[]{kRevID}, 0, true, 0);
+            doc = db.put(kDocID, kBody.getBytes(), true, false, new String[]{kRevID}, 0, true, 0);
             assertNotNull(doc);
             assertEquals(kRevID, doc.getRevID());
             assertEquals(kRevID, doc.getSelectedRevID());
@@ -217,7 +217,7 @@ public class DocumentTest extends BaseTest {
         try {
             for (int i = 0; i < kNumRevs; i++) {
                 String[] history = {doc.getRevID()};
-                Document savedDoc = db.put(doc.getDocID(), kBody.getBytes(), null, false, false, history, 0, true, 30);
+                Document savedDoc = db.put(doc.getDocID(), kBody.getBytes(), false, false, history, 0, true, 30);
                 assertNotNull(savedDoc);
                 doc.free();
                 doc = savedDoc;
@@ -256,7 +256,7 @@ public class DocumentTest extends BaseTest {
         db.beginTransaction();
         try {
             // Creating doc given ID:
-            Document doc = db.put(kDocID, kBody.getBytes(), null, false, false, new String[0], 0, true, 0);
+            Document doc = db.put(kDocID, kBody.getBytes(), false, false, new String[0], 0, true, 0);
             assertNotNull(doc);
             assertEquals(kDocID, doc.getDocID());
             String kExpectedRevID = isRevTrees() ?
@@ -269,7 +269,7 @@ public class DocumentTest extends BaseTest {
 
             // Update doc:
             String[] history = {kExpectedRevID};
-            doc = db.put(kDocID, "{\"ok\":\"go\"}".getBytes(), null, false, false, history, 0, true, 0);
+            doc = db.put(kDocID, "{\"ok\":\"go\"}".getBytes(), false, false, history, 0, true, 0);
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             String kExpectedRevID2 = isRevTrees() ?
@@ -285,7 +285,7 @@ public class DocumentTest extends BaseTest {
                     "2-deadbeef" :
                     "1@binky";
             String[] history2 = {kConflictRevID, kExpectedRevID};
-            doc = db.put(kDocID, "{\"from\":\"elsewhere\"}".getBytes(), null, true, true, history2, 0, true, 0);
+            doc = db.put(kDocID, "{\"from\":\"elsewhere\"}".getBytes(), true, true, history2, 0, true, 0);
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             assertEquals(kConflictRevID, doc.getRevID());

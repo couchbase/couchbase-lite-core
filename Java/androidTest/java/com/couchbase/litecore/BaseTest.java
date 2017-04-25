@@ -144,7 +144,7 @@ public class BaseTest implements Constants {
             if (doc.getRevID() != null)
                 revIDs.add(doc.getRevID());
             String[] history = revIDs.toArray(new String[revIDs.size()]);
-            db.put(docID, body, null, true, false, history, flags, true, 0);
+            db.put(docID, body, true, false, history, flags, true, 0);
             doc.free();
             commit = true;
         } finally {
@@ -171,7 +171,7 @@ public class BaseTest implements Constants {
                     FLSliceResult body = db.encodeJSON(line.getBytes());
                     String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
                     String[] history = new String[0];
-                    Document doc = db.put(docID, body, null, false, false, history, 0, true, 0);
+                    Document doc = db.put(docID, body, false, false, history, 0, true, 0);
                     assertNotNull(doc);
                     doc.free();
                     body.free();
