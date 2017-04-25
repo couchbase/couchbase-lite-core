@@ -57,7 +57,7 @@ public class AllDocsPerformanceTest extends BaseTest {
                 else
                     list.add("1@deadbeefcafebabe80081e50");
                 String[] history = list.toArray(new String[list.size()]);
-                Document doc = db.put(docID, json.getBytes(), null, true, false, history, 0, true, 0);
+                Document doc = db.put(docID, json.getBytes(), true, false, history, 0, true, 0);
                 assertNotNull(doc);
                 doc.free();
             }

@@ -315,18 +315,16 @@ JNIEXPORT jobjectArray JNICALL Java_com_couchbase_litecore_Database_purgeExpired
 /*
  * Class:     com_couchbase_litecore_Database
  * Method:    put1
- * Signature: (JLjava/lang/String;[BLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
+ * Signature: (JLjava/lang/String;[BZZ[Ljava/lang/String;IZI)J
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put1
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jbyteArray jbody,
-         jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,
          jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth) {
     auto db = (C4Database *) dbHandle;
-    jstringSlice docID(env, jdocID), docType(env, jdocType);
+    jstringSlice docID(env, jdocID);
     C4DocPutRequest rq;
     rq.docID = docID;
-    rq.docType = docType;
     rq.existingRevision = existingRevision;
     rq.allowConflict = allowConflict;
     rq.revFlags = flags;
@@ -372,23 +370,22 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put1
         throwError(env, error);
     return (jlong) doc;
 }
+
 /*
  * Class:     com_couchbase_litecore_Database
  * Method:    put2
- * Signature: (JLjava/lang/String;JLjava/lang/String;ZZ[Ljava/lang/String;IZI)J
+ * Signature: (JLjava/lang/String;JZZ[Ljava/lang/String;IZI)J
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_Database_put2
         (JNIEnv *env, jclass klass, jlong dbHandle, jstring jdocID, jlong jbody,
-         jstring jdocType,
          jboolean existingRevision, jboolean allowConflict,
          jobjectArray jhistory, jint flags, jboolean save, jint maxRevTreeDepth) {
     auto db = (C4Database *) dbHandle;
     C4Slice *pBody = (C4Slice *) jbody;
-    jstringSlice docID(env, jdocID), docType(env, jdocType);
+    jstringSlice docID(env, jdocID);
     C4DocPutRequest rq;
     rq.docID = docID;
     rq.body = *pBody;
-    rq.docType = docType;
     rq.existingRevision = existingRevision;
     rq.allowConflict = allowConflict;
     rq.revFlags = flags;
