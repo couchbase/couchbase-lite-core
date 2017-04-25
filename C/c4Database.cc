@@ -79,7 +79,7 @@ C4Database* c4db_open(C4Slice path,
                       const C4DatabaseConfig *configP,
                       C4Error *outError) noexcept
 {
-    if (!checkParam(configP != nullptr, outError))
+    if (!checkParam(configP != nullptr, "missing config", outError))
         return nullptr;
     return tryCatch<C4Database*>(outError, [=] {
         return retain(new C4Database((string)path, *configP));
@@ -95,7 +95,7 @@ C4Database* c4db_retain(C4Database* db) {
 C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
-    if (!checkParam(db != nullptr, outError))
+    if (!checkParam(db != nullptr, "null database", outError))
         return nullptr;
     string path = db->path();
     return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);

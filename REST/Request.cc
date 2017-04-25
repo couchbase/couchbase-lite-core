@@ -11,6 +11,7 @@
 #include "civetUtils.hh"
 #include "civetweb.h"
 #include "PlatformIO.hh"
+#include "Error.hh"
 #include <stdarg.h>
 
 using namespace std;
@@ -44,7 +45,7 @@ namespace litecore { namespace REST {
     
     string Request::path(int i) const {
         slice path(mg_get_request_info(_conn)->request_uri);
-        assert(path[0] == '/');
+        Assert(path[0] == '/');
         path.moveStart(1);
         for (; i > 0; --i) {
             auto slash = path.findByteOrEnd('/');
@@ -91,7 +92,7 @@ namespace litecore { namespace REST {
 
 
     void Request::setStatus(unsigned status, const char *message) {
-        assert(!_sentStatus);
+        Assert(!_sentStatus);
         mg_printf(_conn, "HTTP/1.1 %d %s\r\n", status, (message ? message : ""));
         _status = status;
         _sentStatus = true;
@@ -99,7 +100,7 @@ namespace litecore { namespace REST {
 
 
     void Request::respondWithError(int status, const char *message) {
-        assert(!_sentStatus);
+        Assert(!_sentStatus);
         mg_send_http_error(_conn, status, "%s", message);
         _status = status;
         _sentStatus = true;
@@ -108,7 +109,7 @@ namespace litecore { namespace REST {
 
 
     void Request::respondWithError(C4Error err) {
-        assert(err.code != 0);
+        Assert(err.code != 0);
         alloc_slice message = c4error_getMessage(err);
         int status = 500;
         // TODO: Add more mappings, and make these table-driven
@@ -143,7 +144,7 @@ namespace litecore { namespace REST {
 
 
     void Request::setHeader(const char *header, const char *value) {
-        assert(!_sentHeaders);
+        Assert(!_sentHeaders);
         _headers << header << ": " << value << "\r\n";
     }
 
@@ -155,8 +156,8 @@ namespace litecore { namespace REST {
 
 
     void Request::setContentLength(uint64_t length) {
-        assert(!_chunked);
-        assert(_contentLength < 0);
+        Assert(!_chunked);
+        Assert(_contentLength < 0);
         setHeader("Content-Length", (int64_t)length);
         _contentLength = (int64_t)length;
     }
@@ -164,7 +165,7 @@ namespace litecore { namespace REST {
 
     void Request::setChunked() {
         if (!_chunked) {
-            assert(_contentLength < 0);
+            Assert(_contentLength < 0);
             setHeader("Transfer-Encoding", "chunked");
             _chunked = true;
         }
@@ -195,7 +196,7 @@ namespace litecore { namespace REST {
         if (_chunked) {
             mg_send_chunk(_conn, (const char*)content.buf, (unsigned)content.size);
         } else {
-            assert(_contentLength >= 0);
+            Assert(_contentLength >= 0);
             mg_write(_conn, content.buf, content.size);
         }
     }
@@ -226,7 +227,7 @@ namespace litecore { namespace REST {
             write(json);
         }
         sendHeaders();
-        assert(_contentLength < 0 || _contentLength == _contentSent);
+        Assert(_contentLength < 0 || _contentLength == _contentSent);
         if (_chunked) {
             mg_send_chunk(_conn, nullptr, 0);
             mg_write(_conn, "\r\n", 2);

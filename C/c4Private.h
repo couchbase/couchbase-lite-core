@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
+void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API;
 
 void c4log_warnOnErrors(bool) C4API;
 

@@ -14,6 +14,7 @@
 #include "Server.hh"
 #include "Request.hh"
 #include "StringUtil.hh"
+#include "c4ExceptionUtils.hh"
 #include <functional>
 #include <queue>
 
@@ -508,8 +509,10 @@ static inline Listener* internal(C4RESTListener* r) {return (Listener*)r;}
 static inline C4RESTListener* external(Listener* r) {return (C4RESTListener*)r;}
 
 C4RESTListener* c4rest_start(C4RESTConfig *config, C4Error *error) noexcept {
-
-    return external(new Listener(*config));
+    try {
+        return external(new Listener(*config));
+    } catchExceptions()
+    return nullptr;
 }
 
 void c4rest_free(C4RESTListener *listener) noexcept {
@@ -518,15 +521,20 @@ void c4rest_free(C4RESTListener *listener) noexcept {
 
 
 C4StringResult c4rest_databaseNameFromPath(C4String pathSlice) noexcept {
-    auto pathStr = slice(pathSlice).asString();
-    string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
-    if (name.empty())
-        return {};
-    alloc_slice result(name);
-    result.retain();
-    return {(char*)result.buf, result.size};
+    try {
+        auto pathStr = slice(pathSlice).asString();
+        string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
+        if (name.empty())
+            return {};
+        alloc_slice result(name);
+        result.retain();
+        return {(char*)result.buf, result.size};
+    } catchExceptions()
+    return {};
 }
 
 void c4rest_shareDB(C4RESTListener *listener, C4String name, C4Database *db) noexcept {
-    internal(listener)->registerDatabase(slice(name).asString(), db);
+    try {
+        internal(listener)->registerDatabase(slice(name).asString(), db);
+    } catchExceptions()
 }

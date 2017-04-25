@@ -11,6 +11,7 @@
 #include "c4Private.h"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
+#include "c4ExceptionUtils.hh"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
 #include "StringUtil.hh"
@@ -143,18 +144,6 @@ static bool isValidScheme(C4Slice scheme) {
 }
 
 
-static void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) {
-    if (outError)
-        *outError = c4error_make(domain, code, message);
-}
-
-
-static C4Replicator* returnInvalid(C4String message, C4Error *outError) {
-    c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, message, outError);
-    return nullptr;
-}
-
-
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,
@@ -166,8 +155,9 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4Error *outError) C4API
 {
     try {
-        if (push == kC4Disabled && pull == kC4Disabled)
-            return returnInvalid("Either push or pull must be enabled"_sl, outError);
+        if (!checkParam(push != kC4Disabled || pull != kC4Disabled,
+                        "Either push or pull must be enabled", outError))
+            return nullptr;
 
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
@@ -175,8 +165,8 @@ C4Replicator* c4repl_new(C4Database* db,
 
         C4Replicator *replicator;
         if (otherLocalDB) {
-            if (otherLocalDB == db)
-                return returnInvalid("Can't replicate a database to itself"_sl, outError);
+            if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
+                return nullptr;
             // Local-to-local:
             c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
             if (!otherDBCopy)
@@ -185,17 +175,15 @@ C4Replicator* c4repl_new(C4Database* db,
                                           push, pull, onStatusChanged, callbackContext);
         } else {
             // Remote:
-            if (!isValidScheme(serverAddress.scheme))
-                return returnInvalid("Unsupported replication URL scheme"_sl, outError);
+            if (!checkParam(isValidScheme(serverAddress.scheme),
+                            "Unsupported replication URL scheme", outError))
+                return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName,
                                           push, pull, onStatusChanged, callbackContext);
         }
         return retain(replicator);
-    } catch (const std::exception &x) {
-        // TODO: Return a better error
-        c4error_return(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()), outError);
-        return nullptr;
-    }
+    } catchError(outError);
+    return nullptr;
 }
 
 

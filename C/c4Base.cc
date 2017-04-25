@@ -77,22 +77,6 @@ namespace c4Internal {
             return string();
         }
     }
-    
-
-    void recordException(const exception &e, C4Error* outError) noexcept {
-        error err = error::convertException(e).standardized();
-        recordError((C4ErrorDomain)err.domain, err.code, e.what(), outError);
-    }
-
-
-    bool tryCatch(C4Error *error, function_ref<void()> fn) noexcept {
-        try {
-            fn();
-            return true;
-        } catchError(error);
-        return false;
-    }
-
 }
 
 
@@ -100,6 +84,11 @@ C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API {
     C4Error error;
     recordError(domain, code, (string)message, &error);
     return error;
+}
+
+
+void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API {
+    recordError(domain, code, (string)message, outError);
 }
 
 

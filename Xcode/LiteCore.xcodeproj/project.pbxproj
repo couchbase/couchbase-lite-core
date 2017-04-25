@@ -82,6 +82,13 @@
 		27468F0A1EAD147D00B1B4F5 /* litecp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27468F091EAD147D00B1B4F5 /* litecp.cc */; };
 		27468F111EAD7EC100B1B4F5 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		27468F121EAD7ED200B1B4F5 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
+		2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
+		2749B94A1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
+		2749B94B1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
+		2749B94C1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
+		2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
+		2749B94E1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
+		2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
@@ -808,6 +815,8 @@
 		27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CBLWebSocket.mm; sourceTree = "<group>"; };
 		27491CA71E7B700A001DC54B /* CBLHTTPLogic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBLHTTPLogic.h; sourceTree = "<group>"; };
 		27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBLHTTPLogic.m; sourceTree = "<group>"; };
+		2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExceptionUtils.cc; sourceTree = "<group>"; };
+		2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
@@ -1587,6 +1596,8 @@
 				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
 				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
+				2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */,
+				2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */,
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
@@ -2018,6 +2029,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2063,6 +2075,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2749B94E1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2070,6 +2083,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
 				279794A11D305EC2001D0F3A /* Revision.hh in Headers */,
@@ -2649,6 +2663,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2749B94C1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* Listener.cc in Sources */,
 				279D411C1EA557A800D8DD9D /* Server.cc in Sources */,
 				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
@@ -2746,6 +2761,7 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
+				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
@@ -2814,6 +2830,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2749B94B1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27FC81F61EAAB7C60028E38E /* Listener.cc in Sources */,
 				27FC81F71EAAB7C60028E38E /* Server.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
@@ -2832,6 +2849,7 @@
 				272850AC1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				720EA4101BA8D834002B8416 /* Record.cc in Sources */,
 				2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */,
+				2749B94A1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27E3DD381DB450B300F2872D /* Logging.cc in Sources */,
 				274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */,
 				278963681D7B7E7D00493096 /* Stream.cc in Sources */,

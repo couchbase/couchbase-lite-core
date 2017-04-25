@@ -151,6 +151,7 @@ c4socket_received
 kC4ReplicatorActivityLevelNames
 
 c4error_make
+c4error_return
 c4doc_getForPut
 c4_getObjectCount
 c4_shutdown

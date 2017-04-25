@@ -61,6 +61,7 @@ constexpr C4Slice C4SliceNull = { nullptr, 0 };
 
 #define C4_IMPL // This tells c4Base.h to skip its declaration of C4Slice
 #include "c4Base.h"
+#include "c4ExceptionUtils.hh"
 
 
 namespace c4Internal {
@@ -71,34 +72,6 @@ namespace c4Internal {
 
     void recordError(C4ErrorDomain, int code, std::string message, C4Error* outError) noexcept;
     void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
-    void recordException(const exception &e, C4Error* outError) noexcept;
-    static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}
-
-    #define catchError(OUTERR) \
-        catch (const exception &x) { \
-            recordException(x, OUTERR); \
-        }
-
-    #define catchExceptions() \
-        catch (const exception &) { }
-
-    #define checkParam(TEST, OUTERROR) \
-        ((TEST) || (recordError(LiteCoreDomain, kC4ErrorInvalidParameter, OUTERROR), false))
-
-    // Calls the function, returning its return value. If an exception is thrown, stores the error
-    // into `outError`, and returns a default 0/nullptr/false value.
-    template <typename RESULT>
-    NOINLINE RESULT tryCatch(C4Error *outError, function_ref<RESULT()> fn) noexcept {
-        try {
-            return fn();
-        } catchError(outError);
-        return RESULT(); // this will be 0, nullptr, false, etc.
-    }
-
-    // Calls the function and returns true. If an exception is thrown, stores the error
-    // into `outError`, and returns false.
-    NOINLINE bool tryCatch(C4Error *error, function_ref<void()> fn) noexcept;
-
     // SLICES:
 
     C4SliceResult sliceResult(slice s);

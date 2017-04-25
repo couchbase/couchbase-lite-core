@@ -8,7 +8,10 @@
 
 #include "Server.hh"
 #include "Request.hh"
+#include "Logging.hh"
+#include "Error.hh"
 #include "c4Base.h"
+#include "c4ExceptionUtils.hh"
 #include "civetweb.h"
 
 using namespace std;
@@ -33,7 +36,8 @@ namespace litecore { namespace REST {
             return -1; // disable default logging
         };
         _context = mg_start(&cb, this, options);
-        assert(_context);//FIX
+        if (!_context)
+            error::_throw(error::UnexpectedError, "Couldn't start civetweb server");
     }
 
     Server::~Server() {
@@ -66,38 +70,44 @@ namespace litecore { namespace REST {
 
 
     int Server::handleRequest(struct mg_connection *conn, void *cbdata) {
-        const char *m = mg_get_request_info(conn)->request_method;
-        Method method;
-        if (strcmp(m, "GET") == 0)
-            method = GET;
-        else if (strcmp(m, "PUT") == 0)
-            method = PUT;
-        else if (strcmp(m, "DELETE") == 0)
-        method = DELETE;
-        else if (strcmp(m, "POST") == 0)
-            method = POST;
-        else
-            return 0;
+        try {
+            const char *m = mg_get_request_info(conn)->request_method;
+            Method method;
+            if (strcmp(m, "GET") == 0)
+                method = GET;
+            else if (strcmp(m, "PUT") == 0)
+                method = PUT;
+            else if (strcmp(m, "DELETE") == 0)
+            method = DELETE;
+            else if (strcmp(m, "POST") == 0)
+                method = POST;
+            else
+                return 0;
 
-        auto handlers = (URIHandlers*)cbdata;
-        Handler handler;
-        map<string, string> extraHeaders;
-        {
-            lock_guard<mutex> lock(handlers->server->_mutex);
-            handler = handlers->methods[method];
+            auto handlers = (URIHandlers*)cbdata;
+            Handler handler;
+            map<string, string> extraHeaders;
+            {
+                lock_guard<mutex> lock(handlers->server->_mutex);
+                handler = handlers->methods[method];
+                if (!handler)
+                    handler = handlers->methods[DEFAULT];
+                extraHeaders = handlers->server->_extraHeaders;
+            }
+
+            Request rq(conn);
+            rq.addHeaders(extraHeaders);
             if (!handler)
-                handler = handlers->methods[DEFAULT];
-            extraHeaders = handlers->server->_extraHeaders;
+                rq.respondWithError(405, "Method not allowed");
+            else
+                (handler(rq));
+            rq.finish();
+            return rq.status();
+        } catch (const std::exception &x) {
+            Warn("HTTP handler caught C++ exception: %s", x.what());
+            mg_send_http_error(conn, 500, "Internal exception");
+            return 500;
         }
-
-        Request rq(conn);
-        rq.addHeaders(extraHeaders);
-        if (!handler)
-            rq.respondWithError(405, "Method not allowed");
-        else
-            (handler(rq));
-        rq.finish();
-        return rq.status();
     }
 
 } }

@@ -160,6 +160,7 @@ _kC4ReplicatorActivityLevelNames
 
 # Private API:
 _c4error_make
+_c4error_return
 _c4doc_getForPut
 _c4_getObjectCount
 _c4_shutdown
