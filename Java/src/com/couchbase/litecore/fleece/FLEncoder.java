@@ -31,6 +31,10 @@ public class FLEncoder {
         }
     }
 
+    public void setSharedKeys(FLSharedKeys flSharedKeys) {
+        setSharedKeys(handle, flSharedKeys.getHandle());
+    }
+
     public boolean writeNull() {
         return writeNull(handle);
     }
@@ -151,6 +155,8 @@ public class FLEncoder {
     private native static long init(); // FLEncoder FLEncoder_New(void);
 
     private native static void free(long encoder);
+
+    private native static void setSharedKeys(long encoder, long sharedKeys);
 
     private native static boolean writeNull(long encoder);
 

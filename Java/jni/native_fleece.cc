@@ -137,12 +137,43 @@ Java_com_couchbase_litecore_fleece_FLDict_get(JNIEnv *env, jclass clazz, jlong j
  * Signature: (J[BJ)J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLDict_getSharedKey(JNIEnv *env, jclass clazz, jlong jdict,
-                                                       jbyteArray jkeystring, jlong jsharedkeys) {
-    //TODO:
-    return 0;
+Java_com_couchbase_litecore_fleece_FLDict_getSharedKey(JNIEnv *env,
+                                                       jclass clazz,
+                                                       jlong jdict,
+                                                       jbyteArray jkeystring,
+                                                       jlong jsharedkeys) {
+    jbyteArraySlice key(env, jkeystring, true);
+    return (jlong) FLDict_GetSharedKey((FLDict) jdict,
+                                       {((slice) key).buf, ((slice) key).size},
+                                       (FLSharedKeys) jsharedkeys);
+}
+/*
+ * Class:     com_couchbase_litecore_fleece_FLDict
+ * Method:    getKeyString
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_fleece_FLDict_getKeyString(JNIEnv *env,
+                                                                                 jclass clazz,
+                                                                                 jlong jsharedKey,
+                                                                                 jint jkeyCode) {
+    FLError error = {};
+    FLString str = FLSharedKey_GetKeyString((FLSharedKeys) jsharedKey, (int) jkeyCode, &error);
+    return toJString(env, {str.buf, str.size});
 }
 
+/*
+ * Class:     com_couchbase_litecore_fleece_FLDict
+ * Method:    getUnsorted
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLDict_getUnsorted(JNIEnv *env,
+                                                      jclass clazz,
+                                                      jlong jdict,
+                                                      jbyteArray jkeystring) {
+    jbyteArraySlice key(env, jkeystring, true);
+    return (jlong) FLDict_GetUnsorted((FLDict) jdict, {((slice) key).buf, ((slice) key).size});
+}
 // ----------------------------------------------------------------------------
 // FLDictIterator
 // ----------------------------------------------------------------------------
@@ -413,7 +444,8 @@ Java_com_couchbase_litecore_fleece_FLSliceResult_getSize(JNIEnv *env, jclass cla
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env, jclass clazz) {
+Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env,
+                                                  jclass clazz) {
     return (jlong) FLEncoder_New();
 }
 
@@ -423,8 +455,23 @@ Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env, jclass clazz) {
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env, jclass clazz, jlong jencoder) {
+Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env,
+                                                  jclass clazz,
+                                                  jlong jencoder) {
     FLEncoder_Free((FLEncoder) jencoder);
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLEncoder
+ * Method:    setSharedKeys
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLEncoder_setSharedKeys(JNIEnv *env,
+                                                           jclass clazz,
+                                                           jlong jencoder,
+                                                           jlong jsharedKeys) {
+    FLEncoder_SetSharedKeys((FLEncoder) jencoder, (FLSharedKeys) jsharedKeys);
 }
 
 /*
@@ -557,6 +604,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_endDict(JNIEnv *env, jclass clazz, 
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz, jlong jencoder,
                                                       jstring jkey) {
+    if (jkey == NULL) return false;
     jstringSlice key(env, jkey);
     return (jboolean) FLEncoder_WriteKey((FLEncoder) jencoder,
                                          {((slice) key).buf, ((slice) key).size});

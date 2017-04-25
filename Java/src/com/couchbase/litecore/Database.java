@@ -15,6 +15,7 @@
 package com.couchbase.litecore;
 
 import com.couchbase.litecore.fleece.FLEncoder;
+import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
 
 public class Database {
@@ -255,7 +256,13 @@ public class Database {
         return new FLSliceResult(encodeJSON(_handle, jsonData));
     }
 
+    public FLSharedKeys getFLSharedKeys() {
+        return new FLSharedKeys(getFLSharedKeys(_handle));
+    }
+
     private native static long createFleeceEncoder(long db);
 
     private native static long encodeJSON(long db, byte[] jsonData) throws LiteCoreException;
+
+    private native static long getFLSharedKeys(long db);
 }

@@ -114,7 +114,6 @@ namespace litecore {
             return slice;
         }
 
-
         void throwError(JNIEnv *env, C4Error error) {
             if (env->ExceptionOccurred())
                 return;

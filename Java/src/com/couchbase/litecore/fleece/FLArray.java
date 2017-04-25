@@ -34,6 +34,14 @@ public class FLArray {
         return handle;
     }
 
+    long count() {
+        return count(handle);
+    }
+
+    FLValue get(long index) {
+        return new FLValue(get(handle, index));
+    }
+
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
@@ -54,7 +62,6 @@ public class FLArray {
      * @return long (FLValue)
      */
     private static native long get(long array, long index);
-
 
     // TODO: Need free()?
 }
