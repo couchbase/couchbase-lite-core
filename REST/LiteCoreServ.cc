@@ -8,6 +8,7 @@
 
 #include "c4REST.h"
 #include "FilePath.hh"
+#include "StringUtil.hh"
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -108,13 +109,13 @@ static void shareDatabaseDir(const char *dirPath) {
     int n = 0;
     FilePath dir(dirPath, "");
     dir.forEachFile([=](const FilePath &file) mutable {
-        if (file.extension() == kC4DatabaseFilenameExtension && file.existsAsDir()) {
-            if (n++) cerr << ", ";
-            auto dbPath = file.path().c_str();
-            string name = databaseNameFromPath(dbPath);
+        if (file.isDir() && file.extension() == kC4DatabaseFilenameExtension) {
+            auto path = file.path();
+            string name = databaseNameFromPath(path.c_str());
             if (!name.empty()) {
+                if (n++) cerr << ", ";
                 cerr << name;
-                shareDatabase(dbPath, name);
+                shareDatabase(path.c_str(), name);
             }
         }
     });

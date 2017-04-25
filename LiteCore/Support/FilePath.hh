@@ -53,8 +53,8 @@ namespace litecore {
 
         //////// FILENAME EXTENSIONS:
 
-        std::string unextendedName() const  {return splitExtension(_file).first;}
-        std::string extension() const       {return splitExtension(_file).second;}
+        std::string unextendedName() const;
+        std::string extension() const;
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */

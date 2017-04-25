@@ -194,6 +194,16 @@ namespace litecore {
     }
 
 
+    string FilePath::unextendedName() const {
+        return splitExtension(fileOrDirName()).first;
+    }
+
+    
+    string FilePath::extension() const {
+        return splitExtension(fileOrDirName()).second;
+    }
+
+
     static string addExtension(const string &name, const string &ext) {
         return (ext[0] == '.') ? name + ext : name + "." + ext;
 
