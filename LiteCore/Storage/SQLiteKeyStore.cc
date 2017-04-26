@@ -63,6 +63,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::close() {
+        // If statements are left open, closing the database will fail with a "db busy" error...
         _recCountStmt.reset();
         _getByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
@@ -70,8 +71,11 @@ namespace litecore {
         _getByOffStmt.reset();
         _getMetaBySeqStmt.reset();
         _setStmt.reset();
+        _insertStmt.reset();
+        _replaceStmt.reset();
         _delByKeyStmt.reset();
         _delBySeqStmt.reset();
+        _delByBothStmt.reset();
         _backupStmt.reset();
         KeyStore::close();
     }
@@ -183,7 +187,7 @@ namespace litecore {
                       "SELECT sequence, flags, 0, version, length(body) FROM kv_@ WHERE key=?")
             : compile(_getByKeyStmt,
                       "SELECT sequence, flags, 0, version, body FROM kv_@ WHERE key=?");
-        stmt.bindNoCopy(1, rec.key().buf, (int)rec.key().size);
+        stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
         UsingStatement u(stmt);
         if (!stmt.executeStep())
             return false;
@@ -215,44 +219,69 @@ namespace litecore {
     }
 
 
-    sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags, Transaction&) {
-        LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
-        compile(_setStmt,
-                "INSERT OR REPLACE INTO kv_@ (key, version, body, flags, sequence) VALUES (?, ?, ?, ?, ?)");
-        _setStmt->bindNoCopy(1, key.buf, (int)key.size);
-        _setStmt->bindNoCopy(2, vers.buf, (int)vers.size);
-        _setStmt->bindNoCopy(3, body.buf, (int)body.size);
-        _setStmt->bind(4, (int)flags);
+    sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags,
+                                   Transaction&, const sequence_t *replacingSequence) {
+        SQLite::Statement *stmt;
+        if (replacingSequence == nullptr) {
+            // Default:
+            LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
+            compile(_setStmt,
+                    "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"
+                    " VALUES (?, ?, ?, ?, ?)");
+            stmt = _setStmt.get();
+        } else if (*replacingSequence == 0) {
+            // Insert only:
+            LogTo(DBLog, "KeyStore(%s) insert %s", name().c_str(), logSlice(key));
+            compile(_insertStmt,
+                    "INSERT OR IGNORE INTO kv_@ (version, body, flags, sequence, key)"
+                    " VALUES (?, ?, ?, ?, ?)");
+            stmt = _insertStmt.get();
+        } else {
+            // Replace only:
+            Assert(_capabilities.sequences);
+            LogTo(DBLog, "KeyStore(%s) update %s", name().c_str(), logSlice(key));
+            compile(_replaceStmt,
+                    "UPDATE kv_@ SET version=?, body=?, flags=?, sequence=?"
+                    " WHERE key=? AND sequence=?");
+            stmt = _replaceStmt.get();
+            stmt->bind(6, (long long)*replacingSequence);
+        }
+        stmt->bindNoCopy(1, vers.buf, (int)vers.size);
+        stmt->bindNoCopy(2, body.buf, (int)body.size);
+        stmt->bind(3, (int)flags);
+        stmt->bindNoCopy(5, (const char*)key.buf, (int)key.size);
 
         sequence_t seq = 0;
         if (_capabilities.sequences) {
             seq = lastSequence() + 1;
-            _setStmt->bind(5, (long long)seq);
+            stmt->bind(4, (long long)seq);
         } else {
-            _setStmt->bind(5); // null
+            stmt->bind(4); // null
         }
-        UsingStatement u(_setStmt);
-        _setStmt->exec();
+
+        UsingStatement u(*stmt);
+        if (stmt->exec() == 0)
+            return 0;               // condition wasn't met
         setLastSequence(seq);
         return seq;
     }
 
 
-    bool SQLiteKeyStore::_del(slice key, sequence_t delSeq, Transaction&) {
-        auto& stmt = delSeq ? _delBySeqStmt : _delByKeyStmt;
-        if (!stmt) {
-            stringstream sql;
-            sql << "DELETE FROM kv_@";
-            sql << (delSeq ? " WHERE sequence=?" : " WHERE key=?");
-            compile(stmt, sql.str().c_str());
+    bool SQLiteKeyStore::_del(slice key, sequence_t seq, Transaction&) {
+        SQLite::Statement *stmt;
+        if (key) {
+            if (seq) {
+                stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
+                stmt->bind(2, (long long)seq);
+            } else {
+                stmt = &compile(_delByKeyStmt, "DELETE FROM kv_@ WHERE key=?");
+            }
+            stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        } else {
+            stmt = &compile(_delBySeqStmt, "DELETE FROM kv_@ WHERE sequence=?");
+            stmt->bind(1, (long long)seq);
         }
-
-        if (delSeq)
-            stmt->bind(1, (long long)delSeq);
-        else
-            stmt->bindNoCopy(1, key.buf, (int)key.size);
-
-        UsingStatement u(stmt);
+        UsingStatement u(*stmt);
         return stmt->exec() > 0;
     }
 

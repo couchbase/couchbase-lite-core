@@ -53,7 +53,7 @@ public:
 
         TransactionHelper t(db);
 
-        Encoder enc;
+        Encoder enc(c4db_createFleeceEncoder(db));
         unsigned numDocs = 0;
         for (Value item : docs) {
             // Check that track is correct type:
@@ -133,7 +133,7 @@ public:
             C4Error error;
             auto doc = c4doc_get(db, c4str(docID), true, &error);
             REQUIRE(doc);
-            REQUIRE(doc->selectedRev.body.size > 100);
+            REQUIRE(doc->selectedRev.body.size > 30);
             c4doc_free(doc);
             b.stop();
         }

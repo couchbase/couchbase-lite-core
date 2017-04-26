@@ -45,7 +45,7 @@ namespace litecore {
         const Record& record() const    {return _rec;}
 
         bool changed() const        {return _changed;}
-        void save(Transaction& transaction);
+        bool save(Transaction& transaction);
 
         void updateMeta();
 

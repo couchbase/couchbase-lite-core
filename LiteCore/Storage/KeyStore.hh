@@ -69,16 +69,25 @@ namespace litecore {
 
         //////// Writing:
 
-        virtual sequence_t set(slice key, slice vers, slice value, DocumentFlags, Transaction&) =0;
+        /** Core write method. If replacingSequence is not null, will only update the
+            record if its existing sequence matches. (Or if the record doesn't already
+            exist, in the case where *replacingSequence == 0.) */
+        virtual sequence_t set(slice key, slice version, slice value,
+                               DocumentFlags,
+                               Transaction&,
+                               const sequence_t *replacingSequence =nullptr) =0;
 
-        sequence_t set(slice key, slice value, Transaction &t) {
-            return set(key, nullslice, value, DocumentFlags::kNone, t);
+        sequence_t set(slice key, slice value, Transaction &t,
+                       const sequence_t *replacingSequence =nullptr) {
+            return set(key, nullslice, value, DocumentFlags::kNone, t, replacingSequence);
         }
 
-        void write(Record&, Transaction&);
+        void write(Record&, Transaction&, const sequence_t *replacingSequence =nullptr);
 
-        bool del(slice key, Transaction&);
-        bool del(sequence_t s, Transaction&);
+        bool del(slice key, Transaction &t, const sequence_t *replacingSequence =nullptr) {
+            return del(key, (replacingSequence ? *replacingSequence : 0), t);
+        }
+        bool del(sequence_t s, Transaction& t)  {return del(nullslice, s, t);}
         bool del(const Record&, Transaction&);
 
         //////// INDEXING:
@@ -110,8 +119,7 @@ namespace litecore {
         virtual void reopen()                           { }
         virtual void close()                            { }
 
-        virtual bool _del(slice key, Transaction&) =0;
-        virtual bool _del(sequence_t s, Transaction&) =0;
+        virtual bool _del(slice key, sequence_t s, Transaction&) =0;
 
         virtual RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey,
                                                        RecordEnumerator::Options&) =0;
@@ -125,6 +133,7 @@ namespace litecore {
     private:
         KeyStore(const KeyStore&) = delete;     // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
+        bool del(slice key, sequence_t s, Transaction&);
 
         friend class DataFile;
         friend class RecordEnumerator;

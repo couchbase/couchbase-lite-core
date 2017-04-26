@@ -234,6 +234,10 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     rq.revFlags = flags;
     rq.save = true;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
+    if (!doc) {
+        char buf[256];
+        INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
+    }
     REQUIRE(doc != nullptr);
     c4doc_free(doc);
     c4doc_free(curDoc);

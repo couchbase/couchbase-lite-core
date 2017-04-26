@@ -138,8 +138,6 @@
 		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
 		276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
-		276D15331DFCE21500543B1B /* data in Resources */ = {isa = PBXBuildFile; fileRef = 276D15321DFCE21500543B1B /* data */; };
-		276D15351DFCE21500543B1B /* data in Resources */ = {isa = PBXBuildFile; fileRef = 276D15321DFCE21500543B1B /* data */; };
 		276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
 		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		276D15421DFF54B800543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
@@ -886,7 +884,6 @@
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
 		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
 		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
-		276D15321DFCE21500543B1B /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
 		276E02101EA9717200FEFE8A /* ListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ListenerTest.cc; sourceTree = "<group>"; };
@@ -1446,7 +1443,6 @@
 				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
-				276D15321DFCE21500543B1B /* data */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -2526,7 +2522,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				276D15331DFCE21500543B1B /* data in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2544,7 +2539,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				276D15351DFCE21500543B1B /* data in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

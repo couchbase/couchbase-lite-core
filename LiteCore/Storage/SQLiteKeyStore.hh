@@ -33,7 +33,8 @@ namespace litecore {
         Record get(sequence_t, ContentOptions) const override;
         bool read(Record &rec, ContentOptions options) const override;
 
-        sequence_t set(slice key, slice meta, slice value, DocumentFlags, Transaction&) override;
+        sequence_t set(slice key, slice meta, slice value, DocumentFlags,
+                       Transaction&, const sequence_t *replacingSequence =nullptr) override;
 
         void erase() override;
 
@@ -46,9 +47,7 @@ namespace litecore {
 
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}
-        bool _del(slice key, Transaction &t) override       {return _del(key, 0, t);}
-        bool _del(sequence_t s, Transaction &t) override      {return _del(nullslice, s, t);}
-        bool _del(slice key, sequence_t s, Transaction&);
+        bool _del(slice key, sequence_t s, Transaction&) override;
 
         RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, RecordEnumerator::Options&) override;
         RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max, RecordEnumerator::Options&) override;
@@ -83,7 +82,8 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
-        std::unique_ptr<SQLite::Statement> _setStmt, _backupStmt, _delByKeyStmt, _delBySeqStmt;
+        std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt;
+        std::unique_ptr<SQLite::Statement> _backupStmt, _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};

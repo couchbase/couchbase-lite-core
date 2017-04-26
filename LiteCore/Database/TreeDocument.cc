@@ -187,14 +187,13 @@ namespace c4Internal {
             return true;
         }
 
-        void save(unsigned maxRevTreeDepth) override {
+        bool save(unsigned maxRevTreeDepth) override {
             requireValidDocID();
             if (maxRevTreeDepth == 0)
                 maxRevTreeDepth = _db->maxRevTreeDepth();
             _versionedDoc.prune(maxRevTreeDepth);
-            {
-                _versionedDoc.save(_db->transaction());
-            }
+            if (!_versionedDoc.save(_db->transaction()))
+                return false;
             selectedRev.flags &= ~kRevNew;
             if (_versionedDoc.sequence() > sequence) {
                 sequence = _versionedDoc.sequence();
@@ -202,6 +201,7 @@ namespace c4Internal {
                     selectedRev.sequence = sequence;
                 _db->saved(this);
             }
+            return true;
         }
 
         int32_t purgeRevision(C4Slice revID) override {
@@ -244,6 +244,10 @@ namespace c4Internal {
 
     alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) {
         return revid(version).expanded();
+    }
+
+    bool TreeDocumentFactory::isFirstGenRevID(slice revID) {
+        return revID.hasPrefix(slice("1-", 2));
     }
 
 

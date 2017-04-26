@@ -78,21 +78,28 @@ namespace litecore {
         }
     }
 
-    void VersionedDocument::save(Transaction& transaction) {
+    bool VersionedDocument::save(Transaction& transaction) {
         if (!_changed)
-            return;
+            return true;
         updateMeta();
+        sequence_t seq = _rec.sequence();
         if (currentRevision()) {
             removeNonLeafBodies();
             // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions
             // into the existing body buffer.
-            sequence_t seq = _db.set(_rec.key(), _rec.version(), encode(), _rec.flags(), transaction);
+            seq = _db.set(_rec.key(), _rec.version(), encode(), _rec.flags(),
+                          transaction, &seq);
+            if (!seq)
+                return false;               // Conflict
             _rec.updateSequence(seq);
+            _rec.setExists();
             saved(seq);
         } else {
-            _db.del(_rec.key(), transaction);
+            if (seq && !_db.del(_rec.key(), transaction, &seq))
+                return false;
         }
         _changed = false;
+        return true;
     }
 
 #if DEBUG

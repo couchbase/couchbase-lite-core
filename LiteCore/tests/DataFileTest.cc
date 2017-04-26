@@ -540,6 +540,38 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
 }
 
 
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[DataFile]") {
+    KeyStore &s = db->getKeyStore("store");
+    alloc_slice key("key");
+    sequence_t oldSeq = 0;
+    sequence_t newSeq;
+    {
+        Transaction t(db);
+        newSeq = s.set(key, "initialvalue"_sl, t, &oldSeq);
+        CHECK(newSeq == 1);
+
+        auto badSeq = s.set(key, "wronginitialvalue"_sl, t, &oldSeq);
+        CHECK(badSeq == 0);
+        t.commit();
+    }
+
+    REQUIRE(s.lastSequence() == 1);
+    Record rec = s.get(key);
+    REQUIRE(rec.body() == "initialvalue"_sl);
+
+    {
+        Transaction t(db);
+        newSeq = s.set(key, "updatedvalue"_sl, t, &newSeq);
+        CHECK(newSeq == 2);
+        t.commit();
+    }
+
+    REQUIRE(s.lastSequence() == 2);
+    Record rec2 = s.get(key);
+    REQUIRE(rec2.body() == "updatedvalue"_sl);
+}
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");

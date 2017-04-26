@@ -122,7 +122,8 @@ namespace c4Internal {
             return false;
         }
 
-        virtual void save(unsigned maxRevTreeDepth =0) { }
+        // Returns false on conflict
+        virtual bool save(unsigned maxRevTreeDepth =0) {return true;}
 
         void requireValidDocID();   // Throws if invalid
 

@@ -180,6 +180,34 @@ static alloc_slice createDocUUID() {
 }
 
 
+// Is this a PutRequest that doesn't require a Record to exist already?
+static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) {
+    if (rq->existingRevision)
+        return database->documentFactory().isFirstGenRevID(rq->history[rq->historyCount-1]);
+    else
+        return rq->historyCount == 0;
+}
+
+
+// Try to fulfil a PutRequest by creating a new Record. Return null if one already exists.
+static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
+{
+    Record record(rq->docID);
+    if (!rq->docID.buf)
+        record.setKey(createDocUUID());
+    Document *idoc = internal(database->documentFactory().newDocumentInstance(record));
+    if (rq->existingRevision)
+        idoc->putExistingRevision(*rq);
+    else
+        idoc->putNewRevision(*rq);
+    if (!idoc->save()) {
+        delete idoc;
+        return nullptr;
+    }
+    return idoc;
+}
+
+
 // Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
 // After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
 C4Document* c4doc_getForPut(C4Database *database,
@@ -194,8 +222,7 @@ C4Document* c4doc_getForPut(C4Database *database,
     Document *idoc = nullptr;
     try {
         alloc_slice newDocID;
-        bool isNewDoc = (!docID.buf);
-        if (isNewDoc) {
+        if (!docID.buf) {
             newDocID = createDocUUID();
             docID = newDocID;
         }
@@ -240,31 +267,53 @@ C4Document* c4doc_put(C4Database *database,
 {
     if (!database->mustBeInTransaction(outError))
         return nullptr;
-    int commonAncestorIndex;
+    if (rq->docID.buf && !Document::isValidDocID(rq->docID)) {
+        c4error_return(LiteCoreDomain, kC4ErrorBadDocID, C4STR("Invalid docID"), outError);
+        return nullptr;
+    }
+    if (rq->existingRevision || rq->historyCount > 0)
+        if (!checkParam(rq->docID.buf, "Missing docID", outError))
+            return nullptr;
+    if (rq->existingRevision) {
+        if (!checkParam(rq->historyCount > 0, "No history", outError))
+            return nullptr;
+    } else {
+        if (!checkParam(rq->historyCount <= 1, "Too much history", outError))
+            return nullptr;
+    }
+
+    int commonAncestorIndex = 0;
     C4Document *doc = nullptr;
     try {
-        if (rq->existingRevision) {
-            // Existing revision:
-            if (rq->docID.size == 0 || rq->historyCount == 0)
-                error::_throw(error::InvalidParameter);
-            doc = c4doc_get(database, rq->docID, false, outError);
-            if (!doc)
+        if (isNewDocPutRequest(database, rq)) {
+            doc = putNewDoc(database, rq);
+            if (!doc && !rq->existingRevision && !rq->allowConflict) {
+                recordError(LiteCoreDomain, kC4ErrorConflict, "Document already exists",  outError);
                 return nullptr;
-            commonAncestorIndex = internal(doc)->putExistingRevision(*rq);
+            }
+            if (!doc)
+                Log("putNewDoc failed, but proceeding...");
+        }
+        if (!doc) {
+            if (rq->existingRevision) {
+                // Insert existing revision:
+                doc = c4doc_get(database, rq->docID, false, outError);
+                if (!doc)
+                    return nullptr;
+                commonAncestorIndex = internal(doc)->putExistingRevision(*rq);
 
-        } else {
-            // New revision:
-            C4Slice parentRevID = kC4SliceNull;
-            if (rq->historyCount == 1)
-                parentRevID = rq->history[0];
-            else if (rq->historyCount > 1)
-                error::_throw(error::InvalidParameter);
-            bool deletion = (rq->revFlags & kRevDeleted) != 0;
-            doc = c4doc_getForPut(database, rq->docID, parentRevID, deletion, rq->allowConflict,
-                                  outError);
-            if (!doc)
-                return nullptr;
-            commonAncestorIndex = internal(doc)->putNewRevision(*rq) ? 1 : 0;
+            } else {
+                // Create new revision:
+                C4Slice parentRevID = kC4SliceNull;
+                if (rq->historyCount == 1)
+                    parentRevID = rq->history[0];
+                bool deletion = (rq->revFlags & kRevDeleted) != 0;
+                doc = c4doc_getForPut(database, rq->docID, parentRevID, deletion, rq->allowConflict,
+                                      outError);
+                if (!doc)
+                    return nullptr;
+                commonAncestorIndex = internal(doc)->putNewRevision(*rq) ? 1 : 0;
+            }
         }
 
         if (outCommonAncestorIndex)
