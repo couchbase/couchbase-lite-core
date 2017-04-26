@@ -89,8 +89,7 @@ namespace litecore {
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
-        /** The number of soft deletions that have been purged via compaction. 
-            (Used by the indexer) */
+        /** The number of record deletions since the DataFile was created (Used by the indexer) */
         uint64_t purgeCount() const;
 
         void useDocumentKeys();
@@ -175,8 +174,6 @@ namespace litecore {
             is in a transaction, nor starts a transaction while the function is running. */
         void withFileLock(function_ref<void(void)> fn);
 
-        void updatePurgeCount(Transaction&);
-
         void beganCompacting();
         void finishedCompacting();
 
@@ -200,7 +197,7 @@ namespace litecore {
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
 
-        void incrementDeletionCount(Transaction &t);
+        void incrementPurgeCount(Transaction &t);
 
         Retained<Shared>        _shared;                        // Shared state of file (lock)
         Options                 _options;                       // Option/capability flags
@@ -233,7 +230,7 @@ namespace litecore {
         friend class DataFile;
         friend class KeyStore;
 
-        void incrementDeletionCount()       {_db.incrementDeletionCount(*this);}
+        void incrementPurgeCount()       {_db.incrementPurgeCount(*this);}
 
         Transaction(DataFile*, bool begin);
         Transaction(const Transaction&) = delete;

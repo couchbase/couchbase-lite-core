@@ -14,7 +14,7 @@
 //  and limitations under the License.
 
 #include "VersionedDocument.hh"
-#include "DocumentMeta.hh"
+#include "Record.hh"
 #include "Error.hh"
 #include "varint.hh"
 #include <ostream>
@@ -53,38 +53,29 @@ namespace litecore {
             RevTree::decode(_rec.body(), _rec.sequence());
         else if (_rec.bodySize() > 0)
             _unknown = true;        // i.e. rec was read as meta-only
-
-        if (_rec.exists()) {
-            _meta.decode(_rec.meta());
-        } else {
-            _meta.flags = DocumentFlags::kNone;
-        }
     }
 
     void VersionedDocument::updateMeta() {
-        _meta.flags = kNone;
+        _rec.setFlags(DocumentFlags::kNone);
         const Rev* curRevision = currentRevision();
         if (curRevision) {
-            _meta.version = curRevision->revID;
+            _rec.setVersion(curRevision->revID);
 
             // Compute flags:
             if (curRevision->isDeleted())
-                _meta.setFlag(DocumentFlags::kDeleted);
+                _rec.setFlag(DocumentFlags::kDeleted);
             if (hasConflict())
-                _meta.setFlag(DocumentFlags::kConflicted);
+                _rec.setFlag(DocumentFlags::kConflicted);
             for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
                 if (rev->hasAttachments()) {
-                    _meta.setFlag(DocumentFlags::kHasAttachments);
+                    _rec.setFlag(DocumentFlags::kHasAttachments);
                     break;
                 }
             }
         } else {
-            _meta.setFlag(kDeleted);
-            _meta.version = nullslice;
+            _rec.setFlag(DocumentFlags::kDeleted);
+            _rec.setVersion(nullslice);
         }
-
-        // Write to _rec.meta:
-        _rec.setMeta(_meta.encodeAndUpdate());
     }
 
     void VersionedDocument::save(Transaction& transaction) {
@@ -95,7 +86,7 @@ namespace litecore {
             removeNonLeafBodies();
             // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions
             // into the existing body buffer.
-            sequence_t seq = _db.set(_rec.key(), _rec.meta(), encode(), transaction);
+            sequence_t seq = _db.set(_rec.key(), _rec.version(), encode(), _rec.flags(), transaction);
             _rec.updateSequence(seq);
             saved(seq);
         } else {

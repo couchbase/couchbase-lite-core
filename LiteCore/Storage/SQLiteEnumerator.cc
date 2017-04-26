@@ -28,14 +28,17 @@ namespace litecore {
         SQLiteEnumerator(SQLite::Statement *stmt, bool descending, ContentOptions content)
         :_stmt(stmt),
          _content(content)
-        { }
+        {
+            LogTo(SQL, "Enumerator: %s", _stmt->getQuery().c_str());
+        }
 
         virtual bool next() override {
             return _stmt->executeStep();
         }
 
         virtual bool read(Record &rec) override {
-            updateDoc(rec, (int64_t)_stmt->getColumn(0), (int)_stmt->getColumn(1) != 0);
+            rec.updateSequence((int64_t)_stmt->getColumn(0));
+            rec.setFlags((DocumentFlags)(int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt.get(), _content);
             return true;
@@ -48,7 +51,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::selectFrom(stringstream& in, const RecordEnumerator::Options &options) {
-        in << "SELECT sequence, deleted, key, meta";
+        in << "SELECT sequence, flags, key, version";
         if (options.contentOptions & kMetaOnly)
             in << ", length(body)";
         else
@@ -77,8 +80,7 @@ namespace litecore {
     {
         stringstream sql;
         selectFrom(sql, options);
-        bool noDeleted = _capabilities.softDeletes && !options.includeDeleted;
-        if (minKey.buf || maxKey.buf || noDeleted) {
+        if (minKey.buf || maxKey.buf || !options.includeDeleted) {
             sql << " WHERE ";
             bool writeAnd = false;
             if (minKey.buf) {
@@ -89,9 +91,9 @@ namespace litecore {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
             }
-            if (_capabilities.softDeletes && noDeleted) {
+            if (!options.includeDeleted) {
                 if (writeAnd) sql << " AND "; //else writeAnd = true;
-                sql << "deleted!=1";
+                sql << "(flags & 1) != 1";
             }
         }
         sql << " ORDER BY key";
@@ -124,8 +126,8 @@ namespace litecore {
         sql << (options.inclusiveMin() ? " WHERE sequence >= ?" : " WHERE sequence > ?");
         if (max < INT64_MAX)
             sql << (options.inclusiveMax() ? " AND sequence <= ?"   : " AND sequence < ?");
-        if (_capabilities.softDeletes && !options.includeDeleted)
-            sql << " AND deleted!=1";
+        if (!options.includeDeleted)
+            sql << " AND (flags & 1) != 1";
         sql << " ORDER BY sequence";
         writeSQLOptions(sql, options);
 

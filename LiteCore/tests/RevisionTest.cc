@@ -38,8 +38,9 @@ TEST_CASE("CreateRev", "[Revision]") {
     // Copy record:
     const Record &rec = rev.record();
     Record record2(rec.key());
-    record2.setMeta(rec.meta());
+    record2.setVersion(rec.version());
     record2.setBody(rec.body());
+    record2.setFlags(rec.flags());
 
     Revision rev2(std::move(record2));
     verifyRev(rev2);

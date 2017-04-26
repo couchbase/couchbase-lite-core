@@ -263,8 +263,8 @@ namespace c4Internal {
         return new VectorDocument(this, doc);
     }
 
-    alloc_slice VectorDocumentFactory::revIDFromMeta(const DocumentMeta &meta) {
-        return alloc_slice( VersionVector::extractCurrentVersionFromString(meta.version) );
+    alloc_slice VectorDocumentFactory::revIDFromVersion(slice version) {
+        return alloc_slice( VersionVector::extractCurrentVersionFromString(version) );
     }
 
 }

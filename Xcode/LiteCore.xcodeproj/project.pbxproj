@@ -89,6 +89,11 @@
 		2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
 		2749B94E1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
 		2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
+		2749B95C1EB0110D0068DBF9 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
+		2749B95D1EB0110D0068DBF9 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
+		2749B95E1EB0110D0068DBF9 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
+		2749B95F1EB011A00068DBF9 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		2749B9601EB011C30068DBF9 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
@@ -109,9 +114,6 @@
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
-		274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
-		274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */; };
-		274D5BAC1DF9CCDE00BDAF9D /* DocumentMeta.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDED1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
@@ -841,8 +843,6 @@
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
-		274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentMeta.cc; sourceTree = "<group>"; };
-		274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentMeta.hh; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
 		274EDDF41DA30B43003AD158 /* QueryParser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryParser.cc; sourceTree = "<group>"; };
@@ -1175,6 +1175,7 @@
 				276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */,
 				272850EB1E9D48C7009CA22F /* libFleece.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
+				2749B9601EB011C30068DBF9 /* libsqlite3.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1784,8 +1785,6 @@
 				27DF46C31A12CF46007BB4A4 /* Record.hh */,
 				27E609A11951E4C000202B72 /* RecordEnumerator.cc */,
 				27E609A41951E53F00202B72 /* RecordEnumerator.hh */,
-				274D5BA81DF9CCDE00BDAF9D /* DocumentMeta.cc */,
-				274D5BA91DF9CCDE00BDAF9D /* DocumentMeta.hh */,
 				27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */,
 				27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */,
 				274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */,
@@ -2106,7 +2105,6 @@
 				278963641D7A376900493096 /* EncryptedStream.hh in Headers */,
 				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
-				274D5BAC1DF9CCDE00BDAF9D /* DocumentMeta.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
 				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
@@ -2634,6 +2632,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
+				2749B95E1EB0110D0068DBF9 /* Logging.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
@@ -2642,8 +2641,11 @@
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
+				2749B95F1EB011A00068DBF9 /* StringUtil.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
+				2749B95C1EB0110D0068DBF9 /* Error.cc in Sources */,
 				276E021B1EA983EE00FEFE8A /* Response.cc in Sources */,
+				2749B95D1EB0110D0068DBF9 /* FilePath.cc in Sources */,
 				276E02111EA9717200FEFE8A /* ListenerTest.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
@@ -2816,7 +2818,6 @@
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				279794A61D307626001D0F3A /* RevisionStore.cc in Sources */,
-				274D5BAA1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
@@ -2902,7 +2903,6 @@
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
-				274D5BAB1DF9CCDE00BDAF9D /* DocumentMeta.cc in Sources */,
 				72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */,
 				27F7A0C51D5E657C00447BC6 /* RefCounted.cc in Sources */,
 				271057D51D3D70780018247B /* VectorDocument.cc in Sources */,

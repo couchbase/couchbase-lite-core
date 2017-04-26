@@ -25,8 +25,8 @@ namespace litecore {
     Revision::Revision(const Record& rec)
     :_rec(rec)
     {
-        if (_rec.meta().buf || _rec.exists())
-            readMeta();
+        if (_rec.version().buf || _rec.exists())
+            readRecordVersion();
     }
 
 
@@ -37,11 +37,11 @@ namespace litecore {
     {
         // Create metadata:
         if (p.deleted)
-            _meta.flags = kDeleted;
+            _rec.setFlags(DocumentFlags::kDeleted);
         if (p.hasAttachments)
-            _meta.setFlag(kHasAttachments);
+            _rec.setFlag(DocumentFlags::kHasAttachments);
 
-        writeMeta(vers);
+        storeRecordVersion(vers);
 
         // Set the rec key and body:
         setKey(docID, current);
@@ -51,23 +51,20 @@ namespace litecore {
 
     Revision::Revision(Revision &&old) noexcept
     :_rec(std::move(old._rec)),
-     _meta(old._meta),
      _vers(std::move(old._vers))
     { }
 
 
-    void Revision::writeMeta(const VersionVector &vers) {
+    void Revision::storeRecordVersion(const VersionVector &vers) {
         std::string versStr = vers.asString();
-        _meta.version = slice(versStr);
-        _rec.setMeta(_meta.encode());
+        _rec.setVersion(slice(versStr));
         // Read it back in, to set up my pointers into it:
-        readMeta();
+        readRecordVersion();
     }
 
 
-    void Revision::readMeta() {
-        _meta.decode(_rec.meta());
-        _vers = VersionVector(_meta.version);
+    void Revision::readRecordVersion() {
+        _vers = VersionVector(_rec.version());
     }
 
 
@@ -75,10 +72,9 @@ namespace litecore {
         if (conflicted == isConflicted())
             return false;
         if (conflicted)
-            _meta.setFlag(kConflicted);
+            _rec.setFlag(DocumentFlags::kConflicted);
         else
-            _meta.clearFlag(kConflicted);
-        writeMeta(_vers);
+            _rec.clearFlag(DocumentFlags::kConflicted);
         return true;
     }
 

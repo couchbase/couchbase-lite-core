@@ -217,7 +217,7 @@ namespace litecore {
 
 
     const DataFile::Options DataFile::Options::defaults = DataFile::Options {
-        {true, true},
+        {true},
         true, true
     };
 
@@ -295,8 +295,6 @@ namespace litecore {
         checkOpen();
         Assert(!(options.sequences && !_options.keyStores.sequences),
                "KeyStore can't have sequences if Database doesn't");
-        Assert(!(options.softDeletes && !_options.keyStores.softDeletes),
-               "KeyStore can't have softDeletes if Database doesn't");
         KeyStore *store = newKeyStore(name, options);
         _keyStores[name] = unique_ptr<KeyStore>(store);
         return *store;
@@ -337,27 +335,17 @@ namespace litecore {
 
     const string DataFile::kInfoKeyStoreName = "info";
 
-    static const char* const kDeletionCountKey = "deletionCount";
     static const char* const kPurgeCountKey = "purgeCount";
 
-    void DataFile::incrementDeletionCount(Transaction &t) {
+    void DataFile::incrementPurgeCount(Transaction &t) {
         KeyStore &infoStore = getKeyStore(kInfoKeyStoreName);
-        Record rec = infoStore.get(slice(kDeletionCountKey));
-        uint64_t purgeCount = rec.bodyAsUInt() + 1;
-        uint64_t newBody = _endian_encode(purgeCount);
-        rec.setBody(slice(&newBody, sizeof(newBody)));
+        Record rec = infoStore.get(slice(kPurgeCountKey));
+        rec.setBodyAsUInt(rec.bodyAsUInt() + 1);
         infoStore.write(rec, t);
     }
 
     uint64_t DataFile::purgeCount() const {
         return getKeyStore(kInfoKeyStoreName).get(slice(kPurgeCountKey)).bodyAsUInt();
-    }
-
-    void DataFile::updatePurgeCount(Transaction &t) {
-        KeyStore& infoStore = getKeyStore(kInfoKeyStoreName);
-        Record purgeCount = infoStore.get(slice(kDeletionCountKey));
-        if (purgeCount.exists())
-            infoStore.set(slice(kPurgeCountKey), purgeCount.body(), t);
     }
 
 

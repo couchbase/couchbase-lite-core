@@ -19,7 +19,6 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "DataFile.hh"
-#include "DocumentMeta.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "Logging.hh"
@@ -68,9 +67,10 @@ struct C4DocEnumerator: C4InstanceCounted {
     static RecordEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         RecordEnumerator::Options options;
         options.skip = (unsigned)c4options.skip;
-        options.descending = (c4options.flags & kC4Descending) != 0;
-        options.inclusiveStart = (c4options.flags & kC4InclusiveStart) != 0;
-        options.inclusiveEnd = (c4options.flags & kC4InclusiveEnd) != 0;
+        options.descending      = (c4options.flags & kC4Descending) != 0;
+        options.inclusiveStart  = (c4options.flags & kC4InclusiveStart) != 0;
+        options.inclusiveEnd    = (c4options.flags & kC4InclusiveEnd) != 0;
+        options.includeDeleted  = (c4options.flags & kC4IncludeDeleted) != 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOptions = kMetaOnly;
         return options;
@@ -105,20 +105,19 @@ struct C4DocEnumerator: C4InstanceCounted {
 
 private:
     inline bool useDoc() {
-        if (!_e.record().exists()) {
+        auto &rec = _e.record();
+        if (!rec.exists()) {
             // Client must be enumerating a list of docIDs, and this doc doesn't exist.
             // Return it anyway, without the kExists flag.
             _docFlags = 0;
             _docRevID = nullslice;
-            return (!_filter || _filter(_e.record(), 0));
+            return (!_filter || _filter(rec, 0));
         }
-        DocumentMeta meta(_e.record());
-        _docRevID = _database->documentFactory().revIDFromMeta(meta);
-        _docFlags = (unsigned)meta.flags | kExists;
+        _docRevID = _database->documentFactory().revIDFromVersion(rec.version());
+        _docFlags = (C4DocumentFlags)rec.flags() | kExists;
         auto optFlags = _options.flags;
-        return (optFlags & kC4IncludeDeleted       || !(_docFlags & ::kDeleted))
-            && (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kConflicted))
-            && (!_filter || _filter(_e.record(), _docFlags));
+        return (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kConflicted))
+            && (!_filter || _filter(rec, _docFlags));
     }
 
     Retained<Database> _database;

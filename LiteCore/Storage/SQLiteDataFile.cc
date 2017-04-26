@@ -46,7 +46,7 @@ namespace litecore {
     static const int64_t MB = 1024 * 1024;
 
     // Min/max user_version of db files I can read
-    static const int kMinUserVersion = 200;
+    static const int kMinUserVersion = 201;
     static const int kMaxUserVersion = 299;
 
     // SQLite page size
@@ -202,7 +202,7 @@ path.path().c_str());
                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-                exec("PRAGMA user_version=200; "
+                exec("PRAGMA user_version=201; "
                      "END;");
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
@@ -502,15 +502,6 @@ path.path().c_str());
     void SQLiteDataFile::compact() {
         checkOpen();
         beganCompacting();
-        {
-            Transaction t(this);
-            for (auto& name : allKeyStoreNames()) {
-                auto removed = exec(string("DELETE FROM kv_")+name+" WHERE deleted=1");
-                LogTo(DBLog, "Removed %d deleted keys from kv_%s", removed, name.c_str());
-            }
-            updatePurgeCount(t);
-            t.commit();
-        }
         maybeVacuum();
         finishedCompacting();
     }

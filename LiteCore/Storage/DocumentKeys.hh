@@ -30,7 +30,7 @@ namespace litecore {
             return loadFrom(r.body());
         }
         virtual void write(slice encodedData) override {
-            _keyStore.set("SharedKeys"_sl, nullslice, encodedData, _db.transaction());
+            _keyStore.set("SharedKeys"_sl, encodedData, _db.transaction());
         }
 
     private:

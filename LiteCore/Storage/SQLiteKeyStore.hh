@@ -33,7 +33,7 @@ namespace litecore {
         Record get(sequence_t, ContentOptions) const override;
         bool read(Record &rec, ContentOptions options) const override;
 
-        sequence_t set(slice key, slice meta, slice value, Transaction&) override;
+        sequence_t set(slice key, slice meta, slice value, DocumentFlags, Transaction&) override;
 
         void erase() override;
 

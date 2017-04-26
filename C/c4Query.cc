@@ -19,7 +19,7 @@
 #include "Database.hh"
 #include "DataFile.hh"
 #include "Query.hh"
-#include "DocumentMeta.hh"
+#include "Record.hh"
 #include <math.h>
 #include <limits.h>
 #include <mutex>
@@ -123,9 +123,8 @@ struct C4DBQueryEnumerator : public C4QueryEnumInternal {
             return C4QueryEnumInternal::next();
         docID = _enum.recordID();
         docSequence = _enum.sequence();
-        DocumentMeta meta(_enum.meta());
-        docFlags = meta.flags;
-        revID = _revIDBuf = _database->documentFactory().revIDFromMeta(meta);
+        docFlags = (C4DocumentFlags)_enum.flags();
+        revID = _revIDBuf = _database->documentFactory().revIDFromVersion(_enum.version());
 
         if (_hasFullText) {
             auto &ft = _enum.fullTextTerms();

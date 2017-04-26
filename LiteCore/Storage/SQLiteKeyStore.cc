@@ -50,10 +50,14 @@ namespace litecore {
         if (!db.keyStoreExists(name)) {
             // Here's the table schema. The body comes last because it may be very large, and it's
             // more efficient in SQLite to keep large columns at the end of a row.
-            // Create the sequence and deleted columns regardless of options, otherwise it's too
+            // Create the sequence and flags columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
-            db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ (key BLOB PRIMARY KEY, meta BLOB, "
-                          "sequence INTEGER, deleted INTEGER DEFAULT 0, body BLOB)"));
+            db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
+                          "  key TEXT PRIMARY KEY,"
+                          "  sequence INTEGER,"
+                          "  flags INTEGER DEFAULT 0,"
+                          "  version BLOB,"
+                          "  body BLOB)"));
         }
     }
 
@@ -108,9 +112,7 @@ namespace litecore {
     uint64_t SQLiteKeyStore::recordCount() const {
         if (!_recCountStmt) {
             stringstream sql;
-            sql << "SELECT count(*) FROM kv_" << _name;
-            if (_capabilities.softDeletes)
-                sql << " WHERE deleted!=1";
+            sql << "SELECT count(*) FROM kv_" << _name << " WHERE (flags & 1) != 1";
             compile(_recCountStmt, sql.str().c_str());
         }
         UsingStatement u(_recCountStmt);
@@ -155,17 +157,19 @@ namespace litecore {
     }
 
 
-    // OPT: Would be nice to avoid copying key/meta/body here; this would require Record to
+    // OPT: Would be nice to avoid copying key/vers/body here; this would require Record to
     // know that the pointers are ephemeral, and create copies if they're accessed as
     // alloc_slice (not just slice).
 
 
-    // Gets meta from column 3, and body (or its length) from column 4
+    // Gets flags from col 1, version from col 3, and body (or its length) from col 4
     /*static*/ void SQLiteKeyStore::setRecordMetaAndBody(Record &rec,
                                                          SQLite::Statement &stmt,
                                                          ContentOptions options)
     {
-        rec.setMeta(columnAsSlice(stmt.getColumn(3)));
+        rec.setExists();
+        rec.setFlags((DocumentFlags)(int)stmt.getColumn(1));
+        rec.setVersion(columnAsSlice(stmt.getColumn(3)));
         if (options & kMetaOnly)
             rec.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
         else
@@ -176,19 +180,18 @@ namespace litecore {
     bool SQLiteKeyStore::read(Record &rec, ContentOptions options) const {
         auto &stmt = (options & kMetaOnly)
             ? compile(_getMetaByKeyStmt,
-                      "SELECT sequence, deleted, 0, meta, length(body) FROM kv_@ WHERE key=?")
+                      "SELECT sequence, flags, 0, version, length(body) FROM kv_@ WHERE key=?")
             : compile(_getByKeyStmt,
-                      "SELECT sequence, deleted, 0, meta, body FROM kv_@ WHERE key=?");
+                      "SELECT sequence, flags, 0, version, body FROM kv_@ WHERE key=?");
         stmt.bindNoCopy(1, rec.key().buf, (int)rec.key().size);
         UsingStatement u(stmt);
         if (!stmt.executeStep())
             return false;
 
         sequence_t seq = (int64_t)stmt.getColumn(0);
-        bool deleted = (int)stmt.getColumn(1) != 0;
-        updateDoc(rec, seq, deleted);
+        rec.updateSequence(seq);
         setRecordMetaAndBody(rec, stmt, options);
-        return !rec.deleted();
+        return true;
     }
 
 
@@ -198,35 +201,35 @@ namespace litecore {
         Record rec;
         auto &stmt = (options & kMetaOnly)
             ? compile(_getMetaBySeqStmt,
-                          "SELECT 0, deleted, key, meta, length(body) FROM kv_@ WHERE sequence=?")
+                      "SELECT 0, flags, key, version, length(body) FROM kv_@ WHERE sequence=?")
             : compile(_getBySeqStmt,
-                           "SELECT 0, deleted, key, meta, body FROM kv_@ WHERE sequence=?");
+                      "SELECT 0, flags, key, version, body FROM kv_@ WHERE sequence=?");
         UsingStatement u(stmt);
         stmt.bind(1, (long long)seq);
         if (stmt.executeStep()) {
-            bool deleted = (int)stmt.getColumn(1) != 0;
-            updateDoc(rec, seq, deleted);
             rec.setKey(columnAsSlice(stmt.getColumn(2)));
+            rec.updateSequence(seq);
             setRecordMetaAndBody(rec, stmt, options);
         }
         return rec;
     }
 
 
-    sequence_t SQLiteKeyStore::set(slice key, slice meta, slice body, Transaction&) {
+    sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags, Transaction&) {
         LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
         compile(_setStmt,
-                "INSERT OR REPLACE INTO kv_@ (key, meta, body, sequence, deleted) VALUES (?, ?, ?, ?, 0)");
+                "INSERT OR REPLACE INTO kv_@ (key, version, body, flags, sequence) VALUES (?, ?, ?, ?, ?)");
         _setStmt->bindNoCopy(1, key.buf, (int)key.size);
-        _setStmt->bindNoCopy(2, meta.buf, (int)meta.size);
+        _setStmt->bindNoCopy(2, vers.buf, (int)vers.size);
         _setStmt->bindNoCopy(3, body.buf, (int)body.size);
+        _setStmt->bind(4, (int)flags);
 
         sequence_t seq = 0;
         if (_capabilities.sequences) {
             seq = lastSequence() + 1;
-            _setStmt->bind(4, (long long)seq);
+            _setStmt->bind(5, (long long)seq);
         } else {
-            _setStmt->bind(4);
+            _setStmt->bind(5); // null
         }
         UsingStatement u(_setStmt);
         _setStmt->exec();
@@ -239,33 +242,18 @@ namespace litecore {
         auto& stmt = delSeq ? _delBySeqStmt : _delByKeyStmt;
         if (!stmt) {
             stringstream sql;
-            if (_capabilities.softDeletes) {
-                sql << "UPDATE kv_@ SET deleted=1, meta=null, body=null";
-                if (_capabilities.sequences)
-                    sql << ", sequence=? ";
-            } else {
-                sql << "DELETE FROM kv_@";
-            }
+            sql << "DELETE FROM kv_@";
             sql << (delSeq ? " WHERE sequence=?" : " WHERE key=?");
             compile(stmt, sql.str().c_str());
         }
 
-        sequence_t newSeq = 0;
-        int param = 1;
-        if (_capabilities.softDeletes && _capabilities.sequences) {
-            newSeq = lastSequence() + 1;
-            stmt->bind(param++, (long long)newSeq);
-        }
         if (delSeq)
-            stmt->bind(param++, (long long)delSeq);
+            stmt->bind(1, (long long)delSeq);
         else
-            stmt->bindNoCopy(param++, key.buf, (int)key.size);
+            stmt->bindNoCopy(1, key.buf, (int)key.size);
 
         UsingStatement u(stmt);
-        bool ok = stmt->exec() > 0;
-        if (ok && newSeq > 0)
-            setLastSequence(newSeq);
-        return ok;
+        return stmt->exec() > 0;
     }
 
 

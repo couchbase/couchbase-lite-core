@@ -108,10 +108,6 @@ namespace litecore {
             virtual bool next() =0;
             virtual bool read(Record&) =0;
             virtual bool shouldSkipFirstStep()      {return false;}
-        protected:
-            void updateDoc(Record &record, sequence_t s, bool del =false) const {
-                record.update(s, del);
-            }
         };
 
     private:

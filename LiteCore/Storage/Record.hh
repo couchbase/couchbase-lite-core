@@ -18,8 +18,20 @@
 
 namespace litecore {
 
-    /** The unit of storage in a DataFile: a key, metadata and body (all opaque blobs);
-        and some extra metadata like a deletion flag and a sequence number. */
+    /** Flags used by Document, stored in a Record. Matches C4DocumentFlags. */
+    enum class DocumentFlags : uint8_t {
+        kNone           = 0x00,
+        kDeleted        = 0x01,
+        kConflicted     = 0x02,
+        kHasAttachments = 0x04,
+    };
+
+    static inline bool operator& (DocumentFlags a, DocumentFlags b) {
+        return ((uint8_t)a & (uint8_t)b) != 0;
+    }
+
+    /** The unit of storage in a DataFile: a key, version and body (all opaque blobs);
+        and some extra metadata like flags and a sequence number. */
     class Record {
     public:
         Record()                              { }
@@ -28,27 +40,29 @@ namespace litecore {
         Record(Record&&) noexcept;
 
         const alloc_slice& key() const          {return _key;}
-        const alloc_slice& meta() const         {return _meta;}
+        const alloc_slice& version() const      {return _version;}
         const alloc_slice& body() const         {return _body;}
 
         size_t bodySize() const                 {return _bodySize;}
 
         sequence_t sequence() const             {return _sequence;}
-        bool deleted() const                    {return _deleted;}
+
+        DocumentFlags flags() const             {return _flags;}
+        void setFlags(DocumentFlags f)          {_flags = f;}
+        void setFlag(DocumentFlags f)           {_flags = (DocumentFlags)((uint8_t)_flags | (uint8_t)f);}
+        void clearFlag(DocumentFlags f)         {_flags = (DocumentFlags)((uint8_t)_flags & ~(uint8_t)f);}
 
         bool exists() const                     {return _exists;}
 
         template <typename T>
             void setKey(const T &key)           {_key = key;}
         template <typename T>
-            void setMeta(const T &meta)         {_meta = meta;}
+            void setVersion(const T &vers)      {_version = vers;}
         template <typename T>
             void setBody(const T &body)         {_body = body; _bodySize = _body.size;}
 
-        void setDeleted(bool deleted)           {_deleted = deleted; if (deleted) _exists = false;}
-
-        /** Reallocs the 'meta' slice to the desired size. */
-        const alloc_slice& resizeMeta(size_t newSize)        {_meta.resize(newSize); return _meta;}
+        uint64_t bodyAsUInt() const noexcept;
+        void setBodyAsUInt(uint64_t) noexcept;
 
         /** Clears/frees everything. */
         void clear() noexcept;
@@ -58,25 +72,18 @@ namespace litecore {
 
         void updateSequence(sequence_t s)       {_sequence = s;}
         void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
-
-        uint64_t bodyAsUInt() const noexcept;
-        void setBodyAsUInt(uint64_t) noexcept;
+        void setExists()                        {_exists = true;}
 
     private:
         friend class KeyStore;
-        friend class KeyStoreWriter;
         friend class Transaction;
         friend class RecordEnumerator;
 
-        void update(sequence_t sequence, bool deleted) {
-            _sequence = sequence; _deleted = deleted; _exists = !deleted;
-        }
-
-        alloc_slice _key, _meta, _body;     // The key, metadata and body of the record
-        size_t      _bodySize {0};          // Size of body, if body wasn't loaded
-        sequence_t  _sequence {0};          // Sequence number (if KeyStore supports sequences)
-        bool        _deleted {false};       // Is the record deleted?
-        bool        _exists {false};        // Does the record exist?
+        alloc_slice     _key, _version, _body;  // The key, metadata and body of the record
+        size_t          _bodySize {0};          // Size of body, if body wasn't loaded
+        sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
+        DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)
+        bool            _exists {false};        // Does the record exist?
     };
 
 }

@@ -28,29 +28,30 @@ namespace litecore {
 
     Record::Record(const Record &d)
     :_key(d._key),
-     _meta(d._meta),
+     _version(d._version),
      _body(d._body),
      _bodySize(d._bodySize),
      _sequence(d._sequence),
-     _deleted(d._deleted),
+     _flags(d._flags),
      _exists(d._exists)
     { }
 
     Record::Record(Record &&d) noexcept
     :_key(move(d._key)),
-     _meta(move(d._meta)),
+     _version(move(d._version)),
      _body(move(d._body)),
      _bodySize(d._bodySize),
      _sequence(d._sequence),
-     _deleted(d._deleted),
+     _flags(d._flags),
      _exists(d._exists)
     { }
 
     void Record::clearMetaAndBody() noexcept {
-        setMeta(nullslice);
+        setVersion(nullslice);
         setBody(nullslice);
         _bodySize = _sequence = 0;
-        _exists = _deleted = false;
+        _flags = DocumentFlags::kNone;
+        _exists = false;
     }
 
     void Record::clear() noexcept {

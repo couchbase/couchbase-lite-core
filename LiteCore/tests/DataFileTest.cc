@@ -70,7 +70,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     {
         Transaction t(db);
         Record rec("rec"_sl);
-        rec.setMeta("m-e-t-a"_sl);
+        rec.setVersion("m-e-t-a"_sl);
         rec.setBody("THIS IS THE BODY"_sl);
         store->write(rec, t);
 
@@ -78,7 +78,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         REQUIRE(store->lastSequence() == 2);
         auto doc_alias = store->get(rec.sequence());
         REQUIRE(doc_alias.key() == rec.key());
-        REQUIRE(doc_alias.meta() == rec.meta());
+        REQUIRE(doc_alias.version() == rec.version());
         REQUIRE(doc_alias.body() == rec.body());
 
         doc_alias.setBody("NU BODY"_sl);
@@ -86,7 +86,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
 
         REQUIRE(store->read(rec));
         REQUIRE(rec.sequence() == 3);
-        REQUIRE(rec.meta() == doc_alias.meta());
+        REQUIRE(rec.version() == doc_alias.version());
         REQUIRE(rec.body() == doc_alias.body());
 
         // Record shouldn't exist outside transaction yet:
@@ -102,7 +102,7 @@ static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
         string docID = stringWithFormat("rec-%03d", i);
-        sequence_t seq = store->set(slice(docID), litecore::nullslice, slice(docID), t);
+        sequence_t seq = store->set(slice(docID), slice(docID), t);
         REQUIRE(seq == (sequence_t)i);
         REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
     }
@@ -286,7 +286,7 @@ static void addNumberedDocs(KeyStore *store) {
         enc.endDictionary();
         alloc_slice body = enc.extractOutput();
 
-        sequence_t seq = store->set(slice(docID), litecore::nullslice, body, t);
+        sequence_t seq = store->set(slice(docID), body, t);
         REQUIRE(seq == (sequence_t)i);
     }
     t.commit();
@@ -360,7 +360,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
             enc.endDictionary();
             alloc_slice body = enc.extractOutput();
 
-            store->set(slice(docID), litecore::nullslice, body, t);
+            store->set(slice(docID), body, t);
         }
         t.commit();
     }
@@ -422,7 +422,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
         Transaction trans(db);
         for (unsigned d = 1; d <= kNDocs; d++) {
             string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
-            store->set(slice(docID), nullslice, "some record content goes here"_sl, trans);
+            store->set(slice(docID), "some record content goes here"_sl, trans);
         }
         trans.commit();
     }
@@ -456,9 +456,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
     }
     Record rec = store->get(key);
     REQUIRE_FALSE(rec.exists());
-    REQUIRE(store->lastSequence() == 2);
-    REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
-    db->compact();
+    REQUIRE(store->lastSequence() == 1);
     REQUIRE(db->purgeCount() == 1);
 }
 
@@ -482,8 +480,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
     //    REQUIRE(rec.deleted());
     REQUIRE_FALSE(rec.exists());
     
-    REQUIRE(db->purgeCount() == 0); // doesn't increment until after compaction
-    db->compact();
     REQUIRE(db->purgeCount() == 1);
 }
 
@@ -638,7 +634,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
             // Create encrypted db:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
             Transaction t(*encryptedDB);
-            encryptedDB->defaultKeyStore().set("k"_sl, nullslice, "value"_sl, t);
+            encryptedDB->defaultKeyStore().set("k"_sl, "value"_sl, t);
             t.commit();
         }
         {

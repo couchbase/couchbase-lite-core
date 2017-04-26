@@ -31,7 +31,8 @@ namespace litecore {
     enum {
         kSeqCol = 0,
         kDocIDCol,
-        kMetaCol,
+        kVersionCol,
+        kFlagsCol,
         kFTSOffsetsCol,     // only if there is a MATCH expression
     };
 
@@ -42,7 +43,7 @@ namespace litecore {
         :Query(keyStore)
         {
             QueryParser qp(keyStore.tableName());
-            qp.setBaseResultColumns({"sequence", "key", "meta"});
+            qp.setBaseResultColumns({"sequence", "key", "version", "flags"});
             qp.setDefaultOffset("$offset");
             qp.setDefaultLimit("$limit");
             qp.parseJSON(selectorExpression);
@@ -142,9 +143,11 @@ namespace litecore {
 
         virtual int columnCount() =0;
         virtual slice getStringColumn(int col) =0;
+        virtual int getIntColumn(int col) =0;
 
         slice recordID()        {return _query._isAggregate ? nullslice : getStringColumn(kDocIDCol);}
-        slice meta() override   {return _query._isAggregate ? nullslice : getStringColumn(kMetaCol);}
+        slice version() override   {return _query._isAggregate ? nullslice : getStringColumn(kVersionCol);}
+        DocumentFlags flags() override {return _query._isAggregate ? DocumentFlags::kNone : (DocumentFlags)getIntColumn(kFlagsCol);}
 
         virtual sequence_t sequence() =0;
 
@@ -226,6 +229,10 @@ namespace litecore {
 
         slice getStringColumn(int col) override {
             return _iter->asArray()->get(col)->asString();
+        }
+
+        int getIntColumn(int col) override {
+            return (int)_iter->asArray()->get(col)->asInt();
         }
 
         sequence_t sequence() override {
@@ -326,7 +333,11 @@ namespace litecore {
 
         slice getStringColumn(int col) override {
             return {(const void*)_statement->getColumn(col),
-                    (size_t)_statement->getColumn(col).size()};
+                (size_t)_statement->getColumn(col).size()};
+        }
+
+        int getIntColumn(int col) override {
+            return _statement->getColumn(col);
         }
 
         sequence_t sequence() override {

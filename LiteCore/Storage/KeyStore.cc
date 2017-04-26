@@ -26,7 +26,7 @@ namespace litecore {
 
     extern LogDomain DBLog;
 
-    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false, false};
+    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
 
     Record KeyStore::get(slice key, ContentOptions options) const {
         Record rec(key);
@@ -58,28 +58,25 @@ namespace litecore {
     }
 
     void KeyStore::write(Record &rec, Transaction &t) {
-        if (rec.deleted()) {
-            del(rec, t);
-        } else {
-            auto seq = set(rec.key(), rec.meta(), rec.body(), t);
-            updateDoc(rec, seq);
-        }
+        auto seq = set(rec.key(), rec.version(), rec.body(), rec.flags(), t);
+        rec.setExists();
+        rec.updateSequence(seq);
     }
 
     bool KeyStore::del(slice key, Transaction &t) {
         LogTo(DBLog, "KeyStore(%s) del %s", _name.c_str(), logSlice(key));
-        bool ok = _del(key, t);
-        if (ok && _capabilities.softDeletes)
-            t.incrementDeletionCount();
-        return ok;
+        if (!_del(key, t))
+            return false;
+        t.incrementPurgeCount();
+        return true;
     }
 
     bool KeyStore::del(sequence_t s, Transaction &t) {
         LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)s);
-        bool ok = _del(s, t);
-        if (ok && _capabilities.softDeletes)
-            t.incrementDeletionCount();
-        return ok;
+        if (!_del(s, t))
+            return false;
+        t.incrementPurgeCount();
+        return true;
     }
 
     bool KeyStore::del(const litecore::Record &rec, Transaction &t) {

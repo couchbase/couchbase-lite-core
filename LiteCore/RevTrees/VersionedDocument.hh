@@ -16,7 +16,6 @@
 #pragma once
 #include "RevTree.hh"
 #include "Record.hh"
-#include "DocumentMeta.hh"
 
 namespace litecore {
 
@@ -34,11 +33,11 @@ namespace litecore {
         bool revsAvailable() const {return !_unknown;}
 
         const alloc_slice& docID() const {return _rec.key();}
-        revid revID() const         {return revid(_meta.version);}
-        DocumentFlags flags() const {return _meta.flags;}
-        bool isDeleted() const      {return (flags() & kDeleted) != 0;}
-        bool isConflicted() const   {return (flags() & kConflicted) != 0;}
-        bool hasAttachments() const {return (flags() & kHasAttachments) != 0;}
+        revid revID() const         {return revid(_rec.version());}
+        DocumentFlags flags() const {return _rec.flags();}
+        bool isDeleted() const      {return (flags() & DocumentFlags::kDeleted) != 0;}
+        bool isConflicted() const   {return (flags() & DocumentFlags::kConflicted) != 0;}
+        bool hasAttachments() const {return (flags() & DocumentFlags::kHasAttachments) != 0;}
 
         bool exists() const         {return _rec.exists();}
         sequence_t sequence() const {return _rec.sequence();}
@@ -64,7 +63,6 @@ namespace litecore {
 
         KeyStore&       _db;
         Record          _rec;
-        DocumentMeta    _meta;
         alloc_slice     _docTypeBuf;
     };
 }

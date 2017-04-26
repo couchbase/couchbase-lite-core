@@ -269,7 +269,7 @@ C4RawDocument* c4raw_get(C4Database* database,
         }
         auto rawDoc = new C4RawDocument;
         rawDoc->key = r.key().copy();
-        rawDoc->meta = r.meta().copy();
+        rawDoc->meta = r.version().copy();
         rawDoc->body = r.body().copy();
         return rawDoc;
     });

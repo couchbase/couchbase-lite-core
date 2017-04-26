@@ -9,7 +9,7 @@
 #pragma once
 #include "Record.hh"
 #include "VersionVector.hh"
-#include "DocumentMeta.hh"
+#include "Record.hh"
 
 
 namespace litecore {
@@ -43,10 +43,10 @@ namespace litecore {
                                                           : alloc_slice();}
         const VersionVector& version() const{return _vers;}
 
-        DocumentFlags flags() const         {return _meta.flags;}
-        bool isDeleted() const              {return (flags() & kDeleted) != 0;}
-        bool isConflicted() const           {return (flags() & kConflicted) != 0;}
-        bool hasAttachments() const         {return (flags() & kHasAttachments) != 0;}
+        DocumentFlags flags() const         {return _rec.flags();}
+        bool isDeleted() const              {return (flags() & DocumentFlags::kDeleted) != 0;}
+        bool isConflicted() const           {return (flags() & DocumentFlags::kConflicted) != 0;}
+        bool hasAttachments() const         {return (flags() & DocumentFlags::kHasAttachments) != 0;}
 
         bool exists() const                 {return _rec.exists();}
         sequence_t sequence() const         {return _rec.sequence();}
@@ -61,15 +61,14 @@ namespace litecore {
         bool setConflicted(bool);
 
     private:
-        void readMeta();
-        void writeMeta(const VersionVector &vers);
+        void readRecordVersion();
+        void storeRecordVersion(const VersionVector &vers);
         void setKey(slice docid, bool current);
 
         Revision(const Revision&) =delete;  // not copyable
         Revision& operator= (const Revision&) =delete;
 
         Record          _rec;               // The record
-        DocumentMeta    _meta;              // Decoded metadata
         VersionVector   _vers;              // Version vector
     };
 

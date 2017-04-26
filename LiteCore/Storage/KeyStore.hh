@@ -33,7 +33,6 @@ namespace litecore {
 
         struct Capabilities {
             bool sequences      :1;     ///< Records have sequences & can be enumerated by sequence
-            bool softDeletes    :1;     ///< Deleted records have sequence numbers (until compact)
 
             static const Capabilities defaults;
         };
@@ -70,8 +69,12 @@ namespace litecore {
 
         //////// Writing:
 
-        virtual sequence_t set(slice key, slice meta, slice value, Transaction&) =0;
-        sequence_t set(slice key, slice value, Transaction &t) {return set(key, nullslice, value, t);}
+        virtual sequence_t set(slice key, slice vers, slice value, DocumentFlags, Transaction&) =0;
+
+        sequence_t set(slice key, slice value, Transaction &t) {
+            return set(key, nullslice, value, DocumentFlags::kNone, t);
+        }
+
         void write(Record&, Transaction&);
 
         bool del(slice key, Transaction&);
@@ -115,10 +118,6 @@ namespace litecore {
         virtual RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max,
                                                        RecordEnumerator::Options&) =0;
 
-        void updateDoc(Record &rec, sequence_t seq, bool deleted = false) const {
-            rec.update(seq, deleted);
-        }
-
         DataFile &          _db;            // The DataFile I'm contained in
         const std::string   _name;          // My name
         const Capabilities  _capabilities;  // Do I support sequences or soft deletes?
@@ -129,7 +128,6 @@ namespace litecore {
 
         friend class DataFile;
         friend class RecordEnumerator;
-        friend class KeyStoreWriter;
         friend class Query;
     };
 

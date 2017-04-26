@@ -9,6 +9,7 @@
 #include "c4Test.hh"
 #include "c4REST.h"
 #include "c4.hh"
+#include "FilePath.hh"
 #include "Response.hh"
 
 using namespace std;
@@ -30,6 +31,16 @@ public:
 
     C4RESTTest() :C4Test(0)
     { }
+
+
+    void setUpDirectory() {
+        litecore::FilePath tempDir(TempDir() + "rest/");
+        tempDir.delRecursive();
+        tempDir.mkdir();
+        directory = alloc_slice(tempDir.path().c_str());
+        config.directory = directory;
+        config.allowCreateDBs = true;
+    }
 
 
     void start() {
@@ -62,6 +73,7 @@ public:
     }
 
     C4RESTConfig config = {59849 };
+    alloc_slice directory;
     c4::ref<C4RESTListener> listener;
 };
 
@@ -141,8 +153,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
         r = request("PUT", "/and%2For", 403);       // that's a slash. This is a legal db name.
     }
     SECTION("Allowed") {
-        config.directory = c4str(TempDir().c_str());
-        config.allowCreateDBs = true;
+        setUpDirectory();
         SECTION("Invalid name") {
             r = request("PUT", "/xDB", 400);
             r = request("PUT", "/uh*oh", 400);

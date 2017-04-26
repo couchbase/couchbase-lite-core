@@ -19,7 +19,7 @@
 #include "c4Document.h"
 #include "DataFile.hh"
 #include "CASRevisionStore.hh"
-#include "DocumentMeta.hh"
+#include "Record.hh"
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
 #include "BlobStore.hh"
@@ -96,7 +96,7 @@ namespace c4Internal {
     {
         DataFile::Options options { };
         if (isMainDB) {
-            options.keyStores.sequences = options.keyStores.softDeletes = true;
+            options.keyStores.sequences = true;
         }
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
@@ -274,16 +274,7 @@ namespace c4Internal {
 
 
     uint64_t Database::countDocuments() {
-        RecordEnumerator::Options opts;
-        opts.contentOptions = kMetaOnly;
-
-        uint64_t count = 0;
-        for (RecordEnumerator e(defaultKeyStore(), nullslice, nullslice, opts); e.next(); ) {
-            DocumentMeta meta(e.record());
-            if (!(meta.flags & DocumentFlags::kDeleted))
-                ++count;
-        }
-        return count;
+        return defaultKeyStore().recordCount();
     }
 
 
@@ -350,7 +341,7 @@ namespace c4Internal {
                 // Create the UUIDs:
                 slice uuidSlice{&uuid, sizeof(uuid)};
                 GenerateUUID(uuidSlice);
-                store.set(key, nullslice, uuidSlice, transaction());
+                store.set(key, uuidSlice, transaction());
             }
         } catch (...) {
             endTransaction(false);
@@ -461,7 +452,7 @@ namespace c4Internal {
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
-            localDocs.set(key, meta, body, t);
+            localDocs.set(key, meta, body, DocumentFlags::kNone, t);
         else
             localDocs.del(key, t);
     }

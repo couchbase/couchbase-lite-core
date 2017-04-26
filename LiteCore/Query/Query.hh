@@ -29,7 +29,8 @@ namespace litecore {
 
         slice recordID() const          {return _recordID;}
         sequence_t sequence() const     {return _sequence;}
-        slice meta()                    {return _impl->meta();}
+        slice version()                 {return _impl->version();}
+        DocumentFlags flags()           {return _impl->flags();}
 
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
@@ -53,7 +54,8 @@ namespace litecore {
         public:
             virtual ~Impl() = default;
             virtual bool next(slice &docID, sequence_t &sequence) =0;
-            virtual slice meta() =0;
+            virtual slice version() =0;
+            virtual DocumentFlags flags() =0;
             virtual bool hasFullText()                                  {return false;}
             virtual void getFullTextTerms(std::vector<FullTextTerm>& t) {}
             virtual alloc_slice getMatchedText()                        {return alloc_slice();}

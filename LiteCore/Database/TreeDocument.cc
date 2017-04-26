@@ -17,7 +17,6 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
-#include "DocumentMeta.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "VersionedDocument.hh"
@@ -177,7 +176,7 @@ namespace c4Internal {
 
         void updateMeta() {
             _versionedDoc.updateMeta();
-            flags = (C4DocumentFlags)(_versionedDoc.flags() | kExists);
+            flags = (C4DocumentFlags)_versionedDoc.flags() | kExists;
             initRevID();
         }
 
@@ -243,8 +242,8 @@ namespace c4Internal {
         return RawRevision::getCurrentRevBody;
     }
 
-    alloc_slice TreeDocumentFactory::revIDFromMeta(const DocumentMeta &meta) {
-        return revid(meta.version).expanded();
+    alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) {
+        return revid(version).expanded();
     }
 
 

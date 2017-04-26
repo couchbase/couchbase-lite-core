@@ -58,7 +58,7 @@ namespace litecore {
         if (state.latest.revID.buf && state.latest.revID != state.base.revID)
             enc << state.latest.revID << state.latest.CAS;
         enc.endArray();
-        _casStore.set(docID, nullslice, enc.extractOutput(), t);
+        _casStore.set(docID, enc.extractOutput(), t);
     }
 
 
