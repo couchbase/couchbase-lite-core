@@ -25,11 +25,20 @@ add_library(CivetWeb STATIC ${CIVETWEB_SRC})
 include_directories("../C/include"
                     "../C"
                     "../vendor/fleece/Fleece"
-                    "../LiteCore/Support")
+                    "../LiteCore/Support"
+                    "../LiteCore/Storage")
 
 aux_source_directory("." REST_SRC)
 
 set(ALL_SRC_FILES ${REST_SRC})
+if(MSVC)
+	include_directories("../vendor/fleece/MSVC")
+	set(ALL_SRC_FILES ${ALL_SRC_FILES} ../MSVC/asprintf.c
+			     ../vendor/fleece/MSVC/memmem.cc ../MSVC/mkstemp.cc ../MSVC/mkdtemp.cc ../MSVC/strlcat.c
+			     ../MSVC/vasprintf-msvc.c ../MSVC/arc4random.cc ../LiteCore/Support/PlatformIO.cc)
+elseif(ANDROID)
+  set(ALL_SRC_FILES ${ALL_SRC_FILES} ../LiteCore/Android/strlcat.c)
+endif()
 
 ### STATIC LIBRARY:
 

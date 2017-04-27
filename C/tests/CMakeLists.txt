@@ -24,12 +24,12 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/StringUtil.cc
              ${TOP}/REST/Response.cc)
 if(MSVC)
-	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c)
+	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc)
 endif()
 
 add_executable(C4Tests ${TEST_SRC} )
 
-target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb Fleece)
+target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 
 if(MSVC)

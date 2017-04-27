@@ -213,7 +213,7 @@ add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging.cc
                                 LiteCore/Support/StringUtil.cc)
-target_link_libraries(LiteCoreREST PRIVATE LiteCoreREST_Static LiteCore Fleece)
+target_link_libraries(LiteCoreREST PRIVATE LiteCoreREST_Static LiteCore FleeceStatic)
 
 if (APPLE)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
@@ -226,6 +226,13 @@ add_executable(LiteCoreServ REST/LiteCoreServ.cc)
 target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static)
 target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
+if(NOT APPLE)
+  target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
+  if(ANDROID)
+    target_link_libraries(LiteCoreServ PRIVATE log)
+  endif()
+endif()
+
 
 ### TESTS:
 
