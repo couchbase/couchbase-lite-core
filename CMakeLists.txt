@@ -237,7 +237,8 @@ if(NOT APPLE)
   elseif(MSVC)
     set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
               "/ignore:4099")    
-
+  elseif(UNIX)
+    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic crypto dl bsd c++abi)
   endif()
 endif()
 
